@@ -1,6 +1,8 @@
 // ✅ New Parts Tab with Drag & Drop Allocation
 // file location: src/components/PartsTab_New.js
 import React, { useState, useCallback, useEffect, useMemo, forwardRef } from "react";
+import CalendarField from "@/components/calendarAPI/CalendarField";
+import TimePickerField from "@/components/timePickerAPI/TimePickerField";
 
 // Helper functions (keep existing)
 const normalizePartStatus = (status = "") => {
@@ -46,6 +48,10 @@ const PartsTabNew = forwardRef(function PartsTabNew(
   const [partAllocations, setPartAllocations] = useState({});
   const [selectedPartIds, setSelectedPartIds] = useState([]);
   const [allocatingSelection, setAllocatingSelection] = useState(false);
+
+  // State for parts on order - fetched directly from database
+  const [partsOnOrderFromDB, setPartsOnOrderFromDB] = useState([]);
+  const [loadingPartsOnOrder, setLoadingPartsOnOrder] = useState(false);
 
 
   const canAllocateParts = Boolean(canEdit && jobId);
@@ -107,6 +113,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
 
     // Merge and deduplicate by id
     const allParts = [...allocations, ...jobItems];
+
     const uniqueParts = allParts.reduce((acc, part) => {
       if (!acc.some(p => p.id === part.id)) {
         acc.push(part);
@@ -175,36 +182,80 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     setPartAllocations(allocations);
   }, [jobParts]);
 
-  // Parts on order from regular allocations (non-VHC)
-  const regularPartsOnOrder = useMemo(
-    () => jobParts.filter((part) => {
-      const status = normalizePartStatus(part.status);
-      const origin = normalizePartStatus(part.source || part.origin || "");
-      return status === "on_order" && !origin.includes("vhc");
-    }),
-    [jobParts]
-  );
-
-  // VHC Parts on order - from VHC authorized items
-  const vhcPartsOnOrder = useMemo(
-    () => jobParts.filter((part) => {
-      const partStatus = normalizePartStatus(part.status);
-      const origin = normalizePartStatus(part.source || part.origin || "");
-      const isVhc = origin.includes("vhc");
-      const isOnOrderOrStock = partStatus === "on_order" || partStatus === "stock";
-
-      // Only include VHC parts that are on order or have arrived (stock)
-      return isVhc && isOnOrderOrStock;
-    }),
-    [jobParts]
-  );
-
+  // Parts on order - ALL parts for this job with "on_order" status
   const partsOnOrder = useMemo(
-    () => [...regularPartsOnOrder, ...vhcPartsOnOrder],
-    [regularPartsOnOrder, vhcPartsOnOrder]
+    () => {
+      const filtered = jobParts.filter((part) => {
+        const partStatus = normalizePartStatus(part.status);
+        const isOnOrder = partStatus === "on_order";
+
+        // Include ALL parts with "on_order" status regardless of origin
+        return isOnOrder;
+      });
+
+      return filtered;
+    },
+    [jobParts]
   );
 
-  // Handler for marking VHC part as arrived (from "on order" to "stock")
+  // Fetch parts on order directly from database
+  const fetchPartsOnOrder = useCallback(async () => {
+    if (!jobId) return;
+
+    setLoadingPartsOnOrder(true);
+    try {
+      const response = await fetch(`/api/parts/on-order?jobId=${jobId}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to fetch parts on order");
+      }
+
+      setPartsOnOrderFromDB(data.parts || []);
+    } catch (error) {
+      setPartsOnOrderFromDB([]);
+    } finally {
+      setLoadingPartsOnOrder(false);
+    }
+  }, [jobId]);
+
+  // Fetch parts on order when component mounts or jobId changes
+  useEffect(() => {
+    fetchPartsOnOrder();
+  }, [fetchPartsOnOrder]);
+
+  // Handler for updating ETA date/time
+  const handleUpdateETA = useCallback(async (partId, field, value) => {
+    if (!partId || !jobId) return;
+
+    try {
+      const payload = { partItemId: partId };
+      if (field === "etaDate") {
+        payload.etaDate = value;
+      } else if (field === "etaTime") {
+        payload.etaTime = value;
+      }
+
+      const response = await fetch("/api/parts/update-status", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Failed to update ETA");
+      }
+
+      // Refresh parts on order list
+      await fetchPartsOnOrder();
+    } catch (error) {
+      console.error("Failed to update ETA:", error);
+      alert(`Error: ${error.message}`);
+    }
+  }, [jobId, fetchPartsOnOrder]);
+
+  // Handler for marking part as arrived (from "on order" to "stock")
   const handlePartArrived = useCallback(async (partAllocationId) => {
     if (!partAllocationId || !jobId) return;
 
@@ -226,6 +277,9 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         throw new Error(data.message || "Failed to update part status");
       }
 
+      // Refresh parts on order list
+      await fetchPartsOnOrder();
+
       if (typeof onRefreshJob === "function") {
         onRefreshJob();
       }
@@ -233,7 +287,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       console.error("Failed to mark part as arrived:", error);
       alert(`Error: ${error.message}`);
     }
-  }, [jobId, onRefreshJob]);
+  }, [jobId, onRefreshJob, fetchPartsOnOrder]);
 
   const togglePartSelection = useCallback((partId) => {
     setSelectedPartIds((prev) => {
@@ -452,9 +506,24 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     setSelectedPartIds((prev) => prev.filter((id) => leftPanelParts.some((part) => part.id === id)));
   }, [leftPanelParts]);
 
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-      {/* Search Section */}
+    <>
+      <style>{`
+        .compact-input .calendar-api__control,
+        .compact-input .time-picker-api__control {
+          padding: 4px 8px !important;
+          font-size: 11px !important;
+          min-height: auto !important;
+        }
+        .compact-input .calendar-api__icon,
+        .compact-input .time-picker-api__icon {
+          width: 14px !important;
+          height: 14px !important;
+        }
+      `}</style>
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        {/* Search Section */}
       <div
         style={{
           background: "var(--surface)",
@@ -768,7 +837,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           </div>
         </div>
 
-        {/* Right Side - Parts On Order (VHC) / Allocate Parts */}
+        {/* Right Side - On Order (VHC) / Allocate Parts */}
         <div
           style={{
             background: "var(--surface)",
@@ -788,7 +857,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 textTransform: "uppercase",
               }}
             >
-              {invoiceReady ? "Allocate parts" : "Parts On Order"}
+              {invoiceReady ? "Allocate parts" : "On Order"}
             </div>
             {invoiceReady ? (
               <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--info)" }}>
@@ -796,8 +865,10 @@ const PartsTabNew = forwardRef(function PartsTabNew(
               </p>
             ) : (
               <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--info)" }}>
-                {vhcPartsOnOrder.length > 0
-                  ? `${vhcPartsOnOrder.length} VHC part${vhcPartsOnOrder.length !== 1 ? 's' : ''} on order`
+                {loadingPartsOnOrder
+                  ? "Loading..."
+                  : partsOnOrderFromDB.length > 0
+                  ? `${partsOnOrderFromDB.length} part${partsOnOrderFromDB.length !== 1 ? 's' : ''} on order`
                   : "No parts currently on order"}
               </p>
             )}
@@ -902,7 +973,18 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 })}
               </div>
             )
-          ) : vhcPartsOnOrder.length === 0 ? (
+          ) : loadingPartsOnOrder ? (
+            <div
+              style={{
+                padding: "20px",
+                textAlign: "center",
+                color: "var(--info)",
+                fontSize: "13px",
+              }}
+            >
+              Loading parts...
+            </div>
+          ) : partsOnOrderFromDB.length === 0 ? (
             <div
               style={{
                 padding: "20px",
@@ -921,77 +1003,72 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
                   <thead>
                     <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
-                      <th style={{ textAlign: "left", padding: "8px" }}>Part number</th>
-                      <th style={{ textAlign: "left", padding: "8px" }}>Description</th>
-                      <th style={{ textAlign: "right", padding: "8px" }}>Qty</th>
-                      <th style={{ textAlign: "right", padding: "8px" }}>Retail</th>
-                      <th style={{ textAlign: "right", padding: "8px" }}>Cost</th>
+                      <th style={{ textAlign: "left", padding: "8px" }}>Part Name</th>
+                      <th style={{ textAlign: "left", padding: "8px" }}>Part Number</th>
+                      <th style={{ textAlign: "right", padding: "8px" }}>Quantity</th>
+                      <th style={{ textAlign: "right", padding: "8px" }}>Price</th>
                       <th style={{ textAlign: "left", padding: "8px" }}>ETA Date</th>
                       <th style={{ textAlign: "left", padding: "8px" }}>ETA Time</th>
-                      <th style={{ textAlign: "left", padding: "8px" }}>Supplier Ref</th>
                       <th style={{ textAlign: "center", padding: "8px" }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {vhcPartsOnOrder.map((part) => {
-                      const partStatus = normalizePartStatus(part.status);
-                      const isArrived = partStatus === "stock";
-
+                    {partsOnOrderFromDB.map((part) => {
                       return (
-                        <tr key={part.id} style={{ borderTop: "1px solid var(--surface-light)" }}>
+                        <tr
+                          key={part.id}
+                          style={{
+                            borderTop: "1px solid var(--surface-light)",
+                          }}
+                        >
+                          <td style={{ padding: "8px", color: "var(--info-dark)" }}>
+                            {part.partName}
+                          </td>
                           <td style={{ padding: "8px", fontWeight: 600, color: "var(--accent-purple)" }}>
-                            {part.partNumber || part.part?.part_number || "—"}
+                            {part.partNumber}
                           </td>
-                          <td style={{ padding: "8px", color: "var(--info-dark)" }}>
-                            {part.description || part.name || part.part?.name || "—"}
+                          <td style={{ padding: "8px", textAlign: "right" }}>{part.quantity}</td>
+                          <td style={{ padding: "8px", textAlign: "right" }}>{formatMoney(part.unitPrice)}</td>
+                          <td style={{ padding: "8px" }}>
+                            <CalendarField
+                              value={part.etaDate || ""}
+                              onChange={(e) => handleUpdateETA(part.id, "etaDate", e.target.value)}
+                              disabled={!canEdit}
+                              placeholder="Select date"
+                              size="sm"
+                              className="compact-input"
+                            />
                           </td>
-                          <td style={{ padding: "8px", textAlign: "right" }}>{part.quantity || 1}</td>
-                          <td style={{ padding: "8px", textAlign: "right" }}>{formatMoney(part.unitPrice || part.part?.unit_price || 0)}</td>
-                          <td style={{ padding: "8px", textAlign: "right" }}>{formatMoney(part.unitCost || part.part?.unit_cost || 0)}</td>
-                          <td style={{ padding: "8px", color: "var(--info-dark)" }}>
-                            {part.eta_date || part.etaDate || "—"}
-                          </td>
-                          <td style={{ padding: "8px", color: "var(--info-dark)" }}>
-                            {part.eta_time || part.etaTime || "—"}
-                          </td>
-                          <td style={{ padding: "8px", color: "var(--info-dark)" }}>
-                            {part.supplier_reference || part.supplierReference || "—"}
+                          <td style={{ padding: "8px" }}>
+                            <TimePickerField
+                              value={part.etaTime || ""}
+                              onChange={(e) => handleUpdateETA(part.id, "etaTime", e.target.value)}
+                              disabled={!canEdit}
+                              placeholder="Select time"
+                              size="sm"
+                              format="24"
+                              minuteStep={15}
+                              className="compact-input"
+                            />
                           </td>
                           <td style={{ padding: "8px", textAlign: "center" }}>
-                            {isArrived ? (
-                              <span
-                                style={{
-                                  padding: "4px 8px",
-                                  borderRadius: "6px",
-                                  border: "1px solid var(--success)",
-                                  background: "var(--success-surface)",
-                                  color: "var(--success)",
-                                  fontWeight: 600,
-                                  fontSize: "11px",
-                                  display: "inline-block",
-                                }}
-                              >
-                                Arrived
-                              </span>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => handlePartArrived(part.id)}
-                                disabled={!canEdit}
-                                style={{
-                                  padding: "4px 8px",
-                                  borderRadius: "6px",
-                                  border: "1px solid var(--success)",
-                                  background: !canEdit ? "var(--surface-light)" : "var(--success)",
-                                  color: !canEdit ? "var(--info)" : "var(--surface)",
-                                  fontWeight: 600,
-                                  cursor: !canEdit ? "not-allowed" : "pointer",
-                                  fontSize: "11px",
-                                }}
-                              >
-                                Here
-                              </button>
-                            )}
+                            <button
+                              type="button"
+                              onClick={() => handlePartArrived(part.id)}
+                              disabled={!canEdit}
+                              style={{
+                                padding: "4px 8px",
+                                borderRadius: "6px",
+                                border: "1px solid var(--success)",
+                                background: !canEdit ? "var(--surface-light)" : "var(--success)",
+                                color: !canEdit ? "var(--info)" : "var(--surface)",
+                                fontWeight: 600,
+                                cursor: !canEdit ? "not-allowed" : "pointer",
+                                fontSize: "11px",
+                              }}
+                            >
+                              Mark as Arrived
+                            </button>
                           </td>
                         </tr>
                       );
@@ -1003,8 +1080,8 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           )}
         </div>
       </div>
-
-    </div>
+      </div>
+    </>
   );
 });
 

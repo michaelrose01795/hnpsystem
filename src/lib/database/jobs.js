@@ -428,7 +428,7 @@ export const getAllJobs = async () => {
         fitted_by,
         created_at,
         updated_at,
-        part:part_id(
+        parts_catalog:part_id(
           id,
           part_number,
           name,
@@ -772,7 +772,7 @@ export const getJobByNumber = async (jobNumber) => {
         fitted_by,
         created_at,
         updated_at,
-        part:part_id(
+        parts_catalog:part_id(
           id,
           part_number,
           name,
@@ -822,8 +822,6 @@ export const getJobByNumber = async (jobNumber) => {
     console.log("⚠️ Job not found by job_number"); // Debug log
     return { data: null, error: { message: "Job not found" } };
   }
-
-  console.log("✅ Job found by job_number:", jobData.job_number); // Debug log
 
   const messagingThread = await fetchJobMessagingThread(jobData.job_number);
   const formattedJob = formatJobData(jobData);
@@ -1048,7 +1046,7 @@ export const getJobByNumberOrReg = async (searchTerm) => {
         fitted_by,
         created_at,
         updated_at,
-        part:part_id(
+        parts_catalog:part_id(
           id,
           part_number,
           name,
@@ -1739,40 +1737,45 @@ const formatJobData = (data) => {
       : null,
   }));
 
-  const partsAllocations = (data.parts_job_items || []).map((item) => ({
-    id: item.id,
-    partId: item.part_id,
-    allocatedToRequestId: item.allocated_to_request_id ?? item.allocatedToRequestId ?? null,
-    quantityRequested: item.quantity_requested ?? 0,
-    quantityAllocated: item.quantity_allocated ?? 0,
-    quantityFitted: item.quantity_fitted ?? 0,
-    status: item.status || "pending",
-    origin: item.origin || null,
-    prePickLocation: item.pre_pick_location || null,
-    storageLocation: item.storage_location || item.part?.storage_location || null,
-    unitCost: item.unit_cost ?? item.part?.unit_cost ?? 0,
-    unitPrice: item.unit_price ?? item.part?.unit_price ?? 0,
-    requestNotes: item.request_notes || "",
-    allocatedBy: item.allocated_by || null,
-    pickedBy: item.picked_by || null,
-    fittedBy: item.fitted_by || null,
-    createdAt: item.created_at || null,
-    updatedAt: item.updated_at || null,
-    part: item.part
-      ? {
-          id: item.part.id,
-          partNumber: item.part.part_number,
-          name: item.part.name,
-          description: item.part.description,
-          unitCost: item.part.unit_cost,
-          unitPrice: item.part.unit_price,
-          qtyInStock: item.part.qty_in_stock,
-          qtyReserved: item.part.qty_reserved,
-          qtyOnOrder: item.part.qty_on_order,
-          storageLocation: item.part.storage_location,
-        }
-      : null,
-  }));
+  const partsAllocations = (data.parts_job_items || []).map((item) => {
+    // Handle both 'part' (old) and 'parts_catalog' (new) field names for backward compatibility
+    const partData = item.parts_catalog || item.part;
+
+    return {
+      id: item.id,
+      partId: item.part_id,
+      allocatedToRequestId: item.allocated_to_request_id ?? item.allocatedToRequestId ?? null,
+      quantityRequested: item.quantity_requested ?? 0,
+      quantityAllocated: item.quantity_allocated ?? 0,
+      quantityFitted: item.quantity_fitted ?? 0,
+      status: item.status || "pending",
+      origin: item.origin || null,
+      prePickLocation: item.pre_pick_location || null,
+      storageLocation: item.storage_location || partData?.storage_location || null,
+      unitCost: item.unit_cost ?? partData?.unit_cost ?? 0,
+      unitPrice: item.unit_price ?? partData?.unit_price ?? 0,
+      requestNotes: item.request_notes || "",
+      allocatedBy: item.allocated_by || null,
+      pickedBy: item.picked_by || null,
+      fittedBy: item.fitted_by || null,
+      createdAt: item.created_at || null,
+      updatedAt: item.updated_at || null,
+      part: partData
+        ? {
+            id: partData.id,
+            partNumber: partData.part_number,
+            name: partData.name,
+            description: partData.description,
+            unitCost: partData.unit_cost,
+            unitPrice: partData.unit_price,
+            qtyInStock: partData.qty_in_stock,
+            qtyReserved: partData.qty_reserved,
+            qtyOnOrder: partData.qty_on_order,
+            storageLocation: partData.storage_location,
+          }
+        : null,
+    };
+  });
 
   const goodsInParts = (data.goods_in_items || []).map((item) => ({
     id: item.id,
@@ -1892,6 +1895,7 @@ const formatJobData = (data) => {
     vhcChecks: hydrateVhcChecks(data.vhc_checks),
     partsRequests,
     partsAllocations,
+    parts_job_items: data.parts_job_items || [], // ✅ Raw parts_job_items for Parts tab
     goodsInParts,
     notes: data.job_notes || [],
     writeUp: data.job_writeups?.[0] || null,

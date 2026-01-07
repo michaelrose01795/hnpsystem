@@ -37,7 +37,6 @@ const TAB_OPTIONS = [
   { id: "health-check", label: "Health Check" },
   { id: "parts-identified", label: "Parts Identified" },
   { id: "parts-authorized", label: "Parts Authorized" },
-  { id: "parts-on-order", label: "Parts On Order" },
   { id: "photos", label: "Photos" },
   { id: "videos", label: "Videos" },
 ];
@@ -5284,8 +5283,6 @@ export default function VhcDetailsPanel({
                 </div>
               )}
 
-              {activeTab === "parts-on-order" &&
-                renderPartsPanel("Parts On Order", partsOnOrder, "No parts have been raised with the parts department yet.")}
 
               {activeTab === "photos" &&
                 renderFileGallery("Photos", photoFiles, "No customer-facing photos have been attached.", "photo")}
@@ -5582,7 +5579,6 @@ export default function VhcDetailsPanel({
                   {renderVhcAuthorizedPanel()}
                 </div>
 
-                {renderPartsPanel("Parts On Order", partsOnOrder, "No parts have been raised with the parts department yet.")}
 
                 {renderFileGallery("Photos", photoFiles, "No customer-facing photos have been attached.", "photo")}
 

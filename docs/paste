@@ -1,6 +1,40 @@
 TO DO:
 
-Now copy the table inside the ‘parts tab with in parts on order section “ SEARCH PARTS STOCKSearch and add parts to this jobPARTS ADDED TO JOB4 unallocated · 4 totalPART NUMBER	DESCRIPTION	QTY	RETAIL	COSTFDISCS1	Front Discs	1	£70.00	£59.00FPAD1	Front brake pads	1	£58.00	£42.00TYRE1	Tyre	1	£149.99	£75.00FPAD1	Front brake pads	1	£58.00	£42.00PARTS ON ORDERNo parts currently on orderNo parts currently on order for this job.” this is the place the tables need to be added “parts on order.
+
+within the parts tab inside the On order section, Override calendar and time picker styles so when clicked on the calendar or time section the space is smaller and shows inside the whole page not just inside the section so the view isnt restriced. 
+
+
+
+
+
+Hide  the authorised and declinded and show "VHC not been started yet" if nothing has been repored within the health check section of the VHC tab. Hide the "VHC" tab if "Mark VHC Not Required" if this is the selected hide the VHC tab and "Vehicle Health Check
+VHC has been marked as not required for this job.
+Red: 0
+Amber: 0
+Total Checks: 0
+Service or management can enable the VHC if it becomes required." section to show text "VHC has been selected as not Required, Service or management can enable the VHC if it becomes required."
+
+
+
+
+
+have it so the "AUTHORISED
+£0.00
+VHC Total
+DECLINED
+£0.00
+VHC Total" sections nect to the "VEHICLE
+MF20LZO
+HYUNDAI
+CUSTOMER
+Edward Lane
+07587 332400" section are always showing the total price even if the VHC tab isnt loaded.
+
+
+
+
+
+have it so the row backgrounds inside the authorised and declinded section still show the red or amber background depending on the status of the row (this will link to what the status was before it was changed to authorised or declinded). 
 
 
 
@@ -15,12 +49,16 @@ make the "Customer Requests Contact Scheduling Service History Parts Notes Write
 
 
 
-Make sure the labour check box is only check automaticly when a number from 0 is entered manually into the field. Do not check the box if a part is added to the row. 
+
+
+Make sure the labour check box is only check automaticly when a number from 0 is entered manually into the field. Do not check the box if a part is added to the row. Make sure the parts columm check box is alway ticked when a part is linked to the row or "part not required" is selected within the "Parts identified" tab. 
+
 
 
 
 
 Have it so the "Add Parts to VHC Item" popup is in the centre of the page like the other popups do and not in the centre within the tab section. this popup is glitchy, make it work smoother and easy to use. 
+
 
 
 
