@@ -1,11 +1,8 @@
 TO DO:
 
-At the top of the "Declined" section add a total of for that section in red text Following the theme light and dark. do the same inside the "Authorised" section and have the text green. And then add the total for that section inside the "AUTHORISED £0.00 VHC Total" and the "DECLINED £0.00 VHC Total" section when its been addded to either. also "Items that have been authorised for work" remove this and this text "Items that have been declined"
+the authorised and decindedsections arent showing the total underneath the vhc tab and inside the summary tab, fix this. 
 
 
-
-
-Atm when the rows are added to either authorised or declined section make sure this their new place, the status of these items does not change when the page is refreshed, make sure the status is chaning to authorised or declinded within the database, so when the page loads again the status of the row remains the same and the rows either show inside the declinded, authorised or if niether have been picked yet they stay in either the red or amber section depending on the status of their row when reported. 
 
 
 When a part is authorised added that part with the row inside the "Parts Authorized" tab, this row will show the same row as used inside the  parts indentifed tab with the table title being "VHC Item	Linked Parts	Parts Cost	Warranty	Parts Not Required" however without the Parts noot required title and instead a status upadate drop down (link to drop down api stly) and this also links to the "Find Job Card" section insdie the /parts where the table view is "Part	Qty	Stage	Status	Pre-pick	Notes". 

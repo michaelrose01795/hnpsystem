@@ -966,7 +966,7 @@ export default function VhcDetailsPanel({
             customer:customer_id(*),
             vehicle:vehicle_id(*),
             technician:assigned_to(user_id, first_name, last_name, email, role, phone),
-            vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at, approval_status, approved_by, approved_at, labour_hours, parts_cost, total_override, labour_complete, parts_complete),
+            vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at, approval_status, display_status, approved_by, approved_at, labour_hours, parts_cost, total_override, labour_complete, parts_complete),
             parts_job_items(
               id,
               part_id,
@@ -1180,29 +1180,6 @@ export default function VhcDetailsPanel({
       ),
     [jobParts]
   );
-  const partsAuthorized = useMemo(
-    () =>
-      jobParts.filter((part) => {
-        // Part must be from VHC and marked as authorised
-        const isVhc = normalisePartStatus(part.origin).includes("vhc");
-        const isAuthorised = part.authorised === true;
-        // Exclude parts that are on_order
-        const notOnOrder = normalisePartStatus(part.status) !== "on_order";
-        return isVhc && isAuthorised && notOnOrder;
-      }),
-    [jobParts]
-  );
-  const partsOnOrder = useMemo(
-    () =>
-      jobParts.filter((part) => {
-        // Part must be from VHC, authorised, and have status on_order
-        const isVhc = normalisePartStatus(part.origin).includes("vhc");
-        const isAuthorised = part.authorised === true;
-        const isOnOrder = normalisePartStatus(part.status) === "on_order";
-        return isVhc && isAuthorised && isOnOrder;
-      }),
-    [jobParts]
-  );
   const jobFiles = useMemo(
     () =>
       Array.isArray(job?.job_files) ? job.job_files.filter(Boolean) : [],
@@ -1313,6 +1290,79 @@ export default function VhcDetailsPanel({
     console.log('[VHC] vhcApprovalLookup built with', map.size, 'entries');
     return map;
   }, [vhcChecksData]);
+
+  const partsAuthorized = useMemo(
+    () => {
+      const filtered = jobParts.filter((part) => {
+        // Part must be from VHC
+        const isVhc = normalisePartStatus(part.origin).includes("vhc");
+        if (!isVhc) return false;
+
+        // Exclude parts that are on_order
+        const notOnOrder = normalisePartStatus(part.status) !== "on_order";
+        if (!notOnOrder) {
+          console.log(`[PARTS AUTHORIZED FILTER] Part ${part.id} EXCLUDED (status is on_order)`);
+          return false;
+        }
+
+        // Check if the part is linked to an authorized VHC item
+        if (part.vhc_item_id) {
+          const canonicalId = String(part.vhc_item_id);
+          const approvalData = vhcApprovalLookup.get(canonicalId);
+          if (approvalData && approvalData.approvalStatus === 'authorized') {
+            console.log(`[PARTS AUTHORIZED FILTER] Part ${part.id} INCLUDED (VHC authorized, status=${part.status})`);
+            return true;
+          }
+        }
+
+        // Also include parts that are marked as authorised in the old way
+        const isAuthorised = part.authorised === true;
+        if (isAuthorised) {
+          console.log(`[PARTS AUTHORIZED FILTER] Part ${part.id} INCLUDED (authorised flag, status=${part.status})`);
+        }
+        return isAuthorised;
+      });
+
+      console.log(`[PARTS AUTHORIZED FILTER] Total parts authorized: ${filtered.length}`, filtered.map(p => p.id));
+      return filtered;
+    },
+    [jobParts, vhcApprovalLookup]
+  );
+
+  const partsOnOrder = useMemo(
+    () => {
+      const filtered = jobParts.filter((part) => {
+        // Part must be from VHC and have status on_order
+        const isVhc = normalisePartStatus(part.origin).includes("vhc");
+        const isOnOrder = normalisePartStatus(part.status) === "on_order";
+
+        console.log(`[PARTS ON ORDER FILTER] Part ${part.id}: isVhc=${isVhc}, status="${part.status}", isOnOrder=${isOnOrder}`);
+
+        if (!isVhc || !isOnOrder) return false;
+
+        // Check if part is linked to an authorized VHC item OR has authorised flag
+        if (part.vhc_item_id) {
+          const canonicalId = String(part.vhc_item_id);
+          const approvalData = vhcApprovalLookup.get(canonicalId);
+          if (approvalData && approvalData.approvalStatus === 'authorized') {
+            console.log(`[PARTS ON ORDER FILTER] Part ${part.id} INCLUDED (VHC authorized)`);
+            return true;
+          }
+        }
+
+        // Also include parts that are marked as authorised in the old way
+        const includeOldWay = part.authorised === true;
+        if (includeOldWay) {
+          console.log(`[PARTS ON ORDER FILTER] Part ${part.id} INCLUDED (authorised flag)`);
+        }
+        return includeOldWay;
+      });
+
+      console.log(`[PARTS ON ORDER FILTER] Total parts on order: ${filtered.length}`, filtered.map(p => p.id));
+      return filtered;
+    },
+    [jobParts, vhcApprovalLookup]
+  );
 
   const summaryItems = useMemo(() => {
     const items = [];
@@ -1713,6 +1763,57 @@ export default function VhcDetailsPanel({
 
     return items;
   }, [summaryItems, partsIdentified, resolveCanonicalVhcId]);
+
+  // Combined VHC items with their parts for Parts Authorized section
+  const vhcItemsWithPartsAuthorized = useMemo(() => {
+    if (!severityLists.authorized || severityLists.authorized.length === 0) return [];
+
+    const items = [];
+    const processedCanonicalIds = new Set();
+
+    const partsByVhcId = new Map();
+    partsAuthorized.forEach((part) => {
+      if (!part?.vhc_item_id) {
+        return;
+      }
+      const key = String(part.vhc_item_id);
+      if (!partsByVhcId.has(key)) {
+        partsByVhcId.set(key, []);
+      }
+      partsByVhcId.get(key).push(part);
+    });
+
+    severityLists.authorized.forEach((summaryItem) => {
+      const displayVhcId = String(summaryItem.id);
+      const canonicalVhcId = resolveCanonicalVhcId(displayVhcId);
+      const linkedParts = partsByVhcId.get(canonicalVhcId) || [];
+
+      items.push({
+        vhcItem: summaryItem,
+        linkedParts,
+        vhcId: displayVhcId,
+        canonicalVhcId,
+      });
+
+      processedCanonicalIds.add(canonicalVhcId);
+    });
+
+    partsAuthorized.forEach((part) => {
+      if (!part?.vhc_item_id) return;
+      const canonicalVhcId = String(part.vhc_item_id);
+      if (processedCanonicalIds.has(canonicalVhcId)) return;
+
+      items.push({
+        vhcItem: null,
+        linkedParts: [part],
+        vhcId: canonicalVhcId,
+        canonicalVhcId,
+      });
+      processedCanonicalIds.add(canonicalVhcId);
+    });
+
+    return items;
+  }, [severityLists, partsAuthorized, resolveCanonicalVhcId]);
 
   const partsCostByVhcItem = useMemo(() => {
     const map = new Map();
@@ -2243,6 +2344,69 @@ export default function VhcDetailsPanel({
     [severitySelections, resolveCanonicalVhcId, authUserId, dbUserId]
   );
 
+  const handleMoveItem = useCallback(
+    async (itemId, newStatus) => {
+      console.log(`[VHC MOVE] Moving item ${itemId} to ${newStatus}`);
+
+      // Update local state immediately
+      setItemEntries((prev) => {
+        const current = ensureEntryValue(prev, itemId);
+        return { ...prev, [itemId]: { ...current, status: newStatus } };
+      });
+
+      // Persist to database
+      const canonicalId = resolveCanonicalVhcId(itemId);
+      const parsedId = Number(canonicalId);
+
+      if (!Number.isInteger(parsedId)) {
+        console.error(`❌ [VHC MOVE ERROR] Invalid ID for item ${itemId}`);
+        return;
+      }
+
+      const dbStatus = newStatus || 'pending';
+
+      try {
+        const response = await fetch("/api/vhc/update-item-status", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            vhcItemId: parsedId,
+            approvalStatus: dbStatus,
+            approvedBy: authUserId || dbUserId || "system"
+          }),
+        });
+
+        const result = await response.json();
+        if (!response.ok || !result?.success) {
+          console.error(`❌ [VHC MOVE ERROR] Failed for vhc_id ${parsedId}:`, result?.message);
+          return;
+        }
+
+        console.log(`✅ [VHC MOVE] Successfully moved vhc_id ${parsedId} to ${newStatus}`);
+
+        // Update vhcChecksData to reflect the change
+        const newDisplayStatus = newStatus === 'authorized' ? 'authorized' : newStatus === 'declined' ? 'declined' : null;
+        setVhcChecksData((prev) => {
+          return prev.map((check) => {
+            if (check.vhc_id === parsedId) {
+              return {
+                ...check,
+                approval_status: newStatus,
+                display_status: newDisplayStatus,
+                approved_by: authUserId || dbUserId || "system",
+                approved_at: new Date().toISOString()
+              };
+            }
+            return check;
+          });
+        });
+      } catch (error) {
+        console.error(`❌ [VHC MOVE ERROR] Exception:`, error);
+      }
+    },
+    [resolveCanonicalVhcId, authUserId, dbUserId]
+  );
+
   const renderSeverityTable = (severity) => {
     const items = severityLists[severity] || [];
     if (items.length === 0) {
@@ -2585,6 +2749,40 @@ export default function VhcDetailsPanel({
                             <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--accent-purple)" }}>
                               {statusState.label}
                             </div>
+                            {(severity === "authorized" || severity === "declined") && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const targetStatus = severity === "authorized" ? "declined" : "authorized";
+                                  handleMoveItem(item.id, targetStatus);
+                                  setHoveredStatusId(null);
+                                }}
+                                style={{
+                                  marginTop: "8px",
+                                  width: "100%",
+                                  padding: "6px 12px",
+                                  fontSize: "12px",
+                                  fontWeight: 600,
+                                  color: severity === "authorized" ? "var(--danger)" : "var(--success)",
+                                  background: severity === "authorized" ? "var(--danger-surface)" : "var(--success-surface)",
+                                  border: `1px solid ${severity === "authorized" ? "var(--danger)" : "var(--success)"}`,
+                                  borderRadius: "8px",
+                                  cursor: "pointer",
+                                  transition: "all 0.2s ease",
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = severity === "authorized" ? "var(--danger)" : "var(--success)";
+                                  e.currentTarget.style.color = "white";
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = severity === "authorized" ? "var(--danger-surface)" : "var(--success-surface)";
+                                  e.currentTarget.style.color = severity === "authorized" ? "var(--danger)" : "var(--success)";
+                                }}
+                              >
+                                Move to {severity === "authorized" ? "Declined" : "Authorised"}
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>
@@ -2899,19 +3097,28 @@ export default function VhcDetailsPanel({
 
   // Handler for updating part status and location
   const handlePartStatusUpdate = useCallback(async (partItemId, updates) => {
+    console.log(`[PART STATUS UPDATE] Starting update for part ${partItemId}`, updates);
+
     try {
+      const requestBody = { partItemId, ...updates };
+      console.log(`[PART STATUS UPDATE] Request body:`, requestBody);
+
       const response = await fetch("/api/parts/update-status", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ partItemId, ...updates }),
+        body: JSON.stringify(requestBody),
       });
+
+      console.log(`[PART STATUS UPDATE] Response status:`, response.status);
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to update part status");
+        console.error(`[PART STATUS UPDATE] API Error:`, errorData);
+        throw new Error(errorData.error || errorData.details || "Failed to update part status");
       }
 
       const result = await response.json();
+      console.log(`[PART STATUS UPDATE] Success:`, result);
 
       // Refresh job data to reflect changes
       if (result.success && job?.id) {
@@ -2922,7 +3129,7 @@ export default function VhcDetailsPanel({
             customer:customer_id(*),
             vehicle:vehicle_id(*),
             technician:assigned_to(user_id, first_name, last_name, email, role, phone),
-            vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at, approval_status, approved_by, approved_at, labour_hours, parts_cost, total_override, labour_complete, parts_complete),
+            vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at, approval_status, display_status, approved_by, approved_at, labour_hours, parts_cost, total_override, labour_complete, parts_complete),
             parts_job_items(
               id,
               part_id,
@@ -2971,12 +3178,20 @@ export default function VhcDetailsPanel({
             parts_job_items: parts_job_items || [],
             job_files: job_files || [],
           });
+          setVhcChecksData(vhc_checks || []);
+          console.log(`[PART STATUS UPDATE] VHC checks refreshed:`, vhc_checks?.length || 0);
         }
       }
 
       return result;
     } catch (err) {
-      console.error("Error updating part status:", err);
+      console.error(`[PART STATUS UPDATE] Error:`, err);
+      console.error(`[PART STATUS UPDATE] Error details:`, {
+        message: err.message,
+        stack: err.stack,
+        partItemId,
+        updates
+      });
       throw err;
     }
   }, [job, resolvedJobNumber]);
@@ -3499,7 +3714,7 @@ export default function VhcDetailsPanel({
     setSelectedPartForJob(null);
   }, []);
 
-  // Render VHC items panel for Parts Identified (shows all red/amber VHC items)
+  // Render VHC items panel for Parts Identified (shows all VHC items regardless of status)
   const renderVhcItemsPanel = useCallback(() => {
     const itemsById = new Map(
       (vhcItemsWithParts || []).map((item) => [String(item.vhcId), item])
@@ -3507,6 +3722,8 @@ export default function VhcDetailsPanel({
     const orderedSourceItems = [
       ...(severityLists.red || []),
       ...(severityLists.amber || []),
+      ...(severityLists.authorized || []),
+      ...(severityLists.declined || []),
     ];
     const filteredItems = orderedSourceItems.map((item) => {
       const key = String(item.id);
@@ -3534,7 +3751,7 @@ export default function VhcDetailsPanel({
             fontSize: "13px",
           }}
         >
-          No VHC red or amber repairs have been recorded yet.
+          No VHC repairs have been recorded yet.
         </div>
       );
     }
@@ -3592,24 +3809,36 @@ export default function VhcDetailsPanel({
                 const entry = getEntryForItem(vhcId);
                 const isLocked = entry.status === "authorized" || entry.status === "declined";
 
+                // Determine background color based on status
+                let rowBackground = "var(--surface)";
+                let rowHoverBackground = "var(--accent-purple-surface)";
+
+                if (entry.status === "authorized") {
+                  rowBackground = "var(--success-surface)";
+                  rowHoverBackground = "rgba(34, 197, 94, 0.15)";
+                } else if (entry.status === "declined") {
+                  rowBackground = "var(--danger-surface)";
+                  rowHoverBackground = "rgba(239, 68, 68, 0.15)";
+                } else if (vhcSeverity) {
+                  rowBackground = SEVERITY_THEME[vhcSeverity]?.background || "var(--surface)";
+                  rowHoverBackground = SEVERITY_THEME[vhcSeverity]?.hover || "var(--accent-purple-surface)";
+                }
+
                 return (
                   <React.Fragment key={vhcId}>
                   <tr
                     onClick={() => handleVhcItemRowClick(vhcId)}
                     style={{
                       borderBottom: isExpanded ? "none" : "1px solid var(--info-surface)",
-                      background: vhcSeverity ? SEVERITY_THEME[vhcSeverity]?.background : "var(--surface)",
+                      background: rowBackground,
                       cursor: "pointer",
                       transition: "background 0.2s ease",
                     }}
                     onMouseEnter={(e) => {
-                      const hoverColor = vhcSeverity && SEVERITY_THEME[vhcSeverity]?.hover
-                        ? SEVERITY_THEME[vhcSeverity].hover
-                        : "var(--accent-purple-surface)";
-                      e.currentTarget.style.background = hoverColor;
+                      e.currentTarget.style.background = rowHoverBackground;
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.background = vhcSeverity ? SEVERITY_THEME[vhcSeverity]?.background : "var(--surface)";
+                      e.currentTarget.style.background = rowBackground;
                     }}
                   >
                     <td style={{ padding: "12px 16px" }}>
@@ -3726,7 +3955,7 @@ export default function VhcDetailsPanel({
                   {isExpanded && (
                     <tr>
                       <td colSpan="5" style={{ padding: "0", borderBottom: "1px solid var(--info-surface)" }}>
-                        <div style={{ padding: "24px", background: "var(--surface-light)" }}>
+                        <div style={{ padding: "24px", background: rowBackground }}>
                           {/* Add Part Button */}
                           <div style={{ marginBottom: "20px" }}>
                             <button
@@ -4066,6 +4295,266 @@ export default function VhcDetailsPanel({
       </div>
     );
   }, [vhcItemsWithParts, severityLists, resolveCanonicalVhcId, partsNotRequired, warrantyRows, partsCostByVhcItem, handlePartsNotRequiredToggle, handleVhcItemRowClick, expandedVhcItems, partDetails, handleAddPartButtonClick, handlePartDetailChange, handleRemovePart, removingPartIds]);
+
+  // Render VHC authorized items panel (similar to Parts Identified but for authorized items)
+  const renderVhcAuthorizedPanel = useCallback(() => {
+    const filteredItems = vhcItemsWithPartsAuthorized || [];
+
+    if (!filteredItems || filteredItems.length === 0) {
+      return (
+        <div
+          style={{
+            padding: "18px",
+            border: "1px solid var(--info-surface)",
+            borderRadius: "12px",
+            background: "var(--info-surface)",
+            color: "var(--info)",
+            fontSize: "13px",
+          }}
+        >
+          No authorized VHC items with parts yet.
+        </div>
+      );
+    }
+
+    return (
+      <div
+        style={{
+          border: "1px solid var(--success-surface)",
+          borderRadius: "16px",
+          background: "var(--surface)",
+          overflow: "hidden",
+        }}
+      >
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+            <thead>
+              <tr
+                style={{
+                  background: "var(--info-surface)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.04em",
+                  color: "var(--info)",
+                  fontSize: "11px",
+                }}
+              >
+                <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "280px" }}>VHC Item</th>
+                <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "200px" }}>Linked Parts</th>
+                <th style={{ textAlign: "right", padding: "12px 16px", minWidth: "120px" }}>Parts Cost</th>
+                <th style={{ textAlign: "center", padding: "12px 16px", minWidth: "100px" }}>Warranty</th>
+                <th style={{ textAlign: "center", padding: "12px 16px", minWidth: "180px" }}>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredItems.map((item) => {
+                const { vhcItem, linkedParts, vhcId, canonicalVhcId } = item;
+                const isWarranty = warrantyRows.has(vhcId);
+
+                // VHC item details
+                const vhcLabel = vhcItem?.label || "VHC Item";
+                const vhcNotes = vhcItem?.notes || vhcItem?.concernText || "";
+                const vhcCategory = vhcItem?.categoryLabel || vhcItem?.category?.label || "";
+                const locationLabel = vhcItem?.location
+                  ? LOCATION_LABELS[vhcItem.location] || vhcItem.location.replace(/_/g, " ")
+                  : null;
+
+                // Authorized items should have green background
+                const rowBackground = "var(--success-surface)";
+                const rowHoverBackground = "rgba(34, 197, 94, 0.15)";
+
+                // If no parts, show single row with VHC item
+                if (!linkedParts || linkedParts.length === 0) {
+                  return (
+                    <tr
+                      key={vhcId}
+                      style={{
+                        borderBottom: "1px solid var(--info-surface)",
+                        background: rowBackground,
+                        transition: "background 0.2s ease",
+                      }}
+                    >
+                      <td style={{ padding: "12px 16px" }}>
+                        <div>
+                          <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+                            {vhcCategory}
+                          </div>
+                          <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--success)", marginTop: "2px" }}>
+                            {vhcLabel}
+                          </div>
+                          {vhcNotes && (
+                            <div style={{ fontSize: "12px", color: "var(--info-dark)", marginTop: "4px" }}>
+                              {vhcNotes}
+                            </div>
+                          )}
+                          {locationLabel && (
+                            <div style={{ fontSize: "11px", color: "var(--info)", marginTop: "4px" }}>
+                              Location: {locationLabel}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td style={{ padding: "12px 16px" }}>
+                        <span style={{ color: "var(--info-light)", fontSize: "12px" }}>No parts linked</span>
+                      </td>
+                      <td style={{ padding: "12px 16px", textAlign: "right" }}>
+                        <span style={{ color: "var(--info-light)", fontSize: "12px" }}>£0.00</span>
+                      </td>
+                      <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                        {isWarranty ? (
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              width: "28px",
+                              height: "28px",
+                              borderRadius: "999px",
+                              background: "var(--warning-surface)",
+                              color: "var(--warning)",
+                              fontWeight: 700,
+                              fontSize: "13px",
+                            }}
+                          >
+                            W
+                          </span>
+                        ) : (
+                          <span style={{ color: "var(--info-light)", fontSize: "12px" }}>—</span>
+                        )}
+                      </td>
+                      <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                        <span style={{ color: "var(--info-light)", fontSize: "12px" }}>—</span>
+                      </td>
+                    </tr>
+                  );
+                }
+
+                // Show one row per part
+                return linkedParts.map((part, partIndex) => {
+                  const partPrice = Number(part.unit_price ?? part.part?.unit_price ?? 0);
+                  const partQty = Number(part.quantity_requested || 1);
+                  const partTotal = partPrice * partQty;
+                  const currentStatus = part.status || 'authorized';
+
+                  return (
+                    <tr
+                      key={`${vhcId}-part-${part.id}`}
+                      style={{
+                        borderBottom: "1px solid var(--info-surface)",
+                        background: rowBackground,
+                        transition: "background 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = rowHoverBackground;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = rowBackground;
+                      }}
+                    >
+                      <td style={{ padding: "12px 16px" }}>
+                        {partIndex === 0 && (
+                          <div>
+                            <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+                              {vhcCategory}
+                            </div>
+                            <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--success)", marginTop: "2px" }}>
+                              {vhcLabel}
+                            </div>
+                            {vhcNotes && (
+                              <div style={{ fontSize: "12px", color: "var(--info-dark)", marginTop: "4px" }}>
+                                {vhcNotes}
+                              </div>
+                            )}
+                            {locationLabel && (
+                              <div style={{ fontSize: "11px", color: "var(--info)", marginTop: "4px" }}>
+                                Location: {locationLabel}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                      <td style={{ padding: "12px 16px" }}>
+                        <div style={{ fontSize: "12px", color: "var(--info-dark)" }}>
+                          <div style={{ fontWeight: 600, color: "var(--success)" }}>
+                            {part.part?.name || "Unknown Part"}
+                          </div>
+                          <div style={{ fontSize: "11px", color: "var(--info)" }}>
+                            {part.part?.part_number || "No part number"} • Qty: {partQty}
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding: "12px 16px", textAlign: "right" }}>
+                        <span style={{ fontWeight: 700, color: "var(--success)", fontSize: "14px" }}>
+                          £{partTotal.toFixed(2)}
+                        </span>
+                      </td>
+                      <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                        {partIndex === 0 && isWarranty ? (
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              width: "28px",
+                              height: "28px",
+                              borderRadius: "999px",
+                              background: "var(--warning-surface)",
+                              color: "var(--warning)",
+                              fontWeight: 700,
+                              fontSize: "13px",
+                            }}
+                          >
+                            W
+                          </span>
+                        ) : (
+                          <span style={{ color: "var(--info-light)", fontSize: "12px" }}>—</span>
+                        )}
+                      </td>
+                      <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                        <select
+                          key={`${part.id}-${currentStatus}`}
+                          style={{
+                            padding: "8px 12px",
+                            borderRadius: "8px",
+                            border: "1px solid var(--success)",
+                            background: "var(--surface)",
+                            color: "var(--success)",
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            fontSize: "12px",
+                            width: "100%",
+                          }}
+                          defaultValue={currentStatus}
+                          onChange={async (e) => {
+                            const newStatus = e.target.value;
+                            try {
+                              await handlePartStatusUpdate(part.id, { status: newStatus });
+                              console.log(`✅ Part ${part.id} status updated to ${newStatus}`);
+                            } catch (error) {
+                              console.error(`❌ Failed to update part ${part.id}:`, error);
+                              alert(`Failed to update part status: ${error.message}`);
+                              // Reset dropdown to previous value
+                              e.target.value = currentStatus;
+                            }
+                          }}
+                        >
+                          <option value="authorized">Authorized</option>
+                          <option value="pending">Pending</option>
+                          <option value="in_progress">In Progress</option>
+                          <option value="completed">Completed</option>
+                          <option value="on_hold">On Hold</option>
+                          <option value="on_order">Part on Order</option>
+                        </select>
+                      </td>
+                    </tr>
+                  );
+                });
+              }).flat()}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }, [vhcItemsWithPartsAuthorized, warrantyRows, partsCostByVhcItem, handlePartStatusUpdate]);
 
   // Render parts panel with table
   const renderPartsPanel = useCallback((title, parts, emptyMessage) => {
@@ -4668,7 +5157,6 @@ export default function VhcDetailsPanel({
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <div>
                           <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--success)" }}>Authorised</h2>
-                          <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "13px" }}>Items that have been authorised for work</p>
                         </div>
                         {customerTotals.authorized > 0 && (
                           <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--success)" }}>
@@ -4697,7 +5185,6 @@ export default function VhcDetailsPanel({
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <div>
                           <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--danger)" }}>Declined</h2>
-                          <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "13px" }}>Items that have been declined</p>
                         </div>
                         {customerTotals.declined > 0 && (
                           <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--danger)" }}>
@@ -4846,8 +5333,11 @@ export default function VhcDetailsPanel({
                 </div>
               )}
 
-              {activeTab === "parts-authorized" &&
-                renderPartsPanel("Parts Authorized", partsAuthorized, "No parts awaiting authorization or approvals recorded.")}
+              {activeTab === "parts-authorized" && (
+                <div id="parts-authorized">
+                  {renderVhcAuthorizedPanel()}
+                </div>
+              )}
 
               {activeTab === "parts-on-order" &&
                 renderPartsPanel("Parts On Order", partsOnOrder, "No parts have been raised with the parts department yet.")}
@@ -4970,7 +5460,6 @@ export default function VhcDetailsPanel({
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <div>
                           <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--success)" }}>Authorised</h2>
-                          <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "13px" }}>Items that have been authorised for work</p>
                         </div>
                         {customerTotals.authorized > 0 && (
                           <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--success)" }}>
@@ -5001,7 +5490,6 @@ export default function VhcDetailsPanel({
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <div>
                           <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--danger)" }}>Declined</h2>
-                          <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "13px" }}>Items that have been declined</p>
                         </div>
                         {customerTotals.declined > 0 && (
                           <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--danger)" }}>
@@ -5145,7 +5633,9 @@ export default function VhcDetailsPanel({
                   {renderVhcItemsPanel()}
                 </div>
 
-                {renderPartsPanel("Parts Authorized", partsAuthorized, "No parts awaiting authorization or approvals recorded.")}
+                <div id="parts-authorized">
+                  {renderVhcAuthorizedPanel()}
+                </div>
 
                 {renderPartsPanel("Parts On Order", partsOnOrder, "No parts have been raised with the parts department yet.")}
 
