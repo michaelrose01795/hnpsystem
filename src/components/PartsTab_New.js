@@ -55,9 +55,10 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     ? "Job must be loaded before allocating parts."
     : "";
 
-  // Get all parts added to the job (from allocations)
+  // Get all parts added to the job (from allocations and parts_job_items for VHC parts)
   const jobParts = useMemo(() => {
-    return (Array.isArray(jobData.partsAllocations) ? jobData.partsAllocations : []).map((item) => ({
+    // Start with partsAllocations
+    const allocations = (Array.isArray(jobData.partsAllocations) ? jobData.partsAllocations : []).map((item) => ({
       id: item.id,
       partId: item.part?.id || item.partId,
       partNumber: item.part?.partNumber || item.part?.part_number || "N/A",
@@ -72,8 +73,49 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       allocatedToRequestId: item.allocatedToRequestId || null,
       createdAt: item.createdAt,
       source: "allocation",
+      origin: item.origin || "",
+      eta_date: item.eta_date || item.etaDate || null,
+      eta_time: item.eta_time || item.etaTime || null,
+      supplier_reference: item.supplier_reference || item.supplierReference || null,
+      part: item.part,
     }));
-  }, [jobData.partsAllocations]);
+
+    // Also include parts_job_items (which includes VHC parts with origin field)
+    const jobItems = (Array.isArray(jobData.parts_job_items) ? jobData.parts_job_items : [])
+      .filter(Boolean)
+      .map((item) => ({
+        id: item.id,
+        partId: item.part?.id || item.part_id,
+        partNumber: item.part?.part_number || item.part?.partNumber || "N/A",
+        name: item.part?.name || "Part",
+        description: item.part?.description || "",
+        quantity: item.quantity_requested ?? item.quantityRequested ?? 1,
+        unitPrice: item.unit_price ?? item.part?.unit_price ?? 0,
+        unitCost: item.unit_cost ?? item.part?.unit_cost ?? 0,
+        qtyInStock: item.part?.qty_in_stock ?? 0,
+        storageLocation: item.storage_location || item.storageLocation || "Not assigned",
+        status: item.status || "pending",
+        allocatedToRequestId: item.allocated_to_request_id || item.allocatedToRequestId || null,
+        createdAt: item.created_at || item.createdAt,
+        source: "job_item",
+        origin: item.origin || "",
+        eta_date: item.eta_date || null,
+        eta_time: item.eta_time || null,
+        supplier_reference: item.supplier_reference || null,
+        part: item.part,
+      }));
+
+    // Merge and deduplicate by id
+    const allParts = [...allocations, ...jobItems];
+    const uniqueParts = allParts.reduce((acc, part) => {
+      if (!acc.some(p => p.id === part.id)) {
+        acc.push(part);
+      }
+      return acc;
+    }, []);
+
+    return uniqueParts;
+  }, [jobData.partsAllocations, jobData.parts_job_items]);
 
   const goodsInParts = useMemo(() => {
     return (Array.isArray(jobData.goodsInParts) ? jobData.goodsInParts : [])
@@ -133,10 +175,65 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     setPartAllocations(allocations);
   }, [jobParts]);
 
-  const partsOnOrder = useMemo(
-    () => jobParts.filter((part) => normalizePartStatus(part.status) === "on_order"),
+  // Parts on order from regular allocations (non-VHC)
+  const regularPartsOnOrder = useMemo(
+    () => jobParts.filter((part) => {
+      const status = normalizePartStatus(part.status);
+      const origin = normalizePartStatus(part.source || part.origin || "");
+      return status === "on_order" && !origin.includes("vhc");
+    }),
     [jobParts]
   );
+
+  // VHC Parts on order - from VHC authorized items
+  const vhcPartsOnOrder = useMemo(
+    () => jobParts.filter((part) => {
+      const partStatus = normalizePartStatus(part.status);
+      const origin = normalizePartStatus(part.source || part.origin || "");
+      const isVhc = origin.includes("vhc");
+      const isOnOrderOrStock = partStatus === "on_order" || partStatus === "stock";
+
+      // Only include VHC parts that are on order or have arrived (stock)
+      return isVhc && isOnOrderOrStock;
+    }),
+    [jobParts]
+  );
+
+  const partsOnOrder = useMemo(
+    () => [...regularPartsOnOrder, ...vhcPartsOnOrder],
+    [regularPartsOnOrder, vhcPartsOnOrder]
+  );
+
+  // Handler for marking VHC part as arrived (from "on order" to "stock")
+  const handlePartArrived = useCallback(async (partAllocationId) => {
+    if (!partAllocationId || !jobId) return;
+
+    try {
+      const response = await fetch("/api/parts/update-status", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          partItemId: partAllocationId,
+          status: "stock",
+          stockStatus: "in_stock",
+          etaDate: null,
+          etaTime: null,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Failed to update part status");
+      }
+
+      if (typeof onRefreshJob === "function") {
+        onRefreshJob();
+      }
+    } catch (error) {
+      console.error("Failed to mark part as arrived:", error);
+      alert(`Error: ${error.message}`);
+    }
+  }, [jobId, onRefreshJob]);
 
   const togglePartSelection = useCallback((partId) => {
     setSelectedPartIds((prev) => {
@@ -671,7 +768,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           </div>
         </div>
 
-        {/* Right Side - Parts On Order / Allocate Parts */}
+        {/* Right Side - Parts On Order (VHC) / Allocate Parts */}
         <div
           style={{
             background: "var(--surface)",
@@ -693,9 +790,15 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             >
               {invoiceReady ? "Allocate parts" : "Parts On Order"}
             </div>
-            {invoiceReady && (
+            {invoiceReady ? (
               <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--info)" }}>
                 Select parts on the left, then choose a request to allocate them.
+              </p>
+            ) : (
+              <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--info)" }}>
+                {vhcPartsOnOrder.length > 0
+                  ? `${vhcPartsOnOrder.length} VHC part${vhcPartsOnOrder.length !== 1 ? 's' : ''} on order`
+                  : "No parts currently on order"}
               </p>
             )}
           </div>
@@ -799,7 +902,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 })}
               </div>
             )
-          ) : partsOnOrder.length === 0 ? (
+          ) : vhcPartsOnOrder.length === 0 ? (
             <div
               style={{
                 padding: "20px",
@@ -813,33 +916,89 @@ const PartsTabNew = forwardRef(function PartsTabNew(
               No parts currently on order for this job.
             </div>
           ) : (
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                <thead>
-                  <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
-                    <th style={{ textAlign: "left", padding: "8px" }}>Part number</th>
-                    <th style={{ textAlign: "left", padding: "8px" }}>Description</th>
-                    <th style={{ textAlign: "right", padding: "8px" }}>Qty</th>
-                    <th style={{ textAlign: "right", padding: "8px" }}>Retail</th>
-                    <th style={{ textAlign: "right", padding: "8px" }}>Cost</th>
-                    <th style={{ textAlign: "left", padding: "8px" }}>ETA</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {partsOnOrder.map((part) => (
-                    <tr key={part.id} style={{ borderTop: "1px solid var(--surface-light)" }}>
-                      <td style={{ padding: "8px", fontWeight: 600, color: "var(--accent-purple)" }}>
-                        {part.partNumber}
-                      </td>
-                      <td style={{ padding: "8px", color: "var(--info-dark)" }}>{part.description || part.name}</td>
-                      <td style={{ padding: "8px", textAlign: "right" }}>{part.quantity}</td>
-                      <td style={{ padding: "8px", textAlign: "right" }}>{formatMoney(part.unitPrice)}</td>
-                      <td style={{ padding: "8px", textAlign: "right" }}>{formatMoney(part.unitCost)}</td>
-                      <td style={{ padding: "8px", color: "var(--info-dark)" }}>—</td>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                  <thead>
+                    <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
+                      <th style={{ textAlign: "left", padding: "8px" }}>Part number</th>
+                      <th style={{ textAlign: "left", padding: "8px" }}>Description</th>
+                      <th style={{ textAlign: "right", padding: "8px" }}>Qty</th>
+                      <th style={{ textAlign: "right", padding: "8px" }}>Retail</th>
+                      <th style={{ textAlign: "right", padding: "8px" }}>Cost</th>
+                      <th style={{ textAlign: "left", padding: "8px" }}>ETA Date</th>
+                      <th style={{ textAlign: "left", padding: "8px" }}>ETA Time</th>
+                      <th style={{ textAlign: "left", padding: "8px" }}>Supplier Ref</th>
+                      <th style={{ textAlign: "center", padding: "8px" }}>Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {vhcPartsOnOrder.map((part) => {
+                      const partStatus = normalizePartStatus(part.status);
+                      const isArrived = partStatus === "stock";
+
+                      return (
+                        <tr key={part.id} style={{ borderTop: "1px solid var(--surface-light)" }}>
+                          <td style={{ padding: "8px", fontWeight: 600, color: "var(--accent-purple)" }}>
+                            {part.partNumber || part.part?.part_number || "—"}
+                          </td>
+                          <td style={{ padding: "8px", color: "var(--info-dark)" }}>
+                            {part.description || part.name || part.part?.name || "—"}
+                          </td>
+                          <td style={{ padding: "8px", textAlign: "right" }}>{part.quantity || 1}</td>
+                          <td style={{ padding: "8px", textAlign: "right" }}>{formatMoney(part.unitPrice || part.part?.unit_price || 0)}</td>
+                          <td style={{ padding: "8px", textAlign: "right" }}>{formatMoney(part.unitCost || part.part?.unit_cost || 0)}</td>
+                          <td style={{ padding: "8px", color: "var(--info-dark)" }}>
+                            {part.eta_date || part.etaDate || "—"}
+                          </td>
+                          <td style={{ padding: "8px", color: "var(--info-dark)" }}>
+                            {part.eta_time || part.etaTime || "—"}
+                          </td>
+                          <td style={{ padding: "8px", color: "var(--info-dark)" }}>
+                            {part.supplier_reference || part.supplierReference || "—"}
+                          </td>
+                          <td style={{ padding: "8px", textAlign: "center" }}>
+                            {isArrived ? (
+                              <span
+                                style={{
+                                  padding: "4px 8px",
+                                  borderRadius: "6px",
+                                  border: "1px solid var(--success)",
+                                  background: "var(--success-surface)",
+                                  color: "var(--success)",
+                                  fontWeight: 600,
+                                  fontSize: "11px",
+                                  display: "inline-block",
+                                }}
+                              >
+                                Arrived
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handlePartArrived(part.id)}
+                                disabled={!canEdit}
+                                style={{
+                                  padding: "4px 8px",
+                                  borderRadius: "6px",
+                                  border: "1px solid var(--success)",
+                                  background: !canEdit ? "var(--surface-light)" : "var(--success)",
+                                  color: !canEdit ? "var(--info)" : "var(--surface)",
+                                  fontWeight: 600,
+                                  cursor: !canEdit ? "not-allowed" : "pointer",
+                                  fontSize: "11px",
+                                }}
+                              >
+                                Here
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>

@@ -4730,7 +4730,7 @@ export default function VhcDetailsPanel({
         </div>
       </div>
     );
-  }, [handlePrePickLocationChange, handlePartArrived, handleAddToJobClick, readOnly, normalisePartStatus]);
+  }, [handlePrePickLocationChange, handleAddToJobClick, readOnly, handlePartArrived, normalisePartStatus]);
 
   // Render file gallery (photos/videos)
   const renderFileGallery = useCallback((title, files, emptyMessage, fileType) => {
