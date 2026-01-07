@@ -1,9 +1,15 @@
 TO DO:
-within the parts authorised section, within the dropdown, when the part is selected within the dropdown and Parts ordered this part row is then added within the parts on order section, make sure within the parts authorised section the drop down is always shown with a dropdown list of parts on order, parts arrived (this is changed when the "Here" button is pressed within the parts on order section) an pre picked location (with the location shown and all saved to the database). Also within the parts authorised section make sure the linked parts are shown within the table view, get this infomaton from the database which is used for the parts identified tab.
+ok add this within the “ STATUS” column inside the “ Parts Authorized” add a button which is labelled “ordered” which updates the status of the part to ordered (also keeping the status of Authorised status inside the database), when the status of the part is order this is when the row is shown inside the “Parts on order” tab. If the row is added inside the “ PARTS ON ORDER” tab also show it inside the “ PARTS ON ORDER” within the “parts” tab as well (VHC tab isnt always used and parts on order can be used from other places within the app so other jobs can be show within the Parts tab parts on order section fyi)
+
+
 
 
 
 make the "Customer Requests Contact Scheduling Service History Parts Notes Write Up VHC Warranty Clocking Messages Documents Invoice" tabs bigger to fit the tab section cleanly and neatly only add a horizontal scroll if necessary . but if a scroll is added then make the length of it half the length of the tab section and for it to not push the tab buttons up out of the centre horizontally line of the tab section, if and only if the section requires to be made bigger to achieving ive this then make the tab section bigger but if making bigger dont also move the buttons so they arent in the horizontally centre line.
+
+
+
+Make sure the labour check box is only check automaticly when a number from 0 is entered manually into the field. Do not check the box if a part is added to the row. 
 
 
 

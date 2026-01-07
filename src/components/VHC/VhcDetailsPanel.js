@@ -4516,41 +4516,78 @@ export default function VhcDetailsPanel({
                         )}
                       </td>
                       <td style={{ padding: "12px 16px", textAlign: "center" }}>
-                        <select
-                          key={`${part.id}-${currentStatus}`}
-                          style={{
-                            padding: "8px 12px",
-                            borderRadius: "8px",
-                            border: "1px solid var(--success)",
-                            background: "var(--surface)",
-                            color: "var(--success)",
-                            fontWeight: 600,
-                            cursor: "pointer",
-                            fontSize: "12px",
-                            width: "100%",
-                          }}
-                          defaultValue={currentStatus}
-                          onChange={async (e) => {
-                            const newStatus = e.target.value;
-                            try {
-                              await handlePartStatusUpdate(part.id, { status: newStatus });
-                              console.log(`✅ Part ${part.id} status updated to ${newStatus}`);
-                            } catch (error) {
-                              console.error(`❌ Failed to update part ${part.id}:`, error);
-                              alert(`Failed to update part status: ${error.message}`);
-                              // Reset dropdown to previous value
-                              e.target.value = currentStatus;
-                            }
-                          }}
-                        >
-                          <option value="authorized">Authorized</option>
-                          <option value="pending">Pending</option>
-                          <option value="in_progress">In Progress</option>
-                          <option value="completed">Completed</option>
-                          <option value="on_hold">On Hold</option>
-                          <option value="on_order">Parts On Order</option>
-                          <option value="stock">Parts Arrived</option>
-                        </select>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                          <select
+                            value={currentStatus}
+                            style={{
+                              padding: "8px 12px",
+                              borderRadius: "8px",
+                              border: "1px solid var(--success)",
+                              background: "var(--surface)",
+                              color: "var(--success)",
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              fontSize: "12px",
+                              width: "100%",
+                            }}
+                            onChange={async (e) => {
+                              const newStatus = e.target.value;
+                              try {
+                                await handlePartStatusUpdate(part.id, { status: newStatus });
+                                console.log(`✅ Part ${part.id} status updated to ${newStatus}`);
+                              } catch (error) {
+                                console.error(`❌ Failed to update part ${part.id}:`, error);
+                                alert(`Failed to update part status: ${error.message}`);
+                                // Reset dropdown to previous value
+                                e.target.value = currentStatus;
+                              }
+                            }}
+                          >
+                            <option value="authorized">Authorized</option>
+                            <option value="pending">Pending</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                            <option value="on_hold">On Hold</option>
+                            <option value="on_order">Parts On Order</option>
+                            <option value="stock">Parts Arrived</option>
+                          </select>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                // Set status to on_order while keeping authorised flag
+                                await handlePartStatusUpdate(part.id, {
+                                  status: "on_order",
+                                  authorised: true,
+                                  stockStatus: "no_stock"
+                                });
+                                console.log(`✅ Part ${part.id} marked as ordered`);
+                              } catch (error) {
+                                console.error(`❌ Failed to mark part ${part.id} as ordered:`, error);
+                                alert(`Failed to mark part as ordered: ${error.message}`);
+                              }
+                            }}
+                            style={{
+                              padding: "8px 16px",
+                              borderRadius: "8px",
+                              border: "1px solid var(--primary)",
+                              background: "var(--primary)",
+                              color: "var(--surface)",
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              fontSize: "12px",
+                              transition: "all 0.2s ease",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.target.style.background = "var(--primary-dark)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.target.style.background = "var(--primary)";
+                            }}
+                          >
+                            Ordered
+                          </button>
+                        </div>
                       </td>
                       <td style={{ padding: "12px 16px" }}>
                         <select
