@@ -15,6 +15,15 @@ import InternalElectricsDetailsModal from "@/components/VHC/InternalElectricsDet
 import UndersideDetailsModal from "@/components/VHC/UndersideDetailsModal";
 import PartSearchModal from "@/components/VHC/PartSearchModal";
 import PrePickLocationModal from "@/components/VHC/PrePickLocationModal";
+import {
+  EmptyStateMessage,
+  SeverityBadge,
+  VhcItemCell,
+  extractVhcItemData,
+  FinancialTotalsGrid,
+  StockStatusBadge,
+  PartRowCells,
+} from "@/components/VHC/VhcSharedComponents";
 
 const STATUS_BADGES = {
   red: "var(--danger)",
@@ -1270,10 +1279,8 @@ export default function VhcDetailsPanel({
   // Create lookup map from vhc_id to approval data
   const vhcApprovalLookup = useMemo(() => {
     const map = new Map();
-    console.log('[VHC] Building vhcApprovalLookup from vhcChecksData:', vhcChecksData.length, 'checks');
     vhcChecksData.forEach((check) => {
       if (check.vhc_id) {
-        console.log(`[VHC] Check vhc_id=${check.vhc_id}: approval_status=${check.approval_status}, display_status=${check.display_status}`);
         map.set(String(check.vhc_id), {
           approvalStatus: check.approval_status || 'pending',
           displayStatus: check.display_status || null,
@@ -1287,13 +1294,12 @@ export default function VhcDetailsPanel({
         });
       }
     });
-    console.log('[VHC] vhcApprovalLookup built with', map.size, 'entries');
     return map;
   }, [vhcChecksData]);
 
   const partsAuthorized = useMemo(
     () => {
-      const filtered = jobParts.filter((part) => {
+      return jobParts.filter((part) => {
         // Part must be from VHC
         const isVhc = normalisePartStatus(part.origin).includes("vhc");
         if (!isVhc) return false;
@@ -1303,34 +1309,24 @@ export default function VhcDetailsPanel({
           const canonicalId = String(part.vhc_item_id);
           const approvalData = vhcApprovalLookup.get(canonicalId);
           if (approvalData && approvalData.approvalStatus === 'authorized') {
-            console.log(`[PARTS AUTHORIZED FILTER] Part ${part.id} INCLUDED (VHC authorized, status=${part.status})`);
             return true;
           }
         }
 
         // Also include parts that are marked as authorised in the old way
-        const isAuthorised = part.authorised === true;
-        if (isAuthorised) {
-          console.log(`[PARTS AUTHORIZED FILTER] Part ${part.id} INCLUDED (authorised flag, status=${part.status})`);
-        }
-        return isAuthorised;
+        return part.authorised === true;
       });
-
-      console.log(`[PARTS AUTHORIZED FILTER] Total parts authorized: ${filtered.length}`, filtered.map(p => p.id));
-      return filtered;
     },
     [jobParts, vhcApprovalLookup]
   );
 
   const partsOnOrder = useMemo(
     () => {
-      const filtered = jobParts.filter((part) => {
+      return jobParts.filter((part) => {
         // Part must be from VHC and have status on_order or stock (parts that have arrived)
         const isVhc = normalisePartStatus(part.origin).includes("vhc");
         const partStatus = normalisePartStatus(part.status);
         const isOnOrderOrStock = partStatus === "on_order" || partStatus === "stock";
-
-        console.log(`[PARTS ON ORDER FILTER] Part ${part.id}: isVhc=${isVhc}, status="${part.status}", isOnOrderOrStock=${isOnOrderOrStock}`);
 
         if (!isVhc || !isOnOrderOrStock) return false;
 
@@ -1339,21 +1335,13 @@ export default function VhcDetailsPanel({
           const canonicalId = String(part.vhc_item_id);
           const approvalData = vhcApprovalLookup.get(canonicalId);
           if (approvalData && approvalData.approvalStatus === 'authorized') {
-            console.log(`[PARTS ON ORDER FILTER] Part ${part.id} INCLUDED (VHC authorized)`);
             return true;
           }
         }
 
         // Also include parts that are marked as authorised in the old way
-        const includeOldWay = part.authorised === true;
-        if (includeOldWay) {
-          console.log(`[PARTS ON ORDER FILTER] Part ${part.id} INCLUDED (authorised flag)`);
-        }
-        return includeOldWay;
+        return part.authorised === true;
       });
-
-      console.log(`[PARTS ON ORDER FILTER] Total parts on order: ${filtered.length}`, filtered.map(p => p.id));
-      return filtered;
     },
     [jobParts, vhcApprovalLookup]
   );
@@ -1379,7 +1367,6 @@ export default function VhcDetailsPanel({
         // Get approval status from database - resolve display ID to canonical vhc_id first
         const canonicalId = vhcIdAliases[String(id)] || String(id);
         const approvalData = vhcApprovalLookup.get(canonicalId) || {};
-        console.log(`[VHC] Item ${id}: canonicalId=${canonicalId}, approvalData =`, approvalData);
 
         items.push({
           id: String(id),
@@ -1417,9 +1404,7 @@ export default function VhcDetailsPanel({
       }
     });
 
-    console.log('[VHC] summaryItems built with', items.length, 'items');
     items.forEach(item => {
-      console.log(`[VHC] summaryItem: id=${item.id}, label=${item.label}, rawSeverity=${item.rawSeverity}, displaySeverity=${item.displaySeverity}, approvalStatus=${item.approvalStatus}`);
     });
 
     return items;
@@ -1632,55 +1617,41 @@ export default function VhcDetailsPanel({
     [tyreSupplementaryByWheel]
   );
 
-  const severitySections = useMemo(() => {
-    const base = { red: new Map(), amber: new Map(), authorized: new Map(), declined: new Map() };
-    summaryItems.forEach((item) => {
-      const severity = item.displaySeverity;
-      if (!base[severity]) {
-        // If severity not in our base map, skip this item
-        console.log(`[VHC] Unknown severity "${severity}" for item ${item.id}, skipping`);
-        return;
-      }
-      const categoryId = item.category.id;
-      if (!base[severity].has(categoryId)) {
-        base[severity].set(categoryId, { category: item.category, items: [] });
-      }
-      base[severity].get(categoryId).items.push(item);
-    });
-    return base;
-  }, [summaryItems]);
+  // Combined severity sections and lists into single memo for better performance
   const severityLists = useMemo(() => {
     const lists = { red: [], amber: [], authorized: [], declined: [] };
+    const sections = { red: new Map(), amber: new Map(), authorized: new Map(), declined: new Map() };
+
+    // Build sections map
+    summaryItems.forEach((item) => {
+      const severity = item.displaySeverity;
+      if (!sections[severity]) return; // Skip unknown severities
+
+      const categoryId = item.category.id;
+      if (!sections[severity].has(categoryId)) {
+        sections[severity].set(categoryId, { category: item.category, items: [] });
+      }
+      sections[severity].get(categoryId).items.push(item);
+    });
+
+    // Flatten sections to lists
     ["red", "amber", "authorized", "declined"].forEach((severity) => {
-      const section = severitySections[severity];
+      const section = sections[severity];
       if (!section) return;
+
       Array.from(section.values()).forEach(({ category, items }) => {
         items.forEach((item) => {
-          const enrichedItem = {
+          lists[severity].push({
             ...item,
             categoryLabel: category.label,
             categoryId: category.id,
-          };
-
-          console.log(`[VHC] severityLists: Item ${item.id} (${item.label}) in ${severity} section, displaySeverity=${item.displaySeverity}`);
-          lists[severity].push(enrichedItem);
+          });
         });
       });
     });
-    console.log('[VHC] severityLists calculated:', {
-      red: lists.red.length,
-      amber: lists.amber.length,
-      authorized: lists.authorized.length,
-      declined: lists.declined.length
-    });
-    if (lists.authorized.length > 0) {
-      console.log('[VHC] Authorized items:', lists.authorized.map(i => ({ id: i.id, label: i.label })));
-    }
-    if (lists.declined.length > 0) {
-      console.log('[VHC] Declined items:', lists.declined.map(i => ({ id: i.id, label: i.label })));
-    }
+
     return lists;
-  }, [severitySections]);
+  }, [summaryItems]);
 
   const labourHoursByVhcItem = useMemo(() => {
     const map = new Map();
@@ -1861,9 +1832,6 @@ export default function VhcDetailsPanel({
   const getEntryForItem = (itemId) => ensureEntryValue(itemEntries, itemId);
 
   const updateEntryStatus = async (itemId, status) => {
-    console.log(`━━━ [VHC STATUS] STARTING UPDATE ━━━`);
-    console.log(`[VHC STATUS] Item ID: ${itemId}`);
-    console.log(`[VHC STATUS] New Status: ${status}`);
 
     // Update local state immediately
     setItemEntries((prev) => ({
@@ -1874,7 +1842,6 @@ export default function VhcDetailsPanel({
     // Persist to database (convert null to 'pending')
     const canonicalId = resolveCanonicalVhcId(itemId);
     const parsedId = Number(canonicalId);
-    console.log(`[VHC STATUS] Canonical ID: ${canonicalId}, Parsed ID: ${parsedId}`);
 
     if (!Number.isInteger(parsedId)) {
       console.error(`❌ [VHC STATUS ERROR] Invalid ID - cannot update`);
@@ -1885,7 +1852,6 @@ export default function VhcDetailsPanel({
     const dbStatus = status || 'pending';
     const newDisplayStatus = dbStatus === 'authorized' ? 'authorized' : dbStatus === 'declined' ? 'declined' : null;
 
-    console.log(`[VHC STATUS] DB Status: ${dbStatus}, Display Status: ${newDisplayStatus}`);
 
     try {
       const requestBody = {
@@ -1893,7 +1859,6 @@ export default function VhcDetailsPanel({
         approvalStatus: dbStatus,
         approvedBy: authUserId || dbUserId || "system"
       };
-      console.log(`[VHC STATUS] API Request Body:`, requestBody);
 
       const response = await fetch("/api/vhc/update-item-status", {
         method: "PATCH",
@@ -1902,7 +1867,6 @@ export default function VhcDetailsPanel({
       });
 
       const result = await response.json();
-      console.log(`[VHC STATUS] API Response:`, result);
 
       if (!response.ok || !result?.success) {
         console.error(`❌ [VHC STATUS ERROR] API Failed:`, result?.message);
@@ -1910,15 +1874,11 @@ export default function VhcDetailsPanel({
         return;
       }
 
-      console.log(`✅ [VHC STATUS] Database updated successfully!`);
 
       // Update vhcChecksData to trigger re-render of sections
-      console.log(`[VHC STATUS] Updating local state vhcChecksData...`);
       setVhcChecksData((prev) => {
-        console.log(`[VHC STATUS] Previous vhcChecksData count: ${prev.length}`);
         const updated = prev.map((check) => {
           if (check.vhc_id === parsedId) {
-            console.log(`[VHC STATUS] FOUND CHECK TO UPDATE:`, check);
             const updatedCheck = {
               ...check,
               approval_status: dbStatus,
@@ -1926,17 +1886,13 @@ export default function VhcDetailsPanel({
               approved_by: authUserId || dbUserId || "system",
               approved_at: dbStatus === 'pending' ? null : new Date().toISOString(),
             };
-            console.log(`[VHC STATUS] UPDATED CHECK:`, updatedCheck);
             return updatedCheck;
           }
           return check;
         });
-        console.log(`[VHC STATUS] Updated vhcChecksData count: ${updated.length}`);
         return updated;
       });
 
-      console.log(`✅ ━━━ [VHC STATUS] UPDATE COMPLETE ━━━`);
-      console.log(`✅ Item ${itemId} should now appear in "${dbStatus}" section`);
     } catch (error) {
       console.error(`❌ ━━━ [VHC STATUS ERROR] EXCEPTION ━━━`);
       console.error(`❌ [VHC STATUS ERROR]`, error);
@@ -2242,14 +2198,10 @@ export default function VhcDetailsPanel({
 
   const handleBulkStatus = useCallback(
     async (severity, status) => {
-      console.log(`━━━ [VHC BULK] STARTING BULK UPDATE ━━━`);
-      console.log(`[VHC BULK] Severity: ${severity}, New Status: ${status}`);
 
       const selectedIds = severitySelections[severity] || [];
-      console.log(`[VHC BULK] Selected IDs:`, selectedIds);
 
       if (selectedIds.length === 0) {
-        console.log(`[VHC BULK] No items selected - aborting`);
         return;
       }
 
@@ -2267,7 +2219,6 @@ export default function VhcDetailsPanel({
       const updatePromises = selectedIds.map(async (itemId) => {
         const canonicalId = resolveCanonicalVhcId(itemId);
         const parsedId = Number(canonicalId);
-        console.log(`[VHC BULK] Processing item ${itemId} -> vhc_id ${parsedId}`);
 
         if (!Number.isInteger(parsedId)) {
           console.error(`❌ [VHC BULK ERROR] Invalid ID for item ${itemId}`);
@@ -2292,7 +2243,6 @@ export default function VhcDetailsPanel({
             console.error(`❌ [VHC BULK ERROR] Failed for vhc_id ${parsedId}:`, result?.message);
             return null;
           }
-          console.log(`✅ [VHC BULK] Success for vhc_id ${parsedId}`);
           return parsedId;
         } catch (error) {
           console.error(`❌ [VHC BULK ERROR] Exception for item ${itemId}:`, error);
@@ -2304,18 +2254,14 @@ export default function VhcDetailsPanel({
       const updatedIds = await Promise.all(updatePromises);
       const successfulIds = updatedIds.filter(id => id !== null);
 
-      console.log(`[VHC BULK] Successful updates: ${successfulIds.length}/${selectedIds.length}`);
-      console.log(`[VHC BULK] Successful vhc_ids:`, successfulIds);
 
       // Update vhcChecksData for all successfully updated items
       if (successfulIds.length > 0) {
         const newDisplayStatus = status === 'authorized' ? 'authorized' : status === 'declined' ? 'declined' : null;
-        console.log(`[VHC BULK] Updating vhcChecksData, setting display_status to: ${newDisplayStatus}`);
 
         setVhcChecksData((prev) => {
           const updated = prev.map((check) => {
             if (successfulIds.includes(check.vhc_id)) {
-              console.log(`[VHC BULK] Updating check vhc_id=${check.vhc_id} from display_status=${check.display_status} to ${newDisplayStatus}`);
               return {
                 ...check,
                 approval_status: status || 'pending',
@@ -2326,7 +2272,6 @@ export default function VhcDetailsPanel({
             }
             return check;
           });
-          console.log(`[VHC BULK] Updated vhcChecksData`);
           return updated;
         });
       }
@@ -2334,15 +2279,12 @@ export default function VhcDetailsPanel({
       // Clear selection
       setSeveritySelections((prev) => ({ ...prev, [severity]: [] }));
 
-      console.log(`✅ ━━━ [VHC BULK] BULK UPDATE COMPLETE ━━━`);
-      console.log(`✅ ${successfulIds.length} items should now appear in "${status}" section`);
     },
     [severitySelections, resolveCanonicalVhcId, authUserId, dbUserId]
   );
 
   const handleMoveItem = useCallback(
     async (itemId, newStatus) => {
-      console.log(`[VHC MOVE] Moving item ${itemId} to ${newStatus}`);
 
       // Update local state immediately
       setItemEntries((prev) => {
@@ -2378,7 +2320,6 @@ export default function VhcDetailsPanel({
           return;
         }
 
-        console.log(`✅ [VHC MOVE] Successfully moved vhc_id ${parsedId} to ${newStatus}`);
 
         // Update vhcChecksData to reflect the change
         const newDisplayStatus = newStatus === 'authorized' ? 'authorized' : newStatus === 'declined' ? 'declined' : null;
@@ -2406,20 +2347,7 @@ export default function VhcDetailsPanel({
   const renderSeverityTable = (severity) => {
     const items = severityLists[severity] || [];
     if (items.length === 0) {
-      return (
-        <div
-          style={{
-            padding: "18px",
-            border: "1px solid var(--info-surface)",
-            borderRadius: "12px",
-            background: "var(--info-surface)",
-            color: "var(--info)",
-            fontSize: "13px",
-          }}
-        >
-          No {severity} items recorded.
-        </div>
-      );
+      return <EmptyStateMessage message={`No ${severity} items recorded.`} />;
     }
     // Disable selection for authorized/declined items
     const selectionEnabled = !readOnly && severity !== "authorized" && severity !== "declined";
@@ -3011,38 +2939,7 @@ export default function VhcDetailsPanel({
 
   const renderCustomerView = () => (
     <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-          gap: "12px",
-        }}
-      >
-        <div style={{ padding: "14px 16px", borderRadius: "12px", background: "var(--surface-light)" }}>
-          <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
-            Red Work
-          </div>
-          <div style={{ fontSize: "18px", fontWeight: 700 }}>{formatCurrency(customerTotals.red)}</div>
-        </div>
-        <div style={{ padding: "14px 16px", borderRadius: "12px", background: "var(--surface-light)" }}>
-          <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
-            Amber Work
-          </div>
-          <div style={{ fontSize: "18px", fontWeight: 700 }}>{formatCurrency(customerTotals.amber)}</div>
-        </div>
-        <div style={{ padding: "14px 16px", borderRadius: "12px", background: "var(--surface-light)" }}>
-          <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
-            Authorised
-          </div>
-          <div style={{ fontSize: "18px", fontWeight: 700 }}>{formatCurrency(customerTotals.authorized)}</div>
-        </div>
-        <div style={{ padding: "14px 16px", borderRadius: "12px", background: "var(--surface-light)" }}>
-          <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
-            Declined
-          </div>
-          <div style={{ fontSize: "18px", fontWeight: 700 }}>{formatCurrency(customerTotals.declined)}</div>
-        </div>
-      </div>
+      <FinancialTotalsGrid totals={customerTotals} />
 
       {/* Only show Red section if there are pending red items */}
       {severityLists.red && severityLists.red.length > 0 && renderCustomerSection("Red Items", severityLists.red, "red")}
@@ -3093,7 +2990,6 @@ export default function VhcDetailsPanel({
 
   // Handler for updating part status and location
   const handlePartStatusUpdate = useCallback(async (partItemId, updates) => {
-    console.log(`[PART STATUS UPDATE] Starting update for part ${partItemId}`, updates);
 
     try {
       // Optimistically update the local state first
@@ -3112,7 +3008,6 @@ export default function VhcDetailsPanel({
             if (updates.etaTime !== undefined) updatedPart.eta_time = updates.etaTime;
             if (updates.authorised !== undefined) updatedPart.authorised = updates.authorised;
 
-            console.log(`[PART STATUS UPDATE] Optimistic update applied:`, updatedPart);
             return updatedPart;
           }
           return part;
@@ -3125,7 +3020,6 @@ export default function VhcDetailsPanel({
       });
 
       const requestBody = { partItemId, ...updates };
-      console.log(`[PART STATUS UPDATE] Request body:`, requestBody);
 
       const response = await fetch("/api/parts/update-status", {
         method: "PATCH",
@@ -3133,7 +3027,6 @@ export default function VhcDetailsPanel({
         body: JSON.stringify(requestBody),
       });
 
-      console.log(`[PART STATUS UPDATE] Response status:`, response.status);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -3205,7 +3098,6 @@ export default function VhcDetailsPanel({
       }
 
       const result = await response.json();
-      console.log(`[PART STATUS UPDATE] Success:`, result);
 
       return result;
     } catch (err) {
@@ -3236,7 +3128,6 @@ export default function VhcDetailsPanel({
 
         // If we don't have a valid numeric ID (no alias exists), we need to create a vhc_checks record
         if (!Number.isInteger(parsedId) && item) {
-          console.log(`[VHC] No canonical vhc_id for ${displayVhcId}, creating vhc_checks record`);
 
           // Create a vhc_checks record for this item
           const createResponse = await fetch("/api/jobcards/create-vhc-item", {
@@ -3259,7 +3150,6 @@ export default function VhcDetailsPanel({
               vhcItemIdToUse = createResult.vhcId;
               // Create alias mapping
               await upsertVhcItemAlias(displayVhcId, vhcItemIdToUse);
-              console.log(`[VHC] Created vhc_checks record with ID ${vhcItemIdToUse} for ${displayVhcId}`);
             }
           }
         }
@@ -3764,20 +3654,7 @@ export default function VhcDetailsPanel({
     });
 
     if (!filteredItems || filteredItems.length === 0) {
-      return (
-        <div
-          style={{
-            padding: "18px",
-            border: "1px solid var(--info-surface)",
-            borderRadius: "12px",
-            background: "var(--info-surface)",
-            color: "var(--info)",
-            fontSize: "13px",
-          }}
-        >
-          No VHC repairs have been recorded yet.
-        </div>
-      );
+      return <EmptyStateMessage message="No VHC repairs have been recorded yet." />;
     }
 
     return (
@@ -4325,20 +4202,7 @@ export default function VhcDetailsPanel({
     const filteredItems = vhcItemsWithPartsAuthorized || [];
 
     if (!filteredItems || filteredItems.length === 0) {
-      return (
-        <div
-          style={{
-            padding: "18px",
-            border: "1px solid var(--info-surface)",
-            borderRadius: "12px",
-            background: "var(--info-surface)",
-            color: "var(--info)",
-            fontSize: "13px",
-          }}
-        >
-          No authorized VHC items with parts yet.
-        </div>
-      );
+      return <EmptyStateMessage message="No authorized VHC items with parts yet." />;
     }
 
     return (
@@ -4549,7 +4413,6 @@ export default function VhcDetailsPanel({
                                   authorised: true,
                                   stockStatus: "no_stock"
                                 });
-                                console.log(`✅ Part ${part.id} marked as ordered`);
                               } catch (error) {
                                 console.error(`❌ Failed to mark part ${part.id} as ordered:`, error);
                                 alert(`Failed to mark part as ordered: ${error.message}`);
@@ -4603,7 +4466,6 @@ export default function VhcDetailsPanel({
                               }
 
                               await handlePartStatusUpdate(part.id, updates);
-                              console.log(`✅ Part ${part.id} location updated to ${newLocation}`);
                             } catch (error) {
                               console.error(`❌ Failed to update part ${part.id}:`, error);
                               alert(`Failed to update part location: ${error.message}`);
@@ -4651,20 +4513,7 @@ export default function VhcDetailsPanel({
   // Render parts panel with table
   const renderPartsPanel = useCallback((title, parts, emptyMessage) => {
     if (!parts || parts.length === 0) {
-      return (
-        <div
-          style={{
-            padding: "18px",
-            border: "1px solid var(--info-surface)",
-            borderRadius: "12px",
-            background: "var(--info-surface)",
-            color: "var(--info)",
-            fontSize: "13px",
-          }}
-        >
-          {emptyMessage}
-        </div>
-      );
+      return <EmptyStateMessage message={emptyMessage} />;
     }
 
     const isAuthorisedSection = title === "Parts Authorized";
@@ -4886,20 +4735,7 @@ export default function VhcDetailsPanel({
   // Render file gallery (photos/videos)
   const renderFileGallery = useCallback((title, files, emptyMessage, fileType) => {
     if (!files || files.length === 0) {
-      return (
-        <div
-          style={{
-            padding: "18px",
-            border: "1px solid var(--info-surface)",
-            borderRadius: "12px",
-            background: "var(--info-surface)",
-            color: "var(--info)",
-            fontSize: "13px",
-          }}
-        >
-          {emptyMessage}
-        </div>
-      );
+      return <EmptyStateMessage message={emptyMessage} />;
     }
 
     return (

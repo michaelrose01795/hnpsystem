@@ -16,7 +16,8 @@
       "Bash(psql:*)",
       "Bash(npm run dev:*)",
       "Bash(npm run:*)",
-      "Bash(git diff:*)"
+      "Bash(git diff:*)",
+      "Bash(node --check:*)"
     ],
     "deny": [],
     "ask": []
