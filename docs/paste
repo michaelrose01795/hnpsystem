@@ -1,6 +1,5 @@
 TO DO:
-ok add this within the “ STATUS” column inside the “ Parts Authorized” add a button which is labelled “ordered” which updates the status of the part to ordered (also keeping the status of Authorised status inside the database), when the status of the part is order this is when the row is shown inside the “Parts on order” tab. If the row is added inside the “ PARTS ON ORDER” tab also show it inside the “ PARTS ON ORDER” within the “parts” tab as well (VHC tab isnt always used and parts on order can be used from other places within the app so other jobs can be show within the Parts tab parts on order section fyi)
-
+Remove the dropdown completly from the row, only use the order button which then changes to “Ordered” and green (following light and dark theme) once pressed
 
 
 
