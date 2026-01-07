@@ -2145,6 +2145,8 @@ export default function VhcDetailsPanel({
     };
     accumulate(severityLists.red || [], "red");
     accumulate(severityLists.amber || [], "amber");
+    accumulate(severityLists.authorized || [], "authorized");
+    accumulate(severityLists.declined || [], "declined");
     return totals;
   }, [severityLists, itemEntries, labourHoursByVhcItem, partsCostByVhcItem, resolveCanonicalVhcId]);
 
@@ -4343,6 +4345,7 @@ export default function VhcDetailsPanel({
                 <th style={{ textAlign: "right", padding: "12px 16px", minWidth: "120px" }}>Parts Cost</th>
                 <th style={{ textAlign: "center", padding: "12px 16px", minWidth: "100px" }}>Warranty</th>
                 <th style={{ textAlign: "center", padding: "12px 16px", minWidth: "180px" }}>Status</th>
+                <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "180px" }}>Pre-Pick Location</th>
               </tr>
             </thead>
             <tbody>
@@ -4422,6 +4425,9 @@ export default function VhcDetailsPanel({
                         )}
                       </td>
                       <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                        <span style={{ color: "var(--info-light)", fontSize: "12px" }}>—</span>
+                      </td>
+                      <td style={{ padding: "12px 16px" }}>
                         <span style={{ color: "var(--info-light)", fontSize: "12px" }}>—</span>
                       </td>
                     </tr>
@@ -4542,7 +4548,61 @@ export default function VhcDetailsPanel({
                           <option value="in_progress">In Progress</option>
                           <option value="completed">Completed</option>
                           <option value="on_hold">On Hold</option>
-                          <option value="on_order">Part on Order</option>
+                          <option value="on_order">Parts On Order</option>
+                          <option value="stock">Parts Arrived</option>
+                        </select>
+                      </td>
+                      <td style={{ padding: "12px 16px" }}>
+                        <select
+                          value={part.pre_pick_location || ""}
+                          onChange={async (e) => {
+                            const newLocation = e.target.value;
+                            try {
+                              const updates = { prePickLocation: newLocation };
+
+                              // If "on_order" is selected, also update status
+                              if (newLocation === "on_order") {
+                                updates.status = "on_order";
+                                updates.stockStatus = "no_stock";
+                              } else if (newLocation && newLocation !== "") {
+                                // If a valid location is selected, mark as pre-picked and in stock
+                                updates.status = "pre_picked";
+                                updates.stockStatus = "in_stock";
+                              }
+
+                              await handlePartStatusUpdate(part.id, updates);
+                              console.log(`✅ Part ${part.id} location updated to ${newLocation}`);
+                            } catch (error) {
+                              console.error(`❌ Failed to update part ${part.id}:`, error);
+                              alert(`Failed to update part location: ${error.message}`);
+                              // Reset dropdown to previous value
+                              e.target.value = part.pre_pick_location || "";
+                            }
+                          }}
+                          style={{
+                            padding: "8px 12px",
+                            borderRadius: "8px",
+                            border: "1px solid var(--accent-purple-surface)",
+                            background: "var(--surface)",
+                            color: "var(--accent-purple)",
+                            fontWeight: 500,
+                            cursor: "pointer",
+                            width: "100%",
+                            fontSize: "12px",
+                          }}
+                        >
+                          <option value="">Select Location</option>
+                          <option value="service_rack_1">Service Rack 1</option>
+                          <option value="service_rack_2">Service Rack 2</option>
+                          <option value="service_rack_3">Service Rack 3</option>
+                          <option value="service_rack_4">Service Rack 4</option>
+                          <option value="sales_rack_1">Sales Rack 1</option>
+                          <option value="sales_rack_2">Sales Rack 2</option>
+                          <option value="sales_rack_3">Sales Rack 3</option>
+                          <option value="sales_rack_4">Sales Rack 4</option>
+                          <option value="stairs_pre_pick">Stairs Pre-Pick</option>
+                          <option value="no_pick">No Pick</option>
+                          <option value="on_order">On Order</option>
                         </select>
                       </td>
                     </tr>

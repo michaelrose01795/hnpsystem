@@ -305,17 +305,19 @@ export default function NewsFeed() {
           </div>
         )}
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "48px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           {accessibleUpdates.map((update) => (
             <article
               key={update.id ?? update.title}
               style={{
-                padding: "32px",
+                padding: "20px 24px",
                 border: "1px solid var(--border)",
-                borderRadius: "16px",
+                borderRadius: "12px",
                 backgroundColor: "var(--layer-section-level-1)",
                 cursor: "pointer",
                 transition: "transform 0.3s ease, box-shadow 0.3s ease",
+                maxWidth: "100%",
+                width: "100%",
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = "translateY(-8px)";
@@ -329,9 +331,9 @@ export default function NewsFeed() {
               {/* Title */}
               <h2
                 style={{
-                  fontSize: "28px",
+                  fontSize: "22px",
                   fontWeight: "bold",
-                  marginBottom: "12px",
+                  marginBottom: "8px",
                   color: "var(--text-primary)",
                 }}
               >
@@ -341,8 +343,8 @@ export default function NewsFeed() {
               {/* Author and Time */}
               <div
                 style={{
-                  fontSize: "12px",
-                  marginBottom: "20px",
+                  fontSize: "11px",
+                  marginBottom: "12px",
                   display: "flex",
                   alignItems: "center",
                   gap: "8px",
@@ -356,16 +358,18 @@ export default function NewsFeed() {
               </div>
 
               {/* Description */}
-              <p
+              <div
                 style={{
-                  fontSize: "20px",
-                  lineHeight: "1.9",
+                  fontSize: "15px",
+                  lineHeight: "1.6",
                   color: "var(--text-primary)",
                   opacity: 0.9,
+                  maxHeight: "calc(1.6em * 20)",
+                  overflowY: "auto",
                 }}
               >
                 {update.content}
-              </p>
+              </div>
             </article>
           ))}
         </div>

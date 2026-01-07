@@ -1,23 +1,14 @@
 TO DO:
-
-the authorised and decindedsections arent showing the total underneath the vhc tab and inside the summary tab, fix this. 
-
+within the parts authorised section, within the dropdown, when the part is selected within the dropdown and Parts ordered this part row is then added within the parts on order section, make sure within the parts authorised section the drop down is always shown with a dropdown list of parts on order, parts arrived (this is changed when the "Here" button is pressed within the parts on order section) an pre picked location (with the location shown and all saved to the database). Also within the parts authorised section make sure the linked parts are shown within the table view, get this infomaton from the database which is used for the parts identified tab.
 
 
 
-When a part is authorised added that part with the row inside the "Parts Authorized" tab, this row will show the same row as used inside the  parts indentifed tab with the table title being "VHC Item	Linked Parts	Parts Cost	Warranty	Parts Not Required" however without the Parts noot required title and instead a status upadate drop down (link to drop down api stly) and this also links to the "Find Job Card" section insdie the /parts where the table view is "Part	Qty	Stage	Status	Pre-pick	Notes". 
+make the "Customer Requests Contact Scheduling Service History Parts Notes Write Up VHC Warranty Clocking Messages Documents Invoice" tabs bigger to fit the tab section cleanly and neatly only add a horizontal scroll if necessary . but if a scroll is added then make the length of it half the length of the tab section and for it to not push the tab buttons up out of the centre horizontally line of the tab section, if and only if the section requires to be made bigger to achieving ive this then make the tab section bigger but if making bigger dont also move the buttons so they arent in the horizontally centre line.
 
 
 
 
-Inside the newfeed page bring the rows closer to gether so the have some room when hover is active, make the width of the sections smaller and the higets smaller (only make bigger when more rows of text within the description (add a scroll after 20 lines)), make the description text smaller a bit and have the sections so they follow the theme and style of the rest of the app
-
-
-
-
-
-make the "Customer Requests Contact Scheduling Service History Parts Notes Write Up VHC Warranty Clocking Messages Documents Invoice" tabs bigger to fit the tab section claenly and neatly only add a horisontal scroll if nessacarry. but if a scroll is added then make the length of it half the lengh of the tab section and for it to not push the tab buttons up out of the center horizonaly line of the tab section, if and only if the section requires to be made bigger to achive this then make the tab section bigger but if making bigger dont also move the buttons so they arent in the horizonaly center line. 
-
+Have it so the "Add Parts to VHC Item" popup is in the centre of the page like the other popups do and not in the centre within the tab section. this popup is glitchy, make it work smoother and easy to use. 
 
 
 
