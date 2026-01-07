@@ -1298,13 +1298,6 @@ export default function VhcDetailsPanel({
         const isVhc = normalisePartStatus(part.origin).includes("vhc");
         if (!isVhc) return false;
 
-        // Exclude parts that are on_order
-        const notOnOrder = normalisePartStatus(part.status) !== "on_order";
-        if (!notOnOrder) {
-          console.log(`[PARTS AUTHORIZED FILTER] Part ${part.id} EXCLUDED (status is on_order)`);
-          return false;
-        }
-
         // Check if the part is linked to an authorized VHC item
         if (part.vhc_item_id) {
           const canonicalId = String(part.vhc_item_id);
@@ -1332,13 +1325,14 @@ export default function VhcDetailsPanel({
   const partsOnOrder = useMemo(
     () => {
       const filtered = jobParts.filter((part) => {
-        // Part must be from VHC and have status on_order
+        // Part must be from VHC and have status on_order or stock (parts that have arrived)
         const isVhc = normalisePartStatus(part.origin).includes("vhc");
-        const isOnOrder = normalisePartStatus(part.status) === "on_order";
+        const partStatus = normalisePartStatus(part.status);
+        const isOnOrderOrStock = partStatus === "on_order" || partStatus === "stock";
 
-        console.log(`[PARTS ON ORDER FILTER] Part ${part.id}: isVhc=${isVhc}, status="${part.status}", isOnOrder=${isOnOrder}`);
+        console.log(`[PARTS ON ORDER FILTER] Part ${part.id}: isVhc=${isVhc}, status="${part.status}", isOnOrderOrStock=${isOnOrderOrStock}`);
 
-        if (!isVhc || !isOnOrder) return false;
+        if (!isVhc || !isOnOrderOrStock) return false;
 
         // Check if part is linked to an authorized VHC item OR has authorised flag
         if (part.vhc_item_id) {
@@ -3102,6 +3096,34 @@ export default function VhcDetailsPanel({
     console.log(`[PART STATUS UPDATE] Starting update for part ${partItemId}`, updates);
 
     try {
+      // Optimistically update the local state first
+      setJob(prevJob => {
+        if (!prevJob?.parts_job_items) return prevJob;
+
+        const updatedParts = prevJob.parts_job_items.map(part => {
+          if (part.id === partItemId) {
+            const updatedPart = { ...part };
+
+            // Apply updates
+            if (updates.status !== undefined) updatedPart.status = updates.status;
+            if (updates.stockStatus !== undefined) updatedPart.stock_status = updates.stockStatus;
+            if (updates.prePickLocation !== undefined) updatedPart.pre_pick_location = updates.prePickLocation;
+            if (updates.etaDate !== undefined) updatedPart.eta_date = updates.etaDate;
+            if (updates.etaTime !== undefined) updatedPart.eta_time = updates.etaTime;
+            if (updates.authorised !== undefined) updatedPart.authorised = updates.authorised;
+
+            console.log(`[PART STATUS UPDATE] Optimistic update applied:`, updatedPart);
+            return updatedPart;
+          }
+          return part;
+        });
+
+        return {
+          ...prevJob,
+          parts_job_items: updatedParts
+        };
+      });
+
       const requestBody = { partItemId, ...updates };
       console.log(`[PART STATUS UPDATE] Request body:`, requestBody);
 
@@ -3116,74 +3138,74 @@ export default function VhcDetailsPanel({
       if (!response.ok) {
         const errorData = await response.json();
         console.error(`[PART STATUS UPDATE] API Error:`, errorData);
+
+        // Revert optimistic update on error by re-fetching
+        if (job?.id) {
+          const { data: revertJob, error: fetchError } = await supabase
+            .from("jobs")
+            .select(`
+              *,
+              customer:customer_id(*),
+              vehicle:vehicle_id(*),
+              technician:assigned_to(user_id, first_name, last_name, email, role, phone),
+              vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at, approval_status, display_status, approved_by, approved_at, labour_hours, parts_cost, total_override, labour_complete, parts_complete),
+              parts_job_items(
+                id,
+                part_id,
+                quantity_requested,
+                quantity_allocated,
+                quantity_fitted,
+                status,
+                origin,
+                vhc_item_id,
+                unit_cost,
+                unit_price,
+                request_notes,
+                created_at,
+                updated_at,
+                authorised,
+                stock_status,
+                pre_pick_location,
+                eta_date,
+                eta_time,
+                supplier_reference,
+                labour_hours,
+                part:part_id(
+                  id,
+                  part_number,
+                  name,
+                  unit_price
+                )
+              ),
+              job_files(
+                file_id,
+                file_name,
+                file_url,
+                file_type,
+                folder,
+                uploaded_at,
+                uploaded_by
+              )
+            `)
+            .eq("job_number", resolvedJobNumber)
+            .maybeSingle();
+
+          if (!fetchError && revertJob) {
+            const { vhc_checks = [], parts_job_items = [], job_files = [], ...jobFields } = revertJob;
+            setJob({
+              ...jobFields,
+              parts_job_items: parts_job_items || [],
+              job_files: job_files || [],
+            });
+            setVhcChecksData(vhc_checks || []);
+          }
+        }
+
         throw new Error(errorData.error || errorData.details || "Failed to update part status");
       }
 
       const result = await response.json();
       console.log(`[PART STATUS UPDATE] Success:`, result);
-
-      // Refresh job data to reflect changes
-      if (result.success && job?.id) {
-        const { data: updatedJob, error: fetchError } = await supabase
-          .from("jobs")
-          .select(`
-            *,
-            customer:customer_id(*),
-            vehicle:vehicle_id(*),
-            technician:assigned_to(user_id, first_name, last_name, email, role, phone),
-            vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at, approval_status, display_status, approved_by, approved_at, labour_hours, parts_cost, total_override, labour_complete, parts_complete),
-            parts_job_items(
-              id,
-              part_id,
-              quantity_requested,
-              quantity_allocated,
-              quantity_fitted,
-              status,
-              origin,
-              vhc_item_id,
-              unit_cost,
-              unit_price,
-              request_notes,
-              created_at,
-              updated_at,
-              authorised,
-              stock_status,
-              pre_pick_location,
-              eta_date,
-              eta_time,
-              supplier_reference,
-              labour_hours,
-              part:part_id(
-                id,
-                part_number,
-                name,
-                unit_price
-              )
-            ),
-            job_files(
-              file_id,
-              file_name,
-              file_url,
-              file_type,
-              folder,
-              uploaded_at,
-              uploaded_by
-            )
-          `)
-          .eq("job_number", resolvedJobNumber)
-          .maybeSingle();
-
-        if (!fetchError && updatedJob) {
-          const { vhc_checks = [], parts_job_items = [], job_files = [], ...jobFields } = updatedJob;
-          setJob({
-            ...jobFields,
-            parts_job_items: parts_job_items || [],
-            job_files: job_files || [],
-          });
-          setVhcChecksData(vhc_checks || []);
-          console.log(`[PART STATUS UPDATE] VHC checks refreshed:`, vhc_checks?.length || 0);
-        }
-      }
 
       return result;
     } catch (err) {
@@ -3196,7 +3218,7 @@ export default function VhcDetailsPanel({
       });
       throw err;
     }
-  }, [job, resolvedJobNumber]);
+  }, [job, resolvedJobNumber, setJob, setVhcChecksData]);
 
   const persistLabourHours = useCallback(
     async (displayVhcId, hoursValue) => {
@@ -4516,46 +4538,12 @@ export default function VhcDetailsPanel({
                         )}
                       </td>
                       <td style={{ padding: "12px 16px", textAlign: "center" }}>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                          <select
-                            value={currentStatus}
-                            style={{
-                              padding: "8px 12px",
-                              borderRadius: "8px",
-                              border: "1px solid var(--success)",
-                              background: "var(--surface)",
-                              color: "var(--success)",
-                              fontWeight: 600,
-                              cursor: "pointer",
-                              fontSize: "12px",
-                              width: "100%",
-                            }}
-                            onChange={async (e) => {
-                              const newStatus = e.target.value;
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            // Only allow ordering if not already ordered
+                            if (currentStatus !== "on_order") {
                               try {
-                                await handlePartStatusUpdate(part.id, { status: newStatus });
-                                console.log(`✅ Part ${part.id} status updated to ${newStatus}`);
-                              } catch (error) {
-                                console.error(`❌ Failed to update part ${part.id}:`, error);
-                                alert(`Failed to update part status: ${error.message}`);
-                                // Reset dropdown to previous value
-                                e.target.value = currentStatus;
-                              }
-                            }}
-                          >
-                            <option value="authorized">Authorized</option>
-                            <option value="pending">Pending</option>
-                            <option value="in_progress">In Progress</option>
-                            <option value="completed">Completed</option>
-                            <option value="on_hold">On Hold</option>
-                            <option value="on_order">Parts On Order</option>
-                            <option value="stock">Parts Arrived</option>
-                          </select>
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              try {
-                                // Set status to on_order while keeping authorised flag
                                 await handlePartStatusUpdate(part.id, {
                                   status: "on_order",
                                   authorised: true,
@@ -4566,28 +4554,35 @@ export default function VhcDetailsPanel({
                                 console.error(`❌ Failed to mark part ${part.id} as ordered:`, error);
                                 alert(`Failed to mark part as ordered: ${error.message}`);
                               }
-                            }}
-                            style={{
-                              padding: "8px 16px",
-                              borderRadius: "8px",
-                              border: "1px solid var(--primary)",
-                              background: "var(--primary)",
-                              color: "var(--surface)",
-                              fontWeight: 600,
-                              cursor: "pointer",
-                              fontSize: "12px",
-                              transition: "all 0.2s ease",
-                            }}
-                            onMouseEnter={(e) => {
+                            }
+                          }}
+                          style={{
+                            padding: "8px 16px",
+                            borderRadius: "8px",
+                            border: currentStatus === "on_order" ? "1px solid var(--success)" : "1px solid var(--primary)",
+                            background: currentStatus === "on_order" ? "var(--success)" : "var(--primary)",
+                            color: "var(--surface)",
+                            fontWeight: 600,
+                            cursor: currentStatus === "on_order" ? "default" : "pointer",
+                            fontSize: "12px",
+                            transition: "all 0.2s ease",
+                            width: "100%",
+                          }}
+                          onMouseEnter={(e) => {
+                            if (currentStatus !== "on_order") {
                               e.target.style.background = "var(--primary-dark)";
-                            }}
-                            onMouseLeave={(e) => {
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (currentStatus !== "on_order") {
                               e.target.style.background = "var(--primary)";
-                            }}
-                          >
-                            Ordered
-                          </button>
-                        </div>
+                            } else {
+                              e.target.style.background = "var(--success)";
+                            }
+                          }}
+                        >
+                          {currentStatus === "on_order" ? "Ordered" : "Order"}
+                        </button>
                       </td>
                       <td style={{ padding: "12px 16px" }}>
                         <select
@@ -4842,22 +4837,39 @@ export default function VhcDetailsPanel({
                           {partItem.supplier_reference || "—"}
                         </td>
                         <td style={{ padding: "12px 16px", textAlign: "center" }}>
-                          <button
-                            type="button"
-                            onClick={() => handlePartArrived(partItem.id)}
-                            style={{
-                              padding: "8px 16px",
-                              borderRadius: "8px",
-                              border: "1px solid var(--success)",
-                              background: "var(--success)",
-                              color: "var(--surface)",
-                              fontWeight: 600,
-                              cursor: "pointer",
-                              fontSize: "12px",
-                            }}
-                          >
-                            Here
-                          </button>
+                          {normalisePartStatus(partItem.status) === "stock" ? (
+                            <span
+                              style={{
+                                padding: "8px 16px",
+                                borderRadius: "8px",
+                                border: "1px solid var(--success)",
+                                background: "var(--success-surface)",
+                                color: "var(--success)",
+                                fontWeight: 600,
+                                fontSize: "12px",
+                                display: "inline-block",
+                              }}
+                            >
+                              Arrived
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handlePartArrived(partItem.id)}
+                              style={{
+                                padding: "8px 16px",
+                                borderRadius: "8px",
+                                border: "1px solid var(--success)",
+                                background: "var(--success)",
+                                color: "var(--surface)",
+                                fontWeight: 600,
+                                cursor: "pointer",
+                                fontSize: "12px",
+                              }}
+                            >
+                              Here
+                            </button>
+                          )}
                         </td>
                       </>
                     )}
@@ -4869,7 +4881,7 @@ export default function VhcDetailsPanel({
         </div>
       </div>
     );
-  }, [handlePrePickLocationChange, handlePartArrived]);
+  }, [handlePrePickLocationChange, handlePartArrived, handleAddToJobClick, readOnly, normalisePartStatus]);
 
   // Render file gallery (photos/videos)
   const renderFileGallery = useCallback((title, files, emptyMessage, fileType) => {

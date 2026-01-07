@@ -1,5 +1,10 @@
 TO DO:
-Remove the dropdown completly from the status rcolumn within the vhc tab inside authorised parts tab, only use the order button which then changes to “Ordered” and green (following light and dark theme) once pressed. 
+Move everything from and all of the functions from the “parts on order” tab within the VHC tab, and move these full functions within the “Parts on order” section inside the “Parts” tab still inside the same apge
+
+
+
+
+Automate with parts in and parts on order, have it so when the part is goods in and added to the Parts booked to job section it auto dectects the part thought the part number, and changes the "here" button to complete automatically. 
 
 
 
