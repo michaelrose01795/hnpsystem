@@ -2411,7 +2411,22 @@ export default function VhcDetailsPanel({
                 const isChecked = selectedSet.has(item.id);
                 const isWarranty = warrantyRows.has(String(item.id));
                 const rowSeverity = item.displaySeverity || severity;
-                const rowTheme = SEVERITY_THEME[rowSeverity] || {};
+                // For authorized/declined items, use rawSeverity for background color to show original red/amber status
+                const backgroundSeverity = (severity === "authorized" || severity === "declined") ? (item.rawSeverity || rowSeverity) : rowSeverity;
+                const rowTheme = SEVERITY_THEME[backgroundSeverity] || {};
+
+                // Explicitly set background color for authorized/declined items based on original severity
+                const getExplicitBackground = () => {
+                  if (severity === "authorized" || severity === "declined") {
+                    if (item.rawSeverity === "red") {
+                      return "var(--danger-surface)";
+                    } else if (item.rawSeverity === "amber") {
+                      return "var(--warning-surface)";
+                    }
+                  }
+                  return rowTheme.background || "var(--surface)";
+                };
+
                 const detailLabel = item.label || item.sectionName || "Recorded item";
                 const concernDetail = item.concernText || "";
                 const detailContent = concernDetail || item.notes || "";
@@ -2427,7 +2442,7 @@ export default function VhcDetailsPanel({
                     key={item.id}
                     style={{
                       borderBottom: "1px solid var(--info-surface)",
-                      background: rowTheme.background || "var(--surface)",
+                      background: getExplicitBackground(),
                       transition: "background 0.2s ease",
                     }}
                   >
@@ -2785,6 +2800,21 @@ export default function VhcDetailsPanel({
     // Only show authorize/decline checkboxes for pending red/amber items
     const showDecision = (severity === "red" || severity === "amber") && !isAuthorized && !isDeclined;
 
+    // Determine background color for authorized/declined rows based on original severity
+    const getRowBackground = () => {
+      if (isAuthorized || isDeclined) {
+        // Use rawSeverity to determine background (red or amber)
+        // rawSeverity stores the original severity before status change
+        const originalSeverity = item.rawSeverity;
+        if (originalSeverity === "red") {
+          return "var(--danger-surface)";
+        } else if (originalSeverity === "amber") {
+          return "var(--warning-surface)";
+        }
+      }
+      return "transparent";
+    };
+
     return (
       <div
         key={`${severity}-${item.id}`}
@@ -2794,6 +2824,7 @@ export default function VhcDetailsPanel({
           gap: "10px",
           padding: "14px 16px",
           borderBottom: "1px solid var(--info-surface)",
+          background: getRowBackground(),
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>

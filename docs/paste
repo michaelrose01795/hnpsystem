@@ -1,34 +1,11 @@
 TO DO:
 
-Hide  the authorised and declinded and show "VHC not been started yet" if nothing has been repored within the health check section of the VHC tab. Hide the "VHC" tab if "Mark VHC Not Required" if this is the selected hide the VHC tab and "Vehicle Health Check VHC has been marked as not required for this job. Red: 0cAmber: 0 Total Checks: 0 Service or management can enable the VHC if it becomes required." section to show text "VHC has been selected as not Required, Service or management can enable the VHC if it becomes required."
+have it so the "AUTHORISED£0.00 VHC Total DECLINED £0.00 VHC Total" sections nect to the "VEHICLE MF20LZO HYUNDAI CUSTOMER Edward Lane 07587 332400" section are always showing the total price even if the VHC tab isnt loaded.
 
 
 
 
-
-have it so the "AUTHORISED
-£0.00
-VHC Total
-DECLINED
-£0.00
-VHC Total" sections nect to the "VEHICLE
-MF20LZO
-HYUNDAI
-CUSTOMER
-Edward Lane
-07587 332400" section are always showing the total price even if the VHC tab isnt loaded.
-
-
-
-
-
-have it so the row backgrounds inside the authorised and declinded section still show the red or amber background depending on the status of the row (this will link to what the status was before it was changed to authorised or declinded). 
-
-
-
-
-
-Automate with parts in and parts on order, have it so when the part is goods in and added to the Parts booked to job section it auto dectects the part thought the part number, and changes the "here" button to complete automatically. 
+Automate with parts in and parts on order, have it so when the part is goods in and added to the Parts booked to job section it auto dectects the part thought the part number, and changes the "here" button to "added" automatically. 
 
 
 
