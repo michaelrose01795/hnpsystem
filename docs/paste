@@ -1,18 +1,6 @@
 TO DO:
 
-
-within the parts tab inside the On order section, Override calendar and time picker styles so when clicked on the calendar or time section the space is smaller and shows inside the whole page not just inside the section so the view isnt restriced. 
-
-
-
-
-
-Hide  the authorised and declinded and show "VHC not been started yet" if nothing has been repored within the health check section of the VHC tab. Hide the "VHC" tab if "Mark VHC Not Required" if this is the selected hide the VHC tab and "Vehicle Health Check
-VHC has been marked as not required for this job.
-Red: 0
-Amber: 0
-Total Checks: 0
-Service or management can enable the VHC if it becomes required." section to show text "VHC has been selected as not Required, Service or management can enable the VHC if it becomes required."
+Hide  the authorised and declinded and show "VHC not been started yet" if nothing has been repored within the health check section of the VHC tab. Hide the "VHC" tab if "Mark VHC Not Required" if this is the selected hide the VHC tab and "Vehicle Health Check VHC has been marked as not required for this job. Red: 0cAmber: 0 Total Checks: 0 Service or management can enable the VHC if it becomes required." section to show text "VHC has been selected as not Required, Service or management can enable the VHC if it becomes required."
 
 
 
@@ -59,6 +47,10 @@ Make sure the labour check box is only check automaticly when a number from 0 is
 
 Have it so the "Add Parts to VHC Item" popup is in the centre of the page like the other popups do and not in the centre within the tab section. this popup is glitchy, make it work smoother and easy to use. 
 
+
+
+
+Add "Clocking" button inside the workshop mmanager section iinside the sidebar. only have it within this section. 
 
 
 

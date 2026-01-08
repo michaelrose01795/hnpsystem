@@ -53,6 +53,9 @@ const PartsTabNew = forwardRef(function PartsTabNew(
   const [partsOnOrderFromDB, setPartsOnOrderFromDB] = useState([]);
   const [loadingPartsOnOrder, setLoadingPartsOnOrder] = useState(false);
 
+  // State for picker backdrop
+  const [showPickerBackdrop, setShowPickerBackdrop] = useState(false);
+
 
   const canAllocateParts = Boolean(canEdit && jobId);
   const allocationDisabledReason = !canEdit
@@ -223,6 +226,22 @@ const PartsTabNew = forwardRef(function PartsTabNew(
   useEffect(() => {
     fetchPartsOnOrder();
   }, [fetchPartsOnOrder]);
+
+  // Monitor for open calendar/time pickers in the on-order section
+  useEffect(() => {
+    const checkForOpenPickers = () => {
+      const section = document.querySelector('.on-order-section');
+      if (section) {
+        const hasOpenPicker = section.querySelector('.calendar-api.is-open, .timepicker-api.is-open');
+        setShowPickerBackdrop(!!hasOpenPicker);
+      }
+    };
+
+    // Check periodically
+    const interval = setInterval(checkForOpenPickers, 100);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Handler for updating ETA date/time
   const handleUpdateETA = useCallback(async (partId, field, value) => {
@@ -510,16 +529,112 @@ const PartsTabNew = forwardRef(function PartsTabNew(
   return (
     <>
       <style>{`
+        /* Make compact calendar and time picker controls smaller */
         .compact-input .calendar-api__control,
-        .compact-input .time-picker-api__control {
-          padding: 4px 8px !important;
-          font-size: 11px !important;
+        .compact-input .timepicker-api__control {
+          padding: 2px 6px !important;
+          font-size: 10px !important;
           min-height: auto !important;
+          border-radius: 6px !important;
+          gap: 4px !important;
         }
+
         .compact-input .calendar-api__icon,
-        .compact-input .time-picker-api__icon {
-          width: 14px !important;
-          height: 14px !important;
+        .compact-input .timepicker-api__icon {
+          width: 12px !important;
+          height: 12px !important;
+        }
+
+        .compact-input .calendar-api__value,
+        .compact-input .timepicker-api__value {
+          font-size: 10px !important;
+        }
+
+        /* Create a backdrop overlay within the on-order section when picker is open */
+        .on-order-section {
+          position: relative;
+          overflow: visible;
+        }
+
+        .picker-backdrop {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          z-index: 9998;
+          backdrop-filter: blur(4px);
+          border-radius: 12px;
+        }
+
+        /* Center the calendar and time picker menus within the on-order section */
+        .on-order-section .compact-input .calendar-api__menu,
+        .on-order-section .compact-input .timepicker-api__menu {
+          position: absolute !important;
+          top: 50% !important;
+          left: 50% !important;
+          transform: translate(-50%, -50%) !important;
+          z-index: 9999 !important;
+          box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4) !important;
+          max-height: 400px;
+          overflow-y: auto;
+        }
+
+        /* Optimize the on-order table to use maximum space */
+        .on-order-table {
+          font-size: 11px !important;
+          table-layout: auto !important;
+        }
+
+        .on-order-table th {
+          padding: 6px 8px !important;
+          font-size: 10px !important;
+          white-space: nowrap !important;
+          font-weight: 700 !important;
+        }
+
+        .on-order-table td {
+          padding: 6px 8px !important;
+          font-size: 11px !important;
+          vertical-align: middle !important;
+        }
+
+        .on-order-table button {
+          padding: 4px 8px !important;
+          font-size: 10px !important;
+          white-space: nowrap !important;
+        }
+
+        /* Make part name and number columns flexible */
+        .on-order-table td:nth-child(1),
+        .on-order-table td:nth-child(2) {
+          max-width: 200px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        /* Keep qty and price columns compact */
+        .on-order-table th:nth-child(3),
+        .on-order-table th:nth-child(4),
+        .on-order-table td:nth-child(3),
+        .on-order-table td:nth-child(4) {
+          width: 60px;
+        }
+
+        /* ETA date and time columns */
+        .on-order-table th:nth-child(5),
+        .on-order-table th:nth-child(6),
+        .on-order-table td:nth-child(5),
+        .on-order-table td:nth-child(6) {
+          width: 110px;
+        }
+
+        /* Action column */
+        .on-order-table th:nth-child(7),
+        .on-order-table td:nth-child(7) {
+          width: 130px;
         }
       `}</style>
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -839,6 +954,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
 
         {/* Right Side - On Order (VHC) / Allocate Parts */}
         <div
+          className="on-order-section"
           style={{
             background: "var(--surface)",
             border: "1px solid var(--surface-light)",
@@ -847,6 +963,20 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             minHeight: "400px",
           }}
         >
+          {/* Backdrop for pickers */}
+          {showPickerBackdrop && (
+            <div
+              className="picker-backdrop"
+              onClick={() => {
+                // Close any open pickers by clicking outside
+                const openPickers = document.querySelectorAll('.on-order-section .calendar-api.is-open, .on-order-section .timepicker-api.is-open');
+                openPickers.forEach((picker) => {
+                  const button = picker.querySelector('button.calendar-api__control, button.timepicker-api__control');
+                  if (button) button.click();
+                });
+              }}
+            />
+          )}
           <div style={{ marginBottom: "12px" }}>
             <div
               style={{
@@ -1000,16 +1130,16 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                <table className="on-order-table" style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
                     <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
-                      <th style={{ textAlign: "left", padding: "8px" }}>Part Name</th>
-                      <th style={{ textAlign: "left", padding: "8px" }}>Part Number</th>
-                      <th style={{ textAlign: "right", padding: "8px" }}>Quantity</th>
-                      <th style={{ textAlign: "right", padding: "8px" }}>Price</th>
-                      <th style={{ textAlign: "left", padding: "8px" }}>ETA Date</th>
-                      <th style={{ textAlign: "left", padding: "8px" }}>ETA Time</th>
-                      <th style={{ textAlign: "center", padding: "8px" }}>Action</th>
+                      <th style={{ textAlign: "left" }}>Part Name</th>
+                      <th style={{ textAlign: "left" }}>Part Number</th>
+                      <th style={{ textAlign: "right" }}>Qty</th>
+                      <th style={{ textAlign: "right" }}>Price</th>
+                      <th style={{ textAlign: "left" }}>ETA Date</th>
+                      <th style={{ textAlign: "left" }}>ETA Time</th>
+                      <th style={{ textAlign: "center" }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1021,50 +1151,49 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             borderTop: "1px solid var(--surface-light)",
                           }}
                         >
-                          <td style={{ padding: "8px", color: "var(--info-dark)" }}>
+                          <td style={{ color: "var(--info-dark)" }}>
                             {part.partName}
                           </td>
-                          <td style={{ padding: "8px", fontWeight: 600, color: "var(--accent-purple)" }}>
+                          <td style={{ fontWeight: 600, color: "var(--accent-purple)" }}>
                             {part.partNumber}
                           </td>
-                          <td style={{ padding: "8px", textAlign: "right" }}>{part.quantity}</td>
-                          <td style={{ padding: "8px", textAlign: "right" }}>{formatMoney(part.unitPrice)}</td>
-                          <td style={{ padding: "8px" }}>
+                          <td style={{ textAlign: "right" }}>{part.quantity}</td>
+                          <td style={{ textAlign: "right" }}>{formatMoney(part.unitPrice)}</td>
+                          <td>
                             <CalendarField
                               value={part.etaDate || ""}
                               onChange={(e) => handleUpdateETA(part.id, "etaDate", e.target.value)}
                               disabled={!canEdit}
-                              placeholder="Select date"
+                              placeholder="Date"
                               size="sm"
                               className="compact-input"
                             />
                           </td>
-                          <td style={{ padding: "8px" }}>
+                          <td>
                             <TimePickerField
                               value={part.etaTime || ""}
                               onChange={(e) => handleUpdateETA(part.id, "etaTime", e.target.value)}
                               disabled={!canEdit}
-                              placeholder="Select time"
+                              placeholder="Time"
                               size="sm"
                               format="24"
                               minuteStep={15}
                               className="compact-input"
                             />
                           </td>
-                          <td style={{ padding: "8px", textAlign: "center" }}>
+                          <td style={{ textAlign: "center" }}>
                             <button
                               type="button"
                               onClick={() => handlePartArrived(part.id)}
                               disabled={!canEdit}
                               style={{
-                                padding: "4px 8px",
                                 borderRadius: "6px",
-                                border: "1px solid var(--success)",
-                                background: !canEdit ? "var(--surface-light)" : "var(--success)",
+                                border: "1px solid var(--warning)",
+                                background: !canEdit ? "var(--surface-light)" : "var(--warning)",
                                 color: !canEdit ? "var(--info)" : "var(--surface)",
                                 fontWeight: 600,
                                 cursor: !canEdit ? "not-allowed" : "pointer",
-                                fontSize: "11px",
+                                whiteSpace: "nowrap",
                               }}
                             >
                               Mark as Arrived

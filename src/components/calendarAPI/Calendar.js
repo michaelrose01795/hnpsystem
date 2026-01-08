@@ -168,6 +168,15 @@ export default function Calendar({
     return `${year}-${month}-${day}`;
   };
 
+  // Format date for display in dd/mm/yy format
+  const formatDateDisplay = (date) => {
+    if (!date) return "";
+    const year = String(date.getFullYear()).slice(-2);
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${day}/${month}/${year}`;
+  };
+
   // Navigate months
   const handlePrevMonth = () => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
@@ -195,7 +204,7 @@ export default function Calendar({
   }, [firstDayOfWeek]);
 
   // Compute display value
-  const displayValue = normalizedValue ? formatDate(normalizedValue) : "";
+  const displayValue = normalizedValue ? formatDateDisplay(normalizedValue) : "";
 
   const containerClassName = [
     "calendar-api",
