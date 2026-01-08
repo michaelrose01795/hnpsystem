@@ -194,8 +194,8 @@ export const sidebarSections = [
         roles: ["parts"],
       },
       {
-        label: "Parts Workspace",
-        href: "/parts",
+        label: "Stock Catalogue",
+        href: "/stock-catalogue",
         roles: ["parts"],
       },
       {
@@ -220,8 +220,8 @@ export const sidebarSections = [
         roles: ["parts manager"],
       },
       {
-        label: "Parts Workspace",
-        href: "/parts",
+        label: "Stock Catalogue",
+        href: "/stock-catalogue",
         roles: ["parts manager"],
       },
       {

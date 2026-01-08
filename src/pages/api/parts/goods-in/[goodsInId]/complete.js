@@ -73,7 +73,102 @@ async function handler(req, res, session) {
       throw error;
     }
 
-    return res.status(200).json({ success: true, goodsIn: data });
+    // Process items and add/update them in the parts catalog
+    const catalogUpdates = [];
+    const errors = [];
+
+    for (const item of data.items || []) {
+      try {
+        if (!item.part_number || !item.quantity || item.quantity <= 0) {
+          continue; // Skip invalid items
+        }
+
+        // Check if part exists in catalog
+        const { data: existingPart } = await supabase
+          .from("parts_catalog")
+          .select("id, qty_in_stock, unit_cost, unit_price, storage_location")
+          .eq("part_number", item.part_number)
+          .maybeSingle();
+
+        if (existingPart) {
+          // UPDATE existing part: increase stock quantity
+          const { error: updateError } = await supabase
+            .from("parts_catalog")
+            .update({
+              qty_in_stock: existingPart.qty_in_stock + item.quantity,
+              unit_cost: item.cost_price || existingPart.unit_cost,
+              unit_price: item.retail_price || existingPart.unit_price,
+              storage_location: item.bin_location || existingPart.storage_location,
+              updated_at: timestamp,
+            })
+            .eq("id", existingPart.id);
+
+          if (updateError) throw updateError;
+
+          // Link goods-in item to catalog part
+          await supabase
+            .from("parts_goods_in_items")
+            .update({ part_catalog_id: existingPart.id })
+            .eq("id", item.id);
+
+          catalogUpdates.push({
+            partNumber: item.part_number,
+            action: "updated",
+            catalogId: existingPart.id,
+            quantityAdded: item.quantity,
+          });
+        } else {
+          // INSERT new part into catalog
+          const { data: newPart, error: insertError } = await supabase
+            .from("parts_catalog")
+            .insert({
+              part_number: item.part_number,
+              name: item.description || item.part_number,
+              qty_in_stock: item.quantity,
+              unit_cost: item.cost_price || 0,
+              unit_price: item.retail_price || 0,
+              storage_location: item.bin_location || null,
+              supplier: item.franchise || null,
+              category: item.franchise || null,
+              is_active: true,
+              created_at: timestamp,
+              updated_at: timestamp,
+            })
+            .select("id")
+            .single();
+
+          if (insertError) throw insertError;
+
+          // Link goods-in item to new catalog part
+          await supabase
+            .from("parts_goods_in_items")
+            .update({ part_catalog_id: newPart.id })
+            .eq("id", item.id);
+
+          catalogUpdates.push({
+            partNumber: item.part_number,
+            action: "created",
+            catalogId: newPart.id,
+            quantityAdded: item.quantity,
+          });
+        }
+      } catch (err) {
+        console.error(`Failed to process part ${item.part_number}:`, err);
+        errors.push({
+          partNumber: item.part_number,
+          error: err.message,
+        });
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      goodsIn: data,
+      catalogUpdates: {
+        successful: catalogUpdates,
+        failed: errors,
+      },
+    });
   } catch (error) {
     console.error("Failed to complete goods-in record:", error);
     return res.status(500).json({

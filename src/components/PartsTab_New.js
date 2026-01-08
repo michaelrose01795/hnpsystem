@@ -3,6 +3,10 @@
 import React, { useState, useCallback, useEffect, useMemo, forwardRef } from "react";
 import CalendarField from "@/components/calendarAPI/CalendarField";
 import TimePickerField from "@/components/timePickerAPI/TimePickerField";
+import {
+  mapPartStatusToPipelineId,
+  getPipelineStageMeta
+} from "@/lib/partsPipeline";
 
 // Helper functions (keep existing)
 const normalizePartStatus = (status = "") => {
@@ -14,6 +18,9 @@ const normalizePartStatus = (status = "") => {
   if (["stock", "allocated", "fitted"].includes(normalized)) return "stock";
   return "pending";
 };
+
+const formatStatusLabel = (status) =>
+  status ? status.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()) : "Unknown";
 
 const moneyFormatter = new Intl.NumberFormat("en-GB", {
   style: "currency",
@@ -907,17 +914,21 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
                   <thead>
                     <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
-                      <th style={{ textAlign: "left", padding: "8px" }}>Part number</th>
-                      <th style={{ textAlign: "left", padding: "8px" }}>Description</th>
+                      <th style={{ textAlign: "left", padding: "8px" }}>Part</th>
                       <th style={{ textAlign: "right", padding: "8px" }}>Qty</th>
-                      <th style={{ textAlign: "right", padding: "8px" }}>Retail</th>
-                      <th style={{ textAlign: "right", padding: "8px" }}>Cost</th>
+                      <th style={{ textAlign: "left", padding: "8px" }}>Stage</th>
+                      <th style={{ textAlign: "left", padding: "8px" }}>Status</th>
+                      <th style={{ textAlign: "left", padding: "8px" }}>Pre-pick</th>
+                      <th style={{ textAlign: "left", padding: "8px" }}>Notes</th>
                     </tr>
                   </thead>
                   <tbody>
                     {leftPanelParts.map((part) => {
                       const isAllocatable = part.source !== "goods-in" && invoiceReady;
                       const isSelected = selectedPartIds.includes(part.id);
+                      const stageId = mapPartStatusToPipelineId(part.status);
+                      const stageMeta = getPipelineStageMeta(stageId);
+
                       return (
                         <tr
                           key={part.id}
@@ -933,15 +944,57 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                           }}
                           title={part.source === "goods-in" ? "Goods-in parts are view-only here." : ""}
                         >
-                          <td style={{ padding: "8px", fontWeight: 600, color: "var(--accent-purple)" }}>
-                            {part.partNumber}
+                          {/* Part Column */}
+                          <td style={{ padding: "8px", verticalAlign: "top" }}>
+                            <div style={{ fontWeight: 600, color: "var(--accent-purple)" }}>
+                              {part.partNumber}
+                            </div>
+                            <div style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>
+                              {part.description || part.name}
+                            </div>
                           </td>
-                          <td style={{ padding: "8px", color: "var(--info-dark)" }}>
-                            {part.description || part.name}
+
+                          {/* Qty Column */}
+                          <td style={{ padding: "8px", textAlign: "right", verticalAlign: "top" }}>
+                            {part.quantity}
                           </td>
-                          <td style={{ padding: "8px", textAlign: "right" }}>{part.quantity}</td>
-                          <td style={{ padding: "8px", textAlign: "right" }}>{formatMoney(part.unitPrice)}</td>
-                          <td style={{ padding: "8px", textAlign: "right" }}>{formatMoney(part.unitCost)}</td>
+
+                          {/* Stage Column */}
+                          <td style={{ padding: "8px", verticalAlign: "top" }}>
+                            <span style={{
+                              display: "inline-flex",
+                              padding: "4px 10px",
+                              borderRadius: "999px",
+                              fontSize: "0.75rem",
+                              fontWeight: 600,
+                              backgroundColor: "var(--surface-light)",
+                              color: "var(--danger)",
+                            }}>
+                              {stageMeta.label}
+                            </span>
+                            <div style={{
+                              fontSize: "0.7rem",
+                              color: "var(--grey-accent-dark)",
+                              marginTop: "4px"
+                            }}>
+                              {stageMeta.description}
+                            </div>
+                          </td>
+
+                          {/* Status Column */}
+                          <td style={{ padding: "8px", verticalAlign: "top" }}>
+                            {formatStatusLabel(part.status)}
+                          </td>
+
+                          {/* Pre-pick Column */}
+                          <td style={{ padding: "8px", verticalAlign: "top" }}>
+                            {part.prePickLocation || part.pre_pick_location || "—"}
+                          </td>
+
+                          {/* Notes Column */}
+                          <td style={{ padding: "8px", fontSize: "0.9rem", verticalAlign: "top" }}>
+                            {part.requestNotes || part.request_notes || part.notes || "—"}
+                          </td>
                         </tr>
                       );
                     })}

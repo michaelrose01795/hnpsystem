@@ -1,4 +1,10 @@
 TO DO:
+
+
+
+
+
+
 Automate with parts in and parts on order, have it so when the part is goods in and added to the Parts booked to job section it auto dectects the part thought the part number, and changes the "here" button to "added" automatically. 
 
 
@@ -12,16 +18,6 @@ Make sure the labour check box is only check automaticly when a number from 0 is
 
 Add "Clocking" button inside the workshop mmanager section inside the sidebar. only have it within this section. 
 
-
-
-
-Log deleiver button needs to be removed as all logs are done when a part is Goods in through the goods in page, whena part is goods in add it to the stock list, if the part is goods in and then booked stright to a jobnumber then book the part in and then take it out again to book to the part so there is a log of the part(s) being logged. 
-
-
-
-
-
-When a new part is added within the "Add part" section inside the /parts/goods-in page add the new part to "Stock Catalogue" and the database. Remove the "Deliveries & Ordered Stock" section inside the /parts page. make the stock catalogue the bottom half of the page and the Find job card section the top half of the page. Implement the find job card section inside the parts tab inside the job-cards/[jobnumber] page have it so this view is only visible to the parts and parts manager user that is this table view "Part	Qty	Stage	Status	Pre-pick	Notes". also link where required to do with status inside the vhc tab inside the "Parts On Order" tab. change the /parts page to a stock catalogue as well as the sidebar button and the url link name. keep the "Find Job Card" on this page for the time being. 
 
 
 

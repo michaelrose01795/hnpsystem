@@ -254,6 +254,10 @@ export default function JobCardDetailPage() {
   ].some((role) => userRoles.includes(role));
   const canEdit = !isArchiveMode && canEditBase;
   const canManageDocuments = !isArchiveMode && canManageDocumentsBase;
+  const canViewPartsTab = [
+    "parts",
+    "parts manager"
+  ].some((role) => userRoles.includes(role));
 
   // Invoice tab is visible for anyone who can open this page to make review easier
   const canViewInvoice = true;
@@ -1171,7 +1175,7 @@ export default function JobCardDetailPage() {
     { id: "contact", label: "Contact"},
     { id: "scheduling", label: "Scheduling"},
     { id: "service-history", label: "Service History"},
-    { id: "parts", label: "Parts"},
+    ...(canViewPartsTab ? [{ id: "parts", label: "Parts"}] : []),
     { id: "notes", label: "Notes"},
     { id: "write-up", label: "Write Up"},
     ...(jobData.vhcRequired ? [{ id: "vhc", label: "VHC", badge: vhcTabBadge}] : []),
@@ -1553,7 +1557,7 @@ export default function JobCardDetailPage() {
           )}
 
           {/* Parts Tab */}
-          {activeTab === "parts" && (
+          {activeTab === "parts" && canViewPartsTab && (
             <>
               <PartsTabNew
                 jobData={jobData}
