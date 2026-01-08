@@ -105,6 +105,41 @@ body {
   scrollbar-width: none;
 }
 
+/* Tabs container with visible scrollbar - centered at bottom, half width */
+.tabs-scroll-container-visible {
+  position: relative;
+  padding-bottom: 24px !important;
+}
+
+.tabs-scroll-container-visible::-webkit-scrollbar {
+  height: 8px;
+  position: absolute;
+  bottom: 0;
+}
+
+.tabs-scroll-container-visible::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 0 25%;
+}
+
+.tabs-scroll-container-visible::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.tabs-scroll-container-visible::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  background-clip: padding-box;
+}
+
+/* Firefox scrollbar styling for tabs */
+.tabs-scroll-container-visible {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
 /* ========================================================= */
 /* === Custom Checkbox Styles === */
 /* ========================================================= */

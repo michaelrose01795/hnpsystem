@@ -1372,7 +1372,7 @@ export default function JobCardDetailPage() {
         }}>
           <div style={{
             padding: "16px 20px",
-            backgroundColor: "var(--layer-section-level-1)",
+            backgroundColor: "var(--layer-section-level-3)",
             borderRadius: "12px",
             boxShadow: "none",
             border: "1px solid var(--surface-light)"
@@ -1388,7 +1388,7 @@ export default function JobCardDetailPage() {
 
           <div style={{
             padding: "16px 20px",
-            backgroundColor: "var(--surface)",
+            backgroundColor: "var(--layer-section-level-3)",
             borderRadius: "12px",
             boxShadow: "none",
             border: "1px solid var(--surface-light)"
@@ -1404,7 +1404,7 @@ export default function JobCardDetailPage() {
 
           <div style={{
             padding: "16px 20px",
-            backgroundColor: "var(--surface)",
+            backgroundColor: "var(--layer-section-level-3)",
             borderRadius: "12px",
             boxShadow: "none",
             border: "1px solid var(--surface-light)"
@@ -1420,7 +1420,7 @@ export default function JobCardDetailPage() {
 
           <div style={{
             padding: "16px 20px",
-            backgroundColor: "var(--surface)",
+            backgroundColor: "var(--layer-section-level-3)",
             borderRadius: "12px",
             boxShadow: "none",
             border: "1px solid var(--surface-light)"
@@ -1440,22 +1440,21 @@ export default function JobCardDetailPage() {
           style={{
             borderRadius: "999px",
             border: "1px solid var(--surface-light)",
-            background: "var(--surface)",
-            padding: "6px 8px",
+            background: "var(--layer-section-level-2)",
+            padding: "8px 12px",
             display: "flex",
-            gap: "4px",
+            gap: "6px",
             width: "100%",
             overflowX: "auto",
             flexShrink: 0,
-            scrollbarWidth: "none",
             scrollBehavior: "smooth",
             WebkitOverflowScrolling: "touch",
             alignItems: "center",
-            justifyContent: "center",
-            minHeight: "44px",
-            flexWrap: "wrap"
+            justifyContent: "flex-start",
+            minHeight: "56px",
+            flexWrap: "nowrap"
           }}
-          className="tabs-scroll-container"
+          className="tabs-scroll-container-visible"
         >
           {tabs.map((tab) => (
             <button
@@ -1465,8 +1464,8 @@ export default function JobCardDetailPage() {
                 flex: "0 0 auto",
                 borderRadius: "999px",
                 border: "1px solid transparent",
-                padding: "6px 14px",
-                fontSize: "0.8rem",
+                padding: "10px 20px",
+                fontSize: "0.95rem",
                 fontWeight: 600,
                 cursor: "pointer",
                 background: activeTab === tab.id ? "var(--primary)" : "transparent",
@@ -1475,21 +1474,21 @@ export default function JobCardDetailPage() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: "4px",
+                gap: "6px",
                 whiteSpace: "nowrap",
                 height: "auto",
-                minHeight: "30px"
+                minHeight: "38px"
               }}
             >
               {tab.icon && <span>{tab.icon}</span>}
               <span>{tab.label}</span>
               {tab.badge && (
                 <span style={{
-                  padding: "2px 6px",
+                  padding: "3px 8px",
                   backgroundColor: activeTab === tab.id ? "rgba(255, 255, 255, 0.3)" : "var(--primary)",
                   color: "white",
                   borderRadius: "8px",
-                  fontSize: "10px",
+                  fontSize: "11px",
                   fontWeight: "600"
                 }}>
                   {tab.badge}
