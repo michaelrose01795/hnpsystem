@@ -85,13 +85,51 @@ export default function PartSearchModal({
 
   const defaultFilter = useMemo(() => deriveCategoryFilter(vhcItem), [vhcItem]);
 
-  // Lock body scroll when modal is open
+  // Lock body scroll and scroll to top when modal opens
   useEffect(() => {
     if (isOpen) {
-      const originalStyle = window.getComputedStyle(document.body).overflow;
-      document.body.style.overflow = 'hidden';
+      // Save current scroll position before scrolling to top
+      const currentScrollY = window.scrollY;
+
+      // Scroll to top of page smoothly
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // Small delay to allow scroll to complete
+      const lockTimer = setTimeout(() => {
+        const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+        // Lock body in place at top
+        document.body.style.position = 'fixed';
+        document.body.style.top = '0px';
+        document.body.style.left = '0px';
+        document.body.style.right = '0px';
+        document.body.style.width = '100%';
+        document.body.style.overflow = 'hidden';
+        document.body.style.paddingRight = `${scrollbarWidth}px`;
+
+        // Store original scroll position for restoration
+        document.body.dataset.scrollY = currentScrollY.toString();
+      }, 300);
+
       return () => {
-        document.body.style.overflow = originalStyle;
+        clearTimeout(lockTimer);
+
+        // Restore original styles
+        const savedScrollY = parseInt(document.body.dataset.scrollY || '0', 10);
+
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+
+        // Restore scroll position
+        if (savedScrollY > 0) {
+          window.scrollTo(0, savedScrollY);
+        }
+        delete document.body.dataset.scrollY;
       };
     }
   }, [isOpen]);
@@ -213,7 +251,7 @@ export default function PartSearchModal({
     if (hasSearchTerm || (hasCategoryFilter && categoryFilter.mode === "manual")) {
       const timeoutId = setTimeout(() => {
         searchParts(searchQuery, categoryFilter);
-      }, 300); // 300ms debounce
+      }, 400); // 400ms debounce for smoother typing
 
       return () => clearTimeout(timeoutId);
     } else if (!hasSearchTerm && !hasCategoryFilter) {
@@ -463,37 +501,55 @@ export default function PartSearchModal({
   if (!isOpen) return null;
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0, 0, 0, 0.7)",
-        backdropFilter: "blur(4px)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        zIndex: 1200,
-        padding: "24px",
-        overflowY: "auto",
-      }}
-      onClick={onClose}
-      onMouseDown={(e) => e.stopPropagation()}
-      onTouchStart={(e) => e.stopPropagation()}
-    >
+    <>
+      <style jsx>{`
+        @keyframes modalFadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        @keyframes modalSlideIn {
+          from {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+      `}</style>
       <div
         style={{
-          width: "900px",
-          maxWidth: "95vw",
-          maxHeight: "90vh",
+          position: "fixed",
+          inset: 0,
+          backgroundColor: "rgba(8, 9, 14, 0.78)",
+          backdropFilter: "blur(8px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 9999,
+          overflow: "hidden",
+          animation: "modalFadeIn 0.2s ease-out",
+        }}
+        onClick={onClose}
+      >
+      <div
+        style={{
+          width: "min(900px, calc(100vw - 48px))",
+          maxHeight: "calc(100vh - 48px)",
           background: "var(--surface)",
           borderRadius: "18px",
           border: "1px solid var(--accent-purple-surface)",
-          boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
+          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
-          margin: "auto",
           position: "relative",
+          animation: "modalSlideIn 0.3s ease-out",
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -542,6 +598,8 @@ export default function PartSearchModal({
             display: "flex",
             flexDirection: "column",
             gap: "24px",
+            minHeight: 0,
+            WebkitOverflowScrolling: "touch",
           }}
         >
           {/* VHC Item Details */}
@@ -850,7 +908,7 @@ export default function PartSearchModal({
                   </div>
                 </div>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "300px", overflowY: "auto", minHeight: "100px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "300px", overflowY: "auto", minHeight: "100px", scrollBehavior: "smooth" }}>
                 {searchResults.map((part) => {
                   const isSelected = selectedParts.some((entry) => entry.part.id === part.id);
                   return (
@@ -863,7 +921,16 @@ export default function PartSearchModal({
                       background: isSelected ? "var(--accent-purple-surface)" : "var(--surface)",
                       border: `1px solid ${isSelected ? "var(--primary)" : "var(--accent-purple-surface)"}`,
                       cursor: "pointer",
-                      transition: "all 0.2s ease",
+                      transition: "background 0.15s ease, border-color 0.15s ease, transform 0.1s ease",
+                      willChange: "transform",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.transform = "translateY(-1px)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "translateY(0)";
                     }}
                   >
                     <div style={{ fontWeight: 600, color: "var(--accent-purple)" }}>
@@ -953,5 +1020,6 @@ export default function PartSearchModal({
         </div>
       </div>
     </div>
+    </>
   );
 }

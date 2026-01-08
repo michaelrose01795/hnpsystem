@@ -120,6 +120,11 @@ export const sidebarSections = [
         roles: ["workshop manager"],
       },
       {
+        label: "Clocking",
+        href: "/clocking",
+        roles: ["workshop manager"],
+      },
+      {
         label: "Consumables Tracker", // Workshop consumable planning workspace
         href: "/workshop/consumables-tracker",
         roles: ["workshop manager"],
