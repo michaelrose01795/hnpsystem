@@ -21,10 +21,6 @@ Log deleiver button needs to be removed as all logs are done when a part is Good
 
 
 
-
-Change the "Description" box is its the same size as the other field until text goes beond the size only then make the text box section bigger within the /parts/goods-in page. Also link the Supplier accounts popup to the Company accounts database so it brings the list view of all of the company accounts when start typing for. Add a "Franchise" drop down (following the dropdown api style) has Mitsubushi, Suzuki, stock, tyre, consumables within the dropdown. Have it so if a tyre is selected within that drop down have it so either the Retail preice is calculated to £30 more than the  cost price or the cost price is £30 less than the Retial price depending what has been eneted first. When a part or parts are added within the "Invoice lines" section add a total retial price and total cost price at the top of the section on the same row as the "Refresh, Complete" buttons for easy refernce to cross reference the invocie (make sure this adds the total for the quantity example 1 part has two quanities costing 50 so the total for that row would be £100). 
-
-
 When a new part is added within the "Add part" section inside the /parts/goods-in page add the new part to "Stock Catalogue" and the database. Remove the "Deliveries & Ordered Stock" section inside the /parts page. make the stock catalogue the bottom half of the page and the Find job card section the top half of the page. Implement the find job card section inside the parts tab inside the job-cards/[jobnumber] page have it so this view is only visible to the parts and parts manager user that is this table view "Part	Qty	Stage	Status	Pre-pick	Notes". also link where required to do with status inside the vhc tab inside the "Parts On Order" tab. change the /parts page to a stock catalogue as well as the sidebar button and the url link name. keep the "Find Job Card" on this page for the time being. 
 
 

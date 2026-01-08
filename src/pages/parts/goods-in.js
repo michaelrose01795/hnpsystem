@@ -16,7 +16,7 @@ const PRICE_LEVEL_OPTIONS = [
   { value: "other", label: "Other" },
 ];
 
-const FRANCHISE_OPTIONS = ["Mitsubishi", "Suzuki", "Other", "Tyre", "Stock", "Consumables"];
+const FRANCHISE_OPTIONS = ["Mitsubishi", "Suzuki", "Stock", "Tyre", "Consumables"];
 
 const BIN_LOCATION_OPTIONS = (() => {
   const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -87,6 +87,21 @@ const inputStyle = {
 const textareaStyle = {
   ...inputStyle,
   minHeight: "96px",
+};
+
+const autoExpandTextareaStyle = {
+  ...inputStyle,
+  minHeight: "40px",
+  resize: "vertical",
+  overflow: "auto",
+};
+
+const compactDropdownOverride = {
+  ".dropdown-api__control": {
+    minHeight: "40px",
+    padding: "10px 40px 10px 12px",
+    borderRadius: "10px",
+  },
 };
 
 const primaryButtonStyle = (disabled = false) => ({
@@ -335,7 +350,43 @@ function GoodsInPage() {
 
   const handlePartChange = (field, value) => {
     setPartError("");
-    setPartForm((prev) => ({ ...prev, [field]: value }));
+    setPartForm((prev) => {
+      const next = { ...prev, [field]: value };
+
+      // Tyre pricing logic: £30 markup/markdown
+      const isTyre = (field === "franchise" && value === "Tyre") || prev.franchise === "Tyre";
+
+      if (isTyre) {
+        if (field === "retailPrice" && value && !prev.costPrice) {
+          // Calculate cost price as retail - £30
+          const retailNum = parseFloat(value);
+          if (!isNaN(retailNum) && retailNum > 30) {
+            next.costPrice = (retailNum - 30).toFixed(2);
+          }
+        } else if (field === "costPrice" && value && !prev.retailPrice) {
+          // Calculate retail price as cost + £30
+          const costNum = parseFloat(value);
+          if (!isNaN(costNum)) {
+            next.retailPrice = (costNum + 30).toFixed(2);
+          }
+        } else if (field === "franchise" && value === "Tyre") {
+          // When franchise changes to Tyre, apply pricing logic
+          if (prev.retailPrice && !prev.costPrice) {
+            const retailNum = parseFloat(prev.retailPrice);
+            if (!isNaN(retailNum) && retailNum > 30) {
+              next.costPrice = (retailNum - 30).toFixed(2);
+            }
+          } else if (prev.costPrice && !prev.retailPrice) {
+            const costNum = parseFloat(prev.costPrice);
+            if (!isNaN(costNum)) {
+              next.retailPrice = (costNum + 30).toFixed(2);
+            }
+          }
+        }
+      }
+
+      return next;
+    });
   };
 
   const handleNestedPartChange = (group, field, value) => {
@@ -606,8 +657,8 @@ function GoodsInPage() {
   const handleSupplierSelected = (supplier) => {
     setInvoiceForm((prev) => ({
       ...prev,
-      supplierAccountId: supplier.account_id,
-      supplierName: supplier.billing_name || supplier.account_id,
+      supplierAccountId: supplier.account_number,
+      supplierName: supplier.company_name || supplier.trading_name || supplier.account_number,
       supplierAddress: [
         supplier.billing_address_line1,
         supplier.billing_address_line2,
@@ -616,7 +667,7 @@ function GoodsInPage() {
       ]
         .filter(Boolean)
         .join(", "),
-      supplierContact: supplier.billing_phone || supplier.billing_email || "",
+      supplierContact: supplier.contact_phone || supplier.contact_email || "",
     }));
     setSupplierModalOpen(false);
   };
@@ -662,6 +713,26 @@ function GoodsInPage() {
 
   return (
     <Layout>
+      <style jsx>{`
+        .compact-dropdown :global(.dropdown-api__control) {
+          min-height: 40px;
+          padding: 10px 40px 10px 12px;
+          border-radius: 10px;
+          font-size: 0.95rem;
+        }
+        .compact-dropdown :global(.dropdown-api__chevron) {
+          right: 12px;
+        }
+        .compact-calendar :global(.calendar-api__control) {
+          padding: 10px 40px 10px 12px;
+          border-radius: 10px;
+          font-size: 0.95rem;
+          min-height: 40px;
+        }
+        .compact-calendar :global(.calendar-api__icon) {
+          right: 12px;
+        }
+      `}</style>
       <div style={{ display: "flex", flexDirection: "column", gap: "18px", padding: "12px" }}>
         {toast && (
           <div
@@ -785,29 +856,50 @@ function GoodsInPage() {
               />
             </div>
             <div>
-              <CalendarField
-                label="Invoice date"
-                value={invoiceForm.invoiceDate}
-                onChange={(event) => handleInvoiceChange("invoiceDate", event.target.value)}
-                name="invoiceDate"
-                helperText=""
-                style={{ width: "100%" }}
-              />
+              <div className="compact-calendar">
+                <CalendarField
+                  label="Invoice date"
+                  value={invoiceForm.invoiceDate}
+                  onChange={(event) => handleInvoiceChange("invoiceDate", event.target.value)}
+                  name="invoiceDate"
+                  helperText=""
+                  style={{ width: "100%" }}
+                />
+              </div>
             </div>
             <div>
               <label style={labelStyle}>Price level</label>
-              <DropdownField
-                value={invoiceForm.priceLevel}
-                onChange={(event) => handleInvoiceChange("priceLevel", event.target.value)}
-                style={{ width: "100%" }}
-                placeholder="Select price level"
-              >
-                {PRICE_LEVEL_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </DropdownField>
+              <div className="compact-dropdown">
+                <DropdownField
+                  value={invoiceForm.priceLevel}
+                  onChange={(event) => handleInvoiceChange("priceLevel", event.target.value)}
+                  style={{ width: "100%" }}
+                  placeholder="Select price level"
+                >
+                  {PRICE_LEVEL_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </DropdownField>
+              </div>
+            </div>
+            <div>
+              <label style={labelStyle}>Franchise</label>
+              <div className="compact-dropdown">
+                <DropdownField
+                  value={partForm.franchise}
+                  onChange={(event) => handlePartChange("franchise", event.target.value)}
+                  style={{ width: "100%" }}
+                  placeholder="Select franchise"
+                >
+                  {FRANCHISE_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </DropdownField>
+              </div>
             </div>
           </div>
           {invoiceForm.supplierAddress && (
@@ -908,9 +1000,14 @@ function GoodsInPage() {
             <div>
               <label style={labelStyle}>Description</label>
               <textarea
-                style={textareaStyle}
+                style={autoExpandTextareaStyle}
                 value={partForm.description}
                 onChange={(event) => handlePartChange("description", event.target.value)}
+                rows={1}
+                onInput={(event) => {
+                  event.target.style.height = "auto";
+                  event.target.style.height = `${event.target.scrollHeight}px`;
+                }}
               />
             </div>
             <div>
@@ -948,21 +1045,6 @@ function GoodsInPage() {
               <div style={{ marginTop: "14px" }}>
                 {activeTab === "global" && (
                   <div style={fieldGridStyle}>
-                    <div>
-                      <label style={labelStyle}>Franchise</label>
-                      <DropdownField
-                        value={partForm.franchise}
-                        onChange={(event) => handlePartChange("franchise", event.target.value)}
-                        style={{ width: "100%" }}
-                        placeholder="Select franchise"
-                      >
-                        {FRANCHISE_OPTIONS.map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </DropdownField>
-                    </div>
                     <div>
                       <label style={labelStyle}>Surcharge</label>
                       <input
@@ -1265,7 +1347,27 @@ function GoodsInPage() {
 
         <section style={sectionCardStyle}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h2 style={{ margin: 0 }}>Invoice lines</h2>
+            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+              <h2 style={{ margin: 0 }}>Invoice lines</h2>
+              {goodsInItems.length > 0 && (() => {
+                const totalCost = goodsInItems.reduce((sum, item) => {
+                  const cost = Number(item.cost_price || 0);
+                  const qty = Number(item.quantity || 0);
+                  return sum + (cost * qty);
+                }, 0);
+                const totalRetail = goodsInItems.reduce((sum, item) => {
+                  const retail = Number(item.retail_price || 0);
+                  const qty = Number(item.quantity || 0);
+                  return sum + (retail * qty);
+                }, 0);
+                return (
+                  <div style={{ display: "flex", gap: "16px", fontSize: "0.9rem", color: "var(--text-secondary)" }}>
+                    <span>Total Cost: <strong style={{ color: "var(--text-primary)" }}>{currencyFormatter.format(totalCost)}</strong></span>
+                    <span>Total Retail: <strong style={{ color: "var(--text-primary)" }}>{currencyFormatter.format(totalRetail)}</strong></span>
+                  </div>
+                );
+              })()}
+            </div>
             <div style={{ display: "flex", gap: "10px" }}>
               <button
                 style={secondaryButtonStyle}
@@ -1401,15 +1503,15 @@ function SupplierSearchModal({ onClose, onSelect }) {
         setLoading(true);
         const params = new URLSearchParams();
         if (term.trim()) {
-          params.set("q", term.trim());
+          params.set("search", term.trim());
         }
-        const response = await fetch(`/api/parts/suppliers/search?${params.toString()}`);
+        const response = await fetch(`/api/company-accounts?${params.toString()}`);
         const payload = await response.json();
         if (!response.ok || !payload?.success) {
           throw new Error(payload?.message || "Unable to search suppliers");
         }
-        setResults(payload.suppliers || []);
-        setError(payload.suppliers?.length ? "" : "No suppliers found");
+        setResults(payload.data || []);
+        setError(payload.data?.length ? "" : "No suppliers found");
       } catch (err) {
         console.error(err);
         setError(err.message);
@@ -1452,7 +1554,7 @@ function SupplierSearchModal({ onClose, onSelect }) {
           <div style={{ maxHeight: "420px", overflowY: "auto" }}>
             {results.map((result) => (
               <button
-                key={result.account_id}
+                key={result.account_number}
                 style={{
                   width: "100%",
                   textAlign: "left",
@@ -1464,9 +1566,9 @@ function SupplierSearchModal({ onClose, onSelect }) {
                 }}
                 onClick={() => onSelect(result)}
               >
-                <div style={{ fontWeight: 600 }}>{result.billing_name || result.account_id}</div>
+                <div style={{ fontWeight: 600 }}>{result.company_name || result.trading_name || result.account_number}</div>
                 <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-                  Account {result.account_id} · {result.billing_city || "Unknown city"}
+                  Account {result.account_number} · {result.billing_city || "Unknown city"}
                 </div>
               </button>
             ))}
