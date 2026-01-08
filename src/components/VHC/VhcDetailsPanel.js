@@ -1654,6 +1654,7 @@ export default function VhcDetailsPanel({
 
   const labourHoursByVhcItem = useMemo(() => {
     const map = new Map();
+    const fromVhcChecks = new Set(); // Track which items have labour from vhc_checks
 
     // First, get labour hours from vhc_checks (primary source of truth)
     vhcChecksData.forEach((check) => {
@@ -1662,6 +1663,7 @@ export default function VhcDetailsPanel({
       if (!Number.isFinite(hours) || hours < 0) return; // Allow 0 values
       const key = String(check.vhc_id);
       map.set(key, hours);
+      fromVhcChecks.add(key); // Mark as coming from vhc_checks
     });
 
     // Then, also check parts_job_items and take the maximum value
@@ -1674,7 +1676,7 @@ export default function VhcDetailsPanel({
       map.set(key, Math.max(current, hours));
     });
 
-    return map;
+    return { map, fromVhcChecks };
   }, [partsIdentified, vhcChecksData]);
 
   // Combined VHC items with their parts for Parts Identified section
@@ -1938,6 +1940,8 @@ export default function VhcDetailsPanel({
     });
   }, [partsCostByVhcItem, partsNotRequired, severityLists, resolveCanonicalVhcId]);
 
+  // Load labour hours from parts_job_items (when parts with labour hours are added)
+  // DO NOT auto-check labourComplete when loading from parts
   useEffect(() => {
     setItemEntries((prev) => {
       const updated = { ...prev };
@@ -1946,16 +1950,19 @@ export default function VhcDetailsPanel({
 
       items.forEach((item) => {
         const entry = ensureEntryValue(prev, item.id);
+        // Skip if labour hours already set from database or user input
         if (entry.laborHours !== "" && entry.laborHours !== null && entry.laborHours !== undefined) {
           return;
         }
         const canonicalId = resolveCanonicalVhcId(item.id);
-        const hours = labourHoursByVhcItem.get(canonicalId);
+        const hours = labourHoursByVhcItem.map.get(canonicalId);
+        const isFromVhcChecks = labourHoursByVhcItem.fromVhcChecks.has(canonicalId);
         if (Number.isFinite(hours) && hours >= 0) { // Allow 0 values
           updated[item.id] = {
             ...entry,
             laborHours: String(hours),
-            labourComplete: true,
+            labourComplete: isFromVhcChecks ? (entry.labourComplete || false) : false,
+            // Set to false when loading from parts, preserve existing value when from vhc_checks
           };
           hasChanges = true;
         }
@@ -2063,7 +2070,7 @@ export default function VhcDetailsPanel({
     const entry = getEntryForItem(itemId);
     const resolvedPartsCost = resolvePartsCost(itemId, entry);
     const canonicalId = resolveCanonicalVhcId(itemId);
-    const labourHours = labourHoursByVhcItem.get(canonicalId) || 0;
+    const labourHours = labourHoursByVhcItem.map.get(canonicalId) || 0;
     const labourCost = labourHours * LABOUR_RATE;
     const partsCost = resolvedPartsCost ?? 0;
     const total = partsCost + labourCost;
@@ -2579,7 +2586,7 @@ export default function VhcDetailsPanel({
                           onChange={(event) => {
                             const value = event.target.value;
                             updateEntryValue(item.id, "laborHours", value);
-                            // Auto-check the checkbox if a number is entered (including 0)
+                            // Auto-check the checkbox if a number is entered manually (including 0)
                             if (value !== "" && value !== null && value !== undefined) {
                               updateEntryValue(item.id, "labourComplete", true);
                             }
