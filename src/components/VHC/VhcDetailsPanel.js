@@ -1907,8 +1907,15 @@ export default function VhcDetailsPanel({
       const updated = { ...prev };
       let hasChanges = false;
 
-      // Check each item in the summary
-      severityLists.red?.forEach((item) => {
+      // Check each item in ALL severity lists (red, amber, authorized, declined)
+      const allItems = [
+        ...(severityLists.red || []),
+        ...(severityLists.amber || []),
+        ...(severityLists.authorized || []),
+        ...(severityLists.declined || [])
+      ];
+
+      allItems.forEach((item) => {
         const itemId = item.id;
         const canonicalId = resolveCanonicalVhcId(itemId);
         const hasParts = partsCostByVhcItem.has(canonicalId);
@@ -1919,20 +1926,23 @@ export default function VhcDetailsPanel({
         if (entry.partsComplete !== shouldBeComplete) {
           updated[itemId] = { ...entry, partsComplete: shouldBeComplete };
           hasChanges = true;
-        }
-      });
 
-      severityLists.amber?.forEach((item) => {
-        const itemId = item.id;
-        const canonicalId = resolveCanonicalVhcId(itemId);
-        const hasParts = partsCostByVhcItem.has(canonicalId);
-        const isNotRequired = partsNotRequired.has(String(itemId));
-        const shouldBeComplete = hasParts || isNotRequired;
-
-        const entry = ensureEntryValue(prev, itemId);
-        if (entry.partsComplete !== shouldBeComplete) {
-          updated[itemId] = { ...entry, partsComplete: shouldBeComplete };
-          hasChanges = true;
+          // Also persist to database if the item has a valid VHC ID
+          const parsedId = Number(canonicalId);
+          if (Number.isInteger(parsedId) && shouldBeComplete !== entry.partsComplete) {
+            // Update database asynchronously
+            fetch("/api/vhc/update-item-status", {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                vhcItemId: parsedId,
+                partsComplete: shouldBeComplete,
+                approvedBy: "system"
+              }),
+            }).catch((error) => {
+              console.error("Failed to save parts complete status", error);
+            });
+          }
         }
       });
 
@@ -1981,24 +1991,40 @@ export default function VhcDetailsPanel({
 
       items.forEach((item) => {
         const entry = ensureEntryValue(prev, item.id);
-        // Only initialize if not already set
-        if (entry.laborHours !== "" && entry.laborHours !== null && entry.laborHours !== undefined) {
-          return;
-        }
 
         // Get approval data from database
         const approvalData = vhcApprovalLookup.get(String(item.id));
-        if (approvalData && approvalData.labourHours !== null && approvalData.labourHours !== undefined) {
-          updated[item.id] = {
+        if (approvalData) {
+          // Build the updated entry with database values
+          const updatedEntry = {
             ...entry,
-            laborHours: String(approvalData.labourHours),
-            labourComplete: approvalData.labourComplete || false,
-            partsCost: approvalData.partsCost !== null && approvalData.partsCost !== undefined ? String(approvalData.partsCost) : entry.partsCost,
-            partsComplete: approvalData.partsComplete || false,
-            totalOverride: approvalData.totalOverride !== null && approvalData.totalOverride !== undefined ? String(approvalData.totalOverride) : entry.totalOverride,
-            status: approvalData.approvalStatus || null,
+            status: approvalData.approvalStatus || entry.status || null,
           };
-          hasChanges = true;
+
+          // Update labour hours if present in database
+          if (approvalData.labourHours !== null && approvalData.labourHours !== undefined) {
+            updatedEntry.laborHours = String(approvalData.labourHours);
+            updatedEntry.labourComplete = approvalData.labourComplete || false;
+          }
+
+          // Update parts cost if present in database
+          if (approvalData.partsCost !== null && approvalData.partsCost !== undefined) {
+            updatedEntry.partsCost = String(approvalData.partsCost);
+          }
+
+          // Update parts complete status
+          updatedEntry.partsComplete = approvalData.partsComplete || false;
+
+          // Update total override if present in database
+          if (approvalData.totalOverride !== null && approvalData.totalOverride !== undefined) {
+            updatedEntry.totalOverride = String(approvalData.totalOverride);
+          }
+
+          // Only update if something changed
+          if (JSON.stringify(entry) !== JSON.stringify(updatedEntry)) {
+            updated[item.id] = updatedEntry;
+            hasChanges = true;
+          }
         }
       });
 
@@ -2122,6 +2148,13 @@ export default function VhcDetailsPanel({
   };
 
   const resolveRowStatusState = (entry, resolvedPartsCost, itemId) => {
+    if (entry.status === "completed") {
+      return {
+        color: "var(--success)",
+        label: "Completed",
+        showTick: true,
+      };
+    }
     if (entry.status === "authorized") {
       return {
         color: "var(--success)",
@@ -2211,6 +2244,10 @@ export default function VhcDetailsPanel({
         return;
       }
 
+      // Get the items from the severity list to access their rawSeverity
+      const items = severityLists[severity] || [];
+      const itemsMap = new Map(items.map(item => [item.id, item]));
+
       // Update local state immediately for all selected items
       setItemEntries((prev) => {
         const next = { ...prev };
@@ -2231,7 +2268,21 @@ export default function VhcDetailsPanel({
           return null;
         }
 
+        const item = itemsMap.get(itemId);
         const dbStatus = status || 'pending';
+
+        // Determine the display_status based on the action
+        let displayStatus = null;
+        if (status === 'authorized') {
+          displayStatus = 'authorized';
+        } else if (status === 'declined') {
+          displayStatus = 'declined';
+        } else if (status === 'completed') {
+          displayStatus = 'completed';
+        } else if (status === 'pending' && item?.rawSeverity) {
+          // For Reset: restore original red/amber severity
+          displayStatus = item.rawSeverity;
+        }
 
         try {
           const response = await fetch("/api/vhc/update-item-status", {
@@ -2240,6 +2291,7 @@ export default function VhcDetailsPanel({
             body: JSON.stringify({
               vhcItemId: parsedId,
               approvalStatus: dbStatus,
+              displayStatus: displayStatus,
               approvedBy: authUserId || dbUserId || "system"
             }),
           });
@@ -2249,7 +2301,7 @@ export default function VhcDetailsPanel({
             console.error(`❌ [VHC BULK ERROR] Failed for vhc_id ${parsedId}:`, result?.message);
             return null;
           }
-          return parsedId;
+          return { parsedId, displayStatus, item };
         } catch (error) {
           console.error(`❌ [VHC BULK ERROR] Exception for item ${itemId}:`, error);
           return null;
@@ -2257,21 +2309,19 @@ export default function VhcDetailsPanel({
       });
 
       // Wait for all updates to complete
-      const updatedIds = await Promise.all(updatePromises);
-      const successfulIds = updatedIds.filter(id => id !== null);
-
+      const updateResults = await Promise.all(updatePromises);
+      const successfulUpdates = updateResults.filter(result => result !== null);
 
       // Update vhcChecksData for all successfully updated items
-      if (successfulIds.length > 0) {
-        const newDisplayStatus = status === 'authorized' ? 'authorized' : status === 'declined' ? 'declined' : null;
-
+      if (successfulUpdates.length > 0) {
         setVhcChecksData((prev) => {
           const updated = prev.map((check) => {
-            if (successfulIds.includes(check.vhc_id)) {
+            const matchingUpdate = successfulUpdates.find(u => u.parsedId === check.vhc_id);
+            if (matchingUpdate) {
               return {
                 ...check,
                 approval_status: status || 'pending',
-                display_status: newDisplayStatus || check.display_status,
+                display_status: matchingUpdate.displayStatus || check.display_status,
                 approved_by: authUserId || dbUserId || "system",
                 approved_at: status ? new Date().toISOString() : null,
               };
@@ -2286,7 +2336,7 @@ export default function VhcDetailsPanel({
       setSeveritySelections((prev) => ({ ...prev, [severity]: [] }));
 
     },
-    [severitySelections, resolveCanonicalVhcId, authUserId, dbUserId]
+    [severitySelections, severityLists, resolveCanonicalVhcId, authUserId, dbUserId]
   );
 
   const handleMoveItem = useCallback(
@@ -2355,8 +2405,8 @@ export default function VhcDetailsPanel({
     if (items.length === 0) {
       return <EmptyStateMessage message={`No ${severity} items recorded.`} />;
     }
-    // Disable selection for authorized/declined items
-    const selectionEnabled = !readOnly && severity !== "authorized" && severity !== "declined";
+    // Enable selection for all items when not read-only
+    const selectionEnabled = !readOnly;
     const selectedIds = severitySelections[severity] || [];
     const selectedSet = new Set(selectedIds);
     const allChecked = items.length > 0 && selectedSet.size === items.length;
@@ -2371,8 +2421,8 @@ export default function VhcDetailsPanel({
           overflow: "hidden",
         }}
       >
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+        <div style={{ overflow: "visible" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", tableLayout: "fixed" }}>
             <thead>
               <tr
                 style={{
@@ -2383,13 +2433,13 @@ export default function VhcDetailsPanel({
                   fontSize: "11px",
                 }}
               >
-                <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "260px" }}>Item Details</th>
-                <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "120px" }}>Parts</th>
-                <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "130px" }}>Labour</th>
-                <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "160px" }}>Total</th>
-                <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "130px" }}>Status</th>
+                <th style={{ textAlign: "left", padding: "12px 8px", width: "35%" }}>Item Details</th>
+                <th style={{ textAlign: "left", padding: "12px 8px", width: "15%" }}>Parts</th>
+                <th style={{ textAlign: "left", padding: "12px 8px", width: "18%" }}>Labour</th>
+                <th style={{ textAlign: "left", padding: "12px 8px", width: "15%" }}>Total</th>
+                <th style={{ textAlign: "left", padding: "12px 8px", width: "10%" }}>Status</th>
                 {selectionEnabled && (
-                  <th style={{ textAlign: "center", padding: "12px 16px", minWidth: "90px" }}>
+                  <th style={{ textAlign: "center", padding: "12px 8px", width: "7%" }}>
                     <input
                       type="checkbox"
                       checked={allChecked}
@@ -2453,7 +2503,7 @@ export default function VhcDetailsPanel({
                       transition: "background 0.2s ease",
                     }}
                   >
-                    <td style={{ padding: "12px 16px", color: "var(--accent-purple)", width: "32%" }}>
+                    <td style={{ padding: "12px 8px", color: "var(--accent-purple)", wordWrap: "break-word", overflow: "hidden" }}>
                       <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
                         {item.categoryLabel || "Recorded Section"}
                       </div>
@@ -2530,21 +2580,21 @@ export default function VhcDetailsPanel({
                         </div>
                       ) : null}
                     </td>
-                    <td style={{ padding: "12px 16px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <td style={{ padding: "12px 8px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
                         <input
                           type="checkbox"
                           checked={entry.partsComplete || false}
                           disabled={true}
                           title={entry.partsComplete ? "Parts added or marked as not required" : "Add parts or mark as not required"}
                         />
-                        <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--accent-purple)" }}>
+                        <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--accent-purple)" }}>
                           {partsDisplayValue ? `£${partsDisplayValue}` : "—"}
                         </div>
                       </div>
                     </td>
-                    <td style={{ padding: "12px 16px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <td style={{ padding: "12px 8px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
                         <input
                           type="checkbox"
                           checked={entry.labourComplete || false}
@@ -2596,19 +2646,19 @@ export default function VhcDetailsPanel({
                           }}
                           placeholder="0.0"
                           style={{
-                            width: "60px",
-                            padding: "6px 8px",
+                            width: "50px",
+                            padding: "4px 6px",
                             borderRadius: "8px",
                             border: "1px solid var(--accent-purple-surface)",
-                            fontSize: "14px",
+                            fontSize: "13px",
                           }}
                           disabled={readOnly || (entry.status === "authorized" || entry.status === "declined")}
                         />
                         <span style={{ fontSize: "12px", color: "var(--info)", whiteSpace: "nowrap" }}>£{labourCost.toFixed(2)}</span>
                       </div>
                     </td>
-                    <td style={{ padding: "12px 16px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <td style={{ padding: "12px 8px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
                         <input
                           type="number"
                           min="0"
@@ -2617,11 +2667,11 @@ export default function VhcDetailsPanel({
                           onChange={(event) => updateEntryValue(item.id, "totalOverride", event.target.value)}
                           placeholder="0.00"
                           style={{
-                            width: "80px",
-                            padding: "6px 8px",
+                            width: "70px",
+                            padding: "4px 6px",
                             borderRadius: "8px",
                             border: "1px solid var(--accent-purple-surface)",
-                            fontSize: "14px",
+                            fontSize: "13px",
                           }}
                           disabled={readOnly || (entry.status === "authorized" || entry.status === "declined")}
                         />
@@ -2647,7 +2697,7 @@ export default function VhcDetailsPanel({
                         )}
                       </div>
                     </td>
-                    <td style={{ padding: "12px 16px" }}>
+                    <td style={{ padding: "12px 8px" }}>
                       <div
                         onMouseEnter={() => setHoveredStatusId(statusKey)}
                         onMouseLeave={() => setHoveredStatusId(null)}
@@ -2658,7 +2708,7 @@ export default function VhcDetailsPanel({
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          minHeight: "40px",
+                          minHeight: "32px",
                           width: "100%",
                         }}
                         tabIndex={0}
@@ -2694,46 +2744,12 @@ export default function VhcDetailsPanel({
                             <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--accent-purple)" }}>
                               {statusState.label}
                             </div>
-                            {(severity === "authorized" || severity === "declined") && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  const targetStatus = severity === "authorized" ? "declined" : "authorized";
-                                  handleMoveItem(item.id, targetStatus);
-                                  setHoveredStatusId(null);
-                                }}
-                                style={{
-                                  marginTop: "8px",
-                                  width: "100%",
-                                  padding: "6px 12px",
-                                  fontSize: "12px",
-                                  fontWeight: 600,
-                                  color: severity === "authorized" ? "var(--danger)" : "var(--success)",
-                                  background: severity === "authorized" ? "var(--danger-surface)" : "var(--success-surface)",
-                                  border: `1px solid ${severity === "authorized" ? "var(--danger)" : "var(--success)"}`,
-                                  borderRadius: "8px",
-                                  cursor: "pointer",
-                                  transition: "all 0.2s ease",
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.background = severity === "authorized" ? "var(--danger)" : "var(--success)";
-                                  e.currentTarget.style.color = "white";
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.background = severity === "authorized" ? "var(--danger-surface)" : "var(--success-surface)";
-                                  e.currentTarget.style.color = severity === "authorized" ? "var(--danger)" : "var(--success)";
-                                }}
-                              >
-                                Move to {severity === "authorized" ? "Declined" : "Authorised"}
-                              </button>
-                            )}
                           </div>
                         )}
                       </div>
                     </td>
                     {selectionEnabled && (
-                      <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                      <td style={{ padding: "12px 8px", textAlign: "center" }}>
                         <input
                           type="checkbox"
                           checked={isChecked}
@@ -2747,7 +2763,7 @@ export default function VhcDetailsPanel({
             </tbody>
           </table>
         </div>
-        {selectionEnabled && severity !== "authorized" && severity !== "declined" && (
+        {selectionEnabled && (
           <div
             style={{
               display: "flex",
@@ -2757,38 +2773,77 @@ export default function VhcDetailsPanel({
               borderTop: "1px solid var(--info-surface)",
             }}
           >
-            <button
-              type="button"
-              onClick={() => handleBulkStatus(severity, "declined")}
-              disabled={selectedSet.size === 0}
-              style={{
-                padding: "10px 16px",
-                borderRadius: "10px",
-                border: "1px solid var(--danger)",
-                backgroundColor: selectedSet.size === 0 ? "var(--danger-surface)" : "var(--surface)",
-                color: "var(--danger)",
-                fontWeight: 600,
-                cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
-              }}
-            >
-              Decline
-            </button>
-            <button
-              type="button"
-              onClick={() => handleBulkStatus(severity, "authorized")}
-              disabled={selectedSet.size === 0}
-              style={{
-                padding: "10px 16px",
-                borderRadius: "10px",
-                border: "1px solid var(--success)",
-                backgroundColor: selectedSet.size === 0 ? "var(--success-surface)" : "var(--success)",
-                color: selectedSet.size === 0 ? "var(--success)" : "var(--surface)",
-                fontWeight: 600,
-                cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
-              }}
-            >
-              Authorise
-            </button>
+            {(severity === "authorized" || severity === "declined") ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleBulkStatus(severity, "pending")}
+                  disabled={selectedSet.size === 0}
+                  style={{
+                    padding: "10px 16px",
+                    borderRadius: "10px",
+                    border: "1px solid var(--accent-purple)",
+                    backgroundColor: selectedSet.size === 0 ? "var(--accent-purple-surface)" : "var(--surface)",
+                    color: "var(--accent-purple)",
+                    fontWeight: 600,
+                    cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Reset
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleBulkStatus(severity, "completed")}
+                  disabled={selectedSet.size === 0}
+                  style={{
+                    padding: "10px 16px",
+                    borderRadius: "10px",
+                    border: "1px solid var(--success)",
+                    backgroundColor: selectedSet.size === 0 ? "var(--success-surface)" : "var(--success)",
+                    color: selectedSet.size === 0 ? "var(--success)" : "white",
+                    fontWeight: 600,
+                    cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Complete
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleBulkStatus(severity, "declined")}
+                  disabled={selectedSet.size === 0}
+                  style={{
+                    padding: "10px 16px",
+                    borderRadius: "10px",
+                    border: "1px solid var(--danger)",
+                    backgroundColor: selectedSet.size === 0 ? "var(--danger-surface)" : "var(--surface)",
+                    color: "var(--danger)",
+                    fontWeight: 600,
+                    cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Decline
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleBulkStatus(severity, "authorized")}
+                  disabled={selectedSet.size === 0}
+                  style={{
+                    padding: "10px 16px",
+                    borderRadius: "10px",
+                    border: "1px solid var(--success)",
+                    backgroundColor: selectedSet.size === 0 ? "var(--success-surface)" : "var(--success)",
+                    color: selectedSet.size === 0 ? "var(--success)" : "white",
+                    fontWeight: 600,
+                    cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Authorise
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>

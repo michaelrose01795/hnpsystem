@@ -255,8 +255,11 @@ export default function JobCardDetailPage() {
   const canEdit = !isArchiveMode && canEditBase;
   const canManageDocuments = !isArchiveMode && canManageDocumentsBase;
   const canViewPartsTab = [
+    "workshop manager",
+    "service manager",
     "parts",
-    "parts manager"
+    "parts manager",
+    "after-sales manager"
   ].some((role) => userRoles.includes(role));
 
   // Invoice tab is visible for anyone who can open this page to make review easier

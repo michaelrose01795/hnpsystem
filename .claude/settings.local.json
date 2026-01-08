@@ -17,7 +17,8 @@
       "Bash(npm run dev:*)",
       "Bash(npm run:*)",
       "Bash(git diff:*)",
-      "Bash(node --check:*)"
+      "Bash(node --check:*)",
+      "Bash(test:*)"
     ],
     "deny": [],
     "ask": []
