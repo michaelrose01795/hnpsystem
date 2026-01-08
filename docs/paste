@@ -1,10 +1,4 @@
 TO DO:
-
-have it so the "AUTHORISED£0.00 VHC Total DECLINED £0.00 VHC Total" sections nect to the "VEHICLE MF20LZO HYUNDAI CUSTOMER Edward Lane 07587 332400" section are always showing the total price even if the VHC tab isnt loaded.
-
-
-
-
 Automate with parts in and parts on order, have it so when the part is goods in and added to the Parts booked to job section it auto dectects the part thought the part number, and changes the "here" button to "added" automatically. 
 
 

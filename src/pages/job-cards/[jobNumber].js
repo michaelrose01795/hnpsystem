@@ -24,6 +24,7 @@ import {
 import { summarizePartsPipeline } from "@/lib/partsPipeline";
 import VhcDetailsPanel from "@/components/VHC/VhcDetailsPanel";
 import InvoiceSection from "@/components/Invoices/InvoiceSection";
+import { calculateVhcFinancialTotals } from "@/lib/vhc/calculateVhcTotals";
 import { isValidUuid, sanitizeNumericId } from "@/lib/utils/ids";
 import PartsTabNew from "@/components/PartsTab_New";
 import NotesTabNew from "@/components/NotesTab_New";
@@ -231,7 +232,7 @@ export default function JobCardDetailPage() {
   const [invoicePopupOpen, setInvoicePopupOpen] = useState(false);
   const [invoiceResponse, setInvoiceResponse] = useState(null);
   const [showDocumentsPopup, setShowDocumentsPopup] = useState(false);
-  const [vhcFinancialTotalsFromPanel, setVhcFinancialTotalsFromPanel] = useState({ authorized: 0, declined: 0 });
+  const [vhcFinancialTotalsFromPanel, setVhcFinancialTotalsFromPanel] = useState(null);
 
   const isArchiveMode = router.query.archive === "1";
 
@@ -1012,18 +1013,27 @@ export default function JobCardDetailPage() {
     }
   };
 
-  // ✅ VHC Financial Totals (received from VhcDetailsPanel via callback)
+  // ✅ VHC Financial Totals (calculated from vhcChecks or received from VhcDetailsPanel)
   const vhcFinancialTotals = useMemo(() => {
     // Return null values if jobData is not loaded yet
     if (!jobData) {
       return { authorized: null, declined: null };
     }
 
-    // Use the totals from VhcDetailsPanel (will be 0 if no items marked)
-    return {
-      authorized: vhcFinancialTotalsFromPanel.authorized,
-      declined: vhcFinancialTotalsFromPanel.declined
-    };
+    // If VHC tab has been loaded and sent totals, use those (more accurate with real-time updates)
+    // Otherwise, calculate from jobData.vhcChecks (allows showing totals before VHC tab is loaded)
+    if (vhcFinancialTotalsFromPanel !== null) {
+      // Use the totals from VhcDetailsPanel (will reflect real-time updates)
+      return vhcFinancialTotalsFromPanel;
+    }
+
+    // Calculate from vhcChecks and parts_job_items data (allows showing totals without loading VHC tab)
+    if (jobData.vhcChecks && Array.isArray(jobData.vhcChecks)) {
+      return calculateVhcFinancialTotals(jobData.vhcChecks, jobData.parts_job_items || []);
+    }
+
+    // Default to 0 if no vhcChecks data
+    return { authorized: 0, declined: 0 };
   }, [jobData, vhcFinancialTotalsFromPanel]);
 
   const formatCurrency = (value) => {
