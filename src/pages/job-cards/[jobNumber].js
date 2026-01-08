@@ -1164,7 +1164,7 @@ export default function JobCardDetailPage() {
     { id: "parts", label: "Parts"},
     { id: "notes", label: "Notes"},
     { id: "write-up", label: "Write Up"},
-    { id: "vhc", label: "VHC", badge: vhcTabBadge},
+    ...(jobData.vhcRequired ? [{ id: "vhc", label: "VHC", badge: vhcTabBadge}] : []),
     { id: "warranty", label: "Warranty"},
     { id: "clocking", label: "Clocking"},
     { id: "messages", label: "Messages"},
@@ -2000,50 +2000,52 @@ function CustomerRequestsTab({
             <p style={{ margin: "0 0 12px 0", fontSize: "14px", color: "var(--info-dark)" }}>
               {jobData.vhcRequired
                 ? "A VHC is required for this job card."
-                : "VHC has been marked as not required for this job."}
+                : "VHC has been selected as not Required, Service or management can enable the VHC if it becomes required."}
             </p>
 
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginBottom: "12px" }}>
-              <span style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: "6px 10px",
-                borderRadius: "999px",
-                backgroundColor: "var(--danger-surface)",
-                color: "var(--danger)",
-                fontSize: "12px",
-                fontWeight: "600"
-              }}>
-                Red: {vhcSummary.red}
-              </span>
-              <span style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: "6px 10px",
-                borderRadius: "999px",
-                backgroundColor: "var(--warning-surface)",
-                color: "var(--warning)",
-                fontSize: "12px",
-                fontWeight: "600"
-              }}>
-                Amber: {vhcSummary.amber}
-              </span>
-              <span style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: "6px 10px",
-                borderRadius: "999px",
-                backgroundColor: "var(--info-surface)",
-                color: "var(--info-dark)",
-                fontSize: "12px",
-                fontWeight: "600"
-              }}>
-                Total Checks: {vhcSummary.total}
-              </span>
-            </div>
+            {jobData.vhcRequired && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginBottom: "12px" }}>
+                <span style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "6px 10px",
+                  borderRadius: "999px",
+                  backgroundColor: "var(--danger-surface)",
+                  color: "var(--danger)",
+                  fontSize: "12px",
+                  fontWeight: "600"
+                }}>
+                  Red: {vhcSummary.red}
+                </span>
+                <span style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "6px 10px",
+                  borderRadius: "999px",
+                  backgroundColor: "var(--warning-surface)",
+                  color: "var(--warning)",
+                  fontSize: "12px",
+                  fontWeight: "600"
+                }}>
+                  Amber: {vhcSummary.amber}
+                </span>
+                <span style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "6px 10px",
+                  borderRadius: "999px",
+                  backgroundColor: "var(--info-surface)",
+                  color: "var(--info-dark)",
+                  fontSize: "12px",
+                  fontWeight: "600"
+                }}>
+                  Total Checks: {vhcSummary.total}
+                </span>
+              </div>
+            )}
 
             {jobData.vhcRequired ? (
               highlightedItems.length > 0 ? (

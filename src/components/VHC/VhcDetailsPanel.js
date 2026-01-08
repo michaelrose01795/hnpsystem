@@ -5084,61 +5084,65 @@ export default function VhcDetailsPanel({
                     );
                   })}
 
-                  {/* Authorised section - always show */}
-                  <div
-                    style={{
-                      border: "2px solid var(--success)",
-                      borderRadius: "18px",
-                      padding: "18px",
-                      background: "var(--surface)",
-                      boxShadow: "none",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "16px",
-                    }}
-                  >
-                    <div style={{ borderBottom: "1px solid var(--success)", paddingBottom: "10px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div>
-                          <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--success)" }}>Authorised</h2>
-                        </div>
-                        {customerTotals.authorized > 0 && (
-                          <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--success)" }}>
-                            {formatCurrency(customerTotals.authorized)}
+                  {/* Authorised section - only show if there are authorized items or if VHC has been started */}
+                  {(severityLists.authorized && severityLists.authorized.length > 0) || (severityLists.red && severityLists.red.length > 0) || (severityLists.amber && severityLists.amber.length > 0) ? (
+                    <div
+                      style={{
+                        border: "2px solid var(--success)",
+                        borderRadius: "18px",
+                        padding: "18px",
+                        background: "var(--surface)",
+                        boxShadow: "none",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "16px",
+                      }}
+                    >
+                      <div style={{ borderBottom: "1px solid var(--success)", paddingBottom: "10px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <div>
+                            <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--success)" }}>Authorised</h2>
                           </div>
-                        )}
+                          {customerTotals.authorized > 0 && (
+                            <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--success)" }}>
+                              {formatCurrency(customerTotals.authorized)}
+                            </div>
+                          )}
+                        </div>
                       </div>
+                      {renderSeverityTable("authorized")}
                     </div>
-                    {renderSeverityTable("authorized")}
-                  </div>
+                  ) : null}
 
-                  {/* Declined section - always show */}
-                  <div
-                    style={{
-                      border: "2px solid var(--danger)",
-                      borderRadius: "18px",
-                      padding: "18px",
-                      background: "var(--surface)",
-                      boxShadow: "none",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "16px",
-                    }}
-                  >
-                    <div style={{ borderBottom: "1px solid var(--danger)", paddingBottom: "10px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div>
-                          <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--danger)" }}>Declined</h2>
-                        </div>
-                        {customerTotals.declined > 0 && (
-                          <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--danger)" }}>
-                            {formatCurrency(customerTotals.declined)}
+                  {/* Declined section - only show if there are declined items or if VHC has been started */}
+                  {(severityLists.declined && severityLists.declined.length > 0) || (severityLists.red && severityLists.red.length > 0) || (severityLists.amber && severityLists.amber.length > 0) ? (
+                    <div
+                      style={{
+                        border: "2px solid var(--danger)",
+                        borderRadius: "18px",
+                        padding: "18px",
+                        background: "var(--surface)",
+                        boxShadow: "none",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "16px",
+                      }}
+                    >
+                      <div style={{ borderBottom: "1px solid var(--danger)", paddingBottom: "10px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <div>
+                            <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--danger)" }}>Declined</h2>
                           </div>
-                        )}
+                          {customerTotals.declined > 0 && (
+                            <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--danger)" }}>
+                              {formatCurrency(customerTotals.declined)}
+                            </div>
+                          )}
+                        </div>
                       </div>
+                      {renderSeverityTable("declined")}
                     </div>
-                    {renderSeverityTable("declined")}
-                  </div>
+                  ) : null}
 
                   {greenItems.length > 0 && (
                     <div
@@ -5264,8 +5268,7 @@ export default function VhcDetailsPanel({
                         textAlign: "center",
                       }}
                     >
-                      Technicians have not recorded any VHC data yet. Use the section buttons above to open the full builder
-                      forms and start a health check for this job.
+                      VHC has not been started yet.
                     </div>
                   )}
                 </div>
