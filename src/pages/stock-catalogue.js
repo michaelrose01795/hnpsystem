@@ -2201,7 +2201,7 @@ useEffect(() => {
                     placeholder="Search location..."
                     value={locationSearchTerm}
                     onChange={(e) => setLocationSearchTerm(e.target.value)}
-                    onFocus={() => document.getElementById('location-dropdown').style.display = 'block'}
+                    onFocus={() => { document.getElementById('location-dropdown').style.display = 'block'; }}
                     style={{
                       padding: "12px",
                       borderRadius: "8px",

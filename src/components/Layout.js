@@ -26,26 +26,6 @@ import { roleCategories } from "@/config/users";
 import { getUserActiveJobs, clockOutFromJob } from "@/lib/database/jobClocking";
 import { DropdownField } from "@/components/dropdownAPI";
 
-const WORKSHOP_SHORTCUT_ROLES = ["workshop manager", "aftersales manager"];
-
-const WORKSHOP_SHORTCUT_LINKS = [
-  {
-    label: "Clocking",
-    href: "/clocking",
-    roles: WORKSHOP_SHORTCUT_ROLES,
-    keywords: ["clocking", "time", "overview"],
-    description: "Unified clocking workspace",
-  },
-];
-
-const WORKSHOP_SHORTCUT_SECTIONS = [
-  {
-    label: "Workshop Shortcuts",
-    category: "departments",
-    items: WORKSHOP_SHORTCUT_LINKS,
-  },
-];
-
 const SERVICE_ACTION_ROLES = new Set([
   "service",
   "service department",
@@ -498,7 +478,6 @@ export default function Layout({ children, jobNumber }) {
   ];
   const serviceSidebarSections = [
     ...jobDivisionSidebarSections,
-    ...WORKSHOP_SHORTCUT_SECTIONS,
     ...accountsSidebarSections,
   ];
   const combinedSidebarSections = [...sidebarSections, ...serviceSidebarSections];

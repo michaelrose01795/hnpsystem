@@ -18,7 +18,9 @@
       "Bash(npm run:*)",
       "Bash(git diff:*)",
       "Bash(node --check:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(git checkout:*)",
+      "Bash(NEXT_BUILD_USE_TURBOPACK=false npm run build:*)"
     ],
     "deny": [],
     "ask": []

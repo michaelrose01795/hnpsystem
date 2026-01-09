@@ -1389,7 +1389,12 @@ export default function VhcDetailsPanel({
 
     items.forEach((item) => {
       // Use display_status from database if available, otherwise use original severity
-      item.displaySeverity = item.displayStatus || item.rawSeverity;
+      // Completed items should stay in the "authorized" section but show completed visual status
+      if (item.displayStatus === 'completed') {
+        item.displaySeverity = 'authorized';
+      } else {
+        item.displaySeverity = item.displayStatus || item.rawSeverity;
+      }
     });
 
     items.forEach((item) => {
@@ -2720,11 +2725,28 @@ export default function VhcDetailsPanel({
                             height: "18px",
                             borderRadius: "999px",
                             backgroundColor: statusState.color,
-                            display: "inline-block",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
                             boxShadow: "0 0 0 2px var(--surface)",
                             cursor: "pointer",
                           }}
-                        />
+                        >
+                          {statusState.showTick && (
+                            <svg
+                              width="10"
+                              height="10"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="white"
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          )}
+                        </span>
                         {isStatusHovered && (
                           <div
                             style={{

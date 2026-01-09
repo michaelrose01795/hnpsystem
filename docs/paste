@@ -1,28 +1,5 @@
 TO DO:
 
-## Error Type
-Build Error
-
-## Error Message
-Parsing ecmascript source code failed
-
-## Build Output
-./src/pages/stock-catalogue.js:2964:10
-Parsing ecmascript source code failed
-  2962 |             </div>
-  2963 |           </div>
-> 2964 |         )}
-       |          ^
-  2965 |
-  2966 |         {renderDeliveryModal()}
-  2967 |       </div>
-
-Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
-
-Next.js version: 16.1.1 (Turbopack)
-
-
-
 have it so if the check box is clicked  within the last column, and reset button is pressed this resets the status to either red or amber depending on what the row is, if its amber the row is removed from the authorised or declined section and added to the amber repeorts section, if its Red the row is removed from the authorised or declined section and added to the Red repeorts section. If complete is clicked with the check box sleected for that row, it turns all of the rows selected status to Complete, this Turnes the status circle to green with a tick in the middle.
 
 
