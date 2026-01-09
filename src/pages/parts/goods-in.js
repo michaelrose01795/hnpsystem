@@ -141,7 +141,7 @@ const invoiceTableStyles = {
   width: "100%",
   borderCollapse: "separate",
   borderSpacing: "0 10px",
-  minWidth: "1000px",
+  tableLayout: "fixed",
 };
 
 const invoiceHeaderCellStyle = {
@@ -150,12 +150,16 @@ const invoiceHeaderCellStyle = {
   letterSpacing: "0.08em",
   textTransform: "uppercase",
   color: "var(--text-secondary)",
+  background: "var(--layer-section-level-2)",
 };
 
 const invoiceCellStyle = {
   padding: "16px",
   fontSize: "0.95rem",
   color: "var(--text-primary)",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
 };
 
 const invoiceRowStyle = {
@@ -263,7 +267,7 @@ function GoodsInPage() {
   const [toast, setToast] = useState(null);
   const [supplierModalOpen, setSupplierModalOpen] = useState(false);
   const [partSearchOpen, setPartSearchOpen] = useState(false);
-  const [jobModalItem, setJobModalItem] = useState(null);
+  const [jobModalOpen, setJobModalOpen] = useState(false);
   const [completionPromptOpen, setCompletionPromptOpen] = useState(false);
   const [scanBusy, setScanBusy] = useState(false);
   const [removingItemId, setRemovingItemId] = useState(null);
@@ -352,35 +356,23 @@ function GoodsInPage() {
     setPartError("");
     setPartForm((prev) => {
       const next = { ...prev, [field]: value };
-
-      // Tyre pricing logic: £30 markup/markdown
-      const isTyre = (field === "franchise" && value === "Tyre") || prev.franchise === "Tyre";
-
-      if (isTyre) {
-        if (field === "retailPrice" && value && !prev.costPrice) {
-          // Calculate cost price as retail - £30
+      // Keep retail/cost prices in sync with a fixed £30 delta.
+      if (field === "retailPrice") {
+        if (!value) {
+          next.costPrice = "";
+        } else {
           const retailNum = parseFloat(value);
-          if (!isNaN(retailNum) && retailNum > 30) {
+          if (!isNaN(retailNum)) {
             next.costPrice = (retailNum - 30).toFixed(2);
           }
-        } else if (field === "costPrice" && value && !prev.retailPrice) {
-          // Calculate retail price as cost + £30
+        }
+      } else if (field === "costPrice") {
+        if (!value) {
+          next.retailPrice = "";
+        } else {
           const costNum = parseFloat(value);
           if (!isNaN(costNum)) {
             next.retailPrice = (costNum + 30).toFixed(2);
-          }
-        } else if (field === "franchise" && value === "Tyre") {
-          // When franchise changes to Tyre, apply pricing logic
-          if (prev.retailPrice && !prev.costPrice) {
-            const retailNum = parseFloat(prev.retailPrice);
-            if (!isNaN(retailNum) && retailNum > 30) {
-              next.costPrice = (retailNum - 30).toFixed(2);
-            }
-          } else if (prev.costPrice && !prev.retailPrice) {
-            const costNum = parseFloat(prev.costPrice);
-            if (!isNaN(costNum)) {
-              next.retailPrice = (costNum + 30).toFixed(2);
-            }
           }
         }
       }
@@ -466,7 +458,6 @@ function GoodsInPage() {
   const buildPartPayload = () => ({
     partId: partForm.partId,
     partNumber: partForm.partNumber,
-    mainPartNumber: partForm.mainPartNumber,
     description: partForm.description,
     binLocation: partForm.binLocation,
     franchise: partForm.franchise,
@@ -687,17 +678,34 @@ function GoodsInPage() {
     setPartSearchOpen(false);
   };
 
-  const handleJobAssigned = (updatedItem) => {
-    setGoodsInItems((prev) => prev.map((item) => (item.id === updatedItem.id ? updatedItem : item)));
-    setJobModalItem(null);
-    setToast({ type: "success", message: "Goods in complete and added to job" });
-    setPartError("");
+  const resetGoodsInState = useCallback(() => {
+    setGoodsInRecord(null);
+    setGoodsInItems([]);
+    setInvoiceForm(createDefaultInvoiceForm(todayIso));
+    setInvoiceScanPayload(null);
     setPartForm(createDefaultPartForm());
-    setIsAdvancedPanelOpen(false);
     setActiveTab("global");
-    if (updatedItem?.job_number) {
-      router.push(`/job-cards/${updatedItem.job_number}?tab=parts`);
-    }
+    setIsAdvancedPanelOpen(false);
+    setCompletionPromptOpen(false);
+    setJobModalOpen(false);
+    setPartError("");
+  }, [todayIso]);
+
+  const handleCompletionDismiss = useCallback(() => {
+    resetGoodsInState();
+    router.push("/parts/goods-in");
+  }, [resetGoodsInState, router]);
+
+  const handleJobItemsAssigned = (updatedItems) => {
+    if (!updatedItems?.length) return;
+    const updatedMap = new Map(updatedItems.map((item) => [item.id, item]));
+    setGoodsInItems((prev) => prev.map((item) => updatedMap.get(item.id) || item));
+    setToast({ type: "success", message: "Selected parts added to job" });
+    setPartError("");
+  };
+
+  const handleFinishGoodsIn = () => {
+    handleCompletionDismiss();
   };
 
   if (!hasGoodsInAccess) {
@@ -961,14 +969,6 @@ function GoodsInPage() {
                 }}
                 onChange={(event) => handlePartChange("partNumber", event.target.value)}
                 placeholder="e.g., FPAD1"
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Main part number</label>
-              <input
-                style={inputStyle}
-                value={partForm.mainPartNumber}
-                onChange={(event) => handlePartChange("mainPartNumber", event.target.value)}
               />
             </div>
             <div>
@@ -1395,23 +1395,20 @@ function GoodsInPage() {
               style={{
                 borderRadius: "20px",
                 border: "1px solid var(--surface-light)",
-                overflowX: "auto",
-                background: "var(--surface)",
+                overflowX: "hidden",
+                background: "var(--layer-section-level-2)",
               }}
             >
               <table style={invoiceTableStyles}>
                 <thead>
                   <tr style={{ textAlign: "left" }}>
                     <th style={invoiceHeaderCellStyle}>Part number</th>
-                    <th style={invoiceHeaderCellStyle}>Main part number</th>
                     <th style={invoiceHeaderCellStyle}>Description</th>
-                    <th style={invoiceHeaderCellStyle}>Bin</th>
                     <th style={invoiceHeaderCellStyle}>Retail</th>
                     <th style={invoiceHeaderCellStyle}>Cost</th>
                     <th style={invoiceHeaderCellStyle}>Surcharge</th>
                     <th style={invoiceHeaderCellStyle}>Qty</th>
                     <th style={invoiceHeaderCellStyle}>Cost total</th>
-                    <th style={invoiceHeaderCellStyle}>Claim</th>
                     <th style={invoiceHeaderCellStyle}>Actions</th>
                   </tr>
                 </thead>
@@ -1422,9 +1419,7 @@ function GoodsInPage() {
                     return (
                       <tr key={item.id} style={invoiceRowStyle}>
                         <td style={{ ...invoiceCellStyle, fontWeight: 600 }}>{item.part_number}</td>
-                        <td style={invoiceCellStyle}>{item.main_part_number || "—"}</td>
                         <td style={{ ...invoiceCellStyle, color: "var(--text-secondary)" }}>{item.description}</td>
-                        <td style={invoiceCellStyle}>{item.bin_location || "—"}</td>
                         <td style={invoiceCellStyle}>
                           {item.retail_price ? currencyFormatter.format(item.retail_price) : "--"}
                         </td>
@@ -1434,7 +1429,6 @@ function GoodsInPage() {
                         <td style={invoiceCellStyle}>{item.surcharge || "--"}</td>
                         <td style={invoiceCellStyle}>{item.quantity}</td>
                         <td style={invoiceCellStyle}>{currencyFormatter.format(cost * qty || 0)}</td>
-                        <td style={invoiceCellStyle}>{item.claim_number || "--"}</td>
                         <td style={{ ...invoiceCellStyle, textAlign: "right" }}>
                           <button
                             style={{ ...dangerButtonStyle, opacity: removingItemId === item.id ? 0.6 : 1 }}
@@ -1467,23 +1461,24 @@ function GoodsInPage() {
           initialQuery={partForm.partNumber}
         />
       )}
-      {jobModalItem && (
+      {jobModalOpen && (
         <JobAssignmentModal
-          item={jobModalItem}
-          onClose={() => setJobModalItem(null)}
-          onAssigned={handleJobAssigned}
+          items={goodsInItems}
+          onClose={() => {
+            setJobModalOpen(false);
+            setCompletionPromptOpen(true);
+          }}
+          onAssigned={handleJobItemsAssigned}
+          onFinish={handleFinishGoodsIn}
         />
       )}
       {completionPromptOpen && (
         <CompletionPrompt
           goodsInNumber={goodsInRecord?.goods_in_number}
-          onClose={() => setCompletionPromptOpen(false)}
+          onClose={handleCompletionDismiss}
           onAddToJob={() => {
             setCompletionPromptOpen(false);
-            const firstUnassigned = goodsInItems.find((item) => !item.added_to_job);
-            if (firstUnassigned) {
-              setJobModalItem(firstUnassigned);
-            }
+            setJobModalOpen(true);
           }}
         />
       )}
@@ -1684,12 +1679,19 @@ function GoodsInPartSearchModal({ onClose, onSelect, initialQuery = "" }) {
   );
 }
 
-function JobAssignmentModal({ item, onClose, onAssigned }) {
+function JobAssignmentModal({ items, onClose, onAssigned, onFinish }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [jobResults, setJobResults] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [selectedItems, setSelectedItems] = useState(() => new Set());
+  const [submitting, setSubmitting] = useState(false);
+
+  const availableItems = useMemo(
+    () => items.filter((item) => !item.added_to_job),
+    [items]
+  );
 
   const searchJobs = useCallback(async (term, signal) => {
     try {
@@ -1733,78 +1735,107 @@ function JobAssignmentModal({ item, onClose, onAssigned }) {
       setError("Select a job row first");
       return;
     }
+    if (selectedItems.size === 0) {
+      setError("Select at least one part row");
+      return;
+    }
     try {
-      const response = await fetch(`/api/parts/goods-in/items/${item.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          addedToJob: true,
-          jobNumber: selectedJob.job_number,
-          jobId: selectedJob.id,
-          jobAllocationPayload: {
-            customer: selectedJob.customer,
-            description: selectedJob.description,
-            part: {
-              partNumber: item.part_number,
-              description: item.description,
-              costPrice: item.cost_price,
-              retailPrice: item.retail_price,
-              quantity: item.quantity,
-            },
-          },
-        }),
-      });
-      const payload = await response.json();
-      if (!response.ok || !payload?.success) {
-        throw new Error(payload?.message || "Unable to link part to job");
+      setSubmitting(true);
+      setError("");
+      const itemsToAssign = availableItems.filter((item) => selectedItems.has(item.id));
+      const results = await Promise.allSettled(
+        itemsToAssign.map(async (item) => {
+          const response = await fetch(`/api/parts/goods-in/items/${item.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              addedToJob: true,
+              jobNumber: selectedJob.job_number,
+              jobId: selectedJob.id,
+              jobAllocationPayload: {
+                customer: selectedJob.customer,
+                description: selectedJob.description,
+                part: {
+                  partNumber: item.part_number,
+                  description: item.description,
+                  costPrice: item.cost_price,
+                  retailPrice: item.retail_price,
+                  quantity: item.quantity,
+                },
+              },
+            }),
+          });
+          const payload = await response.json();
+          if (!response.ok || !payload?.success) {
+            throw new Error(payload?.message || "Unable to link part to job");
+          }
+          return payload.item;
+        })
+      );
+
+      const successful = results.filter((result) => result.status === "fulfilled").map((result) => result.value);
+      const failed = results.filter((result) => result.status === "rejected");
+
+      if (successful.length) {
+        onAssigned(successful);
+        setSelectedItems(new Set());
       }
-      onAssigned(payload.item);
+
+      if (failed.length) {
+        setError(failed[0].reason?.message || "Some parts could not be linked to the job");
+      }
     } catch (err) {
       console.error(err);
       setError(err.message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
     <div style={popupOverlayStyles}>
-      <div style={{ ...popupCardStyles, padding: "24px", maxWidth: "520px" }}>
+      <div style={{ ...popupCardStyles, padding: "24px", maxWidth: "720px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-          <h3 style={{ margin: 0 }}>Add {item.part_number} to a job</h3>
-          <button onClick={onClose} style={secondaryButtonStyle}>
-            Close
+          <h3 style={{ margin: 0 }}>Add goods-in parts to a job</h3>
+          <button onClick={onClose} style={secondaryButtonStyle} disabled={submitting}>
+            Cancel
           </button>
         </div>
-        <p style={{ marginTop: 0, color: "var(--text-secondary)" }}>{item.description}</p>
+        <p style={{ marginTop: 0, color: "var(--text-secondary)" }}>
+          Select one job and the parts to add. Part number, description, and quantity will be sent to the job.
+        </p>
         <label style={labelStyle}>Search job number or customer</label>
         <input
           style={inputStyle}
           value={searchTerm}
           onChange={(event) => setSearchTerm(event.target.value)}
           placeholder="e.g., GJ12345"
+          disabled={submitting}
         />
         {loading && <div style={{ marginTop: "8px" }}>Searching...</div>}
         {error && <div style={{ marginTop: "8px", color: "var(--danger)" }}>{error}</div>}
         <div style={{ maxHeight: "260px", overflowY: "auto", marginTop: "12px" }}>
           {jobResults.map((job) => {
             const isSelected = selectedJob?.id === job.id;
-            return (
-              <button
-                key={job.id}
-                style={{
-                  width: "100%",
-                  textAlign: "left",
+                  return (
+                    <button
+                      key={job.id}
+                      style={{
+                        width: "100%",
+                        textAlign: "left",
                   border: "1px solid var(--surface-light)",
                   borderRadius: "12px",
                   padding: "12px",
                   marginBottom: "8px",
                   cursor: "pointer",
                   background: isSelected ? "var(--surface-light)" : "transparent",
-                }}
-                onClick={() => {
-                  setSelectedJob(job);
-                  setError("");
-                }}
-              >
+                      }}
+                      onClick={() => {
+                        setSelectedJob(job);
+                        setError("");
+                      }}
+                      disabled={submitting}
+                    >
                 <div style={{ fontWeight: 600 }}>
                   {job.job_number} · {job.customer || "Unknown customer"}
                 </div>
@@ -1813,17 +1844,101 @@ function JobAssignmentModal({ item, onClose, onAssigned }) {
                   {job.vehicle_reg || "No reg"} · Updated {job.updated_at ? formatRelativeTime(job.updated_at) : "recently"}
                 </div>
               </button>
-            );
-          })}
+                );
+              })}
         </div>
         {selectedJob && (
           <div style={{ marginTop: "8px", fontSize: "0.9rem", color: "var(--text-secondary)" }}>
             Selected job: <strong>{selectedJob.job_number}</strong>
           </div>
         )}
-        <button style={{ ...primaryButtonStyle(false), marginTop: "16px", width: "100%" }} onClick={handleAssign}>
-          Link part to job
-        </button>
+        <div style={{ marginTop: "16px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <label style={labelStyle}>Select parts to add</label>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button
+                style={secondaryButtonStyle}
+                onClick={() => setSelectedItems(new Set(availableItems.map((item) => item.id)))}
+                disabled={availableItems.length === 0 || submitting}
+              >
+                Select all
+              </button>
+              <button
+                style={secondaryButtonStyle}
+                onClick={() => setSelectedItems(new Set())}
+                disabled={selectedItems.size === 0 || submitting}
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+          {availableItems.length === 0 ? (
+            <div style={{ marginTop: "12px", color: "var(--text-secondary)" }}>
+              All parts from this goods-in are already linked to a job.
+            </div>
+          ) : (
+            <div
+              style={{
+                marginTop: "12px",
+                border: "1px solid var(--surface-light)",
+                borderRadius: "12px",
+                overflow: "hidden",
+              }}
+            >
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead style={{ background: "var(--surface-light)" }}>
+                  <tr>
+                    <th style={{ ...invoiceHeaderCellStyle, width: "44px" }}></th>
+                    <th style={invoiceHeaderCellStyle}>Part number</th>
+                    <th style={invoiceHeaderCellStyle}>Description</th>
+                    <th style={invoiceHeaderCellStyle}>Qty</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {availableItems.map((item) => {
+                    const isSelected = selectedItems.has(item.id);
+                    return (
+                      <tr key={item.id} style={{ borderTop: "1px solid var(--surface-light)" }}>
+                        <td style={{ ...invoiceCellStyle, width: "44px" }}>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(event) => {
+                              const next = new Set(selectedItems);
+                              if (event.target.checked) {
+                                next.add(item.id);
+                              } else {
+                                next.delete(item.id);
+                              }
+                              setSelectedItems(next);
+                              setError("");
+                            }}
+                            disabled={submitting}
+                          />
+                        </td>
+                        <td style={{ ...invoiceCellStyle, fontWeight: 600 }}>{item.part_number}</td>
+                        <td style={{ ...invoiceCellStyle, color: "var(--text-secondary)" }}>{item.description}</td>
+                        <td style={invoiceCellStyle}>{item.quantity}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+        <div style={{ display: "flex", gap: "12px", marginTop: "16px", justifyContent: "flex-end" }}>
+          <button style={secondaryButtonStyle} onClick={onFinish} disabled={submitting}>
+            Finish
+          </button>
+          <button
+            style={primaryButtonStyle(submitting)}
+            onClick={handleAssign}
+            disabled={submitting || availableItems.length === 0}
+          >
+            {submitting ? "Adding..." : "Add selected to job"}
+          </button>
+        </div>
       </div>
     </div>
   );

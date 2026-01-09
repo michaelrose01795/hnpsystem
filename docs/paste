@@ -1,37 +1,17 @@
 TO DO:
 
-have it so if the check box is clicked  within the last column, and reset button is pressed this resets the status to either red or amber depending on what the row is, if its amber the row is removed from the authorised or declined section and added to the amber repeorts section, if its Red the row is removed from the authorised or declined section and added to the Red repeorts section. If complete is clicked with the check box sleected for that row, it turns all of the rows selected status to Complete, this Turnes the status circle to green with a tick in the middle.
 
-
-
-
-Remove the "Workshop Shortcuts Clocking" section from the sidebar.
-
-
-
-
+CHECKKKKKKKKKKKKKK
 Automate with parts in and parts on order, have it so when the part is goods in and added to the Parts booked to job section it auto dectects the part thought the part number, and changes the "here" button to "added" automatically. Also within the PArts added to job section inside the parts tab, remove the stage column, the status column will alwasys have added to job so keep this backend within the database not front end inside the table column so remove the coloum from the ui, inside the prepick column add a drop down which has all of the pre pick location inside them, make sure to use the dropdown style api however make the button for the drop down the same as style and size as the button for the data and time picker inside the "On Order" section, remove the Notes column. if the row is clicked it opens the part number stock amout which is linked to the stock catalogue. 
 
 
 
-Make sure when a number is entered within the Retail price inside the "parts/goods-in" page it auto calculated the price of the Cost price £30 cheaper. however if the cost price is entered first then then auto calculate the Retail price to £30 more. 
 
-
-
-
-Make sure the labour check box is only check automaticly when a number from 0 is entered manually into the field. Do not check the box if a part is added to the row. Make sure the parts columm check box is alway ticked when a part is linked to the row or "part not required" is selected within the "Parts identified" tab. 
-
-
-
-
-Remove the "Workshop Shortcuts Clocking" section from the sidebar.
-
-
-
+CHECKKKKKKKKKKK
 When the "Complete" button is pressed and the popup opnes and "Not now" is pressed take the user back to the "parts/goods-in" page with all of the data cleared from the fields. when "Add to job" button is pressed the next popup shows the "Part number" and "Pirelli P Zero, 235/40 R18 95Y XL" with quantity wanting to add to the job with job number, 1 or multiple rows of the parts can be selected to add to the job number at once, after 1 or all of the parts are added (doesnt matter how many) the cancel button which takes the user back to the "Goods in complete" popup is pressed or the finish button is pressed which saves the changes to the database, any parts which we not added to a job number we added to the stock catalog and the user is taken back to the "parts/goods-in" page with the fields empty. 
 
 
-
+CHECKKKKKKKKK
 When search in global for "goods in number" have it so it opens the page "/parts/goods-in/[GINnumber]" not "/parts/goods-in?goodsIn=GIN[number], this will take the users to a new page, inside this page build a invoice recreation with Supplier details at the top section, invoice lines in the middle, totals at the bottom, history section for where the parts were added once goods in was complete either to a job number or to stock, if to job number how many what invocie line and how many and the same with stock. 
 
 

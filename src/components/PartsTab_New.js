@@ -3,10 +3,7 @@
 import React, { useState, useCallback, useEffect, useMemo, forwardRef } from "react";
 import CalendarField from "@/components/calendarAPI/CalendarField";
 import TimePickerField from "@/components/timePickerAPI/TimePickerField";
-import {
-  mapPartStatusToPipelineId,
-  getPipelineStageMeta
-} from "@/lib/partsPipeline";
+import { DropdownField } from "@/components/dropdownAPI";
 
 // Helper functions (keep existing)
 const normalizePartStatus = (status = "") => {
@@ -19,9 +16,6 @@ const normalizePartStatus = (status = "") => {
   return "pending";
 };
 
-const formatStatusLabel = (status) =>
-  status ? status.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()) : "Unknown";
-
 const moneyFormatter = new Intl.NumberFormat("en-GB", {
   style: "currency",
   currency: "GBP",
@@ -33,6 +27,21 @@ const formatMoney = (value) => {
   if (Number.isNaN(amount)) return "—";
   return moneyFormatter.format(amount);
 };
+
+const PRE_PICK_OPTIONS = [
+  { value: "", label: "Not assigned" },
+  { value: "service_rack_1", label: "Service Rack 1" },
+  { value: "service_rack_2", label: "Service Rack 2" },
+  { value: "service_rack_3", label: "Service Rack 3" },
+  { value: "service_rack_4", label: "Service Rack 4" },
+  { value: "sales_rack_1", label: "Sales Rack 1" },
+  { value: "sales_rack_2", label: "Sales Rack 2" },
+  { value: "sales_rack_3", label: "Sales Rack 3" },
+  { value: "sales_rack_4", label: "Sales Rack 4" },
+  { value: "stairs_pre_pick", label: "Stairs Pre-Pick" },
+  { value: "no_pick", label: "No Pick" },
+  { value: "on_order", label: "On Order" },
+];
 
 const PartsTabNew = forwardRef(function PartsTabNew(
   { jobData, canEdit, onRefreshJob, actingUserId, actingUserNumericId, invoiceReady },
@@ -93,6 +102,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       eta_date: item.eta_date || item.etaDate || null,
       eta_time: item.eta_time || item.etaTime || null,
       supplier_reference: item.supplier_reference || item.supplierReference || null,
+      prePickLocation: item.pre_pick_location || item.prePickLocation || null,
       part: item.part,
     }));
 
@@ -118,6 +128,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         eta_date: item.eta_date || null,
         eta_time: item.eta_time || null,
         supplier_reference: item.supplier_reference || null,
+        prePickLocation: item.pre_pick_location || item.prePickLocation || null,
         part: item.part,
       }));
 
@@ -470,6 +481,43 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     selectedCatalogPart,
   ]);
 
+  const handleUpdatePrePickLocation = useCallback(
+    async (part, location) => {
+      if (!canEdit || !part?.id || part.source === "goods-in") return;
+
+      try {
+        const response = await fetch("/api/parts/update-status", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            partItemId: part.id,
+            prePickLocation: location || null,
+          }),
+        });
+
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          throw new Error(data.message || "Failed to update pre-pick location");
+        }
+
+        if (typeof onRefreshJob === "function") {
+          onRefreshJob();
+        }
+      } catch (error) {
+        console.error("Failed to update pre-pick location:", error);
+        alert(`Error: ${error.message}`);
+      }
+    },
+    [canEdit, onRefreshJob]
+  );
+
+  const openStockCatalogue = useCallback((partNumber) => {
+    if (!partNumber || partNumber === "N/A") return;
+    if (typeof window === "undefined") return;
+    const encoded = encodeURIComponent(partNumber);
+    window.open(`/stock-catalogue?partNumber=${encoded}`, "_blank", "noopener");
+  }, []);
+
   // Get unallocated parts
   const unallocatedParts = jobParts.filter((part) => !part.allocatedToRequestId);
   const leftPanelParts = [...unallocatedParts, ...goodsInParts];
@@ -538,7 +586,8 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       <style>{`
         /* Make compact calendar and time picker controls smaller */
         .compact-input .calendar-api__control,
-        .compact-input .timepicker-api__control {
+        .compact-input .timepicker-api__control,
+        .compact-input .dropdown-api__control {
           padding: 2px 6px !important;
           font-size: 10px !important;
           min-height: auto !important;
@@ -547,13 +596,15 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         }
 
         .compact-input .calendar-api__icon,
-        .compact-input .timepicker-api__icon {
+        .compact-input .timepicker-api__icon,
+        .compact-input .dropdown-api__chevron {
           width: 12px !important;
           height: 12px !important;
         }
 
         .compact-input .calendar-api__value,
-        .compact-input .timepicker-api__value {
+        .compact-input .timepicker-api__value,
+        .compact-input .dropdown-api__value {
           font-size: 10px !important;
         }
 
@@ -916,18 +967,13 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                     <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
                       <th style={{ textAlign: "left", padding: "8px" }}>Part</th>
                       <th style={{ textAlign: "right", padding: "8px" }}>Qty</th>
-                      <th style={{ textAlign: "left", padding: "8px" }}>Stage</th>
-                      <th style={{ textAlign: "left", padding: "8px" }}>Status</th>
                       <th style={{ textAlign: "left", padding: "8px" }}>Pre-pick</th>
-                      <th style={{ textAlign: "left", padding: "8px" }}>Notes</th>
                     </tr>
                   </thead>
                   <tbody>
                     {leftPanelParts.map((part) => {
                       const isAllocatable = part.source !== "goods-in" && invoiceReady;
                       const isSelected = selectedPartIds.includes(part.id);
-                      const stageId = mapPartStatusToPipelineId(part.status);
-                      const stageMeta = getPipelineStageMeta(stageId);
 
                       return (
                         <tr
@@ -936,6 +982,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             if (isAllocatable) {
                               togglePartSelection(part.id);
                             }
+                            openStockCatalogue(part.partNumber || part.part_number);
                           }}
                           style={{
                             background: isSelected ? "var(--info-surface)" : "transparent",
@@ -959,41 +1006,21 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             {part.quantity}
                           </td>
 
-                          {/* Stage Column */}
-                          <td style={{ padding: "8px", verticalAlign: "top" }}>
-                            <span style={{
-                              display: "inline-flex",
-                              padding: "4px 10px",
-                              borderRadius: "999px",
-                              fontSize: "0.75rem",
-                              fontWeight: 600,
-                              backgroundColor: "var(--surface-light)",
-                              color: "var(--danger)",
-                            }}>
-                              {stageMeta.label}
-                            </span>
-                            <div style={{
-                              fontSize: "0.7rem",
-                              color: "var(--grey-accent-dark)",
-                              marginTop: "4px"
-                            }}>
-                              {stageMeta.description}
-                            </div>
-                          </td>
-
-                          {/* Status Column */}
-                          <td style={{ padding: "8px", verticalAlign: "top" }}>
-                            {formatStatusLabel(part.status)}
-                          </td>
-
                           {/* Pre-pick Column */}
-                          <td style={{ padding: "8px", verticalAlign: "top" }}>
-                            {part.prePickLocation || part.pre_pick_location || "—"}
-                          </td>
-
-                          {/* Notes Column */}
-                          <td style={{ padding: "8px", fontSize: "0.9rem", verticalAlign: "top" }}>
-                            {part.requestNotes || part.request_notes || part.notes || "—"}
+                          <td
+                            style={{ padding: "8px", verticalAlign: "top" }}
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            <DropdownField
+                              options={PRE_PICK_OPTIONS}
+                              value={part.prePickLocation || part.pre_pick_location || ""}
+                              onChange={(event) =>
+                                handleUpdatePrePickLocation(part, event.target.value)
+                              }
+                              disabled={!canEdit || part.source === "goods-in"}
+                              size="sm"
+                              className="compact-input"
+                            />
                           </td>
                         </tr>
                       );

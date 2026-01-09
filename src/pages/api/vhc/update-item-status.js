@@ -10,6 +10,7 @@ export default async function handler(req, res) {
     const {
       vhcItemId,
       approvalStatus,
+      displayStatus,
       labourHours,
       partsCost,
       totalOverride,
@@ -26,26 +27,28 @@ export default async function handler(req, res) {
     const updateData = {};
 
     if (approvalStatus !== undefined) {
-      if (!['pending', 'authorized', 'declined'].includes(approvalStatus)) {
+      if (!['pending', 'authorized', 'declined', 'completed'].includes(approvalStatus)) {
         return res.status(400).json({
           success: false,
-          message: "approvalStatus must be 'pending', 'authorized', or 'declined'"
+          message: "approvalStatus must be 'pending', 'authorized', 'declined', or 'completed'"
         });
       }
       updateData.approval_status = approvalStatus;
 
-      // Set display_status to match approval_status when authorized or declined
-      // This makes items move to Authorised or Declined sections
-      if (approvalStatus === 'authorized') {
+      // Use displayStatus from request if provided, otherwise set based on approvalStatus
+      if (displayStatus !== undefined) {
+        updateData.display_status = displayStatus;
+      } else if (approvalStatus === 'authorized') {
         updateData.display_status = 'authorized';
       } else if (approvalStatus === 'declined') {
         updateData.display_status = 'declined';
+      } else if (approvalStatus === 'completed') {
+        updateData.display_status = 'completed';
       }
-      // If returning to pending, display_status will stay as original severity (red/amber/green)
-      // unless we also need to reset it - we'll handle this in the UI
+      // If returning to pending, displayStatus should be passed from UI to restore original severity
 
-      // Set approved_at and approved_by when status changes to authorized or declined
-      if (approvalStatus === 'authorized' || approvalStatus === 'declined') {
+      // Set approved_at and approved_by when status changes to authorized, declined, or completed
+      if (approvalStatus === 'authorized' || approvalStatus === 'declined' || approvalStatus === 'completed') {
         updateData.approved_at = new Date().toISOString();
         if (approvedBy) {
           updateData.approved_by = approvedBy;

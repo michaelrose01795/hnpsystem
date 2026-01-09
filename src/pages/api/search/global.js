@@ -339,7 +339,7 @@ export default async function handler(req, res) {
         invoiceNumber: record.invoice_number || "",
         title: goodsInNumber ? `Goods In ${goodsInNumber}` : "Goods In Receipt",
         subtitle: subtitleParts.join(" • "),
-        href: `/parts/goods-in?goodsIn=${encodeURIComponent(goodsInQuery)}`,
+        href: `/parts/goods-in/${encodeURIComponent(goodsInQuery)}`,
       });
     });
 
