@@ -1091,6 +1091,13 @@ body:has(.login-page-wrapper) {
   border-radius: 20px;
 }
 
+.calendar-api.compact-picker .calendar-api__control {
+  padding: 10px 12px !important;
+  border-radius: 10px !important;
+  background: var(--surface-light) !important;
+  font-size: 14px !important;
+}
+
 .calendar-api__control:hover:not(:disabled) {
   border-color: var(--primary);
   background: rgba(var(--surface-rgb), 0.95);
@@ -1374,6 +1381,13 @@ body:has(.login-page-wrapper) {
   padding: 10px 14px;
   font-size: 0.9rem;
   border-radius: 20px;
+}
+
+.timepicker-api.compact-picker .timepicker-api__control {
+  padding: 10px 12px !important;
+  border-radius: 10px !important;
+  background: var(--surface-light) !important;
+  font-size: 14px !important;
 }
 
 .timepicker-api__control:hover:not(:disabled) {

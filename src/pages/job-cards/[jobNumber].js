@@ -2848,6 +2848,41 @@ function SchedulingTab({
     ? new Date(bookingRequest.estimatedCompletion).toLocaleString()
     : null;
 
+  const cardStyle = {
+    padding: "20px",
+    backgroundColor: "var(--surface)",
+    borderRadius: "16px",
+    border: "1px solid var(--border)",
+    boxShadow: "0 10px 24px rgba(0, 0, 0, 0.06)"
+  };
+  const cardTitleStyle = {
+    margin: 0,
+    fontSize: "16px",
+    fontWeight: "600",
+    color: "var(--text-primary)"
+  };
+  const cardSubtitleStyle = {
+    margin: "4px 0 0 0",
+    color: "var(--text-secondary)",
+    fontSize: "13px"
+  };
+  const fieldLabelStyle = {
+    fontSize: "12px",
+    fontWeight: "600",
+    color: "var(--text-secondary)",
+    display: "block",
+    marginBottom: "6px"
+  };
+  const inputStyle = {
+    width: "100%",
+    padding: "10px 12px",
+    borderRadius: "10px",
+    border: "1px solid var(--border)",
+    fontSize: "14px",
+    backgroundColor: "var(--surface-light)",
+    color: "var(--text-primary)"
+  };
+
   return (
     <div>
       <h2
@@ -2861,113 +2896,90 @@ function SchedulingTab({
         Scheduling Information
       </h2>
 
-      <div
-        style={{
-          padding: "20px",
-          backgroundColor: "var(--surface)",
-          borderRadius: "12px",
-          border: "1px solid var(--accent-purple-surface)",
-          marginBottom: "24px",
-          boxShadow: "none"
-        }}
-      >
-        <div style={{ marginBottom: "16px" }}>
-          <h3
-            style={{
-              margin: 0,
-              fontSize: "16px",
-              fontWeight: "600",
-              color: "var(--accent-purple)"
-            }}
-          >
-            Customer Booking
-          </h3>
-          <p style={{ margin: "4px 0 0 0", color: "var(--info)", fontSize: "13px" }}>
-            Select the stored vehicle, confirm details, and capture the customer
-            request so the team can approve it.
-          </p>
-        </div>
+      <div style={{ display: "grid", gap: "20px" }}>
+        <div style={cardStyle}>
+          <div style={{ marginBottom: "16px" }}>
+            <h3 style={cardTitleStyle}>Customer Booking</h3>
+          </div>
 
-        <div>
-          <label
-            style={{
-              fontSize: "12px",
-              fontWeight: "600",
-              color: "var(--info)",
-              display: "block",
-              marginBottom: "6px"
-            }}
-          >
-            Vehicle
-          </label>
-          {customerVehiclesLoading ? (
-            <div style={{ fontSize: "13px", color: "var(--info)", padding: "8px 0" }}>
-              Loading stored vehicles...
-            </div>
-          ) : vehicleOptions.length > 0 ? (
-            <>
-              <select
-                value={selectedVehicleIdValue}
-                onChange={(event) => handleVehicleChange(event.target.value)}
-                disabled={!canEdit}
+          <div>
+            <label style={fieldLabelStyle}>Vehicle</label>
+            {customerVehiclesLoading ? (
+              <div
                 style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  borderRadius: "8px",
-                  border: "1px solid var(--info)",
-                  fontSize: "14px",
-                  marginBottom: "10px"
+                  fontSize: "13px",
+                  color: "var(--text-secondary)",
+                  padding: "8px 0"
                 }}
               >
-                <option value="" disabled>
-                  Select stored vehicle
-                </option>
-                {vehicleOptions.map((vehicle) => (
-                  <option key={vehicle.vehicle_id} value={vehicle.vehicle_id}>
-                    {`${vehicle.registration || vehicle.reg_number || "Vehicle"} · ${
-                      vehicle.make_model ||
-                      [vehicle.make, vehicle.model].filter(Boolean).join(" ")
-                    }`}
-                  </option>
-                ))}
-              </select>
-              {selectedVehicle && (
-                <div
+                Loading stored vehicles...
+              </div>
+            ) : vehicleOptions.length > 0 ? (
+              <>
+                <select
+                  value={selectedVehicleIdValue}
+                  onChange={(event) => handleVehicleChange(event.target.value)}
+                  disabled={!canEdit}
                   style={{
-                    padding: "12px",
-                    backgroundColor: "var(--info-surface)",
-                    border: "1px solid var(--accent-purple-surface)",
-                    borderRadius: "10px",
-                    fontSize: "13px",
-                    color: "var(--info-dark)"
+                    ...inputStyle,
+                    marginBottom: "10px"
                   }}
                 >
-                  <div style={{ fontWeight: "600", color: "var(--primary)" }}>
-                    {selectedVehicle.registration || selectedVehicle.reg_number}
+                  <option value="" disabled>
+                    Select stored vehicle
+                  </option>
+                  {vehicleOptions.map((vehicle) => (
+                    <option key={vehicle.vehicle_id} value={vehicle.vehicle_id}>
+                      {`${vehicle.registration || vehicle.reg_number || "Vehicle"} · ${
+                        vehicle.make_model ||
+                        [vehicle.make, vehicle.model].filter(Boolean).join(" ")
+                      }`}
+                    </option>
+                  ))}
+                </select>
+                {selectedVehicle && (
+                  <div
+                    style={{
+                      padding: "12px",
+                      backgroundColor: "var(--surface-light)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "10px",
+                      fontSize: "13px",
+                      color: "var(--text-secondary)"
+                    }}
+                  >
+                    <div style={{ fontWeight: "600", color: "var(--text-primary)" }}>
+                      {selectedVehicle.registration || selectedVehicle.reg_number}
+                    </div>
+                    <div>
+                      {selectedVehicle.make_model ||
+                        [selectedVehicle.make, selectedVehicle.model]
+                          .filter(Boolean)
+                          .join(" ")}
+                    </div>
                   </div>
-                  <div>
-                    {selectedVehicle.make_model ||
-                      [selectedVehicle.make, selectedVehicle.model]
-                        .filter(Boolean)
-                        .join(" ")}
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
-            <div style={{ fontSize: "13px", color: "var(--danger)", padding: "8px 0" }}>
-              No stored vehicles found for this customer.
-            </div>
-          )}
-        </div>
+                )}
+              </>
+            ) : (
+              <div
+                style={{ fontSize: "13px", color: "var(--danger)", padding: "8px 0" }}
+              >
+                No stored vehicles found for this customer.
+              </div>
+            )}
+          </div>
 
         <div
           style={{
             marginTop: "16px",
             padding: "12px",
             borderRadius: "10px",
-            border: `1px solid ${confirmCustomerDetails ? "var(--info)" : "var(--warning)"}`,
-            backgroundColor: confirmCustomerDetails ? "var(--success-surface)" : "var(--warning-surface)"
+            border: `1px solid ${
+              confirmCustomerDetails ? "var(--success)" : "var(--warning)"
+            }`,
+            backgroundColor: confirmCustomerDetails
+              ? "var(--success-surface)"
+              : "var(--warning-surface)"
           }}
         >
           <label
@@ -2976,7 +2988,7 @@ function SchedulingTab({
               gap: "10px",
               alignItems: "center",
               fontSize: "13px",
-              color: "var(--info-dark)"
+              color: "var(--text-primary)"
             }}
           >
             <input
@@ -2998,7 +3010,7 @@ function SchedulingTab({
             style={{
               fontSize: "13px",
               fontWeight: "600",
-              color: "var(--info-dark)",
+              color: "var(--text-primary)",
               marginBottom: "8px"
             }}
           >
@@ -3019,9 +3031,13 @@ function SchedulingTab({
                     minWidth: "140px",
                     padding: "12px 16px",
                     borderRadius: "10px",
-                    border: isActive ? "2px solid var(--primary)" : "2px solid var(--primary)",
-                    backgroundColor: isActive ? "var(--primary)" : "var(--grey-accent)",
-                    color: "white",
+                    border: isActive
+                      ? "2px solid var(--primary)"
+                      : "1px solid var(--border)",
+                    backgroundColor: isActive
+                      ? "var(--primary)"
+                      : "var(--surface-light)",
+                    color: isActive ? "var(--text-inverse)" : "var(--text-primary)",
                     fontWeight: "600",
                     cursor: canEdit ? "pointer" : "default",
                     transition: "all 0.2s"
@@ -3035,17 +3051,7 @@ function SchedulingTab({
         </div>
 
         <div style={{ marginTop: "16px" }}>
-          <label
-            style={{
-              fontSize: "12px",
-              fontWeight: "600",
-              color: "var(--info)",
-              display: "block",
-              marginBottom: "6px"
-            }}
-          >
-            Booking Description
-          </label>
+          <label style={fieldLabelStyle}>Booking Description</label>
           <textarea
             value={bookingDescription}
             onChange={(event) =>
@@ -3054,16 +3060,13 @@ function SchedulingTab({
             rows={4}
             disabled={!canEdit}
             style={{
-              width: "100%",
+              ...inputStyle,
               padding: "12px",
-              borderRadius: "10px",
-              border: "1px solid var(--info)",
-              fontSize: "14px",
               resize: "vertical"
             }}
             placeholder="- Customer waiting for vehicle\n- Loan car requested"
           />
-          <p style={{ marginTop: "6px", fontSize: "12px", color: "var(--info)" }}>
+          <p style={{ marginTop: "6px", fontSize: "12px", color: "var(--text-secondary)" }}>
             Each new line automatically starts with "- " to maintain the booking
             checklist format.
           </p>
@@ -3083,8 +3086,10 @@ function SchedulingTab({
             disabled={bookingButtonDisabled || vehicleOptions.length === 0}
             style={{
               padding: "10px 20px",
-              backgroundColor: bookingButtonDisabled ? "var(--info)" : "var(--accent-purple)",
-              color: "white",
+              backgroundColor: bookingButtonDisabled
+                ? "var(--grey-accent)"
+                : "var(--primary)",
+              color: "var(--text-inverse)",
               border: "none",
               borderRadius: "8px",
               cursor: bookingButtonDisabled ? "not-allowed" : "pointer",
@@ -3105,34 +3110,16 @@ function SchedulingTab({
             </span>
           )}
         </div>
-      </div>
-
-      <div
-        style={{
-          padding: "20px",
-          backgroundColor: "var(--surface)",
-          borderRadius: "12px",
-          border: "1px solid var(--accent-purple-surface)",
-          marginBottom: "24px",
-          boxShadow: "none"
-        }}
-      >
-        <div style={{ marginBottom: "16px" }}>
-          <h3
-            style={{
-              margin: 0,
-              fontSize: "16px",
-              fontWeight: "600",
-              color: "var(--accent-purple)"
-            }}
-          >
-            Booking Approval & Confirmation
-          </h3>
-          <p style={{ margin: "4px 0 0 0", color: "var(--info)", fontSize: "13px" }}>
-            Review the booking request, capture workshop commitments, and send the
-            confirmation email.
-          </p>
         </div>
+
+        <div style={cardStyle}>
+          <div style={{ marginBottom: "16px" }}>
+            <h3 style={cardTitleStyle}>Booking Approval & Confirmation</h3>
+            <p style={cardSubtitleStyle}>
+              Review the booking request, capture workshop commitments, and send the
+              confirmation email.
+            </p>
+          </div>
 
         {bookingRequest ? (
           <>
@@ -3157,7 +3144,7 @@ function SchedulingTab({
               >
                 {bookingStatus === "approved" ? "Approved" : "Awaiting Approval"}
               </span>
-              <span style={{ fontSize: "13px", color: "var(--info)" }}>
+              <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
                 Waiting status: {bookingRequest.waitingStatus || "Neither"}
               </span>
             </div>
@@ -3168,15 +3155,15 @@ function SchedulingTab({
                   marginBottom: "16px",
                   padding: "12px",
                   borderRadius: "10px",
-                  border: "1px solid var(--accent-purple-surface)",
-                  backgroundColor: "var(--info-surface)"
+                  border: "1px solid var(--border)",
+                  backgroundColor: "var(--surface-light)"
                 }}
               >
                 <div
                   style={{
                     fontSize: "13px",
                     fontWeight: "600",
-                    color: "var(--info-dark)",
+                    color: "var(--text-primary)",
                     marginBottom: "8px"
                   }}
                 >
@@ -3186,7 +3173,7 @@ function SchedulingTab({
                   style={{
                     margin: 0,
                     paddingLeft: "18px",
-                    color: "var(--info-dark)",
+                    color: "var(--text-secondary)",
                     fontSize: "13px"
                   }}
                 >
@@ -3209,17 +3196,17 @@ function SchedulingTab({
                 style={{
                   padding: "12px",
                   borderRadius: "10px",
-                  border: "1px solid var(--accent-purple-surface)",
-                  backgroundColor: "var(--info-surface)"
+                  border: "1px solid var(--border)",
+                  backgroundColor: "var(--surface-light)"
                 }}
               >
-                <p style={{ margin: "0 0 4px 0", color: "var(--info)", fontSize: "12px" }}>
+                <p style={{ margin: "0 0 4px 0", color: "var(--text-secondary)", fontSize: "12px" }}>
                   Submitted
                 </p>
-                <p style={{ margin: 0, fontSize: "14px", color: "var(--accent-purple)" }}>
+                <p style={{ margin: 0, fontSize: "14px", color: "var(--text-primary)" }}>
                   {submittedAt}
                 </p>
-                <p style={{ margin: 0, fontSize: "12px", color: "var(--info)" }}>
+                <p style={{ margin: 0, fontSize: "12px", color: "var(--text-secondary)" }}>
                   {bookingRequest.submittedByName || "Customer Portal"}
                 </p>
               </div>
@@ -3227,18 +3214,18 @@ function SchedulingTab({
                 style={{
                   padding: "12px",
                   borderRadius: "10px",
-                  border: "1px solid var(--accent-purple-surface)",
-                  backgroundColor: "var(--info-surface)"
+                  border: "1px solid var(--border)",
+                  backgroundColor: "var(--surface-light)"
                 }}
               >
-                <p style={{ margin: "0 0 4px 0", color: "var(--info)", fontSize: "12px" }}>
+                <p style={{ margin: "0 0 4px 0", color: "var(--text-secondary)", fontSize: "12px" }}>
                   Approved
                 </p>
-                <p style={{ margin: 0, fontSize: "14px", color: "var(--accent-purple)" }}>
+                <p style={{ margin: 0, fontSize: "14px", color: "var(--text-primary)" }}>
                   {approvedAt || "Not yet approved"}
                 </p>
                 {bookingRequest.approvedByName && (
-                  <p style={{ margin: 0, fontSize: "12px", color: "var(--info)" }}>
+                  <p style={{ margin: 0, fontSize: "12px", color: "var(--text-secondary)" }}>
                     {bookingRequest.approvedByName}
                   </p>
                 )}
@@ -3247,18 +3234,18 @@ function SchedulingTab({
                 style={{
                   padding: "12px",
                   borderRadius: "10px",
-                  border: "1px solid var(--accent-purple-surface)",
-                  backgroundColor: "var(--info-surface)"
+                  border: "1px solid var(--border)",
+                  backgroundColor: "var(--surface-light)"
                 }}
               >
-                <p style={{ margin: "0 0 4px 0", color: "var(--info)", fontSize: "12px" }}>
+                <p style={{ margin: "0 0 4px 0", color: "var(--text-secondary)", fontSize: "12px" }}>
                   Estimated Completion
                 </p>
-                <p style={{ margin: 0, fontSize: "14px", color: "var(--accent-purple)" }}>
+                <p style={{ margin: 0, fontSize: "14px", color: "var(--text-primary)" }}>
                   {etaDisplay || "Not scheduled"}
                 </p>
                 {bookingRequest.priceEstimate && (
-                  <p style={{ margin: 0, fontSize: "12px", color: "var(--info)" }}>
+                  <p style={{ margin: 0, fontSize: "12px", color: "var(--text-secondary)" }}>
                     Estimate: £{Number(bookingRequest.priceEstimate).toFixed(2)}
                   </p>
                 )}
@@ -3271,7 +3258,7 @@ function SchedulingTab({
                   marginBottom: "16px",
                   padding: "12px",
                   borderRadius: "10px",
-                  border: "1px solid var(--accent-purple-surface)",
+                  border: "1px solid var(--border)",
                   backgroundColor: "var(--warning-surface)",
                   color: "var(--danger-dark)",
                   fontSize: "13px"
@@ -3290,7 +3277,7 @@ function SchedulingTab({
                   marginBottom: "16px",
                   padding: "12px",
                   borderRadius: "10px",
-                  border: "1px solid var(--accent-purple-surface)",
+                  border: "1px solid var(--border)",
                   backgroundColor: "var(--success-surface)",
                   color: "var(--success-dark)",
                   fontSize: "13px"
@@ -3308,7 +3295,7 @@ function SchedulingTab({
                 style={{
                   marginTop: "12px",
                   paddingTop: "16px",
-                  borderTop: "1px solid var(--accent-purple-surface)"
+                  borderTop: "1px solid var(--border)"
                 }}
               >
                 <div
@@ -3321,17 +3308,7 @@ function SchedulingTab({
                   }}
                 >
                   <div>
-                    <label
-                      style={{
-                        fontSize: "12px",
-                        fontWeight: "600",
-                        color: "var(--info)",
-                        display: "block",
-                        marginBottom: "6px"
-                      }}
-                    >
-                      Price Estimate (£)
-                    </label>
+                    <label style={fieldLabelStyle}>Price Estimate (£)</label>
                     <input
                       type="number"
                       min="0"
@@ -3343,13 +3320,7 @@ function SchedulingTab({
                           event.target.value
                         )
                       }
-                      style={{
-                        width: "100%",
-                        padding: "10px 12px",
-                        borderRadius: "8px",
-                        border: "1px solid var(--info)",
-                        fontSize: "14px"
-                      }}
+                      style={inputStyle}
                     />
                   </div>
                   <div>
@@ -3359,6 +3330,7 @@ function SchedulingTab({
                       onChange={(event) =>
                         handleApprovalFieldChange("etaDate", event.target.value)
                       }
+                      className="compact-picker"
                     />
                   </div>
                   <div>
@@ -3368,29 +3340,16 @@ function SchedulingTab({
                       onChange={(event) =>
                         handleApprovalFieldChange("etaTime", event.target.value)
                       }
+                      className="compact-picker"
                       style={{
-                        width: "100%",
-                        padding: "10px 12px",
-                        borderRadius: "8px",
-                        border: "1px solid var(--info)",
-                        fontSize: "14px"
+                        ...inputStyle
                       }}
                     />
                   </div>
                 </div>
 
                 <div style={{ marginBottom: "12px" }}>
-                  <label
-                    style={{
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      color: "var(--info)",
-                      display: "block",
-                      marginBottom: "6px"
-                    }}
-                  >
-                    Loan Car Details
-                  </label>
+                  <label style={fieldLabelStyle}>Loan Car Details</label>
                   <textarea
                     value={approvalForm.loanCarDetails}
                     onChange={(event) =>
@@ -3401,11 +3360,8 @@ function SchedulingTab({
                     }
                     rows={2}
                     style={{
-                      width: "100%",
+                      ...inputStyle,
                       padding: "12px",
-                      borderRadius: "10px",
-                      border: "1px solid var(--info)",
-                      fontSize: "14px",
                       resize: "vertical"
                     }}
                     placeholder="Confirmed courtesy car, fuel policy, insurance details..."
@@ -3413,17 +3369,7 @@ function SchedulingTab({
                 </div>
 
                 <div style={{ marginBottom: "12px" }}>
-                  <label
-                    style={{
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      color: "var(--info)",
-                      display: "block",
-                      marginBottom: "6px"
-                    }}
-                  >
-                    Confirmation Message
-                  </label>
+                  <label style={fieldLabelStyle}>Confirmation Message</label>
                   <textarea
                     value={approvalForm.confirmationMessage}
                     onChange={(event) =>
@@ -3434,11 +3380,8 @@ function SchedulingTab({
                     }
                     rows={3}
                     style={{
-                      width: "100%",
+                      ...inputStyle,
                       padding: "12px",
-                      borderRadius: "10px",
-                      border: "1px solid var(--info)",
-                      fontSize: "14px",
                       resize: "vertical"
                     }}
                     placeholder="Optional note to include in the confirmation email."
@@ -3459,9 +3402,9 @@ function SchedulingTab({
                     style={{
                       padding: "10px 20px",
                       backgroundColor: approvalButtonDisabled
-                        ? "var(--info)"
-                        : "var(--info)",
-                      color: "white",
+                        ? "var(--grey-accent)"
+                        : "var(--primary)",
+                      color: "var(--text-inverse)",
                       border: "none",
                       borderRadius: "8px",
                       cursor: approvalButtonDisabled
@@ -3483,62 +3426,45 @@ function SchedulingTab({
             )}
           </>
         ) : (
-          <p style={{ color: "var(--info)", fontSize: "13px", margin: 0 }}>
+          <p style={{ color: "var(--text-secondary)", fontSize: "13px", margin: 0 }}>
             Save the booking details above to generate a request that can be
             approved.
           </p>
         )}
       </div>
-
-      <div
-        style={{
-          padding: "20px",
-          backgroundColor: "var(--surface)",
-          borderRadius: "12px",
-          border: "1px solid var(--accent-purple-surface)",
-          marginBottom: "24px",
-          boxShadow: "none"
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "16px"
-          }}
-        >
-          <div>
-            <h3
-              style={{
-                margin: 0,
-                fontSize: "16px",
-                fontWeight: "600",
-                color: "var(--accent-purple)"
-              }}
-            >
-              Appointment Information
-            </h3>
-            <p style={{ margin: "4px 0 0 0", color: "var(--info)", fontSize: "13px" }}>
-              Adjust booking times directly from the job card
-            </p>
-          </div>
-          <button
-            onClick={() => router.push(`/appointments?job=${jobData.jobNumber}`)}
+        <div style={cardStyle}>
+          <div
             style={{
-              padding: "8px 14px",
-              borderRadius: "8px",
-              border: "1px solid var(--info)",
-              backgroundColor: "var(--info-surface)",
-              color: "var(--accent-purple)",
-              fontSize: "13px",
-              fontWeight: "600",
-              cursor: "pointer"
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "16px",
+              flexWrap: "wrap",
+              gap: "12px"
             }}
           >
-            Open Appointment Calendar
-          </button>
-        </div>
+            <div>
+              <h3 style={cardTitleStyle}>Appointment Information</h3>
+              <p style={cardSubtitleStyle}>
+                Adjust booking times directly from the job card
+              </p>
+            </div>
+            <button
+              onClick={() => router.push(`/appointments?job=${jobData.jobNumber}`)}
+              style={{
+                padding: "8px 14px",
+                borderRadius: "8px",
+                border: "1px solid var(--border)",
+                backgroundColor: "var(--surface-light)",
+                color: "var(--text-primary)",
+                fontSize: "13px",
+                fontWeight: "600",
+                cursor: "pointer"
+              }}
+            >
+              Open Appointment Calendar
+            </button>
+          </div>
 
         <div
           style={{
@@ -3555,6 +3481,7 @@ function SchedulingTab({
                 handleAppointmentFieldChange("date", event.target.value)
               }
               disabled={!canEdit || appointmentSaving}
+              className="compact-picker"
             />
           </div>
           <div>
@@ -3565,40 +3492,21 @@ function SchedulingTab({
                 handleAppointmentFieldChange("time", event.target.value)
               }
               disabled={!canEdit || appointmentSaving}
+              className="compact-picker"
               style={{
-                width: "100%",
-                padding: "10px 12px",
-                borderRadius: "8px",
-                border: "1px solid var(--info)",
-                fontSize: "14px"
+                ...inputStyle
               }}
             />
           </div>
           <div>
-            <label
-              style={{
-                fontSize: "12px",
-                fontWeight: "600",
-                color: "var(--info)",
-                display: "block",
-                marginBottom: "6px"
-              }}
-            >
-              Status
-            </label>
+            <label style={fieldLabelStyle}>Status</label>
             <select
               value={appointmentForm.status}
               onChange={(event) =>
                 handleAppointmentFieldChange("status", event.target.value)
               }
               disabled={!canEdit || appointmentSaving}
-              style={{
-                width: "100%",
-                padding: "10px 12px",
-                borderRadius: "8px",
-                border: "1px solid var(--info)",
-                fontSize: "14px"
-              }}
+              style={inputStyle}
             >
               <option value="booked">Booked</option>
               <option value="confirmed">Confirmed</option>
@@ -3610,17 +3518,7 @@ function SchedulingTab({
         </div>
 
         <div style={{ marginTop: "16px" }}>
-          <label
-            style={{
-              fontSize: "12px",
-              fontWeight: "600",
-              color: "var(--info)",
-              display: "block",
-              marginBottom: "6px"
-            }}
-          >
-            Notes
-          </label>
+          <label style={fieldLabelStyle}>Notes</label>
           <textarea
             value={appointmentForm.notes}
             onChange={(event) =>
@@ -3629,11 +3527,8 @@ function SchedulingTab({
             rows={3}
             disabled={!canEdit || appointmentSaving}
             style={{
-              width: "100%",
+              ...inputStyle,
               padding: "12px",
-              borderRadius: "10px",
-              border: "1px solid var(--info)",
-              fontSize: "14px",
               resize: "vertical"
             }}
           />
@@ -3653,8 +3548,10 @@ function SchedulingTab({
               disabled={!appointmentDirty || appointmentSaving}
               style={{
                 padding: "10px 20px",
-                backgroundColor: appointmentDirty ? "var(--accent-purple)" : "var(--info)",
-                color: "white",
+                backgroundColor: appointmentDirty
+                  ? "var(--primary)"
+                  : "var(--grey-accent)",
+                color: "var(--text-inverse)",
                 border: "none",
                 borderRadius: "8px",
                 fontWeight: "600",
@@ -3683,14 +3580,16 @@ function SchedulingTab({
           style={{
             marginTop: "20px",
             padding: "12px",
-            backgroundColor: "var(--info-surface)",
+            backgroundColor: "var(--surface-light)",
+            border: "1px solid var(--border)",
             borderRadius: "8px",
             fontSize: "13px",
-            color: "var(--info-dark)"
+            color: "var(--text-secondary)"
           }}
         >
           Appointment created: <strong>{appointmentCreatedAt}</strong>
         </div>
+      </div>
       </div>
     </div>
   );

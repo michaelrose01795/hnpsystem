@@ -2215,6 +2215,7 @@ export default function VhcDetailsPanel({
       return {
         color: "var(--danger)",
         label: "Declined",
+        showCross: true,
       };
     }
 
@@ -2826,6 +2827,21 @@ export default function VhcDetailsPanel({
                               <polyline points="20 6 9 17 4 12" />
                             </svg>
                           )}
+                          {statusState.showCross && (
+                            <svg
+                              width="10"
+                              height="10"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="white"
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <line x1="6" y1="6" x2="18" y2="18" />
+                              <line x1="18" y1="6" x2="6" y2="18" />
+                            </svg>
+                          )}
                         </span>
                         {isStatusHovered && (
                           <div
@@ -2893,22 +2909,24 @@ export default function VhcDetailsPanel({
                 >
                   Reset
                 </button>
-                <button
-                  type="button"
-                  onClick={() => handleBulkStatus(severity, "completed")}
-                  disabled={selectedSet.size === 0}
-                  style={{
-                    padding: "10px 16px",
-                    borderRadius: "10px",
-                    border: "1px solid var(--success)",
-                    backgroundColor: selectedSet.size === 0 ? "var(--success-surface)" : "var(--success)",
-                    color: selectedSet.size === 0 ? "var(--success)" : "white",
-                    fontWeight: 600,
-                    cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
-                  }}
-                >
-                  Complete
-                </button>
+                {severity === "authorized" && (
+                  <button
+                    type="button"
+                    onClick={() => handleBulkStatus(severity, "completed")}
+                    disabled={selectedSet.size === 0}
+                    style={{
+                      padding: "10px 16px",
+                      borderRadius: "10px",
+                      border: "1px solid var(--success)",
+                      backgroundColor: selectedSet.size === 0 ? "var(--success-surface)" : "var(--success)",
+                      color: selectedSet.size === 0 ? "var(--success)" : "white",
+                      fontWeight: 600,
+                      cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    Complete
+                  </button>
+                )}
               </>
             ) : (
               <>

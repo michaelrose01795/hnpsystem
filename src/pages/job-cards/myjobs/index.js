@@ -185,6 +185,12 @@ export default function MyJobsPage() {
   useEffect(() => {
     if (!dbUserId) return;
 
+    const toAssignedId = (value) => {
+      if (value === null || value === undefined) return null;
+      const numeric = Number(value);
+      return Number.isFinite(numeric) ? numeric : null;
+    };
+
     const channel = supabase
       .channel(`myjobs-jobs-${dbUserId}`)
       .on(
@@ -192,11 +198,14 @@ export default function MyJobsPage() {
         {
           event: "*",
           schema: "public",
-          table: "jobs",
-          filter: `assigned_to=eq.${dbUserId}`
+          table: "jobs"
         },
-        () => {
-          fetchJobsForTechnician();
+        (payload) => {
+          const nextAssigned = toAssignedId(payload?.new?.assigned_to);
+          const previousAssigned = toAssignedId(payload?.old?.assigned_to);
+          if (nextAssigned === dbUserId || previousAssigned === dbUserId) {
+            fetchJobsForTechnician();
+          }
         }
       )
       .subscribe();

@@ -1,4 +1,7 @@
 TO DO:
+Continue flow with job number 54
+fix the dev login user error, example i have Cheryl’s T user when clicked it shows that however when inside its using Jake T user instead, fix this so its using the correct user this is the same with nearly all of the techs users, fix this so all tech users use individual users and recive data they have been shared only. 
+
 
 
 CHECKKKKKKKKKKKKKK
@@ -16,11 +19,6 @@ When search in global for "goods in number" have it so it opens the page "/parts
 
 
 
-Have it so the "Scheduling" tab within the job-cards/[jobnumber] page follows the light and dark theme better. and is layed out better so it fits better with all the sections and buttons. remove these tect "Select the stored vehicle, confirm details, and capture the customer request so the team can approve it.", "
-
-
-
-
 Parts identified console error???
 
 
@@ -32,9 +30,6 @@ Go though each page and set which section has what level of colour level 1-4,
 Change to base layer " /* Level 3 (Bottom layer - pale red): page background + outer shell */
   --layer-section-level-3: #ffeaea;" adjust in all places where users 
 
-
-
-Inside "Tech Hours" tab within the appointsmemts page have it so the techs 1, 2, 3 etc are the tech users actaul names. auto detected if a user is on holiday. 
 
 
 

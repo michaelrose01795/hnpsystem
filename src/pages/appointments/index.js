@@ -2,7 +2,7 @@
 // file location: src/pages/appointments/index.js
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react"; // Import React hooks
+import React, { useState, useEffect, useCallback, useMemo } from "react"; // Import React hooks
 import Layout from "@/components/Layout"; // Main layout wrapper
 import Popup from "@/components/popups/Popup"; // Reusable popup modal
 import { useRouter } from "next/router"; // For reading query params
@@ -140,6 +140,12 @@ const DEFAULT_RETAIL_TECH_NAMES = [
   "Retail Tech 5",
   "Retail Tech 6",
 ];
+const TECH_USER_ROLES = [
+  "Techs",
+  "Technician",
+  "Technician Lead",
+  "Lead Technician",
+];
 
 const CALENDAR_SEVERITY_STYLES = {
   amber: {
@@ -177,6 +183,11 @@ const getBookingSeverity = (percent) => {
 const STAFF_ROLES = new Set([
   "service advisor",
   "technician",
+  "techs",
+  "technician lead",
+  "lead technician",
+  "mot tester",
+  "tester",
   "workshop manager",
   "service manager",
   "after sales manager",
@@ -205,6 +216,11 @@ const formatStaffName = (user) => {
   return [first, last].filter(Boolean).join(" ") || user.email || "Staff Member";
 };
 
+const normalizeKey = (value) => {
+  if (value === null || value === undefined) return "";
+  return String(value);
+};
+
 const buildStaffAbsenceMap = (records = [], calendarStart, calendarEnd) => {
   const map = {};
   const startBoundary = toMidnightDate(calendarStart);
@@ -231,6 +247,7 @@ const buildStaffAbsenceMap = (records = [], calendarStart, calendarEnd) => {
 
     const entryBase = {
       id: `${absence.absence_id}-${user?.user_id || absence.absence_id}`,
+      userId: user?.user_id || null,
       name: formatStaffName(user),
       role: formatRoleLabel(normalizedRole),
       type: absence?.type || "Holiday",
@@ -367,6 +384,16 @@ export default function Appointments() {
   const [staffOffPopupDate, setStaffOffPopupDate] = useState(null);
   const [activeDayTab, setActiveDayTab] = useState("jobs");
   const [techHoursOverrides, setTechHoursOverrides] = useState({});
+  const [techUsers, setTechUsers] = useState([]);
+
+  const techUserNameMap = useMemo(() => {
+    const map = new Map();
+    (techUsers || []).forEach((user) => {
+      if (!user?.user_id) return;
+      map.set(normalizeKey(user.user_id), formatStaffName(user));
+    });
+    return map;
+  }, [techUsers]);
 
   // ---------------- Fetch Jobs ----------------
   const fetchJobs = async () => {
@@ -527,6 +554,22 @@ export default function Appointments() {
     }
   }, [dates]);
 
+  const fetchTechUsers = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from("users")
+        .select("user_id, first_name, last_name, email, role")
+        .in("role", TECH_USER_ROLES)
+        .order("first_name", { ascending: true });
+
+      if (error) throw error;
+      setTechUsers(data || []);
+    } catch (error) {
+      console.error("Error fetching tech users:", error);
+      setTechUsers([]);
+    }
+  }, []);
+
   const fetchStaffAbsences = useCallback(async () => {
     if (!dates || dates.length === 0) return;
 
@@ -573,6 +616,10 @@ export default function Appointments() {
     if (!dates.length) return;
     fetchTechAvailability();
   }, [dates, fetchTechAvailability]);
+
+  useEffect(() => {
+    fetchTechUsers();
+  }, [fetchTechUsers]);
 
   useEffect(() => {
     const jobIdsWithAppointments = jobs
@@ -875,36 +922,75 @@ export default function Appointments() {
     const dayData = techAvailability[dateKey] || { techs: [] };
     const storedTechs = Array.isArray(dayData.techs) ? dayData.techs : [];
     const overridesForDay = techHoursOverrides[dateKey] || {};
+    const staffEntries = staffAbsences[dateKey] || [];
+    const staffOffByUserId = new Map(
+      staffEntries
+        .filter((entry) => entry?.userId)
+        .map((entry) => [normalizeKey(entry.userId), entry])
+    );
+    const roster = Array.isArray(techUsers) ? techUsers : [];
+    const expectedTechCount = roster.length > 0 ? roster.length : DEFAULT_RETAIL_TECH_COUNT;
 
     const normalizedTechs = storedTechs.map((tech, index) => {
       const techId = tech.techId ?? tech.user?.user_id ?? `${dateKey}-tech-${index}`;
+      const techKey = normalizeKey(techId);
       const overrideHours = parseHoursValue(overridesForDay[techId]);
       const baseAvailable = parseHoursValue(tech.availableHours);
-      const availableHours = overrideHours ?? baseAvailable ?? DEFAULT_RETAIL_TECH_HOURS;
+      const staffEntry = staffOffByUserId.get(techKey);
+      const isOnHoliday = Boolean(staffEntry);
+      const availableHours =
+        overrideHours ?? (isOnHoliday ? 0 : baseAvailable ?? DEFAULT_RETAIL_TECH_HOURS);
       return {
         ...tech,
         techId,
+        name: techUserNameMap.get(techKey) || tech.name || `Tech #${techId}`,
         availableHours,
+        isOnHoliday,
+        absenceType: staffEntry?.type || null,
       };
     });
 
-    const placeholders = [];
-    for (let idx = normalizedTechs.length; idx < DEFAULT_RETAIL_TECH_COUNT; idx += 1) {
-      const placeholderId = `${dateKey}-retail-placeholder-${idx}`;
-      const overrideHours = parseHoursValue(overridesForDay[placeholderId]);
-      placeholders.push({
-        techId: placeholderId,
-        name: DEFAULT_RETAIL_TECH_NAMES[idx] || `Retail Tech ${idx + 1}`,
-        availableHours: overrideHours ?? DEFAULT_RETAIL_TECH_HOURS,
-        totalHours: 0,
-        segments: [],
-        currentlyClockedIn: false,
-        isPlaceholder: true,
-        workType: "retail",
-      });
-    }
+    const normalizedTechIds = new Set(normalizedTechs.map((tech) => normalizeKey(tech.techId)));
+    const placeholders = roster.length
+      ? roster
+          .filter((user) => !normalizedTechIds.has(normalizeKey(user.user_id)))
+          .map((user) => {
+            const techId = user.user_id;
+            const techKey = normalizeKey(techId);
+            const overrideHours = parseHoursValue(overridesForDay[techId]);
+            const staffEntry = staffOffByUserId.get(techKey);
+            const isOnHoliday = Boolean(staffEntry);
+            return {
+              techId,
+              name: techUserNameMap.get(techKey) || formatStaffName(user),
+              availableHours: overrideHours ?? (isOnHoliday ? 0 : DEFAULT_RETAIL_TECH_HOURS),
+              totalHours: 0,
+              segments: [],
+              currentlyClockedIn: false,
+              isPlaceholder: true,
+              workType: "retail",
+              isOnHoliday,
+              absenceType: staffEntry?.type || null,
+            };
+          })
+      : Array.from({ length: Math.max(expectedTechCount - normalizedTechs.length, 0) }, (_, idx) => {
+          const placeholderId = `${dateKey}-retail-placeholder-${idx}`;
+          const overrideHours = parseHoursValue(overridesForDay[placeholderId]);
+          return {
+            techId: placeholderId,
+            name: DEFAULT_RETAIL_TECH_NAMES[idx] || `Retail Tech ${idx + 1}`,
+            availableHours: overrideHours ?? DEFAULT_RETAIL_TECH_HOURS,
+            totalHours: 0,
+            segments: [],
+            currentlyClockedIn: false,
+            isPlaceholder: true,
+            workType: "retail",
+          };
+        });
 
-    const finalTechs = [...normalizedTechs, ...placeholders];
+    const finalTechs = [...normalizedTechs, ...placeholders].sort((a, b) =>
+      (a.name || "").localeCompare(b.name || "")
+    );
     const totalAvailableHours = finalTechs.reduce(
       (sum, tech) => sum + (parseHoursValue(tech.availableHours) ?? 0),
       0
@@ -913,7 +999,7 @@ export default function Appointments() {
     return {
       dateKey,
       techs: finalTechs,
-      totalTechs: Math.max(finalTechs.length, DEFAULT_RETAIL_TECH_COUNT),
+      totalTechs: Math.max(finalTechs.length, expectedTechCount),
       totalAvailableHours,
     };
   };
@@ -1638,6 +1724,7 @@ export default function Appointments() {
                       : "-";
                     const availableHoursValue = parseHoursValue(tech.availableHours) ?? DEFAULT_RETAIL_TECH_HOURS;
                     const totalLogged = parseHoursValue(tech.totalHours) ?? 0;
+                    const absenceLabel = tech.absenceType || "Holiday";
 
                     return (
                       <div
@@ -1654,8 +1741,24 @@ export default function Appointments() {
                         }}
                       >
                         <div>
-                          <div style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-secondary)" }}>
-                            {tech.name || "Retail Technician"}
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <div style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-secondary)" }}>
+                              {tech.name || "Retail Technician"}
+                            </div>
+                            {tech.isOnHoliday && (
+                              <span
+                                style={{
+                                  fontSize: "11px",
+                                  fontWeight: "600",
+                                  padding: "2px 8px",
+                                  borderRadius: "999px",
+                                  backgroundColor: "var(--warning-surface)",
+                                  color: "var(--warning)"
+                                }}
+                              >
+                                {`On ${absenceLabel}`}
+                              </span>
+                            )}
                           </div>
                           <div style={{ fontSize: "12px", color: "var(--grey-accent)" }}>
                             {latestJobDisplay}
