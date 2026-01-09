@@ -32,7 +32,9 @@ export default function StatusSidebar({
   const safeViewportWidth = typeof viewportWidth === 'number' ? viewportWidth : 1440;
   const isDocked = variant === "docked";
   const compactMode = !isDocked && (isCompact || safeViewportWidth <= 1100);
-  const panelWidth = compactMode ? Math.min(Math.max(safeViewportWidth - 32, 280), 420) : 400;
+  const panelWidth = compactMode
+    ? Math.min(Math.max(safeViewportWidth - 32, 300), 520)
+    : Math.round(Math.min(Math.max(safeViewportWidth * 0.32, 440), 560));
   
   // Fetch status history when component mounts or jobId changes
   useEffect(() => {
@@ -275,6 +277,7 @@ export default function StatusSidebar({
         height: '100%',
         minHeight: '100vh',
         width: `${panelWidth}px`,
+        maxWidth: '100vw',
         backgroundColor: 'var(--surface)',
         boxShadow: 'none',
         borderRadius: '0px',
@@ -468,6 +471,7 @@ export default function StatusSidebar({
         {/* Scrollable content area */}
         <div style={{
           overflowY: 'auto',
+          overflowX: 'hidden',
           flex: 1, // Fill remaining vertical space so colored section reaches footer
           minHeight: 0, // Allow flex child to shrink for proper scrolling
           padding: '20px',

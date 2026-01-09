@@ -45,7 +45,7 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
         backgroundColor: COLORS.panelBg,
         borderRadius: "16px",
         border: "1px solid var(--surface-light)",
-        padding: "16px",
+        padding: "12px",
         boxShadow: "none",
         height: "100%",
         display: "flex",
@@ -73,7 +73,7 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
           flex: 1,
           overflowY: "auto",
           overflowX: "hidden",
-          padding: "0 8px 12px 8px",
+          padding: "0 4px 8px 4px",
           minHeight: 0,
         }}
       >
@@ -124,8 +124,8 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
               key={`${item?.status || item?.label || "status"}-${index}`}
               style={{
                 position: "relative",
-                paddingLeft: "48px",
-                marginBottom: "12px",
+                paddingLeft: "42px",
+                marginBottom: "10px",
               }}
             >
               {/* Dot + connector */}
@@ -183,13 +183,13 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
                     ? "1px solid rgba(var(--danger-rgb), 0.35)"
                     : "1px solid rgba(var(--background-rgb), 0.8)",
                   boxShadow: "none",
-                  padding: "16px 18px",
+                  padding: "12px 14px",
                   display: "flex",
                   flexDirection: "column",
-                  gap: "6px",
+                  gap: "4px",
                   fontFamily: "'Inter','Segoe UI','Helvetica Neue',Arial,sans-serif",
                   transition: "transform 0.2s ease",
-                  minHeight: "96px",
+                  minHeight: "72px",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = "translateY(-2px)";
@@ -207,13 +207,11 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
                       fontWeight: 700,
                       color: COLORS.textDark,
                       lineHeight: 1.25,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
                       display: "flex",
                       justifyContent: "space-between",
-                      gap: "12px",
-                      alignItems: "center",
+                      gap: "8px",
+                      alignItems: "flex-start",
+                      flexWrap: "wrap",
                     }}
                   >
                     {displayLabel}
@@ -235,11 +233,11 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
                   <div
                     style={{
                       marginTop: "4px",
-                      fontSize: "13px",
+                      fontSize: "12px",
                       color: COLORS.textMuted,
                       display: "flex",
                       justifyContent: "space-between",
-                      gap: "12px",
+                      gap: "8px",
                       flexWrap: "wrap",
                     }}
                   >
@@ -249,13 +247,12 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
                   {secondaryLine && (
                     <div
                       style={{
-                        marginTop: "6px",
-                        fontSize: "13px",
+                        marginTop: "4px",
+                        fontSize: "12px",
                         color: COLORS.textMuted,
                         lineHeight: 1.4,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
+                        whiteSpace: "normal",
+                        wordBreak: "break-word",
                       }}
                     >
                       {secondaryLine}
