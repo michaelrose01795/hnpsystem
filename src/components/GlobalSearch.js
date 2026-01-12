@@ -34,6 +34,7 @@ const GlobalSearch = ({
 }) => {
   const router = useRouter();
   const containerRef = useRef(null);
+  const inputRef = useRef(null);
   const abortRef = useRef(null);
 
   const [query, setQuery] = useState("");
@@ -44,6 +45,7 @@ const GlobalSearch = ({
   const [apiResults, setApiResults] = useState([]);
   const [navResults, setNavResults] = useState([]);
   const [feedback, setFeedback] = useState("");
+  const [dropdownStyle, setDropdownStyle] = useState(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -196,6 +198,34 @@ const GlobalSearch = ({
     trimmedQuery.length > 0 &&
     (isLoading || (feedback && (navResults.length === 0 && apiResults.length === 0)));
 
+  useEffect(() => {
+    if (!containerRef.current) return;
+    if (!isOpen && !shouldShowFeedback) return;
+
+    const updatePosition = () => {
+      const anchor = inputRef.current || containerRef.current;
+      if (!anchor) return;
+      const rect = anchor.getBoundingClientRect();
+      setDropdownStyle({
+        position: "fixed",
+        top: rect.bottom + 12,
+        left: rect.left,
+        width: rect.width,
+        right: "auto",
+        margin: 0,
+        boxSizing: "border-box",
+      });
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [isOpen, shouldShowFeedback, query, navResults.length, apiResults.length]);
+
   const handleSelect = (item) => {
     if (!item) return;
 
@@ -259,7 +289,7 @@ const GlobalSearch = ({
   return (
     <div
       ref={containerRef}
-      style={{ position: "relative", width: "100%", maxWidth: "480px" }}
+      style={{ position: "relative", width: "100%", maxWidth: "480px", zIndex: 9999 }}
     >
       <div
         style={{
@@ -276,6 +306,7 @@ const GlobalSearch = ({
       >
         <input
           type="search"
+          ref={inputRef}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           onFocus={() => {
@@ -323,10 +354,7 @@ const GlobalSearch = ({
       {shouldShowFeedback && (
         <div
           style={{
-            position: "absolute",
-            top: "calc(100% + 12px)",
-            left: 0,
-            right: 0,
+            ...dropdownStyle,
             padding: "12px 16px",
             borderRadius: "12px",
             backgroundColor: searchBackground,
@@ -334,7 +362,7 @@ const GlobalSearch = ({
             boxShadow: "none",
             color: textColor,
             fontSize: "0.85rem",
-            zIndex: 30,
+            zIndex: 10000,
           }}
         >
           {isLoading ? "Searching…" : feedback}
@@ -344,16 +372,15 @@ const GlobalSearch = ({
       {isOpen && combinedResults.length > 0 && (
         <div
           style={{
-            position: "absolute",
-            top: "calc(100% + 12px)",
-            left: 0,
-            right: 0,
+            ...dropdownStyle,
             backgroundColor: searchBackground,
             borderRadius: "16px",
             boxShadow: "none",
             border: `1px solid ${drawerBorderColor}`,
             overflow: "hidden",
-            zIndex: 40,
+            maxHeight: "280px",
+            overflowY: "auto",
+            zIndex: 10000,
           }}
         >
           {combinedResults.map((item, index) => {
@@ -428,10 +455,7 @@ const GlobalSearch = ({
         !feedback && (
           <div
             style={{
-              position: "absolute",
-              top: "calc(100% + 12px)",
-              left: 0,
-              right: 0,
+              ...dropdownStyle,
               padding: "16px",
               borderRadius: "12px",
               backgroundColor: searchBackground,
@@ -439,7 +463,7 @@ const GlobalSearch = ({
               boxShadow: "none",
               color: textColor,
               fontSize: "0.85rem",
-              zIndex: 30,
+              zIndex: 10000,
             }}
           >
             No matches — try another term.

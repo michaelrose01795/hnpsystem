@@ -25,8 +25,9 @@ export default function StatusSidebar({
   refreshKey = 0,
 }) {
   const [statusHistory, setStatusHistory] = useState([]); // Array of past statuses with timestamps
-  const [totalTimeSpent, setTotalTimeSpent] = useState(0); // Total working time in minutes
-  const [currentTimer, setCurrentTimer] = useState(0); // Current session time
+  const [clockingBaseSeconds, setClockingBaseSeconds] = useState(0); // Completed clocking seconds
+  const [activeClockIns, setActiveClockIns] = useState([]); // Active clock-in timestamps
+  const [liveClockingSeconds, setLiveClockingSeconds] = useState(0); // Running clocked total
   const [searchInput, setSearchInput] = useState(''); // Search input state
   const [searchError, setSearchError] = useState(''); // Error message state
   const safeViewportWidth = typeof viewportWidth === 'number' ? viewportWidth : 1440;
@@ -41,8 +42,9 @@ export default function StatusSidebar({
     if (!jobId) {
       // Clear data when no job selected
       setStatusHistory([]);
-      setTotalTimeSpent(0);
-      setCurrentTimer(0);
+      setClockingBaseSeconds(0);
+      setActiveClockIns([]);
+      setLiveClockingSeconds(0);
       return;
     }
     
@@ -50,7 +52,9 @@ export default function StatusSidebar({
       const fetched = await fetchStatusHistory(jobId);
       if (!fetched) {
         setStatusHistory([]);
-        setTotalTimeSpent(0);
+        setClockingBaseSeconds(0);
+        setActiveClockIns([]);
+        setLiveClockingSeconds(0);
         setSearchError('No status history available yet');
       }
     };
@@ -65,13 +69,13 @@ export default function StatusSidebar({
       const data = await response.json();
       
       if (data.success) {
-        if (Array.isArray(data.history) && data.history.length > 0) {
-          setStatusHistory(data.history); // Array of {status, timestamp, userId, duration}
-          setTotalTimeSpent(data.totalTime); // Total working time
-          setSearchError(''); // Clear any errors
-          return true;
-        }
-        return false;
+        const history = Array.isArray(data.history) ? data.history : [];
+        setStatusHistory(history); // Array of {status, timestamp, userId, duration}
+        const summary = data.clockingSummary || {};
+        setClockingBaseSeconds(summary.completedSeconds || 0);
+        setActiveClockIns(Array.isArray(summary.activeClockIns) ? summary.activeClockIns : []);
+        setSearchError(history.length ? '' : 'No status history available yet'); // Clear any errors
+        return true;
       }
       setSearchError(data.error || 'Job not found');
     } catch (error) {
@@ -120,28 +124,34 @@ export default function StatusSidebar({
     setSearchError('');
     setMockCurrentStatus(null);
     setStatusHistory([]);
-    setTotalTimeSpent(0);
-    setCurrentTimer(0);
+    setClockingBaseSeconds(0);
+    setActiveClockIns([]);
+    setLiveClockingSeconds(0);
   };
 
-  // Live timer update when job is in progress (not paused)
-  useEffect(() => {
-    if (!jobId) return; // Don't run timer if no job selected
-    
-    const statusId = currentStatus?.toUpperCase();
-    const currentStatusObj = SERVICE_STATUS_FLOW[statusId];
-    
-    // Only run timer if status doesn't pause time
-    if (currentStatusObj && !currentStatusObj.pausesTime) {
-      const interval = setInterval(() => {
-        setCurrentTimer(prev => prev + 1); // Increment every second
-      }, 1000);
-      
-      return () => clearInterval(interval);
-    } else {
-      setCurrentTimer(0); // Reset timer when paused
+  const calculateLiveClockingSeconds = (baseSeconds, activeStarts) => {
+    if (!Array.isArray(activeStarts) || activeStarts.length === 0) {
+      return baseSeconds;
     }
-  }, [currentStatus, jobId]);
+    const nowMs = Date.now();
+    const activeSeconds = activeStarts.reduce((sum, start) => {
+      const startMs = new Date(start).getTime();
+      if (Number.isNaN(startMs)) return sum;
+      return sum + Math.max(0, Math.floor((nowMs - startMs) / 1000));
+    }, 0);
+    return baseSeconds + activeSeconds;
+  };
+
+  useEffect(() => {
+    setLiveClockingSeconds(calculateLiveClockingSeconds(clockingBaseSeconds, activeClockIns));
+    if (!activeClockIns.length) return;
+
+    const interval = setInterval(() => {
+      setLiveClockingSeconds(calculateLiveClockingSeconds(clockingBaseSeconds, activeClockIns));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [clockingBaseSeconds, activeClockIns]);
 
   const currentStatusForDisplay = currentStatus;
 
@@ -183,14 +193,14 @@ export default function StatusSidebar({
       .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
   }, [statusHistory]);
 
-  // Format seconds to HH:MM:SS
+  // Format seconds to hours + minutes (e.g., 1h 50min(s))
   const formatTime = (seconds) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    const totalMinutes = Math.floor(Math.max(0, seconds) / 60);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return `${hours}h ${minutes}min(s)`;
   };
+
 
   const showFloatingToggle = showToggleButton && !compactMode && !isDocked;
   const toggleButtonStyle = compactMode
@@ -350,7 +360,7 @@ export default function StatusSidebar({
                 cursor: 'pointer'
               }}
             >
-              ✕
+              Close
             </button>
           )}
           <h2 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '12px', color: 'var(--text-inverse)' }}>
@@ -416,7 +426,7 @@ export default function StatusSidebar({
                   borderRadius: '6px',
                   border: '1px solid rgba(var(--surface-rgb), 0.3)'
                 }}>
-                  ⚠️ {searchError}
+                  {searchError}
                 </div>
               )}
             </form>
@@ -451,19 +461,9 @@ export default function StatusSidebar({
                   Clear Job
                 </button>
               </div>
-              <div style={{ marginTop: '10px', fontWeight: '600', fontSize: '16px' }}>
-                ⏱️ Total Time: {formatTime(totalTimeSpent * 60)}
+              <div id="job-progress-total-time" style={{ marginTop: '10px', fontWeight: '600', fontSize: '16px' }}>
+                Total Time: {formatTime(liveClockingSeconds)}
               </div>
-              {currentTimer > 0 && (
-                <div style={{ 
-                  marginTop: '6px', 
-                  color: 'var(--success)',
-                  fontWeight: '600',
-                  animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
-                }}>
-                  ▶️ Current Session: {formatTime(currentTimer)}
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -489,9 +489,6 @@ export default function StatusSidebar({
               textAlign: 'center', 
               color: 'var(--grey-accent-light)' 
             }}>
-              <svg style={{ width: '64px', height: '64px', marginBottom: '16px', color: 'var(--danger)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
               <p style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px', color: 'var(--grey-accent-dark)' }}>
                 No Job Selected
               </p>
@@ -533,7 +530,7 @@ export default function StatusSidebar({
                   </span>
                 </div>
                 <div style={{ marginTop: '8px', fontSize: '14px', color: 'var(--grey-accent-dark)' }}>
-                  🏢 Department: {SERVICE_STATUS_FLOW[currentStatusForDisplay?.toUpperCase()]?.department}
+                  Department: {SERVICE_STATUS_FLOW[currentStatusForDisplay?.toUpperCase()]?.department}
                 </div>
                 {SERVICE_STATUS_FLOW[currentStatusForDisplay?.toUpperCase()]?.requiresAction && (
                   <div style={{
@@ -544,7 +541,7 @@ export default function StatusSidebar({
                     fontSize: '14px',
                     borderRadius: '6px'
                   }}>
-                    <strong>⚠️ Action Required:</strong>{' '}
+                    <strong>Action Required:</strong>{' '}
                     {SERVICE_STATUS_FLOW[currentStatusForDisplay?.toUpperCase()].requiresAction}
                   </div>
                 )}

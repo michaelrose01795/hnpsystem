@@ -166,6 +166,15 @@ const getAverageTreadDepth = (tread = {}) => {
   if (readings.length === 0) return null;
   return readings.reduce((sum, value) => sum + value, 0) / readings.length;
 };
+const formatTreadDisplay = (tread = {}) => {
+  const values = ["outer", "middle", "inner"]
+    .map((section) => parseFloat(tread?.[section]))
+    .filter((value) => !Number.isNaN(value));
+  if (values.length === 0) return null;
+  const lowest = Math.min(...values);
+  return Number.isInteger(lowest) ? String(lowest) : lowest.toFixed(1);
+};
+
 
 function AutoCompleteInput({ value, onChange, options, placeholder }) {
   const [filtered, setFiltered] = useState([]);
@@ -268,6 +277,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
     WHEELS.forEach((wheel) => {
       const entry = tyres[wheel] ?? {};
       const depth = getAverageTreadDepth(entry.tread);
+      const displayText = formatTreadDisplay(entry.tread);
       const measurementStatus = getReadingStatus(depth).status;
       const measurementRank = resolveTyreRank(measurementStatus);
       const concernRank = (entry.concerns ?? []).reduce(
@@ -278,6 +288,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
       diagramState[wheel.toLowerCase()] = {
         depth,
         severity: mapRankToTyreStatus(severityRank),
+        readingText: displayText,
       };
     });
     return diagramState;

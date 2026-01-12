@@ -829,6 +829,7 @@ export default function Layout({ children, jobNumber }) {
                 gap: isMobile ? "10px" : "14px",
                 justifyContent: "space-between",
                 overflowX: "auto",
+                overflowY: "visible",
               }}
             >
               <div

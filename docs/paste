@@ -2,23 +2,13 @@ TO DO:
 Continue flow with job number 54
 
 
-have it so within the "Wheels & Tyres" popup the entered amount shows like example 4,4,4 is entered within the "Tread Depth (mm)" box it shows like "4,4,4" within the diagram wheels section, simularlly to how "Brakes & Hubs" popup shows the "Pad Measurement (mm)" measurment within the diagram. make it so the diagram can fit 3 numbers within the section neatly. 
-
-remove the inner boared of the wheels and tyres image so there is the - boared  on the outside but non on the inside folloiing the same designe as the "Brakes & Hubs" diagram. 
+npm i next@latest
 
 
-have it so the "Close VHC summary" follows the backgornd colour of the "Complete VHC" button. Remove the icon from the "📷 Camera" button and have it so the "VHC SummaryReview all items reported across sections" follows the level 1 theme colour
+Within the "Timeline" section inside the status side bar, swap it so the first update is at the bottom of the list, and the newest updates is at the top, have it so there is a small filter section to filter the section from selected users only to show, selected actions only etc, add it so there is a duel layer dropdown (following dropdown api style) 
 
-Hvae is so the "In Progress
-Status
-Service
-Job Type
-1
-VHC Checks
-0
-Parts Requests
-0.0h
-Clocked Hours" backgrounds follows the level 1 theme colour. 
+
+
 
 CHECKKKKKKKKKKKKKK
 Automate with parts in and parts on order, have it so when the part is goods in and added to the Parts booked to job section it auto dectects the part thought the part number, and changes the "here" button to "added" automatically. Also within the PArts added to job section inside the parts tab, remove the stage column, the status column will alwasys have added to job so keep this backend within the database not front end inside the table column so remove the coloum from the ui, inside the prepick column add a drop down which has all of the pre pick location inside them, make sure to use the dropdown style api however make the button for the drop down the same as style and size as the button for the data and time picker inside the "On Order" section, remove the Notes column. if the row is clicked it opens the part number stock amout which is linked to the stock catalogue. 
@@ -32,10 +22,6 @@ When the "Complete" button is pressed and the popup opnes and "Not now" is press
 
 CHECKKKKKKKKK
 When search in global for "goods in number" have it so it opens the page "/parts/goods-in/[GINnumber]" not "/parts/goods-in?goodsIn=GIN[number], this will take the users to a new page, inside this page build a invoice recreation with Supplier details at the top section, invoice lines in the middle, totals at the bottom, history section for where the parts were added once goods in was complete either to a job number or to stock, if to job number how many what invocie line and how many and the same with stock. 
-
-
-
-Within the "Timeline" section inside the status side bar, swap it so the first update is at the bottom of the list, and the newest updates is at the top, have it so there is a small filter section to filter the section from selected users only to show, selected actions only etc, add it so there is a duel layer dropdown (following dropdown api style) 
 
 
 
@@ -69,6 +55,9 @@ See if database strucure links to all of the code with the src/lib/database/sche
 
 Add any database tables / columns to file location: src/lib/database/schema/addtable.sql, can to see if the table is already inside the file location: src/lib/database/schema/schemaReference.sql file first
 
+
+
+npm i next@latest
 
 
 DONE:

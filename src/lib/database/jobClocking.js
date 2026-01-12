@@ -137,6 +137,14 @@ const deriveJobMeta = (job = {}) => {
   };
 };
 
+const resolveDateStamp = (timestamp) => {
+  const date = timestamp ? new Date(timestamp) : new Date();
+  if (Number.isNaN(date.getTime())) {
+    return new Date().toISOString().split("T")[0];
+  }
+  return date.toISOString().split("T")[0];
+};
+
 const mapClockingRow = (row = {}, job = null) => {
   const jobMeta = job ? deriveJobMeta(job) : { reg: "", makeModel: "", customer: "", status: null };
   return {
@@ -255,12 +263,13 @@ export const clockInToJob = async (...rawArgs) => {
       throw new Error("clockInToJob requires a jobNumber string.");
     }
 
+    const clockInTimestamp = new Date().toISOString();
     const payload = {
       user_id: userIdInt,
       job_id: jobIdInt,
       job_number: jobNumberText,
       work_type: normaliseWorkType(workType),
-      clock_in: new Date().toISOString(),
+      clock_in: clockInTimestamp,
       clock_out: null,
     };
 
@@ -274,8 +283,43 @@ export const clockInToJob = async (...rawArgs) => {
       throw new Error(`Failed to clock in to job ${jobNumberText}: ${error.message}`);
     }
 
+    const timeRecordNotes = JSON.stringify({
+      requestKey: "job",
+      requestLabel: `Job #${jobNumberText}`,
+      requestTitle: `Job #${jobNumberText}`,
+      source: "job_clocking",
+      workType: payload.work_type,
+      clockingId: data.id,
+    });
+    const { error: timeRecordError } = await db.from("time_records").insert([
+      {
+        user_id: userIdInt,
+        job_id: jobIdInt,
+        job_number: jobNumberText,
+        date: resolveDateStamp(clockInTimestamp),
+        clock_in: clockInTimestamp,
+        clock_out: null,
+        hours_worked: null,
+        break_minutes: 0,
+        notes: timeRecordNotes,
+        created_at: clockInTimestamp,
+        updated_at: clockInTimestamp,
+      },
+    ]);
+
+    if (timeRecordError) {
+      console.error("Failed to create time record entry:", timeRecordError.message);
+    }
+
     const jobsById = await fetchJobsByIds([jobIdInt]);
     const mapped = mapClockingRow(data, jobsById.get(jobIdInt));
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("statusFlowRefresh", {
+          detail: { jobNumber: String(jobNumberText) },
+        })
+      );
+    }
     return { success: true, data: mapped };
   } catch (err) {
     console.error("clockInToJob error:", err.message);
@@ -310,8 +354,80 @@ export const clockOutFromJob = async (...rawArgs) => {
       throw new Error(`Failed to clock out entry ${clockingIdInt}: ${error.message}`);
     }
 
+    const resolvedUserId = userIdInt ?? data.user_id;
+    const resolvedJobId = jobIdInt ?? data.job_id;
+    const resolvedJobNumber = data.job_number;
+    const clockOutTimestamp = timestamp;
+
+    if (resolvedUserId !== null && resolvedJobId !== null) {
+      const { data: openRecords, error: openError } = await db
+        .from("time_records")
+        .select("id, clock_in")
+        .eq("user_id", resolvedUserId)
+        .eq("job_id", resolvedJobId)
+        .is("clock_out", null)
+        .order("clock_in", { ascending: false })
+        .limit(1);
+
+      if (openError) {
+        console.error("Failed to locate open time record:", openError.message);
+      } else if (openRecords && openRecords.length > 0) {
+        const openRecord = openRecords[0];
+        const hoursWorked = calculateHoursWorked(openRecord.clock_in, clockOutTimestamp);
+        const { error: updateError } = await db
+          .from("time_records")
+          .update({
+            clock_out: clockOutTimestamp,
+            hours_worked: hoursWorked,
+            updated_at: clockOutTimestamp,
+          })
+          .eq("id", openRecord.id);
+
+        if (updateError) {
+          console.error("Failed to update time record:", updateError.message);
+        }
+      } else {
+        const clockInFallback = data.clock_in || clockOutTimestamp;
+        const hoursWorked = calculateHoursWorked(clockInFallback, clockOutTimestamp);
+        const timeRecordNotes = JSON.stringify({
+          requestKey: "job",
+          requestLabel: `Job #${resolvedJobNumber || ""}`.trim(),
+          requestTitle: `Job #${resolvedJobNumber || ""}`.trim(),
+          source: "job_clocking",
+          workType: data.work_type || "initial",
+          clockingId: data.id,
+        });
+        const { error: insertError } = await db.from("time_records").insert([
+          {
+            user_id: resolvedUserId,
+            job_id: resolvedJobId,
+            job_number: resolvedJobNumber || "",
+            date: resolveDateStamp(clockInFallback),
+            clock_in: clockInFallback,
+            clock_out: clockOutTimestamp,
+            hours_worked: hoursWorked,
+            break_minutes: 0,
+            notes: timeRecordNotes,
+            created_at: clockInFallback,
+            updated_at: clockOutTimestamp,
+          },
+        ]);
+
+        if (insertError) {
+          console.error("Failed to backfill time record:", insertError.message);
+        }
+      }
+    }
+
     const jobsById = await fetchJobsByIds([data.job_id]);
     const mapped = mapClockingRow(data, jobsById.get(data.job_id));
+    if (typeof window !== "undefined" && mapped.jobNumber) {
+      window.dispatchEvent(
+        new CustomEvent("statusFlowRefresh", {
+          detail: { jobNumber: String(mapped.jobNumber) },
+        })
+      );
+    }
     return { success: true, data: mapped, hoursWorked: mapped.hoursWorked };
   } catch (err) {
     console.error("clockOutFromJob error:", err.message);

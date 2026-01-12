@@ -142,7 +142,7 @@ export default function VhcCameraButton({
         }}
         title="Capture photo or video for VHC"
       >
-        📷 Camera
+        Camera
       </button>
 
       {/* Camera Capture Modal */}

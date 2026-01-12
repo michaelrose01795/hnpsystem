@@ -1722,65 +1722,94 @@ export default function TechJobDetailPage() {
           marginBottom: "12px",
           flexShrink: 0
         }}>
-          {quickStats.map((stat) => (
-            <div
-              key={stat.label}
-              style={{
-                backgroundColor: "var(--surface)",
-                border: "1px solid var(--surface-light)",
-                borderRadius: "8px",
-                padding: "16px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "6px",
-                alignItems: "center",
-                justifyContent: "center",
-                minHeight: "108px"
-              }}
-            >
-              <div style={{
-                fontSize: stat.pill ? "15px" : "24px",
-                fontWeight: "700",
-                color: stat.accent,
-                backgroundColor: stat.pill ? `${stat.accent}15` : "transparent",
-                padding: stat.pill ? "6px 14px" : 0,
-                borderRadius: stat.pill ? "999px" : 0,
-                letterSpacing: stat.pill ? "0.04em" : 0,
-                textTransform: stat.pill ? "uppercase" : "none"
-              }}>
-                {stat.value}
-              </div>
-              <span style={{ fontSize: "12px", color: "var(--info)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                {stat.label}
-              </span>
-            </div>
-          ))}
+          {quickStats.map((stat) => {
+            const isClockedHours = stat.label === "Clocked Hours";
+            const CardTag = isClockedHours ? "button" : "div";
+            return (
+              <CardTag
+                key={stat.label}
+                type={isClockedHours ? "button" : undefined}
+                onClick={
+                  isClockedHours
+                    ? () => {
+                        const target = document.getElementById("job-progress-total-time");
+                        if (target) {
+                          target.scrollIntoView({ behavior: "smooth", block: "start" });
+                        }
+                      }
+                    : undefined
+                }
+                style={{
+                  backgroundColor: "var(--layer-section-level-1)",
+                  border: "1px solid var(--surface-light)",
+                  borderRadius: "8px",
+                  padding: "16px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "6px",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  minHeight: "108px",
+                  cursor: isClockedHours ? "pointer" : "default",
+                }}
+              >
+                <div style={{
+                  fontSize: stat.pill ? "15px" : "24px",
+                  fontWeight: "700",
+                  color: stat.accent,
+                  backgroundColor: stat.pill ? `${stat.accent}15` : "transparent",
+                  padding: stat.pill ? "6px 14px" : 0,
+                  borderRadius: stat.pill ? "999px" : 0,
+                  letterSpacing: stat.pill ? "0.04em" : 0,
+                  textTransform: stat.pill ? "uppercase" : "none"
+                }}>
+                  {stat.value}
+                </div>
+                <span style={{ fontSize: "12px", color: "var(--info)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                  {stat.label}
+                </span>
+              </CardTag>
+            );
+          })}
         </div>
 
         {/* Tabs Navigation */}
         <div style={{
+          borderRadius: "999px",
+          border: "1px solid var(--surface-light)",
+          background: "var(--surface)",
+          padding: "6px",
           display: "flex",
-          gap: "12px",
-          marginBottom: "12px",
+          gap: "6px",
+          width: "100%",
           overflowX: "auto",
-          paddingBottom: "4px",
-          flexShrink: 0
+          flexShrink: 0,
+          scrollbarWidth: "thin",
+          scrollbarColor: "var(--scrollbar-thumb) transparent",
+          scrollBehavior: "smooth",
+          WebkitOverflowScrolling: "touch",
+          marginBottom: "12px",
         }}>
           {["overview", "vhc", "parts", "notes", "write-up"].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               style={{
-                padding: "10px 18px",
-                backgroundColor: activeTab === tab ? "var(--primary)" : "var(--surface-light)",
-                color: activeTab === tab ? "var(--text-inverse)" : "var(--text-primary)",
-                border: activeTab === tab ? "1px solid var(--primary)" : "1px solid var(--border)",
-                borderRadius: "8px",
+                flex: "0 0 auto",
+                borderRadius: "999px",
+                border: "1px solid transparent",
+                padding: "10px 20px",
+                fontSize: "0.9rem",
+                fontWeight: 600,
                 cursor: "pointer",
-                fontSize: "14px",
-                fontWeight: activeTab === tab ? "600" : "500",
+                background: activeTab === tab ? "var(--primary)" : "transparent",
+                color: activeTab === tab ? "var(--text-inverse)" : "var(--text-primary)",
+                transition: "all 0.15s ease",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                cursor: "pointer",
                 textTransform: "capitalize",
-                transition: "all 0.2s",
                 whiteSpace: "nowrap"
               }}
             >
@@ -1933,7 +1962,7 @@ export default function TechJobDetailPage() {
                 justifyContent: "space-between",
                 alignItems: "center",
                 padding: "16px 20px",
-                backgroundColor: "var(--accent-purple-surface)",
+                backgroundColor: "var(--layer-section-level-1)",
                 borderRadius: "12px",
                 border: "1px solid var(--accent-purple)"
               }}>
@@ -1967,9 +1996,9 @@ export default function TechJobDetailPage() {
                     style={{
                       padding: "10px 16px",
                       borderRadius: "999px",
-                      border: "1px solid var(--info)",
-                      backgroundColor: showVhcSummary ? "var(--info)" : "transparent",
-                      color: showVhcSummary ? "var(--surface)" : "var(--info)",
+                      border: "1px solid var(--accent-purple)",
+                      backgroundColor: showVhcSummary ? "var(--accent-purple)" : "transparent",
+                      color: showVhcSummary ? "var(--surface)" : "var(--accent-purple)",
                       fontWeight: 600,
                       fontSize: "13px",
                       cursor: "pointer",
@@ -2040,7 +2069,7 @@ export default function TechJobDetailPage() {
               {!showVhcSummary && (
                 <>
                   {/* Mandatory Sections */}
-                  <div>
+                  <div style={{ backgroundColor: "var(--layer-section-level-1)", borderRadius: "12px", padding: "16px" }}>
                 <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "12px", color: "var(--accent-purple)" }}>
                   Mandatory Sections
                 </h3>
@@ -2048,7 +2077,7 @@ export default function TechJobDetailPage() {
 
                   {/* Wheels & Tyres */}
                   <div style={{
-                    backgroundColor: "var(--surface)",
+                    backgroundColor: "var(--layer-section-level-3)",
                     border: `2px solid ${getBadgeState(sectionStatus.wheelsTyres).border}`,
                     borderRadius: "12px",
                     padding: "20px",
@@ -2088,7 +2117,7 @@ export default function TechJobDetailPage() {
 
                   {/* Brakes & Hubs */}
                   <div style={{
-                    backgroundColor: "var(--surface)",
+                    backgroundColor: "var(--layer-section-level-3)",
                     border: `2px solid ${getBadgeState(sectionStatus.brakesHubs).border}`,
                     borderRadius: "12px",
                     padding: "20px",
@@ -2128,7 +2157,7 @@ export default function TechJobDetailPage() {
 
                   {/* Service Indicator & Under Bonnet */}
                   <div style={{
-                    backgroundColor: "var(--surface)",
+                    backgroundColor: "var(--layer-section-level-3)",
                     border: `2px solid ${getBadgeState(sectionStatus.serviceIndicator).border}`,
                     borderRadius: "12px",
                     padding: "20px",
@@ -2169,7 +2198,7 @@ export default function TechJobDetailPage() {
               </div>
 
               {/* Additional Checks (Optional) */}
-              <div>
+              <div style={{ backgroundColor: "var(--layer-section-level-1)", borderRadius: "12px", padding: "16px" }}>
                 <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "12px", color: "var(--info)" }}>
                   Additional Checks
                   <span style={{ fontSize: "12px", fontWeight: "normal", marginLeft: "8px", color: "var(--grey-accent)" }}>
@@ -2180,7 +2209,7 @@ export default function TechJobDetailPage() {
 
                   {/* External */}
                   <div style={{
-                    backgroundColor: "var(--surface)",
+                    backgroundColor: "var(--layer-section-level-3)",
                     border: "1px solid var(--accent-purple-surface)",
                     borderRadius: "12px",
                     padding: "20px",
@@ -2221,7 +2250,7 @@ export default function TechJobDetailPage() {
 
                   {/* Internal & Electrics */}
                   <div style={{
-                    backgroundColor: "var(--surface)",
+                    backgroundColor: "var(--layer-section-level-3)",
                     border: "1px solid var(--accent-purple-surface)",
                     borderRadius: "12px",
                     padding: "20px",
@@ -2262,7 +2291,7 @@ export default function TechJobDetailPage() {
 
                   {/* Underside */}
                   <div style={{
-                    backgroundColor: "var(--surface)",
+                    backgroundColor: "var(--layer-section-level-3)",
                     border: "1px solid var(--accent-purple-surface)",
                     borderRadius: "12px",
                     padding: "20px",
@@ -2308,7 +2337,7 @@ export default function TechJobDetailPage() {
               {/* VHC Summary */}
               {showVhcSummary && (
                 <div style={{
-                  backgroundColor: "var(--info-surface)",
+                  backgroundColor: "var(--layer-section-level-1)",
                   border: "1px solid var(--info)",
                   borderRadius: "12px",
                   padding: "20px"

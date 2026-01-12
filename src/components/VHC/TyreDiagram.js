@@ -19,10 +19,10 @@ const TYRE_KEYS = [
 ];
 
 const statusPalette = {
-  unknown: { fill: "var(--border)", text: "var(--accent-purple)", label: "var(--accent-purple-surface)" },
-  danger: { fill: "var(--danger)", text: "var(--danger-surface)", label: "var(--danger)" },
-  advisory: { fill: "var(--warning)", text: "var(--warning-dark)", label: "var(--warning)" },
-  good: { fill: "var(--success)", text: "var(--success-surface)", label: "var(--success)" },
+  unknown: { fill: "var(--border)", text: "var(--text-primary)", label: "var(--accent-purple-surface)" },
+  danger: { fill: "var(--danger)", text: "var(--text-primary)", label: "var(--danger)" },
+  advisory: { fill: "var(--warning)", text: "var(--text-primary)", label: "var(--warning)" },
+  good: { fill: "var(--success)", text: "var(--text-primary)", label: "var(--success)" },
 };
 
 export const getReadingStatus = (value) => {
@@ -38,6 +38,7 @@ const resolveTyreEntry = (value) => {
     return {
       depth: value.depth,
       overrideStatus: value.severity,
+      readingText: value.readingText,
     };
   }
   return { depth: value, overrideStatus: null };
@@ -86,16 +87,17 @@ export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareAct
           strokeDasharray="10 8"
           opacity="0.9"
         />
-        <rect x="82" y="72" width="142" height="208" rx="34" fill={cabinFill} stroke={palette.border} strokeWidth="1" opacity="0.8" />
+        <rect x="82" y="72" width="142" height="208" rx="34" fill={cabinFill} opacity="0.8" />
         <line x1="58" y1={FRONT_Y + TYRE_HEIGHT / 2} x2="248" y2={FRONT_Y + TYRE_HEIGHT / 2} stroke={axleColor} strokeWidth="5" strokeLinecap="round" />
         <line x1="58" y1={REAR_Y + TYRE_HEIGHT / 2} x2="248" y2={REAR_Y + TYRE_HEIGHT / 2} stroke={axleColor} strokeWidth="5" strokeLinecap="round" />
 
         {TYRE_KEYS.map(({ key, label, position }) => {
           const entry = tyres?.[key];
-          const { depth, overrideStatus } = resolveTyreEntry(entry);
+          const { depth, overrideStatus, readingText: overrideText } = resolveTyreEntry(entry);
           const { readingText, status: baseStatus } = getReadingStatus(depth);
           const status = overrideStatus || baseStatus;
           const colors = statusPalette[status] || statusPalette.unknown;
+          const displayText = overrideText || readingText;
           const isActive = activeKey === key;
 
           return (
@@ -124,7 +126,7 @@ export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareAct
                 fontSize="12"
                 fontWeight="700"
               >
-                {readingText}
+                {displayText}
               </text>
               <text
                 x={position.x + TYRE_WIDTH / 2}

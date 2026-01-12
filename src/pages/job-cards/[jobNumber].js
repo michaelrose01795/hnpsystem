@@ -272,6 +272,12 @@ export default function JobCardDetailPage() {
     }
   }, [router.query.tab]);
 
+  useEffect(() => {
+    if (router.query.tab === "clocking") {
+      setActiveTab("clocking");
+    }
+  }, [router.query.tab]);
+
   // Watch for job completion and redirect to invoice tab
   const previousStatusRef = useRef(null);
   useEffect(() => {
@@ -5614,15 +5620,17 @@ function ClockingTab({ jobData, canEdit }) {
       </form>
 
       {jobId && normalizedJobNumber && (
-        <ClockingHistorySection
-          jobId={jobId}
-          jobNumber={normalizedJobNumber}
-          requests={normalizeRequests(jobData?.requests || [])}
-          jobAllocatedHours={jobData?.labour_hours || null}
-          refreshSignal={refreshSignal}
-          enableRequestClick={false}
-          title="Clocking history"
-        />
+        <div id="clocking-history">
+          <ClockingHistorySection
+            jobId={jobId}
+            jobNumber={normalizedJobNumber}
+            requests={normalizeRequests(jobData?.requests || [])}
+            jobAllocatedHours={jobData?.labour_hours || null}
+            refreshSignal={refreshSignal}
+            enableRequestClick={false}
+            title="Clocking history"
+          />
+        </div>
       )}
     </div>
   );

@@ -86,8 +86,36 @@ const attachDurations = (entries, nowIso) => {
   });
 };
 
+const buildClockingSummary = (clockingRows = []) => {
+  const activeClockIns = [];
+  const completedSeconds = (clockingRows || []).reduce((total, row) => {
+    if (!row?.clock_in) return total;
+    const clockInIso = ensureIsoString(row.clock_in, null);
+    if (!clockInIso) return total;
+    const clockInMs = new Date(clockInIso).getTime();
+    if (Number.isNaN(clockInMs)) return total;
+
+    if (row.clock_out) {
+      const clockOutIso = ensureIsoString(row.clock_out, null);
+      const clockOutMs = clockOutIso ? new Date(clockOutIso).getTime() : NaN;
+      if (!Number.isNaN(clockOutMs) && clockOutMs >= clockInMs) {
+        return total + Math.floor((clockOutMs - clockInMs) / 1000);
+      }
+      return total;
+    }
+
+    activeClockIns.push(clockInIso);
+    return total;
+  }, 0);
+
+  return {
+    completedSeconds,
+    activeClockIns,
+  };
+};
+
 const fetchJobActionEvents = async (jobId) => {
-  if (!jobId) return [];
+  if (!jobId) return { entries: [], clockingSummary: buildClockingSummary() };
 
   const keyEventsPromise = dbClient
     .from("key_tracking_events")
@@ -108,7 +136,7 @@ const fetchJobActionEvents = async (jobId) => {
   const clockingPromise = dbClient
     .from("job_clocking")
     .select(
-      "id, user_id, clock_in, work_type, user:user_id (name, first_name, last_name)"
+      "id, user_id, clock_in, clock_out, work_type, user:user_id (name, first_name, last_name)"
     )
     .eq("job_id", jobId)
     .order("clock_in", { ascending: true });
@@ -195,10 +223,13 @@ const fetchJobActionEvents = async (jobId) => {
     });
   }
 
+  let clockingSummary = buildClockingSummary();
   if (clockingRes.error) {
     console.error("Failed to load job clocking entries", clockingRes.error);
   } else {
-    (clockingRes.data || []).forEach((row) => {
+    const clockingRows = clockingRes.data || [];
+    clockingSummary = buildClockingSummary(clockingRows);
+    clockingRows.forEach((row) => {
       if (!row.clock_in) return;
       const workLabel = row.work_type
         ? row.work_type.replace(/_/g, " ")
@@ -252,9 +283,12 @@ const fetchJobActionEvents = async (jobId) => {
     });
   }
 
-  return actionEntries.sort(
-    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-  );
+  return {
+    entries: actionEntries.sort(
+      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    ),
+    clockingSummary,
+  };
 };
 
 export default async function handler(req, res) {
@@ -350,7 +384,7 @@ export default async function handler(req, res) {
       return total;
     }, 0);
 
-    const actionEvents = await fetchJobActionEvents(jobRow.id);
+    const { entries: actionEvents, clockingSummary } = await fetchJobActionEvents(jobRow.id);
     const statusTimeline = timelineEntries.map((entry) => ({
       ...entry,
       kind: "status",
@@ -372,6 +406,7 @@ export default async function handler(req, res) {
       history: combinedHistory,
       totalTime: totalActiveSeconds,
       totalRecordedTime: totalRecordedSeconds,
+      clockingSummary,
       generatedAt: referenceNow,
     }); // Respond with structured timeline data for UI consumption
   } catch (error) {

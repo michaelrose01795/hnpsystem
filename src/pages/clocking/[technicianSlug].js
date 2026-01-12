@@ -823,7 +823,7 @@ export default function UserClockingHistory() {
             </div>
           )}
 
-          <section style={basePanelStyle}>
+          <section id="live-technician-activity" style={basePanelStyle}>
             <div
               style={{
                 display: "flex",
