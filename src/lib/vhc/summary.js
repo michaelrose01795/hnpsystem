@@ -57,6 +57,7 @@ const SERVICE_CHOICE_LABELS = {
 const SERVICE_SOURCE_LABELS = {
   service: "Service Reminder",
   oil: "Engine Oil",
+  "Service reminder/Oil level": "Service reminder/Oil level",
 };
 
 // ✅ Headings for optional sections so the dashboard mirrors the technician workspace
@@ -490,11 +491,24 @@ const buildServiceIndicatorSection = (serviceSection) => {
 
   entries.forEach((service) => {
     if (!service || typeof service !== "object") return;
-    const badgeStatus = normaliseStatus(service.status) || determineDominantStatus([service.serviceChoice]);
+    const derivedOilStatus =
+      service.oilStatus === "Bad"
+        ? "Red"
+        : service.oilStatus === "Good" || service.oilStatus === "EV"
+        ? "Green"
+        : null;
+    const badgeStatus =
+      normaliseStatus(service.status) ||
+      determineDominantStatus([service.serviceChoice, derivedOilStatus].filter(Boolean));
     const rows = [];
     if (service.serviceChoice) {
       const label = SERVICE_CHOICE_LABELS[service.serviceChoice] || service.serviceChoice;
       rows.push(label);
+    }
+    if (service.oilStatus) {
+      rows.push(`Oil level: ${service.oilStatus}`);
+      if (service.oilStatus === "Bad") red += 1;
+      if (service.oilStatus === "Good" || service.oilStatus === "EV") grey += 1;
     }
     if (service.oilLevel) rows.push(`Oil level: ${service.oilLevel}`);
     if (service.oilCondition) rows.push(`Oil condition: ${service.oilCondition}`);

@@ -29,7 +29,7 @@ const SPARE_TYPES = [
   { key: "not_checked", label: "Not Checked" },
 ];
 
-const CONCERN_STATUS_OPTIONS = ["Amber", "Red"];
+const CONCERN_STATUS_OPTIONS = ["Amber", "Red", "Green"];
 
 const TYRE_SEVERITY_RANK = {
   Red: 1,
@@ -156,6 +156,7 @@ const concernBadge = (color) => ({
 const statusColors = {
   Amber: { background: "rgba(var(--warning-rgb), 0.16)", text: palette.warning, border: "rgba(var(--warning-rgb), 0.32)" },
   Red: { background: "rgba(var(--danger-rgb), 0.16)", text: palette.danger, border: "rgba(var(--danger-rgb), 0.32)" },
+  Green: { background: "rgba(var(--success-rgb), 0.16)", text: palette.success, border: "rgba(var(--success-rgb), 0.32)" },
 };
 
 const getAverageTreadDepth = (tread = {}) => {

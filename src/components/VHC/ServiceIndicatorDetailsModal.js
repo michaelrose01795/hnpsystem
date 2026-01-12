@@ -18,7 +18,7 @@ const SERVICE_OPTIONS = [
   { key: "indicator_on", label: "Service Indicator On" },
 ];
 
-const OIL_OPTIONS = ["Yes", "No", "EV"];
+const OIL_OPTIONS = ["Good", "Bad", "EV"];
 
 const UNDER_BONNET_ITEMS = [
   "Antifreeze Strength",
@@ -29,9 +29,17 @@ const UNDER_BONNET_ITEMS = [
   "Fuel System",
   "Cam Belt",
   "Miscellaneous",
+  "Service reminder/Oil level",
 ];
 
 const STATUS_OPTIONS = ["Red", "Amber", "Green"];
+
+const normaliseOilStatus = (value) => {
+  if (!value) return null;
+  if (value === "Yes") return "Good";
+  if (value === "No") return "Bad";
+  return value;
+};
 
 const statusPillStyles = {
   Red: { background: "rgba(var(--danger-rgb), 0.16)", color: palette.danger, border: "rgba(var(--danger-rgb), 0.32)" },
@@ -64,7 +72,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
   };
 
   const [serviceChoice, setServiceChoice] = useState(initialData?.serviceChoice ?? null);
-  const [oilStatus, setOilStatus] = useState(initialData?.oilStatus ?? null);
+  const [oilStatus, setOilStatus] = useState(normaliseOilStatus(initialData?.oilStatus ?? null));
   const [concerns, setConcerns] = useState(() => initialData?.concerns ?? []);
   const [showConcernModal, setShowConcernModal] = useState(false);
   const [activeConcernTarget, setActiveConcernTarget] = useState(null);
@@ -74,7 +82,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
   useEffect(() => {
     if (!initialData) return;
     setServiceChoice(initialData.serviceChoice ?? null);
-    setOilStatus(initialData.oilStatus ?? null);
+    setOilStatus(normaliseOilStatus(initialData.oilStatus ?? null));
     setConcerns(initialData.concerns ?? []);
   }, [initialData]);
 
@@ -105,6 +113,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
     if (!concernsList.length) return null;
     const redCount = concernsList.filter((concernItem) => concernItem.status === "Red").length;
     const amberCount = concernsList.filter((concernItem) => concernItem.status === "Amber").length;
+    const greenCount = concernsList.filter((concernItem) => concernItem.status === "Green").length;
     return (
       <div style={concernCardStyle}>
         <div
@@ -155,6 +164,18 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
             >
               Amber {amberCount}
             </span>
+            <span
+              style={{
+                padding: "6px 12px",
+                borderRadius: "999px",
+                background: "var(--success-surface)",
+                color: palette.success,
+                fontWeight: 600,
+                fontSize: "12px",
+              }}
+            >
+              Green {greenCount}
+            </span>
           </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -186,7 +207,12 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                 style={{
                   fontSize: "12px",
                   fontWeight: 700,
-                  color: concernItem.status === "Red" ? palette.danger : palette.warning,
+                  color:
+                    concernItem.status === "Red"
+                      ? palette.danger
+                      : concernItem.status === "Green"
+                        ? palette.success
+                        : palette.warning,
                 }}
               >
                 {concernItem.status}
@@ -223,9 +249,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
   const activeConcernLabel =
     concernTargets.find((target) => target.key === activeConcernTarget)?.label || activeConcernTarget || "selected area";
 
-  const canComplete =
-    !!serviceChoice &&
-    (oilStatus === "Yes" || oilStatus === "EV" || (oilStatus === "No" && concerns.some((c) => c.source === "oil")));
+  const canComplete = !!serviceChoice && !!oilStatus;
 
   const handleClose = () => {
     if (!onClose) return;
@@ -312,6 +336,10 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
               {OIL_OPTIONS.map((option) => {
                 const isActive = oilStatus === option;
+                const isPositive = option === "Good" || option === "EV";
+                const optionBorder = isPositive ? palette.success : palette.danger;
+                const optionSurface = isPositive ? "var(--success-surface)" : "var(--danger-surface)";
+                const optionText = isPositive ? palette.success : palette.danger;
                 return (
                   <button
                     key={option}
@@ -320,8 +348,8 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                     style={{
                       padding: "12px 20px",
                       borderRadius: "999px",
-                      border: `1px solid ${isActive ? palette.accent : palette.border}`,
-                      background: isActive ? palette.accent : palette.surface,
+                      border: `1px solid ${isActive ? optionBorder : palette.border}`,
+                      background: isActive ? optionBorder : palette.surface,
                       color: isActive ? "var(--text-inverse)" : palette.textPrimary,
                       fontWeight: 600,
                       cursor: "pointer",
@@ -551,6 +579,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                       <DropdownField
                         value={concern.status}
                         onChange={(e) => updateConcern(idx, { status: e.target.value })}
+                        className="vhc-concern-dropdown"
                         style={{
                           borderRadius: "999px",
                           padding: "6px 12px",

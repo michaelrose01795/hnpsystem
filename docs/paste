@@ -1,22 +1,7 @@
 TO DO:
 Continue flow with job number 54
 
-
-
-
-Change "Oil Level" buttons from Yes, no, EV to Good (Green status), Bad (Red status), EV (Green status) and then add a "Service reminder/Oil level" concern section within the "Under Bonnet Items" section, add the box to the right of the "Miscellaneous" button, this new button will do the same thing as the other items by opening "Add Concern" popup and showing wihtin the summary tab inside the VHC tab inside job-cards[jobnumber] page that the item is under the "Service reminder/Oil level" section with [concern added] within the row. 
-
-
-Remve the icons/emojies from the /job-cards/myjobs/[jobnumber] page within mainly VHC tab (and the whole app)
-
-
-atm when anything is typed within the "Pad Measurement (mm)" and "Disc Thickness (mm)" fields within the "Brakes & Hubs" popup it kicks the users out of the field from typing anything after one item has been entered, have it so it doesnt close the keyboard or stop the user from typing when one item is entered. Override any thing stopping this field from working like a normal number only field. 
-
-Api dropowns boarder removed from concern dropdowns. 
-
-Example ive reported a concern within the "Wipers/Washers/Horn" within the "External" popup however this red item isnt showing within the "📋 VHC SummaryReview all items reported across sections". have it so each report and concern are give a status within the database either Green, Amber, Red. these are upadted within the database and used within the summary section etc. Make sure that all rows wihtin the database for the VHC section are set to N/A which means nor green amber or red have been selected, only change that to one of the three after its been added as a concern or the reports chagnes to meet the recriemnts to that. 
-
-
+Have it so the "Show Summer button is within the "Vehicle Health Check Complete mandatory sections to finish VHC" section and when the button is lcikec is hides the "Mandatory" and "Additional" sections and shows the "VHC SummaryReview all items reported across sections" section instead, when the button is clicjedk again (text changes to "Close VHC summary") then it hides the "VHC SummaryReview all items reported across sections" section shows the "Vehicle Health Check Complete mandatory sections to finish VHC" 
 
 
 CHECKKKKKKKKKKKKKK
@@ -31,6 +16,11 @@ When the "Complete" button is pressed and the popup opnes and "Not now" is press
 
 CHECKKKKKKKKK
 When search in global for "goods in number" have it so it opens the page "/parts/goods-in/[GINnumber]" not "/parts/goods-in?goodsIn=GIN[number], this will take the users to a new page, inside this page build a invoice recreation with Supplier details at the top section, invoice lines in the middle, totals at the bottom, history section for where the parts were added once goods in was complete either to a job number or to stock, if to job number how many what invocie line and how many and the same with stock. 
+
+
+
+Within the "Timeline" section inside the status side bar, swap it so the first update is at the bottom of the list, and the newest updates is at the top, have it so there is a small filter section to filter the section from selected users only to show, selected actions only etc, add it so there is a duel layer dropdown (following dropdown api style) 
+
 
 
 

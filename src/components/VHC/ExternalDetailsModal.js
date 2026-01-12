@@ -32,7 +32,7 @@ const createDefaultCategoryData = () =>
     return acc;
   }, {});
 
-const STATUS_OPTIONS = ["Red", "Amber"];
+const STATUS_OPTIONS = ["Red", "Amber", "Green"];
 
 const fieldLabelStyle = {
   fontSize: "12px",
@@ -211,7 +211,8 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
             const concerns = data[category]?.concerns ?? [];
             const redCount = concerns.filter((c) => c.status === "Red").length;
             const amberCount = concerns.filter((c) => c.status === "Amber").length;
-            const loggedCount = redCount + amberCount;
+            const greenCount = concerns.filter((c) => c.status === "Green").length;
+            const loggedCount = redCount + amberCount + greenCount;
 
             return (
               <button
@@ -304,6 +305,7 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
                     temp: { ...prev.temp, status: e.target.value },
                   }))
                 }
+                className="vhc-concern-dropdown"
                 style={statusSelectStyle}
               >
                 {STATUS_OPTIONS.map((option) => (
@@ -379,6 +381,7 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
                       <DropdownField
                         value={concern.status}
                         onChange={(e) => updateConcern(activeConcern.category, idx, "status", e.target.value)}
+                        className="vhc-concern-dropdown"
                         style={{ ...statusSelectStyle, flex: "0 0 130px" }}
                       >
                         {STATUS_OPTIONS.map((option) => (

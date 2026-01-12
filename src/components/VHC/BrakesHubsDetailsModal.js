@@ -1,5 +1,5 @@
 // file location: src/components/VHC/BrakesHubsDetailsModal.js
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
 import themeConfig, {
   createVhcButtonStyle,
@@ -191,6 +191,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
   const [data, setData] = useState(normalisedInitial.data);
   const [showDrum, setShowDrum] = useState(normalisedInitial.showDrum);
   const [activeSide, setActiveSide] = useState("front");
+  const hasInitializedRef = useRef(false);
   const [concernPopup, setConcernPopup] = useState({
     open: false,
     category: "frontPads",
@@ -199,9 +200,15 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
   });
 
   useEffect(() => {
+    if (!isOpen) {
+      hasInitializedRef.current = false;
+      return;
+    }
+    if (hasInitializedRef.current) return;
     setData(normalisedInitial.data);
     setShowDrum(normalisedInitial.showDrum);
-  }, [normalisedInitial]);
+    hasInitializedRef.current = true;
+  }, [isOpen, normalisedInitial]);
 
   const padLabels = { frontPads: "Front Pads", rearPads: "Rear Pads" };
   const discLabels = { frontDiscs: "Front Discs", rearDiscs: "Rear Discs" };
@@ -256,8 +263,18 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
     borderRadius: "999px",
     fontSize: "12px",
     fontWeight: 700,
-    background: status === "Red" ? "var(--danger-surface)" : "var(--warning-surface)",
-    color: status === "Red" ? palette.danger : palette.warning,
+    background:
+      status === "Red"
+        ? "var(--danger-surface)"
+        : status === "Green"
+          ? "var(--success-surface)"
+          : "var(--warning-surface)",
+    color:
+      status === "Red"
+        ? palette.danger
+        : status === "Green"
+          ? palette.success
+          : palette.warning,
   });
 
   const resetConcernPopup = () =>
@@ -376,6 +393,11 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
     fontSize: "14px",
     outline: "none",
   };
+  const measurementInputStyle = {
+    ...inputStyle,
+    textAlign: "center",
+    fontWeight: 600,
+  };
 
   const concernItemStyle = {
     display: "flex",
@@ -411,33 +433,29 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
   };
 
   const updatePadMeasurement = (category, value) => {
-    const sanitized = sanitizeNumericListInput(value);
+    const sanitized = sanitizeDecimalInput(value);
 
-    // Only calculate status if there's actual numeric content
-    // This prevents premature status changes while typing
-    const numbers = sanitized
-      .replace(/[,\s]+$/g, "")
-      .split(/[, ]+/)
-      .map((v) => parseFloat(v.trim()))
-      .filter((v) => !Number.isNaN(v));
+    setData((prev) => {
+      const section = prev[category];
+      if (!section) return prev;
 
-    let newStatus = "Green";
-    if (numbers.length > 0) {
-      const min = Math.min(...numbers);
-      if (min < 3) newStatus = "Red";
-      else if (min < 5) newStatus = "Amber";
-      else newStatus = "Green";
-    }
+      const parsed = parseFloat(sanitized);
+      let newStatus = "Green";
+      if (!Number.isNaN(parsed)) {
+        if (parsed < 3) newStatus = "Red";
+        else if (parsed < 5) newStatus = "Amber";
+        else newStatus = "Green";
+      }
 
-    // Use functional setState to ensure we don't lose focus
-    setData((prev) => ({
-      ...prev,
-      [category]: {
-        ...prev[category],
-        measurement: sanitized,
-        status: newStatus
-      },
-    }));
+      return {
+        ...prev,
+        [category]: {
+          ...section,
+          measurement: sanitized,
+          status: newStatus,
+        },
+      };
+    });
   };
 
   const updatePadStatus = (category, value) => {
@@ -545,15 +563,11 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
   };
 
   const handleDiscMeasurementValue = (category, value) => {
-    const sanitized = sanitizeNumericListInput(value);
+    const sanitized = sanitizeDecimalInput(value);
 
-    // Use functional setState to ensure consistent state updates
     setData((prev) => {
       const section = prev[category];
       if (!section) return prev;
-
-      const nextValues = [sanitized];
-      const thickness = sanitized.replace(/[,\s]+$/g, "");
 
       return {
         ...prev,
@@ -561,8 +575,8 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
           ...section,
           measurements: {
             ...section.measurements,
-            values: nextValues,
-            thickness,
+            values: [sanitized],
+            thickness: sanitized,
           },
         },
       };
@@ -683,22 +697,13 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
 
         <label style={fieldLabelStyle}>Pad Measurement (mm)</label>
         <input
-          type="text"
+          type="number"
           inputMode="decimal"
           value={padData.measurement}
           onChange={(e) => updatePadMeasurement(category, e.target.value)}
-          placeholder="Enter readings (e.g. 6.0, 5.5, 5.0)"
+          placeholder="0"
           autoComplete="off"
-          style={{
-            width: "100%",
-            padding: "10px 12px",
-            borderRadius: "12px",
-            border: `1px solid ${palette.border}`,
-            backgroundColor: palette.surface,
-            fontSize: "14px",
-            color: palette.textPrimary,
-            outline: "none",
-          }}
+          style={measurementInputStyle}
           onFocus={enhanceFocus}
           onBlur={resetFocus}
         />
@@ -771,19 +776,17 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
         {discData.tab === "measurements" && (
           <>
             <label style={fieldLabelStyle}>Disc Thickness (mm)</label>
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              <input
-                type="text"
-                value={discData.measurements.values?.[0] || ""}
-                onChange={(e) => handleDiscMeasurementValue(category, e.target.value)}
-                placeholder="Enter readings separated by commas or spaces"
-                inputMode="decimal"
-                autoComplete="off"
-                style={inputStyle}
-                onFocus={enhanceFocus}
-                onBlur={resetFocus}
-              />
-            </div>
+            <input
+              type="number"
+              value={discData.measurements.values?.[0] || ""}
+              onChange={(e) => handleDiscMeasurementValue(category, e.target.value)}
+              placeholder="0"
+              inputMode="decimal"
+              autoComplete="off"
+              style={measurementInputStyle}
+              onFocus={enhanceFocus}
+              onBlur={resetFocus}
+            />
 
             <label style={fieldLabelStyle}>Status</label>
             <DropdownField
@@ -1100,12 +1103,14 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                       tempConcern: { ...prev.tempConcern, status: e.target.value },
                     }))
                   }
+                  className="vhc-concern-dropdown"
                   style={dropdownFieldStyle}
                   onFocus={enhanceFocus}
                   onBlur={resetFocus}
                 >
                   <option>Red</option>
                   <option>Amber</option>
+                  <option>Green</option>
                 </DropdownField>
 
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", marginTop: "16px", flexWrap: "wrap" }}>

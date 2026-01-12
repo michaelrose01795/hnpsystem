@@ -181,6 +181,16 @@ const getStatusAfterClockOut = (currentStatus) => {
   return null;
 };
 
+const normalizeVhcStatus = (value) => {
+  if (value === null || value === undefined) return "na";
+  const raw = String(value).trim().toLowerCase();
+  if (!raw || raw === "n/a" || raw === "na" || raw === "none") return "na";
+  if (raw.includes("green") || raw === "good" || raw === "ok") return "green";
+  if (raw.includes("amber") || raw.includes("advisory") || raw.includes("warning")) return "amber";
+  if (raw.includes("red") || raw.includes("danger") || raw.includes("critical")) return "red";
+  return "na";
+};
+
 export default function TechJobDetailPage() {
   const router = useRouter();
   const { jobNumber } = router.query;
@@ -296,7 +306,7 @@ export default function TechJobDetailPage() {
 
         setPartsRequests(data || []);
       } catch (loadError) {
-        console.error("❌ Failed to load parts requests:", loadError);
+        console.error("Failed to load parts requests:", loadError);
         setPartsRequests([]);
       } finally {
         setPartsRequestsLoading(false);
@@ -318,7 +328,7 @@ export default function TechJobDetailPage() {
         const fetchedNotes = await getNotesByJob(targetJobId);
         setNotes(Array.isArray(fetchedNotes) ? fetchedNotes : []);
       } catch (error) {
-        console.error("❌ Failed to load notes:", error);
+        console.error("Failed to load notes:", error);
         setNotes([]);
       } finally {
         setNotesLoading(false);
@@ -327,7 +337,7 @@ export default function TechJobDetailPage() {
     [jobCardId]
   );
 
-  // ✅ FIXED: Define all useCallback hooks FIRST before any useEffect that uses them
+  // FIXED: Define all useCallback hooks FIRST before any useEffect that uses them
 
   // Callback: Refresh clocking status
   const refreshClockingStatus = useCallback(async () => {
@@ -344,7 +354,7 @@ export default function TechJobDetailPage() {
         setClockingStatus(null);
       }
     } catch (error) {
-      console.error("❌ Error refreshing clocking status:", error);
+      console.error("Error refreshing clocking status:", error);
       setClockingStatus(null);
     }
   }, [dbUserId]);
@@ -373,7 +383,7 @@ export default function TechJobDetailPage() {
           return response.data;
         }
       } catch (error) {
-        console.error("❌ syncJobStatus error:", error);
+        console.error("syncJobStatus error:", error);
       }
 
       return null;
@@ -400,7 +410,7 @@ export default function TechJobDetailPage() {
         setJobClocking(null);
       }
     } catch (refreshError) {
-      console.error("❌ Failed to refresh job clocking", refreshError);
+      console.error("Failed to refresh job clocking", refreshError);
       setJobClocking(null);
     }
   }, [dbUserId, user?.id, jobCardId]);
@@ -433,7 +443,7 @@ export default function TechJobDetailPage() {
       await loadPartsRequests(jobCardIdForFetch);
       await loadNotes(jobCardIdForFetch);
     } catch (fetchError) {
-      console.error("❌ Error fetching job:", fetchError);
+      console.error("Error fetching job:", fetchError);
       alert("Failed to load job");
     } finally {
       setLoading(false);
@@ -488,7 +498,7 @@ export default function TechJobDetailPage() {
     try {
       const result = await clockOutFromJob(workshopUserId, jobCardId, jobClocking.clockingId);
       if (result.success) {
-        alert(`✅ Clocked out from Job ${jobCardNumber}\n\nHours worked: ${result.hoursWorked}h`);
+        alert(`Clocked out from Job ${jobCardNumber}\n\nHours worked: ${result.hoursWorked}h`);
         setCurrentJob(null);
         const nextJob = await refreshCurrentJob();
         if (!nextJob) {
@@ -505,7 +515,7 @@ export default function TechJobDetailPage() {
         alert(result.error || "Failed to clock out of this job.");
       }
     } catch (clockOutError) {
-      console.error("❌ Error clocking out from job:", clockOutError);
+      console.error("Error clocking out from job:", clockOutError);
       alert(clockOutError.message || "Error clocking out. Please try again.");
     } finally {
       setClockOutLoading(false);
@@ -552,7 +562,7 @@ export default function TechJobDetailPage() {
       );
 
       if (result.success) {
-        alert(`✅ Clocked in to Job ${jobCardNumber}`);
+        alert(`Clocked in to Job ${jobCardNumber}`);
         setStatus("In Progress");
         setCurrentJob(result.data);
         await refreshCurrentJob();
@@ -564,7 +574,7 @@ export default function TechJobDetailPage() {
         alert(result.error || "Failed to clock in to this job.");
       }
     } catch (clockInError) {
-      console.error("❌ Error clocking in to job:", clockInError);
+      console.error("Error clocking in to job:", clockInError);
       alert(clockInError.message || "Error clocking in. Please try again.");
     } finally {
       setClockInLoading(false);
@@ -626,7 +636,7 @@ export default function TechJobDetailPage() {
       setPartsFeedback("Part request submitted. Parts will review it alongside VHC items.");
       await fetchJobData();
     } catch (submitError) {
-      console.error("❌ Failed to submit part request:", submitError);
+      console.error("Failed to submit part request:", submitError);
       alert(submitError.message || "Failed to raise the part request. Try again.");
     } finally {
       setPartsSubmitting(false);
@@ -664,11 +674,11 @@ export default function TechJobDetailPage() {
   const persistVhcData = useCallback(
     async (payload, { quiet = false, updatedStatus = null } = {}) => {
       if (!jobNumber) {
-        console.warn("⚠️ Cannot save VHC: No job number");
+        console.warn("Cannot save VHC: No job number");
         return false;
       }
       try {
-        console.log("💾 Saving VHC data for job:", jobNumber);
+        console.log("Saving VHC data for job:", jobNumber);
         setSaveStatus("saving");
         setSaveError("");
 
@@ -681,7 +691,7 @@ export default function TechJobDetailPage() {
 
         const result = await saveChecksheet(jobNumber, payloadWithStatus);
         if (result.success) {
-          console.log("✅ VHC data saved successfully");
+          console.log("VHC data saved successfully");
           setLastSavedAt(new Date());
           if (saveTimeoutRef.current) {
             clearTimeout(saveTimeoutRef.current);
@@ -694,12 +704,12 @@ export default function TechJobDetailPage() {
           }
           return true;
         }
-        console.error("❌ VHC save failed:", result.error);
+        console.error("VHC save failed:", result.error);
         setSaveStatus("error");
         setSaveError(result.error?.message || "Failed to save VHC data.");
         return false;
       } catch (err) {
-        console.error("❌ Error saving VHC:", err);
+        console.error("Error saving VHC:", err);
         setSaveStatus("error");
         setSaveError(err.message || "Unexpected error saving VHC data.");
         return false;
@@ -766,9 +776,11 @@ export default function TechJobDetailPage() {
         const wheelData = vhcData.wheelsTyres[wheel];
         if (wheelData && Array.isArray(wheelData.concerns)) {
           wheelData.concerns.forEach(concern => {
+            const status = normalizeVhcStatus(concern.status);
+            if (status === "na") return;
             items.push({
               section: `Wheels & Tyres - ${wheel}`,
-              status: (concern.status || "green").toLowerCase(),
+              status,
               text: concern.text || concern.description || concern.issue || "No description",
             });
           });
@@ -789,9 +801,11 @@ export default function TechJobDetailPage() {
             const padData = axleData.pad[side];
             if (padData && Array.isArray(padData.concerns)) {
               padData.concerns.forEach(concern => {
+                const status = normalizeVhcStatus(concern.status);
+                if (status === "na") return;
                 items.push({
                   section: `Brakes & Hubs - ${side} Pad`,
-                  status: (concern.status || "green").toLowerCase(),
+                  status,
                   text: concern.text || concern.description || concern.issue || "No description",
                 });
               });
@@ -805,9 +819,11 @@ export default function TechJobDetailPage() {
             const discData = axleData.disc[side];
             if (discData && Array.isArray(discData.concerns)) {
               discData.concerns.forEach(concern => {
+                const status = normalizeVhcStatus(concern.status);
+                if (status === "na") return;
                 items.push({
                   section: `Brakes & Hubs - ${side} Disc`,
-                  status: (concern.status || "green").toLowerCase(),
+                  status,
                   text: concern.text || concern.description || concern.issue || "No description",
                 });
               });
@@ -821,9 +837,11 @@ export default function TechJobDetailPage() {
     if (vhcData.serviceIndicator && typeof vhcData.serviceIndicator === "object") {
       if (Array.isArray(vhcData.serviceIndicator.concerns)) {
         vhcData.serviceIndicator.concerns.forEach(concern => {
+          const status = normalizeVhcStatus(concern.status);
+          if (status === "na") return;
           items.push({
             section: `Service Indicator - ${concern.source || "Under Bonnet"}`,
-            status: (concern.status || "green").toLowerCase(),
+            status,
             text: concern.text || concern.description || concern.issue || "No description",
           });
         });
@@ -835,9 +853,25 @@ export default function TechJobDetailPage() {
       vhcData.externalInspection.forEach(category => {
         if (category && Array.isArray(category.concerns)) {
           category.concerns.forEach(concern => {
+            const status = normalizeVhcStatus(concern.status);
+            if (status === "na") return;
             items.push({
               section: `External - ${category.name || "General"}`,
-              status: (concern.status || "green").toLowerCase(),
+              status,
+              text: concern.text || concern.description || concern.issue || "No description",
+            });
+          });
+        }
+      });
+    } else if (vhcData.externalInspection && typeof vhcData.externalInspection === "object") {
+      Object.entries(vhcData.externalInspection).forEach(([categoryName, categoryData]) => {
+        if (categoryData && Array.isArray(categoryData.concerns)) {
+          categoryData.concerns.forEach(concern => {
+            const status = normalizeVhcStatus(concern.status);
+            if (status === "na") return;
+            items.push({
+              section: `External - ${categoryName || "General"}`,
+              status,
               text: concern.text || concern.description || concern.issue || "No description",
             });
           });
@@ -850,9 +884,11 @@ export default function TechJobDetailPage() {
       Object.entries(vhcData.internalElectrics).forEach(([subsystem, subsystemData]) => {
         if (subsystemData && Array.isArray(subsystemData.concerns)) {
           subsystemData.concerns.forEach(concern => {
+            const status = normalizeVhcStatus(concern.status);
+            if (status === "na") return;
             items.push({
               section: `Internal & Electrics - ${subsystem}`,
-              status: (concern.status || "green").toLowerCase(),
+              status,
               text: concern.text || concern.description || concern.issue || "No description",
             });
           });
@@ -865,9 +901,11 @@ export default function TechJobDetailPage() {
       Object.entries(vhcData.underside).forEach(([subsystem, subsystemData]) => {
         if (subsystemData && Array.isArray(subsystemData.concerns)) {
           subsystemData.concerns.forEach(concern => {
+            const status = normalizeVhcStatus(concern.status);
+            if (status === "na") return;
             items.push({
               section: `Underside - ${subsystem}`,
-              status: (concern.status || "green").toLowerCase(),
+              status,
               text: concern.text || concern.description || concern.issue || "No description",
             });
           });
@@ -878,12 +916,12 @@ export default function TechJobDetailPage() {
     // Categorize by status
     const buckets = { red: [], amber: [], green: [] };
     items.forEach(item => {
-      const status = (item.status || "green").toLowerCase();
-      if (status.includes("red") || status === "danger" || status === "critical") {
+      const status = normalizeVhcStatus(item.status);
+      if (status === "red") {
         buckets.red.push(item);
-      } else if (status.includes("amber") || status === "advisory" || status === "warning") {
+      } else if (status === "amber") {
         buckets.amber.push(item);
-      } else {
+      } else if (status === "green") {
         buckets.green.push(item);
       }
     });
@@ -930,10 +968,10 @@ export default function TechJobDetailPage() {
           );
         }
       } else {
-        console.warn("⚠️ Failed to update VHC status");
+        console.warn("Failed to update VHC status");
       }
     } catch (error) {
-      console.error("❌ Error updating VHC status:", error);
+      console.error("Error updating VHC status:", error);
     }
   }, [
     jobCardId,
@@ -945,14 +983,14 @@ export default function TechJobDetailPage() {
     jobNumberForStatusFlow,
   ]);
 
-  // ✅ NOW all useEffects come AFTER all callbacks are defined
+  // NOW all useEffects come AFTER all callbacks are defined
 
   // Effect: Load VHC data when vhcChecks changes
   useEffect(() => {
-    console.log("📥 Loading VHC data, checks count:", vhcChecks?.length || 0);
+    console.log("Loading VHC data, checks count:", vhcChecks?.length || 0);
 
     if (!vhcChecks || vhcChecks.length === 0) {
-      console.log("⚠️ No VHC checks found, initializing empty data");
+      console.log("No VHC checks found, initializing empty data");
       setVhcData({
         wheelsTyres: null,
         brakesHubs: [],
@@ -986,7 +1024,7 @@ export default function TechJobDetailPage() {
     );
 
     if (vhcChecksheet && vhcChecksheet.data) {
-      console.log("✅ Found VHC checksheet data, loading...");
+      console.log("Found VHC checksheet data, loading...");
       setVhcData((prev) => ({
         ...prev,
         ...vhcChecksheet.data,
@@ -999,7 +1037,7 @@ export default function TechJobDetailPage() {
       const jobStatus = jobData?.jobCard?.status || "";
       setIsReopenMode(VHC_REOPEN_ELIGIBLE_STATUSES.includes(jobStatus));
     } else {
-      console.log("⚠️ No VHC checksheet section found");
+      console.log("No VHC checksheet section found");
       setSectionStatus(createDefaultSectionStatus());
     }
   }, [vhcChecks, jobData]);
@@ -1039,7 +1077,7 @@ export default function TechJobDetailPage() {
     const result = await updateJobStatus(jobCardId, newStatus);
     
     if (result) {
-      alert("✅ Status updated successfully!");
+      alert("Status updated successfully!");
       setJobData((prev) => {
         if (!prev?.jobCard) return prev;
         return {
@@ -1068,7 +1106,7 @@ export default function TechJobDetailPage() {
         });
       }
     } else {
-      alert("❌ Failed to update status");
+      alert("Failed to update status");
     }
   };
 
@@ -1102,7 +1140,7 @@ export default function TechJobDetailPage() {
       setShowAddNote(false);
       await loadNotes(jobCardId);
     } catch (error) {
-      console.error("❌ Failed to add note:", error);
+      console.error("Failed to add note:", error);
       alert(error?.message || "Failed to add note");
     } finally {
       setNotesSubmitting(false);
@@ -1125,16 +1163,16 @@ export default function TechJobDetailPage() {
 
     // Reopen mode - VHC is complete or sent
     if (VHC_REOPEN_ELIGIBLE_STATUSES.includes(jobCardStatus)) {
-      return "🔄 Reopen VHC";
+      return "Reopen VHC";
     }
 
     // In progress - checks exist but not complete
     if (vhcChecks.length > 0) {
-      return "📋 VHC in Progress";
+      return "VHC in Progress";
     }
 
     // Fresh start - no checks exist
-    return "🚀 Start VHC";
+    return "Start VHC";
   };
 
   // Helper: Get VHC button color based on state
@@ -1332,7 +1370,7 @@ export default function TechJobDetailPage() {
           section: "Service Indicator",
           title: "Oil Status",
           description: `Oil level check: ${si.oilStatus}`,
-          status: si.oilStatus === "No" ? "red" : "green",
+          status: si.oilStatus === "Bad" ? "red" : "green",
           type: "info"
         });
       }
@@ -1635,7 +1673,7 @@ export default function TechJobDetailPage() {
             onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--danger-dark)")}
             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--primary)")}
           >
-            ← Back
+            Back
           </button>
           <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
             <h1 style={{
@@ -1908,20 +1946,53 @@ export default function TechJobDetailPage() {
                   </p>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    style={{
+                      width: "96px",
+                      padding: "8px 10px",
+                      borderRadius: "10px",
+                      border: "1px solid var(--accent-purple)",
+                      backgroundColor: "var(--surface)",
+                      color: "var(--text-primary)",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                    }}
+                  />
                   {saveStatus === "saving" && (
-                    <span style={{ fontSize: "13px", color: "var(--info)" }}>💾 Saving...</span>
+                    <span style={{ fontSize: "13px", color: "var(--info)" }}>Saving...</span>
                   )}
                   {saveStatus === "saved" && (
-                    <span style={{ fontSize: "13px", color: "var(--success)" }}>✅ Saved</span>
+                    <span style={{ fontSize: "13px", color: "var(--success)" }}>Saved</span>
                   )}
                   {saveStatus === "error" && (
-                    <span style={{ fontSize: "13px", color: "var(--danger)" }}>❌ {saveError || "Save failed"}</span>
+                    <span style={{ fontSize: "13px", color: "var(--danger)" }}>{saveError || "Save failed"}</span>
                   )}
                   {lastSavedAt && (
                     <span style={{ fontSize: "12px", color: "var(--info)" }}>
                       Last saved: {formatDateTime(lastSavedAt)}
                     </span>
                   )}
+
+                  <button
+                    type="button"
+                    onClick={() => setShowVhcSummary((prev) => !prev)}
+                    style={{
+                      padding: "10px 16px",
+                      borderRadius: "999px",
+                      border: "1px solid var(--info)",
+                      backgroundColor: showVhcSummary ? "var(--info)" : "transparent",
+                      color: showVhcSummary ? "var(--surface)" : "var(--info)",
+                      fontWeight: 600,
+                      fontSize: "13px",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                    }}
+                  >
+                    {showVhcSummary ? "Close VHC summary" : "Show Summary"}
+                  </button>
 
                   <button
                     type="button"
@@ -1964,7 +2035,7 @@ export default function TechJobDetailPage() {
                         : "Complete all mandatory sections to finish the VHC"
                     }
                   >
-                    {showVhcReopenButton ? "Reopen" : "✓ Complete VHC"}
+                    {showVhcReopenButton ? "Reopen" : "Complete VHC"}
                   </button>
 
                   {/* Camera Button - Always visible for technicians */}
@@ -1973,7 +2044,7 @@ export default function TechJobDetailPage() {
                       jobNumber={jobNumber}
                       userId={dbUserId || user?.id}
                       onUploadComplete={() => {
-                        console.log("📷 VHC media uploaded, refreshing job data...");
+                        console.log("VHC media uploaded, refreshing job data...");
                         loadJobData();
                       }}
                     />
@@ -1981,8 +2052,10 @@ export default function TechJobDetailPage() {
                 </div>
               </div>
 
-              {/* Mandatory Sections */}
-              <div>
+              {!showVhcSummary && (
+                <>
+                  {/* Mandatory Sections */}
+                  <div>
                 <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "12px", color: "var(--accent-purple)" }}>
                   Mandatory Sections
                 </h3>
@@ -2009,7 +2082,7 @@ export default function TechJobDetailPage() {
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
                       <h4 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "var(--accent-purple)" }}>
-                        🛞 Wheels & Tyres
+                        Wheels & Tyres
                       </h4>
                       <span style={{
                         ...getBadgeState(sectionStatus.wheelsTyres),
@@ -2049,7 +2122,7 @@ export default function TechJobDetailPage() {
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
                       <h4 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "var(--accent-purple)" }}>
-                        🔧 Brakes & Hubs
+                        Brakes & Hubs
                       </h4>
                       <span style={{
                         ...getBadgeState(sectionStatus.brakesHubs),
@@ -2089,7 +2162,7 @@ export default function TechJobDetailPage() {
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
                       <h4 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "var(--accent-purple)" }}>
-                        🔍 Service Indicator & Under Bonnet
+                        Service Indicator & Under Bonnet
                       </h4>
                       <span style={{
                         ...getBadgeState(sectionStatus.serviceIndicator),
@@ -2141,7 +2214,7 @@ export default function TechJobDetailPage() {
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
                       <h4 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "var(--info)" }}>
-                        🚗 External
+                        External
                       </h4>
                       {getOptionalCount("externalInspection") > 0 && (
                         <span style={{
@@ -2182,7 +2255,7 @@ export default function TechJobDetailPage() {
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
                       <h4 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "var(--info)" }}>
-                        💡 Internal & Electrics
+                        Internal & Electrics
                       </h4>
                       {getOptionalCount("internalElectrics") > 0 && (
                         <span style={{
@@ -2223,7 +2296,7 @@ export default function TechJobDetailPage() {
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
                       <h4 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "var(--info)" }}>
-                        ⚙️ Underside
+                        Underside
                       </h4>
                       {getOptionalCount("underside") > 0 && (
                         <span style={{
@@ -2243,40 +2316,27 @@ export default function TechJobDetailPage() {
                     </p>
                   </div>
                 </div>
-              </div>
+                  </div>
+                </>
+              )}
 
               {/* VHC Summary */}
-              <div style={{
-                backgroundColor: "var(--info-surface)",
-                border: "1px solid var(--info)",
-                borderRadius: "12px",
-                padding: "20px"
-              }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-                  <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "var(--info)" }}>
-                    📋 VHC Summary
-                    <span style={{ fontSize: "12px", fontWeight: "normal", marginLeft: "8px" }}>
-                      Review all items reported across sections
-                    </span>
-                  </h3>
-                  <button
-                    onClick={() => setShowVhcSummary(!showVhcSummary)}
-                    style={{
-                      padding: "8px 16px",
-                      backgroundColor: "var(--info)",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "8px",
-                      cursor: "pointer",
-                      fontSize: "13px",
-                      fontWeight: "600"
-                    }}
-                  >
-                    {showVhcSummary ? "Hide" : "Show"} Summary
-                  </button>
-                </div>
+              {showVhcSummary && (
+                <div style={{
+                  backgroundColor: "var(--info-surface)",
+                  border: "1px solid var(--info)",
+                  borderRadius: "12px",
+                  padding: "20px"
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                    <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "var(--info)" }}>
+                      VHC Summary
+                      <span style={{ fontSize: "12px", fontWeight: "normal", marginLeft: "8px" }}>
+                        Review all items reported across sections
+                      </span>
+                    </h3>
+                  </div>
 
-                {showVhcSummary && (
                   <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                     {/* Red Items */}
                     {vhcSummaryItems.red.length > 0 && (
@@ -2290,7 +2350,6 @@ export default function TechJobDetailPage() {
                           backgroundColor: "var(--danger-surface)",
                           borderRadius: "8px"
                         }}>
-                          <span style={{ fontSize: "16px" }}>🔴</span>
                           <strong style={{ fontSize: "14px", color: "var(--danger)" }}>
                             Critical Issues ({vhcSummaryItems.red.length})
                           </strong>
@@ -2326,7 +2385,6 @@ export default function TechJobDetailPage() {
                           backgroundColor: "var(--warning-surface)",
                           borderRadius: "8px"
                         }}>
-                          <span style={{ fontSize: "16px" }}>🟡</span>
                           <strong style={{ fontSize: "14px", color: "var(--warning)" }}>
                             Advisory Items ({vhcSummaryItems.amber.length})
                           </strong>
@@ -2365,7 +2423,6 @@ export default function TechJobDetailPage() {
                         }}
                         onClick={() => setShowGreenItems(!showGreenItems)}
                         >
-                          <span style={{ fontSize: "16px" }}>🟢</span>
                           <strong style={{ fontSize: "14px", color: "var(--success)" }}>
                             OK Items ({vhcSummaryItems.green.length})
                           </strong>
@@ -2398,8 +2455,8 @@ export default function TechJobDetailPage() {
                       </p>
                     )}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
               {/* VHC Modals */}
               {activeSection === "wheelsTyres" && (
@@ -2797,7 +2854,6 @@ export default function TechJobDetailPage() {
                   borderRadius: "12px",
                   border: "1px solid var(--surface-light)"
                 }}>
-                  <div style={{ fontSize: "48px", marginBottom: "16px" }}>📝</div>
                   <p style={{ fontSize: "16px", fontWeight: "600", marginBottom: "4px" }}>No notes added yet</p>
                   <p style={{ fontSize: "14px", color: "var(--info)" }}>
                     Keep technicians aligned by logging progress, issues and next steps.
@@ -2879,7 +2935,7 @@ export default function TechJobDetailPage() {
               fontWeight: "600",
             }}
           >
-            ← Back to My Jobs
+            Back to My Jobs
           </button>
 
           {/* Clock Action Button */}
@@ -2900,7 +2956,7 @@ export default function TechJobDetailPage() {
                 transition: "all 0.2s ease"
               }}
             >
-              {clockOutLoading ? "Clocking Out..." : "⏸️ Clock Out"}
+              {clockOutLoading ? "Clocking Out..." : "Clock Out"}
             </button>
           ) : (
             <button
@@ -2919,7 +2975,7 @@ export default function TechJobDetailPage() {
                 transition: "all 0.2s ease"
               }}
             >
-              {clockInLoading ? "Clocking In..." : "▶️ Clock In"}
+              {clockInLoading ? "Clocking In..." : "Clock In"}
             </button>
           )}
 
@@ -2937,7 +2993,7 @@ export default function TechJobDetailPage() {
               fontWeight: "600",
             }}
           >
-            ✍️ Write-Up
+            Write-Up
           </button>
 
           {/* Complete Job Button - gated by write-up + VHC completion */}
@@ -2961,7 +3017,7 @@ export default function TechJobDetailPage() {
                 : "Complete write-up (fault, cause, rectification) and finish VHC first"
             }
           >
-            {canCompleteJob ? "✓ Complete Job" : "Complete Job (locked)"}
+            {canCompleteJob ? "Complete Job" : "Complete Job (locked)"}
           </button>
         </div>
       </div>

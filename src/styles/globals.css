@@ -825,7 +825,7 @@ body:has(.login-page-wrapper) {
   width: 100%;
   min-height: 56px;
   border-radius: 24px;
-  border: 1px solid var(--border);
+  border: none;
   background: rgba(var(--surface-rgb), 0.95);
   color: var(--text-primary);
   font-size: 0.95rem;
@@ -838,11 +838,22 @@ body:has(.login-page-wrapper) {
   box-shadow: none;
 }
 
+.vhc-concern-dropdown .dropdown-api__control {
+  border: none;
+  box-shadow: none;
+}
+
+.vhc-concern-dropdown.is-open .dropdown-api__control,
+.vhc-concern-dropdown .dropdown-api__control:focus-visible {
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
+
 .dropdown-api.is-open .dropdown-api__control,
 .dropdown-api__control:focus-visible {
-  border-color: var(--primary);
-  outline: 2px solid rgba(var(--primary-rgb), 0.2);
-  outline-offset: 2px;
+  border: none;
+  outline: none;
   background-color: var(--surface);
 }
 

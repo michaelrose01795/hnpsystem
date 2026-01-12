@@ -20,7 +20,7 @@ const CATEGORY_ORDER = [
   "Miscellaneous",
 ];
 
-const STATUS_OPTIONS = ["Red", "Amber"];
+const STATUS_OPTIONS = ["Red", "Amber", "Green"];
 
 const fieldLabelStyle = {
   fontSize: "12px",
@@ -174,7 +174,8 @@ export default function InternalElectricsDetailsModal({ isOpen, onClose, onCompl
             const concerns = data[category]?.concerns ?? [];
             const redCount = concerns.filter((c) => c.status === "Red").length;
             const amberCount = concerns.filter((c) => c.status === "Amber").length;
-            const loggedCount = redCount + amberCount;
+            const greenCount = concerns.filter((c) => c.status === "Green").length;
+            const loggedCount = redCount + amberCount + greenCount;
 
             return (
               <button
