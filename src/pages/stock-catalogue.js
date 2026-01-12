@@ -2526,6 +2526,7 @@ useEffect(() => {
                   ×
                 </button>
               </div>
+              </div>
 
               {/* Scrollable Content */}
               <div style={{ flex: 1, overflow: "auto", paddingRight: "12px" }}>

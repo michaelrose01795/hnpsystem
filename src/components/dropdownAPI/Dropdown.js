@@ -1,5 +1,6 @@
 // file location: /src/components/dropdownAPI/Dropdown.js
 import React, { useEffect, useId, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 /**
  * DropdownAPI
@@ -35,6 +36,7 @@ export default function Dropdown({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [menuPosition, setMenuPosition] = useState(null);
   const dropdownRef = useRef(null);
   const menuRef = useRef(null);
 
@@ -188,12 +190,52 @@ export default function Dropdown({
     if (!isOpen) return;
     const handleClick = (event) => {
       if (!dropdownRef.current) return;
-      if (!dropdownRef.current.contains(event.target)) {
+      const menuNode = menuRef.current;
+      if (!dropdownRef.current.contains(event.target) && !(menuNode && menuNode.contains(event.target))) {
         setIsOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setMenuPosition(null);
+      return;
+    }
+
+    const updateMenuPosition = () => {
+      const controlNode = dropdownRef.current?.querySelector(".dropdown-api__control");
+      if (!controlNode) return;
+      const rect = controlNode.getBoundingClientRect();
+      const menuNode = menuRef.current;
+      const menuHeight = menuNode?.offsetHeight || 0;
+      const gap = 10;
+      let top = rect.bottom + gap;
+      const left = rect.left;
+      const width = rect.width;
+
+      if (menuHeight && top + menuHeight > window.innerHeight - gap) {
+        top = Math.max(gap, rect.top - menuHeight - gap);
+      }
+
+      setMenuPosition({
+        position: "fixed",
+        top,
+        left,
+        width,
+        zIndex: 2000,
+      });
+    };
+
+    updateMenuPosition();
+    window.addEventListener("resize", updateMenuPosition);
+    window.addEventListener("scroll", updateMenuPosition, true);
+    return () => {
+      window.removeEventListener("resize", updateMenuPosition);
+      window.removeEventListener("scroll", updateMenuPosition, true);
+    };
   }, [isOpen]);
 
   // Scroll to focused option
@@ -262,44 +304,48 @@ export default function Dropdown({
       </button>
       {helperText && <p className="dropdown-api__helper">{helperText}</p>}
 
-      <div
-        className="dropdown-api__menu"
-        role="listbox"
-        aria-activedescendant={selectedOption ? `${controlId}-${selectedOption.key}` : undefined}
-        hidden={!isOpen}
-        ref={menuRef}
-      >
-        {normalizedOptions.length === 0 && (
-          <div className="dropdown-api__empty">{emptyState}</div>
+      {isOpen &&
+        createPortal(
+          <div
+            className="dropdown-api__menu"
+            role="listbox"
+            aria-activedescendant={selectedOption ? `${controlId}-${selectedOption.key}` : undefined}
+            ref={menuRef}
+            style={menuPosition ?? undefined}
+          >
+            {normalizedOptions.length === 0 && (
+              <div className="dropdown-api__empty">{emptyState}</div>
+            )}
+            {normalizedOptions.map((option, index) => {
+              const isSelected = selectedOption?.key === option.key;
+              return (
+                <button
+                  type="button"
+                  role="option"
+                  data-option-button
+                  className={`dropdown-api__option ${isSelected ? "is-selected" : ""} ${
+                    option.disabled ? "is-disabled" : ""
+                  }`}
+                  key={option.key}
+                  id={`${controlId}-${option.key}`}
+                  aria-selected={isSelected}
+                  aria-disabled={option.disabled}
+                  disabled={option.disabled}
+                  onClick={() => handleOptionSelect(option)}
+                  onKeyDown={(event) => handleOptionKeyDown(event, option, index)}
+                >
+                  <span className="dropdown-api__option-label">{option.label}</span>
+                  {(option.description || option.meta) && (
+                    <span className="dropdown-api__option-description">
+                      {option.description || option.meta}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>,
+          document.body
         )}
-        {normalizedOptions.map((option, index) => {
-          const isSelected = selectedOption?.key === option.key;
-          return (
-            <button
-              type="button"
-              role="option"
-              data-option-button
-              className={`dropdown-api__option ${isSelected ? "is-selected" : ""} ${
-                option.disabled ? "is-disabled" : ""
-              }`}
-              key={option.key}
-              id={`${controlId}-${option.key}`}
-              aria-selected={isSelected}
-              aria-disabled={option.disabled}
-              disabled={option.disabled}
-              onClick={() => handleOptionSelect(option)}
-              onKeyDown={(event) => handleOptionKeyDown(event, option, index)}
-            >
-              <span className="dropdown-api__option-label">{option.label}</span>
-              {(option.description || option.meta) && (
-                <span className="dropdown-api__option-description">
-                  {option.description || option.meta}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
     </div>
   );
 }

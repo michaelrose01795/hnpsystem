@@ -802,6 +802,11 @@ body:has(.login-page-wrapper) {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  z-index: 0;
+}
+
+.dropdown-api.is-open {
+  z-index: 1200;
 }
 
 .dropdown-api--sm .dropdown-api__control {
@@ -884,7 +889,7 @@ body:has(.login-page-wrapper) {
   padding: 8px;
   max-height: 260px;
   overflow-y: auto;
-  z-index: 30;
+  z-index: 1250;
   box-shadow: 0 24px 48px rgba(15, 23, 42, 0.12);
   backdrop-filter: blur(12px);
 }

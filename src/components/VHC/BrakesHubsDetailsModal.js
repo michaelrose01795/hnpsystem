@@ -359,6 +359,13 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
     outline: "none",
   };
 
+  const dropdownFieldStyle = {
+    width: "100%",
+    border: "none",
+    padding: 0,
+    backgroundColor: "transparent",
+  };
+
   const inputStyle = {
     width: "100%",
     padding: "10px 12px",
@@ -700,7 +707,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
         <DropdownField
           value={padData.status}
           onChange={(e) => updatePadStatus(category, e.target.value)}
-          style={selectBaseStyle}
+          style={dropdownFieldStyle}
           onFocus={enhanceFocus}
           onBlur={resetFocus}
         >
@@ -784,7 +791,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
               onChange={(e) =>
                 updateDisc(category, "measurements", { status: e.target.value })
               }
-              style={selectBaseStyle}
+              style={dropdownFieldStyle}
               onFocus={enhanceFocus}
               onBlur={resetFocus}
             >
@@ -803,7 +810,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
               onChange={(e) =>
                 updateDisc(category, "visual", { status: e.target.value })
               }
-              style={selectBaseStyle}
+              style={dropdownFieldStyle}
               onFocus={enhanceFocus}
               onBlur={resetFocus}
             >
@@ -1093,7 +1100,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                       tempConcern: { ...prev.tempConcern, status: e.target.value },
                     }))
                   }
-                  style={{ ...selectBaseStyle, width: "100%" }}
+                  style={dropdownFieldStyle}
                   onFocus={enhanceFocus}
                   onBlur={resetFocus}
                 >

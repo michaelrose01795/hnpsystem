@@ -123,6 +123,13 @@ const baseInputStyle = {
   outline: "none",
 };
 
+const dropdownFieldStyle = {
+  width: "100%",
+  border: "none",
+  padding: 0,
+  backgroundColor: "transparent",
+};
+
 const pillButton = ({ active = false } = {}) => ({
   padding: "10px 18px",
   borderRadius: "999px",
@@ -823,7 +830,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                               Spare: { ...prev.Spare, month: event.target.value },
                             }))
                           }
-                          style={baseInputStyle}
+                          style={dropdownFieldStyle}
                         >
                           <option value="">Month</option>
                           {months.map((month) => (
@@ -840,7 +847,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                               Spare: { ...prev.Spare, year: event.target.value },
                             }))
                           }
-                          style={baseInputStyle}
+                          style={dropdownFieldStyle}
                         >
                           <option value="">Year</option>
                           {years.map((year) => (
