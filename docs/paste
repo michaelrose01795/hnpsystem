@@ -1,8 +1,24 @@
 TO DO:
 Continue flow with job number 54
 
-Have it so the "Show Summer button is within the "Vehicle Health Check Complete mandatory sections to finish VHC" section and when the button is lcikec is hides the "Mandatory" and "Additional" sections and shows the "VHC SummaryReview all items reported across sections" section instead, when the button is clicjedk again (text changes to "Close VHC summary") then it hides the "VHC SummaryReview all items reported across sections" section shows the "Vehicle Health Check Complete mandatory sections to finish VHC" 
 
+have it so within the "Wheels & Tyres" popup the entered amount shows like example 4,4,4 is entered within the "Tread Depth (mm)" box it shows like "4,4,4" within the diagram wheels section, simularlly to how "Brakes & Hubs" popup shows the "Pad Measurement (mm)" measurment within the diagram. make it so the diagram can fit 3 numbers within the section neatly. 
+
+remove the inner boared of the wheels and tyres image so there is the - boared  on the outside but non on the inside folloiing the same designe as the "Brakes & Hubs" diagram. 
+
+
+have it so the "Close VHC summary" follows the backgornd colour of the "Complete VHC" button. Remove the icon from the "📷 Camera" button and have it so the "VHC SummaryReview all items reported across sections" follows the level 1 theme colour
+
+Hvae is so the "In Progress
+Status
+Service
+Job Type
+1
+VHC Checks
+0
+Parts Requests
+0.0h
+Clocked Hours" backgrounds follows the level 1 theme colour. 
 
 CHECKKKKKKKKKKKKKK
 Automate with parts in and parts on order, have it so when the part is goods in and added to the Parts booked to job section it auto dectects the part thought the part number, and changes the "here" button to "added" automatically. Also within the PArts added to job section inside the parts tab, remove the stage column, the status column will alwasys have added to job so keep this backend within the database not front end inside the table column so remove the coloum from the ui, inside the prepick column add a drop down which has all of the pre pick location inside them, make sure to use the dropdown style api however make the button for the drop down the same as style and size as the button for the data and time picker inside the "On Order" section, remove the Notes column. if the row is clicked it opens the part number stock amout which is linked to the stock catalogue. 

@@ -139,7 +139,7 @@ const getPadStatus = (value) => {
   const reading = typeof value === "number" ? value : parseFloat(value);
   if (Number.isNaN(reading)) return { text: "–", status: "unknown" };
   if (reading <= 2) return { text: `${reading.toFixed(1)} mm`, status: "critical" };
-  if (reading <= 4) return { text: `${reading.toFixed(1)} mm`, status: "advisory" };
+  if (reading < 4) return { text: `${reading.toFixed(1)} mm`, status: "advisory" };
   return { text: `${reading.toFixed(1)} mm`, status: "good" };
 };
 
@@ -172,18 +172,248 @@ const computeAxleSeverityRank = (padSection, discSection) => {
   const measurementRank = resolveDiagramRank(measurementStatus);
   const padRank = resolveDiagramRank(padSection.status);
   const padConcernRank = getConcernRank(padSection.concerns);
-  const discMeasurementRank = resolveDiagramRank(discSection.measurements.status);
-  const discVisualRank = resolveDiagramRank(discSection.visual.status);
+  const discTab = discSection?.tab || "measurements";
+  const discStatus =
+    discTab === "visual" ? discSection.visual?.status : discSection.measurements?.status;
+  const discRank = resolveDiagramRank(discStatus);
   const discConcernRank = getConcernRank(discSection.concerns);
   return Math.min(
     measurementRank,
     padRank,
     padConcernRank,
-    discMeasurementRank,
-    discVisualRank,
+    discRank,
     discConcernRank,
   );
 };
+
+const PadsSection = ({
+  title,
+  padData = {},
+  onMeasurementChange,
+  onStatusChange,
+  sectionPanelBase,
+  fieldLabelStyle,
+  inputStyle,
+  dropdownFieldStyle,
+  enhanceFocus,
+  resetFocus,
+}) => (
+  <div style={sectionPanelBase}>
+    <div style={{ display: "flex", alignItems: "center" }}>
+      <h3 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
+        {title}
+      </h3>
+    </div>
+
+    <label style={fieldLabelStyle}>Pad Measurement (mm)</label>
+    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+      <input
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        value={padData.measurement || ""}
+        onChange={(e) => onMeasurementChange?.(e.target.value)}
+        placeholder="0"
+        autoComplete="off"
+        style={{ ...inputStyle, width: "8ch", textAlign: "center", fontWeight: 600 }}
+        onFocus={enhanceFocus}
+        onBlur={resetFocus}
+      />
+      <DropdownField
+        value={padData.status || "Green"}
+        onChange={(e) => onStatusChange?.(e.target.value)}
+        style={{ ...dropdownFieldStyle, minWidth: "140px" }}
+        onFocus={enhanceFocus}
+        onBlur={resetFocus}
+      >
+        <option>Red</option>
+        <option>Amber</option>
+        <option>Green</option>
+      </DropdownField>
+    </div>
+  </div>
+);
+
+const DiscsSection = ({
+  title,
+  discData = {},
+  onTabChange,
+  onMeasurementChange,
+  onMeasurementStatusChange,
+  onVisualStatusChange,
+  showDrumButton,
+  onSwitchToDrum,
+  sectionPanelBase,
+  fieldLabelStyle,
+  inputStyle,
+  dropdownFieldStyle,
+  enhanceFocus,
+  resetFocus,
+}) => {
+  const tabWrapperStyle = {
+    display: "inline-flex",
+    gap: "8px",
+    padding: "4px",
+    borderRadius: "999px",
+    backgroundColor: palette.accentSurface,
+    marginTop: "8px",
+  };
+
+  const tabButtonStyle = (active) => ({
+    ...createVhcButtonStyle(active ? "primary" : "ghost"),
+    backgroundColor: active ? palette.accent : "transparent",
+    color: active ? "var(--surface)" : palette.textPrimary,
+    padding: "8px 16px",
+    fontSize: "12px",
+    border: active ? "none" : "1px solid transparent",
+  });
+
+  const activeTab = discData.tab || "measurements";
+  return (
+    <div style={sectionPanelBase}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+        <h3 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
+          {title}
+        </h3>
+        <div style={tabWrapperStyle}>
+          {["measurements", "visual"].map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => onTabChange?.(tab)}
+              style={tabButtonStyle(activeTab === tab)}
+            >
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {activeTab === "measurements" && (
+        <>
+          <label style={fieldLabelStyle}>Disc Thickness (mm)</label>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={discData.measurements?.values?.[0] || ""}
+              onChange={(e) => onMeasurementChange?.(e.target.value)}
+              placeholder="0"
+              autoComplete="off"
+              style={{ ...inputStyle, width: "8ch", textAlign: "center", fontWeight: 600 }}
+              onFocus={enhanceFocus}
+              onBlur={resetFocus}
+            />
+            <DropdownField
+              value={discData.measurements?.status || "Green"}
+              onChange={(e) => onMeasurementStatusChange?.(e.target.value)}
+              style={{ ...dropdownFieldStyle, minWidth: "140px" }}
+              onFocus={enhanceFocus}
+              onBlur={resetFocus}
+            >
+              <option>Red</option>
+              <option>Amber</option>
+              <option>Green</option>
+            </DropdownField>
+          </div>
+        </>
+      )}
+
+      {activeTab === "visual" && (
+        <>
+          <label style={fieldLabelStyle}>Visual Inspection</label>
+          <DropdownField
+            value={discData.visual?.status || "Green"}
+            onChange={(e) => onVisualStatusChange?.(e.target.value)}
+            style={dropdownFieldStyle}
+            onFocus={enhanceFocus}
+            onBlur={resetFocus}
+          >
+            <option>Red</option>
+            <option>Amber</option>
+            <option>Green</option>
+          </DropdownField>
+        </>
+      )}
+
+      {showDrumButton && (
+        <button
+          type="button"
+          onClick={onSwitchToDrum}
+          style={{
+            ...buildModalButton("ghost"),
+            border: `1px dashed ${palette.accent}`,
+            color: palette.accent,
+            background: "transparent",
+            padding: "10px 16px",
+            marginTop: "8px",
+          }}
+        >
+          Switch to Drum Brakes
+        </button>
+      )}
+    </div>
+  );
+};
+
+const DrumBrakesSection = ({
+  status,
+  onStatusChange,
+  onSwitchToDisc,
+  sectionPanelBase,
+}) => (
+    <div style={sectionPanelBase}>
+      <h3 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
+        Drum Brakes
+      </h3>
+
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "12px",
+          marginTop: "8px",
+        }}
+      >
+        {["Good", "Monitor", "Replace"].map((label) => {
+          const active = status === label;
+          return (
+            <button
+              key={label}
+              type="button"
+              onClick={() => onStatusChange?.(label)}
+              style={{
+                ...createVhcButtonStyle(active ? "primary" : "ghost"),
+                padding: "10px 18px",
+                backgroundColor: active ? palette.accent : palette.surface,
+                color: active ? "var(--surface)" : palette.textPrimary,
+                border: active ? "none" : `1px solid ${palette.border}`,
+              }}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
+      <button
+        type="button"
+        onClick={onSwitchToDisc}
+        style={{
+          ...buildModalButton("ghost"),
+          alignSelf: "flex-start",
+          padding: "10px 18px",
+          color: palette.accent,
+          border: `1px dashed ${palette.accent}`,
+          background: "transparent",
+          marginTop: "8px",
+        }}
+      >
+        Switch to Disc Brakes
+      </button>
+    </div>
+);
 
 export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, initialData }) {
   const normalisedInitial = useMemo(() => normaliseBrakesState(initialData), [initialData]);
@@ -393,21 +623,6 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
     fontSize: "14px",
     outline: "none",
   };
-  const measurementInputStyle = {
-    ...inputStyle,
-    textAlign: "center",
-    fontWeight: 600,
-  };
-
-  const concernItemStyle = {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    padding: "10px 12px",
-    borderRadius: "12px",
-    backgroundColor: palette.accentSurface,
-    border: `1px solid ${palette.border}`,
-  };
 
   const popupOverlayStyle = {
     ...popupOverlayStyles,
@@ -432,34 +647,33 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
     event.target.style.borderColor = palette.border;
   };
 
+  const updatePadStatus = (category, value) => {
+    setData((prev) => ({ ...prev, [category]: { ...prev[category], status: value } }));
+  };
+
   const updatePadMeasurement = (category, value) => {
     const sanitized = sanitizeDecimalInput(value);
 
     setData((prev) => {
-      const section = prev[category];
-      if (!section) return prev;
-
       const parsed = parseFloat(sanitized);
-      let newStatus = "Green";
-      if (!Number.isNaN(parsed)) {
-        if (parsed < 3) newStatus = "Red";
-        else if (parsed < 5) newStatus = "Amber";
-        else newStatus = "Green";
-      }
+      const currentStatus = prev[category]?.status || "Green";
+      const nextStatus = Number.isNaN(parsed)
+        ? currentStatus
+        : parsed <= 2
+          ? "Red"
+          : parsed < 4
+            ? "Amber"
+            : "Green";
 
       return {
         ...prev,
         [category]: {
-          ...section,
+          ...prev[category],
           measurement: sanitized,
-          status: newStatus,
+          status: nextStatus,
         },
       };
     });
-  };
-
-  const updatePadStatus = (category, value) => {
-    setData((prev) => ({ ...prev, [category]: { ...prev[category], status: value } }));
   };
 
   const updateDisc = (category, field, value) => {
@@ -494,6 +708,37 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
         },
       };
     });
+  };
+
+  const updateDiscMeasurementValue = (category, value) => {
+    const sanitized = sanitizeDecimalInput(value);
+
+    setData((prev) => {
+      const section = prev[category];
+      if (!section) return prev;
+
+      return {
+        ...prev,
+        [category]: {
+          ...section,
+          measurements: {
+            ...section.measurements,
+            values: [sanitized],
+            thickness: sanitized,
+          },
+        },
+      };
+    });
+  };
+
+  const updateDiscTab = (category, tab) => {
+    setData((prev) => ({
+      ...prev,
+      [category]: {
+        ...prev[category],
+        tab,
+      },
+    }));
   };
 
   const addConcern = (category, concern, index = null) => {
@@ -559,27 +804,6 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
             : escalateDiscSeverity(nextSection, severity);
       }
       return { ...prev, [category]: nextSection };
-    });
-  };
-
-  const handleDiscMeasurementValue = (category, value) => {
-    const sanitized = sanitizeDecimalInput(value);
-
-    setData((prev) => {
-      const section = prev[category];
-      if (!section) return prev;
-
-      return {
-        ...prev,
-        [category]: {
-          ...section,
-          measurements: {
-            ...section.measurements,
-            values: [sanitized],
-            thickness: sanitized,
-          },
-        },
-      };
     });
   };
 
@@ -683,229 +907,6 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
 
   if (!isOpen) return null;
 
-  const PadsSection = ({ category }) => {
-    const padData = data[category];
-    const title = padLabels[category] || "Pads";
-
-    return (
-      <div style={sectionPanelBase}>
-      <div style={{ display: "flex", alignItems: "center" }}>
-        <h3 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
-          {title}
-        </h3>
-      </div>
-
-        <label style={fieldLabelStyle}>Pad Measurement (mm)</label>
-        <input
-          type="number"
-          inputMode="decimal"
-          value={padData.measurement}
-          onChange={(e) => updatePadMeasurement(category, e.target.value)}
-          placeholder="0"
-          autoComplete="off"
-          style={measurementInputStyle}
-          onFocus={enhanceFocus}
-          onBlur={resetFocus}
-        />
-
-        <label style={fieldLabelStyle}>Status</label>
-        <DropdownField
-          value={padData.status}
-          onChange={(e) => updatePadStatus(category, e.target.value)}
-          style={dropdownFieldStyle}
-          onFocus={enhanceFocus}
-          onBlur={resetFocus}
-        >
-          <option>Red</option>
-          <option>Amber</option>
-          <option>Green</option>
-        </DropdownField>
-      </div>
-    );
-  };
-
-  // ✅ Discs Section
-  const DiscsSection = ({ category, showDrumButton }) => {
-    const discData = data[category];
-    const title = discLabels[category] || "Discs";
-
-    const tabWrapperStyle = {
-      display: "inline-flex",
-      gap: "8px",
-      padding: "4px",
-      borderRadius: "999px",
-      backgroundColor: palette.accentSurface,
-      marginTop: "8px",
-    };
-
-    const tabButtonStyle = (active) => ({
-      ...createVhcButtonStyle(active ? "primary" : "ghost"),
-      backgroundColor: active ? palette.accent : "transparent",
-      color: active ? "var(--surface)" : palette.textPrimary,
-      padding: "8px 16px",
-      fontSize: "12px",
-      border: active ? "none" : "1px solid transparent",
-    });
-
-    return (
-      <div style={sectionPanelBase}>
-      <div style={{ display: "flex", alignItems: "center" }}>
-        <h3 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
-          {title}
-        </h3>
-      </div>
-
-        <div style={tabWrapperStyle}>
-          {["measurements", "visual"].map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() =>
-                setData((prev) => ({
-                  ...prev,
-                  [category]: { ...prev[category], tab },
-                }))
-              }
-              style={tabButtonStyle(discData.tab === tab)}
-            >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </button>
-          ))}
-        </div>
-
-        {discData.tab === "measurements" && (
-          <>
-            <label style={fieldLabelStyle}>Disc Thickness (mm)</label>
-            <input
-              type="number"
-              value={discData.measurements.values?.[0] || ""}
-              onChange={(e) => handleDiscMeasurementValue(category, e.target.value)}
-              placeholder="0"
-              inputMode="decimal"
-              autoComplete="off"
-              style={measurementInputStyle}
-              onFocus={enhanceFocus}
-              onBlur={resetFocus}
-            />
-
-            <label style={fieldLabelStyle}>Status</label>
-            <DropdownField
-              value={discData.measurements.status}
-              onChange={(e) =>
-                updateDisc(category, "measurements", { status: e.target.value })
-              }
-              style={dropdownFieldStyle}
-              onFocus={enhanceFocus}
-              onBlur={resetFocus}
-            >
-              <option>Red</option>
-              <option>Amber</option>
-              <option>Green</option>
-            </DropdownField>
-          </>
-        )}
-
-        {discData.tab === "visual" && (
-          <>
-            <label style={fieldLabelStyle}>Visual Inspection</label>
-            <DropdownField
-              value={discData.visual.status}
-              onChange={(e) =>
-                updateDisc(category, "visual", { status: e.target.value })
-              }
-              style={dropdownFieldStyle}
-              onFocus={enhanceFocus}
-              onBlur={resetFocus}
-            >
-              <option>Red</option>
-              <option>Amber</option>
-              <option>Green</option>
-            </DropdownField>
-          </>
-        )}
-
-        {showDrumButton && (
-          <button
-            type="button"
-            onClick={() => setShowDrum(true)}
-            style={{
-              ...buildModalButton("ghost"),
-              border: `1px dashed ${palette.accent}`,
-              color: palette.accent,
-              background: "transparent",
-              padding: "10px 16px",
-              marginTop: "8px",
-            }}
-          >
-            Switch to Drum Brakes
-          </button>
-        )}
-      </div>
-    );
-  };
-
-  // ✅ Drum Brakes Section
-  const DrumBrakesSection = () => (
-    <div style={sectionPanelBase}>
-      <h3 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
-        Drum Brakes
-      </h3>
-
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "12px",
-          marginTop: "8px",
-        }}
-      >
-        {["Good", "Monitor", "Replace"].map((label) => {
-          const active = data.rearDrums.status === label;
-          return (
-            <button
-              key={label}
-              type="button"
-              onClick={() =>
-        setData((prev) => ({
-          ...prev,
-          rearDrums: {
-            ...prev.rearDrums,
-            status: label,
-          },
-        }))
-              }
-              style={{
-                ...createVhcButtonStyle(active ? "primary" : "ghost"),
-                padding: "10px 18px",
-                backgroundColor: active ? palette.accent : palette.surface,
-                color: active ? "var(--surface)" : palette.textPrimary,
-                border: active ? "none" : `1px solid ${palette.border}`,
-              }}
-            >
-              {label}
-            </button>
-          );
-        })}
-      </div>
-
-      <button
-        type="button"
-        onClick={() => setShowDrum(false)}
-        style={{
-          ...buildModalButton("ghost"),
-          alignSelf: "flex-start",
-          padding: "10px 18px",
-          color: palette.accent,
-          border: `1px dashed ${palette.accent}`,
-          background: "transparent",
-          marginTop: "8px",
-        }}
-      >
-        Switch to Disc Brakes
-      </button>
-    </div>
-  );
-
   return (
     <VHCModalShell
       isOpen={isOpen}
@@ -991,19 +992,94 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
             >
               {activeSide === "front" && (
                 <>
-                  <PadsSection category="frontPads" />
-                  <DiscsSection category="frontDiscs" />
+                  <PadsSection
+                    title={padLabels.frontPads}
+                    padData={data.frontPads}
+                    onMeasurementChange={(value) => updatePadMeasurement("frontPads", value)}
+                    onStatusChange={(value) => updatePadStatus("frontPads", value)}
+                    sectionPanelBase={sectionPanelBase}
+                    fieldLabelStyle={fieldLabelStyle}
+                    inputStyle={inputStyle}
+                    dropdownFieldStyle={dropdownFieldStyle}
+                    enhanceFocus={enhanceFocus}
+                    resetFocus={resetFocus}
+                  />
+                  <DiscsSection
+                    title={discLabels.frontDiscs}
+                    discData={data.frontDiscs}
+                    onTabChange={(tab) => updateDiscTab("frontDiscs", tab)}
+                    onMeasurementChange={(value) => updateDiscMeasurementValue("frontDiscs", value)}
+                    onMeasurementStatusChange={(value) =>
+                      updateDisc("frontDiscs", "measurements", { status: value })
+                    }
+                    onVisualStatusChange={(value) =>
+                      updateDisc("frontDiscs", "visual", { status: value })
+                    }
+                    showDrumButton={false}
+                    onSwitchToDrum={() => setShowDrum(true)}
+                    sectionPanelBase={sectionPanelBase}
+                    fieldLabelStyle={fieldLabelStyle}
+                    inputStyle={inputStyle}
+                    dropdownFieldStyle={dropdownFieldStyle}
+                    enhanceFocus={enhanceFocus}
+                    resetFocus={resetFocus}
+                  />
                 </>
               )}
 
               {activeSide === "rear" && !showDrum && (
                 <>
-                  <PadsSection category="rearPads" />
-                  <DiscsSection category="rearDiscs" showDrumButton />
+                  <PadsSection
+                    title={padLabels.rearPads}
+                    padData={data.rearPads}
+                    onMeasurementChange={(value) => updatePadMeasurement("rearPads", value)}
+                    onStatusChange={(value) => updatePadStatus("rearPads", value)}
+                    sectionPanelBase={sectionPanelBase}
+                    fieldLabelStyle={fieldLabelStyle}
+                    inputStyle={inputStyle}
+                    dropdownFieldStyle={dropdownFieldStyle}
+                    enhanceFocus={enhanceFocus}
+                    resetFocus={resetFocus}
+                  />
+                  <DiscsSection
+                    title={discLabels.rearDiscs}
+                    discData={data.rearDiscs}
+                    onTabChange={(tab) => updateDiscTab("rearDiscs", tab)}
+                    onMeasurementChange={(value) => updateDiscMeasurementValue("rearDiscs", value)}
+                    onMeasurementStatusChange={(value) =>
+                      updateDisc("rearDiscs", "measurements", { status: value })
+                    }
+                    onVisualStatusChange={(value) =>
+                      updateDisc("rearDiscs", "visual", { status: value })
+                    }
+                    showDrumButton
+                    onSwitchToDrum={() => setShowDrum(true)}
+                    sectionPanelBase={sectionPanelBase}
+                    fieldLabelStyle={fieldLabelStyle}
+                    inputStyle={inputStyle}
+                    dropdownFieldStyle={dropdownFieldStyle}
+                    enhanceFocus={enhanceFocus}
+                    resetFocus={resetFocus}
+                  />
                 </>
               )}
 
-              {activeSide === "rear" && showDrum && <DrumBrakesSection />}
+              {activeSide === "rear" && showDrum && (
+                <DrumBrakesSection
+                  status={data.rearDrums.status}
+                  onStatusChange={(value) =>
+                    setData((prev) => ({
+                      ...prev,
+                      rearDrums: {
+                        ...prev.rearDrums,
+                        status: value,
+                      },
+                    }))
+                  }
+                  onSwitchToDisc={() => setShowDrum(false)}
+                  sectionPanelBase={sectionPanelBase}
+                />
+              )}
 
               <div style={{ ...sectionPanelBase, flex: "0 0 auto" }}>
                 <div

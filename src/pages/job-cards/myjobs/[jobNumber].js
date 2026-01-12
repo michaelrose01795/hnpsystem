@@ -1946,21 +1946,6 @@ export default function TechJobDetailPage() {
                   </p>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    style={{
-                      width: "96px",
-                      padding: "8px 10px",
-                      borderRadius: "10px",
-                      border: "1px solid var(--accent-purple)",
-                      backgroundColor: "var(--surface)",
-                      color: "var(--text-primary)",
-                      fontSize: "13px",
-                      fontWeight: 600,
-                    }}
-                  />
                   {saveStatus === "saving" && (
                     <span style={{ fontSize: "13px", color: "var(--info)" }}>Saving...</span>
                   )}

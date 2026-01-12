@@ -1,4 +1,5 @@
 import React from "react";
+import { useTheme } from "@/styles/themeProvider";
 import themeConfig from "@/styles/appTheme";
 
 const { palette, shadows } = themeConfig;
@@ -17,19 +18,12 @@ const BRAKE_KEYS = [
   { key: "osr", label: "OSR", position: { x: 228, y: REAR_Y } },
 ];
 
-const statusPalette = {
-  critical: { fill: "var(--danger)", text: "var(--danger-surface)", label: "var(--danger)" },
-  advisory: { fill: "var(--warning)", text: "var(--warning-dark)", label: "var(--warning)" },
-  good: { fill: "var(--success)", text: "var(--success-surface)", label: "var(--success)" },
-  unknown: { fill: "var(--border)", text: "var(--accent-purple)", label: "var(--accent-purple)" },
-};
-
 const getPadStatus = (value) => {
   const reading = typeof value === "number" ? value : parseFloat(value);
   if (Number.isNaN(reading)) return { text: "–", status: "unknown" };
-  if (reading <= 2) return { text: `${reading.toFixed(1)} mm`, status: "critical" };
-  if (reading <= 4) return { text: `${reading.toFixed(1)} mm`, status: "advisory" };
-  return { text: `${reading.toFixed(1)} mm`, status: "good" };
+  if (reading <= 2) return { text: `${reading.toFixed(1)}`, status: "critical" };
+  if (reading < 4) return { text: `${reading.toFixed(1)}`, status: "advisory" };
+  return { text: `${reading.toFixed(1)}`, status: "good" };
 };
 
 const resolveBrakeEntry = (entry) => {
@@ -44,9 +38,18 @@ const resolveBrakeEntry = (entry) => {
 };
 
 export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect }) {
+  const { resolvedMode } = useTheme();
   const activeKey = activeBrake?.toLowerCase();
   const isFrontActive = activeKey === "front" || activeKey === "nsf" || activeKey === "osf";
   const isRearActive = activeKey === "rear" || activeKey === "nsr" || activeKey === "osr";
+  const unknownFill =
+    resolvedMode === "dark" ? "var(--danger)" : "var(--accent-purple)";
+  const statusPalette = {
+    critical: { fill: "var(--danger)", text: "var(--text-inverse)", label: "var(--danger)" },
+    advisory: { fill: "var(--warning)", text: "var(--text-inverse)", label: "var(--warning)" },
+    good: { fill: "var(--success)", text: "var(--text-inverse)", label: "var(--success)" },
+    unknown: { fill: unknownFill, text: "var(--text-inverse)", label: unknownFill },
+  };
 
   const containerStyle = {
     width: "100%",
