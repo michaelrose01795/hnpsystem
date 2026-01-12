@@ -76,6 +76,83 @@ const buildRequestList = (rawRequests) => {
 // ✅ Compose a unique key for checklist items
 const composeTaskKey = (task) => `${task.source}:${task.sourceKey}`;
 
+const toPastTenseRequest = (value = "") => {
+  if (!value) return value;
+  const trimmed = value.trim();
+  if (!trimmed) return value;
+
+  const prefixMatch = trimmed.match(/^(Request\s*\d+\s*:\s*)(.*)$/i);
+  const prefix = prefixMatch ? prefixMatch[1] : "";
+  let body = prefixMatch ? prefixMatch[2] : trimmed;
+
+  body = body.replace(/^(please\s+)?(customer\s+)?(requests?|request\s+to)\s+/i, "");
+  body = body.replace(/^(needs?\s+to|need\s+to)\s+/i, "");
+  const crackedReplacementMatch = body.match(/^(.*)\bcracked\b.*replacement required\b/i);
+  if (crackedReplacementMatch) {
+    const part = crackedReplacementMatch[1].trim();
+    return `${prefix}Carried out ${part} replacement`.trim();
+  }
+
+  const replacements = [
+    [/^carry out\b/i, "Carried out"],
+    [/^carryout\b/i, "Carried out"],
+    [/^replace\b/i, "Replaced"],
+    [/^renew\b/i, "Renewed"],
+    [/^change\b/i, "Changed"],
+    [/^repair\b/i, "Repaired"],
+    [/^fix\b/i, "Fixed"],
+    [/^check\b/i, "Checked"],
+    [/^inspect\b/i, "Inspected"],
+    [/^diagnose\b/i, "Diagnosed"],
+    [/^investigate\b/i, "Investigated"],
+    [/^test\b/i, "Tested"],
+    [/^fit\b/i, "Fitted"],
+    [/^install\b/i, "Installed"],
+    [/^service\b/i, "Serviced"],
+    [/^perform\b/i, "Performed"],
+    [/^update\b/i, "Updated"],
+    [/^adjust\b/i, "Adjusted"],
+    [/^align\b/i, "Aligned"],
+    [/^calibrate\b/i, "Calibrated"],
+    [/^program\b/i, "Programmed"],
+    [/^reprogram\b/i, "Reprogrammed"],
+    [/^reset\b/i, "Reset"],
+    [/^refill\b/i, "Refilled"],
+    [/^top up\b/i, "Topped up"],
+    [/^flush\b/i, "Flushed"],
+    [/^bleed\b/i, "Bled"],
+    [/^lubricate\b/i, "Lubricated"],
+    [/^grease\b/i, "Greased"],
+    [/^tighten\b/i, "Tightened"],
+    [/^loosen\b/i, "Loosened"],
+    [/^secure\b/i, "Secured"],
+    [/^remove\b/i, "Removed"],
+    [/^clean\b/i, "Cleaned"],
+    [/^wash\b/i, "Washed"],
+    [/^polish\b/i, "Polished"],
+    [/^repaint\b/i, "Repainted"],
+    [/^recharge\b/i, "Recharged"],
+    [/^regas\b/i, "Regassed"],
+    [/^recover\b/i, "Recovered"],
+    [/^degrease\b/i, "Degreased"],
+  ];
+
+  for (const [pattern, replacement] of replacements) {
+    if (pattern.test(body)) {
+      body = body.replace(pattern, replacement);
+      break;
+    }
+  }
+
+  body = body.replace(/\s*-\s*(replacement|repair|replace|fix)\s+required\s*$/i, "");
+  body = body.replace(/\s*(replacement|repair)\s+required\s*$/i, "");
+  body = body.replace(/\s*-\s*(additional work|authorise[d]?)\s*$/i, "");
+  body = body.replace(/\s*-\s*please\s+advise\s*$/i, "");
+  body = body.replace(/\s*-\s*customer\s+request\s*$/i, "");
+
+  return `${prefix}${body.trim()}`;
+};
+
 const ensureAuthorizedTasks = (tasks = [], authorizedItems = []) => {
   const mergedTasks = Array.isArray(tasks) ? [...tasks] : [];
   if (!Array.isArray(authorizedItems) || authorizedItems.length === 0) {
@@ -271,7 +348,7 @@ const formatLastSavedTime = (value) => {
 };
 
 const sectionBoxStyle = {
-  backgroundColor: "var(--surface-light)",
+  backgroundColor: "var(--layer-section-level-3)",
   padding: "18px",
   borderRadius: "16px",
   boxShadow: "none",
@@ -334,6 +411,7 @@ const computeTaskSignature = (tasks = [], completionStatus = "") => {
     key: task?.sourceKey || "",
     status: task?.status || "",
     label: task?.label || "",
+    originalLabel: task?.originalLabel || "",
   }));
   return JSON.stringify({ tasks: payload, completionStatus });
 };
@@ -423,7 +501,7 @@ const cardRowStyle = (completed) => ({
   borderRadius: "12px",
   border: `1px solid ${completed ? "var(--info)" : "var(--accent-purple-surface)"}`,
   padding: "12px",
-  backgroundColor: completed ? "var(--success-surface)" : "var(--surface-light)",
+  backgroundColor: completed ? "var(--success-surface)" : "var(--layer-section-level-3)",
   display: "flex",
   flexDirection: "column",
   gap: "8px",
@@ -433,7 +511,7 @@ const rectificationCardStyle = (completed) => ({
   borderRadius: "12px",
   border: `1px solid ${completed ? "var(--info)" : "var(--danger)"}`,
   padding: "12px",
-  backgroundColor: completed ? "var(--success-surface)" : "var(--surface-light)",
+  backgroundColor: completed ? "var(--success-surface)" : "var(--layer-section-level-3)",
   display: "flex",
   flexDirection: "column",
   gap: "8px",
@@ -462,7 +540,7 @@ const checkboxStyle = {
 const causeRowStyle = {
   borderRadius: "12px",
   border: "1px solid var(--info)",
-  backgroundColor: "var(--surface-light)",
+  backgroundColor: "var(--layer-section-level-3)",
   padding: "12px",
   display: "flex",
   flexDirection: "column",
@@ -959,7 +1037,14 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
           return task;
         }
         updated = true;
-        return { ...task, label: value };
+        if (task.status === "complete" && task.source === "request") {
+          return {
+            ...task,
+            label: toPastTenseRequest(value),
+            originalLabel: value,
+          };
+        }
+        return { ...task, label: value, originalLabel: value };
       }),
     }));
     if (updated) {
@@ -1146,7 +1231,21 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
         if (!toggledSection) {
           toggledSection = task?.source === "request" ? "fault" : "rectification";
         }
-        const nextStatus = task.status === "complete" ? "additional_work" : "complete";
+        const nextStatus = task.status === "complete" ? "inprogress" : "complete";
+        if (task?.source !== "request") {
+          return { ...task, status: task.status === "complete" ? "additional_work" : "complete" };
+        }
+
+        if (nextStatus === "complete") {
+          const originalLabel = task.originalLabel || task.label || "";
+          const nextLabel = toPastTenseRequest(originalLabel);
+          return { ...task, status: nextStatus, label: nextLabel, originalLabel };
+        }
+
+        if (task.originalLabel) {
+          return { ...task, status: nextStatus, label: task.originalLabel, originalLabel: "" };
+        }
+
         return { ...task, status: nextStatus };
       });
 
@@ -1459,6 +1558,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
   );
   const canAddCause =
     requestTasks.length > 0 && writeUpData.causeEntries.length < requestTasks.length;
+  const isWarrantyJob = (jobData?.jobCard?.jobSource || "").toLowerCase() === "warranty";
   const getRequestOptions = (entryRequestKey) =>
     requestTasks.filter((task) => {
       if (entryRequestKey && task.sourceKey === entryRequestKey) {
@@ -1481,11 +1581,13 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
       </span>
     );
   };
-  const renderLastSaved = () => (
+const renderLastSaved = () => (
     <span style={{ ...sectionSubtitleStyle, color: "var(--info-dark)" }}>
       {formatLastSavedTime(lastSavedAt)}
     </span>
   );
+  const stripRequestPrefix = (value = "") =>
+    value.replace(/^Request\s*\d+\s*:\s*/i, "");
   const metadataFields = [
     { label: "Warranty Claim Number", field: "warrantyClaim", type: "input" },
     { label: "TSR Number", field: "tsrNumber", type: "input" },
@@ -1624,8 +1726,8 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
         flex: 1,
         borderRadius: "8px",
         boxShadow: "none",
-        border: "1px solid var(--surface-light)",
-        background: "var(--surface)",
+        border: "none",
+        background: "transparent",
         padding: "24px",
         overflow: "hidden",
         display: "flex",
@@ -1635,12 +1737,19 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
       }}>
         <div
           style={{
-            display: "flex",
-            gap: "8px",
-            backgroundColor: "var(--surface-light)",
-            padding: "6px",
-            borderRadius: "12px",
+            borderRadius: "999px",
             border: "1px solid var(--surface-light)",
+            background: "var(--layer-section-level-3)",
+            padding: "6px",
+            display: "flex",
+            gap: "6px",
+            width: "100%",
+            overflowX: "auto",
+            flexShrink: 0,
+            scrollbarWidth: "thin",
+            scrollbarColor: "var(--scrollbar-thumb) transparent",
+            scrollBehavior: "smooth",
+            WebkitOverflowScrolling: "touch",
           }}
         >
           <button
@@ -1648,30 +1757,46 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
             onClick={() => setActiveTab("writeup")}
             style={{
               flex: 1,
-              padding: "12px",
-              borderRadius: "8px",
-              border: activeTab === "writeup" ? "2px solid var(--primary)" : "1px solid var(--accent-purple-surface)",
-              backgroundColor: activeTab === "writeup" ? "var(--surface-light)" : "var(--surface)",
+              borderRadius: "999px",
+              border: "1px solid transparent",
+              padding: "14px 22px",
+              fontSize: "1rem",
               fontWeight: 600,
-              cursor: "pointer"
+              cursor: "pointer",
+              background: activeTab === "writeup" ? "var(--primary)" : "transparent",
+              color: activeTab === "writeup" ? "var(--text-inverse)" : "var(--text-primary)",
+              transition: "all 0.15s ease",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              whiteSpace: "nowrap",
+              justifyContent: "center",
             }}
           >
-            <span style={{ color: "var(--primary)" }}>Write-Up</span>
+            Write-Up
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("extras")}
             style={{
               flex: 1,
-              padding: "12px",
-              borderRadius: "8px",
-              border: activeTab === "extras" ? "2px solid var(--primary)" : "1px solid var(--accent-purple-surface)",
-              backgroundColor: activeTab === "extras" ? "var(--surface-light)" : "var(--surface)",
+              borderRadius: "999px",
+              border: "1px solid transparent",
+              padding: "14px 22px",
+              fontSize: "1rem",
               fontWeight: 600,
-              cursor: "pointer"
+              cursor: "pointer",
+              background: activeTab === "extras" ? "var(--primary)" : "transparent",
+              color: activeTab === "extras" ? "var(--text-inverse)" : "var(--text-primary)",
+              transition: "all 0.15s ease",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              whiteSpace: "nowrap",
+              justifyContent: "center",
             }}
           >
-            <span style={{ color: "var(--primary)" }}>Warranty Extras</span>
+            Warranty Extras
           </button>
         </div>
         <div style={{ flex: 1, minHeight: 0 }}>
@@ -1710,10 +1835,15 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
                         </label>
                         <div style={{ fontSize: "12px", color: "var(--info)" }}>Request {index + 1}</div>
                         <textarea
-                          value={task?.label || ""}
+                          value={stripRequestPrefix(task?.label || "")}
                           onChange={handleRequestLabelChange(slotKey)}
                           style={modernTextareaStyle}
                         />
+                        {isComplete && (
+                          <div style={{ fontSize: "12px", color: "var(--info-dark)" }}>
+                            Completed work: {stripRequestPrefix(toPastTenseRequest(task.originalLabel || task.label || ""))}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -1722,67 +1852,69 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
                   )}
                 </div>
               </div>
-              <div style={sectionBoxStyle}>
-                <div style={sectionHeaderStyle}>
-                  <div>
-                    <p style={sectionTitleStyle}>Cause</p>
-                    {renderLastSaved()}
-                    {renderSectionEditorMeta("cause")}
+              {isWarrantyJob && (
+                <div style={sectionBoxStyle}>
+                  <div style={sectionHeaderStyle}>
+                    <div>
+                      <p style={sectionTitleStyle}>Cause</p>
+                      {renderLastSaved()}
+                      {renderSectionEditorMeta("cause")}
+                    </div>
+                    {canAddCause && (
+                      <button
+                        type="button"
+                        onClick={addCauseRow}
+                        style={{ ...modernButtonStyle, backgroundColor: "var(--accent-purple)", color: "var(--surface)" }}
+                      >
+                        + Add Cause
+                      </button>
+                    )}
                   </div>
-                  {canAddCause && (
-                    <button
-                      type="button"
-                      onClick={addCauseRow}
-                      style={{ ...modernButtonStyle, backgroundColor: "var(--accent-purple)", color: "var(--surface)" }}
-                    >
-                      + Add Cause
-                    </button>
-                  )}
-                </div>
-                <div style={sectionScrollerStyle}>
-                      {writeUpData.causeEntries.map((entry) => {
-                        const matchedRequest = requestTasks.find((task) => task.sourceKey === entry.requestKey);
-                        const baseOptions = getRequestOptions(entry.requestKey);
-                        const dropdownOptions =
-                          entry.requestKey && !matchedRequest
-                            ? [{ sourceKey: entry.requestKey, label: entry.requestKey }, ...baseOptions]
-                            : baseOptions;
-                        return (
-                          <div key={entry.id} style={causeRowStyle}>
-                            <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
-                              <select
-                                value={entry.requestKey}
-                                onChange={handleCauseRequestChange(entry.id)}
-                                style={{ ...modernSelectStyle, flex: "0 0 38%" }}
-                              >
-                                <option value="">Select a job request…</option>
-                                {dropdownOptions.map((request) => (
-                                  <option key={request.sourceKey} value={request.sourceKey}>
-                                    {request.label}
-                                  </option>
-                                ))}
-                              </select>
-                              <textarea
-                                placeholder="Describe the cause..."
-                                value={entry.text}
-                                onChange={handleCauseTextChange(entry.id)}
-                                style={{ ...modernTextareaStyle, flex: 1, minHeight: "120px" }}
-                              />
+                  <div style={sectionScrollerStyle}>
+                        {writeUpData.causeEntries.map((entry) => {
+                          const matchedRequest = requestTasks.find((task) => task.sourceKey === entry.requestKey);
+                          const baseOptions = getRequestOptions(entry.requestKey);
+                          const dropdownOptions =
+                            entry.requestKey && !matchedRequest
+                              ? [{ sourceKey: entry.requestKey, label: entry.requestKey }, ...baseOptions]
+                              : baseOptions;
+                          return (
+                            <div key={entry.id} style={causeRowStyle}>
+                              <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
+                                <select
+                                  value={entry.requestKey}
+                                  onChange={handleCauseRequestChange(entry.id)}
+                                  style={{ ...modernSelectStyle, flex: "0 0 38%" }}
+                                >
+                                  <option value="">Select a job request…</option>
+                                  {dropdownOptions.map((request) => (
+                                    <option key={request.sourceKey} value={request.sourceKey}>
+                                      {request.label}
+                                    </option>
+                                  ))}
+                                </select>
+                                <textarea
+                                  placeholder="Describe the cause..."
+                                  value={entry.text}
+                                  onChange={handleCauseTextChange(entry.id)}
+                                  style={{ ...modernTextareaStyle, flex: 1, minHeight: "120px" }}
+                                />
+                              </div>
+                              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                                <button
+                                  type="button"
+                                  onClick={() => removeCauseRow(entry.id)}
+                                  style={{ ...modernButtonStyle, backgroundColor: "var(--danger)", color: "white" }}
+                                >
+                                  Remove
+                                </button>
+                              </div>
                             </div>
-                            <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                              <button
-                                type="button"
-                                onClick={() => removeCauseRow(entry.id)}
-                                style={{ ...modernButtonStyle, backgroundColor: "var(--danger)", color: "white" }}
-                              >
-                                Remove
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                  </div>
                 </div>
-              </div>
+              )}
               <div style={sectionBoxStyle}>
                 <div style={sectionHeaderStyle}>
                   <div>
@@ -1843,7 +1975,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
                 <div
                   key={fieldConfig.field}
                   style={{
-                    backgroundColor: "var(--surface)",
+                    backgroundColor: "var(--layer-section-level-3)",
                     padding: "16px",
                     borderRadius: "8px",
                     border: "1px solid var(--surface-light)",

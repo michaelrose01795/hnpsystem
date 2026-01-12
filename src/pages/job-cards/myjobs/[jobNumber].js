@@ -9,7 +9,7 @@ import { useUser } from "@/context/UserContext";
 import { useNextAction } from "@/context/NextActionContext";
 import { useRoster } from "@/context/RosterContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
-import { getJobByNumber, updateJobStatus } from "@/lib/database/jobs";
+import { getJobByNumber, updateJob, updateJobStatus } from "@/lib/database/jobs";
 import { getVHCChecksByJob } from "@/lib/database/vhc";
 import { getClockingStatus } from "@/lib/database/clocking";
 import { clockInToJob, clockOutFromJob, getUserActiveJobs } from "@/lib/database/jobClocking";
@@ -45,14 +45,15 @@ const SECTION_TITLES = {
 const MANDATORY_SECTION_KEYS = ["wheelsTyres", "brakesHubs", "serviceIndicator"];
 const trackedSectionKeys = new Set(MANDATORY_SECTION_KEYS);
 
-const VHC_REOPENED_STATUS = "VHC Reopened";
-const VHC_REOPEN_ELIGIBLE_STATUSES = ["VHC Complete", "VHC Sent"];
+const VHC_REOPENED_STATUS = "Open";
+const VHC_REOPEN_ELIGIBLE_STATUSES = ["VHC Complete", "VHC Sent", "Tech Done"];
 const VHC_COMPLETED_STATUSES = [
   "VHC Complete",
   "VHC Sent",
   "VHC Approved",
   "VHC Declined",
   "Tech Complete",
+  "Tech Done",
 ];
 
 const createDefaultSectionStatus = () =>
@@ -96,6 +97,44 @@ const deriveSectionStatusFromSavedData = (savedData = {}) => {
     derived.serviceIndicator = "complete";
   }
   return derived;
+};
+
+const normalizeJobTypeKey = (value) =>
+  typeof value === "string" ? value.trim().toLowerCase() : "";
+
+const JOB_TYPE_KEYWORDS = [
+  { label: "MOT", keywords: ["mot"] },
+  { label: "Service", keywords: ["service", "oil", "inspection", "maintenance"] },
+  { label: "Diagnose", keywords: ["diagnos", "fault", "warning", "investigation", "check"] },
+];
+
+const deriveJobTypeLabel = (jobCard) => {
+  const categories = (jobCard?.jobCategories || []).map(normalizeJobTypeKey);
+  if (categories.some((category) => category.includes("mot"))) return "MOT";
+  if (categories.some((category) => category.includes("service"))) return "Service";
+  if (categories.some((category) => category.includes("diag"))) return "Diagnose";
+
+  const baseType = normalizeJobTypeKey(jobCard?.type);
+  if (baseType.includes("mot")) return "MOT";
+  if (baseType.includes("service")) return "Service";
+  if (baseType.includes("diag")) return "Diagnose";
+
+  const haystack = [
+    jobCard?.description || "",
+    typeof jobCard?.requests === "string"
+      ? jobCard.requests
+      : JSON.stringify(jobCard?.requests || ""),
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  for (const mapping of JOB_TYPE_KEYWORDS) {
+    if (mapping.keywords.some((keyword) => haystack.includes(keyword))) {
+      return mapping.label;
+    }
+  }
+
+  return "Other";
 };
 
 const isConcernLocked = (concern) => {
@@ -241,6 +280,7 @@ export default function TechJobDetailPage() {
   const [notes, setNotes] = useState([]);
   const [notesLoading, setNotesLoading] = useState(false);
   const [notesSubmitting, setNotesSubmitting] = useState(false);
+  const [isCompleteJobHover, setIsCompleteJobHover] = useState(false);
 
   // VHC state management
   const [vhcData, setVhcData] = useState({
@@ -276,6 +316,7 @@ export default function TechJobDetailPage() {
   const saveTimeoutRef = useRef(null);
   const [showVhcSummary, setShowVhcSummary] = useState(false);
   const [showGreenItems, setShowGreenItems] = useState(false);
+  const [vhcCompleteOverride, setVhcCompleteOverride] = useState(false);
 
   const jobCardId = jobData?.jobCard?.id ?? null;
   const jobCardStatus = jobData?.jobCard?.status || "";
@@ -382,14 +423,17 @@ export default function TechJobDetailPage() {
 
   // Callback: Sync job status
   const syncJobStatus = useCallback(
-    async (targetStatus, currentStatus) => {
+    async (targetStatus, currentStatus, extraUpdates = {}) => {
       if (!targetStatus || !jobCardId) return null;
 
       const normalizedCurrent = (currentStatus || "").trim();
       if (!normalizedCurrent || normalizedCurrent === targetStatus) return null;
 
       try {
-        const response = await updateJobStatus(jobCardId, targetStatus);
+        const response =
+          extraUpdates && Object.keys(extraUpdates).length > 0
+            ? await updateJob(jobCardId, { status: targetStatus, ...extraUpdates })
+            : await updateJobStatus(jobCardId, targetStatus);
         if (response?.success && response.data) {
           setJobData((prev) => {
             if (!prev?.jobCard) return prev;
@@ -1032,22 +1076,34 @@ export default function TechJobDetailPage() {
     return mandatoryComplete;
   }, [sectionStatus]);
 
-  const showVhcReopenButton = VHC_REOPEN_ELIGIBLE_STATUSES.includes(jobCardStatus);
+  const showVhcReopenButton =
+    vhcCompleteOverride ||
+    Boolean(jobData?.jobCard?.vhcCompletedAt) ||
+    VHC_REOPEN_ELIGIBLE_STATUSES.includes(jobCardStatus);
 
   const handleCompleteVhcClick = useCallback(async () => {
     if (!jobCardId) return;
     if (!showVhcReopenButton && !canCompleteVhc) return;
 
-    const targetStatus = showVhcReopenButton ? VHC_REOPENED_STATUS : "VHC Complete";
+    const targetStatus = showVhcReopenButton ? VHC_REOPENED_STATUS : "Tech Done";
+    const shouldShowCompleteCard = targetStatus === "VHC Complete";
+    if (shouldShowCompleteCard) {
+      setVhcCompleteOverride(true);
+    }
 
     try {
-      const updated = await syncJobStatus(targetStatus, jobCardStatus);
+      const vhcUpdate = shouldShowCompleteCard
+        ? { vhc_completed_at: new Date().toISOString() }
+        : { vhc_completed_at: null };
+      const updated = await syncJobStatus(targetStatus, jobCardStatus, vhcUpdate);
       if (updated) {
-        if (targetStatus === "VHC Complete") {
+        if (shouldShowCompleteCard) {
           setIsReopenMode(true);
-          setActiveTab("overview");
+          setShowVhcSummary(false);
+          setShowGreenItems(false);
         } else {
           setIsReopenMode(false);
+          setVhcCompleteOverride(false);
         }
 
         if (jobNumberForStatusFlow) {
@@ -1062,9 +1118,15 @@ export default function TechJobDetailPage() {
         }
       } else {
         console.warn("Failed to update VHC status");
+        if (shouldShowCompleteCard) {
+          setVhcCompleteOverride(false);
+        }
       }
     } catch (error) {
       console.error("Error updating VHC status:", error);
+      if (shouldShowCompleteCard) {
+        setVhcCompleteOverride(false);
+      }
     }
   }, [
     jobCardId,
@@ -1072,7 +1134,6 @@ export default function TechJobDetailPage() {
     canCompleteVhc,
     syncJobStatus,
     jobCardStatus,
-    setActiveTab,
     jobNumberForStatusFlow,
   ]);
 
@@ -1634,6 +1695,7 @@ export default function TechJobDetailPage() {
   const jobStatusBadgeStyle = getStatusBadgeStyle(jobCardStatus, jobStatusColor);
   const partsCount = jobCard.partsRequests?.length || 0;
   const clockedHours = formatClockingDuration(clockedMinutesTotal);
+  const isWarrantyJob = (jobCard?.jobSource || "").toLowerCase() === "warranty";
 
   // Quick stats data for display
   const quickStats = [
@@ -1645,7 +1707,7 @@ export default function TechJobDetailPage() {
     },
     {
       label: "Job Type",
-      value: jobCard.type || "General",
+      value: deriveJobTypeLabel(jobCard),
       accent: "var(--info-dark)",
       pill: false,
     },
@@ -1701,16 +1763,31 @@ export default function TechJobDetailPage() {
       ? writeUp.completion_status.toLowerCase()
       : "";
   const rectificationsComplete = writeUpCompletion === "complete";
-  const writeUpComplete =
-    Boolean(faultText?.trim()) &&
-    Boolean(causeText?.trim()) &&
-    Boolean(rectificationText?.trim()) &&
-    rectificationsComplete;
+  const writeUpComplete = rectificationsComplete;
 
   const isVhcComplete =
-    !jobRequiresVhc || VHC_COMPLETED_STATUSES.includes(jobCardStatus);
+    !jobRequiresVhc ||
+    Boolean(jobCard?.vhcCompletedAt) ||
+    VHC_COMPLETED_STATUSES.includes(jobCardStatus);
 
   const canCompleteJob = writeUpComplete && isVhcComplete;
+  const completeJobLockedReasons = [];
+  if (!writeUpComplete) {
+    if (!rectificationsComplete) {
+      completeJobLockedReasons.push("Complete all write-up checkboxes");
+    }
+  }
+  if (!isVhcComplete) {
+    completeJobLockedReasons.push("Click Complete VHC");
+  }
+  const completeJobLockedTitle = canCompleteJob
+    ? "Mark job as Tech Complete"
+    : completeJobLockedReasons.length > 0
+    ? completeJobLockedReasons.join(" • ")
+    : "Complete the required steps to unlock";
+  const completeJobHoverShadow = isCompleteJobHover
+    ? "0 10px 20px rgba(0, 0, 0, 0.18)"
+    : "0 6px 14px rgba(0, 0, 0, 0.12)";
 
   const handleCompleteJob = async () => {
     if (!canCompleteJob) return;
@@ -1784,14 +1861,16 @@ export default function TechJobDetailPage() {
             display: "flex",
             alignItems: "center",
             gap: "12px",
+            flexWrap: "wrap",
+            justifyContent: "flex-end",
             backgroundColor: "var(--surface)",
             border: "1px solid var(--surface-light)",
             borderRadius: "12px",
-            padding: "10px 18px"
+            padding: "10px 14px"
           }}>
             <span style={{
               backgroundColor: jobStatusBadgeStyle.background,
-              padding: "6px 16px",
+              padding: "6px 14px",
               borderRadius: "8px",
               fontSize: "13px",
               letterSpacing: "0.02em",
@@ -1803,6 +1882,87 @@ export default function TechJobDetailPage() {
             <span style={{ fontSize: "12px", color: "var(--info)" }}>
               Updated {formatDateTime(jobCard.updatedAt)}
             </span>
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              {jobClocking ? (
+                <button
+                  onClick={handleJobClockOut}
+                  disabled={clockOutLoading || clockInLoading}
+                  style={{
+                    padding: "6px 12px",
+                    backgroundColor: "var(--accent-purple-surface)",
+                    color: "var(--accent-purple)",
+                    border: "1px solid var(--accent-purple-surface)",
+                    borderRadius: "8px",
+                    cursor: clockOutLoading || clockInLoading ? "not-allowed" : "pointer",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    opacity: clockOutLoading ? 0.8 : 1,
+                    transition: "all 0.2s ease"
+                  }}
+                >
+                  {clockOutLoading ? "Clocking Out..." : "Clock Out"}
+                </button>
+              ) : (
+                <>
+                <button
+                  onClick={handleJobClockIn}
+                  disabled={clockInLoading || clockOutLoading}
+                  style={{
+                    padding: "6px 12px",
+                    backgroundColor: "var(--accent-purple-surface)",
+                    color: "var(--accent-purple)",
+                    border: "1px solid var(--accent-purple-surface)",
+                    borderRadius: "8px",
+                    cursor: clockInLoading || clockOutLoading ? "not-allowed" : "pointer",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    opacity: clockInLoading ? 0.8 : 1,
+                    transition: "all 0.2s ease"
+                  }}
+                >
+                  {clockInLoading ? "Clocking In..." : "Clock In"}
+                </button>
+                </>
+              )}
+
+              <button
+                onClick={() => {
+                  if (!canCompleteJob || clockInLoading || clockOutLoading) {
+                    return;
+                  }
+                  handleCompleteJob();
+                }}
+                aria-disabled={!canCompleteJob || clockInLoading || clockOutLoading}
+                onMouseEnter={() => setIsCompleteJobHover(true)}
+                onMouseLeave={() => setIsCompleteJobHover(false)}
+                style={{
+                  padding: "6px 12px",
+                  backgroundColor: canCompleteJob
+                    ? isCompleteJobHover
+                      ? "var(--primary-dark)"
+                      : "var(--primary)"
+                    : isCompleteJobHover
+                    ? "var(--accent-purple-surface)"
+                    : "var(--layer-section-level-2)",
+                  color: canCompleteJob ? "var(--text-inverse)" : "var(--accent-purple)",
+                  border: canCompleteJob
+                    ? "1px solid var(--primary)"
+                    : isCompleteJobHover
+                    ? "1px solid var(--accent-purple)"
+                    : "1px solid var(--surface-light)",
+                  borderRadius: "8px",
+                  cursor: canCompleteJob ? "pointer" : "not-allowed",
+                  fontSize: "12px",
+                  fontWeight: "600",
+                  opacity: clockInLoading || clockOutLoading ? 0.8 : 1,
+                  transition: "all 0.2s ease",
+                  boxShadow: canCompleteJob || isCompleteJobHover ? completeJobHoverShadow : "none"
+                }}
+                title={completeJobLockedTitle}
+              >
+                {canCompleteJob ? "Complete Job" : "Complete Job (locked)"}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1916,7 +2076,7 @@ export default function TechJobDetailPage() {
             flex: 1,
             borderRadius: "8px",
             border: "1px solid var(--surface-light)",
-            background: "var(--surface)",
+            backgroundColor: "var(--layer-section-level-1)",
             padding: "24px",
             overflow: "hidden",
             display: "flex",
@@ -1966,79 +2126,81 @@ export default function TechJobDetailPage() {
                 )}
               </div>
 
-              {/* Vehicle Info */}
-              <div style={{
-                backgroundColor: "var(--surface)",
-                padding: "24px",
-                borderRadius: "12px",
-                border: "1px solid var(--surface-light)"
-              }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px" }}>
-                  Vehicle Information
-                </h3>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "12px" }}>
-                  <div>
-                    <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Registration:</span>
-                    <p style={{ fontSize: "16px", fontWeight: "600", color: "var(--primary)", margin: "4px 0 0 0" }}>
-                      {vehicle.reg}
-                    </p>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Make & Model:</span>
-                    <p style={{ fontSize: "16px", fontWeight: "600", margin: "4px 0 0 0" }}>
-                      {vehicle.makeModel}
-                    </p>
-                  </div>
-                  {vehicle.mileage && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px" }}>
+                {/* Vehicle Info */}
+                <div style={{
+                  backgroundColor: "var(--surface)",
+                  padding: "24px",
+                  borderRadius: "12px",
+                  border: "1px solid var(--surface-light)"
+                }}>
+                  <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px" }}>
+                    Vehicle Information
+                  </h3>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "12px" }}>
                     <div>
-                      <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Mileage:</span>
-                      <p style={{ fontSize: "16px", fontWeight: "600", margin: "4px 0 0 0" }}>
-                        {vehicle.mileage.toLocaleString()} miles
+                      <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Registration:</span>
+                      <p style={{ fontSize: "16px", fontWeight: "600", color: "var(--primary)", margin: "4px 0 0 0" }}>
+                        {vehicle.reg}
                       </p>
                     </div>
-                  )}
-                  {vehicle.colour && (
                     <div>
-                      <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Colour:</span>
+                      <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Make & Model:</span>
                       <p style={{ fontSize: "16px", fontWeight: "600", margin: "4px 0 0 0" }}>
-                        {vehicle.colour}
+                        {vehicle.makeModel}
                       </p>
                     </div>
-                  )}
+                    {vehicle.mileage && (
+                      <div>
+                        <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Mileage:</span>
+                        <p style={{ fontSize: "16px", fontWeight: "600", margin: "4px 0 0 0" }}>
+                          {vehicle.mileage.toLocaleString()} miles
+                        </p>
+                      </div>
+                    )}
+                    {vehicle.colour && (
+                      <div>
+                        <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Colour:</span>
+                        <p style={{ fontSize: "16px", fontWeight: "600", margin: "4px 0 0 0" }}>
+                          {vehicle.colour}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              {/* Customer Info */}
-              <div style={{
-                backgroundColor: "var(--surface)",
-                padding: "24px",
-                borderRadius: "12px",
-                border: "1px solid var(--surface-light)"
-              }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px" }}>
-                  Customer Information
-                </h3>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "12px" }}>
-                  <div>
-                    <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Name:</span>
-                    <p style={{ fontSize: "16px", fontWeight: "600", margin: "4px 0 0 0" }}>
-                      {customer.firstName} {customer.lastName}
-                    </p>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Mobile:</span>
-                    <p style={{ fontSize: "16px", fontWeight: "600", margin: "4px 0 0 0" }}>
-                      {customer.mobile}
-                    </p>
-                  </div>
-                  {customer.email && (
+                {/* Customer Info */}
+                <div style={{
+                  backgroundColor: "var(--surface)",
+                  padding: "24px",
+                  borderRadius: "12px",
+                  border: "1px solid var(--surface-light)"
+                }}>
+                  <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px" }}>
+                    Customer Information
+                  </h3>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "12px" }}>
                     <div>
-                      <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Email:</span>
-                      <p style={{ fontSize: "16px", fontWeight: "600", color: "var(--info)", margin: "4px 0 0 0" }}>
-                        {customer.email}
+                      <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Name:</span>
+                      <p style={{ fontSize: "16px", fontWeight: "600", margin: "4px 0 0 0" }}>
+                        {customer.firstName} {customer.lastName}
                       </p>
                     </div>
-                  )}
+                    <div>
+                      <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Mobile:</span>
+                      <p style={{ fontSize: "16px", fontWeight: "600", margin: "4px 0 0 0" }}>
+                        {customer.mobile}
+                      </p>
+                    </div>
+                    {customer.email && (
+                      <div>
+                        <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Email:</span>
+                        <p style={{ fontSize: "16px", fontWeight: "600", color: "var(--info)", margin: "4px 0 0 0" }}>
+                          {customer.email}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -2047,125 +2209,163 @@ export default function TechJobDetailPage() {
           {/* VHC TAB */}
           {activeTab === "vhc" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "20px", height: "100%" }}>
-
-              {/* VHC Header with Save Status */}
-              <div style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "16px 20px",
-                backgroundColor: "var(--layer-section-level-1)",
-                borderRadius: "12px",
-                border: "1px solid var(--accent-purple)"
-              }}>
-                <div>
-                  <h2 style={{ margin: 0, fontSize: "20px", fontWeight: "700", color: "var(--accent-purple)" }}>
-                    Vehicle Health Check
-                  </h2>
-                  <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "var(--info)" }}>
-                    Complete mandatory sections to finish VHC
-                  </p>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  {saveStatus === "saving" && (
-                    <span style={{ fontSize: "13px", color: "var(--info)" }}>Saving...</span>
-                  )}
-                  {saveStatus === "saved" && (
-                    <span style={{ fontSize: "13px", color: "var(--success)" }}>Saved</span>
-                  )}
-                  {saveStatus === "error" && (
-                    <span style={{ fontSize: "13px", color: "var(--danger)" }}>{saveError || "Save failed"}</span>
-                  )}
-                  {lastSavedAt && (
-                    <span style={{ fontSize: "12px", color: "var(--info)" }}>
-                      Last saved: {formatDateTime(lastSavedAt)}
-                    </span>
-                  )}
-
+              {showVhcReopenButton ? (
+                <div style={{
+                  backgroundColor: "var(--layer-section-level-2)",
+                  borderRadius: "12px",
+                  border: "1px solid var(--surface-light)",
+                  padding: "20px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "16px",
+                }}>
+                  <div>
+                    <h2 style={{ margin: 0, fontSize: "20px", fontWeight: "700", color: "var(--accent-purple)" }}>
+                      VHC Complete
+                    </h2>
+                    <p style={{ margin: "6px 0 0 0", fontSize: "13px", color: "var(--info)" }}>
+                      Vehicle Health Check completed.
+                    </p>
+                  </div>
                   <button
                     type="button"
-                    onClick={() => setShowVhcSummary((prev) => !prev)}
+                    onClick={handleCompleteVhcClick}
                     style={{
-                      padding: "10px 16px",
+                      padding: "10px 18px",
                       borderRadius: "999px",
                       border: "1px solid var(--accent-purple)",
-                      backgroundColor: showVhcSummary ? "var(--accent-purple)" : "transparent",
-                      color: showVhcSummary ? "var(--surface)" : "var(--accent-purple)",
+                      backgroundColor: "transparent",
+                      color: "var(--accent-purple)",
                       fontWeight: 600,
                       fontSize: "13px",
                       cursor: "pointer",
                       transition: "all 0.2s ease",
                     }}
                   >
-                    {showVhcSummary ? "Close VHC summary" : "Show Summary"}
+                    Reopen VHC
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={handleCompleteVhcClick}
-                    disabled={!showVhcReopenButton && !canCompleteVhc}
-                    style={{
-                      padding: "10px 18px",
-                      borderRadius: "999px",
-                      border: "1px solid var(--accent-purple)",
-                      backgroundColor:
-                        showVhcReopenButton || !canCompleteVhc
-                          ? "transparent"
-                          : "var(--accent-purple)",
-                      color: showVhcReopenButton
-                        ? "var(--accent-purple)"
-                        : canCompleteVhc
-                        ? "var(--surface)"
-                        : "var(--accent-purple)",
-                      fontWeight: 600,
-                      fontSize: "13px",
-                      cursor:
-                        showVhcReopenButton || canCompleteVhc ? "pointer" : "not-allowed",
-                      opacity: showVhcReopenButton || canCompleteVhc ? 1 : 0.5,
-                      transition: "all 0.2s ease",
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!showVhcReopenButton && !canCompleteVhc) return;
-                      e.currentTarget.style.transform = "translateY(-2px)";
-                      e.currentTarget.style.boxShadow = "0 6px 16px rgba(var(--info-rgb),0.4)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(var(--info-rgb),0.3)";
-                    }}
-                    title={
-                      showVhcReopenButton
-                        ? "Reopen the Vehicle Health Check to make additional changes"
-                        : canCompleteVhc
-                        ? "Mark the Vehicle Health Check as complete"
-                        : "Complete all mandatory sections to finish the VHC"
-                    }
-                  >
-                    {showVhcReopenButton ? "Reopen" : "Complete VHC"}
-                  </button>
-
-                  {/* Camera Button - Always visible for technicians */}
-                  {jobNumber && (
-                    <VhcCameraButton
-                      jobNumber={jobNumber}
-                      userId={dbUserId || user?.id}
-                      onUploadComplete={() => {
-                        console.log("VHC media uploaded, refreshing job data...");
-                        loadJobData();
-                      }}
-                    />
-                  )}
                 </div>
-              </div>
-
-              {!showVhcSummary && (
+              ) : (
                 <>
-                  {/* Mandatory Sections */}
-                  <div style={{ backgroundColor: "var(--layer-section-level-1)", borderRadius: "12px", padding: "16px" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "12px", color: "var(--accent-purple)" }}>
-                  Mandatory Sections
-                </h3>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px" }}>
+                  {/* VHC Header with Save Status */}
+                  <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "16px 20px",
+                    backgroundColor: "var(--layer-section-level-3)",
+                    borderRadius: "12px",
+                    border: "1px solid var(--accent-purple)"
+                  }}>
+                    <div>
+                      <h2 style={{ margin: 0, fontSize: "20px", fontWeight: "700", color: "var(--accent-purple)" }}>
+                        Vehicle Health Check
+                      </h2>
+                      <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "var(--info)" }}>
+                        Complete mandatory sections to finish VHC
+                      </p>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      {saveStatus === "saving" && (
+                        <span style={{ fontSize: "13px", color: "var(--info)" }}>Saving...</span>
+                      )}
+                      {saveStatus === "saved" && (
+                        <span style={{ fontSize: "13px", color: "var(--success)" }}>Saved</span>
+                      )}
+                      {saveStatus === "error" && (
+                        <span style={{ fontSize: "13px", color: "var(--danger)" }}>{saveError || "Save failed"}</span>
+                      )}
+                      {lastSavedAt && (
+                        <span style={{ fontSize: "12px", color: "var(--info)" }}>
+                          Last saved: {formatDateTime(lastSavedAt)}
+                        </span>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => setShowVhcSummary((prev) => !prev)}
+                        style={{
+                          padding: "10px 16px",
+                          borderRadius: "999px",
+                          border: "1px solid var(--accent-purple)",
+                          backgroundColor: showVhcSummary ? "var(--accent-purple)" : "transparent",
+                          color: showVhcSummary ? "var(--surface)" : "var(--accent-purple)",
+                          fontWeight: 600,
+                          fontSize: "13px",
+                          cursor: "pointer",
+                          transition: "all 0.2s ease",
+                        }}
+                      >
+                        {showVhcSummary ? "Close VHC summary" : "Show Summary"}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleCompleteVhcClick}
+                        disabled={!showVhcReopenButton && !canCompleteVhc}
+                        style={{
+                          padding: "10px 18px",
+                          borderRadius: "999px",
+                          border: "1px solid var(--accent-purple)",
+                          backgroundColor:
+                            showVhcReopenButton || !canCompleteVhc
+                              ? "transparent"
+                              : "var(--accent-purple)",
+                          color: showVhcReopenButton
+                            ? "var(--accent-purple)"
+                            : canCompleteVhc
+                            ? "var(--surface)"
+                            : "var(--accent-purple)",
+                          fontWeight: 600,
+                          fontSize: "13px",
+                          cursor:
+                            showVhcReopenButton || canCompleteVhc ? "pointer" : "not-allowed",
+                          opacity: showVhcReopenButton || canCompleteVhc ? 1 : 0.5,
+                          transition: "all 0.2s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!showVhcReopenButton && !canCompleteVhc) return;
+                          e.currentTarget.style.transform = "translateY(-2px)";
+                          e.currentTarget.style.boxShadow = "0 6px 16px rgba(var(--info-rgb),0.4)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = "translateY(0)";
+                          e.currentTarget.style.boxShadow = "0 4px 12px rgba(var(--info-rgb),0.3)";
+                        }}
+                        title={
+                          showVhcReopenButton
+                            ? "Reopen the Vehicle Health Check to make additional changes"
+                            : canCompleteVhc
+                            ? "Mark the Vehicle Health Check as complete"
+                            : "Complete all mandatory sections to finish the VHC"
+                        }
+                      >
+                        {showVhcReopenButton ? "Reopen" : "Complete VHC"}
+                      </button>
+
+                      {/* Camera Button - Always visible for technicians */}
+                      {jobNumber && (
+                        <VhcCameraButton
+                          jobNumber={jobNumber}
+                          userId={dbUserId || user?.id}
+                          onUploadComplete={() => {
+                            console.log("VHC media uploaded, refreshing job data...");
+                            loadJobData();
+                          }}
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  {!showVhcSummary && (
+                    <>
+                      {/* Mandatory Sections */}
+                      <div style={{ backgroundColor: "var(--layer-section-level-1)", borderRadius: "12px", padding: "16px" }}>
+                    <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "12px", color: "var(--accent-purple)" }}>
+                      Mandatory Sections
+                    </h3>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px" }}>
 
                   {/* Wheels & Tyres */}
                   <div style={{
@@ -2563,6 +2763,8 @@ export default function TechJobDetailPage() {
                   </div>
                 </div>
               )}
+                </>
+              )}
 
               {/* VHC Modals */}
               {activeSection === "wheelsTyres" && (
@@ -2630,7 +2832,7 @@ export default function TechJobDetailPage() {
           {/* PARTS TAB */}
           {activeTab === "parts" && (
             <div style={{
-              backgroundColor: "var(--surface)",
+              backgroundColor: "var(--layer-section-level-2)",
               padding: "24px",
               borderRadius: "12px",
               border: "1px solid var(--surface-light)",
@@ -2640,7 +2842,7 @@ export default function TechJobDetailPage() {
               alignItems: "stretch"
             }}>
               <div style={{
-                backgroundColor: "var(--surface)",
+                backgroundColor: "var(--layer-section-level-3)",
                 borderRadius: "12px",
                 border: "1px solid var(--surface-light)",
                 padding: "20px",
@@ -2741,7 +2943,7 @@ export default function TechJobDetailPage() {
               </div>
 
               <div style={{
-                backgroundColor: "var(--surface)",
+                backgroundColor: "var(--layer-section-level-3)",
                 borderRadius: "12px",
                 border: "1px solid var(--accent-purple-surface)",
                 padding: "20px",
@@ -2852,7 +3054,7 @@ export default function TechJobDetailPage() {
           {/* NOTES TAB */}
           {activeTab === "notes" && (
             <div style={{
-              backgroundColor: "var(--surface)",
+              backgroundColor: "var(--layer-section-level-2)",
               padding: "24px",
               borderRadius: "12px",
               border: "1px solid var(--surface-light)",
@@ -2872,8 +3074,8 @@ export default function TechJobDetailPage() {
                   style={{
                     padding: "10px 20px",
                     backgroundColor: "var(--primary)",
-                    color: "white",
-                    border: "1px solid var(--danger)",
+                    color: "var(--text-inverse)",
+                    border: "1px solid var(--primary)",
                     borderRadius: "8px",
                     cursor: "pointer",
                     fontSize: "14px",
@@ -2887,7 +3089,7 @@ export default function TechJobDetailPage() {
               {showAddNote && (
                 <div style={{
                   padding: "20px",
-                  backgroundColor: "var(--surface-light)",
+                  backgroundColor: "var(--layer-section-level-3)",
                   borderRadius: "12px",
                   border: "1px solid var(--surface-light)"
                 }}>
@@ -2956,7 +3158,7 @@ export default function TechJobDetailPage() {
                   textAlign: "center",
                   padding: "40px",
                   color: "var(--info)",
-                  backgroundColor: "var(--surface-light)",
+                  backgroundColor: "var(--layer-section-level-3)",
                   borderRadius: "12px",
                   border: "1px solid var(--surface-light)"
                 }}>
@@ -2982,7 +3184,7 @@ export default function TechJobDetailPage() {
                           border: "1px solid var(--surface-light)",
                           borderRadius: "10px",
                           padding: "16px",
-                          backgroundColor: "var(--surface-light)"
+                          backgroundColor: "var(--layer-section-level-3)"
                         }}
                       >
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "8px" }}>
@@ -3012,7 +3214,7 @@ export default function TechJobDetailPage() {
               flexDirection: "column",
               borderRadius: "12px",
               border: "1px solid var(--surface-light)",
-              backgroundColor: "var(--surface)"
+              backgroundColor: "var(--layer-section-level-2)"
             }}>
               <WriteUpForm jobNumber={jobNumber} showHeader={false} />
             </div>
@@ -3021,97 +3223,6 @@ export default function TechJobDetailPage() {
         </div>
 
         {/* Bottom Action Bar */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
-          gap: "12px",
-          marginTop: "12px",
-          paddingTop: "12px",
-          borderTop: "2px solid var(--surface-light)",
-          flexShrink: 0
-        }}>
-          {/* Back to My Jobs Button */}
-          <button
-            onClick={() => router.push("/job-cards/myjobs")}
-            style={{
-              padding: "14px",
-              backgroundColor: "var(--primary)",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: "600",
-            }}
-          >
-            Back to My Jobs
-          </button>
-
-          {/* Clock Action Button */}
-          {jobClocking ? (
-            <button
-              onClick={handleJobClockOut}
-              disabled={clockOutLoading || clockInLoading}
-              style={{
-                padding: "14px",
-                backgroundColor: "var(--accent-purple-surface)",
-                color: "var(--accent-purple)",
-                border: "1px solid var(--accent-purple-surface)",
-                borderRadius: "8px",
-                cursor: clockOutLoading || clockInLoading ? "not-allowed" : "pointer",
-                fontSize: "14px",
-                fontWeight: "600",
-                opacity: clockOutLoading ? 0.8 : 1,
-                transition: "all 0.2s ease"
-              }}
-            >
-              {clockOutLoading ? "Clocking Out..." : "Clock Out"}
-            </button>
-          ) : (
-            <button
-              onClick={handleJobClockIn}
-              disabled={clockInLoading || clockOutLoading}
-              style={{
-                padding: "14px",
-                backgroundColor: "var(--accent-purple-surface)",
-                color: "var(--accent-purple)",
-                border: "1px solid var(--accent-purple-surface)",
-                borderRadius: "8px",
-                cursor: clockInLoading || clockOutLoading ? "not-allowed" : "pointer",
-                fontSize: "14px",
-                fontWeight: "600",
-                opacity: clockInLoading ? 0.8 : 1,
-                transition: "all 0.2s ease"
-              }}
-            >
-              {clockInLoading ? "Clocking In..." : "Clock In"}
-            </button>
-          )}
-
-          {/* Complete Job Button - gated by write-up + VHC completion */}
-          <button
-            onClick={handleCompleteJob}
-            disabled={!canCompleteJob || clockInLoading || clockOutLoading}
-            style={{
-              padding: "14px",
-              backgroundColor: canCompleteJob ? "var(--info)" : "var(--success)",
-              color: canCompleteJob ? "white" : "var(--info)",
-              border: "none",
-              borderRadius: "8px",
-              cursor: canCompleteJob ? "pointer" : "not-allowed",
-              fontSize: "14px",
-              fontWeight: "600",
-              opacity: clockInLoading || clockOutLoading ? 0.8 : 1
-            }}
-            title={
-              canCompleteJob
-                ? "Mark job as Tech Complete"
-                : "Complete write-up (fault, cause, rectification) and finish VHC first"
-            }
-          >
-            {canCompleteJob ? "Complete Job" : "Complete Job (locked)"}
-          </button>
-        </div>
       </div>
     </Layout>
   );

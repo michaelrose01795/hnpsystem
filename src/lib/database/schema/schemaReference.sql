@@ -579,6 +579,7 @@ CREATE TABLE public.job_requests (
   sort_order integer NOT NULL DEFAULT 1,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  status text NOT NULL DEFAULT 'inprogress'::text,
   CONSTRAINT job_requests_pkey PRIMARY KEY (request_id),
   CONSTRAINT job_requests_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
 );

@@ -463,7 +463,7 @@ export const getAllJobs = async () => {
         )
       ),
       job_notes(note_id, note_text, user_id, created_at, updated_at),
-      job_writeups(writeup_id, work_performed, parts_used, recommendations, labour_time, technician_id, created_at, updated_at),
+      job_writeups(writeup_id, work_performed, parts_used, recommendations, labour_time, technician_id, completion_status, created_at, updated_at),
       job_files(file_id, file_name, file_url, file_type, folder, uploaded_by, uploaded_at),
       vhc_authorizations(id, authorized_items, authorized_at),
       booking_request:job_booking_requests(
@@ -807,7 +807,7 @@ export const getJobByNumber = async (jobNumber) => {
         )
       ),
       job_notes(note_id, note_text, user_id, created_at, updated_at),
-      job_writeups(writeup_id, work_performed, parts_used, recommendations, labour_time, technician_id, created_at, updated_at),
+      job_writeups(writeup_id, work_performed, parts_used, recommendations, labour_time, technician_id, completion_status, created_at, updated_at),
       job_files(file_id, file_name, file_url, file_type, folder, uploaded_by, uploaded_at)
     `)
     .eq("job_number", jobNumber)
@@ -1081,7 +1081,7 @@ export const getJobByNumberOrReg = async (searchTerm) => {
         )
       ),
       job_notes(note_id, note_text, created_at),
-      job_writeups(writeup_id, work_performed, parts_used, recommendations),
+      job_writeups(writeup_id, work_performed, parts_used, recommendations, completion_status),
       job_files(file_id, file_name, file_url, file_type, folder, uploaded_at)
     `)
     .eq("job_number", searchTerm)
@@ -1200,7 +1200,7 @@ export const getJobByNumberOrReg = async (searchTerm) => {
           )
         ),
         job_notes(note_id, note_text, created_at),
-        job_writeups(writeup_id, work_performed, parts_used, recommendations),
+        job_writeups(writeup_id, work_performed, parts_used, recommendations, completion_status),
         job_files(file_id, file_name, file_url, file_type, folder, uploaded_at)
       `)
       .eq("vehicle_reg", searchTerm.toUpperCase());
@@ -1498,7 +1498,8 @@ const deriveAuthorisedWorkItems = (authorizationRows = []) => {
 };
 
 // ✅ Normalise stored task status values
-const sanitiseTaskStatus = (status) => (status === "complete" ? "complete" : "additional_work");
+const sanitiseTaskStatus = (status) =>
+  status === "complete" || status === "inprogress" ? status : "additional_work";
 
 // ✅ Merge stored tasks with live request/VHC sources
 const buildWriteUpTaskList = ({ storedTasks = [], requestItems = [], authorisedItems = [] }) => {
@@ -1522,7 +1523,7 @@ const buildWriteUpTaskList = ({ storedTasks = [], requestItems = [], authorisedI
     const key = `${item.source}:${item.sourceKey}`;
     const existing = registry.get(key);
     if (existing) {
-      merged.push({ ...existing, label: item.label });
+      merged.push({ ...existing, label: existing.label || item.label });
       registry.delete(key);
     } else {
       merged.push({
@@ -1539,7 +1540,7 @@ const buildWriteUpTaskList = ({ storedTasks = [], requestItems = [], authorisedI
     const key = `${item.source}:${item.sourceKey}`;
     const existing = registry.get(key);
     if (existing) {
-      merged.push({ ...existing, label: item.label });
+      merged.push({ ...existing, label: existing.label || item.label });
       registry.delete(key);
     } else {
       merged.push({
@@ -1593,7 +1594,12 @@ const buildTaskChecklistPayload = (tasks = [], sectionEditors = createSectionEdi
     source: task?.source || "request",
     sourceKey: task?.sourceKey || task?.source_key || `${task?.source || "request"}-${task?.label || ""}`,
     label: task?.label || "",
-    status: task?.status === "complete" ? "complete" : "additional_work",
+    status:
+      task?.status === "complete"
+        ? "complete"
+        : task?.status === "inprogress"
+        ? "inprogress"
+        : "additional_work",
   })),
   meta: {
     sectionEditors: normalizeSectionEditors(sectionEditors),
@@ -2738,13 +2744,21 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
 
     const rawTasks = Array.isArray(writeUpData?.tasks) ? writeUpData.tasks : [];
     const filteredTasks = rawTasks
-      .map((task) => ({
-        taskId: task?.taskId || null,
-        source: task?.source || "request",
-        sourceKey: task?.sourceKey || `${task?.source || "request"}-${task?.label || "task"}`,
-        label: (task?.label || "").toString().trim(),
-        status: sanitiseTaskStatus(task?.status),
-      }))
+      .map((task) => {
+        const source = task?.source || "request";
+        const normalizedStatus = sanitiseTaskStatus(task?.status);
+        const status =
+          source === "request" && normalizedStatus !== "complete"
+            ? "inprogress"
+            : normalizedStatus;
+        return {
+          taskId: task?.taskId || null,
+          source,
+          sourceKey: task?.sourceKey || `${source}-${task?.label || "task"}`,
+          label: (task?.label || "").toString().trim(),
+          status,
+        };
+      })
       .filter((task) => Boolean(task.label));
 
     // ⚠️ Verify: table or column not found in Supabase schema
@@ -2852,6 +2866,33 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
       if (deleteTasksError) {
         console.error("❌ Error deleting stale write-up tasks:", deleteTasksError);
         return { success: false, error: deleteTasksError.message };
+      }
+    }
+
+    const requestStatusUpdates = filteredTasks
+      .filter((task) => task.source === "request")
+      .map((task) => {
+        const match = String(task.sourceKey || "").match(/^req-(\d+)$/i);
+        if (!match) return null;
+        return {
+          sortOrder: Number(match[1]),
+          status: task.status === "complete" ? "complete" : "inprogress",
+        };
+      })
+      .filter(Boolean);
+
+    if (requestStatusUpdates.length > 0) {
+      const timestamp = new Date().toISOString();
+      for (const update of requestStatusUpdates) {
+        const { error: requestUpdateError } = await supabase
+          .from("job_requests")
+          .update({ status: update.status, updated_at: timestamp })
+          .eq("job_id", job.id)
+          .eq("sort_order", update.sortOrder);
+
+        if (requestUpdateError) {
+          console.error("⚠️ Error updating job request status:", requestUpdateError);
+        }
       }
     }
 
