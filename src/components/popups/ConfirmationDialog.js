@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useTheme } from "@/styles/themeProvider";
-
+import { useRouter } from "next/router";
 const renderMessageLines = (message) => {
   if (!message && message !== 0) return [];
   const text = String(message);
@@ -19,8 +18,7 @@ export default function ConfirmationDialog({
   onCancel,
   onConfirm,
 }) {
-  const { resolvedMode } = useTheme();
-  const closeButtonColor = resolvedMode === "dark" ? "var(--accent-purple)" : "var(--danger)";
+  const router = useRouter();
   useEffect(() => {
     if (!isOpen || typeof window === "undefined") return undefined;
 
@@ -38,6 +36,10 @@ export default function ConfirmationDialog({
   if (!isOpen) return null;
 
   const lines = renderMessageLines(message);
+  const handleConfirm = () => {
+    onConfirm?.();
+    router.push("/job-cards/myjobs");
+  };
 
   return (
     <div
@@ -103,24 +105,6 @@ export default function ConfirmationDialog({
               )}
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onCancel}
-            aria-label="Close confirmation dialog"
-            style={{
-              border: "none",
-              background: "transparent",
-              fontSize: "0.95rem",
-              lineHeight: 1,
-              cursor: "pointer",
-              color: closeButtonColor,
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-            }}
-          >
-            Close
-          </button>
         </div>
         <div
           style={{
@@ -147,7 +131,7 @@ export default function ConfirmationDialog({
           </button>
           <button
             type="button"
-            onClick={onConfirm}
+            onClick={handleConfirm}
             style={{
               padding: "10px 16px",
               borderRadius: "12px",

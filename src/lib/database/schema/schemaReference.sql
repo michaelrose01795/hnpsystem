@@ -518,9 +518,11 @@ CREATE TABLE public.job_clocking (
   work_type text NOT NULL DEFAULT 'initial'::text,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
+  request_id bigint,
   CONSTRAINT job_clocking_pkey PRIMARY KEY (id),
   CONSTRAINT job_clocking_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id),
-  CONSTRAINT job_clocking_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
+  CONSTRAINT job_clocking_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
+  CONSTRAINT job_clocking_request_id_fkey FOREIGN KEY (request_id) REFERENCES public.job_requests(request_id)
 );
 CREATE TABLE public.job_cosmetic_damage (
   id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,

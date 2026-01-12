@@ -260,8 +260,18 @@ const extractTasksFromChecklist = (rawChecklist) => {
   return Array.isArray(parsed.tasks) ? parsed.tasks : [];
 };
 
+const formatLastSavedTime = (value) => {
+  if (!value) return "Not saved yet";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "Not saved yet";
+  return `Last saved ${date.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+  })}`;
+};
+
 const sectionBoxStyle = {
-  backgroundColor: "var(--info-surface)",
+  backgroundColor: "var(--surface-light)",
   padding: "18px",
   borderRadius: "16px",
   boxShadow: "none",
@@ -413,7 +423,7 @@ const cardRowStyle = (completed) => ({
   borderRadius: "12px",
   border: `1px solid ${completed ? "var(--info)" : "var(--accent-purple-surface)"}`,
   padding: "12px",
-  backgroundColor: completed ? "var(--success-surface)" : "var(--surface)",
+  backgroundColor: completed ? "var(--success-surface)" : "var(--surface-light)",
   display: "flex",
   flexDirection: "column",
   gap: "8px",
@@ -423,7 +433,7 @@ const rectificationCardStyle = (completed) => ({
   borderRadius: "12px",
   border: `1px solid ${completed ? "var(--info)" : "var(--danger)"}`,
   padding: "12px",
-  backgroundColor: completed ? "var(--success-surface)" : "var(--surface)",
+  backgroundColor: completed ? "var(--success-surface)" : "var(--surface-light)",
   display: "flex",
   flexDirection: "column",
   gap: "8px",
@@ -452,7 +462,7 @@ const checkboxStyle = {
 const causeRowStyle = {
   borderRadius: "12px",
   border: "1px solid var(--info)",
-  backgroundColor: "var(--surface)",
+  backgroundColor: "var(--surface-light)",
   padding: "12px",
   display: "flex",
   flexDirection: "column",
@@ -536,6 +546,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
   const [, setAuthorizedItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState(null);
   const [writeUpData, setWriteUpData] = useState({
     fault: "",
     caused: "",
@@ -563,6 +574,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
 
   const liveSyncTimeoutRef = useRef(null);
   const autoSaveTimeoutRef = useRef(null);
+  const autoSaveExtrasTimeoutRef = useRef(null);
   const lastSyncedFieldsRef = useRef({
     fault: "",
     caused: "",
@@ -571,6 +583,9 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
     sectionEditorsSignature: "",
   });
   const lastSyncedTasksRef = useRef({
+    signature: "",
+  });
+  const lastSyncedExtrasRef = useRef({
     signature: "",
   });
   const [writeUpMeta, setWriteUpMeta] = useState({ jobId: null, writeupId: null });
@@ -694,6 +709,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
             ...prev,
             completionStatus: nextCompletionStatus,
           }));
+          setLastSavedAt(new Date());
 
           const requestsForPartsStatus = jobData?.jobCard?.partsRequests || [];
           const desiredStatus = determineJobStatusFromTasks(
@@ -1107,6 +1123,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
           }));
         }
 
+        setLastSavedAt(new Date());
         markFieldsSynced({
           ...sanitizedFields,
           causeSignature: buildCauseSignature(normalizedCauseEntries),
@@ -1239,12 +1256,69 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
   ]);
 
   useEffect(() => {
+    if (!writeUpMeta.jobId || saving) {
+      return;
+    }
+
+    const signature = JSON.stringify({
+      warrantyClaim: writeUpData.warrantyClaim || "",
+      tsrNumber: writeUpData.tsrNumber || "",
+      pwaNumber: writeUpData.pwaNumber || "",
+      technicalBulletins: writeUpData.technicalBulletins || "",
+      technicalSignature: writeUpData.technicalSignature || "",
+      qualityControl: writeUpData.qualityControl || "",
+      additionalParts: writeUpData.additionalParts || "",
+      qty: writeUpData.qty || [],
+      booked: writeUpData.booked || [],
+      jobDescription: writeUpData.jobDescription || "",
+    });
+
+    if (signature === lastSyncedExtrasRef.current.signature) {
+      return;
+    }
+
+    if (autoSaveExtrasTimeoutRef.current) {
+      clearTimeout(autoSaveExtrasTimeoutRef.current);
+    }
+
+    autoSaveExtrasTimeoutRef.current = setTimeout(() => {
+      autoSaveExtrasTimeoutRef.current = null;
+      lastSyncedExtrasRef.current.signature = signature;
+      void performWriteUpSave({ silent: true });
+    }, 800);
+
+    return () => {
+      if (autoSaveExtrasTimeoutRef.current) {
+        clearTimeout(autoSaveExtrasTimeoutRef.current);
+        autoSaveExtrasTimeoutRef.current = null;
+      }
+    };
+  }, [
+    writeUpData.warrantyClaim,
+    writeUpData.tsrNumber,
+    writeUpData.pwaNumber,
+    writeUpData.technicalBulletins,
+    writeUpData.technicalSignature,
+    writeUpData.qualityControl,
+    writeUpData.additionalParts,
+    writeUpData.qty,
+    writeUpData.booked,
+    writeUpData.jobDescription,
+    writeUpMeta.jobId,
+    performWriteUpSave,
+    saving,
+  ]);
+
+  useEffect(() => {
     return () => {
       if (liveSyncTimeoutRef.current) {
         clearTimeout(liveSyncTimeoutRef.current);
       }
       if (autoSaveTimeoutRef.current) {
         clearTimeout(autoSaveTimeoutRef.current);
+      }
+      if (autoSaveExtrasTimeoutRef.current) {
+        clearTimeout(autoSaveExtrasTimeoutRef.current);
       }
     };
   }, []);
@@ -1338,9 +1412,6 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
       supabase.removeChannel(channel);
     };
   }, [writeUpMeta.jobId, markFieldsSynced]);
-  const handleSave = async () => {
-    await performWriteUpSave({ silent: false });
-  };
 
   const goBackToJobCard = () => {
     if (isTech) {
@@ -1410,6 +1481,11 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
       </span>
     );
   };
+  const renderLastSaved = () => (
+    <span style={{ ...sectionSubtitleStyle, color: "var(--info-dark)" }}>
+      {formatLastSavedTime(lastSavedAt)}
+    </span>
+  );
   const metadataFields = [
     { label: "Warranty Claim Number", field: "warrantyClaim", type: "input" },
     { label: "TSR Number", field: "tsrNumber", type: "input" },
@@ -1557,7 +1633,16 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
         minHeight: 0,
         gap: "16px"
       }}>
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "8px",
+            backgroundColor: "var(--surface-light)",
+            padding: "6px",
+            borderRadius: "12px",
+            border: "1px solid var(--surface-light)",
+          }}
+        >
           <button
             type="button"
             onClick={() => setActiveTab("writeup")}
@@ -1566,7 +1651,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
               padding: "12px",
               borderRadius: "8px",
               border: activeTab === "writeup" ? "2px solid var(--primary)" : "1px solid var(--accent-purple-surface)",
-              backgroundColor: activeTab === "writeup" ? "var(--surface-light)" : "white",
+              backgroundColor: activeTab === "writeup" ? "var(--surface-light)" : "var(--surface)",
               fontWeight: 600,
               cursor: "pointer"
             }}
@@ -1581,7 +1666,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
               padding: "12px",
               borderRadius: "8px",
               border: activeTab === "extras" ? "2px solid var(--primary)" : "1px solid var(--accent-purple-surface)",
-              backgroundColor: activeTab === "extras" ? "var(--surface-light)" : "white",
+              backgroundColor: activeTab === "extras" ? "var(--surface-light)" : "var(--surface)",
               fontWeight: 600,
               cursor: "pointer"
             }}
@@ -1603,7 +1688,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
                 <div style={{ ...sectionHeaderStyle }}>
                   <div>
                     <p style={sectionTitleStyle}>Fault</p>
-                    <span style={sectionSubtitleStyle}>Matching job requests</span>
+                    {renderLastSaved()}
                     {renderSectionEditorMeta("fault")}
                   </div>
                   <span style={statusBadgeStyle}>Requests</span>
@@ -1641,7 +1726,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
                 <div style={sectionHeaderStyle}>
                   <div>
                     <p style={sectionTitleStyle}>Cause</p>
-                    <span style={sectionSubtitleStyle}>Link faults to root causes</span>
+                    {renderLastSaved()}
                     {renderSectionEditorMeta("cause")}
                   </div>
                   {canAddCause && (
@@ -1702,7 +1787,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
                 <div style={sectionHeaderStyle}>
                   <div>
                     <p style={sectionTitleStyle}>Rectification</p>
-                    <span style={sectionSubtitleStyle}>Capture completed work</span>
+                    {renderLastSaved()}
                     {renderSectionEditorMeta("rectification")}
                   </div>
                   {showRectificationStatus && (
@@ -1797,30 +1882,6 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
         </div>
       </div>
 
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          marginTop: "12px",
-          paddingTop: "12px",
-          borderTop: "2px solid rgba(var(--primary-rgb), 0.1)",
-          flexShrink: 0
-        }}
-      >
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          style={{
-            ...modernButtonStyle,
-            backgroundColor: saving ? "var(--info)" : "var(--info)",
-            color: "white",
-            boxShadow: "none",
-            minWidth: "200px"
-          }}
-        >
-          {saving ? "💾 Saving..." : "💾 Save write-up"}
-        </button>
-      </div>
       {showCheckSheetPopup && (
         <CheckSheetPopup
           onClose={closeCheckSheetPopup}

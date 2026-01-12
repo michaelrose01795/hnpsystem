@@ -65,6 +65,10 @@ const buildStatusPayload = (statusText) => {
   }; // Return normalized status payload used by UI timeline
 };
 
+const MAX_INT32 = 2147483647;
+const isValidUserId = (value) =>
+  Number.isSafeInteger(value) && value > 0 && value <= MAX_INT32;
+
 const attachDurations = (entries, nowIso) => {
   const nowMs = new Date(nowIso).getTime(); // Convert reference timestamp to milliseconds
   return entries.map((entry, index) => {
@@ -234,19 +238,23 @@ const fetchJobActionEvents = async (jobId) => {
       const workLabel = row.work_type
         ? row.work_type.replace(/_/g, " ")
         : "Technician clocked on";
+      const clockInIso = ensureIsoString(row.clock_in, null);
+      const clockOutIso = row.clock_out ? ensureIsoString(row.clock_out, null) : null;
       actionEntries.push({
         id: `clock-${row.id}`,
         kind: "event",
-        eventType: "clock_in",
+        eventType: "clocking",
         label: `${workLabel}`.trim(),
-        timestamp: ensureIsoString(row.clock_in),
+        timestamp: clockInIso || ensureIsoString(row.clock_in),
         userId: row.user_id || null,
-        description: "Technician clocked on",
+        description: null,
         color: "var(--info)",
         department: "Workshop",
         icon: "🛠️",
         meta: {
           workType: row.work_type || null,
+          clockIn: clockInIso,
+          clockOut: clockOutIso,
           userName: getUserName(row.user),
         },
         userName: getUserName(row.user) || null,
@@ -341,7 +349,7 @@ export default async function handler(req, res) {
     const collectedUserIds = new Set();
     const collectUserId = (value) => {
       const parsed = Number(value);
-      if (Number.isFinite(parsed) && parsed > 0) {
+      if (isValidUserId(parsed)) {
         collectedUserIds.add(parsed);
       }
     };
@@ -372,7 +380,7 @@ export default async function handler(req, res) {
       const text = String(value).trim();
       if (!text) return null;
       const parsed = Number(text);
-      if (Number.isFinite(parsed) && parsed > 0) {
+      if (isValidUserId(parsed)) {
         return userNameById.get(parsed) || "Unknown user";
       }
       return /^system/i.test(text) ? "System" : text;

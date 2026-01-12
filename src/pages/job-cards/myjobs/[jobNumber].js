@@ -120,6 +120,14 @@ const STATUS_COLORS = {
   "Viewed": "var(--info)",
 };
 
+const STATUS_BADGE_STYLES = {
+  "In Progress": { background: "var(--info-surface)", color: "var(--accent-purple)" },
+  "Started": { background: "var(--info-surface)", color: "var(--accent-purple)" },
+};
+
+const getStatusBadgeStyle = (status, fallbackColor) =>
+  STATUS_BADGE_STYLES[status] || { background: fallbackColor, color: "white" };
+
 const IN_PROGRESS_STATUS = "In Progress";
 const WAITING_STATUS = "Waiting";
 const STARTED_STATUS = "Started";
@@ -142,15 +150,6 @@ const formatDateTime = (date) => {
     return "N/A";
   }
 };
-
-// Calculate hours worked helper
-function calculateHoursWorked(clockInTime) {
-  if (!clockInTime) return "0.0";
-  const now = new Date();
-  const clockIn = new Date(clockInTime);
-  const hours = (now - clockIn) / (1000 * 60 * 60);
-  return hours.toFixed(1);
-}
 
 const PARTS_STATUS_STYLES = {
   pending: { background: "var(--warning-surface)", color: "var(--danger-dark)" },
@@ -191,6 +190,26 @@ const normalizeVhcStatus = (value) => {
   return "na";
 };
 
+const calculateClockingMinutesTotal = (rows = [], now = Date.now()) => {
+  if (!Array.isArray(rows) || rows.length === 0) return 0;
+  const totalMinutes = rows.reduce((sum, row) => {
+    if (!row?.clock_in) return sum;
+    const start = Date.parse(row.clock_in);
+    const end = row.clock_out ? Date.parse(row.clock_out) : now;
+    if (Number.isNaN(start) || Number.isNaN(end) || end <= start) return sum;
+    return sum + (end - start) / (1000 * 60);
+  }, 0);
+  return Math.max(0, Math.round(totalMinutes));
+};
+
+const formatClockingDuration = (totalMinutes) => {
+  const safeMinutes = Number.isFinite(totalMinutes) ? Math.max(0, totalMinutes) : 0;
+  const hours = Math.floor(safeMinutes / 60);
+  const minutes = safeMinutes % 60;
+  const minuteLabel = minutes === 1 ? "min" : "mins";
+  return `${hours}h${minutes}${minuteLabel}`;
+};
+
 export default function TechJobDetailPage() {
   const router = useRouter();
   const { jobNumber } = router.query;
@@ -211,6 +230,8 @@ export default function TechJobDetailPage() {
   const [jobClocking, setJobClocking] = useState(null);
   const [clockOutLoading, setClockOutLoading] = useState(false);
   const [clockInLoading, setClockInLoading] = useState(false);
+  const [clockingRows, setClockingRows] = useState([]);
+  const [clockingNow, setClockingNow] = useState(() => Date.now());
   const [partsRequests, setPartsRequests] = useState([]);
   const [partsRequestsLoading, setPartsRequestsLoading] = useState(false);
   const [partRequestDescription, setPartRequestDescription] = useState("");
@@ -415,6 +436,29 @@ export default function TechJobDetailPage() {
     }
   }, [dbUserId, user?.id, jobCardId]);
 
+  const fetchClockedHoursTotal = useCallback(async () => {
+    if (!jobCardId && !jobNumber) {
+      setClockingRows([]);
+      return;
+    }
+
+    try {
+      let query = supabase.from("job_clocking").select("clock_in, clock_out");
+      if (jobCardId) {
+        query = query.eq("job_id", jobCardId);
+      } else {
+        query = query.eq("job_number", jobNumber);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      const rows = Array.isArray(data) ? data : [];
+      setClockingRows(rows);
+    } catch (fetchError) {
+      console.error("Failed to fetch clocked hours total:", fetchError);
+      setClockingRows([]);
+    }
+  }, [jobCardId, jobNumber]);
+
   const fetchJobData = useCallback(async () => {
     if (!jobNumber) return;
 
@@ -440,6 +484,7 @@ export default function TechJobDetailPage() {
       }
 
       await refreshClockingStatus();
+      await fetchClockedHoursTotal();
       await loadPartsRequests(jobCardIdForFetch);
       await loadNotes(jobCardIdForFetch);
     } catch (fetchError) {
@@ -453,6 +498,52 @@ export default function TechJobDetailPage() {
   useEffect(() => {
     fetchJobData();
   }, [fetchJobData]);
+
+  useEffect(() => {
+    fetchClockedHoursTotal();
+  }, [fetchClockedHoursTotal, jobClocking]);
+
+  const hasActiveClocking = useMemo(
+    () => clockingRows.some((row) => row && !row.clock_out),
+    [clockingRows]
+  );
+
+  const clockedMinutesTotal = useMemo(
+    () => calculateClockingMinutesTotal(clockingRows, clockingNow),
+    [clockingRows, clockingNow]
+  );
+
+  useEffect(() => {
+    if (!hasActiveClocking) return undefined;
+    const intervalId = setInterval(() => {
+      setClockingNow(Date.now());
+    }, 1000);
+    return () => clearInterval(intervalId);
+  }, [hasActiveClocking]);
+
+  useEffect(() => {
+    if (!jobCardId) return undefined;
+    const channel = supabase.channel(`job-clockings-${jobCardId}`);
+    const handleClockingChange = () => {
+      fetchClockedHoursTotal();
+    };
+
+    channel.on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "job_clocking",
+        filter: `job_id=eq.${jobCardId}`,
+      },
+      handleClockingChange
+    );
+
+    void channel.subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [jobCardId, fetchClockedHoursTotal]);
 
   useEffect(() => {
     if (!jobCardId) {
@@ -506,6 +597,7 @@ export default function TechJobDetailPage() {
         }
         setJobClocking(null);
         await refreshJobClocking();
+        await fetchClockedHoursTotal();
         await refreshClockingStatus();
         const pausedStatus = getStatusAfterClockOut(jobData?.jobCard?.status);
         if (pausedStatus) {
@@ -568,6 +660,7 @@ export default function TechJobDetailPage() {
         await refreshCurrentJob();
         setJobClocking(result.data);
         await refreshJobClocking();
+        await fetchClockedHoursTotal();
         await refreshClockingStatus();
         await syncJobStatus(IN_PROGRESS_STATUS, jobData?.jobCard?.status);
       } else {
@@ -1538,10 +1631,9 @@ export default function TechJobDetailPage() {
   const jobRequiresVhc = jobCard?.vhcRequired === true;
   const jobStatusDisplay = jobCardStatus || "Unknown";
   const jobStatusColor = STATUS_COLORS[jobCardStatus] || "var(--info)";
+  const jobStatusBadgeStyle = getStatusBadgeStyle(jobCardStatus, jobStatusColor);
   const partsCount = jobCard.partsRequests?.length || 0;
-  const clockedHours = clockingStatus?.clock_in
-    ? `${calculateHoursWorked(clockingStatus.clock_in)}h`
-    : "0.0h";
+  const clockedHours = formatClockingDuration(clockedMinutesTotal);
 
   // Quick stats data for display
   const quickStats = [
@@ -1698,12 +1790,12 @@ export default function TechJobDetailPage() {
             padding: "10px 18px"
           }}>
             <span style={{
-              backgroundColor: jobStatusColor,
+              backgroundColor: jobStatusBadgeStyle.background,
               padding: "6px 16px",
               borderRadius: "8px",
               fontSize: "13px",
               letterSpacing: "0.02em",
-              color: "white",
+              color: jobStatusBadgeStyle.color,
               fontWeight: "600"
             }}>
               {jobCard.status}
@@ -2548,9 +2640,9 @@ export default function TechJobDetailPage() {
               alignItems: "stretch"
             }}>
               <div style={{
-                backgroundColor: "var(--warning-surface)",
+                backgroundColor: "var(--surface)",
                 borderRadius: "12px",
-                border: "1px solid var(--warning)",
+                border: "1px solid var(--surface-light)",
                 padding: "20px",
                 display: "flex",
                 flexDirection: "column",
@@ -2917,7 +3009,10 @@ export default function TechJobDetailPage() {
               height: "100%",
               overflow: "hidden",
               display: "flex",
-              flexDirection: "column"
+              flexDirection: "column",
+              borderRadius: "12px",
+              border: "1px solid var(--surface-light)",
+              backgroundColor: "var(--surface)"
             }}>
               <WriteUpForm jobNumber={jobNumber} showHeader={false} />
             </div>
@@ -2992,23 +3087,6 @@ export default function TechJobDetailPage() {
               {clockInLoading ? "Clocking In..." : "Clock In"}
             </button>
           )}
-
-          {/* Write-Up Button */}
-          <button
-            onClick={() => router.push(`/job-cards/${jobNumber}/write-up`)}
-            style={{
-              padding: "14px",
-              backgroundColor: "var(--accent-purple-surface)",
-              color: "var(--accent-purple)",
-              border: "1px solid var(--accent-purple-surface)",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: "600",
-            }}
-          >
-            Write-Up
-          </button>
 
           {/* Complete Job Button - gated by write-up + VHC completion */}
           <button

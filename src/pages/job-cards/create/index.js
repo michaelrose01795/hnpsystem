@@ -20,6 +20,7 @@ import { supabase } from "@/lib/supabaseClient"; // import supabase client for j
 import NewCustomerPopup from "@/components/popups/NewCustomerPopup"; // import new customer popup
 import ExistingCustomerPopup from "@/components/popups/ExistingCustomerPopup"; // import existing customer popup
 import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
+import { DropdownField } from "@/components/dropdownAPI";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 
 const JOB_TYPE_RULES = [
@@ -30,6 +31,17 @@ const JOB_TYPE_RULES = [
   { label: "Brakes", keywords: ["brake", "pad", "disc", "caliper", "calliper", "abs"] },
   { label: "Steering", keywords: ["steering", "rack", "column", "tracking", "alignment"] },
   { label: "Suspension", keywords: ["suspension", "shock", "spring", "damper", "strut"] },
+];
+
+const PAYMENT_TYPE_OPTIONS = [
+  { value: "Customer", label: "Customer" },
+  { value: "Warranty", label: "Warranty" },
+  { value: "Sales Goodwill", label: "Sales Goodwill" },
+  { value: "Service Goodwill", label: "Service Goodwill" },
+  { value: "Internal", label: "Internal" },
+  { value: "Insurance", label: "Insurance" },
+  { value: "Lease Company", label: "Lease Company" },
+  { value: "Staff", label: "Staff" },
 ];
 
 // function to automatically detect job types based on request descriptions
@@ -1901,35 +1913,12 @@ export default function CreateJobCardPage() {
                       {req.time !== "" ? `${req.time}h` : ""}
                     </span>
                   </div>
-                  <select
+                  <DropdownField
                     value={req.paymentType || "Customer"}
                     onChange={(e) => handlePaymentTypeChange(i, e.target.value)}
-                    style={{
-                      padding: "10px 12px",
-                      border: "1px solid var(--surface-light)",
-                      borderRadius: "8px",
-                      fontSize: "14px",
-                      cursor: "pointer",
-                      outline: "none",
-                      transition: "border-color 0.2s",
-                      width: "160px",
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = "var(--primary)";
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = "var(--surface-light)";
-                    }}
-                  >
-                    <option value="Customer">Customer</option>
-                    <option value="Warranty">Warranty</option>
-                    <option value="Sales Goodwill">Sales Goodwill</option>
-                    <option value="Service Goodwill">Service Goodwill</option>
-                    <option value="Internal">Internal</option>
-                    <option value="Insurance">Insurance</option>
-                    <option value="Lease Company">Lease Company</option>
-                    <option value="Staff">Staff</option>
-                  </select>
+                    options={PAYMENT_TYPE_OPTIONS}
+                    className="job-request-payment-dropdown"
+                  />
                   <button
                     onClick={() => handleRemoveRequest(i)}
                     style={{
@@ -2210,6 +2199,37 @@ export default function CreateJobCardPage() {
         />
 
       </div>
+      <style jsx global>{`
+        .job-request-payment-dropdown {
+          width: 160px;
+        }
+
+        .job-request-payment-dropdown .dropdown-api__control {
+          min-height: 40px;
+          padding: 10px 12px;
+          border-radius: 8px;
+          font-size: 14px;
+          border: 1px solid var(--surface-light);
+          background: var(--surface);
+          gap: 8px;
+        }
+
+        .job-request-payment-dropdown .dropdown-api__value {
+          font-size: 14px;
+          font-weight: 500;
+        }
+
+        .job-request-payment-dropdown.dropdown-api.is-open .dropdown-api__control,
+        .job-request-payment-dropdown .dropdown-api__control:focus-visible {
+          border-color: var(--primary);
+          background: var(--surface);
+        }
+
+        .job-request-payment-dropdown .dropdown-api__chevron {
+          width: 16px;
+          height: 16px;
+        }
+      `}</style>
     </Layout>
   );
 }

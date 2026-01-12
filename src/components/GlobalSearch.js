@@ -298,6 +298,7 @@ const GlobalSearch = ({
   };
 
   const searchBackground = isDarkMode ? "var(--search-surface)" : "var(--surface)";
+  const dropdownBackground = "var(--layer-section-level-2)";
   const baseBorderColor = isDarkMode ? "rgba(var(--accent-purple-rgb), 0.65)" : "var(--surface-light)";
   const borderColor = isFocused ? accentColor : baseBorderColor;
   const textColor = isDarkMode ? "var(--search-text)" : "var(--text-primary)";
@@ -320,7 +321,7 @@ const GlobalSearch = ({
             style={{
               padding: "12px 16px",
               borderRadius: "12px",
-              backgroundColor: searchBackground,
+              backgroundColor: dropdownBackground,
               border: `1px solid ${drawerBorderColor}`,
               boxShadow: "none",
               color: textColor,
@@ -334,7 +335,7 @@ const GlobalSearch = ({
         {showResults && (
           <div
             style={{
-              backgroundColor: searchBackground,
+              backgroundColor: dropdownBackground,
               borderRadius: "16px",
               boxShadow: "none",
               border: `1px solid ${drawerBorderColor}`,
@@ -414,7 +415,7 @@ const GlobalSearch = ({
             style={{
               padding: "16px",
               borderRadius: "12px",
-              backgroundColor: searchBackground,
+              backgroundColor: dropdownBackground,
               border: `1px solid ${drawerBorderColor}`,
               boxShadow: "none",
               color: textColor,

@@ -33,31 +33,6 @@ const calculateDurationHours = (start, end) => {
   return Number((diff / (1000 * 60 * 60)).toFixed(2));
 };
 
-const parseRequestSnapshot = (raw) => {
-  if (!raw || typeof raw !== "string") {
-    return null;
-  }
-  const trimmed = raw.trim();
-  if (!trimmed) {
-    return null;
-  }
-  if (trimmed.startsWith("{")) {
-    try {
-      const parsed = JSON.parse(trimmed);
-      if (parsed && parsed.requestLabel) {
-        return {
-          requestLabel: parsed.requestLabel,
-          requestKey: parsed.requestKey || null,
-          requestTitle: parsed.requestTitle || parsed.requestLabel
-        };
-      }
-    } catch (_error) {
-      // fall through
-    }
-  }
-  return null;
-};
-
 export default function ClockingHistorySection({
   jobId,
   jobNumber,
@@ -71,6 +46,7 @@ export default function ClockingHistorySection({
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [requestsAllocatedTotal, setRequestsAllocatedTotal] = useState(null);
 
   const fetchEntries = useCallback(async () => {
     if (!jobId) {
@@ -82,23 +58,28 @@ export default function ClockingHistorySection({
     setError("");
     try {
       const { data, error: queryError } = await supabase
-        .from("time_records")
+        .from("job_clocking")
         .select(`
           id,
           user_id,
           job_id,
           job_number,
-          date,
           clock_in,
           clock_out,
-          hours_worked,
-          notes,
+          work_type,
+          request_id,
           created_at,
           updated_at,
           users:user_id(
             user_id,
             first_name,
             last_name
+          ),
+          request:request_id(
+            request_id,
+            description,
+            hours,
+            sort_order
           )
         `)
         .eq("job_id", jobId)
@@ -115,8 +96,16 @@ export default function ClockingHistorySection({
         jobNumber: row.job_number || "",
         clockIn: row.clock_in,
         clockOut: row.clock_out,
-        hoursWorked: row.hours_worked !== null && row.hours_worked !== undefined ? Number(row.hours_worked) : null,
-        notes: row.notes || "",
+        requestId: row.request_id ?? null,
+        requestDescription: row.request?.description || "",
+        requestHours:
+          row.request?.hours !== null && row.request?.hours !== undefined
+            ? Number(row.request.hours)
+            : null,
+        requestSortOrder:
+          row.request?.sort_order !== null && row.request?.sort_order !== undefined
+            ? Number(row.request.sort_order)
+            : null,
         raw: row
       }));
 
@@ -139,6 +128,39 @@ export default function ClockingHistorySection({
   }, [jobId, fetchEntries, refreshSignal]);
 
   useEffect(() => {
+    if (!jobId) {
+      setRequestsAllocatedTotal(null);
+      return;
+    }
+    let isMounted = true;
+    const loadAllocatedTotal = async () => {
+      try {
+        const { data, error: queryError } = await supabase
+          .from("job_requests")
+          .select("hours")
+          .eq("job_id", jobId);
+        if (queryError) throw queryError;
+        const total = (data || []).reduce((sum, row) => {
+          const hours = Number(row?.hours);
+          return Number.isFinite(hours) ? sum + hours : sum;
+        }, 0);
+        if (isMounted) {
+          setRequestsAllocatedTotal(total > 0 ? Number(total.toFixed(2)) : null);
+        }
+      } catch (err) {
+        console.error("Failed to load allocated hours total:", err);
+        if (isMounted) {
+          setRequestsAllocatedTotal(null);
+        }
+      }
+    };
+    loadAllocatedTotal();
+    return () => {
+      isMounted = false;
+    };
+  }, [jobId]);
+
+  useEffect(() => {
     if (!jobId) return;
     const channelName = `job-clock-history-${jobId}`;
     const channel = supabase
@@ -148,7 +170,7 @@ export default function ClockingHistorySection({
         {
           event: "*",
           schema: "public",
-          table: "time_records",
+          table: "job_clocking",
           filter: `job_id=eq.${jobId}`
         },
         () => {
@@ -162,16 +184,6 @@ export default function ClockingHistorySection({
     };
   }, [jobId, fetchEntries]);
 
-  const requestMap = useMemo(() => {
-    const map = new Map();
-    (requests || []).forEach((request) => {
-      if (request?.key) {
-        map.set(request.key, request);
-      }
-    });
-    return map;
-  }, [requests]);
-
   const fallbackJobHours = useMemo(() => {
     if (typeof jobAllocatedHours === "number" && !Number.isNaN(jobAllocatedHours)) {
       return jobAllocatedHours;
@@ -183,25 +195,34 @@ export default function ClockingHistorySection({
     return total > 0 ? Number(total.toFixed(2)) : null;
   }, [jobAllocatedHours, requests]);
 
+  const totalAllocatedForRequests = useMemo(() => {
+    if (typeof requestsAllocatedTotal === "number" && !Number.isNaN(requestsAllocatedTotal)) {
+      return requestsAllocatedTotal;
+    }
+    return null;
+  }, [requestsAllocatedTotal]);
+
   const derivedRows = useMemo(() => {
     return entries.map((entry) => {
-      const snapshot = parseRequestSnapshot(entry.notes);
-      const requestKey = snapshot?.requestKey || null;
-      const requestDefinition = requestKey ? requestMap.get(requestKey) : null;
-      const isJobLevel = !snapshot?.requestKey || snapshot.requestKey === "job";
-      const baseLabel = snapshot?.requestLabel || `Job #${entry.jobNumber || jobNumber || ""}`.trim();
-      const requestLabel = baseLabel || `Job #${jobNumber || entry.jobNumber || ""}`;
-      const requestTitle = snapshot?.requestTitle || requestDefinition?.title || requestLabel;
+      const hasRequest = Boolean(entry.requestId);
+      const requestIndex = hasRequest
+        ? entry.requestSortOrder !== null && !Number.isNaN(entry.requestSortOrder)
+          ? entry.requestSortOrder
+          : entry.requestId
+        : null;
+      const baseJobNumber = entry.jobNumber || jobNumber || "";
+      const requestLabel = hasRequest
+        ? `Req ${requestIndex}: ${baseJobNumber}`.trim()
+        : `Job: ${baseJobNumber}`.trim();
+      const requestTitle = requestLabel;
       const requestHours =
-        requestDefinition?.hours !== null && requestDefinition?.hours !== undefined
-          ? Number(requestDefinition.hours)
-          : isJobLevel
-          ? fallbackJobHours
-          : null;
+        entry.requestHours !== null && entry.requestHours !== undefined
+          ? entry.requestHours
+          : hasRequest
+          ? null
+          : fallbackJobHours;
       const durationHours =
-        entry.hoursWorked !== null && entry.hoursWorked !== undefined && !Number.isNaN(entry.hoursWorked)
-          ? Number(entry.hoursWorked)
-          : calculateDurationHours(entry.clockIn, entry.clockOut);
+        calculateDurationHours(entry.clockIn, entry.clockOut);
 
       return {
         id: entry.id,
@@ -209,7 +230,7 @@ export default function ClockingHistorySection({
         requestLabel,
         requestTitle,
         requestHours: requestHours !== null && !Number.isNaN(requestHours) ? Number(requestHours.toFixed(2)) : null,
-        requestKey: requestKey || (isJobLevel ? "job" : null),
+        requestKey: hasRequest ? String(entry.requestId) : "job",
         dateOn: formatDate(entry.clockIn),
         timeOn: formatTime(entry.clockIn),
         dateOff: formatDate(entry.clockOut),
@@ -218,10 +239,12 @@ export default function ClockingHistorySection({
         rawEntry: entry
       };
     });
-  }, [entries, requestMap, fallbackJobHours, jobNumber]);
+  }, [entries, fallbackJobHours, jobNumber]);
 
   const shouldScroll = derivedRows.length > 5;
-  const bodyMaxHeight = shouldScroll ? "345px" : "auto";
+  const rowHeight = 48;
+  const headerHeight = 44;
+  const bodyMaxHeight = shouldScroll ? `${rowHeight * 5 + headerHeight}px` : "auto";
 
   return (
     <section
@@ -363,6 +386,39 @@ export default function ClockingHistorySection({
                   ))
                 )}
               </tbody>
+              {derivedRows.length > 0 && (
+                <tfoot>
+                  <tr>
+                    <td
+                      colSpan={7}
+                      style={{
+                        padding: "12px 14px",
+                        borderTop: "1px solid var(--surface-light)",
+                        fontWeight: 600,
+                        textAlign: "right",
+                        color: "var(--grey-accent)"
+                      }}
+                    >
+                      Totals
+                    </td>
+                    <td
+                      style={{
+                        padding: "12px 14px",
+                        borderTop: "1px solid var(--surface-light)",
+                        fontWeight: 600,
+                        color: "var(--text-primary)"
+                      }}
+                    >
+                      <div>
+                        Requests total: {totalAllocatedForRequests !== null ? `${totalAllocatedForRequests.toFixed(2)}h` : "—"}
+                      </div>
+                      <div>
+                        Job total: {fallbackJobHours !== null ? `${Number(fallbackJobHours).toFixed(2)}h` : "—"}
+                      </div>
+                    </td>
+                  </tr>
+                </tfoot>
+              )}
             </table>
           </div>
         </div>

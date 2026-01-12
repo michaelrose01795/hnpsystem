@@ -13,7 +13,38 @@ import {
 } from "@/lib/database/jobClocking"; // DB: job clocking
 import { getAllJobs } from "@/lib/database/jobs"; // DB: fetch list of jobs
 import { ensureDevDbUserAndGetId } from "@/lib/users/devUsers";
+import { DropdownField } from "@/components/dropdownAPI";
+import { supabase } from "@/lib/supabaseClient";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
+
+const buildRequestOptions = (jobNumberValue, requestRows) => {
+  const trimmed = jobNumberValue.trim();
+  if (!trimmed) return [];
+  const options = [
+    {
+      value: "job",
+      label: `Job: ${trimmed}`,
+      description: "Clock onto the whole job",
+    },
+  ];
+
+  (Array.isArray(requestRows) ? requestRows : []).forEach((request, index) => {
+    const order =
+      request?.sort_order !== null && request?.sort_order !== undefined
+        ? request.sort_order
+        : index + 1;
+    const requestId = request?.request_id ?? request?.id ?? null;
+    if (!requestId) return;
+    const description = request?.description || `Request ${order}`;
+    options.push({
+      value: `request:${requestId}`,
+      label: `Req ${order}: ${description}`,
+      description: request?.hours ? `${request.hours}h allocated` : "",
+    });
+  });
+
+  return options;
+};
 
 /* -------------------------- UI COMPONENT -------------------------- */
 
@@ -28,10 +59,11 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
   const [dbUserId, setDbUserId] = useState(null); // ✅ Real DB users.user_id (integer)
   const [activeJobs, setActiveJobs] = useState([]); // Jobs currently clocked into
   const [availableJobs, setAvailableJobs] = useState([]); // Jobs that can be clocked into
-  const [showAvailableJobs, setShowAvailableJobs] = useState(false); // Toggle listing section
-  const [workType, setWorkType] = useState("initial"); // "initial" or "additional"
-  const [searchTerm, setSearchTerm] = useState(""); // Filter text for lists
+  const [selectedRequestValue, setSelectedRequestValue] = useState("job"); // Selected request dropdown value
+  const [selectedRequestId, setSelectedRequestId] = useState(null); // request_id for job_requests
+  const [requestOptions, setRequestOptions] = useState([]); // Job request dropdown entries
   const inputRef = useRef(null); // Ref for auto-focus on input
+  const lastJobNumberRef = useRef(""); // Track last job number to avoid resetting selection
 
   // ✅ Prefill job number when modal opens with a job selected
   useEffect(() => {
@@ -40,6 +72,60 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
       inputRef.current?.focus(); // Focus the input for immediate action
     }
   }, [isOpen, prefilledJobNumber]); // Run when modal opens or prefilled job changes
+
+  useEffect(() => {
+    const trimmed = jobNumber.trim();
+    if (!trimmed) {
+      setRequestOptions([]);
+      setSelectedRequestValue("job");
+      setSelectedRequestId(null);
+      lastJobNumberRef.current = "";
+      return;
+    }
+
+    if (trimmed !== lastJobNumberRef.current) {
+      setSelectedRequestValue("job");
+      setSelectedRequestId(null);
+      lastJobNumberRef.current = trimmed;
+    }
+
+    let isMounted = true;
+    const fallbackOptions = buildRequestOptions(trimmed, []);
+    setRequestOptions(fallbackOptions);
+
+    const loadRequests = async () => {
+      try {
+        const jobMatch = availableJobs.find(
+          (job) =>
+            job.jobNumber?.toString().toLowerCase() === trimmed.toLowerCase() ||
+            job.id?.toString() === trimmed
+        );
+        if (!jobMatch?.id) {
+          if (!isMounted) return;
+          setRequestOptions(fallbackOptions);
+          return;
+        }
+        const { data, error } = await supabase
+          .from("job_requests")
+          .select("request_id, description, hours, sort_order")
+          .eq("job_id", Number(jobMatch.id))
+          .order("sort_order", { ascending: true });
+        if (error) throw error;
+        if (!isMounted) return;
+        setRequestOptions(buildRequestOptions(trimmed, data || []));
+      } catch (err) {
+        console.warn("Failed to load job requests for Start Job dropdown:", err);
+        if (!isMounted) return;
+        setRequestOptions(fallbackOptions);
+      }
+    };
+
+    loadRequests();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [jobNumber, availableJobs]);
 
   // Normalize various job object shapes into a single predictable shape
   const normaliseJob = (j) => ({ // Convert DB/job list rows to a standard object
@@ -159,7 +245,13 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
       }
 
       // Do the clock-in with real integer ids
-      const res = await clockInToJob(dbUserId, Number(job.id), job.jobNumber, workType); // Call DB
+      const res = await clockInToJob(
+        dbUserId,
+        Number(job.id),
+        job.jobNumber,
+        "initial",
+        selectedRequestId
+      ); // Call DB
       if (res.success) { // If OK
         setStatus("In Progress"); // Reflect active work in status bar
         await refreshCurrentJob(); // Keep context in sync with active job
@@ -190,6 +282,10 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
       const res = await clockOutFromJob(dbUserId, jobId, clockingId); // Call DB
       if (res.success) { // If OK
         alert(`✅ Clocked out from Job ${jobNumText}\n\nHours worked: ${res.hoursWorked}h`); // Show hours
+        setJobNumber(""); // Clear job number input for next open
+        setWorkType(""); // Reset request selection
+        setRequestOptions([]); // Clear request dropdown options
+        lastJobNumberRef.current = ""; // Reset job number tracker
         setCurrentJob(null); // Immediately clear cached current job
         const nextJob = await refreshCurrentJob(); // Sync active job state
         if (!nextJob) {
@@ -234,30 +330,11 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
     }
   };
 
-  // Selecting a job from the list populates the input
-  const handleSelectJob = (job) => { // Choose from list
-    setJobNumber(job.jobNumber); // Set input
-    setShowAvailableJobs(false); // Hide list
-    inputRef.current?.focus(); // Refocus input
-  };
-
   // ✅ NEW: Handle clicking on active job - navigate to job page
   const handleActiveJobClick = (job) => {
     onClose(); // Close modal
     router.push(`/job-cards/myjobs/${job.jobNumber}`); // Navigate to tech's job detail page
   };
-
-  // Filter the list by search term
-  const filteredJobs = availableJobs.filter((job) => { // Apply search filter
-    if (!searchTerm.trim()) return true; // Show all if empty
-    const q = searchTerm.toLowerCase(); // Lowercase query
-    return (
-      job.jobNumber?.toString().toLowerCase().includes(q) || // Match by code
-      job.reg?.toLowerCase().includes(q) || // By reg
-      job.customer?.toLowerCase().includes(q) || // By customer
-      job.makeModel?.toLowerCase().includes(q) // By make/model
-    );
-  });
 
   if (!isOpen) return null; // Do not render when closed
 
@@ -290,7 +367,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
             textAlign: "center" // Centered
           }}
         >
-          🔧 Start Job
+          Start Job
         </h2>
 
         {/* Active clock-ins */}
@@ -324,7 +401,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
                   justifyContent: "space-between", // Space between cols
                   alignItems: "center", // Vertically center
                   padding: "12px", // Inner spacing
-                  backgroundColor: "var(--surface)", // Card bg
+                  backgroundColor: "var(--surface-light)", // Card bg
                   borderRadius: "6px", // Rounded
                   marginBottom: "8px", // Gap between items
                   cursor: "pointer", // ✅ NEW: Show it's clickable
@@ -336,7 +413,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
                   e.currentTarget.style.borderColor = "var(--primary)";
                 }}
                 onMouseLeave={(e) => { // ✅ NEW: Remove hover effect
-                  e.currentTarget.style.backgroundColor = "white";
+                  e.currentTarget.style.backgroundColor = "var(--surface-light)";
                   e.currentTarget.style.borderColor = "transparent";
                 }}
               >
@@ -417,23 +494,24 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
           />
 
           {/* Work type selector */}
-          <select
-            value={workType} // Current value
-            onChange={(e) => setWorkType(e.target.value)} // Update
-            disabled={loading} // Disable when loading
-            style={{
-              width: "100%", // Full width
-              padding: "12px", // Padding
-              marginBottom: "12px", // Gap
-              borderRadius: "6px", // Rounded
-              border: "1px solid var(--surface-light)", // Subtle border
-              fontSize: "14px", // Text size
-              cursor: "pointer" // Pointer cursor
+          <DropdownField
+            value={selectedRequestValue}
+            onChange={(e) => {
+              const value = e.target.value;
+              setSelectedRequestValue(value);
+              if (value.startsWith("request:")) {
+                const idValue = Number(value.replace("request:", ""));
+                setSelectedRequestId(Number.isFinite(idValue) ? idValue : null);
+              } else {
+                setSelectedRequestId(null);
+              }
             }}
-          >
-            <option value="initial">Initial Work</option> {/* Default */}
-            <option value="additional">Additional Work</option> {/* Extra */}
-          </select>
+            options={requestOptions}
+            placeholder={jobNumber.trim() ? `Job: ${jobNumber.trim()}` : "No job number"}
+            disabled={loading || !jobNumber.trim()}
+            className="start-job-request-dropdown"
+            style={{ marginBottom: "12px" }}
+          />
 
           {/* Error banner */}
           {error && (
@@ -447,7 +525,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
                 borderRadius: "4px" // Rounded
               }}
             >
-              ⚠️ {error} {/* Error message */}
+              {error} {/* Error message */}
             </p>
           )}
 
@@ -470,112 +548,9 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
               transform: "none" // Prevent hover shift offset
             }}
           >
-            {loading ? "Clocking In..." : "⏱️ Clock In"} {/* Label */}
+            {loading ? "Clocking In..." : "Clock In"} {/* Label */}
           </button>
         </div>
-
-        {/* Toggle available jobs */}
-        <div style={{ marginBottom: "16px" }}> {/* Toggle area */}
-          <button
-            onClick={() => setShowAvailableJobs(!showAvailableJobs)} // Show/hide list
-            disabled={loading} // Disable when busy
-            style={{
-              width: "100%", // Full width
-              padding: "10px", // Padding
-              backgroundColor: showAvailableJobs ? "var(--primary)" : "var(--surface)", // Accent when open
-              color: showAvailableJobs ? "white" : "var(--grey-accent)", // Contrast
-              border: "1px solid var(--surface-light)", // Border
-              borderRadius: "6px", // Rounded
-              cursor: "pointer", // Pointer
-              fontSize: "14px", // Size
-              fontWeight: "600", // Bold
-              transform: "none" // Prevent hover offset
-            }}
-          >
-            {showAvailableJobs ? "Hide Available Jobs" : "Show Available Jobs"} {/* Toggle text */}
-          </button>
-        </div>
-
-        {/* Available jobs list */}
-        {showAvailableJobs && (
-          <div> {/* List container */}
-            <input
-              type="search" // Search input
-              placeholder="🔍 Search jobs..." // Hint
-              value={searchTerm} // Controlled value
-              onChange={(e) => setSearchTerm(e.target.value)} // Update
-              style={{
-                width: "100%", // Full width
-                padding: "10px", // Padding
-                marginBottom: "12px", // Gap
-                borderRadius: "6px", // Rounded
-                border: "1px solid var(--search-surface-muted)", // Border
-                fontSize: "14px", // Size
-                outline: "none",
-                backgroundColor: "var(--search-surface)",
-                color: "var(--search-text)"
-              }}
-            />
-
-            <div
-              style={{
-                maxHeight: "300px", // Scroll area height
-                overflowY: "auto", // Vertical scroll
-                border: "1px solid var(--surface-light)", // Border
-                borderRadius: "6px" // Rounded
-              }}
-            >
-              {filteredJobs.length === 0 ? ( // No results
-                <div
-                  style={{
-                    padding: "20px", // Inner padding
-                    textAlign: "center", // Center text
-                    color: "var(--grey-accent-light)" // Muted
-                  }}
-                >
-                  No jobs found {/* Empty state */}
-                </div>
-              ) : (
-                filteredJobs.map((job) => ( // Render list
-                  <div
-                    key={`${job.id}-${job.jobNumber}`} // Unique key
-                    onClick={() => handleSelectJob(job)} // Choose job
-                    style={{
-                      padding: "12px", // Row padding
-                      borderBottom: "1px solid var(--surface)", // Divider
-                      cursor: "pointer", // Clickable
-                      transition: "background-color 0.2s" // Smooth hover
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--info-surface)")} // Hover in
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "white")} // Hover out
-                  >
-                    <div
-                      style={{
-                        fontWeight: "600", // Bold
-                        color: "var(--primary)", // Accent
-                        marginBottom: "4px" // Gap
-                      }}
-                    >
-                      Job {job.jobNumber} - {job.reg} {/* Job label */}
-                    </div>
-                    <div style={{ fontSize: "13px", color: "var(--grey-accent)" }}> {/* Meta */}
-                      {job.makeModel} • {job.customer} {/* Info */}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "12px", // Small
-                        color: "var(--grey-accent-light)", // Muted
-                        marginTop: "4px" // Gap
-                      }}
-                    >
-                      Status: {job.status} {/* Status */}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
 
         {/* Cancel button */}
         <button
@@ -597,6 +572,47 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
           Cancel {/* Label */}
         </button>
       </div>
+      <style jsx global>{`
+        .start-job-request-dropdown {
+          width: 100%;
+        }
+
+        .start-job-request-dropdown .dropdown-api__control {
+          min-height: 44px;
+          padding: 12px;
+          border-radius: 6px;
+          border: 1px solid var(--surface-light);
+          font-size: 14px;
+          background: var(--surface);
+          gap: 8px;
+        }
+
+        .start-job-request-dropdown .dropdown-api__value {
+          font-size: 14px;
+          font-weight: 500;
+        }
+
+        .start-job-request-dropdown.dropdown-api.is-open .dropdown-api__control,
+        .start-job-request-dropdown .dropdown-api__control:focus-visible {
+          border-color: var(--primary);
+          background: var(--surface);
+        }
+
+        .start-job-request-dropdown .dropdown-api__option-description {
+          display: inline-flex;
+          align-items: center;
+          width: fit-content;
+          padding: 2px 8px;
+          border-radius: 999px;
+          border: 1px solid var(--success);
+          color: var(--success);
+          background: rgba(var(--success-rgb), 0.08);
+          font-weight: 600;
+          font-size: 0.7rem;
+          text-transform: uppercase;
+          letter-spacing: 0.02em;
+        }
+      `}</style>
     </div>
   );
 }

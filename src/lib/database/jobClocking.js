@@ -9,6 +9,7 @@ const CLOCKING_COLUMNS = [
   "user_id",
   "job_id",
   "job_number",
+  "request_id",
   "clock_in",
   "clock_out",
   "work_type",
@@ -153,6 +154,7 @@ const mapClockingRow = (row = {}, job = null) => {
     userId: row.user_id ?? null,
     jobId: row.job_id ?? null,
     jobNumber: row.job_number || job?.job_number || "",
+    requestId: row.request_id ?? null,
     clockIn: row.clock_in || null,
     clockOut: row.clock_out || null,
     workType: row.work_type || "initial",
@@ -206,6 +208,7 @@ const normaliseClockInArgs = (args) => {
       jobId: args[1],
       jobNumber: args[2],
       workType: args[3],
+      requestId: args[4],
     };
   }
   throw new Error("clockInToJob requires userId, jobId, and jobNumber.");
@@ -254,10 +257,14 @@ const getTodayRange = () => {
 
 export const clockInToJob = async (...rawArgs) => {
   try {
-    const { userId, jobId, jobNumber, workType } = normaliseClockInArgs(rawArgs);
+    const { userId, jobId, jobNumber, workType, requestId } = normaliseClockInArgs(rawArgs);
     const userIdInt = assertInteger(userId, "userId");
     const jobIdInt = assertInteger(jobId, "jobId");
     const jobNumberText = normaliseJobNumber(jobNumber);
+    const requestIdValue =
+      requestId === null || requestId === undefined || requestId === ""
+        ? null
+        : assertInteger(requestId, "requestId");
 
     if (!jobNumberText) {
       throw new Error("clockInToJob requires a jobNumber string.");
@@ -268,6 +275,7 @@ export const clockInToJob = async (...rawArgs) => {
       user_id: userIdInt,
       job_id: jobIdInt,
       job_number: jobNumberText,
+      request_id: requestIdValue,
       work_type: normaliseWorkType(workType),
       clock_in: clockInTimestamp,
       clock_out: null,
@@ -290,6 +298,7 @@ export const clockInToJob = async (...rawArgs) => {
       source: "job_clocking",
       workType: payload.work_type,
       clockingId: data.id,
+      requestId: requestIdValue,
     });
     const { error: timeRecordError } = await db.from("time_records").insert([
       {
@@ -396,6 +405,7 @@ export const clockOutFromJob = async (...rawArgs) => {
           source: "job_clocking",
           workType: data.work_type || "initial",
           clockingId: data.id,
+          requestId: data.request_id ?? null,
         });
         const { error: insertError } = await db.from("time_records").insert([
           {
