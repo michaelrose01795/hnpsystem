@@ -13,7 +13,7 @@ import { useConfirmation } from "@/context/ConfirmationContext";
 
 export default function TechsDashboard() {
   const router = useRouter();
-  const { user } = useUser();
+  const { user, dbUserId } = useUser();
   const { confirm } = useConfirmation();
   const { usersByRole, isLoading: rosterLoading } = useRoster();
   const [jobs, setJobs] = useState([]);
@@ -35,8 +35,22 @@ export default function TechsDashboard() {
   const isTech = allowedNames.has(username) || hasTechRole;
 
   // ✅ Fetch jobs and clocking status
+  const isAssignedToTechnician = (job) => {
+    if (!dbUserId || !job) return false;
+    const assignedNumeric =
+      typeof job.assignedTo === "number"
+        ? job.assignedTo
+        : typeof job.assignedTo === "string"
+        ? Number(job.assignedTo)
+        : null;
+
+    if (assignedNumeric === dbUserId) return true;
+    if (job.assignedTech?.id && job.assignedTech.id === dbUserId) return true;
+    return false;
+  };
+
   useEffect(() => {
-    if (!isTech || !username) return;
+    if (!isTech || !dbUserId) return;
 
     const fetchData = async () => {
       setLoading(true);
@@ -47,9 +61,7 @@ export default function TechsDashboard() {
         setJobs(fetchedJobs);
 
         // Filter jobs assigned to this tech
-        const assignedJobs = fetchedJobs.filter(
-          (job) => job.assignedTech?.name === username || job.technician === username
-        );
+        const assignedJobs = fetchedJobs.filter((job) => isAssignedToTechnician(job));
 
         // Sort by priority/created date
         const sortedJobs = assignedJobs.sort((a, b) => {
@@ -63,7 +75,7 @@ export default function TechsDashboard() {
         setNextJob(sortedJobs.length > 0 ? sortedJobs[0] : null);
 
         // Get clocking status
-        const { isClockedIn, data } = await getClockingStatus(username);
+        const { isClockedIn, data } = await getClockingStatus(dbUserId);
         setClockingStatus(data);
 
         // If clocked in, find the job they're working on
@@ -81,13 +93,13 @@ export default function TechsDashboard() {
     };
 
     fetchData();
-  }, [username, isTech]);
+  }, [dbUserId, isTech]);
 
   // ✅ Handle clock in
   const handleClockIn = async () => {
-    if (!username) return;
+    if (!dbUserId) return;
 
-    const result = await clockIn(username);
+    const result = await clockIn(dbUserId);
     
     if (result.success) {
       alert("Clocked in successfully!");
@@ -99,12 +111,12 @@ export default function TechsDashboard() {
 
   // ✅ Handle clock out
   const handleClockOut = async () => {
-    if (!username) return;
+    if (!dbUserId) return;
 
     const confirmed = await confirm("Are you sure you want to clock out?");
     if (!confirmed) return;
 
-    const result = await clockOut(username);
+    const result = await clockOut(dbUserId);
     
     if (result.success) {
       alert("Clocked out successfully!");

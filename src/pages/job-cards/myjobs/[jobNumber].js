@@ -331,13 +331,13 @@ export default function TechJobDetailPage() {
 
   // Callback: Refresh clocking status
   const refreshClockingStatus = useCallback(async () => {
-    if (!username) {
+    if (!dbUserId) {
       setClockingStatus(null);
       return;
     }
 
     try {
-      const { success, data } = await getClockingStatus(username);
+      const { success, data } = await getClockingStatus(dbUserId);
       if (success) {
         setClockingStatus(data);
       } else {
@@ -347,7 +347,7 @@ export default function TechJobDetailPage() {
       console.error("❌ Error refreshing clocking status:", error);
       setClockingStatus(null);
     }
-  }, [username]);
+  }, [dbUserId]);
 
   // Callback: Sync job status
   const syncJobStatus = useCallback(

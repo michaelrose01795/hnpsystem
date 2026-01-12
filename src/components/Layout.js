@@ -824,10 +824,11 @@ export default function Layout({ children, jobNumber }) {
             <div
               style={{
                 display: "flex",
-                flexWrap: "wrap",
+                flexWrap: "nowrap",
                 alignItems: "center",
-                gap: "16px",
+                gap: isMobile ? "10px" : "14px",
                 justifyContent: "space-between",
+                overflowX: "auto",
               }}
             >
               <div
@@ -941,6 +942,59 @@ export default function Layout({ children, jobNumber }) {
                 </div>
               )}
 
+              {isTech && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    flex: "0 0 auto",
+                  }}
+                >
+                  <button
+                    type="button"
+                    disabled={!currentJob?.jobNumber}
+                    onClick={() =>
+                      currentJob?.jobNumber && router.push(`/job-cards/myjobs/${currentJob.jobNumber}`)
+                    }
+                    style={{
+                      padding: "6px 12px",
+                      borderRadius: "10px",
+                      border: "none",
+                      background: currentJob?.jobNumber
+                        ? "var(--primary)"
+                        : "var(--info-surface)",
+                      color: currentJob?.jobNumber ? "var(--surface)" : "var(--info)",
+                      fontWeight: 600,
+                      cursor: currentJob?.jobNumber ? "pointer" : "not-allowed",
+                      boxShadow: "none",
+                      transition: "all 0.2s ease",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {currentJob?.jobNumber ? `Open Job ${currentJob.jobNumber}` : "No Current Job"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(true)}
+                    style={{
+                      padding: "6px 12px",
+                      borderRadius: "10px",
+                      border: "1px solid var(--primary)",
+                      background: "var(--surface)",
+                      color: "var(--primary)",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      boxShadow: "none",
+                      transition: "all 0.2s ease",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    Start Job
+                  </button>
+                </div>
+              )}
+
               {canUseServiceActions && (
                 <div
                   style={{
@@ -1032,8 +1086,8 @@ export default function Layout({ children, jobNumber }) {
                   display: "flex",
                   alignItems: "center",
                   gap: "12px",
-                  flex: "1 1 auto",
-                  minWidth: isTablet ? "100%" : "320px",
+                  flex: "1 1 0",
+                  minWidth: isTablet ? "0" : "320px",
                   justifyContent: isTablet ? "flex-start" : "flex-end",
                 }}
               >
@@ -1078,60 +1132,6 @@ export default function Layout({ children, jobNumber }) {
                 )}
               </div>
             </div>
-
-            {isTech && (
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: "8px",
-                  alignItems: "center",
-                  justifyContent: "flex-start",
-                }}
-              >
-                <button
-                  type="button"
-                  disabled={!currentJob?.jobNumber}
-                  onClick={() =>
-                    currentJob?.jobNumber && router.push(`/job-cards/myjobs/${currentJob.jobNumber}`)
-                  }
-                  style={{
-                    padding: "6px 12px",
-                    borderRadius: "10px",
-                    border: "none",
-                    background: currentJob?.jobNumber
-                      ? "var(--primary)"
-                      : "var(--info-surface)",
-                    color: currentJob?.jobNumber ? "var(--surface)" : "var(--info)",
-                    fontWeight: 600,
-                    cursor: currentJob?.jobNumber ? "pointer" : "not-allowed",
-                    boxShadow: "none",
-                    transition: "all 0.2s ease",
-                    width: isMobile ? "100%" : "auto",
-                  }}
-                >
-                  {currentJob?.jobNumber ? `Open Job ${currentJob.jobNumber}` : "No Current Job"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(true)}
-                  style={{
-                    padding: "6px 12px",
-                    borderRadius: "10px",
-                    border: "1px solid var(--primary)",
-                    background: "var(--surface)",
-                    color: "var(--primary)",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    boxShadow: "none",
-                    transition: "all 0.2s ease",
-                    width: isMobile ? "100%" : "auto",
-                  }}
-                >
-                  Start Job
-                </button>
-              </div>
-            )}
           </section>
         )}
 
@@ -1286,6 +1286,9 @@ export default function Layout({ children, jobNumber }) {
         <JobCardModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
       )}
       <TopbarAlerts />
+      <div className="orientation-lock">
+        <div className="orientation-lock__message">Please rotate your phone to landscape.</div>
+      </div>
     </div>
   );
 }

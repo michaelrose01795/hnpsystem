@@ -116,13 +116,6 @@ const ensureCustomerUser = async (customerRow) => {
   }
 
   if (existingUser?.user_id) {
-    const role = existingUser.role || "";
-    if (!role.toLowerCase().includes("customer")) {
-      await supabase
-        .from("users")
-        .update({ role: "Customer Portal" })
-        .eq("user_id", existingUser.user_id);
-    }
     return existingUser.user_id;
   }
 

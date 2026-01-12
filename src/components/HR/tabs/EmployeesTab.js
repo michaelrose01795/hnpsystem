@@ -11,11 +11,18 @@ import { CalendarField } from "@/components/calendarAPI"; // Date input componen
 
 const defaultFilters = { department: "all", status: "all", employmentType: "all" };
 
-// Get all available roles from Retail and Sales categories (excluding Customers)
-const AVAILABLE_ROLES = [
-  ...(roleCategories.Retail || []),
-  ...(roleCategories.Sales || []),
-].sort();
+const buildUniqueList = (items = []) => {
+  const map = new Map();
+  items.filter(Boolean).forEach((item) => {
+    const label = String(item).trim();
+    if (!label) return;
+    const key = label.toLowerCase();
+    if (!map.has(key)) {
+      map.set(key, label);
+    }
+  });
+  return Array.from(map.values()).sort((a, b) => a.localeCompare(b));
+};
 
 const SAMPLE_PAYLOAD_FIELD_MAP = {
   "first name": "firstName",
@@ -157,6 +164,21 @@ export default function EmployeesTab() {
     });
     return Array.from(map.values());
   }, [baseEmployees, localEmployees]);
+
+  const availableRoles = useMemo(() => {
+    const configRoles = [
+      ...(roleCategories.Retail || []),
+      ...(roleCategories.Sales || []),
+      ...(roleCategories.Customers || []),
+    ];
+    const employeeRoles = employees.map((employee) => employee.role);
+    return buildUniqueList([...configRoles, ...employeeRoles]);
+  }, [employees]);
+
+  const availableJobTitles = useMemo(() => {
+    const employeeTitles = employees.map((employee) => employee.jobTitle);
+    return buildUniqueList(employeeTitles);
+  }, [employees]);
 
   useEffect(() => {
     if (!isLoading && !error && employees.length > 0 && !selectedEmployeeId) {
@@ -691,7 +713,12 @@ function EmployeeForm({
           {errorMessage && (
             <div style={{ color: "var(--danger)", fontWeight: 600 }}>{errorMessage}</div>
           )}
-          <EmployeeDetailsFields values={values} onFieldChange={onFieldChange} />
+          <EmployeeDetailsFields
+            values={values}
+            onFieldChange={onFieldChange}
+            availableRoles={availableRoles}
+            availableJobTitles={availableJobTitles}
+          />
           {footerContent}
         </div>
       </SectionCard>
@@ -699,18 +726,25 @@ function EmployeeForm({
   );
 }
 
-function SearchableRoleDropdown({ value, onChange }) {
+function SearchableListDropdown({
+  value,
+  onChange,
+  items,
+  placeholder,
+  emptyLabel,
+  allowCustom = false,
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = React.useRef(null);
 
-  // Filter roles based on search term
-  const filteredRoles = useMemo(() => {
-    if (!searchTerm.trim()) return AVAILABLE_ROLES;
-    return AVAILABLE_ROLES.filter(role =>
-      role.toLowerCase().includes(searchTerm.toLowerCase())
+  // Filter items based on search term
+  const filteredItems = useMemo(() => {
+    if (!searchTerm.trim()) return items || [];
+    return (items || []).filter((item) =>
+      item.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [searchTerm]);
+  }, [items, searchTerm]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -724,8 +758,14 @@ function SearchableRoleDropdown({ value, onChange }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleSelectRole = (role) => {
-    onChange({ target: { value: role } });
+  useEffect(() => {
+    if (isOpen) {
+      setSearchTerm(value || "");
+    }
+  }, [isOpen, value]);
+
+  const handleSelectItem = (item) => {
+    onChange({ target: { value: item } });
     setIsOpen(false);
     setSearchTerm("");
   };
@@ -736,11 +776,15 @@ function SearchableRoleDropdown({ value, onChange }) {
         type="text"
         value={isOpen ? searchTerm : value}
         onChange={(e) => {
-          setSearchTerm(e.target.value);
+          const nextValue = e.target.value;
+          setSearchTerm(nextValue);
           if (!isOpen) setIsOpen(true);
+          if (allowCustom) {
+            onChange({ target: { value: nextValue } });
+          }
         }}
         onFocus={() => setIsOpen(true)}
-        placeholder="Select or search role..."
+        placeholder={placeholder}
         style={{
           padding: "10px",
           borderRadius: "8px",
@@ -766,35 +810,35 @@ function SearchableRoleDropdown({ value, onChange }) {
             boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
           }}
         >
-          {filteredRoles.length > 0 ? (
-            filteredRoles.map((role) => (
+          {filteredItems.length > 0 ? (
+            filteredItems.map((item) => (
               <div
-                key={role}
-                onClick={() => handleSelectRole(role)}
+                key={item}
+                onClick={() => handleSelectItem(item)}
                 style={{
                   padding: "10px 12px",
                   cursor: "pointer",
-                  background: value === role ? "rgba(var(--accent-purple-rgb), 0.1)" : "transparent",
-                  color: value === role ? "var(--accent-purple)" : "var(--text-primary)",
-                  fontWeight: value === role ? 600 : 400,
+                  background: value === item ? "rgba(var(--accent-purple-rgb), 0.1)" : "transparent",
+                  color: value === item ? "var(--accent-purple)" : "var(--text-primary)",
+                  fontWeight: value === item ? 600 : 400,
                 }}
                 onMouseEnter={(e) => {
-                  if (value !== role) {
+                  if (value !== item) {
                     e.currentTarget.style.background = "var(--surface-light)";
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (value !== role) {
+                  if (value !== item) {
                     e.currentTarget.style.background = "transparent";
                   }
                 }}
               >
-                {role}
+                {item}
               </div>
             ))
           ) : (
             <div style={{ padding: "10px 12px", color: "var(--info)", fontSize: "0.9rem" }}>
-              No roles found
+              {emptyLabel}
             </div>
           )}
         </div>
@@ -803,7 +847,12 @@ function SearchableRoleDropdown({ value, onChange }) {
   );
 }
 
-function EmployeeDetailsFields({ values, onFieldChange }) {
+function EmployeeDetailsFields({
+  values,
+  onFieldChange,
+  availableRoles,
+  availableJobTitles,
+}) {
   const update = (field) => (event) => onFieldChange(field, event.target.value);
 
   return (
@@ -875,18 +924,22 @@ function EmployeeDetailsFields({ values, onFieldChange }) {
           />
         </FormField>
         <FormField label="Job Title">
-          <input
-            type="text"
+          <SearchableListDropdown
             value={values.jobTitle}
             onChange={update("jobTitle")}
-            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-            placeholder="Supervisor"
+            items={availableJobTitles}
+            placeholder="Select or search job title..."
+            emptyLabel="No job titles found"
+            allowCustom
           />
         </FormField>
         <FormField label="Role">
-          <SearchableRoleDropdown
+          <SearchableListDropdown
             value={values.role}
             onChange={update("role")}
+            items={availableRoles}
+            placeholder="Select or search role..."
+            emptyLabel="No roles found"
           />
         </FormField>
         <FormField label="Employment Type">

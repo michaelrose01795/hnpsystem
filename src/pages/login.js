@@ -85,7 +85,7 @@ export default function LoginPage() {
   const devLogin = userContext?.devLogin;
   const user = userContext?.user;
   const setUser = userContext?.setUser;
-  const { usersByRole, isLoading: rosterLoading, refreshRoster } = useRoster();
+  const { usersByRole, usersByRoleDetailed, isLoading: rosterLoading, refreshRoster } = useRoster();
 
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -95,6 +95,42 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [loadingDevUsers, setLoadingDevUsers] = useState(true);
+
+  const loginRoleCategories = React.useMemo(() => {
+    const rosterRoles = Object.keys(usersByRoleDetailed || usersByRole || {}).filter(Boolean);
+    const categories = roleCategories || {};
+    const seen = new Map();
+    const normalizedCategory = {};
+
+    Object.entries(categories).forEach(([category, roles]) => {
+      const nextRoles = [];
+      (roles || []).forEach((role) => {
+        const key = String(role).toLowerCase();
+        if (!seen.has(key)) {
+          seen.set(key, role);
+          nextRoles.push(role);
+        }
+      });
+      if (nextRoles.length) {
+        normalizedCategory[category] = nextRoles;
+      }
+    });
+
+    const missingRoles = [];
+    rosterRoles.forEach((role) => {
+      const key = String(role).toLowerCase();
+      if (!seen.has(key)) {
+        seen.set(key, role);
+        missingRoles.push(role);
+      }
+    });
+
+    if (missingRoles.length) {
+      normalizedCategory.Other = missingRoles.sort((a, b) => a.localeCompare(b));
+    }
+
+    return normalizedCategory;
+  }, [usersByRole, usersByRoleDetailed]);
 
   // Developer login handler
   const handleDevLogin = async () => {
@@ -252,7 +288,8 @@ export default function LoginPage() {
                   selectedUser={selectedUser}
                   setSelectedUser={setSelectedUser}
                   usersByRole={usersByRole}
-                  roleCategories={roleCategories}
+                  usersByRoleDetailed={usersByRoleDetailed}
+                  roleCategories={loginRoleCategories}
                 />
 
                 {(loadingDevUsers || rosterLoading) && (

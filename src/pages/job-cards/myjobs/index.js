@@ -287,13 +287,13 @@ export default function MyJobsPage() {
   }, [techStatus, currentJob?.jobNumber, fetchJobsForTechnician]);
 
   const refreshClockingStatus = useCallback(async () => {
-    if (!username) {
+    if (!dbUserId) {
       setClockingStatus(null);
       return;
     }
 
     try {
-      const { success, data } = await getClockingStatus(username);
+      const { success, data } = await getClockingStatus(dbUserId);
       if (success) {
         setClockingStatus(data);
       } else {
@@ -303,7 +303,7 @@ export default function MyJobsPage() {
       console.error("❌ Error refreshing clocking status:", error);
       setClockingStatus(null);
     }
-  }, [username]);
+  }, [dbUserId]);
 
   useEffect(() => {
     refreshClockingStatus();
@@ -678,6 +678,7 @@ export default function MyJobsPage() {
                 return (
                   <div
                     key={job.id || job.jobNumber}
+                    className="myjobs-row"
                     onClick={() => handleJobClick(job)}
                     style={{
                       border: "1px solid var(--border)",
@@ -701,6 +702,7 @@ export default function MyJobsPage() {
                   >
                     {/* Status Badge */}
                     <div
+                      className="myjobs-cell myjobs-status"
                       style={{
                         backgroundColor: statusStyle.background,
                         color: statusStyle.color,
@@ -718,6 +720,7 @@ export default function MyJobsPage() {
 
                     {/* Job Number */}
                     <span
+                      className="myjobs-cell myjobs-jobnumber"
                       style={{
                         fontSize: "16px",
                         fontWeight: "700",
@@ -730,6 +733,7 @@ export default function MyJobsPage() {
 
                     {/* Registration */}
                     <span
+                      className="myjobs-cell myjobs-reg"
                       style={{
                         fontSize: "14px",
                         color: "var(--text-secondary)",
@@ -742,6 +746,7 @@ export default function MyJobsPage() {
 
                     {/* Customer */}
                     <span
+                      className="myjobs-cell myjobs-customer"
                       style={{
                         fontSize: "13px",
                         color: "var(--text-primary)",
@@ -754,6 +759,7 @@ export default function MyJobsPage() {
 
                     {/* Make/Model */}
                     <span
+                      className="myjobs-cell myjobs-make"
                       style={{
                         fontSize: "13px",
                         color: "var(--text-secondary)",
@@ -766,6 +772,7 @@ export default function MyJobsPage() {
 
                     {/* Job Type */}
                     <span
+                      className="myjobs-cell myjobs-type"
                       style={{
                         fontSize: "12px",
                         color: "var(--text-secondary)",
@@ -777,6 +784,7 @@ export default function MyJobsPage() {
 
                     {/* Clocked Status */}
                     <div
+                      className="myjobs-cell myjobs-clock"
                       style={{
                         fontSize: "11px",
                         fontWeight: "600",
@@ -793,6 +801,7 @@ export default function MyJobsPage() {
 
                     {/* Created Date */}
                     <span
+                      className="myjobs-cell myjobs-date"
                       style={{
                         fontSize: "12px",
                         color: "var(--text-secondary)",
@@ -805,6 +814,7 @@ export default function MyJobsPage() {
 
                     {/* Write-Up Button */}
                     <button
+                      className="myjobs-cell myjobs-writeup"
                       onClick={(e) => {
                         e.stopPropagation();
                         if (!job.jobNumber) return;

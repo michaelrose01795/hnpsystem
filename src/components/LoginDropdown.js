@@ -22,6 +22,7 @@ export default function LoginDropdown({
   selectedUser,
   setSelectedUser,
   usersByRole,
+  usersByRoleDetailed,
   roleCategories,
   className = "",
 }) {
@@ -42,8 +43,22 @@ export default function LoginDropdown({
     return user;
   };
 
-  const getUsersForDepartment = (department) =>
-    (usersByRole[department] || []).map((user, index) =>
+  const resolveDepartmentRoster = (source, department) => {
+    if (!source || !department) return null;
+    if (source[department]) return source[department];
+    const matchKey = Object.keys(source).find(
+      (key) => key.toLowerCase() === department.toLowerCase()
+    );
+    return matchKey ? source[matchKey] : null;
+  };
+
+  const getUsersForDepartment = (department) => {
+    const detailed = resolveDepartmentRoster(usersByRoleDetailed, department);
+    const fallback = resolveDepartmentRoster(usersByRole, department);
+    const source =
+      Array.isArray(detailed) && detailed.length > 0 ? detailed : fallback || [];
+
+    return source.map((user, index) =>
       typeof user === "string"
         ? {
             id: `${department}-${index}`,
@@ -51,23 +66,55 @@ export default function LoginDropdown({
             role: department,
           }
         : {
-            id: String(user.id ?? user.user_id ?? `${department}-${index}`),
+            id: user.id ?? user.user_id ?? `${department}-${index}`,
             name:
               user.name ||
               user.displayName ||
               user.fullName ||
               `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
+              `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
               user.email ||
               `User ${index + 1}`,
             email: user.email || "",
             role: user.role || department,
           }
     );
+  };
 
   const userOptions = useMemo(() => {
     if (!selectedDepartment) return [];
     return getUsersForDepartment(selectedDepartment);
-  }, [selectedDepartment, usersByRole]);
+  }, [selectedDepartment, usersByRole, usersByRoleDetailed]);
+
+  useEffect(() => {
+    if (!selectedUser || userOptions.length === 0) return;
+    const selectedId = String(
+      selectedUser.id ?? selectedUser.user_id ?? selectedUser.email ?? selectedUser.name ?? ""
+    );
+    const selectedName = String(
+      selectedUser.name ?? selectedUser.displayName ?? selectedUser.fullName ?? ""
+    )
+      .toLowerCase()
+      .trim();
+    const match =
+      userOptions.find((user) => {
+        const candidateId = String(
+          user.id ?? user.user_id ?? user.email ?? user.name ?? ""
+        );
+        return candidateId && selectedId && candidateId === selectedId;
+      }) ||
+      userOptions.find((user) => {
+        const candidateName = String(user.name ?? "").toLowerCase().trim();
+        return candidateName && selectedName && candidateName === selectedName;
+      });
+    if (!match) {
+      setSelectedUser(null);
+      return;
+    }
+    if (match !== selectedUser) {
+      setSelectedUser(match);
+    }
+  }, [userOptions, selectedUser, setSelectedUser]);
 
   useEffect(() => {
     if (!selectedDepartment || userOptions.length !== 1) return;
@@ -93,13 +140,16 @@ export default function LoginDropdown({
   const departmentOptions = useMemo(() => {
     if (!selectedCategory) return [];
     return (roleCategories?.[selectedCategory] || [])
-      .filter((department) => usersByRole[department])
+      .filter((department) =>
+        resolveDepartmentRoster(usersByRoleDetailed, department) ||
+        resolveDepartmentRoster(usersByRole, department)
+      )
       .map((department) => ({
         key: department,
         value: department,
         label: department,
       }));
-  }, [roleCategories, selectedCategory, usersByRole]);
+  }, [roleCategories, selectedCategory, usersByRole, usersByRoleDetailed]);
 
   const userDropdownOptions = useMemo(
     () =>

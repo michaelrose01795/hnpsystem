@@ -139,9 +139,6 @@ export const ensureUserIdForDisplayName = async (displayName) => {
   try {
     const existingByName = await findUserByName(trimmedName);
     if (existingByName?.user_id) {
-      if (role && existingByName.role !== role) {
-        await supabase.from("users").update({ role }).eq("user_id", existingByName.user_id);
-      }
       return existingByName.user_id;
     }
   } catch (nameLookupError) {
@@ -160,9 +157,6 @@ export const ensureUserIdForDisplayName = async (displayName) => {
   if (findErr && findErr.code !== "PGRST116") throw findErr;
 
   if (existingByEmail?.user_id) {
-    if (role && existingByEmail.role !== role) {
-      await supabase.from("users").update({ role }).eq("user_id", existingByEmail.user_id);
-    }
     return existingByEmail.user_id;
   }
 
@@ -189,6 +183,26 @@ export const ensureUserIdForDisplayName = async (displayName) => {
 
 // Convenience helper mirroring the previous ensureDevDbUserAndGetId signature
 export const ensureDevDbUserAndGetId = async (devUser) => {
+  const candidateId =
+    devUser?.id ?? devUser?.user_id ?? devUser?.identifier ?? null;
+  if (candidateId !== null && candidateId !== undefined) {
+    const numeric = Number(candidateId);
+    if (Number.isInteger(numeric) && !Number.isNaN(numeric)) {
+      try {
+        const { data: existing } = await supabase
+          .from("users")
+          .select("user_id")
+          .eq("user_id", numeric)
+          .maybeSingle();
+        if (existing?.user_id) {
+          return existing.user_id;
+        }
+      } catch (error) {
+        console.warn("⚠️ Failed to validate dev user id:", error?.message || error);
+      }
+    }
+  }
+
   const displayName =
     devUser?.name ||
     devUser?.fullName ||
