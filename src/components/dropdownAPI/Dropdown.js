@@ -32,8 +32,23 @@ export default function Dropdown({
   size = "md",
   emptyState = "No results found",
   id,
+  style,
   ...rest
 }) {
+  const wrapperStyle = style
+    ? {
+        ...style,
+        border: undefined,
+        borderColor: undefined,
+        borderWidth: undefined,
+        borderStyle: undefined,
+        borderRadius: undefined,
+        background: undefined,
+        backgroundColor: undefined,
+        boxShadow: undefined,
+        padding: undefined,
+      }
+    : undefined;
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [menuPosition, setMenuPosition] = useState(null);
@@ -270,7 +285,7 @@ export default function Dropdown({
   const controlId = id || `dropdown-api-${reactId.replace(/[:]/g, "")}`;
 
   return (
-    <div className={wrapperClasses} ref={dropdownRef} {...rest}>
+    <div className={wrapperClasses} ref={dropdownRef} style={wrapperStyle} {...rest}>
       {label && (
         <label className="dropdown-api__label" htmlFor={controlId}>
           {label}

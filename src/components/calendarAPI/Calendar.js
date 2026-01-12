@@ -18,8 +18,23 @@ export default function Calendar({
   id,
   required = false,
   name,
+  style,
   ...rest
 }) {
+  const wrapperStyle = style
+    ? {
+        ...style,
+        border: undefined,
+        borderColor: undefined,
+        borderWidth: undefined,
+        borderStyle: undefined,
+        borderRadius: undefined,
+        background: undefined,
+        backgroundColor: undefined,
+        boxShadow: undefined,
+        padding: undefined,
+      }
+    : undefined;
   const generatedId = useId();
   const controlId = id || generatedId;
   const [isOpen, setIsOpen] = useState(false);
@@ -218,7 +233,7 @@ export default function Calendar({
     .join(" ");
 
   return (
-    <div ref={calendarRef} className={containerClassName} {...rest}>
+    <div ref={calendarRef} className={containerClassName} style={wrapperStyle} {...rest}>
       {label && (
         <label htmlFor={controlId} className="calendar-api__label">
           {label}

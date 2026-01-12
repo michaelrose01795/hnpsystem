@@ -927,7 +927,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                   }}
                 >
                   <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
-                    Logged Concerns
+                    Logged Concerns ({activeWheel})
                   </h3>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
                     <button
@@ -942,20 +942,8 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                     >
                       + Add Concern
                     </button>
-                    <div style={concernBadge(statusColors.Amber)}>{allConcerns} total</div>
+                    <div style={concernBadge(statusColors.Amber)}>{(currentTyre.concerns ?? []).length} total</div>
                   </div>
-                </div>
-
-                <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                  {[...WHEELS, "Spare"].map((wheel) => {
-                    const count = tyres[wheel].concerns?.length ?? 0;
-                    if (count === 0) return null;
-                    return (
-                      <div key={wheel} style={{ ...concernBadge(statusColors.Amber), backgroundColor: palette.surfaceAlt }}>
-                        {wheel}: {count}
-                      </div>
-                    );
-                  })}
                 </div>
 
                 <div
