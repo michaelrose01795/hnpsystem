@@ -56,7 +56,7 @@ const MODE_ROLE_MAP = {
   Sales: new Set((roleCategories.Sales || []).map((role) => role.toLowerCase())),
 };
 const NAV_DRAWER_WIDTH = 260;
-const STATUS_DRAWER_WIDTH = 280;
+const STATUS_DRAWER_WIDTH = 560;
 
 export default function Layout({ children, jobNumber }) {
   const { user, loading: userLoading, status, setStatus, currentJob, dbUserId } = useUser(); // get user context data
@@ -1097,7 +1097,7 @@ export default function Layout({ children, jobNumber }) {
                     flex: "1 1 auto",
                     minWidth: "240px",
                     width: "100%",
-                    maxWidth: isMobile ? "100%" : "600px",
+                    maxWidth: isMobile ? "100%" : `${navDrawerTargetWidth}px`,
                     position: "relative",
                   }}
                 >

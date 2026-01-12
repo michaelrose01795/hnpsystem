@@ -60,7 +60,9 @@ export default function HrAttendance() {
                     <tbody>
                       {attendanceLogs.map((log) => (
                         <tr key={log.id} style={{ borderTop: "1px solid var(--accent-purple-surface)" }}>
-                          <td style={{ padding: "12px 0", fontWeight: 600 }}>{log.employeeId}</td>
+                          <td style={{ padding: "12px 0", fontWeight: 600 }}>
+                            {log.employeeName || "Unknown user"}
+                          </td>
                           <td>{new Date(log.date).toLocaleDateString()}</td>
                           <td>{log.clockIn}</td>
                           <td>{log.clockOut}</td>

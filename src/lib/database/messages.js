@@ -19,7 +19,7 @@ const assertMessagingWriteAccess = () => {
 
 const buildFullName = (user) => {
   const parts = [user?.first_name, user?.last_name].filter(Boolean);
-  return parts.join(" ").trim() || user?.email || `User ${user?.user_id || ""}`;
+  return parts.join(" ").trim() || user?.email || "Unknown user";
 };
 
 const formatUserProfile = (user) => {

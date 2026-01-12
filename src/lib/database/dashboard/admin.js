@@ -2,6 +2,13 @@ import dayjs from "dayjs";
 import { supabase } from "@/lib/supabaseClient";
 import { runQuery } from "@/lib/database/dashboard/utils";
 
+const formatUserName = (user) => {
+  if (!user) return "Unknown user";
+  const parts = [user.first_name, user.last_name].filter(Boolean);
+  const name = parts.join(" ").trim();
+  return name || user.email || "Unknown user";
+};
+
 export const getAdminDashboardData = async () => {
   const todayStart = dayjs().startOf("day").toISOString();
   const todayEnd = dayjs().endOf("day").toISOString();
@@ -27,7 +34,7 @@ export const getAdminDashboardData = async () => {
     runQuery(() =>
       supabase
         .from("hr_absences")
-        .select("absence_id,user_id,type,start_date,end_date")
+        .select("absence_id,user_id,type,start_date,end_date,user:user_id(first_name,last_name,email)")
         .eq("type", "Holiday")
         .gte("start_date", todayStart)
         .lte("start_date", dayjs().add(7, "day").endOf("day").toISOString())
@@ -43,12 +50,17 @@ export const getAdminDashboardData = async () => {
     ),
   ]);
 
+  const holidays = (holidaysRes || []).map((row) => ({
+    ...row,
+    userName: formatUserName(row.user),
+  }));
+
   return {
     totalJobs: jobsRes.count || 0,
     appointmentsToday: appointmentsRes.count || 0,
     partsRequests: partsRes.count || 0,
     newUsers: usersRes.count || 0,
-    holidays: holidaysRes,
+    holidays,
     notices: noticesRes,
   };
 };

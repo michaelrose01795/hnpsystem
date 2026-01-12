@@ -237,13 +237,12 @@ const buildJobFromClockingEntry = (entry = {}, technicianName = "") => {
     customer: entry.customer || "",
     description: entry.description || "",
     status: entry.status || "In Progress",
-    assignedTech:
-      technicianName || entry.userId
-        ? {
-            id: entry.userId ?? null,
-            name: technicianName || "",
-          }
-        : null,
+    assignedTech: technicianName
+      ? {
+          id: entry.userId ?? null,
+          name: technicianName,
+        }
+      : null,
   };
 };
 

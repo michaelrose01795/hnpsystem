@@ -1,7 +1,8 @@
 // file location: src/components/StatusTracking/JobProgressTracker.js
 // Displays a vertical job status timeline with a central connector
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
+import { DropdownField } from "@/components/dropdownAPI";
 
 const COLORS = {
   current: "var(--danger)",
@@ -25,18 +26,125 @@ const formatTimestamp = (timestamp) => {
   });
 };
 
-export default function JobProgressTracker({ statuses = [], currentStatus }) {
+export default function JobProgressTracker({
+  statuses = [],
+  currentStatus,
+  currentStatusMeta = null,
+  isWide = false,
+}) {
+  const [selectedUser, setSelectedUser] = useState("all");
+  const [selectedAction, setSelectedAction] = useState("all");
   const normalizedCurrent = currentStatus?.toLowerCase() || null;
   const orderedStatuses = Array.isArray(statuses) ? statuses : [];
 
+  const chronologicalStatuses = useMemo(
+    () =>
+      orderedStatuses.map((item, index) => ({
+        ...item,
+        __chronologicalIndex: index,
+      })),
+    [orderedStatuses]
+  );
+
   const currentIndex = useMemo(() => {
     if (!normalizedCurrent) return -1;
-    return orderedStatuses.findIndex((item) => {
+    return chronologicalStatuses.findIndex((item) => {
       const candidate =
         item?.status?.toLowerCase?.() || item?.label?.toLowerCase?.() || null;
       return candidate === normalizedCurrent;
     });
-  }, [normalizedCurrent, orderedStatuses]);
+  }, [normalizedCurrent, chronologicalStatuses]);
+
+  const normalizePerformerLabel = (value) => {
+    if (!value) return null;
+    const text = String(value).trim();
+    if (!text) return null;
+    return /^\d+$/.test(text) ? null : text;
+  };
+
+  const resolvePerformer = (item) => {
+    if (!item) return "System";
+    const rawUser = item.user;
+    if (rawUser) {
+      if (typeof rawUser === "string") {
+        const label = normalizePerformerLabel(rawUser);
+        if (label) return label;
+      } else if (typeof rawUser === "object") {
+        const first = rawUser.first_name || rawUser.firstName || "";
+        const last = rawUser.last_name || rawUser.lastName || "";
+        const fullName = [first, last].filter(Boolean).join(" ").trim();
+        const label =
+          normalizePerformerLabel(fullName) ||
+          normalizePerformerLabel(rawUser.name) ||
+          normalizePerformerLabel(rawUser.email);
+        if (label) return label;
+      }
+    }
+    return (
+      normalizePerformerLabel(item.userName) ||
+      normalizePerformerLabel(item.performedBy) ||
+      normalizePerformerLabel(item.meta?.userName) ||
+      "System"
+    );
+  };
+
+  const resolveActionKey = (item) => {
+    if (item?.kind === "event") {
+      return item?.eventType || item?.label || "Event";
+    }
+    return item?.status || item?.label || "Status";
+  };
+
+  const userOptions = useMemo(() => {
+    const unique = new Map();
+    chronologicalStatuses.forEach((item) => {
+      const performer = resolvePerformer(item);
+      if (performer) {
+        unique.set(performer, performer);
+      }
+    });
+    return [
+      { value: "all", label: "All users" },
+      ...Array.from(unique.values()).map((value) => ({
+        value,
+        label: value,
+      })),
+    ];
+  }, [chronologicalStatuses]);
+
+  const actionOptions = useMemo(() => {
+    const unique = new Map();
+    chronologicalStatuses.forEach((item) => {
+      const actionKey = resolveActionKey(item);
+      const label =
+        typeof actionKey === "string" ? actionKey.replace(/_/g, " ") : actionKey;
+      if (actionKey) {
+        unique.set(actionKey, label);
+      }
+    });
+    return [
+      { value: "all", label: "All actions" },
+      ...Array.from(unique.entries()).map(([value, label]) => ({
+        value,
+        label,
+      })),
+    ];
+  }, [chronologicalStatuses]);
+
+  const filteredStatuses = useMemo(() => {
+    return chronologicalStatuses.filter((item) => {
+      const performer = resolvePerformer(item);
+      const actionKey = resolveActionKey(item);
+      const matchesUser = selectedUser === "all" || performer === selectedUser;
+      const matchesAction = selectedAction === "all" || actionKey === selectedAction;
+      return matchesUser && matchesAction;
+    });
+  }, [chronologicalStatuses, selectedUser, selectedAction]);
+
+  const displayStatuses = useMemo(
+    () => [...filteredStatuses].reverse(),
+    [filteredStatuses]
+  );
 
   return (
     // Outer wrapper keeps the card styling consistent with the rest of the UI shell
@@ -53,18 +161,89 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
         minHeight: 0,
       }}
     >
-      {/* Section label keeps consistent naming requested by spec */}
-      <h3
+      <div
         style={{
-          margin: 0,
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "12px",
+          alignItems: "center",
+          justifyContent: "space-between",
           marginBottom: "16px",
-          fontSize: "16px",
-          fontWeight: 700,
-          color: COLORS.textDark,
         }}
       >
-        Timeline
-      </h3>
+        <h3
+          style={{
+            margin: 0,
+            fontSize: "16px",
+            fontWeight: 700,
+            color: COLORS.textDark,
+          }}
+        >
+          Timeline
+        </h3>
+        {currentStatusMeta && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              background: "var(--surface)",
+              borderRadius: "12px",
+              border: "1px solid var(--surface-light)",
+              padding: "8px 12px",
+              minWidth: isWide ? "240px" : "100%",
+            }}
+          >
+            <span
+              style={{
+                width: "12px",
+                height: "12px",
+                borderRadius: "999px",
+                backgroundColor: currentStatusMeta?.color || COLORS.base,
+              }}
+            />
+            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+              <span style={{ fontWeight: 700, fontSize: "14px", color: COLORS.textDark }}>
+                Current Status
+              </span>
+              <span style={{ fontSize: "13px", color: COLORS.textMuted }}>
+                {currentStatusMeta?.label || currentStatus || "Unknown"}
+                {currentStatusMeta?.department ? ` · ${currentStatusMeta.department}` : ""}
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: isWide ? "repeat(2, minmax(0, 1fr))" : "1fr",
+          gap: "10px",
+          marginBottom: "14px",
+          padding: "12px",
+          borderRadius: "12px",
+          border: "1px solid var(--surface-light)",
+          backgroundColor: "var(--surface)",
+        }}
+      >
+        <DropdownField
+          id="timeline-filter-user"
+          label="Users"
+          options={userOptions}
+          value={selectedUser}
+          onChange={(event) => setSelectedUser(event.target.value)}
+          size="sm"
+        />
+        <DropdownField
+          id="timeline-filter-action"
+          label="Actions"
+          options={actionOptions}
+          value={selectedAction}
+          onChange={(event) => setSelectedAction(event.target.value)}
+          size="sm"
+        />
+      </div>
 
       {/* Scrollable area so long timelines remain accessible */}
       <div
@@ -78,15 +257,16 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
         }}
       >
         {/* Each status entry renders a node + detail card */}
-        {orderedStatuses.map((item, index) => {
+        {displayStatuses.map((item, index) => {
           const lowerStatus =
             item?.status?.toLowerCase?.() || item?.label?.toLowerCase?.() || "";
           const displayLabel = item?.label || item?.status || "Status";
           const isEvent = item?.kind === "event";
           const isCurrent = normalizedCurrent
             ? lowerStatus === normalizedCurrent
-            : index === orderedStatuses.length - 1;
-          const isComplete = currentIndex > -1 && index < currentIndex;
+            : item.__chronologicalIndex === chronologicalStatuses.length - 1;
+          const isComplete =
+            currentIndex > -1 && item.__chronologicalIndex < currentIndex;
           const fallbackColor = isEvent
             ? "var(--accent-orange)"
             : COLORS.base;
@@ -99,13 +279,7 @@ export default function JobProgressTracker({ statuses = [], currentStatus }) {
             ? COLORS.complete
             : resolvedColor;
           const connectorColor = COLORS.connector;
-          const performer =
-            item?.user ||
-            item?.userName ||
-            item?.performedBy ||
-            item?.meta?.userName ||
-            (item?.userId ? `User #${item.userId}` : null) ||
-            "System";
+          const performer = resolvePerformer(item);
           const secondaryLine =
             item?.description ||
             item?.notes ||

@@ -222,7 +222,10 @@ async function getUserProfile(userId) {
   if (!data) return null;
 
   const user = data.user || {};
-  const name = `${user.first_name || ""} ${user.last_name || ""}`.trim() || user.email || `User ${userId}`;
+  const name =
+    `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
+    user.email ||
+    "Unknown user";
 
   // Format emergency contact
   const formatEmergencyContact = (value) => {

@@ -66,7 +66,9 @@ const HolidayList = ({ holidays }) => (
           style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: "var(--info-dark)" }}
         >
           <div>
-            <strong style={{ color: "var(--primary-dark)" }}>User {absence.user_id}</strong>
+            <strong style={{ color: "var(--primary-dark)" }}>
+              {absence.userName || "Unknown user"}
+            </strong>
             <p style={{ margin: "4px 0 0", color: "var(--info)" }}>
               {dayjs(absence.start_date).format("D MMM")} – {dayjs(absence.end_date).format("D MMM")}
             </p>

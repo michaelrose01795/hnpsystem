@@ -5118,7 +5118,7 @@ function ClockingTab({ jobData, canEdit }) {
       try {
         const { data, error } = await supabase
           .from("users")
-          .select("user_id, first_name, last_name, role")
+          .select("user_id, first_name, last_name, role, email")
           .ilike("role", "%tech%")
           .order("first_name", { ascending: true })
           .order("last_name", { ascending: true });
@@ -5154,7 +5154,10 @@ function ClockingTab({ jobData, canEdit }) {
       (technicians || []).map((tech) => ({
         key: tech.user_id,
         value: String(tech.user_id),
-        label: `${tech.first_name || ""} ${tech.last_name || ""}`.trim() || `Technician ${tech.user_id}`,
+        label:
+          `${tech.first_name || ""} ${tech.last_name || ""}`.trim() ||
+          tech.email ||
+          "Technician",
         description: tech.role || "Technician",
       })),
     [technicians]

@@ -50,7 +50,7 @@ export default function AdminUserManagement() {
     const grouped = directory.reduce((acc, employee) => {
         const dept = employee.department || "Unassigned";
         if (!acc[dept]) acc[dept] = [];
-        acc[dept].push(employee.name || employee.email || employee.id);
+        acc[dept].push(employee.name || employee.email || "Unknown user");
         return acc;
       }, {});
 
@@ -69,7 +69,7 @@ export default function AdminUserManagement() {
         members: (entries || [])
           .map((member) => ({
             ...member,
-            displayName: member.name || member.email || `User ${member.id}`,
+            displayName: member.name || member.email || "Unknown user",
             departments: member.departments || [],
           }))
           .sort((a, b) => {

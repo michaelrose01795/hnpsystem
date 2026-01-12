@@ -35,7 +35,8 @@ export default function StatusSidebar({
   const compactMode = !isDocked && (isCompact || safeViewportWidth <= 1100);
   const panelWidth = compactMode
     ? Math.min(Math.max(safeViewportWidth - 32, 300), 520)
-    : Math.round(Math.min(Math.max(safeViewportWidth * 0.32, 440), 560));
+    : Math.round(Math.min(Math.max(safeViewportWidth * 0.64, 880), 1120));
+  const isWideLayout = !compactMode && panelWidth >= 720;
   
   // Fetch status history when component mounts or jobId changes
   useEffect(() => {
@@ -122,7 +123,6 @@ export default function StatusSidebar({
     }
     setSearchInput('');
     setSearchError('');
-    setMockCurrentStatus(null);
     setStatusHistory([]);
     setClockingBaseSeconds(0);
     setActiveClockIns([]);
@@ -434,34 +434,44 @@ export default function StatusSidebar({
 
           {/* Show job info with clear button for searched jobs */}
           {jobId && (
-            <div style={{ fontSize: '14px', opacity: 0.95 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontWeight: '600' }}>Job ID: {jobId}</span>
-                <button
-                  onClick={handleClearJob}
-                  style={{
-                    marginLeft: '8px',
-                    padding: '4px 10px',
-                    backgroundColor: 'rgba(var(--surface-rgb), 0.15)',
-                    color: 'var(--text-inverse)',
-                    border: '1px solid rgba(var(--surface-rgb), 0.3)',
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(var(--surface-rgb), 0.3)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'rgba(var(--surface-rgb), 0.2)';
-                  }}
-                >
-                  Clear Job
-                </button>
+            <div
+              style={{
+                fontSize: '14px',
+                opacity: 0.95,
+                display: 'grid',
+                gridTemplateColumns: isWideLayout ? 'minmax(0, 1fr) auto' : '1fr',
+                gap: '12px',
+                alignItems: 'center',
+              }}
+            >
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                  <span style={{ fontWeight: '600' }}>Job ID: {jobId}</span>
+                  <button
+                    onClick={handleClearJob}
+                    style={{
+                      padding: '4px 10px',
+                      backgroundColor: 'rgba(var(--surface-rgb), 0.15)',
+                      color: 'var(--text-inverse)',
+                      border: '1px solid rgba(var(--surface-rgb), 0.3)',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'rgba(var(--surface-rgb), 0.3)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'rgba(var(--surface-rgb), 0.2)';
+                    }}
+                  >
+                    Clear Job
+                  </button>
+                </div>
               </div>
-              <div id="job-progress-total-time" style={{ marginTop: '10px', fontWeight: '600', fontSize: '16px' }}>
+              <div id="job-progress-total-time" style={{ fontWeight: '600', fontSize: '16px' }}>
                 Total Time: {formatTime(liveClockingSeconds)}
               </div>
             </div>
@@ -500,60 +510,16 @@ export default function StatusSidebar({
               </p>
             </div>
           ) : (
-            <>
-              {/* Current Status Card - ALWAYS AT TOP */}
-              <div style={{
-                marginBottom: '20px',
-                padding: '16px',
-                background: 'var(--surface)',
-                borderRadius: '16px',
-                border: '2px solid var(--surface-light)', // Lighter border
-                boxShadow: 'none',
-                transition: 'all 0.3s ease'
-              }}>
-                <h3 style={{ fontWeight: 'bold', color: 'var(--accent-purple)', marginBottom: '10px', fontSize: '16px' }}>
-                  Current Status
-                </h3>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div
-                    style={{
-                      width: '16px',
-                      height: '16px',
-                      borderRadius: '50%',
-                    backgroundColor: SERVICE_STATUS_FLOW[currentStatusForDisplay?.toUpperCase()]?.color || 'var(--grey-accent-light)',
-                    animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                    boxShadow: 'none'
-                  }}
-                />
-                <span style={{ fontWeight: '600', fontSize: '18px', color: 'var(--text-primary)' }}>
-                    {SERVICE_STATUS_FLOW[currentStatusForDisplay?.toUpperCase()]?.label || 'Unknown'}
-                  </span>
-                </div>
-                <div style={{ marginTop: '8px', fontSize: '14px', color: 'var(--grey-accent-dark)' }}>
-                  Department: {SERVICE_STATUS_FLOW[currentStatusForDisplay?.toUpperCase()]?.department}
-                </div>
-                {SERVICE_STATUS_FLOW[currentStatusForDisplay?.toUpperCase()]?.requiresAction && (
-                  <div style={{
-                    marginTop: '12px',
-                    padding: '10px',
-                    backgroundColor: 'var(--warning-surface)',
-                    borderLeft: '4px solid var(--warning)',
-                    fontSize: '14px',
-                    borderRadius: '6px'
-                  }}>
-                    <strong>Action Required:</strong>{' '}
-                    {SERVICE_STATUS_FLOW[currentStatusForDisplay?.toUpperCase()].requiresAction}
-                  </div>
-                )}
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ minHeight: 0 }}>
                 <JobProgressTracker
                   statuses={timelineStatuses}
                   currentStatus={currentStatusForDisplay}
+                  currentStatusMeta={SERVICE_STATUS_FLOW[currentStatusForDisplay?.toUpperCase()] || null}
+                  isWide={isWideLayout}
                 />
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>

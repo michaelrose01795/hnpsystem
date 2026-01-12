@@ -1,10 +1,7 @@
 TO DO:
 Continue flow with job number 54
 
-
-npm i next@latest
-
-
+CHECK
 Within the "Timeline" section inside the status side bar, swap it so the first update is at the bottom of the list, and the newest updates is at the top, have it so there is a small filter section to filter the section from selected users only to show, selected actions only etc, add it so there is a duel layer dropdown (following dropdown api style) 
 
 

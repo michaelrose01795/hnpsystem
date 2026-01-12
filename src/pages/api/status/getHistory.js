@@ -338,6 +338,46 @@ export default async function handler(req, res) {
       throw historyError; // Surface history query issues
     }
 
+    const collectedUserIds = new Set();
+    const collectUserId = (value) => {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        collectedUserIds.add(parsed);
+      }
+    };
+
+    (historyRows || []).forEach((row) => collectUserId(row.changed_by));
+    collectUserId(jobRow.status_updated_by);
+
+    const userNameById = new Map();
+    if (collectedUserIds.size > 0) {
+      const { data: userRows, error: userError } = await dbClient
+        .from("users")
+        .select("user_id, first_name, last_name, email")
+        .in("user_id", Array.from(collectedUserIds));
+
+      if (userError) {
+        console.error("Failed to load status history users", userError);
+      } else {
+        (userRows || []).forEach((user) => {
+          const parts = [user.first_name, user.last_name].filter(Boolean);
+          const name = parts.join(" ").trim() || user.email || "Unknown user";
+          userNameById.set(user.user_id, name);
+        });
+      }
+    }
+
+    const resolveHistoryUserName = (value) => {
+      if (!value) return null;
+      const text = String(value).trim();
+      if (!text) return null;
+      const parsed = Number(text);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        return userNameById.get(parsed) || "Unknown user";
+      }
+      return /^system/i.test(text) ? "System" : text;
+    };
+
     const baselineEntries = (historyRows || []).map((row) => {
       const statusPayload = buildStatusPayload(row.to_status || row.from_status); // Build metadata payload for the history status
       return {
@@ -346,6 +386,7 @@ export default async function handler(req, res) {
         statusLabel: statusPayload.label,
         timestamp: row.changed_at,
         userId: row.changed_by || null,
+        userName: resolveHistoryUserName(row.changed_by),
         reason: row.reason || null,
         color: statusPayload.color,
         department: statusPayload.department,
@@ -362,6 +403,7 @@ export default async function handler(req, res) {
         timestamp:
           jobRow.status_updated_at || jobRow.updated_at || jobRow.created_at || new Date().toISOString(),
         userId: jobRow.status_updated_by || null,
+        userName: resolveHistoryUserName(jobRow.status_updated_by),
         reason: null,
         color: statusPayload.color,
         department: statusPayload.department,

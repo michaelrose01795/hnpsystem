@@ -14,7 +14,7 @@ const mapUsersToNameList = (grouped = {}) =>
         const joined = parts.join(" ").trim();
         if (joined) return joined;
         if (user.email) return user.email;
-        return `User ${user.id}`;
+        return "Unknown user";
       }),
     ])
   );

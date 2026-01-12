@@ -28,7 +28,7 @@ const buildRosterMap = (rows = []) =>
     const display =
       `${row.first_name || ""} ${row.last_name || ""}`.trim() ||
       row.email ||
-      `User ${row.user_id}`;
+      "Unknown user";
     acc[role].push(display);
     return acc;
   }, {});

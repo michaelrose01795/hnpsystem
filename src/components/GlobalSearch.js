@@ -1,5 +1,6 @@
 // file location: src/components/GlobalSearch.js
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/router";
 import { createCustomerDisplaySlug } from "@/lib/customers/slug";
 
@@ -34,7 +35,9 @@ const GlobalSearch = ({
 }) => {
   const router = useRouter();
   const containerRef = useRef(null);
+  const controlRef = useRef(null);
   const inputRef = useRef(null);
+  const dropdownRef = useRef(null);
   const abortRef = useRef(null);
 
   const [query, setQuery] = useState("");
@@ -46,16 +49,20 @@ const GlobalSearch = ({
   const [navResults, setNavResults] = useState([]);
   const [feedback, setFeedback] = useState("");
   const [dropdownStyle, setDropdownStyle] = useState(null);
+  const [portalRoot, setPortalRoot] = useState(null);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    setPortalRoot(document.body);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target)
-      ) {
-        setIsOpen(false);
-        setActiveIndex(0);
-      }
+      const target = event.target;
+      if (containerRef.current?.contains(target)) return;
+      if (dropdownRef.current?.contains(target)) return;
+      setIsOpen(false);
+      setActiveIndex(0);
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -198,19 +205,30 @@ const GlobalSearch = ({
     trimmedQuery.length > 0 &&
     (isLoading || (feedback && (navResults.length === 0 && apiResults.length === 0)));
 
+  const showResults =
+    isOpen && combinedResults.length > 0 && !shouldShowFeedback;
+  const showEmptyState =
+    !isLoading &&
+    !combinedResults.length &&
+    trimmedQuery.length >= MIN_QUERY_LENGTH &&
+    !feedback &&
+    !shouldShowFeedback;
+  const shouldShowDropdown = shouldShowFeedback || showResults || showEmptyState;
+
   useEffect(() => {
     if (!containerRef.current) return;
-    if (!isOpen && !shouldShowFeedback) return;
+    if (!shouldShowDropdown) return;
 
     const updatePosition = () => {
-      const anchor = inputRef.current || containerRef.current;
+      const anchor = controlRef.current || containerRef.current;
       if (!anchor) return;
       const rect = anchor.getBoundingClientRect();
+      const width = rect.width;
       setDropdownStyle({
         position: "fixed",
         top: rect.bottom + 12,
         left: rect.left,
-        width: rect.width,
+        width,
         right: "auto",
         margin: 0,
         boxSizing: "border-box",
@@ -224,7 +242,7 @@ const GlobalSearch = ({
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [isOpen, shouldShowFeedback, query, navResults.length, apiResults.length]);
+  }, [shouldShowDropdown, query, navResults.length, apiResults.length]);
 
   const handleSelect = (item) => {
     if (!item) return;
@@ -261,7 +279,7 @@ const GlobalSearch = ({
   };
 
   const handleKeyDown = (event) => {
-    if (!isOpen || combinedResults.length === 0) return;
+    if (!showResults || combinedResults.length === 0) return;
 
     if (event.key === "ArrowDown") {
       event.preventDefault();
@@ -286,12 +304,139 @@ const GlobalSearch = ({
   const placeholderColor = isDarkMode ? "rgba(10, 10, 12, 0.6)" : "var(--border)";
   const drawerBorderColor = isDarkMode ? "rgba(var(--accent-purple-rgb), 0.45)" : "var(--surface)";
 
+  const dropdownZIndex = 2147483647;
+  const dropdownContent =
+    shouldShowDropdown && dropdownStyle ? (
+      <div
+        ref={dropdownRef}
+        style={{
+          ...dropdownStyle,
+          zIndex: dropdownZIndex,
+          pointerEvents: "auto",
+        }}
+      >
+        {shouldShowFeedback && (
+          <div
+            style={{
+              padding: "12px 16px",
+              borderRadius: "12px",
+              backgroundColor: searchBackground,
+              border: `1px solid ${drawerBorderColor}`,
+              boxShadow: "none",
+              color: textColor,
+              fontSize: "0.85rem",
+            }}
+          >
+            {isLoading ? "Searching…" : feedback}
+          </div>
+        )}
+
+        {showResults && (
+          <div
+            style={{
+              backgroundColor: searchBackground,
+              borderRadius: "16px",
+              boxShadow: "none",
+              border: `1px solid ${drawerBorderColor}`,
+              overflow: "hidden",
+              maxHeight: "280px",
+              overflowY: "auto",
+            }}
+          >
+            {combinedResults.map((item, index) => {
+              const active = index === activeIndex;
+              const chipLabel = typeLabels[item.type] || "Result";
+              const itemBackground = active
+                ? `${accentColor}14`
+                : "transparent";
+              const itemColor = active ? accentColor : textColor;
+
+              return (
+                <button
+                  key={`${item.type}-${item.title}-${index}`}
+                  type="button"
+                  onMouseEnter={() => setActiveIndex(index)}
+                  onClick={() => handleSelect(item)}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    width: "100%",
+                    padding: "14px 16px",
+                    border: "none",
+                    borderBottom:
+                      index === combinedResults.length - 1
+                        ? "none"
+                        : `1px solid ${isDarkMode ? "rgba(var(--accent-purple-rgb), 0.3)" : "var(--surface)"}`,
+                    backgroundColor: itemBackground,
+                    color: itemColor,
+                    cursor: "pointer",
+                    textAlign: "left",
+                  }}
+                >
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>
+                      {item.title}
+                    </span>
+                    {item.subtitle && (
+                      <span
+                        style={{
+                          fontSize: "0.8rem",
+                          color: isDarkMode ? "var(--border)" : "var(--grey-accent)",
+                        }}
+                      >
+                        {item.subtitle}
+                      </span>
+                    )}
+                  </div>
+                  <span
+                    style={{
+                      fontSize: "0.7rem",
+                      padding: "4px 8px",
+                      borderRadius: "999px",
+                      backgroundColor: active ? accentColor : "var(--search-surface-muted)",
+                      color: active ? "var(--surface)" : textColor,
+                      textTransform: "uppercase",
+                      fontWeight: 700,
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    {chipLabel}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {showEmptyState && (
+          <div
+            style={{
+              padding: "16px",
+              borderRadius: "12px",
+              backgroundColor: searchBackground,
+              border: `1px solid ${drawerBorderColor}`,
+              boxShadow: "none",
+              color: textColor,
+              fontSize: "0.85rem",
+            }}
+          >
+            No matches — try another term.
+          </div>
+        )}
+      </div>
+    ) : null;
+  const dropdownPortal = portalRoot
+    ? createPortal(dropdownContent, portalRoot)
+    : dropdownContent;
+
   return (
     <div
       ref={containerRef}
-      style={{ position: "relative", width: "100%", maxWidth: "480px", zIndex: 9999 }}
+      style={{ position: "relative", width: "100%", maxWidth: "480px", zIndex: dropdownZIndex }}
     >
       <div
+        ref={controlRef}
         style={{
           display: "flex",
           alignItems: "center",
@@ -351,124 +496,7 @@ const GlobalSearch = ({
         )}
       </div>
 
-      {shouldShowFeedback && (
-        <div
-          style={{
-            ...dropdownStyle,
-            padding: "12px 16px",
-            borderRadius: "12px",
-            backgroundColor: searchBackground,
-            border: `1px solid ${drawerBorderColor}`,
-            boxShadow: "none",
-            color: textColor,
-            fontSize: "0.85rem",
-            zIndex: 10000,
-          }}
-        >
-          {isLoading ? "Searching…" : feedback}
-        </div>
-      )}
-
-      {isOpen && combinedResults.length > 0 && (
-        <div
-          style={{
-            ...dropdownStyle,
-            backgroundColor: searchBackground,
-            borderRadius: "16px",
-            boxShadow: "none",
-            border: `1px solid ${drawerBorderColor}`,
-            overflow: "hidden",
-            maxHeight: "280px",
-            overflowY: "auto",
-            zIndex: 10000,
-          }}
-        >
-          {combinedResults.map((item, index) => {
-            const active = index === activeIndex;
-            const chipLabel = typeLabels[item.type] || "Result";
-            const itemBackground = active
-              ? `${accentColor}14`
-              : "transparent";
-            const itemColor = active ? accentColor : textColor;
-
-            return (
-              <button
-                key={`${item.type}-${item.title}-${index}`}
-                type="button"
-                onMouseEnter={() => setActiveIndex(index)}
-                onClick={() => handleSelect(item)}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  width: "100%",
-                  padding: "14px 16px",
-                  border: "none",
-                  borderBottom:
-                    index === combinedResults.length - 1
-                      ? "none"
-                      : `1px solid ${isDarkMode ? "rgba(var(--accent-purple-rgb), 0.3)" : "var(--surface)"}`,
-                  backgroundColor: itemBackground,
-                  color: itemColor,
-                  cursor: "pointer",
-                  textAlign: "left",
-                }}
-              >
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>
-                    {item.title}
-                  </span>
-                  {item.subtitle && (
-                    <span
-                      style={{
-                        fontSize: "0.8rem",
-                        color: isDarkMode ? "var(--border)" : "var(--grey-accent)",
-                      }}
-                    >
-                      {item.subtitle}
-                    </span>
-                  )}
-                </div>
-                <span
-                  style={{
-                    fontSize: "0.7rem",
-                    padding: "4px 8px",
-                    borderRadius: "999px",
-                    backgroundColor: active ? accentColor : "var(--search-surface-muted)",
-                    color: active ? "var(--surface)" : textColor,
-                    textTransform: "uppercase",
-                    fontWeight: 700,
-                    letterSpacing: "0.05em",
-                  }}
-                >
-                  {chipLabel}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {!isLoading &&
-        !combinedResults.length &&
-        trimmedQuery.length >= MIN_QUERY_LENGTH &&
-        !feedback && (
-          <div
-            style={{
-              ...dropdownStyle,
-              padding: "16px",
-              borderRadius: "12px",
-              backgroundColor: searchBackground,
-              border: `1px solid ${drawerBorderColor}`,
-              boxShadow: "none",
-              color: textColor,
-              fontSize: "0.85rem",
-              zIndex: 10000,
-            }}
-          >
-            No matches — try another term.
-          </div>
-        )}
+      {dropdownPortal}
     </div>
   );
 };

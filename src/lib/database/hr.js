@@ -142,7 +142,7 @@ function formatEmployee(user) {
   const id = user.user_id ?? user.id ?? null;
   const first = user.first_name || "";
   const last = user.last_name || "";
-  const name = `${first} ${last}`.trim() || user.email || `User ${id ?? ""}`.trim();
+  const name = `${first} ${last}`.trim() || user.email || "Unknown user";
   return { id, name };
 }
 
@@ -812,7 +812,10 @@ export async function getEmployeeDirectory() {
     const userId = user.user_id || profile.user_id;
     const storedEmploymentStatus = profile.employment_status || "Active";
     const status = activeAbsenceMap.get(userId) || storedEmploymentStatus;
-    const name = `${user.first_name || ""} ${user.last_name || ""}`.trim() || user.email || `User ${userId}`;
+    const name =
+      `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
+      user.email ||
+      "Unknown user";
     const emergencyDetails = formatEmergencyContact(profile.emergency_contact);
     const contractedHours = profile.contracted_hours ?? null;
     const hourlyRate = profile.hourly_rate;
