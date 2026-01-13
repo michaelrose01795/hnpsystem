@@ -42,37 +42,11 @@ const isMotRole = (role) => {
   return normalized.includes("mot");
 };
 
-const STATUS_WAITING_QUEUE = new Set([
-  "CHECKED IN",
-  "ACCEPTED IN",
-  "WAITING FOR WORKSHOP",
-  "AWAITING WORKSHOP",
-  "AWAITING TECH",
-  "AWAITING ALLOCATION",
-  "ARRIVED",
-  "IN RECEPTION",
-]);
-
-const STATUS_IN_PROGRESS = new Set([
-  "WORKSHOP/MOT",
-  "WORKSHOP",
-  "IN PROGRESS",
-  "VHC COMPLETE",
-  "VHC SENT",
-  "ADDITIONAL WORK REQUIRED",
-  "ADDITIONAL WORK BEING CARRIED OUT",
-  "ADDITIONAL WORK",
-  "BEING WASHED",
-]);
-
-const STATUS_COMPLETED = new Set([
+const STATUS_TECH_PANEL_EXCLUDED = new Set([
+  "BOOKED",
+  "INVOICED",
   "COMPLETE",
   "COMPLETED",
-  "INVOICED",
-  "COLLECTED",
-  "CLOSED",
-  "FINISHED",
-  "CANCELLED",
 ]);
 
 const toStatusKey = (status) => (status ? String(status).trim().toUpperCase() : "");
@@ -299,30 +273,15 @@ export default function NextJobsPage() {
     [usersByRole]
   );
 
-  const isWaitingJob = (job) => {
-    const statusKey = toStatusKey(job.status);
-    const hasStarted =
-      STATUS_IN_PROGRESS.has(statusKey) || Boolean(job.workshopStartedAt);
-    const isFinished =
-      STATUS_COMPLETED.has(statusKey) || Boolean(job.completedAt);
-    const hasArrived =
-      STATUS_WAITING_QUEUE.has(statusKey) ||
-      (Boolean(job.checkedInAt) && !isFinished);
-
-    return hasArrived && !hasStarted && !isFinished;
-  };
-
-  const waitingJobs = useMemo(() => jobs.filter(isWaitingJob), [jobs]);
-
   const jobsByNumber = useMemo(() => {
     const map = new Map();
-    waitingJobs.forEach((job) => {
+    jobs.forEach((job) => {
       if (job?.jobNumber) {
         map.set(job.jobNumber, job);
       }
     });
     return map;
-  }, [waitingJobs]);
+  }, [jobs]);
 
   const mapJobFromDatabase = (row) => {
     const customerFirst = row.customer?.firstname?.trim() || "";
@@ -554,96 +513,6 @@ export default function NextJobsPage() {
     };
   }, [fetchActiveClockings]);
 
-  const staffDirectory = useMemo(() => {
-    const map = new Map();
-
-    const mergePerson = (person, roleTag, index, prefix) => {
-      if (!person) return;
-      const label =
-        person.name ||
-        person.displayName ||
-        person.fullName ||
-        person.email ||
-        (typeof person === "string" ? person : "");
-      const normalized = normalizeDisplayName(label);
-      if (!normalized) return;
-
-      const fallbackName =
-        label ||
-        `${roleTag === "tech" ? "Technician" : "MOT"} ${index + 1}`;
-      const fallbackId =
-        person.id ??
-        person.user_id ??
-        person.email ??
-        `${prefix}-${index}`;
-
-      const existing = map.get(normalized) || {
-        id: fallbackId || normalized,
-        name: fallbackName,
-        email: person.email || "",
-        roles: new Set(),
-      };
-
-      if (!existing.name && fallbackName) existing.name = fallbackName;
-      if (!existing.email && person.email) existing.email = person.email;
-      if (!existing.id && fallbackId) existing.id = fallbackId;
-
-      existing.roles.add(roleTag);
-      map.set(normalized, existing);
-    };
-
-    const techSource = dbTechnicians.length > 0 ? dbTechnicians : fallbackTechs;
-    techSource.forEach((person, index) => mergePerson(person, "tech", index, "tech"));
-
-    const motSource = dbMotTesters.length > 0 ? dbMotTesters : fallbackMot;
-    motSource.forEach((person, index) => mergePerson(person, "mot", index, "mot"));
-
-    waitingJobs.forEach((job, index) => {
-      const assignedTech = job?.assignedTech;
-      if (!assignedTech) return;
-      const role = assignedTech.role || "";
-      const shouldIncludeTech = isTechRole(role);
-      const shouldIncludeMot = isMotRole(role);
-      if (!shouldIncludeTech && !shouldIncludeMot) return;
-      const person = {
-        id: assignedTech.id || null,
-        name: assignedTech.name || assignedTech.fullName || "",
-        email: assignedTech.email || "",
-      };
-      if (shouldIncludeTech) {
-        mergePerson(person, "tech", index, "assigned-tech");
-      }
-      if (shouldIncludeMot) {
-        mergePerson(person, "mot", index, "assigned-mot");
-      }
-    });
-
-    return Array.from(map.entries()).map(([normalized, entry]) => ({
-      ...entry,
-      normalizedName: normalized,
-      roles: Array.from(entry.roles),
-    }));
-  }, [dbTechnicians, dbMotTesters, fallbackTechs, fallbackMot, waitingJobs]);
-
-  const techPanelList = useMemo(
-    () => staffDirectory.filter((person) => person.roles.includes("tech")),
-    [staffDirectory]
-  );
-
-  const motPanelList = useMemo(
-    () => staffDirectory.filter((person) => person.roles.includes("mot")),
-    [staffDirectory]
-  );
-
-  const assignableStaffList = useMemo(
-    () =>
-      staffDirectory.map((staff) => ({
-        id: staff.id || staff.normalizedName,
-        name: staff.name,
-      })),
-    [staffDirectory]
-  );
-
   const techIdSet = useMemo(() => {
     return new Set(
       (dbTechnicians || [])
@@ -688,6 +557,111 @@ export default function NextJobsPage() {
     });
   };
 
+  const isExcludedFromTechPanel = (status) => {
+    const statusKey = toStatusKey(status);
+    return STATUS_TECH_PANEL_EXCLUDED.has(statusKey);
+  };
+
+  const assignedPanelJobs = useMemo(
+    () =>
+      jobs.filter(
+        (job) =>
+          isAssignedToKnownStaff(job) &&
+          !isExcludedFromTechPanel(job.status)
+      ),
+    [jobs, techIdSet, motIdSet, dbTechnicians, dbMotTesters]
+  );
+
+  const staffDirectory = useMemo(() => {
+    const map = new Map();
+
+    const mergePerson = (person, roleTag, index, prefix) => {
+      if (!person) return;
+      const label =
+        person.name ||
+        person.displayName ||
+        person.fullName ||
+        person.email ||
+        (typeof person === "string" ? person : "");
+      const normalized = normalizeDisplayName(label);
+      if (!normalized) return;
+
+      const fallbackName =
+        label ||
+        `${roleTag === "tech" ? "Technician" : "MOT"} ${index + 1}`;
+      const fallbackId =
+        person.id ??
+        person.user_id ??
+        person.email ??
+        `${prefix}-${index}`;
+
+      const existing = map.get(normalized) || {
+        id: fallbackId || normalized,
+        name: fallbackName,
+        email: person.email || "",
+        roles: new Set(),
+      };
+
+      if (!existing.name && fallbackName) existing.name = fallbackName;
+      if (!existing.email && person.email) existing.email = person.email;
+      if (!existing.id && fallbackId) existing.id = fallbackId;
+
+      existing.roles.add(roleTag);
+      map.set(normalized, existing);
+    };
+
+    const techSource = dbTechnicians.length > 0 ? dbTechnicians : fallbackTechs;
+    techSource.forEach((person, index) => mergePerson(person, "tech", index, "tech"));
+
+    const motSource = dbMotTesters.length > 0 ? dbMotTesters : fallbackMot;
+    motSource.forEach((person, index) => mergePerson(person, "mot", index, "mot"));
+
+    assignedPanelJobs.forEach((job, index) => {
+      const assignedTech = job?.assignedTech;
+      if (!assignedTech) return;
+      const role = assignedTech.role || "";
+      const shouldIncludeTech = isTechRole(role);
+      const shouldIncludeMot = isMotRole(role);
+      if (!shouldIncludeTech && !shouldIncludeMot) return;
+      const person = {
+        id: assignedTech.id || null,
+        name: assignedTech.name || assignedTech.fullName || "",
+        email: assignedTech.email || "",
+      };
+      if (shouldIncludeTech) {
+        mergePerson(person, "tech", index, "assigned-tech");
+      }
+      if (shouldIncludeMot) {
+        mergePerson(person, "mot", index, "assigned-mot");
+      }
+    });
+
+    return Array.from(map.entries()).map(([normalized, entry]) => ({
+      ...entry,
+      normalizedName: normalized,
+      roles: Array.from(entry.roles),
+    }));
+  }, [dbTechnicians, dbMotTesters, fallbackTechs, fallbackMot, assignedPanelJobs]);
+
+  const techPanelList = useMemo(
+    () => staffDirectory.filter((person) => person.roles.includes("tech")),
+    [staffDirectory]
+  );
+
+  const motPanelList = useMemo(
+    () => staffDirectory.filter((person) => person.roles.includes("mot")),
+    [staffDirectory]
+  );
+
+  const assignableStaffList = useMemo(
+    () =>
+      staffDirectory.map((staff) => ({
+        id: staff.id || staff.normalizedName,
+        name: staff.name,
+      })),
+    [staffDirectory]
+  );
+
   const outstandingJobs = useMemo(
     () =>
       jobs.filter((job) => {
@@ -725,7 +699,7 @@ export default function NextJobsPage() {
     const normalizedAssignee = normalizeDisplayName(assignee?.name);
     const assigneeIdKey = toUserIdKey(assignee?.id);
 
-    return waitingJobs
+    return assignedPanelJobs
       .filter((job) => {
         const jobAssignedIdKey = toUserIdKey(
           job.assignedTech?.id ?? job.assignedTo
@@ -752,7 +726,7 @@ export default function NextJobsPage() {
         panelKey: `${tech.id || tech.normalizedName || "tech"}-tech-${index}`,
         jobs: getJobsForAssignee(tech),
       })),
-    [waitingJobs, techPanelList]
+    [assignedPanelJobs, techPanelList]
   );
 
   const assignedMotJobs = useMemo(
@@ -762,7 +736,7 @@ export default function NextJobsPage() {
         panelKey: `${tester.id || tester.normalizedName || "mot"}-mot-${index}`,
         jobs: getJobsForAssignee(tester),
       })),
-    [waitingJobs, motPanelList]
+    [assignedPanelJobs, motPanelList]
   );
 
   const handleOpenJobDetails = (job) => {

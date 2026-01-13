@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useState, useCallback, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "@/lib/supabaseClient";
 
 const CATEGORY_FILTERS = {
@@ -72,6 +73,7 @@ export default function PartSearchModal({
   userId,
   userNumericId,
 }) {
+  const [isMounted, setIsMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -85,53 +87,42 @@ export default function PartSearchModal({
 
   const defaultFilter = useMemo(() => deriveCategoryFilter(vhcItem), [vhcItem]);
 
-  // Lock body scroll and scroll to top when modal opens
   useEffect(() => {
-    if (isOpen) {
-      // Save current scroll position before scrolling to top
-      const currentScrollY = window.scrollY;
+    setIsMounted(true);
+  }, []);
 
-      // Scroll to top of page smoothly
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-
-      // Small delay to allow scroll to complete
-      const lockTimer = setTimeout(() => {
-        const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-
-        // Lock body in place at top
-        document.body.style.position = 'fixed';
-        document.body.style.top = '0px';
-        document.body.style.left = '0px';
-        document.body.style.right = '0px';
-        document.body.style.width = '100%';
-        document.body.style.overflow = 'hidden';
-        document.body.style.paddingRight = `${scrollbarWidth}px`;
-
-        // Store original scroll position for restoration
-        document.body.dataset.scrollY = currentScrollY.toString();
-      }, 300);
-
-      return () => {
-        clearTimeout(lockTimer);
-
-        // Restore original styles
-        const savedScrollY = parseInt(document.body.dataset.scrollY || '0', 10);
-
-        document.body.style.position = '';
-        document.body.style.top = '';
-        document.body.style.left = '';
-        document.body.style.right = '';
-        document.body.style.width = '';
-        document.body.style.overflow = '';
-        document.body.style.paddingRight = '';
-
-        // Restore scroll position
-        if (savedScrollY > 0) {
-          window.scrollTo(0, savedScrollY);
-        }
-        delete document.body.dataset.scrollY;
-      };
+  // Lock body scroll while keeping the modal centered in the current viewport
+  useEffect(() => {
+    if (!isOpen) {
+      return undefined;
     }
+
+    const currentScrollY = window.scrollY;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${currentScrollY}px`;
+    document.body.style.left = "0px";
+    document.body.style.right = "0px";
+    document.body.style.width = "100%";
+    document.body.style.overflow = "hidden";
+    document.body.style.paddingRight = `${scrollbarWidth}px`;
+    document.body.dataset.scrollY = currentScrollY.toString();
+
+    return () => {
+      const savedScrollY = parseInt(document.body.dataset.scrollY || "0", 10);
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
+      document.body.style.width = "";
+      document.body.style.overflow = "";
+      document.body.style.paddingRight = "";
+      if (savedScrollY > 0) {
+        window.scrollTo(0, savedScrollY);
+      }
+      delete document.body.dataset.scrollY;
+    };
   }, [isOpen]);
 
   useEffect(() => {
@@ -498,9 +489,9 @@ export default function PartSearchModal({
     }
   }, [selectedParts, vhcItemData, jobNumber, onPartSelected, onClose, userId, userNumericId]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !isMounted) return null;
 
-  return (
+  return createPortal(
     <>
       <style jsx>{`
         @keyframes modalFadeIn {
@@ -533,6 +524,7 @@ export default function PartSearchModal({
           justifyContent: "center",
           zIndex: 9999,
           overflow: "hidden",
+          padding: "24px",
           animation: "modalFadeIn 0.2s ease-out",
         }}
         onClick={onClose}
@@ -541,6 +533,7 @@ export default function PartSearchModal({
         style={{
           width: "min(900px, calc(100vw - 48px))",
           maxHeight: "calc(100vh - 48px)",
+          minHeight: 0,
           background: "var(--surface)",
           borderRadius: "18px",
           border: "1px solid var(--accent-purple-surface)",
@@ -1020,6 +1013,7 @@ export default function PartSearchModal({
         </div>
       </div>
     </div>
-    </>
+    </>,
+    document.body
   );
 }
