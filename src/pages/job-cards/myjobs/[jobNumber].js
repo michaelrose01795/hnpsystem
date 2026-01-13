@@ -17,6 +17,12 @@ import { supabase } from "@/lib/supabaseClient";
 import WriteUpForm from "@/components/JobCards/WriteUpForm";
 import { getJobByNumberOrReg, saveChecksheet } from "@/lib/database/jobs";
 import { createJobNote, getNotesByJob } from "@/lib/database/notes";
+import { logJobSubStatus } from "@/lib/services/jobStatusService";
+import {
+  getMainStatusMetadata,
+  resolveMainStatusId,
+  resolveSubStatusId,
+} from "@/lib/status/statusFlow";
 
 // VHC Section Modals
 import WheelsTyresDetailsModal from "@/components/VHC/WheelsTyresDetailsModal";
@@ -45,16 +51,8 @@ const SECTION_TITLES = {
 const MANDATORY_SECTION_KEYS = ["wheelsTyres", "brakesHubs", "serviceIndicator"];
 const trackedSectionKeys = new Set(MANDATORY_SECTION_KEYS);
 
-const VHC_REOPENED_STATUS = "Open";
-const VHC_REOPEN_ELIGIBLE_STATUSES = ["VHC Complete", "VHC Sent", "Tech Done"];
-const VHC_COMPLETED_STATUSES = [
-  "VHC Complete",
-  "VHC Sent",
-  "VHC Approved",
-  "VHC Declined",
-  "Tech Complete",
-  "Tech Done",
-];
+const VHC_REOPENED_SUB_STATUS = "VHC Started";
+const VHC_COMPLETED_SUB_STATUS = "VHC Completed";
 
 const createDefaultSectionStatus = () =>
   MANDATORY_SECTION_KEYS.reduce((acc, key) => {
@@ -168,12 +166,6 @@ const getStatusBadgeStyle = (status, fallbackColor) =>
   STATUS_BADGE_STYLES[status] || { background: fallbackColor, color: "white" };
 
 const IN_PROGRESS_STATUS = "In Progress";
-const WAITING_STATUS = "Waiting";
-const STARTED_STATUS = "Started";
-const PAUSE_ON_CLOCK_OUT_STATUSES = new Set([
-  IN_PROGRESS_STATUS.toLowerCase(),
-  STARTED_STATUS.toLowerCase(),
-]);
 
 // Format date and time helper
 const formatDateTime = (date) => {
@@ -210,14 +202,7 @@ const getPartsStatusStyle = (status) => {
 };
 
 // Helper to get status after clock out
-const getStatusAfterClockOut = (currentStatus) => {
-  if (!currentStatus) return null;
-  const normalized = currentStatus.trim().toLowerCase();
-  if (PAUSE_ON_CLOCK_OUT_STATUSES.has(normalized)) {
-    return WAITING_STATUS;
-  }
-  return null;
-};
+const getStatusAfterClockOut = () => null;
 
 const normalizeVhcStatus = (value) => {
   if (value === null || value === undefined) return "na";
@@ -317,6 +302,7 @@ export default function TechJobDetailPage() {
   const [showVhcSummary, setShowVhcSummary] = useState(false);
   const [showGreenItems, setShowGreenItems] = useState(false);
   const [vhcCompleteOverride, setVhcCompleteOverride] = useState(false);
+  const [vhcStartedLogged, setVhcStartedLogged] = useState(false);
 
   const jobCardId = jobData?.jobCard?.id ?? null;
   const jobCardStatus = jobData?.jobCard?.status || "";
@@ -426,8 +412,37 @@ export default function TechJobDetailPage() {
     async (targetStatus, currentStatus, extraUpdates = {}) => {
       if (!targetStatus || !jobCardId) return null;
 
-      const normalizedCurrent = (currentStatus || "").trim();
-      if (!normalizedCurrent || normalizedCurrent === targetStatus) return null;
+      const subStatusId = resolveSubStatusId(targetStatus);
+      if (subStatusId) {
+        try {
+          const { status, status_updated_at, status_updated_by, ...restUpdates } = extraUpdates;
+          if (Object.keys(restUpdates).length > 0) {
+            const response = await updateJob(jobCardId, restUpdates);
+            if (response?.success && response.data) {
+              setJobData((prev) => {
+                if (!prev?.jobCard) return prev;
+                return {
+                  ...prev,
+                  jobCard: {
+                    ...prev.jobCard,
+                    ...response.data,
+                  },
+                };
+              });
+            }
+          }
+          await logJobSubStatus(jobCardId, targetStatus, dbUserId, restUpdates?.status_change_reason);
+          return { status: targetStatus };
+        } catch (error) {
+          console.error("syncJobStatus error:", error);
+          return null;
+        }
+      }
+
+      const targetMainId = resolveMainStatusId(targetStatus);
+      if (!targetMainId) return null;
+      const currentMainId = resolveMainStatusId(currentStatus);
+      if (currentMainId && currentMainId === targetMainId) return null;
 
       try {
         const statusAuditUpdates = { ...extraUpdates };
@@ -441,10 +456,12 @@ export default function TechJobDetailPage() {
           statusAuditUpdates.status_updated_by = dbUserId;
         }
 
+        const targetMeta = getMainStatusMetadata(targetStatus);
+        const targetLabel = targetMeta?.label || targetStatus;
         const response =
           statusAuditUpdates && Object.keys(statusAuditUpdates).length > 0
-            ? await updateJob(jobCardId, { status: targetStatus, ...statusAuditUpdates })
-            : await updateJobStatus(jobCardId, targetStatus);
+            ? await updateJob(jobCardId, { status: targetLabel, ...statusAuditUpdates })
+            : await updateJobStatus(jobCardId, targetLabel);
         if (response?.success && response.data) {
           setJobData((prev) => {
             if (!prev?.jobCard) return prev;
@@ -840,6 +857,10 @@ export default function TechJobDetailPage() {
         const result = await saveChecksheet(jobNumber, payloadWithStatus);
         if (result.success) {
           console.log("VHC data saved successfully");
+          if (!vhcStartedLogged && jobCardId) {
+            await logJobSubStatus(jobCardId, "VHC Started", dbUserId, "VHC started");
+            setVhcStartedLogged(true);
+          }
           setLastSavedAt(new Date());
           if (saveTimeoutRef.current) {
             clearTimeout(saveTimeoutRef.current);
@@ -863,7 +884,7 @@ export default function TechJobDetailPage() {
         return false;
       }
     },
-    [jobNumber, sectionStatus]
+    [jobNumber, sectionStatus, vhcStartedLogged, jobCardId, dbUserId]
   );
 
   const handleSectionComplete = useCallback(async (sectionKey, sectionData, options = {}) => {
@@ -1087,17 +1108,18 @@ export default function TechJobDetailPage() {
     return mandatoryComplete;
   }, [sectionStatus]);
 
-  const showVhcReopenButton =
-    vhcCompleteOverride ||
-    Boolean(jobData?.jobCard?.vhcCompletedAt) ||
-    VHC_REOPEN_ELIGIBLE_STATUSES.includes(jobCardStatus);
+  const isVhcCompleted =
+    vhcCompleteOverride || Boolean(jobData?.jobCard?.vhcCompletedAt);
+  const showVhcReopenButton = isVhcCompleted;
 
   const handleCompleteVhcClick = useCallback(async () => {
     if (!jobCardId) return;
     if (!showVhcReopenButton && !canCompleteVhc) return;
 
-    const targetStatus = showVhcReopenButton ? VHC_REOPENED_STATUS : "Tech Done";
-    const shouldShowCompleteCard = targetStatus === "VHC Complete";
+    const targetStatus = showVhcReopenButton
+      ? VHC_REOPENED_SUB_STATUS
+      : VHC_COMPLETED_SUB_STATUS;
+    const shouldShowCompleteCard = targetStatus === VHC_COMPLETED_SUB_STATUS;
     if (shouldShowCompleteCard) {
       setVhcCompleteOverride(true);
     }
@@ -1199,13 +1221,18 @@ export default function TechJobDetailPage() {
       setSectionStatus(deriveSectionStatusFromSavedData(vhcChecksheet.data));
 
       // Detect reopen mode
-      const jobStatus = jobData?.jobCard?.status || "";
-      setIsReopenMode(VHC_REOPEN_ELIGIBLE_STATUSES.includes(jobStatus));
+      setIsReopenMode(Boolean(jobData?.jobCard?.vhcCompletedAt));
     } else {
       console.log("No VHC checksheet section found");
       setSectionStatus(createDefaultSectionStatus());
     }
   }, [vhcChecks, jobData]);
+
+  useEffect(() => {
+    if (vhcChecks?.length) {
+      setVhcStartedLogged(true);
+    }
+  }, [vhcChecks]);
 
   // Effect: Refresh job clocking when jobCardId changes
   useEffect(() => {
@@ -1241,7 +1268,7 @@ export default function TechJobDetailPage() {
 
     const result = await updateJobStatus(jobCardId, newStatus);
     
-    if (result) {
+    if (result?.success && result.data) {
       alert("Status updated successfully!");
       setJobData((prev) => {
         if (!prev?.jobCard) return prev;
@@ -1249,12 +1276,12 @@ export default function TechJobDetailPage() {
           ...prev,
           jobCard: {
             ...prev.jobCard,
-            status: newStatus,
+            status: result.data.status,
           },
         };
       });
 
-      const actionType = resolveNextActionType(newStatus);
+      const actionType = resolveNextActionType(result.data.status);
       if (actionType) {
         const vehicleId = jobData?.vehicle?.vehicleId || jobData?.jobCard?.vehicleId || null;
         const vehicleReg =
@@ -1327,7 +1354,7 @@ export default function TechJobDetailPage() {
     if (!jobData?.jobCard?.vhcRequired) return "VHC Not Required";
 
     // Reopen mode - VHC is complete or sent
-    if (VHC_REOPEN_ELIGIBLE_STATUSES.includes(jobCardStatus)) {
+    if (showVhcReopenButton) {
       return "Reopen VHC";
     }
 
@@ -1344,7 +1371,7 @@ export default function TechJobDetailPage() {
   const getVhcButtonColor = () => {
     if (!jobData?.jobCard?.vhcRequired) return "var(--surface-light)";
 
-    if (VHC_REOPEN_ELIGIBLE_STATUSES.includes(jobCardStatus)) {
+    if (showVhcReopenButton) {
       return "var(--warning)"; // Orange for reopen
     }
 
@@ -1359,7 +1386,7 @@ export default function TechJobDetailPage() {
   const getVhcStatusMessage = () => {
     if (!jobData?.jobCard?.vhcRequired) return "";
 
-    if (VHC_REOPEN_ELIGIBLE_STATUSES.includes(jobCardStatus)) {
+    if (showVhcReopenButton) {
       return "VHC completed. Click 'Reopen VHC' to view or make changes.";
     }
 
@@ -1701,10 +1728,7 @@ export default function TechJobDetailPage() {
   // Extract job data
   const { jobCard, customer, vehicle } = jobData;
   const jobRequiresVhc = jobCard?.vhcRequired === true;
-  const techStatusDisplay =
-    jobCardStatus === "VHC Complete" || jobCardStatus === "Tech Complete"
-      ? "Complete"
-      : jobCardStatus || "Unknown";
+  const techStatusDisplay = jobCardStatus || "Unknown";
   const jobStatusColor = STATUS_COLORS[techStatusDisplay] || "var(--info)";
   const jobStatusBadgeStyle = getStatusBadgeStyle(techStatusDisplay, jobStatusColor);
   const partsCount = jobCard.partsRequests?.length || 0;
@@ -1782,8 +1806,7 @@ export default function TechJobDetailPage() {
   const isVhcCompleteForTech =
     !jobRequiresVhc ||
     canCompleteVhc ||
-    Boolean(jobCard?.vhcCompletedAt) ||
-    VHC_COMPLETED_STATUSES.includes(jobCardStatus);
+    Boolean(jobCard?.vhcCompletedAt);
 
   const canCompleteJob = writeUpComplete && isVhcCompleteForTech;
   const completeJobLockedReasons = [];
@@ -1796,7 +1819,7 @@ export default function TechJobDetailPage() {
     completeJobLockedReasons.push("Complete mandatory VHC sections");
   }
   const completeJobLockedTitle = canCompleteJob
-    ? "Mark job as Tech Complete"
+    ? "Mark job as Technician Work Completed"
     : completeJobLockedReasons.length > 0
     ? completeJobLockedReasons.join(" • ")
     : "Complete the required steps to unlock";
@@ -1841,7 +1864,7 @@ export default function TechJobDetailPage() {
       }
     }
 
-    await syncJobStatus("VHC Complete", jobCardStatus);
+    await syncJobStatus("Technician Work Completed", jobCardStatus);
     router.push("/job-cards/myjobs");
   };
 
@@ -2273,7 +2296,7 @@ export default function TechJobDetailPage() {
                 }}>
                   <div>
                     <h2 style={{ margin: 0, fontSize: "20px", fontWeight: "700", color: "var(--accent-purple)" }}>
-                      VHC Complete
+                      VHC Completed
                     </h2>
                     <p style={{ margin: "6px 0 0 0", fontSize: "13px", color: "var(--info)" }}>
                       Vehicle Health Check completed.

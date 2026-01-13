@@ -6,6 +6,9 @@ import { supabase as browserSupabase } from "@/lib/supabaseClient"; // Import sh
 import {
   SERVICE_STATUS_FLOW,
   isValidTransition,
+  getMainStatusMetadata,
+  resolveMainStatusId,
+  resolveSubStatusId,
 } from "@/lib/status/statusFlow"; // Import status flow helpers for validation and metadata
 
 // TODO: Delegate reads/writes to src/lib/database/jobs helpers so status updates share the same data layer as the rest of the app.
@@ -30,17 +33,50 @@ const normalizeJobIdentifier = (raw) => {
   return { type: "job_number", value: String(trimmed) }; // Otherwise treat as external job number string
 };
 
-const normalizeStatusId = (status) => {
-  if (!status) return null; // Handle falsy inputs gracefully
-  return String(status)
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_"); // Convert status text into snake_case identifier used in config
+const buildStatusMetadata = (status) => {
+  return getMainStatusMetadata(status); // Lookup metadata using main status flow
 };
 
-const buildStatusMetadata = (normalizedId) => {
-  if (!normalizedId) return null; // Guard clause when status cannot be resolved
-  return SERVICE_STATUS_FLOW[normalizedId.toUpperCase()] || null; // Lookup metadata using uppercase key variant
+const REQUIRED_INVOICE_SUB_STATUSES = new Set([
+  "technician_work_completed",
+  "vhc_completed",
+  "pricing_completed",
+]);
+
+const fetchSubStatusSet = async (jobId) => {
+  const { data, error } = await dbClient
+    .from("job_status_history")
+    .select("to_status, from_status")
+    .eq("job_id", jobId);
+
+  if (error) {
+    throw error;
+  }
+
+  const set = new Set();
+  (data || []).forEach((row) => {
+    const toId = resolveSubStatusId(row.to_status);
+    const fromId = resolveSubStatusId(row.from_status);
+    if (toId) set.add(toId);
+    if (fromId) set.add(fromId);
+  });
+
+  return set;
+};
+
+const hasInvoiceForJob = async (jobId) => {
+  const { data, error } = await dbClient
+    .from("invoices")
+    .select("id")
+    .eq("job_id", jobId)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return Boolean(data?.id);
 };
 
 export default async function handler(req, res) {
@@ -61,9 +97,12 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Invalid job identifier" }); // Reject invalid identifiers
   }
 
-  const normalizedTargetStatus = normalizeStatusId(newStatus); // Normalise the target status for validation and metadata
+  const normalizedTargetStatus = resolveMainStatusId(newStatus); // Normalise the target status for validation and metadata
   if (!normalizedTargetStatus) {
-    return res.status(400).json({ error: "Unable to interpret newStatus" }); // Reject empty or malformed statuses
+    return res.status(400).json({
+      error: "Main job status required",
+      message: "Use main statuses only: Booked, Checked In, In Progress, Invoiced, Complete.",
+    }); // Reject empty or malformed statuses
   }
 
   try {
@@ -91,7 +130,7 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: "Job not found" }); // Notify caller when job cannot be located
     }
 
-    const normalizedCurrentStatus = normalizeStatusId(jobRow.status); // Normalise existing status for comparison
+    const normalizedCurrentStatus = resolveMainStatusId(jobRow.status); // Normalise existing status for comparison
 
     if (
       normalizedCurrentStatus &&
@@ -109,12 +148,37 @@ export default async function handler(req, res) {
       }); // Halt when transition violates configured flow
     }
 
+    if (normalizedTargetStatus === "invoiced") {
+      const subStatusSet = await fetchSubStatusSet(jobRow.id);
+      const missing = Array.from(REQUIRED_INVOICE_SUB_STATUSES).filter(
+        (status) => !subStatusSet.has(status)
+      );
+      if (missing.length) {
+        return res.status(400).json({
+          error: "Job not ready for invoicing",
+          missingSubStatuses: missing,
+        });
+      }
+    }
+
+    if (normalizedTargetStatus === "complete") {
+      const hasInvoice = await hasInvoiceForJob(jobRow.id);
+      if (!hasInvoice) {
+        return res.status(400).json({
+          error: "Job cannot be completed without an invoice",
+        });
+      }
+    }
+
     const timestamp = new Date().toISOString(); // Generate consistent timestamp for update + history insertion
+
+    const statusMetadata = buildStatusMetadata(normalizedTargetStatus); // Retrieve metadata for the new status
+    const targetStatusLabel = statusMetadata?.label || newStatus;
 
     const { data: updatedJob, error: updateError } = await dbClient
       .from("jobs")
       .update({
-        status: newStatus,
+        status: targetStatusLabel,
         status_updated_at: timestamp,
         status_updated_by: String(userId),
         updated_at: timestamp,
@@ -135,7 +199,7 @@ export default async function handler(req, res) {
         {
           job_id: jobRow.id,
           from_status: jobRow.status || null,
-          to_status: newStatus,
+          to_status: targetStatusLabel,
           changed_by: String(userId),
           reason: notes || null,
           changed_at: timestamp,
@@ -147,8 +211,6 @@ export default async function handler(req, res) {
     if (historyError) {
       throw historyError; // Surface insert failures to caller
     }
-
-    const statusMetadata = buildStatusMetadata(normalizedTargetStatus); // Retrieve metadata for the new status
 
     if (statusMetadata?.notifyDepartment) {
       console.log(

@@ -33,7 +33,11 @@ const isTechCompleteStatus = (value) => {
     normalized === "tech complete" ||
     normalized === "tech_complete" ||
     normalized === "vhc complete" ||
-    normalized === "vhc_complete"
+    normalized === "vhc_complete" ||
+    normalized === "vhc completed" ||
+    normalized === "vhc_completed" ||
+    normalized === "technician work completed" ||
+    normalized === "technician_work_completed"
   );
 };
 

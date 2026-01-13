@@ -8,8 +8,10 @@ import {
   autoSetVHCSentStatus,
   autoSetAdditionalWorkRequiredStatus,
   autoSetWarrantyQualityControlStatus,
-  autoSetWarrantyReadyToClaimStatus
+  autoSetWarrantyReadyToClaimStatus,
+  logJobSubStatus
 } from "@/lib/services/jobStatusService"; // Import auto-status functions
+import { resolveMainStatusId } from "@/lib/status/statusFlow";
 
 /* ============================================
    CHECK AND UPDATE VHC STATUS
@@ -28,6 +30,7 @@ export const checkAndUpdateVHCStatus = async (jobId, userId) => {
         job_number,
         status,
         vhc_required,
+        vhc_completed_at,
         job_source,
         vhc_checks(vhc_id, section, issue_title, issue_description, measurement)
       `)
@@ -67,22 +70,20 @@ export const checkAndUpdateVHCStatus = async (jobId, userId) => {
       return { success: true, message: "VHC incomplete - missing measurements" };
     }
     
-    // VHC is complete - update status if not already updated
-    if (jobData.status === "Workshop/MOT") {
-      console.log("✅ VHC complete - updating status");
-      const result = await autoSetVHCCompleteStatus(jobId, userId);
-      
-      if (result.success) {
-        console.log("✅ Status updated to VHC Complete");
-        return { success: true, statusUpdated: true, newStatus: "VHC Complete" };
-      } else {
-        console.error("❌ Failed to update status:", result.error);
-        return { success: false, error: result.error };
-      }
-    } else {
-      console.log("ℹ️ VHC complete but status already progressed");
-      return { success: true, message: "VHC complete, status already progressed" };
+    const mainStatus = resolveMainStatusId(jobData.status);
+    if (mainStatus === "invoiced" || mainStatus === "complete") {
+      return { success: true, message: "VHC complete, job already invoiced/complete" };
     }
+
+    console.log("✅ VHC complete - logging sub-status");
+    const result = await autoSetVHCCompleteStatus(jobId, userId);
+
+    if (result.success) {
+      return { success: true, statusUpdated: true, newStatus: "VHC Completed" };
+    }
+
+    console.error("❌ Failed to update VHC complete:", result.error);
+    return { success: false, error: result.error };
     
   } catch (error) {
     console.error("❌ Error checking VHC status:", error);
@@ -105,6 +106,8 @@ export const markVHCAsSent = async (jobId, sentBy, sendMethod = "email", custome
         id,
         job_number,
         status,
+        vhc_sent_at,
+        vhc_completed_at,
         vhc_checks(vhc_id)
       `)
       .eq("id", jobId)
@@ -123,12 +126,11 @@ export const markVHCAsSent = async (jobId, sentBy, sendMethod = "email", custome
       return { success: false, error: "VHC has no checks" };
     }
     
-    // Check if status is appropriate to send VHC
-    if (!["VHC Complete", "VHC Sent"].includes(jobData.status)) {
-      console.log("⚠️ Cannot send VHC - status must be VHC Complete");
-      return { 
-        success: false, 
-        error: `Cannot send VHC from status: ${jobData.status}. Status must be "VHC Complete"` 
+    if (!jobData.vhc_completed_at) {
+      console.log("⚠️ Cannot send VHC - VHC must be completed first");
+      return {
+        success: false,
+        error: "Cannot send VHC before it is completed.",
       };
     }
     
@@ -149,7 +151,7 @@ export const markVHCAsSent = async (jobId, sentBy, sendMethod = "email", custome
       // Continue anyway - logging failure shouldn't block the status update
     }
     
-    // Update job status to VHC Sent
+    // Log sub-status: Sent to Customer
     const result = await autoSetVHCSentStatus(jobId, sentBy);
     
     if (result.success) {
@@ -157,7 +159,7 @@ export const markVHCAsSent = async (jobId, sentBy, sendMethod = "email", custome
       return { 
         success: true, 
         statusUpdated: true, 
-        newStatus: "VHC Sent",
+        newStatus: "Sent to Customer",
         message: "VHC sent to customer successfully"
       };
     } else {
@@ -191,6 +193,7 @@ export const authorizeAdditionalWork = async (
         id,
         job_number,
         status,
+        vhc_sent_at,
         vhc_checks(vhc_id, section, issue_title, issue_description, measurement)
       `)
       .eq("id", jobId)
@@ -204,11 +207,11 @@ export const authorizeAdditionalWork = async (
     }
     
     // Check if VHC has been sent
-    if (jobData.status !== "VHC Sent") {
+    if (!jobData.vhc_sent_at) {
       console.log("⚠️ Cannot authorize work - VHC must be sent first");
       return { 
         success: false, 
-        error: `Cannot authorize work from status: ${jobData.status}. VHC must be sent first.` 
+        error: "Cannot authorize work before VHC is sent."
       };
     }
     
@@ -229,7 +232,7 @@ export const authorizeAdditionalWork = async (
       // Continue anyway
     }
     
-    // Update job status to Additional Work Required
+    // Log sub-status: Customer Authorised
     const result = await autoSetAdditionalWorkRequiredStatus(jobId, authorizedBy);
     
     if (result.success) {
@@ -237,7 +240,7 @@ export const authorizeAdditionalWork = async (
       return { 
         success: true, 
         statusUpdated: true, 
-        newStatus: "Additional Work Required",
+        newStatus: "Customer Authorised",
         message: "Additional work authorized successfully"
       };
     } else {
@@ -263,7 +266,7 @@ export const declineAdditionalWork = async (jobId, declinedBy, customerNotes = "
     // Get job data
     const { data: jobData, error: jobError } = await supabase
       .from("jobs")
-      .select("id, job_number, status")
+      .select("id, job_number, status, vhc_sent_at")
       .eq("id", jobId)
       .single();
     
@@ -275,11 +278,11 @@ export const declineAdditionalWork = async (jobId, declinedBy, customerNotes = "
     }
     
     // Check if VHC has been sent
-    if (jobData.status !== "VHC Sent") {
+    if (!jobData.vhc_sent_at) {
       console.log("⚠️ Cannot decline work - VHC must be sent first");
       return { 
         success: false, 
-        error: `Cannot decline work from status: ${jobData.status}. VHC must be sent first.` 
+        error: "Cannot decline work before VHC is sent."
       };
     }
     
@@ -312,8 +315,10 @@ export const declineAdditionalWork = async (jobId, declinedBy, customerNotes = "
     if (noteError) {
       console.error("⚠️ Failed to add note:", noteError);
     }
-    
-    console.log("ℹ️ Customer declined additional work - job can proceed to washing/completion");
+
+    await logJobSubStatus(jobId, "Customer Declined", declinedBy, "Additional work declined");
+
+    console.log("ℹ️ Customer declined additional work - job can proceed to completion");
     
     return { 
       success: true, 
@@ -364,23 +369,13 @@ export const checkWarrantyJobCompletion = async (jobId, userId) => {
     
     // Check if write-up exists and is complete
     if (!jobData.job_writeups || jobData.job_writeups.length === 0) {
-      console.log("⚠️ Warranty job missing write-up - sending to QC");
-      
-      // Update status to Warranty Quality Control
-      const result = await autoSetWarrantyQualityControlStatus(jobId, userId);
-      
-      if (result.success) {
-        console.log("✅ Status updated to Warranty Quality Control");
-        return { 
-          success: true, 
-          statusUpdated: true, 
-          newStatus: "Warranty Quality Control",
-          message: "Warranty job sent to Quality Control - write-up required"
-        };
-      } else {
-        console.error("❌ Failed to update status:", result.error);
-        return { success: false, error: result.error };
-      }
+      console.log("⚠️ Warranty job missing write-up");
+      await autoSetWarrantyQualityControlStatus(jobId, userId);
+      return { 
+        success: true, 
+        statusUpdated: false, 
+        message: "Warranty job requires write-up before completion"
+      };
     }
     
     // Check if write-up is complete (has all required fields)
@@ -392,20 +387,12 @@ export const checkWarrantyJobCompletion = async (jobId, userId) => {
     if (!isComplete) {
       console.log("⚠️ Warranty write-up incomplete - sending to QC");
       
-      const result = await autoSetWarrantyQualityControlStatus(jobId, userId);
-      
-      if (result.success) {
-        console.log("✅ Status updated to Warranty Quality Control");
-        return { 
-          success: true, 
-          statusUpdated: true, 
-          newStatus: "Warranty Quality Control",
-          message: "Warranty job sent to Quality Control - complete write-up required"
-        };
-      } else {
-        console.error("❌ Failed to update status:", result.error);
-        return { success: false, error: result.error };
-      }
+      await autoSetWarrantyQualityControlStatus(jobId, userId);
+      return { 
+        success: true, 
+        statusUpdated: false, 
+        message: "Warranty job requires completed write-up before completion"
+      };
     }
     
     // Write-up is complete - can proceed to completion
@@ -451,15 +438,6 @@ export const completeWarrantyQC = async (jobId, completedBy) => {
       return { success: false, error: "Job not found" };
     }
     
-    // Check if it's in QC status
-    if (jobData.status !== "Warranty Quality Control") {
-      console.log("⚠️ Job not in QC status");
-      return { 
-        success: false, 
-        error: `Cannot complete QC from status: ${jobData.status}` 
-      };
-    }
-    
     // Check if write-up is now complete
     if (!jobData.job_writeups || jobData.job_writeups.length === 0) {
       console.log("⚠️ Write-up still missing");
@@ -486,8 +464,8 @@ export const completeWarrantyQC = async (jobId, completedBy) => {
       console.log("✅ Status updated to Warranty Ready to Claim");
       return { 
         success: true, 
-        statusUpdated: true, 
-        newStatus: "Warranty Ready to Claim",
+        statusUpdated: false, 
+        newStatus: null,
         message: "Warranty QC complete - ready to claim"
       };
     } else {

@@ -4,28 +4,21 @@
 
 import { supabase } from "@/lib/supabaseClient"; // Supabase client for database operations
 import { updateJob } from "@/lib/database/jobs"; // Function to update job in database
+import {
+  getSubStatusMetadata,
+  resolveMainStatusId,
+} from "@/lib/status/statusFlow";
 
 /* ============================================
    STATUS FLOW DEFINITION
    Defines which statuses can transition to which
 ============================================ */
 const STATUS_FLOW = {
-  "Booked": ["Checked In", "Cancelled"], // From Booked, can go to Checked In or Cancelled
-  "Checked In": ["Workshop/MOT", "Cancelled"], // From Checked In, can go to Workshop/MOT or Cancelled
-  "Workshop/MOT": ["VHC Complete", "Being Washed", "Complete"], // From Workshop/MOT, can go to VHC Complete, Being Washed, or Complete
-  "VHC Complete": ["VHC Sent", "Being Washed", "VHC Reopened"], // From VHC Complete, can go to VHC Sent, Being Washed, or be reopened
-  "VHC Reopened": ["VHC Complete"], // From VHC Reopened, must go back to VHC Complete
-  "VHC Sent": ["Additional Work Required", "Being Washed", "Complete", "VHC Reopened"], // From VHC Sent, can go to Additional Work Required, Being Washed, Complete, or be reopened
-  "Additional Work Required": ["Additional Work Being Carried Out"], // From Additional Work Required, can go to Additional Work Being Carried Out
-  "Additional Work Being Carried Out": ["Being Washed", "Complete"], // From Additional Work Being Carried Out, can go to Being Washed or Complete
-  "Being Washed": ["Complete"], // From Being Washed, can only go to Complete
-  "Complete": ["Invoiced", "Collected"], // From Complete, can go to Invoiced or Collected
-  "Retail Parts on Order": ["Workshop/MOT", "Complete"], // Parts arrived, can continue work
-  "Warranty Parts on Order": ["Workshop/MOT", "Complete"], // Warranty parts arrived
-  "Raise TSR": ["Waiting for TSR Response"], // TSR raised, waiting for response
-  "Waiting for TSR Response": ["Workshop/MOT", "Warranty Quality Control"], // TSR response received
-  "Warranty Quality Control": ["Warranty Ready to Claim"], // QC done, ready to claim
-  "Warranty Ready to Claim": ["Complete"], // Claim submitted, job complete
+  Booked: ["Checked In", "In Progress"],
+  "Checked In": ["In Progress"],
+  "In Progress": ["Invoiced"],
+  Invoiced: ["Complete"],
+  Complete: [],
 };
 
 /* ============================================
@@ -47,6 +40,116 @@ export const canTransitionStatus = (currentStatus, newStatus) => {
   }
   
   return true;
+};
+
+const resolveSubStatusLabel = (status) => {
+  const metadata = getSubStatusMetadata(status);
+  return metadata?.label || status || null;
+};
+
+const ensureInProgressStatus = async (jobId, updatedBy) => {
+  const { data: jobRow, error } = await supabase
+    .from("jobs")
+    .select("id, status")
+    .eq("id", jobId)
+    .single();
+
+  if (error) {
+    console.error("❌ Unable to check job status before sub-status update:", error);
+    return null;
+  }
+
+  const currentMain = resolveMainStatusId(jobRow?.status);
+  if (currentMain === "in_progress" || currentMain === "invoiced" || currentMain === "complete") {
+    return jobRow?.status || null;
+  }
+
+  const result = await updateJob(jobId, {
+    status: "In Progress",
+    status_updated_at: new Date().toISOString(),
+    status_updated_by: updatedBy || "SYSTEM_STATUS",
+  });
+
+  return result?.success ? "In Progress" : jobRow?.status || null;
+};
+
+export const logJobSubStatus = async (jobId, subStatus, changedBy, reason) => {
+  if (!jobId || !subStatus) return { success: false, error: "Missing jobId or subStatus" };
+
+  try {
+    await ensureInProgressStatus(jobId, changedBy);
+    const label = resolveSubStatusLabel(subStatus);
+    if (!label) {
+      return { success: false, error: "Unknown sub-status" };
+    }
+
+    const { error } = await supabase.from("job_status_history").insert([
+      {
+        job_id: jobId,
+        from_status: null,
+        to_status: label,
+        changed_by: changedBy || null,
+        reason: reason || null,
+        changed_at: new Date().toISOString(),
+      },
+    ]);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error("❌ Error logging sub-status:", error);
+    return { success: false, error };
+  }
+};
+
+const REQUIRED_INVOICE_SUB_STATUSES = new Set([
+  "technician_work_completed",
+  "vhc_completed",
+  "pricing_completed",
+]);
+
+const fetchJobSubStatusSet = async (jobId) => {
+  const { data, error } = await supabase
+    .from("job_status_history")
+    .select("to_status, from_status")
+    .eq("job_id", jobId);
+
+  if (error) {
+    throw error;
+  }
+
+  const set = new Set();
+  (data || []).forEach((row) => {
+    const toId = getSubStatusMetadata(row.to_status)?.id || null;
+    const fromId = getSubStatusMetadata(row.from_status)?.id || null;
+    if (toId) set.add(toId);
+    if (fromId) set.add(fromId);
+  });
+  return set;
+};
+
+const hasInvoiceForJob = async (jobId) => {
+  const { data, error } = await supabase
+    .from("invoices")
+    .select("id")
+    .eq("job_id", jobId)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return Boolean(data?.id);
+};
+
+const ensureInvoicingPrereqs = async (jobId) => {
+  const subStatusSet = await fetchJobSubStatusSet(jobId);
+  const missing = Array.from(REQUIRED_INVOICE_SUB_STATUSES).filter(
+    (status) => !subStatusSet.has(status)
+  );
+
+  return { ok: missing.length === 0, missing };
 };
 
 /* ============================================
@@ -107,7 +210,7 @@ export const autoSetCheckedInStatus = async (jobId, checkedInBy) => {
    Called when technician clocks onto the job
 ============================================ */
 export const autoSetWorkshopStatus = async (jobId, technicianId, technicianName) => {
-  console.log("🔧 Auto-setting status to Workshop/MOT for job:", jobId);
+  console.log("🔧 Auto-setting status to In Progress for job:", jobId);
   
   try {
     // Get current job data to check if it has MOT in job categories
@@ -117,33 +220,30 @@ export const autoSetWorkshopStatus = async (jobId, technicianId, technicianName)
       .eq("id", jobId)
       .single();
     
-    // Only update if current status is "Checked In" or "Booked"
-    if (!["Checked In", "Booked"].includes(jobData?.status)) {
-      console.log("⚠️ Job not in correct status for Workshop/MOT transition");
-      return { success: false, error: "Job must be Checked In or Booked" };
+    const currentMain = resolveMainStatusId(jobData?.status);
+    if (currentMain === "invoiced" || currentMain === "complete") {
+      return { success: false, error: "Job already invoiced or complete" };
     }
-    
+
     const result = await updateJob(jobId, {
-      status: "Workshop/MOT",
+      status: "In Progress",
       workshop_started_at: new Date().toISOString(),
       status_updated_at: new Date().toISOString(),
-      status_updated_by: technicianId || "SYSTEM_CLOCKING"
+      status_updated_by: technicianId || "SYSTEM_CLOCKING",
     });
-    
+
     if (result.success) {
-      console.log("✅ Status auto-updated to Workshop/MOT");
-      await logStatusChange(
-        jobId, 
-        jobData?.status, 
-        "Workshop/MOT", 
-        technicianId, 
+      await logJobSubStatus(
+        jobId,
+        "Technician Started",
+        technicianId,
         `Technician ${technicianName} started work`
       );
     }
-    
+
     return result;
   } catch (error) {
-    console.error("❌ Error auto-setting Workshop/MOT status:", error);
+    console.error("❌ Error auto-setting In Progress status:", error);
     return { success: false, error };
   }
 };
@@ -153,7 +253,7 @@ export const autoSetWorkshopStatus = async (jobId, technicianId, technicianName)
    Called when technician completes VHC checks
 ============================================ */
 export const autoSetVHCCompleteStatus = async (jobId, completedBy) => {
-  console.log("✅ Auto-setting status to VHC Complete for job:", jobId);
+  console.log("✅ Logging VHC Completed for job:", jobId);
   
   try {
     // Check if job has VHC checks
@@ -168,20 +268,16 @@ export const autoSetVHCCompleteStatus = async (jobId, completedBy) => {
     }
     
     const result = await updateJob(jobId, {
-      status: "VHC Complete",
       vhc_completed_at: new Date().toISOString(),
-      status_updated_at: new Date().toISOString(),
-      status_updated_by: completedBy || "SYSTEM_VHC"
     });
-    
+
     if (result.success) {
-      console.log("✅ Status auto-updated to VHC Complete");
-      await logStatusChange(jobId, "Workshop/MOT", "VHC Complete", completedBy, "VHC inspection completed");
+      await logJobSubStatus(jobId, "VHC Completed", completedBy, "VHC inspection completed");
     }
-    
+
     return result;
   } catch (error) {
-    console.error("❌ Error auto-setting VHC Complete status:", error);
+    console.error("❌ Error logging VHC Completed status:", error);
     return { success: false, error };
   }
 };
@@ -191,24 +287,20 @@ export const autoSetVHCCompleteStatus = async (jobId, completedBy) => {
    Called when manager sends VHC to customer
 ============================================ */
 export const autoSetVHCSentStatus = async (jobId, sentBy) => {
-  console.log("📤 Auto-setting status to VHC Sent for job:", jobId);
+  console.log("📤 Logging VHC Sent for job:", jobId);
   
   try {
     const result = await updateJob(jobId, {
-      status: "VHC Sent",
       vhc_sent_at: new Date().toISOString(),
-      status_updated_at: new Date().toISOString(),
-      status_updated_by: sentBy || "SYSTEM_VHC"
     });
-    
+
     if (result.success) {
-      console.log("✅ Status auto-updated to VHC Sent");
-      await logStatusChange(jobId, "VHC Complete", "VHC Sent", sentBy, "VHC sent to customer");
+      await logJobSubStatus(jobId, "Sent to Customer", sentBy, "VHC sent to customer");
     }
-    
+
     return result;
   } catch (error) {
-    console.error("❌ Error auto-setting VHC Sent status:", error);
+    console.error("❌ Error logging VHC Sent status:", error);
     return { success: false, error };
   }
 };
@@ -218,24 +310,20 @@ export const autoSetVHCSentStatus = async (jobId, sentBy) => {
    Called when customer authorizes additional work from VHC
 ============================================ */
 export const autoSetAdditionalWorkRequiredStatus = async (jobId, authorizedBy) => {
-  console.log("🔨 Auto-setting status to Additional Work Required for job:", jobId);
+  console.log("🔨 Logging Customer Authorised for job:", jobId);
   
   try {
     const result = await updateJob(jobId, {
-      status: "Additional Work Required",
       additional_work_authorized_at: new Date().toISOString(),
-      status_updated_at: new Date().toISOString(),
-      status_updated_by: authorizedBy || "SYSTEM_VHC"
     });
-    
+
     if (result.success) {
-      console.log("✅ Status auto-updated to Additional Work Required");
-      await logStatusChange(jobId, "VHC Sent", "Additional Work Required", authorizedBy, "Additional work authorized");
+      await logJobSubStatus(jobId, "Customer Authorised", authorizedBy, "Additional work authorized");
     }
-    
+
     return result;
   } catch (error) {
-    console.error("❌ Error auto-setting Additional Work Required status:", error);
+    console.error("❌ Error logging Customer Authorised status:", error);
     return { success: false, error };
   }
 };
@@ -245,24 +333,20 @@ export const autoSetAdditionalWorkRequiredStatus = async (jobId, authorizedBy) =
    Called when technician clocks back onto job for additional work
 ============================================ */
 export const autoSetAdditionalWorkInProgressStatus = async (jobId, technicianId) => {
-  console.log("🔧 Auto-setting status to Additional Work Being Carried Out for job:", jobId);
+  console.log("🔧 Logging Technician Started for additional work:", jobId);
   
   try {
     const result = await updateJob(jobId, {
-      status: "Additional Work Being Carried Out",
       additional_work_started_at: new Date().toISOString(),
-      status_updated_at: new Date().toISOString(),
-      status_updated_by: technicianId || "SYSTEM_CLOCKING"
     });
-    
+
     if (result.success) {
-      console.log("✅ Status auto-updated to Additional Work Being Carried Out");
-      await logStatusChange(jobId, "Additional Work Required", "Additional Work Being Carried Out", technicianId, "Additional work started");
+      await logJobSubStatus(jobId, "Technician Started", technicianId, "Additional work started");
     }
-    
+
     return result;
   } catch (error) {
-    console.error("❌ Error auto-setting Additional Work Being Carried Out status:", error);
+    console.error("❌ Error logging Technician Started status:", error);
     return { success: false, error };
   }
 };
@@ -272,24 +356,20 @@ export const autoSetAdditionalWorkInProgressStatus = async (jobId, technicianId)
    Called when valet starts washing the vehicle
 ============================================ */
 export const autoSetBeingWashedStatus = async (jobId, valetId) => {
-  console.log("🚿 Auto-setting status to Being Washed for job:", jobId);
+  console.log("🚿 Recording valet start without main status change for job:", jobId);
   
   try {
     const result = await updateJob(jobId, {
-      status: "Being Washed",
       wash_started_at: new Date().toISOString(),
-      status_updated_at: new Date().toISOString(),
-      status_updated_by: valetId || "SYSTEM_VALET"
     });
     
     if (result.success) {
-      console.log("✅ Status auto-updated to Being Washed");
-      await logStatusChange(jobId, null, "Being Washed", valetId, "Valeting started");
+      console.log("✅ Valeting started");
     }
     
     return result;
   } catch (error) {
-    console.error("❌ Error auto-setting Being Washed status:", error);
+    console.error("❌ Error recording valet start:", error);
     return { success: false, error };
   }
 };
@@ -324,8 +404,24 @@ export const autoSetCompleteStatus = async (jobId, completedBy) => {
     // Check if warranty job has write-up completed
     if (jobData?.job_source === "Warranty" && (!jobData?.job_writeups || jobData.job_writeups.length === 0)) {
       console.log("⚠️ Warranty job requires write-up");
-      // Don't block completion, but set status to Warranty Quality Control instead
-      return await autoSetWarrantyQualityControlStatus(jobId, completedBy);
+      return { success: false, error: "Warranty job requires write-up before completion" };
+    }
+
+    const { data: invoiceRow, error: invoiceError } = await supabase
+      .from("invoices")
+      .select("id")
+      .eq("job_id", jobId)
+      .limit(1)
+      .maybeSingle();
+
+    if (invoiceError) {
+      console.error("❌ Error checking invoices before completion:", invoiceError);
+      return { success: false, error: invoiceError };
+    }
+
+    if (!invoiceRow?.id) {
+      console.log("⚠️ Cannot complete job without invoice");
+      return { success: false, error: "Invoice required before completion" };
     }
     
     const result = await updateJob(jobId, {
@@ -352,24 +448,20 @@ export const autoSetCompleteStatus = async (jobId, completedBy) => {
    Called when parts are marked as on order for retail job
 ============================================ */
 export const autoSetRetailPartsOnOrderStatus = async (jobId, orderedBy) => {
-  console.log("📦 Auto-setting status to Retail Parts on Order for job:", jobId);
+  console.log("📦 Logging Waiting for Parts for job:", jobId);
   
   try {
     const result = await updateJob(jobId, {
-      status: "Retail Parts on Order",
       parts_ordered_at: new Date().toISOString(),
-      status_updated_at: new Date().toISOString(),
-      status_updated_by: orderedBy || "SYSTEM_PARTS"
     });
     
     if (result.success) {
-      console.log("✅ Status auto-updated to Retail Parts on Order");
-      await logStatusChange(jobId, null, "Retail Parts on Order", orderedBy, "Retail parts ordered");
+      await logJobSubStatus(jobId, "Waiting for Parts", orderedBy, "Retail parts ordered");
     }
     
     return result;
   } catch (error) {
-    console.error("❌ Error auto-setting Retail Parts on Order status:", error);
+    console.error("❌ Error logging Waiting for Parts status:", error);
     return { success: false, error };
   }
 };
@@ -379,24 +471,20 @@ export const autoSetRetailPartsOnOrderStatus = async (jobId, orderedBy) => {
    Called when parts are marked as on order for warranty job
 ============================================ */
 export const autoSetWarrantyPartsOnOrderStatus = async (jobId, orderedBy) => {
-  console.log("📦 Auto-setting status to Warranty Parts on Order for job:", jobId);
+  console.log("📦 Logging Waiting for Parts for job:", jobId);
   
   try {
     const result = await updateJob(jobId, {
-      status: "Warranty Parts on Order",
       warranty_parts_ordered_at: new Date().toISOString(),
-      status_updated_at: new Date().toISOString(),
-      status_updated_by: orderedBy || "SYSTEM_PARTS"
     });
     
     if (result.success) {
-      console.log("✅ Status auto-updated to Warranty Parts on Order");
-      await logStatusChange(jobId, null, "Warranty Parts on Order", orderedBy, "Warranty parts ordered");
+      await logJobSubStatus(jobId, "Waiting for Parts", orderedBy, "Warranty parts ordered");
     }
     
     return result;
   } catch (error) {
-    console.error("❌ Error auto-setting Warranty Parts on Order status:", error);
+    console.error("❌ Error logging Waiting for Parts status:", error);
     return { success: false, error };
   }
 };
@@ -406,24 +494,16 @@ export const autoSetWarrantyPartsOnOrderStatus = async (jobId, orderedBy) => {
    Called automatically for warranty jobs without write-up
 ============================================ */
 export const autoSetWarrantyQualityControlStatus = async (jobId, userId) => {
-  console.log("🔍 Auto-setting status to Warranty Quality Control for job:", jobId);
+  console.log("🔍 Warranty QC requires manual review for job:", jobId);
   
   try {
     const result = await updateJob(jobId, {
-      status: "Warranty Quality Control",
       warranty_qc_started_at: new Date().toISOString(),
-      status_updated_at: new Date().toISOString(),
-      status_updated_by: userId || "SYSTEM_WARRANTY"
     });
-    
-    if (result.success) {
-      console.log("✅ Status auto-updated to Warranty Quality Control");
-      await logStatusChange(jobId, null, "Warranty Quality Control", userId, "Warranty QC required - write-up incomplete");
-    }
-    
+
     return result;
   } catch (error) {
-    console.error("❌ Error auto-setting Warranty Quality Control status:", error);
+    console.error("❌ Error recording Warranty QC requirement:", error);
     return { success: false, error };
   }
 };
@@ -433,24 +513,16 @@ export const autoSetWarrantyQualityControlStatus = async (jobId, userId) => {
    Called when warranty write-up is completed
 ============================================ */
 export const autoSetWarrantyReadyToClaimStatus = async (jobId, userId) => {
-  console.log("✅ Auto-setting status to Warranty Ready to Claim for job:", jobId);
+  console.log("✅ Warranty ready to claim noted for job:", jobId);
   
   try {
     const result = await updateJob(jobId, {
-      status: "Warranty Ready to Claim",
       warranty_ready_at: new Date().toISOString(),
-      status_updated_at: new Date().toISOString(),
-      status_updated_by: userId || "SYSTEM_WARRANTY"
     });
-    
-    if (result.success) {
-      console.log("✅ Status auto-updated to Warranty Ready to Claim");
-      await logStatusChange(jobId, "Warranty Quality Control", "Warranty Ready to Claim", userId, "Warranty documentation complete");
-    }
-    
+
     return result;
   } catch (error) {
-    console.error("❌ Error auto-setting Warranty Ready to Claim status:", error);
+    console.error("❌ Error recording Warranty Ready to Claim:", error);
     return { success: false, error };
   }
 };
@@ -517,9 +589,28 @@ export const manualStatusUpdate = async (jobId, newStatus, userId, reason) => {
       .eq("id", jobId)
       .single();
     
+    const normalizedTarget = resolveMainStatusId(newStatus);
+    if (!normalizedTarget) {
+      return { success: false, error: "Main job status required" };
+    }
+
     // Validate transition
     if (!canTransitionStatus(currentJob?.status, newStatus)) {
       console.warn(`⚠️ Invalid status transition: ${currentJob?.status} → ${newStatus}`);
+    }
+
+    if (normalizedTarget === "invoiced") {
+      const { ok, missing } = await ensureInvoicingPrereqs(jobId);
+      if (!ok) {
+        return { success: false, error: `Missing sub-statuses: ${missing.join(", ")}` };
+      }
+    }
+
+    if (normalizedTarget === "complete") {
+      const hasInvoice = await hasInvoiceForJob(jobId);
+      if (!hasInvoice) {
+        return { success: false, error: "Invoice required before completion" };
+      }
     }
     
     // Update status

@@ -4,9 +4,20 @@
 import { notifyJobStatusChange } from "@/codex/notify-status-change";
 import { getDatabaseClient } from "@/lib/database/client";
 import { ensureUserIdForDisplayName } from "@/lib/users/devUsers";
+import {
+  getMainStatusMetadata,
+  resolveMainStatusId,
+  resolveSubStatusId,
+} from "@/lib/status/statusFlow";
 import dayjs from "dayjs";
 
 const supabase = getDatabaseClient();
+
+const REQUIRED_INVOICE_SUB_STATUSES = new Set([
+  "technician_work_completed",
+  "vhc_completed",
+  "pricing_completed",
+]);
 
 const normaliseJobNumberInput = (value) => {
   if (value === null || value === undefined) {
@@ -120,6 +131,42 @@ const normaliseRectificationStatus = (status) => {
   }
 
   return "waiting";
+};
+
+const fetchJobSubStatusSet = async (jobId) => {
+  const { data, error } = await supabase
+    .from("job_status_history")
+    .select("to_status, from_status")
+    .eq("job_id", jobId);
+
+  if (error) {
+    throw error;
+  }
+
+  const set = new Set();
+  (data || []).forEach((row) => {
+    const toId = resolveSubStatusId(row.to_status);
+    const fromId = resolveSubStatusId(row.from_status);
+    if (toId) set.add(toId);
+    if (fromId) set.add(fromId);
+  });
+
+  return set;
+};
+
+const hasInvoiceForJob = async (jobId) => {
+  const { data, error } = await supabase
+    .from("invoices")
+    .select("id")
+    .eq("job_id", jobId)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return Boolean(data?.id);
 };
 
 const mapRectificationRow = (row) => ({
@@ -1677,6 +1724,9 @@ const hydrateVhcChecks = (checks = []) =>
 
 const formatJobData = (data) => {
   if (!data) return null;
+  const statusMeta = getMainStatusMetadata(data.status);
+  const normalizedStatus = statusMeta?.label || data.status || null;
+  const rawStatus = data.status || null;
 
   // Normalise technician information so UI layers can rely on assignedTech
   const assignedTech = (() => {
@@ -1831,7 +1881,8 @@ const formatJobData = (data) => {
     jobNumber: data.job_number,
     description: data.description,
     type: data.type,
-    status: data.status,
+    status: normalizedStatus,
+    rawStatus,
     
     // ✅ Vehicle info from both direct fields and joined table
     vehicleId: data.vehicle_id || data.vehicle?.vehicle_id || null,
@@ -2108,8 +2159,22 @@ export const updateJob = async (jobId, updates) => {
       "status"
     );
     let statusSnapshot = null;
+    let targetMainStatusId = null;
 
     if (hasStatusUpdate) {
+      targetMainStatusId = resolveMainStatusId(updates.status);
+      if (!targetMainStatusId) {
+        return {
+          success: false,
+          error: { message: "Main job status required." },
+        };
+      }
+
+      const targetMeta = getMainStatusMetadata(updates.status);
+      if (targetMeta?.label) {
+        payload.status = targetMeta.label;
+      }
+
       const { data: currentStatusRow, error: statusFetchError } = await supabase
         .from("jobs")
         .select("job_number, status")
@@ -2126,6 +2191,45 @@ export const updateJob = async (jobId, updates) => {
       }
     }
     
+    if (hasStatusUpdate && targetMainStatusId === "invoiced") {
+      try {
+        const subStatusSet = await fetchJobSubStatusSet(jobId);
+        const missing = Array.from(REQUIRED_INVOICE_SUB_STATUSES).filter(
+          (status) => !subStatusSet.has(status)
+        );
+        if (missing.length) {
+          return {
+            success: false,
+            error: { message: `Job missing sub-statuses: ${missing.join(", ")}` },
+          };
+        }
+      } catch (subStatusError) {
+        console.error("❌ Failed to validate invoicing prerequisites:", subStatusError);
+        return {
+          success: false,
+          error: { message: "Unable to validate invoicing prerequisites" },
+        };
+      }
+    }
+
+    if (hasStatusUpdate && targetMainStatusId === "complete") {
+      try {
+        const hasInvoice = await hasInvoiceForJob(jobId);
+        if (!hasInvoice) {
+          return {
+            success: false,
+            error: { message: "Invoice required before completion" },
+          };
+        }
+      } catch (invoiceError) {
+        console.error("❌ Failed to check invoice before completion:", invoiceError);
+        return {
+          success: false,
+          error: { message: "Unable to validate invoice before completion" },
+        };
+      }
+    }
+
     const { data, error } = await supabase
       .from("jobs")
       .update(payload)

@@ -11,6 +11,8 @@ import {
   updateJobStatus,
   getAuthorizedAdditionalWorkByJob,
 } from "@/lib/database/jobs";
+import { logJobSubStatus } from "@/lib/services/jobStatusService";
+import { resolveSubStatusId } from "@/lib/status/statusFlow";
 import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
@@ -254,10 +256,10 @@ const determineJobStatusFromTasks = (tasks = [], requests = [], hasRectification
 
   const hasIncomplete = tasks.some((task) => task.status !== "complete");
   if (!hasIncomplete) {
-    return "Tech Complete";
+    return "Technician Work Completed";
   }
 
-  return hasPartsOnOrder(requests) ? "Awaiting Parts" : "In Progress";
+  return hasPartsOnOrder(requests) ? "Waiting for Parts" : null;
 };
 
 const createSectionEditorsState = () => ({
@@ -609,6 +611,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
   const router = useRouter();
   const { user } = useUser();
   const username = user?.username;
+  const userId = user?.id || user?.user_id || null;
   const userDisplayName =
     user?.displayName ||
     user?.fullName ||
@@ -797,7 +800,17 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
           );
           if (desiredStatus && jobData?.jobCard?.id) {
             try {
-              await updateJobStatus(jobData.jobCard.id, desiredStatus);
+              const isSubStatus = Boolean(resolveSubStatusId(desiredStatus));
+              if (isSubStatus) {
+                await logJobSubStatus(
+                  jobData.jobCard.id,
+                  desiredStatus,
+                  userId,
+                  "Write-up updated"
+                );
+              } else {
+                await updateJobStatus(jobData.jobCard.id, desiredStatus);
+              }
             } catch (statusError) {
               console.error("❌ Failed to update job status after saving write-up:", statusError);
             }
@@ -842,6 +855,7 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
       jobData?.jobCard?.partsRequests,
       jobData?.jobCard?.id,
       rectificationTasks.length,
+      userId,
       onSaveSuccess,
       isTech,
       router,

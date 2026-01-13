@@ -10,6 +10,7 @@ import { useUser } from "@/context/UserContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
 import { supabase } from "@/lib/supabaseClient";
 import { getJobByNumber, updateJob, updateJobStatus, addJobFile, deleteJobFile } from "@/lib/database/jobs";
+import { logJobSubStatus } from "@/lib/services/jobStatusService";
 import { autoSetCheckedInStatus } from "@/lib/services/jobStatusService";
 import {
   getNotesByJob,
@@ -106,15 +107,6 @@ const deriveStoragePathFromUrl = (url = "") => {
 
 const JOB_DOCUMENT_BUCKET = "job-documents";
 
-const READY_FOR_INVOICING_STATUS_IDS = new Set([
-  "ready_for_release",
-  "ready_for_invoice",
-  "ready_for_invoicing",
-  "awaiting_invoicing",
-  "ready_for_accounts",
-  "delivered_to_customer"
-]);
-
 const normalizeStatusId = (value = "") =>
   String(value || "")
     .trim()
@@ -122,7 +114,7 @@ const normalizeStatusId = (value = "") =>
     .replace(/[^a-z0-9]+/g, "_");
 
 const isStatusReadyForInvoicing = (status) =>
-  READY_FOR_INVOICING_STATUS_IDS.has(normalizeStatusId(status));
+  normalizeStatusId(status) === "in_progress";
 
 const arePartsPricedAndAssigned = (allocations = []) => {
   const parts = Array.isArray(allocations) ? allocations : [];
@@ -888,7 +880,19 @@ export default function JobCardDetailPage() {
         throw new Error(payload?.error || "Failed to create invoice");
       }
 
-      const statusResult = await updateJobStatus(jobData.id, "Invoicing");
+      await logJobSubStatus(
+        jobData.id,
+        "Pricing Completed",
+        dbUserId || null,
+        "Invoice created"
+      );
+      await logJobSubStatus(
+        jobData.id,
+        "Ready for Invoice",
+        dbUserId || null,
+        "Invoice ready"
+      );
+      const statusResult = await updateJobStatus(jobData.id, "Invoiced");
       if (!statusResult?.success) {
         console.warn("Invoice created but failed to update status:", statusResult?.error);
       }

@@ -1,4 +1,5 @@
 import { getDatabaseClient } from "@/lib/database/client";
+import { logJobSubStatus } from "@/lib/services/jobStatusService";
 
 const db = getDatabaseClient();
 const TABLE_NAME = "job_clocking";
@@ -322,6 +323,7 @@ export const clockInToJob = async (...rawArgs) => {
 
     const jobsById = await fetchJobsByIds([jobIdInt]);
     const mapped = mapClockingRow(data, jobsById.get(jobIdInt));
+    await logJobSubStatus(jobIdInt, "Technician Started", userIdInt, "Technician clocked in");
     if (typeof window !== "undefined") {
       window.dispatchEvent(
         new CustomEvent("statusFlowRefresh", {

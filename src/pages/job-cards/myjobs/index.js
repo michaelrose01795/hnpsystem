@@ -16,35 +16,25 @@ import { summarizePartsPipeline } from "@/lib/partsPipeline";
 
 const STATUS_BADGE_STYLES = {
   "In Progress": { background: "var(--info-surface)", color: "var(--accent-purple)" },
-  Started: { background: "var(--info-surface)", color: "var(--accent-purple)" },
-  Pending: { background: "var(--warning-surface)", color: "var(--danger-dark)" },
-  Waiting: { background: "var(--warning-surface)", color: "var(--danger-dark)" },
-  Open: { background: "var(--warning-surface)", color: "var(--danger-dark)" },
+  Booked: { background: "var(--warning-surface)", color: "var(--danger-dark)" },
+  "Checked In": { background: "var(--warning-surface)", color: "var(--danger-dark)" },
+  Invoiced: { background: "var(--success-surface)", color: "var(--success-dark)" },
   Complete: { background: "var(--success-surface)", color: "var(--success-dark)" },
-  Completed: { background: "var(--success-surface)", color: "var(--success-dark)" },
-  "VHC Complete": { background: "var(--success-surface)", color: "var(--success-dark)" },
-  "Tech Complete": { background: "var(--success-surface)", color: "var(--success-dark)" },
 };
 
 const getStatusBadgeStyle = (status) =>
   STATUS_BADGE_STYLES[status] || { background: "var(--info-surface)", color: "var(--info-dark)" };
 
-const TECH_COMPLETE_STATUSES = new Set(["VHC Complete", "Tech Complete", "Tech Done"]);
-
-const resolveTechStatusLabel = (status) => {
-  if (status === "VHC Complete") return "VHC Complete";
-  if (status === "Tech Complete") return "Complete";
-  return status || "Pending";
-};
+const resolveTechStatusLabel = (status) => status || "Pending";
 
 const normalizeStatusKey = (status) =>
   typeof status === "string" ? status.trim().toLowerCase() : "";
 
 const getTechStatusCategory = (status) => {
   const normalized = normalizeStatusKey(status);
-  if (normalized === "in progress" || normalized === "started") return "in-progress";
-  if (normalized === "pending" || normalized === "waiting" || normalized === "open") return "pending";
-  if (normalized.includes("complete") || normalized === "tech done") return "complete";
+  if (normalized === "in progress") return "in-progress";
+  if (normalized === "booked" || normalized === "checked in") return "pending";
+  if (normalized === "invoiced" || normalized === "complete") return "complete";
   return "pending";
 };
 

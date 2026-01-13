@@ -3,7 +3,10 @@
 // file location: src/pages/api/status/getCurrentStatus.js
 import { createClient } from "@supabase/supabase-js"; // Import Supabase factory for service role usage
 import { supabase as browserSupabase } from "@/lib/supabaseClient"; // Import shared Supabase client for fallback use
-import { SERVICE_STATUS_FLOW } from "@/lib/status/statusFlow"; // Import status flow definition for metadata enrichment
+import {
+  getMainStatusMetadata,
+  resolveMainStatusId,
+} from "@/lib/status/statusFlow"; // Import status flow definition for metadata enrichment
 
 // TODO: Replace these inline Supabase queries with src/lib/database/jobs helpers (getDashboardData/getCurrentStatus) for consistency.
 
@@ -27,19 +30,9 @@ const normalizeJobIdentifier = (raw) => {
   return { type: "job_number", value: String(trimmed) }; // Default to job number lookups
 };
 
-const normalizeStatusId = (status) => {
-  if (!status) return null; // Guard against missing statuses
-  return String(status)
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_"); // Convert to snake_case identifier used throughout the app
-};
-
 const buildStatusMetadata = (status) => {
-  const normalizedId = normalizeStatusId(status); // Normalize the status to snake_case
-  const statusConfig = normalizedId
-    ? SERVICE_STATUS_FLOW[normalizedId.toUpperCase()]
-    : null; // Resolve metadata from status flow map
+  const statusConfig = getMainStatusMetadata(status); // Resolve metadata from main status flow
+  const normalizedId = resolveMainStatusId(status);
 
   return {
     id: normalizedId,
@@ -105,7 +98,7 @@ export default async function handler(req, res) {
       success: true,
       jobId: jobRow.id,
       jobNumber: jobRow.job_number,
-      status: statusMetadata.id || normalizeStatusId(jobRow.status) || jobRow.status,
+      status: statusMetadata.id || jobRow.status,
       statusLabel: statusMetadata.label,
       department: statusMetadata.department,
       color: statusMetadata.color,

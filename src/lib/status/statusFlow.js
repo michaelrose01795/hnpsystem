@@ -1,368 +1,307 @@
 // file location: src/lib/status/statusFlow.js
-// This file defines all possible statuses and their transitions for the service department
+// This file defines main job statuses (stored on jobs) and sub-statuses (timeline only).
+
+export const MAIN_STATUS_ORDER = [
+  "booked",
+  "checked_in",
+  "in_progress",
+  "invoiced",
+  "complete",
+];
+
 export const SERVICE_STATUS_FLOW = {
-  // Stage 1: Booking & Arrival
   BOOKED: {
-    id: 'booked',
-    label: 'Appointment Booked',
-    color: 'var(--info)', // blue
-    next: ['customer_checkin_pending', 'customer_arrived'],
-    department: 'Service Reception',
-    canClockOn: false,
-    pausesTime: true
-  },
-
-  CUSTOMER_CHECKIN_PENDING: {
-    id: 'customer_checkin_pending',
-    label: 'Customer Check-in Pending',
-    color: 'var(--accent-orange)',
-    next: ['customer_arrived'],
-    department: 'Service Reception',
+    id: "booked",
+    label: "Booked",
+    color: "var(--info)",
+    next: ["checked_in", "in_progress"],
+    department: "Service Reception",
     canClockOn: false,
     pausesTime: true,
-    requiresAction: 'Collect keys and check in customer'
-  },
-  
-  CUSTOMER_ARRIVED: {
-    id: 'customer_arrived',
-    label: 'Customer Arrived',
-    color: 'var(--accent-purple)', // purple
-    next: ['job_accepted'],
-    department: 'Service Reception',
-    canClockOn: false,
-    pausesTime: true
-  },
-  
-  JOB_ACCEPTED: {
-    id: 'job_accepted',
-    label: 'Job Accepted',
-    color: 'var(--info)', // green
-    next: ['assigned_to_tech'],
-    department: 'Workshop Manager',
-    canClockOn: false,
-    pausesTime: true
   },
 
-  // Stage 2: Assignment & Start
-  ASSIGNED_TO_TECH: {
-    id: 'assigned_to_tech',
-    label: 'Waiting to be Started',
-    color: 'var(--warning)', // amber
-    next: ['in_progress'],
-    department: 'Workshop',
-    canClockOn: true,
+  CHECKED_IN: {
+    id: "checked_in",
+    label: "Checked In",
+    color: "var(--accent-purple)",
+    next: ["in_progress"],
+    department: "Service Reception",
+    canClockOn: false,
     pausesTime: true,
-    requiresAction: 'Tech must clock on'
   },
 
   IN_PROGRESS: {
-    id: 'in_progress',
-    label: 'In Workshop',
-    color: 'var(--info)', // green
-    next: [
-      'waiting_for_parts',
-      'tea_break',
-      'vhc_waiting',
-      'vhc_in_progress',
-      'in_mot',
-      'work_complete'
-    ],
-    department: 'Workshop',
-    canClockOn: true,
-    pausesTime: false, // Time actively running
-    autoSetOnClockOn: true
-  },
-
-  IN_MOT: {
-    id: 'in_mot',
-    label: 'In MOT Bay',
-    color: 'var(--warning)',
-    next: ['work_complete', 'waiting_for_parts', 'in_progress'],
-    department: 'MOT',
+    id: "in_progress",
+    label: "In Progress",
+    color: "var(--info)",
+    next: ["invoiced"],
+    department: "Workshop",
     canClockOn: true,
     pausesTime: false,
     autoSetOnClockOn: true,
-    requiresAction: 'MOT tester must finish inspection'
-  },
-
-  // Stage 3: Paused States
-  WAITING_FOR_PARTS: {
-    id: 'waiting_for_parts',
-    label: 'Waiting for Parts',
-    color: 'var(--danger)', // red
-    next: ['parts_arrived', 'in_progress'],
-    department: 'Workshop',
-    canClockOn: true,
-    pausesTime: true, // Pauses job timer
-    notifyDepartment: 'Parts'
-  },
-
-  TEA_BREAK: {
-    id: 'tea_break',
-    label: 'Tea Break',
-    color: 'var(--info)', // gray
-    next: ['in_progress'],
-    department: 'Workshop',
-    canClockOn: true,
-    pausesTime: true, // Pauses job timer
-    maxDuration: 15 // minutes
-  },
-
-  PARTS_ARRIVED: {
-    id: 'parts_arrived',
-    label: 'Parts Ready',
-    color: 'var(--info)', // green
-    next: ['in_progress'],
-    department: 'Parts',
-    canClockOn: true,
-    pausesTime: true,
-    notifyDepartment: 'Workshop'
-  },
-
-  // Stage 4: VHC Process
-  VHC_WAITING: {
-    id: 'vhc_waiting',
-    label: 'VHC Waiting',
-    color: 'var(--warning)',
-    next: ['vhc_in_progress'],
-    department: 'Workshop',
-    canClockOn: true,
-    pausesTime: true,
-    requiresAction: 'Technician must open the VHC tab'
-  },
-
-  VHC_IN_PROGRESS: {
-    id: 'vhc_in_progress',
-    label: 'VHC Being Completed',
-    color: 'var(--accent-purple)', // purple
-    next: ['vhc_complete'],
-    department: 'Workshop',
-    canClockOn: true,
-    pausesTime: false
-  },
-
-  VHC_COMPLETE: {
-    id: 'vhc_complete',
-    label: 'VHC Complete',
-    color: 'var(--success)',
-    next: ['vhc_sent_to_service', 'vhc_reopened'],
-    department: 'Workshop',
-    canClockOn: false,
-    pausesTime: true,
-    requiresAction: 'Send to service for pricing'
-  },
-
-  VHC_REOPENED: {
-    id: 'vhc_reopened',
-    label: 'VHC Reopened',
-    color: 'var(--accent-orange)',
-    next: ['vhc_in_progress', 'vhc_complete'],
-    department: 'Workshop',
-    canClockOn: true,
-    pausesTime: false,
-    requiresAction: 'Technician must review updates and complete VHC again'
-  },
-
-  VHC_SENT_TO_SERVICE: {
-    id: 'vhc_sent_to_service',
-    label: 'VHC With Service Team',
-    color: 'var(--warning)', // amber
-    next: ['waiting_for_pricing', 'vhc_priced', 'in_progress'],
-    department: 'Service',
-    canClockOn: true,
-    pausesTime: true,
-    notifyDepartment: 'Service'
-  },
-
-  WAITING_FOR_PRICING: {
-    id: 'waiting_for_pricing',
-    label: 'Waiting for Parts/Labour Pricing',
-    color: 'var(--danger)',
-    next: ['vhc_priced'],
-    department: 'Service',
-    canClockOn: false,
-    pausesTime: true,
-    requiresAction: 'Add labour time and parts values'
-  },
-
-  VHC_PRICED: {
-    id: 'vhc_priced',
-    label: 'VHC Priced',
-    color: 'var(--info)', // green
-    next: ['vhc_sent_to_customer'],
-    department: 'Service',
-    canClockOn: true,
-    pausesTime: true
-  },
-
-  VHC_SENT_TO_CUSTOMER: {
-    id: 'vhc_sent_to_customer',
-    label: 'Waiting Authorisation',
-    color: 'var(--warning)', // amber
-    next: ['vhc_approved', 'vhc_declined', 'in_progress'],
-    department: 'Service',
-    canClockOn: true,
-    pausesTime: true,
-    notifyCustomer: true
-  },
-
-  VHC_APPROVED: {
-    id: 'vhc_approved',
-    label: 'VHC Work Approved',
-    color: 'var(--info)', // green
-    next: ['waiting_for_parts', 'in_progress'],
-    department: 'Service',
-    canClockOn: true,
-    pausesTime: true,
-    notifyDepartments: ['Workshop', 'Parts']
-  },
-
-  VHC_DECLINED: {
-    id: 'vhc_declined',
-    label: 'VHC Work Declined',
-    color: 'var(--danger)', // red
-    next: ['work_complete'],
-    department: 'Service',
-    canClockOn: true,
-    pausesTime: true,
-    notifyDepartment: 'Workshop'
-  },
-
-  // Stage 5: Completion
-  WORK_COMPLETE: {
-    id: 'work_complete',
-    label: 'Workshop Complete',
-    color: 'var(--info)', // green
-    next: ['ready_for_valet'],
-    department: 'Workshop',
-    canClockOn: false,
-    pausesTime: true,
-    requiresAction: 'Tech must complete write-up'
-  },
-
-  READY_FOR_VALET: {
-    id: 'ready_for_valet',
-    label: 'Ready for Valeting',
-    color: 'var(--info)', // blue
-    next: ['being_valeted'],
-    department: 'Valeting',
-    canClockOn: true,
-    pausesTime: true,
-    notifyDepartment: 'Valeting'
-  },
-
-  BEING_VALETED: {
-    id: 'being_valeted',
-    label: 'In Valet',
-    color: 'var(--accent-purple)', // purple
-    next: ['valet_complete'],
-    department: 'Valeting',
-    canClockOn: true,
-    pausesTime: false,
-    autoSetOnClockOn: true
-  },
-
-  VALET_COMPLETE: {
-    id: 'valet_complete',
-    label: 'Valet Complete',
-    color: 'var(--info)', // green
-    next: ['ready_for_release'],
-    department: 'Valeting',
-    canClockOn: false,
-    pausesTime: true
-  },
-
-  // Stage 6: Release
-  READY_FOR_RELEASE: {
-    id: 'ready_for_release',
-    label: 'Ready for Customer',
-    color: 'var(--info)', // green
-    next: ['released', 'delivered_to_customer', 'invoicing'],
-    department: 'Service',
-    canClockOn: false,
-    pausesTime: true,
-    notifyDepartments: ['Service', 'Accounts']
-  },
-
-  DELIVERED_TO_CUSTOMER: {
-    id: 'delivered_to_customer',
-    label: 'Delivered to Customer',
-    color: 'var(--info-dark)', // teal
-    next: ['released', 'invoicing'],
-    department: 'Service',
-    canClockOn: false,
-    pausesTime: true,
-    notifyDepartments: ['Service', 'Parts']
-  },
-
-  INVOICING: {
-    id: 'invoicing',
-    label: 'Creating Invoice',
-    color: 'var(--warning)', // amber
-    next: ['invoiced'],
-    department: 'Accounts',
-    canClockOn: false,
-    pausesTime: true
   },
 
   INVOICED: {
-    id: 'invoiced',
-    label: 'Invoice Complete',
-    color: 'var(--info)',
-    next: ['ready_for_release', 'released'],
-    department: 'Accounts',
-    canClockOn: false,
-    pausesTime: true
-  },
-
-  RELEASED: {
-    id: 'released',
-    label: 'Released',
-    color: 'var(--success)',
-    next: ['completed'],
-    department: 'Service',
+    id: "invoiced",
+    label: "Invoiced",
+    color: "var(--info)",
+    next: ["complete"],
+    department: "Accounts",
     canClockOn: false,
     pausesTime: true,
-    requiresAction: 'Archive job card'
   },
 
-  COMPLETED: {
-    id: 'completed',
-    label: 'Job Complete',
-    color: 'var(--info)', // green
-    next: null, // Final status
-    department: 'Accounts',
+  COMPLETE: {
+    id: "complete",
+    label: "Complete",
+    color: "var(--success)",
+    next: null,
+    department: "Accounts",
     canClockOn: false,
     pausesTime: true,
-    isFinalStatus: true
+    isFinalStatus: true,
+  },
+};
+
+export const JOB_SUB_STATUS_FLOW = {
+  TECHNICIAN_STARTED: {
+    id: "technician_started",
+    label: "Technician Started",
+    color: "var(--info)",
+    department: "Workshop",
+    category: "Workshop",
+  },
+  TECHNICIAN_WORK_COMPLETED: {
+    id: "technician_work_completed",
+    label: "Technician Work Completed",
+    color: "var(--success)",
+    department: "Workshop",
+    category: "Workshop",
+  },
+  VHC_STARTED: {
+    id: "vhc_started",
+    label: "VHC Started",
+    color: "var(--accent-purple)",
+    department: "VHC",
+    category: "VHC",
+  },
+  VHC_COMPLETED: {
+    id: "vhc_completed",
+    label: "VHC Completed",
+    color: "var(--success)",
+    department: "VHC",
+    category: "VHC",
+  },
+  WAITING_FOR_PRICING: {
+    id: "waiting_for_pricing",
+    label: "Waiting for Pricing",
+    color: "var(--warning)",
+    department: "VHC",
+    category: "VHC",
+  },
+  PRICING_COMPLETED: {
+    id: "pricing_completed",
+    label: "Pricing Completed",
+    color: "var(--info)",
+    department: "VHC",
+    category: "VHC",
+  },
+  SENT_TO_CUSTOMER: {
+    id: "sent_to_customer",
+    label: "Sent to Customer",
+    color: "var(--info)",
+    department: "VHC",
+    category: "VHC",
+  },
+  CUSTOMER_AUTHORISED: {
+    id: "customer_authorised",
+    label: "Customer Authorised",
+    color: "var(--success)",
+    department: "VHC",
+    category: "VHC",
+  },
+  CUSTOMER_DECLINED: {
+    id: "customer_declined",
+    label: "Customer Declined",
+    color: "var(--danger)",
+    department: "VHC",
+    category: "VHC",
+  },
+  WAITING_FOR_PARTS: {
+    id: "waiting_for_parts",
+    label: "Waiting for Parts",
+    color: "var(--danger)",
+    department: "Parts",
+    category: "Parts",
+  },
+  PARTS_READY: {
+    id: "parts_ready",
+    label: "Parts Ready",
+    color: "var(--success)",
+    department: "Parts",
+    category: "Parts",
+  },
+  READY_FOR_INVOICE: {
+    id: "ready_for_invoice",
+    label: "Ready for Invoice",
+    color: "var(--accent-orange)",
+    department: "Admin",
+    category: "Admin",
+  },
+};
+
+const LEGACY_STATUS_TO_MAIN_ID = {
+  appointment_booked: "booked",
+  customer_checkin_pending: "booked",
+  customer_arrived: "checked_in",
+  job_accepted: "checked_in",
+  assigned_to_tech: "checked_in",
+  in_progress: "in_progress",
+  in_mot: "in_progress",
+  waiting_for_parts: "in_progress",
+  tea_break: "in_progress",
+  parts_arrived: "in_progress",
+  vhc_waiting: "in_progress",
+  vhc_in_progress: "in_progress",
+  vhc_complete: "in_progress",
+  vhc_reopened: "in_progress",
+  vhc_sent_to_service: "in_progress",
+  waiting_for_pricing: "in_progress",
+  vhc_priced: "in_progress",
+  vhc_sent_to_customer: "in_progress",
+  vhc_approved: "in_progress",
+  vhc_declined: "in_progress",
+  work_complete: "in_progress",
+  ready_for_valet: "in_progress",
+  being_valeted: "in_progress",
+  valet_complete: "in_progress",
+  ready_for_release: "in_progress",
+  delivered_to_customer: "in_progress",
+  invoicing: "invoiced",
+  invoiced: "invoiced",
+  released: "complete",
+  completed: "complete",
+  complete: "complete",
+  collected: "complete",
+  cancelled: "complete",
+  workshop_mot: "in_progress",
+  vhc_sent: "in_progress",
+  additional_work_required: "in_progress",
+  additional_work_being_carried_out: "in_progress",
+  retail_parts_on_order: "in_progress",
+  warranty_parts_on_order: "in_progress",
+  raise_tsr: "in_progress",
+  waiting_for_tsr_response: "in_progress",
+  warranty_quality_control: "in_progress",
+  warranty_ready_to_claim: "in_progress",
+  being_washed: "in_progress",
+  tech_done: "in_progress",
+  tech_complete: "in_progress",
+};
+
+const LEGACY_STATUS_TO_SUB_ID = {
+  workshop_mot: "technician_started",
+  assigned_to_tech: "technician_started",
+  in_progress: "technician_started",
+  vhc_in_progress: "vhc_started",
+  vhc_complete: "vhc_completed",
+  vhc_sent: "sent_to_customer",
+  vhc_sent_to_customer: "sent_to_customer",
+  waiting_for_pricing: "waiting_for_pricing",
+  vhc_priced: "pricing_completed",
+  vhc_approved: "customer_authorised",
+  vhc_declined: "customer_declined",
+  work_complete: "technician_work_completed",
+  tech_done: "technician_work_completed",
+  tech_complete: "technician_work_completed",
+  waiting_for_parts: "waiting_for_parts",
+  parts_arrived: "parts_ready",
+  retail_parts_on_order: "waiting_for_parts",
+  warranty_parts_on_order: "waiting_for_parts",
+};
+
+export const normalizeStatusId = (status) => {
+  if (!status) return null;
+  return String(status)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_");
+};
+
+export const resolveMainStatusId = (status) => {
+  const normalized = normalizeStatusId(status);
+  if (!normalized) return null;
+  if (SERVICE_STATUS_FLOW[normalized.toUpperCase()]) return normalized;
+  return LEGACY_STATUS_TO_MAIN_ID[normalized] || null;
+};
+
+export const resolveSubStatusId = (status) => {
+  const normalized = normalizeStatusId(status);
+  if (!normalized) return null;
+  if (JOB_SUB_STATUS_FLOW[normalized.toUpperCase()]) return normalized;
+  return LEGACY_STATUS_TO_SUB_ID[normalized] || null;
+};
+
+export const getMainStatusMetadata = (status) => {
+  const mainId = resolveMainStatusId(status);
+  if (!mainId) return null;
+  return SERVICE_STATUS_FLOW[mainId.toUpperCase()] || null;
+};
+
+export const getSubStatusMetadata = (status) => {
+  const subId = resolveSubStatusId(status);
+  if (!subId) return null;
+  return JOB_SUB_STATUS_FLOW[subId.toUpperCase()] || null;
+};
+
+export const getStatusConfig = (status) => {
+  const mainMeta = getMainStatusMetadata(status);
+  if (mainMeta) {
+    return { ...mainMeta, kind: "status", isSubStatus: false };
   }
+  const subMeta = getSubStatusMetadata(status);
+  if (subMeta) {
+    return { ...subMeta, kind: "event", isSubStatus: true };
+  }
+  return null;
 };
 
 // Helper function to get next possible statuses
 export const getNextStatuses = (currentStatusId) => {
-  const currentStatus = SERVICE_STATUS_FLOW[currentStatusId.toUpperCase()];
+  const currentId = resolveMainStatusId(currentStatusId);
+  if (!currentId) return [];
+  const currentStatus = SERVICE_STATUS_FLOW[currentId.toUpperCase()];
   if (!currentStatus || !currentStatus.next) return [];
-  
-  return currentStatus.next.map(nextId => 
+
+  return currentStatus.next.map((nextId) =>
     SERVICE_STATUS_FLOW[nextId.toUpperCase()]
   );
 };
 
 // Helper function to check if status transition is valid
 export const isValidTransition = (fromStatusId, toStatusId) => {
-  const fromStatus = SERVICE_STATUS_FLOW[fromStatusId.toUpperCase()];
+  const fromId = resolveMainStatusId(fromStatusId);
+  const toId = resolveMainStatusId(toStatusId);
+  if (!fromId || !toId) return false;
+  if (fromId === toId) return true;
+
+  const fromStatus = SERVICE_STATUS_FLOW[fromId.toUpperCase()];
   if (!fromStatus || !fromStatus.next) return false;
-  
-  return fromStatus.next.includes(toStatusId.toLowerCase());
+
+  return fromStatus.next.includes(toId.toLowerCase());
 };
 
 // Helper function to check if time should be paused
 export const shouldPauseTime = (statusId) => {
-  const status = SERVICE_STATUS_FLOW[statusId.toUpperCase()];
+  const mainId = resolveMainStatusId(statusId);
+  if (!mainId) return true;
+  const status = SERVICE_STATUS_FLOW[mainId.toUpperCase()];
   return status ? status.pausesTime : true;
 };
 
-// Get all statuses as array for timeline display
+// Get all main statuses as array for timeline display
 export const getStatusTimeline = () => {
-  return Object.values(SERVICE_STATUS_FLOW);
+  return MAIN_STATUS_ORDER.map((statusId) =>
+    SERVICE_STATUS_FLOW[statusId.toUpperCase()]
+  );
 };

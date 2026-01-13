@@ -4,7 +4,9 @@
 import { supabase } from "@/lib/supabaseClient";
 import { createCustomerDisplaySlug, normalizeCustomerSlug } from "@/lib/customers/slug";
 
-const INACTIVE_STATUSES = ["complete", "collected", "cancelled", "invoiced"];
+import { resolveMainStatusId } from "@/lib/status/statusFlow";
+
+const INACTIVE_STATUS_IDS = new Set(["complete", "invoiced"]);
 
 const toTitleCase = (value) => {
   if (!value) return "";
@@ -229,11 +231,11 @@ export default async function handler(req, res) {
 
     const customerJobIndex = jobsByCustomer.reduce((acc, job) => {
       const existing = acc[job.customer_id] || { latest: null, active: null };
-      const jobStatus = (job.status || "").toLowerCase();
+      const jobStatusId = resolveMainStatusId(job.status);
 
       if (
-        jobStatus &&
-        !INACTIVE_STATUSES.includes(jobStatus) &&
+        jobStatusId &&
+        !INACTIVE_STATUS_IDS.has(jobStatusId) &&
         (!existing.active ||
           new Date(job.created_at || 0) >
             new Date(existing.active.created_at || 0))

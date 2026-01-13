@@ -3,7 +3,13 @@
 // file location: src/pages/api/status/getHistory.js
 import { createClient } from "@supabase/supabase-js"; // Import Supabase factory for privileged server access
 import { supabase as browserSupabase } from "@/lib/supabaseClient"; // Import shared Supabase client as fallback
-import { SERVICE_STATUS_FLOW } from "@/lib/status/statusFlow"; // Import status metadata map for enrichment
+import {
+  getMainStatusMetadata,
+  getSubStatusMetadata,
+  resolveMainStatusId,
+  resolveSubStatusId,
+  normalizeStatusId,
+} from "@/lib/status/statusFlow"; // Import status metadata map for enrichment
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL; // Read Supabase project URL from environment
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY; // Read optional service role key for elevated permissions
@@ -25,14 +31,6 @@ const normalizeJobIdentifier = (raw) => {
   return { type: "job_number", value: String(trimmed) }; // Otherwise treat as external job number string
 };
 
-const normalizeStatusId = (status) => {
-  if (!status) return null; // Guard clause for falsy inputs
-  return String(status)
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_"); // Convert textual statuses to snake_case identifiers
-};
-
 const ensureIsoString = (value, fallback = null) => {
   if (!value) return fallback || new Date().toISOString();
   const parsed = new Date(value);
@@ -43,26 +41,46 @@ const ensureIsoString = (value, fallback = null) => {
 };
 
 const buildStatusPayload = (statusText) => {
-  const normalizedId = normalizeStatusId(statusText); // Derive snake_case identifier from stored text
-  if (!normalizedId) {
+  const subStatusId = resolveSubStatusId(statusText);
+  if (subStatusId) {
+    const subConfig = getSubStatusMetadata(statusText) || {};
     return {
-      id: null,
-      label: statusText || null,
-      color: null,
-      department: null,
+      id: subStatusId,
+      label: subConfig?.label || statusText || subStatusId,
+      color: subConfig?.color || null,
+      department: subConfig?.department || null,
       pausesTime: true,
-    }; // Provide minimal payload when status cannot be resolved
+      kind: "event",
+      eventType: subConfig?.category || "sub_status",
+      isSubStatus: true,
+    };
   }
 
-  const statusConfig = SERVICE_STATUS_FLOW[normalizedId.toUpperCase()] || null; // Lookup metadata from status flow map
+  const mainStatusId = resolveMainStatusId(statusText);
+  if (mainStatusId) {
+    const statusConfig = getMainStatusMetadata(statusText) || {};
+    return {
+      id: mainStatusId,
+      label: statusConfig?.label || statusText || mainStatusId,
+      color: statusConfig?.color || null,
+      department: statusConfig?.department || null,
+      pausesTime: Boolean(statusConfig?.pausesTime),
+      kind: "status",
+      isSubStatus: false,
+    };
+  }
 
+  const normalizedFallback = normalizeStatusId(statusText);
   return {
-    id: normalizedId,
-    label: statusConfig?.label || statusText || normalizedId,
-    color: statusConfig?.color || null,
-    department: statusConfig?.department || null,
-    pausesTime: Boolean(statusConfig?.pausesTime),
-  }; // Return normalized status payload used by UI timeline
+    id: normalizedFallback,
+    label: statusText || normalizedFallback || null,
+    color: null,
+    department: null,
+    pausesTime: true,
+    kind: "event",
+    eventType: "status_update",
+    isSubStatus: true,
+  };
 };
 
 const MAX_INT32 = 2147483647;
@@ -386,9 +404,12 @@ export default async function handler(req, res) {
       return /^system/i.test(text) ? "System" : text;
     };
 
-    const baselineEntries = (historyRows || []).map((row) => {
-      const statusPayload = buildStatusPayload(row.to_status || row.from_status); // Build metadata payload for the history status
-      return {
+    const statusEntries = [];
+    const subStatusEntries = [];
+
+    (historyRows || []).forEach((row) => {
+      const statusPayload = buildStatusPayload(row.to_status || row.from_status);
+      const baseEntry = {
         id: row.id,
         status: statusPayload.id,
         statusLabel: statusPayload.label,
@@ -399,28 +420,49 @@ export default async function handler(req, res) {
         color: statusPayload.color,
         department: statusPayload.department,
         pausesTime: statusPayload.pausesTime,
-      }; // Normalise the database row into API response shape
+      };
+
+      if (statusPayload.isSubStatus) {
+        subStatusEntries.push({
+          ...baseEntry,
+          kind: statusPayload.kind || "event",
+          eventType: statusPayload.eventType || "sub_status",
+          label: statusPayload.label || "Update",
+        });
+      } else {
+        statusEntries.push({
+          ...baseEntry,
+          kind: "status",
+          label: statusPayload.label || "Status",
+        });
+      }
     });
 
-    if (baselineEntries.length === 0 && jobRow.status) {
-      const statusPayload = buildStatusPayload(jobRow.status); // Create synthetic entry when history is empty
-      baselineEntries.push({
+    if (statusEntries.length === 0 && jobRow.status) {
+      const mainId = resolveMainStatusId(jobRow.status);
+      const mainMeta = getMainStatusMetadata(jobRow.status) || {};
+      statusEntries.push({
         id: null,
-        status: statusPayload.id,
-        statusLabel: statusPayload.label,
+        status: mainId,
+        statusLabel: mainMeta?.label || jobRow.status,
         timestamp:
-          jobRow.status_updated_at || jobRow.updated_at || jobRow.created_at || new Date().toISOString(),
+          jobRow.status_updated_at ||
+          jobRow.updated_at ||
+          jobRow.created_at ||
+          new Date().toISOString(),
         userId: jobRow.status_updated_by || null,
         userName: resolveHistoryUserName(jobRow.status_updated_by),
         reason: null,
-        color: statusPayload.color,
-        department: statusPayload.department,
-        pausesTime: statusPayload.pausesTime,
+        color: mainMeta?.color || null,
+        department: mainMeta?.department || null,
+        pausesTime: Boolean(mainMeta?.pausesTime),
+        kind: "status",
+        label: mainMeta?.label || jobRow.status || "Status",
       });
     }
 
     const referenceNow = new Date().toISOString(); // Capture reference timestamp for duration calculations
-    const timelineEntries = attachDurations(baselineEntries, referenceNow); // Attach computed durations to each entry
+    const timelineEntries = attachDurations(statusEntries, referenceNow); // Attach computed durations to each entry
 
     const totalRecordedSeconds = timelineEntries.reduce(
       (total, entry) => total + (entry.duration || 0),
@@ -435,17 +477,19 @@ export default async function handler(req, res) {
     }, 0);
 
     const { entries: actionEvents, clockingSummary } = await fetchJobActionEvents(jobRow.id);
-    const statusTimeline = timelineEntries.map((entry) => ({
-      ...entry,
-      kind: "status",
-      label: entry.statusLabel || entry.status || "Status",
-    }));
-
-    const combinedHistory = [...statusTimeline, ...actionEvents].sort(
+    const combinedHistory = [...timelineEntries, ...subStatusEntries, ...actionEvents].sort(
       (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
 
-    const currentStatusPayload = buildStatusPayload(jobRow.status); // Prepare metadata for the job's current status
+    const currentMainId = resolveMainStatusId(jobRow.status);
+    const currentMainMeta = getMainStatusMetadata(jobRow.status) || {};
+    const currentStatusPayload = {
+      id: currentMainId,
+      label: currentMainMeta?.label || jobRow.status || null,
+      color: currentMainMeta?.color || null,
+      department: currentMainMeta?.department || null,
+      pausesTime: Boolean(currentMainMeta?.pausesTime),
+    }; // Prepare metadata for the job's current status
 
     return res.status(200).json({
       success: true,

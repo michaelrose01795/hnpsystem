@@ -2,7 +2,7 @@
 // file location: src/components/StatusTracking/StatusSidebar.js
 
 import { useState, useEffect, useMemo } from 'react';
-import { SERVICE_STATUS_FLOW } from '@/lib/status/statusFlow';
+import { getMainStatusMetadata, getStatusConfig } from '@/lib/status/statusFlow';
 import JobProgressTracker from '@/components/StatusTracking/JobProgressTracker';
 // ⚠️ Mock data found — replacing with Supabase query
 // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
@@ -161,10 +161,7 @@ export default function StatusSidebar({
     return statusHistory
       .map((entry, index) => {
         const statusId = entry.status;
-        const config =
-          statusId && SERVICE_STATUS_FLOW[statusId?.toUpperCase?.()]
-            ? SERVICE_STATUS_FLOW[statusId?.toUpperCase?.()]
-            : {};
+        const config = statusId ? getStatusConfig(statusId) : null;
         const fallbackLabel = statusId
           ? statusId.replace(/_/g, " ")
           : entry.label || "Update";
@@ -175,15 +172,15 @@ export default function StatusSidebar({
         return {
           ...entry,
           status: statusId || null,
-          label: entry.label || config.label || fallbackLabel,
-          department: entry.department || entry.category || config.department,
+          label: entry.label || config?.label || fallbackLabel,
+          department: entry.department || entry.category || config?.department,
           color:
             entry.color ||
             (entry.kind === "event"
               ? "var(--accent-orange)"
-              : config.color || "var(--grey-accent-light)"),
+              : config?.color || "var(--grey-accent-light)"),
           timestamp: timestamp.toISOString(),
-          kind: entry.kind || (statusId ? "status" : "event"),
+          kind: entry.kind || config?.kind || (statusId ? "status" : "event"),
           description: entry.description || entry.reason || entry.notes || null,
           icon: entry.icon || null,
           eventType: entry.eventType || null,
@@ -515,7 +512,7 @@ export default function StatusSidebar({
                 <JobProgressTracker
                   statuses={timelineStatuses}
                   currentStatus={currentStatusForDisplay}
-                  currentStatusMeta={SERVICE_STATUS_FLOW[currentStatusForDisplay?.toUpperCase()] || null}
+                  currentStatusMeta={getMainStatusMetadata(currentStatusForDisplay) || null}
                   isWide={isWideLayout}
                 />
               </div>

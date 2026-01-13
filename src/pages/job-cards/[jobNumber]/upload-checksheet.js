@@ -157,25 +157,6 @@ export default function UploadChecksheet() {
               </button>
 
               <button
-                onClick={() =>
-                  handleStatusChange("Additional Work Required")
-                }
-                disabled={loading}
-                style={{
-                  marginTop: "8px",
-                  padding: "10px 16px",
-                  backgroundColor: "var(--primary)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: loading ? "not-allowed" : "pointer",
-                  width: "100%",
-                }}
-              >
-                Additional Work Required
-              </button>
-
-              <button
                 onClick={() => setShowStatusPopup(false)}
                 style={{
                   marginTop: "12px",

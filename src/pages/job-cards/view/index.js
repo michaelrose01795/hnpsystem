@@ -12,27 +12,9 @@ import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { useUser } from "@/context/UserContext";
 import { DropdownField } from "@/components/dropdownAPI";
 
-const TODAY_STATUSES = [
-  "Booked",
-  "Checked In",
-  "Workshop/MOT",
-  "VHC Complete",
-  "VHC Reopened",
-  "VHC Sent",
-  "Additional Work Required",
-  "Additional Work Being Carried Out",
-  "Being Washed",
-  "Complete",
-];
+const TODAY_STATUSES = ["Booked", "Checked In", "In Progress", "Invoiced", "Complete"];
 
-const CARRY_OVER_STATUSES = [
-  "Retail Parts on Order",
-  "Warranty Parts on Order",
-  "Raise TSR",
-  "Waiting for TSR Response",
-  "Warranty Quality Control",
-  "Warranty Ready to Claim",
-];
+const CARRY_OVER_STATUSES = ["Booked", "Checked In", "In Progress", "Invoiced", "Complete"];
 
 /* ================================
    Utility function: today's date
@@ -284,13 +266,13 @@ export default function ViewJobCards() {
 
   const handleStatusChange = async (jobId, newStatus) => {
     const result = await updateJobStatus(jobId, newStatus); // update status in database
-    if (result.success) {
+    if (result?.success && result.data) {
       fetchJobs(); // refresh jobs list after update
       if (popupJob && popupJob.id === jobId) {
-        setPopupJob({ ...popupJob, status: newStatus }); // update popup if open
+        setPopupJob({ ...popupJob, status: result.data.status }); // update popup if open
       }
 
-      const actionType = resolveNextActionType(newStatus);
+      const actionType = resolveNextActionType(result.data.status);
       if (actionType) {
         const updatedJob = jobs.find((job) => job.id === jobId) || popupJob;
         if (updatedJob) {

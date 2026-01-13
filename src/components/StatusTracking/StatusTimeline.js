@@ -1,7 +1,7 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/components/StatusTracking/StatusTimeline.js
 
-import { SERVICE_STATUS_FLOW, getStatusTimeline } from '@/lib/status/statusFlow';
+import { getStatusTimeline } from '@/lib/status/statusFlow';
 
 // Visual timeline showing all statuses in order with progress indication
 export default function StatusTimeline({ currentStatus, statusHistory, getTimeInStatus }) {
