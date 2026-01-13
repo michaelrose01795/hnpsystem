@@ -2147,6 +2147,21 @@ export const updateJob = async (jobId, updates) => {
         data.jobNumber ??
         null;
 
+      try {
+        await supabase.from("job_status_history").insert([
+          {
+            job_id: jobId,
+            from_status: statusSnapshot.status || null,
+            to_status: updates.status,
+            changed_by: updates.status_updated_by || null,
+            reason: updates.status_change_reason || null,
+            changed_at: updates.status_updated_at || new Date().toISOString(),
+          },
+        ]);
+      } catch (historyError) {
+        console.error("❌ Failed to log job status history:", historyError);
+      }
+
       if (jobNumberForNotification) {
         try {
           await notifyJobStatusChange({

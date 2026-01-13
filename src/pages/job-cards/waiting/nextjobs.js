@@ -332,18 +332,6 @@ export default function NextJobsPage() {
     return map;
   }, [waitingJobs]);
 
-  const outstandingJobs = useMemo(
-    () =>
-      waitingJobs.filter((job) => {
-        const statusKey = toStatusKey(job.status);
-        const allowedStatus = OUTSTANDING_ALLOWED_STATUSES.has(statusKey);
-        const isUnassigned = !job.assignedTech && job.assignedTo == null;
-        const blocked = isBlockedByDepartment(job.status);
-        return allowedStatus && isUnassigned && !blocked;
-      }),
-    [waitingJobs]
-  );
-
   const mapJobFromDatabase = (row) => {
     const customerFirst = row.customer?.firstname?.trim() || "";
     const customerLast = row.customer?.lastname?.trim() || "";
@@ -619,12 +607,32 @@ export default function NextJobsPage() {
     const motSource = dbMotTesters.length > 0 ? dbMotTesters : fallbackMot;
     motSource.forEach((person, index) => mergePerson(person, "mot", index, "mot"));
 
+    waitingJobs.forEach((job, index) => {
+      const assignedTech = job?.assignedTech;
+      if (!assignedTech) return;
+      const role = assignedTech.role || "";
+      const shouldIncludeTech = isTechRole(role);
+      const shouldIncludeMot = isMotRole(role);
+      if (!shouldIncludeTech && !shouldIncludeMot) return;
+      const person = {
+        id: assignedTech.id || null,
+        name: assignedTech.name || assignedTech.fullName || "",
+        email: assignedTech.email || "",
+      };
+      if (shouldIncludeTech) {
+        mergePerson(person, "tech", index, "assigned-tech");
+      }
+      if (shouldIncludeMot) {
+        mergePerson(person, "mot", index, "assigned-mot");
+      }
+    });
+
     return Array.from(map.entries()).map(([normalized, entry]) => ({
       ...entry,
       normalizedName: normalized,
       roles: Array.from(entry.roles),
     }));
-  }, [dbTechnicians, dbMotTesters, fallbackTechs, fallbackMot]);
+  }, [dbTechnicians, dbMotTesters, fallbackTechs, fallbackMot, waitingJobs]);
 
   const techPanelList = useMemo(
     () => staffDirectory.filter((person) => person.roles.includes("tech")),
@@ -643,6 +651,62 @@ export default function NextJobsPage() {
         name: staff.name,
       })),
     [staffDirectory]
+  );
+
+  const techIdSet = useMemo(() => {
+    return new Set(
+      (dbTechnicians || [])
+        .map((tech) => tech?.id ?? tech?.user_id)
+        .filter((id) => id !== null && id !== undefined)
+        .map((id) => String(id))
+    );
+  }, [dbTechnicians]);
+
+  const motIdSet = useMemo(() => {
+    return new Set(
+      (dbMotTesters || [])
+        .map((tester) => tester?.id ?? tester?.user_id)
+        .filter((id) => id !== null && id !== undefined)
+        .map((id) => String(id))
+    );
+  }, [dbMotTesters]);
+
+  const isAssignedToKnownStaff = (job) => {
+    if (!job) return false;
+    const assignedId = job.assignedTech?.id ?? job.assignedTo;
+    if (assignedId != null) {
+      const assignedIdKey = String(assignedId);
+      if (techIdSet.has(assignedIdKey) || motIdSet.has(assignedIdKey)) {
+        return true;
+      }
+    }
+    const assignedRole = job.assignedTech?.role || job.technicianRole || "";
+    if (assignedRole) {
+      return isTechRole(assignedRole) || isMotRole(assignedRole);
+    }
+    const assignedNameRaw =
+      job.assignedTech?.name ||
+      job.technician ||
+      (typeof job.assignedTo === "string" ? job.assignedTo : "");
+    const normalizedAssignedName = normalizeDisplayName(assignedNameRaw);
+    if (!normalizedAssignedName) return false;
+    const allStaff = [...(dbTechnicians || []), ...(dbMotTesters || [])];
+    return allStaff.some((staff) => {
+      const label = staff?.name || staff?.email || "";
+      return normalizeDisplayName(label) === normalizedAssignedName;
+    });
+  };
+
+  const outstandingJobs = useMemo(
+    () =>
+      waitingJobs.filter((job) => {
+        const statusKey = toStatusKey(job.status);
+        const allowedStatus = OUTSTANDING_ALLOWED_STATUSES.has(statusKey);
+        const blocked = isBlockedByDepartment(job.status);
+        const assignedToStaff = isAssignedToKnownStaff(job);
+        return allowedStatus && !assignedToStaff && !blocked;
+      }),
+    [waitingJobs, techIdSet, motIdSet, dbTechnicians, dbMotTesters]
   );
 
   // ✅ Search logic for job cards in the outstanding section
@@ -667,11 +731,18 @@ export default function NextJobsPage() {
   }, [searchTerm, outstandingJobs]);
 
   // ✅ Group jobs by technician (using assignedTech.name)
-  const getJobsForAssignee = (assigneeName) => {
-    const normalizedAssignee = normalizeDisplayName(assigneeName);
+  const getJobsForAssignee = (assignee) => {
+    const normalizedAssignee = normalizeDisplayName(assignee?.name);
+    const assigneeIdKey = toUserIdKey(assignee?.id);
 
     return waitingJobs
       .filter((job) => {
+        const jobAssignedIdKey = toUserIdKey(
+          job.assignedTech?.id ?? job.assignedTo
+        );
+        if (assigneeIdKey && jobAssignedIdKey && assigneeIdKey === jobAssignedIdKey) {
+          return true;
+        }
         const assignedNameRaw =
           job.assignedTech?.name ||
           job.technician ||
@@ -689,7 +760,7 @@ export default function NextJobsPage() {
       techPanelList.map((tech, index) => ({
         ...tech,
         panelKey: `${tech.id || tech.normalizedName || "tech"}-tech-${index}`,
-        jobs: getJobsForAssignee(tech.name),
+        jobs: getJobsForAssignee(tech),
       })),
     [waitingJobs, techPanelList]
   );
@@ -699,7 +770,7 @@ export default function NextJobsPage() {
       motPanelList.map((tester, index) => ({
         ...tester,
         panelKey: `${tester.id || tester.normalizedName || "mot"}-mot-${index}`,
-        jobs: getJobsForAssignee(tester.name),
+        jobs: getJobsForAssignee(tester),
       })),
     [waitingJobs, motPanelList]
   );

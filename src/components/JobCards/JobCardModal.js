@@ -283,7 +283,8 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
       if (res.success) { // If OK
         alert(`✅ Clocked out from Job ${jobNumText}\n\nHours worked: ${res.hoursWorked}h`); // Show hours
         setJobNumber(""); // Clear job number input for next open
-        setWorkType(""); // Reset request selection
+        setSelectedRequestValue("job"); // Reset request selection
+        setSelectedRequestId(null);
         setRequestOptions([]); // Clear request dropdown options
         lastJobNumberRef.current = ""; // Reset job number tracker
         setCurrentJob(null); // Immediately clear cached current job

@@ -26,6 +26,17 @@ const formatTimestamp = (timestamp) => {
   });
 };
 
+const isTechCompleteStatus = (value) => {
+  if (!value) return false;
+  const normalized = String(value).toLowerCase();
+  return (
+    normalized === "tech complete" ||
+    normalized === "tech_complete" ||
+    normalized === "vhc complete" ||
+    normalized === "vhc_complete"
+  );
+};
+
 export default function JobProgressTracker({
   statuses = [],
   currentStatus,
@@ -280,9 +291,14 @@ export default function JobProgressTracker({
             : resolvedColor;
           const connectorColor = COLORS.connector;
           const performer = resolvePerformer(item);
+          const isTechComplete =
+            isTechCompleteStatus(item?.status) || isTechCompleteStatus(item?.label);
+          const performerLabel =
+            isTechComplete && performer ? `Tech complete by ${performer}` : performer;
           const secondaryLine =
             item?.description ||
             item?.notes ||
+            (isTechComplete ? "Tech has completed all work on this job." : null) ||
             item?.department ||
             item?.meta?.location ||
             null;
@@ -415,7 +431,7 @@ export default function JobProgressTracker({
                       flexWrap: "wrap",
                     }}
                   >
-                    <span style={{ fontWeight: 600 }}>{performer}</span>
+                    <span style={{ fontWeight: 600 }}>{performerLabel}</span>
                     <span>{formatTimestamp(item?.timestamp)}</span>
                   </div>
                   {secondaryLine && (

@@ -22,10 +22,31 @@ const STATUS_BADGE_STYLES = {
   Open: { background: "var(--warning-surface)", color: "var(--danger-dark)" },
   Complete: { background: "var(--success-surface)", color: "var(--success-dark)" },
   Completed: { background: "var(--success-surface)", color: "var(--success-dark)" },
+  "VHC Complete": { background: "var(--success-surface)", color: "var(--success-dark)" },
+  "Tech Complete": { background: "var(--success-surface)", color: "var(--success-dark)" },
 };
 
 const getStatusBadgeStyle = (status) =>
   STATUS_BADGE_STYLES[status] || { background: "var(--info-surface)", color: "var(--info-dark)" };
+
+const TECH_COMPLETE_STATUSES = new Set(["VHC Complete", "Tech Complete", "Tech Done"]);
+
+const resolveTechStatusLabel = (status) => {
+  if (status === "VHC Complete") return "VHC Complete";
+  if (status === "Tech Complete") return "Complete";
+  return status || "Pending";
+};
+
+const normalizeStatusKey = (status) =>
+  typeof status === "string" ? status.trim().toLowerCase() : "";
+
+const getTechStatusCategory = (status) => {
+  const normalized = normalizeStatusKey(status);
+  if (normalized === "in progress" || normalized === "started") return "in-progress";
+  if (normalized === "pending" || normalized === "waiting" || normalized === "open") return "pending";
+  if (normalized.includes("complete") || normalized === "tech done") return "complete";
+  return "pending";
+};
 
 const getMakeModel = (job) => {
   if (!job) return "N/A";
@@ -123,9 +144,20 @@ export default function MyJobsPage() {
 
       const assignedJobs = fetchedJobs.filter((job) => isAssignedToTechnician(job));
 
+      const statusRank = {
+        "in-progress": 0,
+        pending: 1,
+        complete: 2,
+      };
       const sortedJobs = assignedJobs.sort((a, b) => {
-        if (a.createdAt && b.createdAt) {
-          return new Date(b.createdAt) - new Date(a.createdAt);
+        const rankA = statusRank[getTechStatusCategory(a.status)] ?? 1;
+        const rankB = statusRank[getTechStatusCategory(b.status)] ?? 1;
+        if (rankA !== rankB) return rankA - rankB;
+
+        const aTimestamp = a.updatedAt || a.createdAt;
+        const bTimestamp = b.updatedAt || b.createdAt;
+        if (aTimestamp && bTimestamp) {
+          return new Date(bTimestamp) - new Date(aTimestamp);
         }
         return 0;
       });
@@ -315,17 +347,11 @@ export default function MyJobsPage() {
 
     // Apply status filter
     if (filter === "in-progress") {
-      filtered = filtered.filter(job =>
-        job.status === "In Progress" || job.status === "Started"
-      );
+      filtered = filtered.filter(job => getTechStatusCategory(job.status) === "in-progress");
     } else if (filter === "pending") {
-      filtered = filtered.filter(job =>
-        job.status === "Pending" || job.status === "Waiting" || job.status === "Open"
-      );
+      filtered = filtered.filter(job => getTechStatusCategory(job.status) === "pending");
     } else if (filter === "complete") {
-      filtered = filtered.filter(job =>
-        job.status === "Complete" || job.status === "Completed"
-      );
+      filtered = filtered.filter(job => getTechStatusCategory(job.status) === "complete");
     }
 
     // Apply search filter
@@ -447,24 +473,6 @@ export default function MyJobsPage() {
             </p>
           </div>
 
-          <button
-            onClick={() => router.push("/tech/dashboard")}
-            style={{
-              padding: "12px 24px",
-              backgroundColor: "var(--primary)",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: "600",
-              transition: "background-color 0.2s"
-            }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = "var(--danger-dark)"}
-            onMouseLeave={(e) => e.target.style.backgroundColor = "var(--primary)"}
-          >
-            ← Back to Dashboard
-          </button>
         </div>
 
         {/* Clocking Status Banner */}
@@ -633,9 +641,36 @@ export default function MyJobsPage() {
                 minHeight: 0
               }}
             >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  padding: "8px 16px",
+                  borderRadius: "10px",
+                  backgroundColor: "var(--surface-light)",
+                  border: "1px solid var(--surface-light)",
+                  fontSize: "12px",
+                  fontWeight: "700",
+                  color: "var(--info)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.04em"
+                }}
+              >
+                <div style={{ minWidth: "110px", textAlign: "center" }}>Status</div>
+                <div style={{ minWidth: "90px" }}>Job</div>
+                <div style={{ minWidth: "80px" }}>Reg</div>
+                <div style={{ minWidth: "140px", flex: "0 0 auto" }}>Customer</div>
+                <div style={{ minWidth: "160px", flex: "1 1 auto" }}>Make/Model</div>
+                <div style={{ minWidth: "80px" }}>Type</div>
+                <div style={{ minWidth: "90px", textAlign: "center" }}>Clocked</div>
+                <div style={{ minWidth: "100px", textAlign: "center" }}>Created</div>
+                <div style={{ minWidth: "90px", textAlign: "center" }}>Write-Up</div>
+              </div>
               {filteredJobs.map((job) => {
                 const statusLabel = job.status || "Pending";
-                const statusStyle = getStatusBadgeStyle(statusLabel);
+                const displayStatusLabel = resolveTechStatusLabel(statusLabel);
+                const statusStyle = getStatusBadgeStyle(displayStatusLabel);
                 const createdAt = formatCreatedAt(job.createdAt);
                 const description = job.description?.trim();
                 const makeModel = getMakeModel(job);
@@ -715,7 +750,7 @@ export default function MyJobsPage() {
                         textAlign: "center"
                       }}
                     >
-                      {statusLabel}
+                      {displayStatusLabel}
                     </div>
 
                     {/* Job Number */}
@@ -863,19 +898,19 @@ export default function MyJobsPage() {
             </div>
             <div>
               <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--info)", marginBottom: "4px" }}>
-                {myJobs.filter(j => j.status === "In Progress").length}
+                {myJobs.filter(j => getTechStatusCategory(j.status) === "in-progress").length}
               </div>
               <div style={{ fontSize: "13px", color: "var(--grey-accent)" }}>In Progress</div>
             </div>
             <div>
               <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--danger)", marginBottom: "4px" }}>
-                {myJobs.filter(j => j.status === "Pending" || j.status === "Open").length}
+                {myJobs.filter(j => getTechStatusCategory(j.status) === "pending").length}
               </div>
               <div style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Pending</div>
             </div>
             <div>
               <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--info)", marginBottom: "4px" }}>
-                {myJobs.filter(j => j.status === "Complete" || j.status === "Completed").length}
+                {myJobs.filter(j => getTechStatusCategory(j.status) === "complete").length}
               </div>
               <div style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Completed</div>
             </div>

@@ -430,9 +430,20 @@ export default function TechJobDetailPage() {
       if (!normalizedCurrent || normalizedCurrent === targetStatus) return null;
 
       try {
+        const statusAuditUpdates = { ...extraUpdates };
+        if (!Object.prototype.hasOwnProperty.call(statusAuditUpdates, "status_updated_at")) {
+          statusAuditUpdates.status_updated_at = new Date().toISOString();
+        }
+        if (
+          dbUserId &&
+          !Object.prototype.hasOwnProperty.call(statusAuditUpdates, "status_updated_by")
+        ) {
+          statusAuditUpdates.status_updated_by = dbUserId;
+        }
+
         const response =
-          extraUpdates && Object.keys(extraUpdates).length > 0
-            ? await updateJob(jobCardId, { status: targetStatus, ...extraUpdates })
+          statusAuditUpdates && Object.keys(statusAuditUpdates).length > 0
+            ? await updateJob(jobCardId, { status: targetStatus, ...statusAuditUpdates })
             : await updateJobStatus(jobCardId, targetStatus);
         if (response?.success && response.data) {
           setJobData((prev) => {
@@ -453,7 +464,7 @@ export default function TechJobDetailPage() {
 
       return null;
     },
-    [jobCardId]
+    [jobCardId, dbUserId]
   );
 
   // Callback: Refresh job clocking
@@ -1690,9 +1701,12 @@ export default function TechJobDetailPage() {
   // Extract job data
   const { jobCard, customer, vehicle } = jobData;
   const jobRequiresVhc = jobCard?.vhcRequired === true;
-  const jobStatusDisplay = jobCardStatus || "Unknown";
-  const jobStatusColor = STATUS_COLORS[jobCardStatus] || "var(--info)";
-  const jobStatusBadgeStyle = getStatusBadgeStyle(jobCardStatus, jobStatusColor);
+  const techStatusDisplay =
+    jobCardStatus === "VHC Complete" || jobCardStatus === "Tech Complete"
+      ? "Complete"
+      : jobCardStatus || "Unknown";
+  const jobStatusColor = STATUS_COLORS[techStatusDisplay] || "var(--info)";
+  const jobStatusBadgeStyle = getStatusBadgeStyle(techStatusDisplay, jobStatusColor);
   const partsCount = jobCard.partsRequests?.length || 0;
   const clockedHours = formatClockingDuration(clockedMinutesTotal);
   const isWarrantyJob = (jobCard?.jobSource || "").toLowerCase() === "warranty";
@@ -1701,7 +1715,7 @@ export default function TechJobDetailPage() {
   const quickStats = [
     {
       label: "Status",
-      value: jobStatusDisplay,
+      value: techStatusDisplay,
       accent: jobStatusColor,
       pill: true,
     },
@@ -1765,20 +1779,21 @@ export default function TechJobDetailPage() {
   const rectificationsComplete = writeUpCompletion === "complete";
   const writeUpComplete = rectificationsComplete;
 
-  const isVhcComplete =
+  const isVhcCompleteForTech =
     !jobRequiresVhc ||
+    canCompleteVhc ||
     Boolean(jobCard?.vhcCompletedAt) ||
     VHC_COMPLETED_STATUSES.includes(jobCardStatus);
 
-  const canCompleteJob = writeUpComplete && isVhcComplete;
+  const canCompleteJob = writeUpComplete && isVhcCompleteForTech;
   const completeJobLockedReasons = [];
   if (!writeUpComplete) {
     if (!rectificationsComplete) {
       completeJobLockedReasons.push("Complete all write-up checkboxes");
     }
   }
-  if (!isVhcComplete) {
-    completeJobLockedReasons.push("Click Complete VHC");
+  if (!isVhcCompleteForTech) {
+    completeJobLockedReasons.push("Complete mandatory VHC sections");
   }
   const completeJobLockedTitle = canCompleteJob
     ? "Mark job as Tech Complete"
@@ -1791,7 +1806,43 @@ export default function TechJobDetailPage() {
 
   const handleCompleteJob = async () => {
     if (!canCompleteJob) return;
-    await syncJobStatus("Tech Complete", jobCardStatus);
+    const workshopUserId = dbUserId ?? user?.id;
+    if (jobClocking && jobCardId) {
+      if (!workshopUserId) {
+        alert("Unable to clock out because your workshop profile is not linked.");
+        return;
+      }
+      setClockOutLoading(true);
+      try {
+        const result = await clockOutFromJob(
+          workshopUserId,
+          jobCardId,
+          jobClocking.clockingId
+        );
+        if (!result.success) {
+          alert(result.error || "Failed to clock out of this job.");
+          return;
+        }
+        setCurrentJob(null);
+        const nextJob = await refreshCurrentJob();
+        if (!nextJob) {
+          setStatus("Waiting for Job");
+        }
+        setJobClocking(null);
+        await refreshJobClocking();
+        await fetchClockedHoursTotal();
+        await refreshClockingStatus();
+      } catch (clockOutError) {
+        console.error("Error clocking out from job:", clockOutError);
+        alert(clockOutError.message || "Error clocking out. Please try again.");
+        return;
+      } finally {
+        setClockOutLoading(false);
+      }
+    }
+
+    await syncJobStatus("VHC Complete", jobCardStatus);
+    router.push("/job-cards/myjobs");
   };
 
   if (rosterLoading) {
@@ -1877,7 +1928,7 @@ export default function TechJobDetailPage() {
               color: jobStatusBadgeStyle.color,
               fontWeight: "600"
             }}>
-              {jobCard.status}
+              {techStatusDisplay}
             </span>
             <span style={{ fontSize: "12px", color: "var(--info)" }}>
               Updated {formatDateTime(jobCard.updatedAt)}
