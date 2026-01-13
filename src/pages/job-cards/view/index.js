@@ -10,6 +10,7 @@ import { useRouter } from "next/router"; // for navigation
 import { getAllJobs, updateJobStatus } from "@/lib/database/jobs"; // import database functions
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { useUser } from "@/context/UserContext";
+import { DropdownField } from "@/components/dropdownAPI";
 
 const TODAY_STATUSES = [
   "Booked",
@@ -340,9 +341,6 @@ export default function ViewJobCards() {
     [divisionFilter, router]
   );
 
-  const divisionFilterLabel =
-    divisionFilter === "All" ? "Retail & Sales" : `${divisionFilter} only`;
-
   const jobDateLookup = useMemo(
     () =>
       divisionFilteredJobs.reduce((acc, job) => {
@@ -466,10 +464,14 @@ export default function ViewJobCards() {
     : isOrdersTab
     ? "No orders available."
     : "No jobs in this status group.";
-  const activeFilterLabel =
-    activeStatusFilter === "All"
-      ? "Showing every status"
-      : `Filtered by "${activeStatusFilter}"`;
+  const tabOptions = useMemo(
+    () => [
+      { value: "today", label: "Today's workload" },
+      { value: "carryOver", label: "Carry over" },
+      { value: "orders", label: "Orders" },
+    ],
+    []
+  );
 
   // For Orders tab, show all orders regardless of status filter
   const filteredByStatus = isOrdersTab
@@ -553,6 +555,45 @@ export default function ViewJobCards() {
   ================================ */
   return (
     <Layout>
+      <style>{`
+        .job-cards-filter .dropdown-api {
+          width: 100%;
+          gap: 0;
+        }
+
+        .job-cards-filter.dropdown-api {
+          height: 100%;
+        }
+
+        .job-cards-filter .dropdown-api__control {
+          min-height: 100%;
+          height: 100%;
+          padding: 10px 14px;
+          border-radius: 14px;
+          border: 1px solid var(--search-surface-muted);
+          background: var(--search-surface);
+          color: var(--search-text);
+          font-size: 14px;
+          box-shadow: none;
+        }
+
+        .job-cards-filter.dropdown-api.is-open .dropdown-api__control,
+        .job-cards-filter .dropdown-api__control:focus-visible {
+          border: 1px solid var(--search-surface-muted);
+          background: var(--search-surface);
+          outline: none;
+        }
+
+        .job-cards-filter .dropdown-api__value {
+          color: var(--search-text);
+          font-size: 14px;
+          font-weight: 500;
+        }
+
+        .job-cards-filter .dropdown-api__chevron {
+          color: var(--search-text);
+        }
+      `}</style>
       {
         // bottom-layer
       }
@@ -578,75 +619,60 @@ export default function ViewJobCards() {
         {
           // middle-layer
         }
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "16px",
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "16px",
               alignItems: "center",
               justifyContent: "space-between",
             }}
           >
             <div
               style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "6px",
-                padding: "4px",
                 borderRadius: "999px",
-                backgroundColor: "var(--surface)",
-                border: "1px solid rgba(var(--primary-rgb),0.2)",
-                boxShadow: "none",
+                border: "1px solid var(--surface-light)",
+                background: "var(--surface)",
+                padding: "6px",
+                display: "flex",
+                gap: "6px",
+                width: "100%",
+                overflowX: "auto",
+                flexShrink: 0,
+                scrollbarWidth: "thin",
+                scrollbarColor: "var(--scrollbar-thumb) transparent",
+                scrollBehavior: "smooth",
+                WebkitOverflowScrolling: "touch",
               }}
             >
-              <button
-                onClick={() => setActiveTab("today")}
-                style={{
-                  padding: "10px 20px",
-                  border: "none",
-                  borderRadius: "999px",
-                  background: activeTab === "today" ? "var(--primary)" : "transparent",
-                  color: activeTab === "today" ? "white" : "var(--accent-purple)",
-                  fontWeight: 600,
-                  fontSize: "0.9rem",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                }}
-              >
-                Today&apos;s workload
-              </button>
-              <button
-                onClick={() => setActiveTab("carryOver")}
-                style={{
-                  padding: "10px 20px",
-                  border: "none",
-                  borderRadius: "999px",
-                  background: activeTab === "carryOver" ? "var(--primary)" : "transparent",
-                  color: activeTab === "carryOver" ? "white" : "var(--accent-purple)",
-                  fontWeight: 600,
-                  fontSize: "0.9rem",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                }}
-              >
-                Carry over
-              </button>
-              <button
-                onClick={() => setActiveTab("orders")}
-                style={{
-                  padding: "10px 20px",
-                  border: "none",
-                  borderRadius: "999px",
-                  background: activeTab === "orders" ? "var(--primary)" : "transparent",
-                  color: activeTab === "orders" ? "white" : "var(--accent-purple)",
-                  fontWeight: 600,
-                  fontSize: "0.9rem",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                }}
-              >
-                Orders
-              </button>
+              {tabOptions.map((tab) => {
+                const isActive = tab.value === activeTab;
+                return (
+                  <button
+                    key={tab.value}
+                    type="button"
+                    onClick={() => setActiveTab(tab.value)}
+                    style={{
+                      flex: "0 0 auto",
+                      borderRadius: "999px",
+                      border: "1px solid transparent",
+                      padding: "10px 20px",
+                      fontSize: "0.9rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      background: isActive ? "var(--primary)" : "transparent",
+                      color: isActive ? "var(--text-inverse)" : "var(--text-primary)",
+                      transition: "all 0.15s ease",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -710,141 +736,51 @@ export default function ViewJobCards() {
               {!isOrdersTab && (
                 <div
                   style={{
-                    flex: "0 1 auto",
-                    minWidth: "auto",
-                    padding: "10px 14px",
-                    borderRadius: "14px",
-                    border: "1px solid var(--surface-light)",
-                    background: "var(--accent-purple-surface)",
-                    color: "var(--accent-purple)",
-                    fontSize: "0.8rem",
-                    fontWeight: 600,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    textAlign: "center",
-                    whiteSpace: "nowrap",
+                    flex: "0 1 220px",
+                    minWidth: "200px",
+                    maxWidth: "320px",
                   }}
                 >
-                  {activeFilterLabel}
+                  <DropdownField
+                    className="job-cards-filter"
+                    value={divisionFilter}
+                    options={[
+                      { value: "All", label: "Division filter: All" },
+                      { value: "Retail", label: "Division filter: Retail" },
+                      { value: "Sales", label: "Division filter: Sales" },
+                    ]}
+                    size="sm"
+                    onValueChange={(value) => handleDivisionFilterChange(value)}
+                  />
+                </div>
+              )}
+              {!isOrdersTab && (
+                <div
+                  style={{
+                    flex: "0 1 220px",
+                    minWidth: "200px",
+                    maxWidth: "320px",
+                  }}
+                >
+                  <DropdownField
+                    className="job-cards-filter"
+                    value={activeStatusFilter}
+                    options={statusTabs.map((status) => ({
+                      value: status,
+                      label: `Status filter: ${status}`,
+                      description:
+                        status === "All"
+                          ? `${baseJobs.length} total`
+                          : `${statusCounts[status] || 0} jobs`,
+                    }))}
+                    size="sm"
+                    onValueChange={(value) =>
+                      handleStatusFilterChange(activeTab, value)
+                    }
+                  />
                 </div>
               )}
             </div>
-            {!isOrdersTab && (
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: "8px",
-                  alignItems: "center",
-                  marginBottom: "12px",
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: "12px",
-                    fontWeight: 600,
-                    color: "var(--grey-accent)",
-                  }}
-                >
-                  Division:
-                </span>
-                {["All", "Retail", "Sales"].map((option) => {
-                  const isActive = divisionFilter === option;
-                  return (
-                    <button
-                      key={option}
-                      type="button"
-                      onClick={() => handleDivisionFilterChange(option)}
-                      style={{
-                        padding: "8px 16px",
-                        borderRadius: "999px",
-                        border: isActive ? "1px solid transparent" : "1px solid var(--surface-light)",
-                        background: isActive ? "var(--primary)" : "var(--surface)",
-                        color: isActive ? "white" : "var(--accent-purple)",
-                        fontWeight: 600,
-                        fontSize: "12px",
-                        cursor: "pointer",
-                        boxShadow: "none",
-                        transition: "all 0.2s ease",
-                      }}
-                    >
-                      {option}
-                    </button>
-                  );
-                })}
-                <span
-                  style={{
-                    fontSize: "11px",
-                    color: "var(--grey-accent)",
-                    fontWeight: 500,
-                  }}
-                >
-                  {divisionFilterLabel}
-                </span>
-              </div>
-            )}
-
-            {!isOrdersTab && (
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: "10px",
-                  padding: "12px",
-                  marginBottom: "16px",
-                  background: "var(--surface)",
-                  borderRadius: "18px",
-                  border: "1px solid var(--surface-light)",
-                  boxShadow: "none",
-                }}
-              >
-                {statusTabs.map((status) => {
-                  const isActive = activeStatusFilter === status;
-                  const count =
-                    status === "All" ? baseJobs.length : statusCounts[status] || 0;
-                  return (
-                    <button
-                      key={status}
-                      type="button"
-                      onClick={() => handleStatusFilterChange(activeTab, status)}
-                      style={{
-                        padding: "10px 18px",
-                        borderRadius: "14px",
-                        border: "1px solid",
-                        borderColor: isActive ? "transparent" : "rgba(var(--primary-rgb), 0.3)",
-                        background: isActive ? "var(--primary)" : "rgba(var(--surface-rgb), 0.9)",
-                        color: isActive ? "white" : "var(--accent-purple)",
-                        cursor: "pointer",
-                        fontWeight: 600,
-                        fontSize: "13px",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "10px",
-                        boxShadow: "none",
-                        transition: "all 0.2s ease",
-                      }}
-                    >
-                      <span>{status}</span>
-                      <span
-                        style={{
-                          fontSize: "11px",
-                          fontWeight: 700,
-                          padding: "2px 10px",
-                          borderRadius: "999px",
-                          backgroundColor: isActive
-                            ? "rgba(var(--surface-rgb), 0.25)"
-                            : "rgba(var(--primary-rgb), 0.1)",
-                          color: isActive ? "white" : "var(--accent-purple)",
-                        }}
-                      >
-                        {count}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
 
             <div
               style={{
@@ -1410,7 +1346,7 @@ const JobListCard = ({ job, onNavigate, onQuickView }) => {
           <span style={{ color: "var(--info-dark)", fontWeight: 500 }}>{appointmentLabel}</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-          <span style={{ fontSize: "10px", color: "var(--info)", textTransform: "uppercase", fontWeight: 600 }}>Status</span>
+          <span style={{ fontSize: "10px", color: "var(--info)", textTransform: "uppercase", fontWeight: 600 }}>Customer Status</span>
           <span style={{ color: "var(--info-dark)", fontWeight: 500 }}>{waitingLabel}</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>

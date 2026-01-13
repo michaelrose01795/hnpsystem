@@ -537,7 +537,7 @@ CREATE TABLE public.job_cosmetic_damage (
 CREATE TABLE public.job_customer_statuses (
   id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
   job_id integer NOT NULL,
-  status text NOT NULL DEFAULT 'Neither'::text,
+  customer_status text NOT NULL DEFAULT 'Neither'::text,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT job_customer_statuses_pkey PRIMARY KEY (id),

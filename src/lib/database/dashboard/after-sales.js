@@ -38,7 +38,7 @@ export const getAfterSalesDashboardData = async () => {
     runQuery(() =>
       supabase
         .from("job_customer_statuses")
-        .select("id,status,job_id,job:job_id(job_number,vehicle_reg)")
+        .select("id,customer_status,job_id,job:job_id(job_number,vehicle_reg)")
         .order("created_at", { ascending: false })
         .limit(8)
     ),
@@ -71,7 +71,9 @@ export const getAfterSalesDashboardData = async () => {
     ),
   ]);
 
-  const followUps = (statusData || []).filter((row) => followsUpStatuses(row.status));
+  const followUps = (statusData || []).filter((row) =>
+    followsUpStatuses(row.customer_status)
+  );
 
   const pendingVhc = (vhcPendingJobs || []).filter(
     (job) => !Array.isArray(job.vhc_authorizations) || job.vhc_authorizations.length === 0

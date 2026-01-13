@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/router";
 const renderMessageLines = (message) => {
   if (!message && message !== 0) return [];
   const text = String(message);
@@ -18,7 +17,6 @@ export default function ConfirmationDialog({
   onCancel,
   onConfirm,
 }) {
-  const router = useRouter();
   useEffect(() => {
     if (!isOpen || typeof window === "undefined") return undefined;
 
@@ -38,7 +36,6 @@ export default function ConfirmationDialog({
   const lines = renderMessageLines(message);
   const handleConfirm = () => {
     onConfirm?.();
-    router.push("/job-cards/myjobs");
   };
 
   return (

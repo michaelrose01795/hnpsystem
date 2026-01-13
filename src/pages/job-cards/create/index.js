@@ -474,9 +474,9 @@ export default function CreateJobCardPage() {
     }
 
     const timestamp = new Date().toISOString(); // shared timestamp for audit trail
-    const payload = { // build insert payload for status table
+    const payload = { // build insert payload for customer status table
       job_id: jobId,
-      status: status || "Neither",
+      customer_status: status || "Neither",
       created_at: timestamp,
       updated_at: timestamp,
     };

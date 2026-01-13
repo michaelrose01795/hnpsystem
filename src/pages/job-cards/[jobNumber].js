@@ -10,6 +10,7 @@ import { useUser } from "@/context/UserContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
 import { supabase } from "@/lib/supabaseClient";
 import { getJobByNumber, updateJob, updateJobStatus, addJobFile, deleteJobFile } from "@/lib/database/jobs";
+import { autoSetCheckedInStatus } from "@/lib/services/jobStatusService";
 import {
   getNotesByJob,
   createJobNote,
@@ -233,6 +234,7 @@ export default function JobCardDetailPage() {
   const [invoiceResponse, setInvoiceResponse] = useState(null);
   const [showDocumentsPopup, setShowDocumentsPopup] = useState(false);
   const [vhcFinancialTotalsFromPanel, setVhcFinancialTotalsFromPanel] = useState(null);
+  const [checkingIn, setCheckingIn] = useState(false);
 
   const isArchiveMode = router.query.archive === "1";
 
@@ -264,6 +266,10 @@ export default function JobCardDetailPage() {
 
   // Invoice tab is visible for anyone who can open this page to make review easier
   const canViewInvoice = true;
+
+  const isBookedStatus =
+    typeof jobData?.status === "string" &&
+    jobData.status.trim().toLowerCase() === "booked";
 
   // Check for tab query parameter to switch to invoice tab
   useEffect(() => {
@@ -373,6 +379,52 @@ export default function JobCardDetailPage() {
   useEffect(() => {
     fetchJobData();
   }, [fetchJobData]);
+
+  const handleCheckIn = useCallback(async () => {
+    if (!jobData?.id) {
+      alert("Unable to check in this job because it is missing an ID.");
+      return;
+    }
+
+    const confirmed = await confirm(
+      `Check in customer?\n\n` +
+        `Job: ${jobData.jobNumber || jobData.id}\n` +
+        `Customer: ${jobData.customer || "N/A"}\n` +
+        `Vehicle: ${jobData.reg || "N/A"}\n` +
+        `Appointment: ${jobData.appointment?.time || "N/A"}`
+    );
+
+    if (!confirmed) return;
+
+    setCheckingIn(true);
+
+    try {
+      const result = await autoSetCheckedInStatus(
+        jobData.id,
+        user?.id || user?.user_id || "SYSTEM"
+      );
+
+      if (!result?.success) {
+        console.error("❌ Check-in failed:", result?.error);
+        alert(`❌ Failed to check in: ${result?.error?.message || "Unknown error"}`);
+        return;
+      }
+
+      alert(
+        `✅ Customer Checked In!\n\n` +
+          `Job: ${jobData.jobNumber || jobData.id}\n` +
+          `Customer: ${jobData.customer || "N/A"}\n` +
+          `Time: ${new Date().toLocaleTimeString()}`
+      );
+
+      await fetchJobData({ silent: true });
+    } catch (error) {
+      console.error("❌ Error checking in:", error);
+      alert("❌ Error checking in customer. Please try again.");
+    } finally {
+      setCheckingIn(false);
+    }
+  }, [confirm, fetchJobData, jobData, user?.id, user?.user_id]);
 
   const scheduleRealtimeRefresh = useCallback(() => {
     if (jobRealtimeRefreshRef.current) {
@@ -1325,6 +1377,36 @@ export default function JobCardDetailPage() {
             >
               Car and Key Tracker
             </button>
+            {isBookedStatus && (
+              <button
+                onClick={handleCheckIn}
+                disabled={checkingIn || !canEdit}
+                style={{
+                  padding: "10px 20px",
+                  backgroundColor: "var(--success)",
+                  color: "var(--info-dark)",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: checkingIn || !canEdit ? "not-allowed" : "pointer",
+                  fontWeight: "600",
+                  fontSize: "14px",
+                  transition: "background-color 0.2s",
+                  opacity: checkingIn || !canEdit ? 0.7 : 1
+                }}
+                onMouseEnter={(e) => {
+                  if (!checkingIn && canEdit) {
+                    e.target.style.backgroundColor = "var(--success-dark)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!checkingIn && canEdit) {
+                    e.target.style.backgroundColor = "var(--success)";
+                  }
+                }}
+              >
+                {checkingIn ? "Checking In..." : "Check In"}
+              </button>
+            )}
             {showCreateInvoiceButton && (
               <button
                 onClick={() => setInvoicePopupOpen(true)}
@@ -3151,7 +3233,7 @@ function SchedulingTab({
                 {bookingStatus === "approved" ? "Approved" : "Awaiting Approval"}
               </span>
               <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
-                Waiting status: {bookingRequest.waitingStatus || "Neither"}
+                Customer Status: {bookingRequest.waitingStatus || "Neither"}
               </span>
             </div>
 

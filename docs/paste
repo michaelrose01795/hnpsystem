@@ -1,7 +1,17 @@
 TO DO:
 Continue flow with job number 54
 
+have it so all of the jobs within the "job-cards/view"
+
+make sure outstanding jobs are going in correct location. 
+
+
 Next jobs and my jobs check 
+
+
+Make sure the "Customer Status" section saves to the database as Customer status and no just status as this could get confusing. make sure to update all palces where this is used to show "Customer Status" and not status example within the "/job-cards/view" page on each row, deep search into other places where this is used. 
+
+
 
 
 Check the My job page can be complete and finished and the complete button within the VHC complete and reopen vhc are linked to the status sidebar to save as an update. 
@@ -46,6 +56,10 @@ Change to base layer " /* Level 3 (Bottom layer - pale red): page background + o
 
 
 TO BE COMPLETED AT END:
+
+Go through the status of each section and job to make sure status is good and matchs and works well within the database. 
+
+
 
 
 With every page within the top bar to the right of the search add a "?" button which opens a drop down (link to drop down style api) which shows (contact support (this opens messages tab and starts a new message with the uers Lead tech (add this in small print within the section as a todo) which within the text box to send the message shows a / comand which tells the sender the page the user was on and then the user can then input text after either reporting a concern, bug, or a question. The next in the drop down is a "Tutorial" button which gives multiple steps describing what each section and button does inside an overlay type style making the background darker and the section or button the tutorial is telling how to use lighter with the description box like a bubble which is inside the darker section and the bubble is following the light and dark theme, there is also a "Next" and "back" button which flicks through the each section and button to do with that page/the tab selected at the time of the button press with also an "Finish" button which closes the overlay and tutorial section. What woul dbe the best way to implement this? as an api with a file linked to each page and tab which has all of the buttons and section anmes and descriptions inside the api linking or a section within the actual code which reads the code and sees what section does what same with buttons, unless theres another way which is commonly used for tutorials like im describing.

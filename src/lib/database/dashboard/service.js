@@ -50,7 +50,7 @@ export const getServiceDashboardData = async () => {
     runQuery(() =>
       supabase
         .from("job_customer_statuses")
-        .select("id,status,job_id,job:job_id(job_number,vehicle_reg)")
+        .select("id,customer_status,job_id,job:job_id(job_number,vehicle_reg)")
         .order("created_at", { ascending: false })
         .limit(6)
     ),
@@ -79,7 +79,7 @@ export const getServiceDashboardData = async () => {
   ]);
 
   const statusCounts = (customerStatuses || []).reduce((acc, row) => {
-    const key = (row.status || "Unknown").trim();
+    const key = (row.customer_status || "Unknown").trim();
     acc[key] = (acc[key] || 0) + 1;
     return acc;
   }, {});

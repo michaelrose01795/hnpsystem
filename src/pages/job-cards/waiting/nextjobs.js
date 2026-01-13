@@ -76,8 +76,6 @@ const STATUS_COMPLETED = new Set([
 ]);
 
 const toStatusKey = (status) => (status ? String(status).trim().toUpperCase() : "");
-const OUTSTANDING_ALLOWED_STATUSES = new Set(["CHECKED IN", "ACCEPTED IN"]);
-const BLOCKING_STATUS_KEYWORDS = ["MOT", "VALET", "SERVICE MANAGER", "AFTERSALES"];
 const OUTSTANDING_VISIBLE_ROWS = 1;
 const OUTSTANDING_CARD_HEIGHT = 210;
 const OUTSTANDING_GRID_MAX_HEIGHT_PX = `${OUTSTANDING_VISIBLE_ROWS * OUTSTANDING_CARD_HEIGHT}px`;
@@ -103,12 +101,6 @@ const formatCustomerStatus = (value) => {
   if (lower.includes("collect")) return "Collection";
   if (lower.includes("wait")) return "Waiting";
   return value;
-};
-
-const isBlockedByDepartment = (status) => {
-  const statusKey = toStatusKey(status);
-  if (!statusKey) return false;
-  return BLOCKING_STATUS_KEYWORDS.some((keyword) => statusKey.includes(keyword));
 };
 
 const getJobRequestsCountFromPayload = (payload) => {
@@ -449,8 +441,7 @@ export default function NextJobsPage() {
 
     const formatted = (data || [])
       .map(mapJobFromDatabase)
-      .filter((job) => job.jobNumber && job.jobNumber.trim() !== "")
-      .filter(isWaitingJob);
+      .filter((job) => job.jobNumber && job.jobNumber.trim() !== "");
 
     setJobs(formatted);
     setLoading(false); // Stop loading
@@ -699,14 +690,13 @@ export default function NextJobsPage() {
 
   const outstandingJobs = useMemo(
     () =>
-      waitingJobs.filter((job) => {
-        const statusKey = toStatusKey(job.status);
-        const allowedStatus = OUTSTANDING_ALLOWED_STATUSES.has(statusKey);
-        const blocked = isBlockedByDepartment(job.status);
+      jobs.filter((job) => {
         const assignedToStaff = isAssignedToKnownStaff(job);
-        return allowedStatus && !assignedToStaff && !blocked;
+        const statusKey = toStatusKey(job.status);
+        const isCheckedIn = Boolean(job.checkedInAt) || statusKey === "CHECKED IN";
+        return isCheckedIn && !assignedToStaff;
       }),
-    [waitingJobs, techIdSet, motIdSet, dbTechnicians, dbMotTesters]
+    [jobs, techIdSet, motIdSet, dbTechnicians, dbMotTesters]
   );
 
   // ✅ Search logic for job cards in the outstanding section
