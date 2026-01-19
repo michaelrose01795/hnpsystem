@@ -20,6 +20,7 @@ import { createJobNote, getNotesByJob } from "@/lib/database/notes";
 import { logJobSubStatus } from "@/lib/services/jobStatusService";
 import {
   getMainStatusMetadata,
+  normalizeStatusId,
   resolveMainStatusId,
   resolveSubStatusId,
 } from "@/lib/status/statusFlow";
@@ -51,7 +52,7 @@ const SECTION_TITLES = {
 const MANDATORY_SECTION_KEYS = ["wheelsTyres", "brakesHubs", "serviceIndicator"];
 const trackedSectionKeys = new Set(MANDATORY_SECTION_KEYS);
 
-const VHC_REOPENED_SUB_STATUS = "VHC Started";
+const VHC_REOPENED_SUB_STATUS = "VHC Reopened";
 const VHC_COMPLETED_SUB_STATUS = "VHC Completed";
 
 const createDefaultSectionStatus = () =>
@@ -106,22 +107,51 @@ const JOB_TYPE_KEYWORDS = [
   { label: "Diagnose", keywords: ["diagnos", "fault", "warning", "investigation", "check"] },
 ];
 
+const extractRequestText = (requests) => {
+  if (!requests) return "";
+  if (Array.isArray(requests)) {
+    return requests
+      .map((entry) => {
+        if (typeof entry === "string") return entry;
+        if (entry && typeof entry === "object") {
+          return entry.text || entry.description || entry.note || entry.label || "";
+        }
+        return "";
+      })
+      .filter(Boolean)
+      .join(" ");
+  }
+  if (typeof requests === "string") {
+    try {
+      const parsed = JSON.parse(requests);
+      if (Array.isArray(parsed)) {
+        return extractRequestText(parsed);
+      }
+    } catch {
+      return requests;
+    }
+    return requests;
+  }
+  if (typeof requests === "object") {
+    return Object.values(requests)
+      .map((value) => (typeof value === "string" ? value : ""))
+      .filter(Boolean)
+      .join(" ");
+  }
+  return "";
+};
+
 const deriveJobTypeLabel = (jobCard) => {
   const categories = (jobCard?.jobCategories || []).map(normalizeJobTypeKey);
   if (categories.some((category) => category.includes("mot"))) return "MOT";
   if (categories.some((category) => category.includes("service"))) return "Service";
   if (categories.some((category) => category.includes("diag"))) return "Diagnose";
 
-  const baseType = normalizeJobTypeKey(jobCard?.type);
-  if (baseType.includes("mot")) return "MOT";
-  if (baseType.includes("service")) return "Service";
-  if (baseType.includes("diag")) return "Diagnose";
+  const requestText = extractRequestText(jobCard?.requests);
 
   const haystack = [
     jobCard?.description || "",
-    typeof jobCard?.requests === "string"
-      ? jobCard.requests
-      : JSON.stringify(jobCard?.requests || ""),
+    requestText,
   ]
     .join(" ")
     .toLowerCase();
@@ -131,6 +161,11 @@ const deriveJobTypeLabel = (jobCard) => {
       return mapping.label;
     }
   }
+
+  const baseType = normalizeJobTypeKey(jobCard?.type);
+  if (baseType.includes("mot")) return "MOT";
+  if (baseType.includes("service")) return "Service";
+  if (baseType.includes("diag")) return "Diagnose";
 
   return "Other";
 };
@@ -145,9 +180,14 @@ const styles = vhcLayoutStyles;
 
 // Status color mapping for consistency
 const STATUS_COLORS = {
+  "Waiting": "var(--warning)",
+  "In Progress": "var(--info)",
+  "VHC Complete": "var(--success)",
+  "VHC Reopened": "var(--warning)",
+  "Write Up Complete": "var(--info)",
+  "Complete": "var(--success)",
   "Outstanding": "var(--info)",
   "Accepted": "var(--primary)",
-  "In Progress": "var(--info)",
   "Awaiting Authorization": "var(--warning)",
   "Authorized": "var(--accent-purple)",
   "Ready": "var(--info)",
@@ -158,7 +198,12 @@ const STATUS_COLORS = {
 };
 
 const STATUS_BADGE_STYLES = {
+  "Waiting": { background: "var(--warning-surface)", color: "var(--danger-dark)" },
   "In Progress": { background: "var(--info-surface)", color: "var(--accent-purple)" },
+  "VHC Complete": { background: "var(--success-surface)", color: "var(--success-dark)" },
+  "VHC Reopened": { background: "var(--warning-surface)", color: "var(--warning)" },
+  "Write Up Complete": { background: "var(--info-surface)", color: "var(--accent-purple)" },
+  "Complete": { background: "var(--success-surface)", color: "var(--success-dark)" },
   "Started": { background: "var(--info-surface)", color: "var(--accent-purple)" },
 };
 
@@ -212,6 +257,51 @@ const normalizeVhcStatus = (value) => {
   if (raw.includes("amber") || raw.includes("advisory") || raw.includes("warning")) return "amber";
   if (raw.includes("red") || raw.includes("danger") || raw.includes("critical")) return "red";
   return "na";
+};
+
+const VHC_ACTION_BUTTON_BASE = {
+  padding: "10px 16px",
+  borderRadius: "999px",
+  border: "1px solid var(--accent-purple)",
+  fontWeight: 600,
+  fontSize: "13px",
+  transition: "all 0.2s ease",
+};
+
+const getVhcActionButtonStyle = ({ active = false, disabled = false } = {}) => ({
+  ...VHC_ACTION_BUTTON_BASE,
+  backgroundColor: active ? "var(--accent-purple)" : "transparent",
+  color: active ? "var(--surface)" : "var(--accent-purple)",
+  cursor: disabled ? "not-allowed" : "pointer",
+  opacity: disabled ? 0.5 : 1,
+});
+
+const resolveTechStatusLabel = (jobCard) => {
+  const rawStatus = normalizeStatusId(jobCard?.rawStatus || jobCard?.status || "");
+  const completionStatus = normalizeStatusId(jobCard?.techCompletionStatus || "");
+  if (
+    rawStatus?.includes("tech_complete") ||
+    rawStatus?.includes("technician_work_completed") ||
+    rawStatus?.includes("invoiced") ||
+    rawStatus === "complete" ||
+    rawStatus === "completed" ||
+    completionStatus === "tech_complete" ||
+    completionStatus === "complete"
+  ) {
+    return "Complete";
+  }
+  if (
+    rawStatus?.includes("booked") ||
+    rawStatus?.includes("checked_in") ||
+    rawStatus?.includes("waiting") ||
+    rawStatus?.includes("pending")
+  ) {
+    return "Waiting";
+  }
+  if (rawStatus?.includes("in_progress")) {
+    return "In Progress";
+  }
+  return "In Progress";
 };
 
 const calculateClockingMinutesTotal = (rows = [], now = Date.now()) => {
@@ -1112,6 +1202,20 @@ export default function TechJobDetailPage() {
     vhcCompleteOverride || Boolean(jobData?.jobCard?.vhcCompletedAt);
   const showVhcReopenButton = isVhcCompleted;
 
+  const writeUpCompletion = (() => {
+    const completionFromWriteUp =
+      typeof jobData?.jobCard?.writeUp?.completion_status === "string"
+        ? jobData.jobCard.writeUp.completion_status.toLowerCase()
+        : "";
+    if (completionFromWriteUp) return completionFromWriteUp;
+    return typeof jobData?.jobCard?.completionStatus === "string"
+      ? jobData.jobCard.completionStatus.toLowerCase()
+      : "";
+  })();
+  const writeUpComplete =
+    writeUpCompletion === "complete" || writeUpCompletion === "waiting_additional_work";
+  const rectificationsComplete = writeUpComplete;
+
   const handleCompleteVhcClick = useCallback(async () => {
     if (!jobCardId) return;
     if (!showVhcReopenButton && !canCompleteVhc) return;
@@ -1130,20 +1234,6 @@ export default function TechJobDetailPage() {
         : { vhc_completed_at: null };
       const updated = await syncJobStatus(targetStatus, jobCardStatus, vhcUpdate);
       if (updated) {
-        const vhcLabel = shouldShowCompleteCard ? "VHC Complete" : "VHC Reopened";
-        const statusResult = await updateJobStatus(jobCardId, vhcLabel);
-        if (statusResult?.success && statusResult.data) {
-          setJobData((prev) => {
-            if (!prev?.jobCard) return prev;
-            return {
-              ...prev,
-              jobCard: {
-                ...prev.jobCard,
-                ...statusResult.data,
-              },
-            };
-          });
-        }
         if (shouldShowCompleteCard) {
           setIsReopenMode(true);
           setShowVhcSummary(false);
@@ -1181,6 +1271,7 @@ export default function TechJobDetailPage() {
     canCompleteVhc,
     syncJobStatus,
     jobCardStatus,
+    writeUpComplete,
     jobNumberForStatusFlow,
   ]);
 
@@ -1670,6 +1761,45 @@ export default function TechJobDetailPage() {
   const isTech =
     (username && allowedTechNames.has(username)) || hasRoleAccess;
 
+  useEffect(() => {
+    if (!jobCardId || !jobData?.jobCard?.status) return;
+    const currentStatusId = normalizeStatusId(jobData.jobCard.status);
+    const completionStatusId = normalizeStatusId(jobData.jobCard.techCompletionStatus || "");
+    const isMarkedComplete =
+      currentStatusId === "complete" ||
+      currentStatusId === "tech_complete" ||
+      completionStatusId === "complete" ||
+      completionStatusId === "tech_complete";
+    if (!isMarkedComplete) return;
+
+    const requiresVhc = jobData?.jobCard?.vhcRequired === true;
+    const canCompleteJobLocal = writeUpComplete && (!requiresVhc || isVhcCompleted);
+    if (canCompleteJobLocal) return;
+
+    updateJob(jobCardId, { tech_completion_status: null }).then((statusResult) => {
+      if (statusResult?.success && statusResult.data) {
+        setJobData((prev) => {
+          if (!prev?.jobCard) return prev;
+          return {
+            ...prev,
+            jobCard: {
+              ...prev.jobCard,
+              ...statusResult.data,
+            },
+          };
+        });
+      }
+    });
+  }, [
+    jobCardId,
+    jobData?.jobCard?.status,
+    jobData?.jobCard?.techCompletionStatus,
+    jobData?.jobCard?.vhcRequired,
+    isVhcCompleted,
+    writeUpComplete,
+  ]);
+
+
   // Access check - only technicians can view this page
   if (!isTech) {
     return (
@@ -1742,21 +1872,16 @@ export default function TechJobDetailPage() {
   // Extract job data
   const { jobCard, customer, vehicle } = jobData;
   const jobRequiresVhc = jobCard?.vhcRequired === true;
-  const techStatusDisplay = jobCardStatus || "Unknown";
+  const techStatusDisplay = resolveTechStatusLabel(jobCard);
   const jobStatusColor = STATUS_COLORS[techStatusDisplay] || "var(--info)";
   const jobStatusBadgeStyle = getStatusBadgeStyle(techStatusDisplay, jobStatusColor);
-  const partsCount = jobCard.partsRequests?.length || 0;
+  const partsCount =
+    partsRequests.length > 0 ? partsRequests.length : jobCard.partsRequests?.length || 0;
   const clockedHours = formatClockingDuration(clockedMinutesTotal);
   const isWarrantyJob = (jobCard?.jobSource || "").toLowerCase() === "warranty";
 
   // Quick stats data for display
   const quickStats = [
-    {
-      label: "Status",
-      value: techStatusDisplay,
-      accent: jobStatusColor,
-      pill: true,
-    },
     {
       label: "Job Type",
       value: deriveJobTypeLabel(jobCard),
@@ -1764,16 +1889,11 @@ export default function TechJobDetailPage() {
       pill: false,
     },
     {
-      label: "VHC Checks",
-      value: vhcChecks.length,
-      accent: "var(--info-dark)",
-      pill: false,
-    },
-    {
-      label: "Parts Requests",
+      label: "Parts authorised",
       value: partsCount,
       accent: "var(--danger)",
       pill: false,
+      onClick: () => setActiveTab("parts"),
     },
     {
       label: "Clocked Hours",
@@ -1810,17 +1930,8 @@ export default function TechJobDetailPage() {
     writeUp.rectification_notes ||
     writeUp.ratification ||
     "";
-  const writeUpCompletion =
-    typeof writeUp.completion_status === "string"
-      ? writeUp.completion_status.toLowerCase()
-      : "";
-  const rectificationsComplete = writeUpCompletion === "complete";
-  const writeUpComplete = rectificationsComplete;
 
-  const isVhcCompleteForTech =
-    !jobRequiresVhc ||
-    canCompleteVhc ||
-    Boolean(jobCard?.vhcCompletedAt);
+  const isVhcCompleteForTech = !jobRequiresVhc || isVhcCompleted;
 
   const canCompleteJob = writeUpComplete && isVhcCompleteForTech;
   const completeJobLockedReasons = [];
@@ -1880,9 +1991,21 @@ export default function TechJobDetailPage() {
 
     await syncJobStatus("Technician Work Completed", jobCardStatus);
     if (jobCardId) {
-      const statusResult = await updateJobStatus(jobCardId, "Tech Complete");
+      const statusResult = await updateJob(jobCardId, { tech_completion_status: "tech_complete" });
       if (!statusResult?.success) {
-        console.warn("Failed to set tech completion status");
+        console.warn("Failed to set completion status");
+      } else if (statusResult.data) {
+        setJobData((prev) => {
+          if (!prev?.jobCard) return prev;
+          return {
+            ...prev,
+            jobCard: {
+              ...prev.jobCard,
+              ...statusResult.data,
+              techCompletionStatus: statusResult.data.techCompletionStatus || "tech_complete",
+            },
+          };
+        });
       }
     }
     router.push("/job-cards/myjobs");
@@ -1920,24 +2043,6 @@ export default function TechJobDetailPage() {
           borderRadius: "8px",
           flexShrink: 0
         }}>
-          <button
-            onClick={() => router.push("/job-cards/myjobs")}
-            style={{
-              padding: "10px 24px",
-              backgroundColor: "var(--primary)",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: "600",
-              transition: "background-color 0.2s"
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--danger-dark)")}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--primary)")}
-          >
-            Back
-          </button>
           <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
             <h1 style={{
               color: "var(--primary)",
@@ -2063,28 +2168,31 @@ export default function TechJobDetailPage() {
         {/* Quick Stats Grid */}
         <div style={{
           display: "grid",
-          gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
+          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
           gap: "12px",
           marginBottom: "12px",
           flexShrink: 0
         }}>
           {quickStats.map((stat) => {
             const isClockedHours = stat.label === "Clocked Hours";
-            const CardTag = isClockedHours ? "button" : "div";
+            const isClickable = Boolean(stat.onClick);
+            const CardTag = isClockedHours || isClickable ? "button" : "div";
             return (
               <CardTag
                 key={stat.label}
-                type={isClockedHours ? "button" : undefined}
-                onClick={
-                  isClockedHours
-                    ? () => {
-                        const target = document.getElementById("job-progress-total-time");
-                        if (target) {
-                          target.scrollIntoView({ behavior: "smooth", block: "start" });
-                        }
-                      }
-                    : undefined
-                }
+                type={isClockedHours || isClickable ? "button" : undefined}
+                onClick={() => {
+                  if (isClockedHours) {
+                    const target = document.getElementById("job-progress-total-time");
+                    if (target) {
+                      target.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }
+                    return;
+                  }
+                  if (stat.onClick) {
+                    stat.onClick();
+                  }
+                }}
                 style={{
                   backgroundColor: "var(--layer-section-level-1)",
                   border: "1px solid var(--surface-light)",
@@ -2096,7 +2204,7 @@ export default function TechJobDetailPage() {
                   alignItems: "center",
                   justifyContent: "center",
                   minHeight: "108px",
-                  cursor: isClockedHours ? "pointer" : "default",
+                  cursor: isClockedHours || isClickable ? "pointer" : "default",
                 }}
               >
                 <div style={{
@@ -2125,9 +2233,11 @@ export default function TechJobDetailPage() {
           border: "1px solid var(--surface-light)",
           background: "var(--surface)",
           padding: "6px",
-          display: "flex",
+          display: "inline-flex",
           gap: "6px",
-          width: "100%",
+          width: "fit-content",
+          alignSelf: "flex-start",
+          maxWidth: "100%",
           overflowX: "auto",
           flexShrink: 0,
           scrollbarWidth: "thin",
@@ -2136,32 +2246,54 @@ export default function TechJobDetailPage() {
           WebkitOverflowScrolling: "touch",
           marginBottom: "12px",
         }}>
-          {["overview", "vhc", "parts", "notes", "write-up"].map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              style={{
-                flex: "0 0 auto",
-                borderRadius: "999px",
-                border: "1px solid transparent",
-                padding: "10px 20px",
-                fontSize: "0.9rem",
-                fontWeight: 600,
-                cursor: "pointer",
-                background: activeTab === tab ? "var(--primary)" : "transparent",
-                color: activeTab === tab ? "var(--text-inverse)" : "var(--text-primary)",
-                transition: "all 0.15s ease",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                cursor: "pointer",
-                textTransform: "capitalize",
-                whiteSpace: "nowrap"
-              }}
-            >
-              {tab.replace("-", " ")}
-            </button>
-          ))}
+          {["overview", "vhc", "parts", "notes", "write-up"].map((tab) => {
+            const isActive = activeTab === tab;
+            const isComplete =
+              (tab === "vhc" && isVhcCompleted) ||
+              (tab === "write-up" && writeUpComplete);
+            const labelMap = {
+              overview: "Overview",
+              vhc: "VHC",
+              parts: "Parts",
+              notes: "Notes",
+              "write-up": "Write-Up",
+            };
+            const baseBackground = isActive ? "var(--primary)" : "transparent";
+            const completeBackground = isActive ? "var(--success)" : "var(--success-surface)";
+            const background = isComplete ? completeBackground : baseBackground;
+            const color = isComplete
+              ? isActive
+                ? "var(--text-inverse)"
+                : "var(--success-dark)"
+              : isActive
+              ? "var(--text-inverse)"
+              : "var(--text-primary)";
+            return (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                style={{
+                  flex: "0 0 auto",
+                  borderRadius: "999px",
+                  border: "1px solid transparent",
+                  padding: "10px 20px",
+                  fontSize: "0.9rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  background,
+                  color,
+                  transition: "all 0.15s ease",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  textTransform: "capitalize",
+                  whiteSpace: "nowrap"
+                }}
+              >
+                {labelMap[tab] || tab.replace("-", " ")}
+              </button>
+            );
+          })}
         </div>
 
         {/* Main Content Area with Scrolling */}
@@ -2379,54 +2511,23 @@ export default function TechJobDetailPage() {
                       <button
                         type="button"
                         onClick={() => setShowVhcSummary((prev) => !prev)}
-                        style={{
-                          padding: "10px 16px",
-                          borderRadius: "999px",
-                          border: "1px solid var(--accent-purple)",
-                          backgroundColor: showVhcSummary ? "var(--accent-purple)" : "transparent",
-                          color: showVhcSummary ? "var(--surface)" : "var(--accent-purple)",
-                          fontWeight: 600,
-                          fontSize: "13px",
-                          cursor: "pointer",
-                          transition: "all 0.2s ease",
-                        }}
+                        style={getVhcActionButtonStyle({ active: showVhcSummary })}
                       >
                         {showVhcSummary ? "Close VHC summary" : "Show Summary"}
                       </button>
 
+                      {(() => {
+                        const isCompleteDisabled = !showVhcReopenButton && !canCompleteVhc;
+                        const isCompleteActive = !showVhcReopenButton && canCompleteVhc;
+                        return (
                       <button
                         type="button"
                         onClick={handleCompleteVhcClick}
                         disabled={!showVhcReopenButton && !canCompleteVhc}
-                        style={{
-                          padding: "10px 18px",
-                          borderRadius: "999px",
-                          border: "1px solid var(--accent-purple)",
-                          backgroundColor:
-                            showVhcReopenButton || !canCompleteVhc
-                              ? "transparent"
-                              : "var(--accent-purple)",
-                          color: showVhcReopenButton
-                            ? "var(--accent-purple)"
-                            : canCompleteVhc
-                            ? "var(--surface)"
-                            : "var(--accent-purple)",
-                          fontWeight: 600,
-                          fontSize: "13px",
-                          cursor:
-                            showVhcReopenButton || canCompleteVhc ? "pointer" : "not-allowed",
-                          opacity: showVhcReopenButton || canCompleteVhc ? 1 : 0.5,
-                          transition: "all 0.2s ease",
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!showVhcReopenButton && !canCompleteVhc) return;
-                          e.currentTarget.style.transform = "translateY(-2px)";
-                          e.currentTarget.style.boxShadow = "0 6px 16px rgba(var(--info-rgb),0.4)";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.transform = "translateY(0)";
-                          e.currentTarget.style.boxShadow = "0 4px 12px rgba(var(--info-rgb),0.3)";
-                        }}
+                        style={getVhcActionButtonStyle({
+                          active: isCompleteActive,
+                          disabled: isCompleteDisabled,
+                        })}
                         title={
                           showVhcReopenButton
                             ? "Reopen the Vehicle Health Check to make additional changes"
@@ -2437,12 +2538,15 @@ export default function TechJobDetailPage() {
                       >
                         {showVhcReopenButton ? "Reopen" : "Complete VHC"}
                       </button>
+                        );
+                      })()}
 
                       {/* Camera Button - Always visible for technicians */}
                       {jobNumber && (
                         <VhcCameraButton
                           jobNumber={jobNumber}
                           userId={dbUserId || user?.id}
+                          buttonStyle={getVhcActionButtonStyle()}
                           onUploadComplete={() => {
                             console.log("VHC media uploaded, refreshing job data...");
                             loadJobData();
@@ -3310,7 +3414,27 @@ export default function TechJobDetailPage() {
               border: "1px solid var(--surface-light)",
               backgroundColor: "var(--layer-section-level-2)"
             }}>
-              <WriteUpForm jobNumber={jobNumber} showHeader={false} />
+              <WriteUpForm
+                jobNumber={jobNumber}
+                showHeader={false}
+                onCompletionChange={(nextStatus) => {
+                  setJobData((prev) => {
+                    if (!prev?.jobCard) return prev;
+                    const nextWriteUp = {
+                      ...(prev.jobCard.writeUp || {}),
+                      completion_status: nextStatus,
+                    };
+                    return {
+                      ...prev,
+                      jobCard: {
+                        ...prev.jobCard,
+                        completionStatus: nextStatus,
+                        writeUp: nextWriteUp,
+                      },
+                    };
+                  });
+                }}
+              />
             </div>
           )}
         </div>

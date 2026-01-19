@@ -607,7 +607,12 @@ const hydrateCauseEntries = (entries) => {
     .filter(Boolean);
 };
 
-export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSuccess }) {
+export default function WriteUpForm({
+  jobNumber,
+  showHeader = true,
+  onSaveSuccess,
+  onCompletionChange,
+}) {
   const router = useRouter();
   const { user } = useUser();
   const username = user?.username;
@@ -1238,6 +1243,8 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
   // ✅ Toggle checklist status and auto-update completion state
   const toggleTaskStatus = (taskKey) => {
     let toggledSection = null;
+    let nextCompletionStatus = null;
+    let timelineEventLabel = null;
     setWriteUpData((prev) => {
       const updatedTasks = prev.tasks.map((task) => {
         const currentKey = composeTaskKey(task);
@@ -1263,6 +1270,22 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
         return { ...task, status: nextStatus };
       });
 
+      const requestList = updatedTasks.filter((task) => task && task.source === "request");
+      const authorisedList = updatedTasks.filter((task) => task && task.source !== "request");
+      const toggledTask = updatedTasks.find((task) => composeTaskKey(task) === taskKey);
+      if (toggledTask) {
+        const isComplete = toggledTask.status === "complete";
+        if (toggledTask.source === "request") {
+          const requestIndex =
+            requestList.findIndex((task) => composeTaskKey(task) === taskKey) + 1;
+          timelineEventLabel = `Request ${requestIndex || 1} ${isComplete ? "Complete" : "Uncompleted"}`;
+        } else {
+          const authorisedIndex =
+            authorisedList.findIndex((task) => composeTaskKey(task) === taskKey) + 1;
+          timelineEventLabel = `Authorised ${authorisedIndex || 1} ${isComplete ? "Complete" : "Uncompleted"}`;
+        }
+      }
+
       // Check if there are any rectification tasks (additional work authorized)
       const hasAdditionalWork = updatedTasks.some((task) => task && task.source !== "request");
 
@@ -1280,8 +1303,29 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
         completionStatus = "additional_work";
       }
 
+      nextCompletionStatus = completionStatus;
       return { ...prev, tasks: updatedTasks, completionStatus };
     });
+    if (timelineEventLabel && writeUpMeta.jobId) {
+      supabase
+        .from("job_status_history")
+        .insert([
+          {
+            job_id: writeUpMeta.jobId,
+            from_status: null,
+            to_status: timelineEventLabel,
+            changed_by: userId || null,
+            reason: "write_up_task",
+            changed_at: new Date().toISOString(),
+          },
+        ])
+        .catch((error) => {
+          console.error("Failed to log write-up task timeline event:", error);
+        });
+    }
+    if (nextCompletionStatus && typeof onCompletionChange === "function") {
+      onCompletionChange(nextCompletionStatus);
+    }
     if (toggledSection) {
       recordSectionEditor(toggledSection);
     }
@@ -1312,6 +1356,13 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
       }
     };
   }, [writeUpMeta.jobId, writeUpData.tasks, writeUpData.completionStatus, saving, performWriteUpSave]);
+
+  useEffect(() => {
+    if (typeof onCompletionChange !== "function") {
+      return;
+    }
+    onCompletionChange(writeUpData.completionStatus || "additional_work");
+  }, [onCompletionChange, writeUpData.completionStatus]);
 
   useEffect(() => {
     if (!writeUpMeta.jobId) {
@@ -1565,6 +1616,20 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
   const completionStatusLabel = getCompletionStatusLabel();
   const completionStatusColor = getCompletionStatusColor();
   const requestSlots = requestTasks;
+  const getProgressLabel = (total, completed) => {
+    if (total <= 0) return "0 complete";
+    if (completed === 0) return `${total} not started`;
+    const remaining = total - completed;
+    if (remaining <= 0) return `${total} complete`;
+    return `${remaining} outstanding`;
+  };
+  const faultCompletedCount = requestTasks.filter((task) => task?.status === "complete").length;
+  const rectificationCompletedCount = rectificationTasks.filter((task) => task?.status === "complete").length;
+  const causeCompletedCount = writeUpData.causeEntries.filter(
+    (entry) => (entry?.text || "").toString().trim().length > 0
+  ).length;
+  const faultProgressLabel = getProgressLabel(requestTasks.length, faultCompletedCount);
+  const rectificationProgressLabel = getProgressLabel(rectificationTasks.length, rectificationCompletedCount);
   const assignedRequestKeys = new Set(
     writeUpData.causeEntries
       .map((entry) => entry.requestKey)
@@ -1573,6 +1638,9 @@ export default function WriteUpForm({ jobNumber, showHeader = true, onSaveSucces
   const canAddCause =
     requestTasks.length > 0 && writeUpData.causeEntries.length < requestTasks.length;
   const isWarrantyJob = (jobData?.jobCard?.jobSource || "").toLowerCase() === "warranty";
+  const causeProgressLabel = isWarrantyJob
+    ? getProgressLabel(requestTasks.length, causeCompletedCount)
+    : "";
   const getRequestOptions = (entryRequestKey) =>
     requestTasks.filter((task) => {
       if (entryRequestKey && task.sourceKey === entryRequestKey) {
@@ -1826,7 +1894,12 @@ const renderLastSaved = () => (
               <div style={sectionBoxStyle}>
                 <div style={{ ...sectionHeaderStyle }}>
                   <div>
-                    <p style={sectionTitleStyle}>Fault</p>
+                    <div style={{ display: "flex", gap: "8px", alignItems: "baseline", flexWrap: "wrap" }}>
+                      <p style={sectionTitleStyle}>Fault</p>
+                      <span style={{ ...sectionSubtitleStyle, color: "var(--info)" }}>
+                        {faultProgressLabel}
+                      </span>
+                    </div>
                     {renderLastSaved()}
                     {renderSectionEditorMeta("fault")}
                   </div>
@@ -1869,11 +1942,16 @@ const renderLastSaved = () => (
               {isWarrantyJob && (
                 <div style={sectionBoxStyle}>
                   <div style={sectionHeaderStyle}>
-                    <div>
+                  <div>
+                    <div style={{ display: "flex", gap: "8px", alignItems: "baseline", flexWrap: "wrap" }}>
                       <p style={sectionTitleStyle}>Cause</p>
-                      {renderLastSaved()}
-                      {renderSectionEditorMeta("cause")}
+                      <span style={{ ...sectionSubtitleStyle, color: "var(--info)" }}>
+                        {causeProgressLabel}
+                      </span>
                     </div>
+                    {renderLastSaved()}
+                    {renderSectionEditorMeta("cause")}
+                  </div>
                     {canAddCause && (
                       <button
                         type="button"
@@ -1932,7 +2010,12 @@ const renderLastSaved = () => (
               <div style={sectionBoxStyle}>
                 <div style={sectionHeaderStyle}>
                   <div>
-                    <p style={sectionTitleStyle}>Rectification</p>
+                    <div style={{ display: "flex", gap: "8px", alignItems: "baseline", flexWrap: "wrap" }}>
+                      <p style={sectionTitleStyle}>Rectification</p>
+                      <span style={{ ...sectionSubtitleStyle, color: "var(--info)" }}>
+                        {rectificationProgressLabel}
+                      </span>
+                    </div>
                     {renderLastSaved()}
                     {renderSectionEditorMeta("rectification")}
                   </div>

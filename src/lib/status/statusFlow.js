@@ -85,6 +85,13 @@ export const JOB_SUB_STATUS_FLOW = {
     department: "VHC",
     category: "VHC",
   },
+  VHC_REOPENED: {
+    id: "vhc_reopened",
+    label: "VHC Reopened",
+    color: "var(--warning)",
+    department: "VHC",
+    category: "VHC",
+  },
   VHC_COMPLETED: {
     id: "vhc_completed",
     label: "VHC Completed",
@@ -204,6 +211,7 @@ const LEGACY_STATUS_TO_SUB_ID = {
   assigned_to_tech: "technician_started",
   in_progress: "technician_started",
   vhc_in_progress: "vhc_started",
+  vhc_reopened: "vhc_reopened",
   vhc_complete: "vhc_completed",
   vhc_sent: "sent_to_customer",
   vhc_sent_to_customer: "sent_to_customer",

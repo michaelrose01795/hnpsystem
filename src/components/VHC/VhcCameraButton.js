@@ -23,6 +23,7 @@ export default function VhcCameraButton({
   jobNumber,
   userId,
   onUploadComplete,
+  buttonStyle,
 }) {
   // Modal states
   const [showCameraModal, setShowCameraModal] = useState(false);
@@ -139,6 +140,7 @@ export default function VhcCameraButton({
           alignItems: "center",
           gap: "6px",
           fontSize: "13px",
+          ...(buttonStyle || {}),
         }}
         title="Capture photo or video for VHC"
       >

@@ -17,9 +17,7 @@ import { summarizePartsPipeline } from "@/lib/partsPipeline";
 const STATUS_BADGE_STYLES = {
   Waiting: { background: "var(--warning-surface)", color: "var(--danger-dark)" },
   "In Progress": { background: "var(--info-surface)", color: "var(--accent-purple)" },
-  "VHC Complete": { background: "var(--success-surface)", color: "var(--success-dark)" },
-  "VHC Reopened": { background: "var(--warning-surface)", color: "var(--warning)" },
-  "Tech Complete": { background: "var(--success-surface)", color: "var(--success-dark)" },
+  Complete: { background: "var(--success-surface)", color: "var(--success-dark)" },
 };
 
 const getStatusBadgeStyle = (status) =>
@@ -28,42 +26,67 @@ const getStatusBadgeStyle = (status) =>
 const normalizeStatusKey = (status) =>
   typeof status === "string" ? status.trim().toLowerCase() : "";
 
-const resolveTechStatusLabel = (job) => {
+const resolveTechStatusLabel = (job, { isClockedOn = false } = {}) => {
   const rawStatus = normalizeStatusKey(job?.rawStatus || job?.status);
-  const hasVhcCompleted = Boolean(job?.vhcCompletedAt);
-
-  if (rawStatus.includes("vhc reopened") || rawStatus.includes("vhc started")) {
-    return "VHC Reopened";
-  }
-  if (rawStatus.includes("vhc complete") || rawStatus.includes("vhc completed") || hasVhcCompleted) {
-    return "VHC Complete";
-  }
+  const completionStatus = normalizeStatusKey(
+    job?.techCompletionStatus || job?.tech_completion_status
+  );
   if (
     rawStatus.includes("tech complete") ||
     rawStatus.includes("technician work completed") ||
     rawStatus.includes("invoiced") ||
     rawStatus === "complete" ||
-    rawStatus === "completed"
+    rawStatus === "completed" ||
+    completionStatus === "tech_complete" ||
+    completionStatus === "complete"
   ) {
-    return "Tech Complete";
+    return "Complete";
   }
-  if (
-    rawStatus.includes("booked") ||
-    rawStatus.includes("checked in") ||
-    rawStatus.includes("waiting") ||
-    rawStatus.includes("pending")
-  ) {
-    return "Waiting";
-  }
-  if (rawStatus.includes("in progress")) {
+  if (isClockedOn) {
     return "In Progress";
   }
-  return "In Progress";
+  return "Waiting";
+};
+
+const resolveTechStatusTooltip = (job, { isClockedOn = false } = {}) => {
+  const requiresVhc = job?.vhcRequired === true;
+  const vhcComplete = Boolean(job?.vhcCompletedAt);
+  const writeUpStatus = normalizeStatusKey(job?.writeUp?.completion_status);
+  const writeUpComplete = writeUpStatus === "complete" || writeUpStatus === "waiting_additional_work";
+  const completionStatus = normalizeStatusKey(
+    job?.techCompletionStatus || job?.tech_completion_status
+  );
+  const missing = [];
+
+  if (!writeUpComplete) {
+    missing.push("Write-up incomplete");
+  }
+  if (requiresVhc && !vhcComplete) {
+    missing.push("VHC incomplete");
+  }
+
+  const statusLabel =
+    completionStatus === "tech_complete" || completionStatus === "complete"
+      ? "Complete"
+      : resolveTechStatusLabel(job, { isClockedOn });
+  if (statusLabel === "Complete") {
+    return "Complete: all criteria met.";
+  }
+  if (statusLabel === "In Progress") {
+    return missing.length
+      ? `In progress: ${missing.join(", ")}.`
+      : "In progress: job clocked on.";
+  }
+  if (statusLabel === "Waiting") {
+    const base = "Waiting: not clocked on.";
+    return missing.length ? `${base} ${missing.join(", ")}.` : base;
+  }
+  return "";
 };
 
 const getTechStatusCategory = (statusLabel) => {
   const normalized = normalizeStatusKey(statusLabel);
-  if (normalized === "tech complete") return "complete";
+  if (normalized === "complete") return "complete";
   if (normalized === "waiting") return "pending";
   return "in-progress";
 };
@@ -170,8 +193,14 @@ export default function MyJobsPage() {
         complete: 2,
       };
       const sortedJobs = assignedJobs.sort((a, b) => {
-        const rankA = statusRank[getTechStatusCategory(resolveTechStatusLabel(a))] ?? 1;
-        const rankB = statusRank[getTechStatusCategory(resolveTechStatusLabel(b))] ?? 1;
+        const rankA =
+          statusRank[
+            getTechStatusCategory(resolveTechStatusLabel(a, { isClockedOn: activeJobIds.has(a.id) }))
+          ] ?? 1;
+        const rankB =
+          statusRank[
+            getTechStatusCategory(resolveTechStatusLabel(b, { isClockedOn: activeJobIds.has(b.id) }))
+          ] ?? 1;
         if (rankA !== rankB) return rankA - rankB;
 
         const aTimestamp = a.updatedAt || a.createdAt;
@@ -367,11 +396,26 @@ export default function MyJobsPage() {
 
     // Apply status filter
     if (filter === "in-progress") {
-      filtered = filtered.filter(job => getTechStatusCategory(resolveTechStatusLabel(job)) === "in-progress");
+      filtered = filtered.filter(
+        (job) =>
+          getTechStatusCategory(
+            resolveTechStatusLabel(job, { isClockedOn: activeJobIds.has(job.id) })
+          ) === "in-progress"
+      );
     } else if (filter === "pending") {
-      filtered = filtered.filter(job => getTechStatusCategory(resolveTechStatusLabel(job)) === "pending");
+      filtered = filtered.filter(
+        (job) =>
+          getTechStatusCategory(
+            resolveTechStatusLabel(job, { isClockedOn: activeJobIds.has(job.id) })
+          ) === "pending"
+      );
     } else if (filter === "complete") {
-      filtered = filtered.filter(job => getTechStatusCategory(resolveTechStatusLabel(job)) === "complete");
+      filtered = filtered.filter(
+        (job) =>
+          getTechStatusCategory(
+            resolveTechStatusLabel(job, { isClockedOn: activeJobIds.has(job.id) })
+          ) === "complete"
+      );
     }
 
     // Apply search filter
@@ -685,11 +729,12 @@ export default function MyJobsPage() {
                 <div style={{ minWidth: "80px" }}>Type</div>
                 <div style={{ minWidth: "90px", textAlign: "center" }}>Clocked</div>
                 <div style={{ minWidth: "100px", textAlign: "center" }}>Created</div>
-                <div style={{ minWidth: "90px", textAlign: "center" }}>Write-Up</div>
               </div>
               {filteredJobs.map((job) => {
-                const displayStatusLabel = resolveTechStatusLabel(job);
+                const isClockedOn = activeJobIds.has(job.id);
+                const displayStatusLabel = resolveTechStatusLabel(job, { isClockedOn });
                 const statusStyle = getStatusBadgeStyle(displayStatusLabel);
+                const statusTooltip = resolveTechStatusTooltip(job, { isClockedOn });
                 const createdAt = formatCreatedAt(job.createdAt);
                 const description = job.description?.trim();
                 const makeModel = getMakeModel(job);
@@ -715,7 +760,6 @@ export default function MyJobsPage() {
                 };
 
                 const jobType = job.type || "Service";
-                const isClockedOn = activeJobIds.has(job.id);
                 const partsPending = (job.partsRequests || []).some((request) => {
                   const status = (request.status || "").toLowerCase();
                   return !["picked", "fitted", "cancelled"].includes(status);
@@ -757,6 +801,7 @@ export default function MyJobsPage() {
                     {/* Status Badge */}
                     <div
                       className="myjobs-cell myjobs-status"
+                      title={statusTooltip}
                       style={{
                         backgroundColor: statusStyle.background,
                         color: statusStyle.color,
@@ -866,29 +911,6 @@ export default function MyJobsPage() {
                       {createdAt || "N/A"}
                     </span>
 
-                    {/* Write-Up Button */}
-                    <button
-                      className="myjobs-cell myjobs-writeup"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (!job.jobNumber) return;
-                        router.push(`/job-cards/${job.jobNumber}/write-up`);
-                      }}
-                      style={{
-                        padding: "6px 12px",
-                        backgroundColor: "var(--accent-purple-surface)",
-                        color: "var(--accent-purple)",
-                        border: "1px solid var(--accent-purple-surface)",
-                        borderRadius: "6px",
-                        cursor: "pointer",
-                        fontSize: "11px",
-                        fontWeight: "600",
-                        transition: "all 0.2s",
-                        whiteSpace: "nowrap"
-                      }}
-                    >
-                      Write-Up
-                    </button>
                   </div>
                 );
               })}
@@ -917,19 +939,34 @@ export default function MyJobsPage() {
             </div>
             <div>
               <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--info)", marginBottom: "4px" }}>
-                {myJobs.filter(j => getTechStatusCategory(resolveTechStatusLabel(j)) === "in-progress").length}
+                {myJobs.filter(
+                  (j) =>
+                    getTechStatusCategory(
+                      resolveTechStatusLabel(j, { isClockedOn: activeJobIds.has(j.id) })
+                    ) === "in-progress"
+                ).length}
               </div>
               <div style={{ fontSize: "13px", color: "var(--grey-accent)" }}>In Progress</div>
             </div>
             <div>
               <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--danger)", marginBottom: "4px" }}>
-                {myJobs.filter(j => getTechStatusCategory(resolveTechStatusLabel(j)) === "pending").length}
+                {myJobs.filter(
+                  (j) =>
+                    getTechStatusCategory(
+                      resolveTechStatusLabel(j, { isClockedOn: activeJobIds.has(j.id) })
+                    ) === "pending"
+                ).length}
               </div>
               <div style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Waiting</div>
             </div>
             <div>
               <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--info)", marginBottom: "4px" }}>
-                {myJobs.filter(j => getTechStatusCategory(resolveTechStatusLabel(j)) === "complete").length}
+                {myJobs.filter(
+                  (j) =>
+                    getTechStatusCategory(
+                      resolveTechStatusLabel(j, { isClockedOn: activeJobIds.has(j.id) })
+                    ) === "complete"
+                ).length}
               </div>
               <div style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Completed</div>
             </div>

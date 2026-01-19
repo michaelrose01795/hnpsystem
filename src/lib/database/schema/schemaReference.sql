@@ -681,6 +681,7 @@ CREATE TABLE public.jobs (
   delivery_confirmed_at timestamp with time zone,
   account_number text,
   job_division text DEFAULT 'Retail'::text,
+  tech_completion_status text,
   CONSTRAINT jobs_pkey PRIMARY KEY (id),
   CONSTRAINT jobs_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES public.users(user_id),
   CONSTRAINT jobs_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.vehicles(vehicle_id),
