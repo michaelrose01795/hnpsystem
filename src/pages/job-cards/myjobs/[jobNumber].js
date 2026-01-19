@@ -1130,6 +1130,20 @@ export default function TechJobDetailPage() {
         : { vhc_completed_at: null };
       const updated = await syncJobStatus(targetStatus, jobCardStatus, vhcUpdate);
       if (updated) {
+        const vhcLabel = shouldShowCompleteCard ? "VHC Complete" : "VHC Reopened";
+        const statusResult = await updateJobStatus(jobCardId, vhcLabel);
+        if (statusResult?.success && statusResult.data) {
+          setJobData((prev) => {
+            if (!prev?.jobCard) return prev;
+            return {
+              ...prev,
+              jobCard: {
+                ...prev.jobCard,
+                ...statusResult.data,
+              },
+            };
+          });
+        }
         if (shouldShowCompleteCard) {
           setIsReopenMode(true);
           setShowVhcSummary(false);
@@ -1865,6 +1879,12 @@ export default function TechJobDetailPage() {
     }
 
     await syncJobStatus("Technician Work Completed", jobCardStatus);
+    if (jobCardId) {
+      const statusResult = await updateJobStatus(jobCardId, "Tech Complete");
+      if (!statusResult?.success) {
+        console.warn("Failed to set tech completion status");
+      }
+    }
     router.push("/job-cards/myjobs");
   };
 

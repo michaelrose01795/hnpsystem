@@ -15,27 +15,57 @@ import { supabase } from "@/lib/supabaseClient";
 import { summarizePartsPipeline } from "@/lib/partsPipeline";
 
 const STATUS_BADGE_STYLES = {
+  Waiting: { background: "var(--warning-surface)", color: "var(--danger-dark)" },
   "In Progress": { background: "var(--info-surface)", color: "var(--accent-purple)" },
-  Booked: { background: "var(--warning-surface)", color: "var(--danger-dark)" },
-  "Checked In": { background: "var(--warning-surface)", color: "var(--danger-dark)" },
-  Invoiced: { background: "var(--success-surface)", color: "var(--success-dark)" },
-  Complete: { background: "var(--success-surface)", color: "var(--success-dark)" },
+  "VHC Complete": { background: "var(--success-surface)", color: "var(--success-dark)" },
+  "VHC Reopened": { background: "var(--warning-surface)", color: "var(--warning)" },
+  "Tech Complete": { background: "var(--success-surface)", color: "var(--success-dark)" },
 };
 
 const getStatusBadgeStyle = (status) =>
   STATUS_BADGE_STYLES[status] || { background: "var(--info-surface)", color: "var(--info-dark)" };
 
-const resolveTechStatusLabel = (status) => status || "Pending";
-
 const normalizeStatusKey = (status) =>
   typeof status === "string" ? status.trim().toLowerCase() : "";
 
-const getTechStatusCategory = (status) => {
-  const normalized = normalizeStatusKey(status);
-  if (normalized === "in progress") return "in-progress";
-  if (normalized === "booked" || normalized === "checked in") return "pending";
-  if (normalized === "invoiced" || normalized === "complete") return "complete";
-  return "pending";
+const resolveTechStatusLabel = (job) => {
+  const rawStatus = normalizeStatusKey(job?.rawStatus || job?.status);
+  const hasVhcCompleted = Boolean(job?.vhcCompletedAt);
+
+  if (rawStatus.includes("vhc reopened") || rawStatus.includes("vhc started")) {
+    return "VHC Reopened";
+  }
+  if (rawStatus.includes("vhc complete") || rawStatus.includes("vhc completed") || hasVhcCompleted) {
+    return "VHC Complete";
+  }
+  if (
+    rawStatus.includes("tech complete") ||
+    rawStatus.includes("technician work completed") ||
+    rawStatus.includes("invoiced") ||
+    rawStatus === "complete" ||
+    rawStatus === "completed"
+  ) {
+    return "Tech Complete";
+  }
+  if (
+    rawStatus.includes("booked") ||
+    rawStatus.includes("checked in") ||
+    rawStatus.includes("waiting") ||
+    rawStatus.includes("pending")
+  ) {
+    return "Waiting";
+  }
+  if (rawStatus.includes("in progress")) {
+    return "In Progress";
+  }
+  return "In Progress";
+};
+
+const getTechStatusCategory = (statusLabel) => {
+  const normalized = normalizeStatusKey(statusLabel);
+  if (normalized === "tech complete") return "complete";
+  if (normalized === "waiting") return "pending";
+  return "in-progress";
 };
 
 const getMakeModel = (job) => {
@@ -140,8 +170,8 @@ export default function MyJobsPage() {
         complete: 2,
       };
       const sortedJobs = assignedJobs.sort((a, b) => {
-        const rankA = statusRank[getTechStatusCategory(a.status)] ?? 1;
-        const rankB = statusRank[getTechStatusCategory(b.status)] ?? 1;
+        const rankA = statusRank[getTechStatusCategory(resolveTechStatusLabel(a))] ?? 1;
+        const rankB = statusRank[getTechStatusCategory(resolveTechStatusLabel(b))] ?? 1;
         if (rankA !== rankB) return rankA - rankB;
 
         const aTimestamp = a.updatedAt || a.createdAt;
@@ -337,11 +367,11 @@ export default function MyJobsPage() {
 
     // Apply status filter
     if (filter === "in-progress") {
-      filtered = filtered.filter(job => getTechStatusCategory(job.status) === "in-progress");
+      filtered = filtered.filter(job => getTechStatusCategory(resolveTechStatusLabel(job)) === "in-progress");
     } else if (filter === "pending") {
-      filtered = filtered.filter(job => getTechStatusCategory(job.status) === "pending");
+      filtered = filtered.filter(job => getTechStatusCategory(resolveTechStatusLabel(job)) === "pending");
     } else if (filter === "complete") {
-      filtered = filtered.filter(job => getTechStatusCategory(job.status) === "complete");
+      filtered = filtered.filter(job => getTechStatusCategory(resolveTechStatusLabel(job)) === "complete");
     }
 
     // Apply search filter
@@ -547,7 +577,7 @@ export default function MyJobsPage() {
             {[
               { value: "all", label: "All Jobs" },
               { value: "in-progress", label: "In Progress" },
-              { value: "pending", label: "Pending" },
+              { value: "pending", label: "Waiting" },
               { value: "complete", label: "Complete" }
             ].map(({ value, label }) => (
               <button
@@ -658,8 +688,7 @@ export default function MyJobsPage() {
                 <div style={{ minWidth: "90px", textAlign: "center" }}>Write-Up</div>
               </div>
               {filteredJobs.map((job) => {
-                const statusLabel = job.status || "Pending";
-                const displayStatusLabel = resolveTechStatusLabel(statusLabel);
+                const displayStatusLabel = resolveTechStatusLabel(job);
                 const statusStyle = getStatusBadgeStyle(displayStatusLabel);
                 const createdAt = formatCreatedAt(job.createdAt);
                 const description = job.description?.trim();
@@ -888,19 +917,19 @@ export default function MyJobsPage() {
             </div>
             <div>
               <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--info)", marginBottom: "4px" }}>
-                {myJobs.filter(j => getTechStatusCategory(j.status) === "in-progress").length}
+                {myJobs.filter(j => getTechStatusCategory(resolveTechStatusLabel(j)) === "in-progress").length}
               </div>
               <div style={{ fontSize: "13px", color: "var(--grey-accent)" }}>In Progress</div>
             </div>
             <div>
               <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--danger)", marginBottom: "4px" }}>
-                {myJobs.filter(j => getTechStatusCategory(j.status) === "pending").length}
+                {myJobs.filter(j => getTechStatusCategory(resolveTechStatusLabel(j)) === "pending").length}
               </div>
-              <div style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Pending</div>
+              <div style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Waiting</div>
             </div>
             <div>
               <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--info)", marginBottom: "4px" }}>
-                {myJobs.filter(j => getTechStatusCategory(j.status) === "complete").length}
+                {myJobs.filter(j => getTechStatusCategory(resolveTechStatusLabel(j)) === "complete").length}
               </div>
               <div style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Completed</div>
             </div>
