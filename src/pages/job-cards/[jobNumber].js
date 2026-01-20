@@ -33,7 +33,6 @@ import NotesTabNew from "@/components/NotesTab_New";
 import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
 import WriteUpForm from "@/components/JobCards/WriteUpForm";
 import { DropdownField } from "@/components/dropdownAPI";
-import Dropdown from "@/components/dropdownAPI/Dropdown";
 import { CalendarField } from "@/components/calendarAPI";
 import { TimePickerField } from "@/components/timePickerAPI";
 import ClockingHistorySection from "@/components/JobCards/ClockingHistorySection";
@@ -276,288 +275,6 @@ export default function JobCardDetailPage() {
       setActiveTab("clocking");
     }
   }, [router.query.tab]);
-
-  // Force status dropdown styling to apply dynamically
-  useEffect(() => {
-    if (typeof document !== 'undefined') {
-      const styleId = 'status-badge-override-dynamic';
-      let styleEl = document.getElementById(styleId);
-
-      if (!styleEl) {
-        styleEl = document.createElement('style');
-        styleEl.id = styleId;
-        document.head.appendChild(styleEl);
-      }
-
-      // Add MutationObserver to force styles when dropdown menu appears
-      const observer = new MutationObserver(() => {
-        const dropdown = document.getElementById('job-status-dropdown');
-        if (dropdown) {
-          const control = dropdown.querySelector('.dropdown-api__control');
-          const chevron = dropdown.querySelector('.dropdown-api__chevron');
-
-          if (control) {
-            control.style.cssText = `
-              display: inline-flex !important;
-              align-items: center !important;
-              padding: 6px 14px !important;
-              background: var(--success-surface) !important;
-              color: var(--success-dark) !important;
-              border-radius: 20px !important;
-              font-weight: 600 !important;
-              font-size: 13px !important;
-              line-height: 1 !important;
-              height: auto !important;
-              width: auto !important;
-              border: 0 !important;
-              cursor: pointer !important;
-              box-shadow: none !important;
-              min-height: auto !important;
-            `;
-          }
-
-          if (chevron) {
-            chevron.style.cssText = 'display: none !important; width: 0 !important; height: 0 !important; opacity: 0 !important;';
-          }
-        }
-
-        // Find menu in document.body since it uses createPortal
-        const allMenus = document.querySelectorAll('.dropdown-api__menu');
-        allMenus.forEach(menu => {
-          // Check if this menu belongs to our dropdown by checking if it has our status options
-          const hasStatusOptions = menu.textContent.includes('Checked In') ||
-                                   menu.textContent.includes('In Progress') ||
-                                   menu.textContent.includes('Invoiced');
-
-          if (hasStatusOptions) {
-            // CRITICAL: Remove the inline width set by menuPosition
-            menu.style.width = 'max-content';
-            menu.style.minWidth = '180px';
-            menu.style.maxWidth = '500px';
-            menu.style.maxHeight = 'none';
-            menu.style.height = 'auto';
-            menu.style.overflow = 'visible';
-            menu.style.overflowX = 'visible';
-            menu.style.overflowY = 'visible';
-            menu.style.padding = '8px';
-
-            const options = menu.querySelectorAll('.dropdown-api__option');
-            options.forEach(opt => {
-              opt.style.whiteSpace = 'nowrap';
-              opt.style.minWidth = 'max-content';
-              opt.style.width = '100%';
-              opt.style.padding = '12px 16px';
-              opt.style.border = '1px solid transparent';
-              opt.style.borderRadius = '12px';
-              opt.style.cursor = 'pointer';
-
-              // Add hover listeners
-              opt.addEventListener('mouseenter', function() {
-                this.style.background = 'rgba(var(--primary-rgb), 0.08)';
-                this.style.borderColor = 'rgba(var(--primary-rgb), 0.35)';
-              });
-
-              opt.addEventListener('mouseleave', function() {
-                if (!this.classList.contains('is-selected')) {
-                  this.style.background = 'transparent';
-                  this.style.borderColor = 'transparent';
-                }
-              });
-
-              // Style selected option
-              if (opt.classList.contains('is-selected')) {
-                opt.style.background = 'rgba(var(--primary-rgb), 0.15)';
-                opt.style.borderColor = 'var(--primary)';
-              }
-            });
-          }
-        });
-      });
-
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        attributeFilter: ['style']
-      });
-
-      // Also add click listener to force styles when dropdown opens
-      const forceMenuStyles = () => {
-        setTimeout(() => {
-          const allMenus = document.querySelectorAll('.dropdown-api__menu');
-          allMenus.forEach(menu => {
-            const hasStatusOptions = menu.textContent.includes('Checked In') ||
-                                     menu.textContent.includes('In Progress') ||
-                                     menu.textContent.includes('Invoiced') ||
-                                     menu.textContent.includes('Open') ||
-                                     menu.textContent.includes('Booked') ||
-                                     menu.textContent.includes('Complete');
-
-            if (hasStatusOptions) {
-              // Force remove inline width
-              menu.style.setProperty('width', 'max-content', 'important');
-              menu.style.setProperty('min-width', '180px', 'important');
-              menu.style.setProperty('max-width', '500px', 'important');
-              menu.style.setProperty('overflow', 'visible', 'important');
-              menu.style.setProperty('max-height', 'none', 'important');
-            }
-          });
-        }, 0);
-      };
-
-      const dropdown = document.getElementById('job-status-dropdown');
-      if (dropdown) {
-        dropdown.addEventListener('click', forceMenuStyles);
-      }
-
-      styleEl.innerHTML = `
-        /* Target by ID and class for maximum specificity */
-        #job-status-dropdown.status-badge-dropdown.dropdown-api .dropdown-api__control,
-        #job-status-dropdown.status-badge-dropdown .dropdown-api__control,
-        #job-status-dropdown .dropdown-api__control,
-        .status-badge-dropdown#job-status-dropdown .dropdown-api__control,
-        span.status-badge-dropdown-wrapper #job-status-dropdown .dropdown-api__control {
-          all: revert !important;
-          display: inline-flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-          padding: 6px 14px !important;
-          background: var(--success-surface) !important;
-          background-color: var(--success-surface) !important;
-          color: var(--success-dark) !important;
-          border-radius: 20px !important;
-          font-weight: 600 !important;
-          font-size: 13px !important;
-          line-height: 1 !important;
-          min-height: auto !important;
-          max-height: none !important;
-          height: auto !important;
-          width: auto !important;
-          min-width: auto !important;
-          max-width: none !important;
-          border: 0 !important;
-          border-width: 0 !important;
-          cursor: pointer !important;
-          box-shadow: none !important;
-          outline: 0 !important;
-          gap: 0 !important;
-          transition: none !important;
-          text-align: center !important;
-        }
-
-        #job-status-dropdown .dropdown-api__control:hover,
-        #job-status-dropdown .dropdown-api__control:focus,
-        #job-status-dropdown.is-open .dropdown-api__control {
-          background: var(--success-surface) !important;
-          background-color: var(--success-surface) !important;
-          color: var(--success-dark) !important;
-          border: 0 !important;
-          outline: 0 !important;
-          box-shadow: none !important;
-        }
-
-        #job-status-dropdown .dropdown-api__value,
-        #job-status-dropdown .dropdown-api__value.is-placeholder {
-          all: revert !important;
-          color: var(--success-dark) !important;
-          font-weight: 600 !important;
-          font-size: 13px !important;
-          line-height: 1 !important;
-          padding: 0 !important;
-          margin: 0 !important;
-          white-space: nowrap !important;
-          text-overflow: clip !important;
-          overflow: visible !important;
-          flex: none !important;
-        }
-
-        #job-status-dropdown .dropdown-api__chevron {
-          display: none !important;
-          visibility: hidden !important;
-          width: 0 !important;
-          height: 0 !important;
-          opacity: 0 !important;
-        }
-
-        #job-status-dropdown .dropdown-api__label {
-          display: none !important;
-          visibility: hidden !important;
-        }
-
-        /* OVERRIDE: Clean dropdown menu - no scroll, all visible at once */
-        #job-status-dropdown .dropdown-api__menu,
-        #job-status-dropdown.dropdown-api .dropdown-api__menu {
-          width: max-content !important;
-          min-width: 180px !important;
-          max-width: 500px !important;
-          max-height: none !important;
-          height: auto !important;
-          overflow: visible !important;
-          overflow-x: visible !important;
-          overflow-y: visible !important;
-          white-space: nowrap !important;
-          padding: 8px !important;
-          box-sizing: border-box !important;
-        }
-
-        /* OVERRIDE: Option rows - full text visible with proper hover border */
-        #job-status-dropdown .dropdown-api__option,
-        #job-status-dropdown .dropdown-api .dropdown-api__option {
-          white-space: nowrap !important;
-          min-width: max-content !important;
-          width: 100% !important;
-          padding: 12px 16px !important;
-          margin: 0 !important;
-          box-sizing: border-box !important;
-          overflow: visible !important;
-          text-overflow: clip !important;
-          display: flex !important;
-          align-items: center !important;
-          border: 1px solid transparent !important;
-          border-radius: 12px !important;
-          cursor: pointer !important;
-          transition: all 0.15s ease !important;
-        }
-
-        /* OVERRIDE: Hover state with full border around text */
-        #job-status-dropdown .dropdown-api__option:hover,
-        #job-status-dropdown .dropdown-api__option:focus,
-        #job-status-dropdown .dropdown-api__option:focus-visible {
-          background: rgba(var(--primary-rgb), 0.08) !important;
-          border: 1px solid rgba(var(--primary-rgb), 0.35) !important;
-          border-radius: 12px !important;
-          outline: none !important;
-        }
-
-        /* OVERRIDE: Selected state */
-        #job-status-dropdown .dropdown-api__option.is-selected {
-          background: rgba(var(--primary-rgb), 0.15) !important;
-          border: 1px solid var(--primary) !important;
-          color: var(--text-primary) !important;
-        }
-
-        /* OVERRIDE: Option label - full text visible */
-        #job-status-dropdown .dropdown-api__option-label {
-          white-space: nowrap !important;
-          overflow: visible !important;
-          text-overflow: clip !important;
-          display: inline-block !important;
-          width: auto !important;
-          flex: 1 !important;
-          font-size: 14px !important;
-          font-weight: 500 !important;
-        }
-      `;
-
-      return () => {
-        observer.disconnect();
-        const dropdown = document.getElementById('job-status-dropdown');
-        if (dropdown) {
-          dropdown.removeEventListener('click', forceMenuStyles);
-        }
-      };
-    }
-  }, []);
 
   // Watch for job completion and redirect to invoice tab
   const previousStatusRef = useRef(null);
@@ -1365,34 +1082,6 @@ export default function JobCardDetailPage() {
     }
   };
 
-  const handleStatusChange = async (newStatus) => {
-    if (!canEdit || !jobData?.id) return;
-
-    try {
-      const result = await updateJobStatus(jobData.id, newStatus);
-
-      if (result.success) {
-        setJobData((prev) => (prev ? { ...prev, status: newStatus } : prev));
-        await fetchJobData({ silent: true });
-      } else {
-        alert(result?.error?.message || "Failed to update job status");
-      }
-    } catch (statusError) {
-      console.error("Error updating job status:", statusError);
-      alert("Failed to update job status");
-    }
-  };
-
-  // ✅ Status Options for Dropdown
-  const statusOptions = useMemo(() => [
-    "Open",
-    "Booked",
-    "Checked In",
-    "In Progress",
-    "Invoiced",
-    "Complete"
-  ], []);
-
   // ✅ VHC Financial Totals (calculated from vhcChecks or received from VhcDetailsPanel)
   const vhcFinancialTotals = useMemo(() => {
     // Return null values if jobData is not loaded yet
@@ -1505,6 +1194,7 @@ export default function JobCardDetailPage() {
     );
   }
 
+  try {
   const writeUpComplete =
     jobData.completionStatus === "complete" ||
     jobData.writeUp?.completion_status === "complete";
@@ -1544,6 +1234,13 @@ export default function JobCardDetailPage() {
     : vhcSummaryCounts.amber
       ? `⚠ ${vhcSummaryCounts.amber}`
       : undefined;
+  const jobDivisionLabel =
+    typeof jobData.jobDivision === "string"
+      ? jobData.jobDivision
+      : jobData.jobDivision
+      ? String(jobData.jobDivision)
+      : "";
+  const jobDivisionLower = jobDivisionLabel.toLowerCase();
 
   // ✅ Tab Configuration
   const tabs = [
@@ -1570,7 +1267,8 @@ export default function JobCardDetailPage() {
 
   // ✅ Main Render
   return (
-    <Layout>
+    <JobCardErrorBoundary>
+      <Layout>
       <div style={pageStackStyle}>
         {isArchiveMode && (
           <section
@@ -1610,21 +1308,21 @@ export default function JobCardDetailPage() {
               }}>
                 Job Card #{jobData.jobNumber}
               </h1>
-              <span
-                className="status-badge-dropdown-wrapper"
-                style={{
-                  display: 'inline-block',
-                  position: 'relative'
-                }}
-              >
-                <Dropdown
-                  options={statusOptions}
-                  value={jobData.status}
-                  onChange={(newStatus) => handleStatusChange(newStatus)}
-                  disabled={!canEdit}
-                  className="status-badge-dropdown"
-                  id="job-status-dropdown"
-                />
+              <span style={{
+                padding: "6px 14px",
+                backgroundColor: 
+                  jobData.status === "Open" ? "var(--success-surface)" : 
+                  jobData.status === "Complete" ? "var(--info-surface)" : 
+                  "var(--warning-surface)",
+                color: 
+                  jobData.status === "Open" ? "var(--success-dark)" : 
+                  jobData.status === "Complete" ? "var(--info)" : 
+                  "var(--danger)",
+                borderRadius: "20px",
+                fontWeight: "600",
+                fontSize: "13px"
+              }}>
+                {jobData.status}
               </span>
               {jobData.jobSource === "Warranty" && (
                 <span style={{
@@ -1638,16 +1336,16 @@ export default function JobCardDetailPage() {
                   {jobData.jobSource}
                 </span>
               )}
-              {jobData.jobDivision && (
+              {jobDivisionLabel && (
                 <span
                   style={{
                     padding: "6px 14px",
                     backgroundColor:
-                      jobData.jobDivision.toLowerCase() === "sales"
+                      jobDivisionLower === "sales"
                         ? "var(--info-surface)"
                         : "var(--success-surface)",
                     color:
-                      jobData.jobDivision.toLowerCase() === "sales"
+                      jobDivisionLower === "sales"
                         ? "var(--info)"
                         : "var(--success-dark)",
                     borderRadius: "20px",
@@ -1655,7 +1353,7 @@ export default function JobCardDetailPage() {
                     fontSize: "13px",
                   }}
                 >
-                  {jobData.jobDivision}
+                  {jobDivisionLabel}
                 </span>
               )}
             </div>
@@ -2099,94 +1797,6 @@ export default function JobCardDetailPage() {
 
       </div>
 
-      {/* NUCLEAR OPTION: Force status dropdown styling */}
-      <style dangerouslySetInnerHTML={{__html: `
-        /* FORCE: Status badge dropdown button styling */
-        .status-badge-dropdown *,
-        #job-status-dropdown * {
-          box-sizing: border-box !important;
-        }
-
-        .status-badge-dropdown .dropdown-api__control,
-        .status-badge-dropdown > * > .dropdown-api__control,
-        #job-status-dropdown .dropdown-api__control {
-          all: revert !important;
-          display: inline-flex !important;
-          align-items: center !important;
-          padding: 6px 14px !important;
-          background: var(--success-surface) !important;
-          color: var(--success-dark) !important;
-          border-radius: 20px !important;
-          font-weight: 600 !important;
-          font-size: 13px !important;
-          line-height: 1 !important;
-          min-height: auto !important;
-          height: auto !important;
-          width: auto !important;
-          border: 0 !important;
-          cursor: pointer !important;
-          box-shadow: none !important;
-          outline: 0 !important;
-        }
-
-        .status-badge-dropdown .dropdown-api__value,
-        #job-status-dropdown .dropdown-api__value {
-          color: var(--success-dark) !important;
-          font-weight: 600 !important;
-          font-size: 13px !important;
-          padding: 0 !important;
-          margin: 0 !important;
-        }
-
-        .status-badge-dropdown .dropdown-api__chevron,
-        #job-status-dropdown .dropdown-api__chevron {
-          display: none !important;
-        }
-
-        /* FORCE: Clean dropdown menu - no scroll, show all at once */
-        .status-badge-dropdown .dropdown-api__menu,
-        #job-status-dropdown .dropdown-api__menu {
-          width: max-content !important;
-          min-width: 180px !important;
-          max-width: 500px !important;
-          max-height: none !important;
-          height: auto !important;
-          overflow: visible !important;
-          padding: 8px !important;
-        }
-
-        /* FORCE: Option rows with hover borders */
-        .status-badge-dropdown .dropdown-api__option,
-        #job-status-dropdown .dropdown-api__option {
-          white-space: nowrap !important;
-          min-width: max-content !important;
-          width: 100% !important;
-          padding: 12px 16px !important;
-          border: 1px solid transparent !important;
-          border-radius: 12px !important;
-          transition: all 0.15s ease !important;
-        }
-
-        .status-badge-dropdown .dropdown-api__option:hover,
-        #job-status-dropdown .dropdown-api__option:hover {
-          background: rgba(var(--primary-rgb), 0.08) !important;
-          border: 1px solid rgba(var(--primary-rgb), 0.35) !important;
-        }
-
-        .status-badge-dropdown .dropdown-api__option.is-selected,
-        #job-status-dropdown .dropdown-api__option.is-selected {
-          background: rgba(var(--primary-rgb), 0.15) !important;
-          border: 1px solid var(--primary) !important;
-        }
-
-        .status-badge-dropdown .dropdown-api__option-label,
-        #job-status-dropdown .dropdown-api__option-label {
-          white-space: nowrap !important;
-          font-size: 14px !important;
-          font-weight: 500 !important;
-        }
-      `}} />
-
       <style jsx global>{`
         .tabs-scroll-container::-webkit-scrollbar {
           height: 6px;
@@ -2205,267 +1815,85 @@ export default function JobCardDetailPage() {
         .tabs-scroll-container::-webkit-scrollbar-thumb:hover {
           background: var(--scrollbar-thumb-hover);
         }
-
-        /* OVERRIDE: Custom styles for status dropdown to look like Retail badge */
-        .status-badge-dropdown {
-          display: inline-block !important;
-          position: relative !important;
-        }
-
-        /* OVERRIDE: Force button to look like Retail badge with maximum specificity */
-        .status-badge-dropdown .dropdown-api .dropdown-api__control,
-        .status-badge-dropdown.dropdown-api .dropdown-api__control,
-        .status-badge-dropdown .dropdown-api__control,
-        div.status-badge-dropdown .dropdown-api__control,
-        div.status-badge-dropdown > div.dropdown-api > button.dropdown-api__control {
-          all: unset !important;
-          display: inline-flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-          padding: 6px 14px !important;
-          background: var(--success-surface) !important;
-          background-color: var(--success-surface) !important;
-          color: var(--success-dark) !important;
-          border-radius: 20px !important;
-          font-weight: 600 !important;
-          font-size: 13px !important;
-          line-height: 1 !important;
-          cursor: pointer !important;
-          border: none !important;
-          box-sizing: border-box !important;
-          min-height: unset !important;
-          height: auto !important;
-          width: auto !important;
-          min-width: unset !important;
-          max-width: none !important;
-          gap: 0 !important;
-          transition: none !important;
-          box-shadow: none !important;
-          outline: none !important;
-          text-align: center !important;
-        }
-
-        .status-badge-dropdown .dropdown-api__control:hover,
-        .status-badge-dropdown .dropdown-api__control:focus,
-        .status-badge-dropdown .dropdown-api__control:focus-visible,
-        .status-badge-dropdown.dropdown-api.is-open .dropdown-api__control,
-        .status-badge-dropdown .dropdown-api.is-open .dropdown-api__control {
-          background: var(--success-surface) !important;
-          background-color: var(--success-surface) !important;
-          color: var(--success-dark) !important;
-          border: none !important;
-          outline: none !important;
-          box-shadow: none !important;
-        }
-
-        .status-badge-dropdown .dropdown-api__value,
-        .status-badge-dropdown .dropdown-api__value.is-placeholder,
-        .status-badge-dropdown .dropdown-api .dropdown-api__value {
-          all: unset !important;
-          padding: 0 !important;
-          margin: 0 !important;
-          font-weight: 600 !important;
-          font-size: 13px !important;
-          line-height: 1 !important;
-          color: var(--success-dark) !important;
-          white-space: nowrap !important;
-          text-overflow: unset !important;
-          overflow: visible !important;
-          flex: none !important;
-          text-align: center !important;
-        }
-
-        /* OVERRIDE: Hide the dropdown chevron/arrow completely */
-        .status-badge-dropdown .dropdown-api__chevron,
-        .status-badge-dropdown .dropdown-api .dropdown-api__chevron,
-        .status-badge-dropdown .dropdown-api__control .dropdown-api__chevron {
-          display: none !important;
-          visibility: hidden !important;
-          width: 0 !important;
-          height: 0 !important;
-          opacity: 0 !important;
-          position: absolute !important;
-          pointer-events: none !important;
-        }
-
-        .status-badge-dropdown .dropdown-api__label {
-          display: none !important;
-          visibility: hidden !important;
-        }
-
-        /* OVERRIDE: Dropdown menu width - always wide enough to fit all text on one row */
-        .status-badge-dropdown .dropdown-api__menu,
-        .status-badge-dropdown .dropdown-api .dropdown-api__menu,
-        div.status-badge-dropdown .dropdown-api__menu,
-        .status-badge-dropdown-inner .dropdown-api__menu {
-          min-width: 200px !important;
-          width: max-content !important;
-          max-width: 400px !important;
-          white-space: nowrap !important;
-          overflow-x: visible !important;
-          overflow-y: auto !important;
-          box-sizing: border-box !important;
-        }
-
-        .status-badge-dropdown .dropdown-api__option,
-        .status-badge-dropdown .dropdown-api .dropdown-api__option,
-        div.status-badge-dropdown .dropdown-api__option,
-        .status-badge-dropdown-inner .dropdown-api__option {
-          padding: 10px 16px !important;
-          white-space: nowrap !important;
-          overflow: visible !important;
-          text-overflow: clip !important;
-          display: flex !important;
-          width: 100% !important;
-          box-sizing: border-box !important;
-          min-width: max-content !important;
-        }
-
-        .status-badge-dropdown .dropdown-api__option-label,
-        .status-badge-dropdown .dropdown-api .dropdown-api__option-label,
-        div.status-badge-dropdown .dropdown-api__option-label,
-        .status-badge-dropdown-inner .dropdown-api__option-label {
-          white-space: nowrap !important;
-          overflow: visible !important;
-          text-overflow: clip !important;
-          display: inline-block !important;
-          width: auto !important;
-          flex: none !important;
-          min-width: max-content !important;
-        }
-
-        /* Additional override for inner dropdown class */
-        .status-badge-dropdown-inner.dropdown-api,
-        .status-badge-dropdown .status-badge-dropdown-inner.dropdown-api {
-          display: inline-block !important;
-          width: auto !important;
-          min-width: unset !important;
-        }
-
-        .status-badge-dropdown-inner .dropdown-api__control,
-        .status-badge-dropdown .status-badge-dropdown-inner .dropdown-api__control {
-          all: unset !important;
-          display: inline-flex !important;
-          padding: 6px 14px !important;
-          background: var(--success-surface) !important;
-          color: var(--success-dark) !important;
-          border-radius: 20px !important;
-          font-weight: 600 !important;
-          font-size: 13px !important;
-          cursor: pointer !important;
-          box-sizing: border-box !important;
-        }
       `}</style>
-
-      {/* FINAL OVERRIDE - Loads last to ensure highest priority */}
-      <style>{`
-        /* Global override for portaled dropdown menu */
-        body > .dropdown-api__menu {
-          width: max-content !important;
-          min-width: 180px !important;
-          max-width: 500px !important;
-          overflow: visible !important;
-          max-height: none !important;
-        }
-
-        body > .dropdown-api__menu .dropdown-api__option {
-          white-space: nowrap !important;
-          min-width: max-content !important;
-          width: 100% !important;
-          padding: 12px 16px !important;
-          border: 1px solid transparent !important;
-          border-radius: 12px !important;
-        }
-
-        body > .dropdown-api__menu .dropdown-api__option:hover {
-          background: rgba(var(--primary-rgb), 0.08) !important;
-          border-color: rgba(var(--primary-rgb), 0.35) !important;
-        }
-
-        body > .dropdown-api__menu .dropdown-api__option.is-selected {
-          background: rgba(var(--primary-rgb), 0.15) !important;
-          border-color: var(--primary) !important;
-        }
-      `}</style>
-
-      <style>{`
-        /* Ultra-high specificity overrides */
-        html body #__next [data-status] #job-status-dropdown.dropdown-api .dropdown-api__control,
-        html body [data-status] #job-status-dropdown .dropdown-api__control {
-          all: revert !important;
-          display: inline-flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-          padding: 6px 14px !important;
-          background: var(--success-surface) !important;
-          background-color: var(--success-surface) !important;
-          color: var(--success-dark) !important;
-          border-radius: 20px !important;
-          font-weight: 600 !important;
-          font-size: 13px !important;
-          line-height: 1 !important;
-          min-height: auto !important;
-          height: auto !important;
-          width: auto !important;
-          border: 0 !important;
-          cursor: pointer !important;
-          box-shadow: none !important;
-          outline: 0 !important;
-        }
-
-        html body #job-status-dropdown .dropdown-api__value {
-          color: var(--success-dark) !important;
-          font-weight: 600 !important;
-          font-size: 13px !important;
-          padding: 0 !important;
-        }
-
-        html body #job-status-dropdown .dropdown-api__chevron {
-          display: none !important;
-          width: 0 !important;
-          height: 0 !important;
-          opacity: 0 !important;
-        }
-
-        html body #job-status-dropdown .dropdown-api__menu {
-          width: max-content !important;
-          min-width: 180px !important;
-          max-width: 500px !important;
-          max-height: 9999px !important;
-          height: auto !important;
-          overflow: visible !important;
-          overflow-x: visible !important;
-          overflow-y: visible !important;
-          padding: 8px !important;
-        }
-
-        html body #job-status-dropdown .dropdown-api__option {
-          white-space: nowrap !important;
-          min-width: max-content !important;
-          width: 100% !important;
-          padding: 12px 16px !important;
-          border: 1px solid transparent !important;
-          border-radius: 12px !important;
-        }
-
-        html body #job-status-dropdown .dropdown-api__option:hover {
-          background: rgba(var(--primary-rgb), 0.08) !important;
-          border-color: rgba(var(--primary-rgb), 0.35) !important;
-        }
-
-        html body #job-status-dropdown .dropdown-api__option.is-selected {
-          background: rgba(var(--primary-rgb), 0.15) !important;
-          border-color: var(--primary) !important;
-        }
-
-        html body #job-status-dropdown .dropdown-api__option-label {
-          white-space: nowrap !important;
-          font-size: 14px !important;
-          font-weight: 500 !important;
-        }
-      `}</style>
-    </Layout>
+      </Layout>
+    </JobCardErrorBoundary>
   );
+  } catch (renderError) {
+    console.error("Job card render error:", renderError);
+    return (
+      <Layout>
+        <div style={{
+          padding: "40px",
+          textAlign: "center",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "60vh"
+        }}>
+          <div style={{ fontSize: "60px", marginBottom: "20px" }}>⚠️</div>
+          <h2 style={{ color: "var(--primary)", marginBottom: "10px" }}>
+            Job card failed to render
+          </h2>
+          <p style={{ color: "var(--grey-accent)", marginBottom: "18px" }}>
+            {renderError?.message || String(renderError)}
+          </p>
+          <p style={{ color: "var(--grey-accent)", marginBottom: "30px", fontSize: "13px" }}>
+            Check the console for the stack trace.
+          </p>
+        </div>
+      </Layout>
+    );
+  }
+}
+
+class JobCardErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+
+  componentDidCatch(error, info) {
+    console.error("Job card render error:", error, info);
+  }
+
+  render() {
+    if (!this.state.error) {
+      return this.props.children;
+    }
+
+    const message = this.state.error?.message || String(this.state.error);
+
+    return (
+      <Layout>
+        <div style={{
+          padding: "40px",
+          textAlign: "center",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "60vh"
+        }}>
+          <div style={{ fontSize: "60px", marginBottom: "20px" }}>⚠️</div>
+          <h2 style={{ color: "var(--primary)", marginBottom: "10px" }}>
+            Job card failed to render
+          </h2>
+          <p style={{ color: "var(--grey-accent)", marginBottom: "18px" }}>
+            {message}
+          </p>
+          <p style={{ color: "var(--grey-accent)", marginBottom: "30px", fontSize: "13px" }}>
+            Check the console for the stack trace.
+          </p>
+        </div>
+      </Layout>
+    );
+  }
 }
 
 // ============================================

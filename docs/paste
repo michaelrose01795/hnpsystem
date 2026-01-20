@@ -2,10 +2,23 @@ TO DO:
 
 Continue flow with job number 54
 
+Have it so any check in, in progress, etc (or status apart from booked and inoviced and comlete) that if a job is assinged to a tech user then it shows within that the users card inside the "job-cards/waiting/nextjobs" page. make sure that the jobs within the todays workflow tab and carry over tab if a tech is assinged that job then it shows within that section until the assingment is unassinged or the assingment is swapped to another tech user. 
 
 
 CHECKKK
 Next jobs and my jobs check, add multiple jobs within one tech 
+
+CHECKKK
+Check status changes 
+
+
+CHECKK
+Make sure the "Customer Status" section saves to the database as Customer status and no just status as this could get confusing. make sure to update all palces where this is used to show "Customer Status" and not status example within the "/job-cards/view" page on each row, deep search into other places where this is used. 
+
+
+
+CHECKK
+Check the My job page can be complete and finished and the complete button within the VHC complete and reopen vhc are linked to the status sidebar to save as an update. 
 
 
 

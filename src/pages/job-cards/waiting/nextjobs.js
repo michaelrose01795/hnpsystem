@@ -42,11 +42,37 @@ const isMotRole = (role) => {
   return normalized.includes("mot");
 };
 
-const STATUS_TECH_PANEL_EXCLUDED = new Set([
-  "BOOKED",
-  "INVOICED",
+const STATUS_WAITING_QUEUE = new Set([
+  "CHECKED IN",
+  "ACCEPTED IN",
+  "WAITING FOR WORKSHOP",
+  "AWAITING WORKSHOP",
+  "AWAITING TECH",
+  "AWAITING ALLOCATION",
+  "ARRIVED",
+  "IN RECEPTION",
+]);
+
+const STATUS_IN_PROGRESS = new Set([
+  "WORKSHOP/MOT",
+  "WORKSHOP",
+  "IN PROGRESS",
+  "VHC COMPLETE",
+  "VHC SENT",
+  "ADDITIONAL WORK REQUIRED",
+  "ADDITIONAL WORK BEING CARRIED OUT",
+  "ADDITIONAL WORK",
+  "BEING WASHED",
+]);
+
+const STATUS_COMPLETED = new Set([
   "COMPLETE",
   "COMPLETED",
+  "INVOICED",
+  "COLLECTED",
+  "CLOSED",
+  "FINISHED",
+  "CANCELLED",
 ]);
 
 const toStatusKey = (status) => (status ? String(status).trim().toUpperCase() : "");
@@ -273,15 +299,30 @@ export default function NextJobsPage() {
     [usersByRole]
   );
 
+  const isWaitingJob = (job) => {
+    const statusKey = toStatusKey(job.status);
+    const hasStarted =
+      STATUS_IN_PROGRESS.has(statusKey) || Boolean(job.workshopStartedAt);
+    const isFinished =
+      STATUS_COMPLETED.has(statusKey) || Boolean(job.completedAt);
+    const hasArrived =
+      STATUS_WAITING_QUEUE.has(statusKey) ||
+      (Boolean(job.checkedInAt) && !isFinished);
+
+    return hasArrived && !hasStarted && !isFinished;
+  };
+
+  const waitingJobs = useMemo(() => jobs.filter(isWaitingJob), [jobs]);
+
   const jobsByNumber = useMemo(() => {
     const map = new Map();
-    jobs.forEach((job) => {
+    waitingJobs.forEach((job) => {
       if (job?.jobNumber) {
         map.set(job.jobNumber, job);
       }
     });
     return map;
-  }, [jobs]);
+  }, [waitingJobs]);
 
   const mapJobFromDatabase = (row) => {
     const customerFirst = row.customer?.firstname?.trim() || "";
@@ -557,21 +598,6 @@ export default function NextJobsPage() {
     });
   };
 
-  const isExcludedFromTechPanel = (status) => {
-    const statusKey = toStatusKey(status);
-    return STATUS_TECH_PANEL_EXCLUDED.has(statusKey);
-  };
-
-  const assignedPanelJobs = useMemo(
-    () =>
-      jobs.filter(
-        (job) =>
-          isAssignedToKnownStaff(job) &&
-          !isExcludedFromTechPanel(job.status)
-      ),
-    [jobs, techIdSet, motIdSet, dbTechnicians, dbMotTesters]
-  );
-
   const staffDirectory = useMemo(() => {
     const map = new Map();
 
@@ -616,7 +642,7 @@ export default function NextJobsPage() {
     const motSource = dbMotTesters.length > 0 ? dbMotTesters : fallbackMot;
     motSource.forEach((person, index) => mergePerson(person, "mot", index, "mot"));
 
-    assignedPanelJobs.forEach((job, index) => {
+    waitingJobs.forEach((job, index) => {
       const assignedTech = job?.assignedTech;
       if (!assignedTech) return;
       const role = assignedTech.role || "";
@@ -641,7 +667,7 @@ export default function NextJobsPage() {
       normalizedName: normalized,
       roles: Array.from(entry.roles),
     }));
-  }, [dbTechnicians, dbMotTesters, fallbackTechs, fallbackMot, assignedPanelJobs]);
+  }, [dbTechnicians, dbMotTesters, fallbackTechs, fallbackMot, waitingJobs]);
 
   const techPanelList = useMemo(
     () => staffDirectory.filter((person) => person.roles.includes("tech")),
@@ -699,7 +725,7 @@ export default function NextJobsPage() {
     const normalizedAssignee = normalizeDisplayName(assignee?.name);
     const assigneeIdKey = toUserIdKey(assignee?.id);
 
-    return assignedPanelJobs
+    return waitingJobs
       .filter((job) => {
         const jobAssignedIdKey = toUserIdKey(
           job.assignedTech?.id ?? job.assignedTo
@@ -726,7 +752,7 @@ export default function NextJobsPage() {
         panelKey: `${tech.id || tech.normalizedName || "tech"}-tech-${index}`,
         jobs: getJobsForAssignee(tech),
       })),
-    [assignedPanelJobs, techPanelList]
+    [waitingJobs, techPanelList]
   );
 
   const assignedMotJobs = useMemo(
@@ -736,7 +762,7 @@ export default function NextJobsPage() {
         panelKey: `${tester.id || tester.normalizedName || "mot"}-mot-${index}`,
         jobs: getJobsForAssignee(tester),
       })),
-    [assignedPanelJobs, motPanelList]
+    [waitingJobs, motPanelList]
   );
 
   const handleOpenJobDetails = (job) => {
