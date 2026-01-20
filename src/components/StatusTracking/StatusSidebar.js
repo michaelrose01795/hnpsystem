@@ -2,7 +2,6 @@
 // file location: src/components/StatusTracking/StatusSidebar.js
 
 import { useState, useEffect, useMemo } from 'react';
-import { getMainStatusMetadata, getStatusConfig } from '@/lib/status/statusFlow';
 import JobProgressTracker from '@/components/StatusTracking/JobProgressTracker';
 // ⚠️ Mock data found — replacing with Supabase query
 // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
@@ -24,7 +23,8 @@ export default function StatusSidebar({
   canClose = true,
   refreshKey = 0,
 }) {
-  const [statusHistory, setStatusHistory] = useState([]); // Array of past statuses with timestamps
+  const [snapshot, setSnapshot] = useState(null); // Latest job status snapshot payload
+  const [statusHistory, setStatusHistory] = useState([]); // Timeline entries for the tracker
   const [clockingBaseSeconds, setClockingBaseSeconds] = useState(0); // Completed clocking seconds
   const [activeClockIns, setActiveClockIns] = useState([]); // Active clock-in timestamps
   const [liveClockingSeconds, setLiveClockingSeconds] = useState(0); // Running clocked total
@@ -38,10 +38,11 @@ export default function StatusSidebar({
     : Math.round(Math.min(Math.max(safeViewportWidth * 0.64, 880), 1120));
   const isWideLayout = !compactMode && panelWidth >= 720;
   
-  // Fetch status history when component mounts or jobId changes
+  // Fetch snapshot when component mounts or jobId changes
   useEffect(() => {
     if (!jobId) {
       // Clear data when no job selected
+      setSnapshot(null);
       setStatusHistory([]);
       setClockingBaseSeconds(0);
       setActiveClockIns([]);
@@ -49,9 +50,10 @@ export default function StatusSidebar({
       return;
     }
     
-    const loadHistory = async () => {
-      const fetched = await fetchStatusHistory(jobId);
+    const loadSnapshot = async () => {
+      const fetched = await fetchStatusSnapshot(jobId);
       if (!fetched) {
+        setSnapshot(null);
         setStatusHistory([]);
         setClockingBaseSeconds(0);
         setActiveClockIns([]);
@@ -60,22 +62,25 @@ export default function StatusSidebar({
       }
     };
 
-    loadHistory();
+    loadSnapshot();
   }, [jobId, refreshKey]);
 
-  // Fetch the complete status history for this job
-  const fetchStatusHistory = async (targetJobId) => {
+  // Fetch the complete status snapshot for this job
+  const fetchStatusSnapshot = async (targetJobId) => {
     try {
-      const response = await fetch(`/api/status/getHistory?jobId=${targetJobId}`);
+      const response = await fetch(`/api/status/snapshot?jobId=${targetJobId}`);
       const data = await response.json();
       
-      if (data.success) {
-        const history = Array.isArray(data.history) ? data.history : [];
-        setStatusHistory(history); // Array of {status, timestamp, userId, duration}
-        const summary = data.clockingSummary || {};
+      if (data.success && data.snapshot) {
+        const history = Array.isArray(data.snapshot.timeline)
+          ? data.snapshot.timeline
+          : [];
+        setSnapshot(data.snapshot);
+        setStatusHistory(history);
+        const summary = data.snapshot.clockingSummary || {};
         setClockingBaseSeconds(summary.completedSeconds || 0);
         setActiveClockIns(Array.isArray(summary.activeClockIns) ? summary.activeClockIns : []);
-        setSearchError(history.length ? '' : 'No status history available yet'); // Clear any errors
+        setSearchError(history.length ? '' : 'No status history available yet');
         return true;
       }
       setSearchError(data.error || 'Job not found');
@@ -99,10 +104,10 @@ export default function StatusSidebar({
 
     // Check if job exists first
     try {
-      const response = await fetch(`/api/status/getCurrentStatus?jobId=${trimmed}`);
+      const response = await fetch(`/api/status/snapshot?jobId=${trimmed}`);
       const data = await response.json();
       
-      if (data.success) {
+      if (data.success && data.snapshot?.job?.id) {
         onJobSearch?.(trimmed); // Update parent with searched job ID
         setSearchInput(''); // Clear search input
         setSearchError(''); // Clear errors
@@ -123,6 +128,7 @@ export default function StatusSidebar({
     }
     setSearchInput('');
     setSearchError('');
+    setSnapshot(null);
     setStatusHistory([]);
     setClockingBaseSeconds(0);
     setActiveClockIns([]);
@@ -153,38 +159,34 @@ export default function StatusSidebar({
     return () => clearInterval(interval);
   }, [clockingBaseSeconds, activeClockIns]);
 
-  const currentStatusForDisplay = currentStatus;
+  const currentStatusForDisplay = snapshot?.job?.status || null;
+  const currentStatusMeta = snapshot?.job?.statusMeta || null;
 
   const timelineStatuses = useMemo(() => {
     if (!Array.isArray(statusHistory)) return [];
 
     return statusHistory
       .map((entry, index) => {
-        const statusId = entry.status;
-        const config = statusId ? getStatusConfig(statusId) : null;
-        const fallbackLabel = statusId
-          ? statusId.replace(/_/g, " ")
-          : entry.label || "Update";
-        const timestamp = entry.timestamp
-          ? new Date(entry.timestamp)
+        const timestamp = entry.at || entry.timestamp;
+        const resolvedTimestamp = timestamp
+          ? new Date(timestamp)
           : new Date(Date.now() - index * 180000);
+        const metadata = entry.metadata || {};
 
         return {
           ...entry,
-          status: statusId || null,
-          label: entry.label || config?.label || fallbackLabel,
-          department: entry.department || entry.category || config?.department,
-          color:
-            entry.color ||
-            (entry.kind === "event"
-              ? "var(--accent-orange)"
-              : config?.color || "var(--grey-accent-light)"),
-          timestamp: timestamp.toISOString(),
-          kind: entry.kind || config?.kind || (statusId ? "status" : "event"),
-          description: entry.description || entry.reason || entry.notes || null,
-          icon: entry.icon || null,
-          eventType: entry.eventType || null,
-          meta: entry.meta || {},
+          status: entry.status || metadata.status || null,
+          label: entry.label || entry.to || metadata.label || "Update",
+          department: entry.department || metadata.department || null,
+          color: entry.color || metadata.color || null,
+          timestamp: resolvedTimestamp.toISOString(),
+          kind: entry.kind || metadata.kind || (entry.type === "status_change" ? "status" : "event"),
+          description: entry.description || metadata.description || null,
+          icon: entry.icon || metadata.icon || null,
+          eventType: entry.eventType || metadata.eventType || null,
+          meta: metadata.meta || metadata || {},
+          userId: entry.actorId || entry.userId || null,
+          userName: entry.actorName || entry.userName || metadata.meta?.userName || null,
         };
       })
       .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
@@ -443,7 +445,9 @@ export default function StatusSidebar({
             >
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
-                  <span style={{ fontWeight: '600' }}>Job ID: {jobId}</span>
+                  <span style={{ fontWeight: '600' }}>
+                    Job ID: {snapshot?.job?.id || jobId}
+                  </span>
                   <button
                     onClick={handleClearJob}
                     style={{
@@ -512,7 +516,7 @@ export default function StatusSidebar({
                 <JobProgressTracker
                   statuses={timelineStatuses}
                   currentStatus={currentStatusForDisplay}
-                  currentStatusMeta={getMainStatusMetadata(currentStatusForDisplay) || null}
+                  currentStatusMeta={currentStatusMeta}
                   isWide={isWideLayout}
                 />
               </div>
