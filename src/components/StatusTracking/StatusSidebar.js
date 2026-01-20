@@ -160,6 +160,7 @@ export default function StatusSidebar({
   }, [clockingBaseSeconds, activeClockIns]);
 
   const currentStatusForDisplay = snapshot?.job?.status || null;
+  const currentStatusId = snapshot?.job?.overallStatus || null;
   const currentStatusMeta = snapshot?.job?.statusMeta || null;
 
   const timelineStatuses = useMemo(() => {
@@ -516,6 +517,7 @@ export default function StatusSidebar({
                 <JobProgressTracker
                   statuses={timelineStatuses}
                   currentStatus={currentStatusForDisplay}
+                  currentStatusId={currentStatusId}
                   currentStatusMeta={currentStatusMeta}
                   isWide={isWideLayout}
                 />

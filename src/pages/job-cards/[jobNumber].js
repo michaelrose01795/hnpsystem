@@ -25,6 +25,8 @@ import {
   mapCustomerJobsToHistory
 } from "@/lib/jobcards/utils";
 import { summarizePartsPipeline } from "@/lib/partsPipeline";
+import { STATUSES as JOB_STATUSES } from "@/lib/status/catalog/job";
+import { resolveMainStatusId } from "@/lib/status/statusFlow";
 import VhcDetailsPanel from "@/components/VHC/VhcDetailsPanel";
 import InvoiceSection from "@/components/Invoices/InvoiceSection";
 import { calculateVhcFinancialTotals } from "@/lib/vhc/calculateVhcTotals";
@@ -116,8 +118,10 @@ const normalizeStatusId = (value = "") =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "_");
 
-const isStatusReadyForInvoicing = (status) =>
-  normalizeStatusId(status) === "in_progress";
+const isStatusReadyForInvoicing = (status, statusId) => {
+  if (statusId) return statusId === JOB_STATUSES.IN_PROGRESS;
+  return normalizeStatusId(status) === JOB_STATUSES.IN_PROGRESS;
+};
 
 const arePartsPricedAndAssigned = (allocations = []) => {
   const parts = Array.isArray(allocations) ? allocations : [];
@@ -302,6 +306,7 @@ export default function JobCardDetailPage() {
 
   // ✅ State Management
   const [jobData, setJobData] = useState(null);
+  const [statusSnapshot, setStatusSnapshot] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("customer-requests");
@@ -332,6 +337,7 @@ export default function JobCardDetailPage() {
 
   // ✅ Permission Check
   const userRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
+  const isWorkshopManager = userRoles.includes("workshop manager");
   const canEditBase = [
     "service",
     "service manager",
@@ -355,13 +361,19 @@ export default function JobCardDetailPage() {
     "parts manager",
     "after-sales manager"
   ].some((role) => userRoles.includes(role));
+  const canViewVhcTab = Boolean(jobData?.vhcRequired || isWorkshopManager);
 
   // Invoice tab is visible for anyone who can open this page to make review easier
   const canViewInvoice = true;
 
-  const isBookedStatus =
-    typeof jobData?.status === "string" &&
-    jobData.status.trim().toLowerCase() === "booked";
+  const overallStatusId =
+    statusSnapshot?.job?.overallStatus || resolveMainStatusId(jobData?.status);
+  const overallStatusLabel =
+    statusSnapshot?.job?.statusLabel || jobData?.status || "";
+  const isBookedStatus = overallStatusId
+    ? overallStatusId === JOB_STATUSES.BOOKED
+    : typeof jobData?.status === "string" &&
+      jobData.status.trim().toLowerCase() === "booked";
 
   // Check for tab query parameter to switch to invoice tab
   useEffect(() => {
@@ -381,7 +393,7 @@ export default function JobCardDetailPage() {
   useEffect(() => {
     if (!jobData) return;
 
-    const currentStatus = jobData.status;
+    const currentStatus = overallStatusLabel || jobData.status;
     const previousStatus = previousStatusRef.current;
 
     // Check if job was just marked as Complete
@@ -471,6 +483,31 @@ export default function JobCardDetailPage() {
   useEffect(() => {
     fetchJobData();
   }, [fetchJobData]);
+
+  useEffect(() => {
+    if (!jobData?.id) {
+      setStatusSnapshot(null);
+      return;
+    }
+    let isActive = true;
+    const loadSnapshot = async () => {
+      try {
+        const response = await fetch(`/api/status/snapshot?jobId=${jobData.id}`);
+        const payload = await response.json();
+        if (!isActive) return;
+        if (payload?.success && payload?.snapshot) {
+          setStatusSnapshot(payload.snapshot);
+        }
+      } catch (snapshotError) {
+        if (!isActive) return;
+        console.error("Failed to load status snapshot:", snapshotError);
+      }
+    };
+    loadSnapshot();
+    return () => {
+      isActive = false;
+    };
+  }, [jobData?.id]);
 
   const loadTrackerEntry = useCallback(async () => {
     const targetJobNumber = jobData?.jobNumber || jobNumber;
@@ -1426,7 +1463,10 @@ export default function JobCardDetailPage() {
   const vhcQualified = !jobData.vhcRequired || Boolean(jobData.vhcCompletedAt);
   const partsReady = arePartsPricedAndAssigned(jobData.partsAllocations);
   const partsAllocated = areAllPartsAllocated(jobData.partsAllocations);
-  const statusReadyForInvoicing = isStatusReadyForInvoicing(jobData.status);
+  const statusReadyForInvoicing = isStatusReadyForInvoicing(
+    jobData.status,
+    overallStatusId
+  );
   const invoicePrerequisitesMet = writeUpComplete && vhcQualified && partsReady && partsAllocated;
   const invoiceBlockingReasons = [];
   if (!writeUpComplete) {
@@ -1476,7 +1516,7 @@ export default function JobCardDetailPage() {
     ...(canViewPartsTab ? [{ id: "parts", label: "Parts"}] : []),
     { id: "notes", label: "Notes"},
     { id: "write-up", label: "Write Up"},
-    ...(jobData.vhcRequired ? [{ id: "vhc", label: "VHC", badge: vhcTabBadge}] : []),
+    ...(canViewVhcTab ? [{ id: "vhc", label: "VHC", badge: vhcTabBadge}] : []),
     { id: "warranty", label: "Warranty"},
     { id: "clocking", label: "Clocking"},
     { id: "messages", label: "Messages"},
@@ -1536,18 +1576,18 @@ export default function JobCardDetailPage() {
               <span style={{
                 padding: "6px 14px",
                 backgroundColor: 
-                  jobData.status === "Open" ? "var(--success-surface)" : 
-                  jobData.status === "Complete" ? "var(--info-surface)" : 
+                  overallStatusLabel === "Open" ? "var(--success-surface)" : 
+                  overallStatusLabel === "Complete" ? "var(--info-surface)" : 
                   "var(--warning-surface)",
                 color: 
-                  jobData.status === "Open" ? "var(--success-dark)" : 
-                  jobData.status === "Complete" ? "var(--info)" : 
+                  overallStatusLabel === "Open" ? "var(--success-dark)" : 
+                  overallStatusLabel === "Complete" ? "var(--info)" : 
                   "var(--danger)",
                 borderRadius: "20px",
                 fontWeight: "600",
                 fontSize: "13px"
               }}>
-                {jobData.status}
+                {overallStatusLabel}
               </span>
               {jobData.jobSource === "Warranty" && (
                 <span style={{

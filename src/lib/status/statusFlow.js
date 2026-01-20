@@ -1,40 +1,52 @@
 // file location: src/lib/status/statusFlow.js
-// This file defines main job statuses (stored on jobs) and sub-statuses (timeline only).
+// Legacy compatibility layer for job statuses and timeline events.
+
+import { normalizeStatusId as normalizeCatalogStatusId } from "@/lib/status/catalog/utils";
+import {
+  STATUSES as JOB_STATUSES,
+  DISPLAY as JOB_DISPLAY,
+  NORMALIZE as NORMALIZE_JOB,
+} from "@/lib/status/catalog/job";
+import {
+  STATUSES as TIMELINE_STATUSES,
+  DISPLAY as TIMELINE_DISPLAY,
+  NORMALIZE as NORMALIZE_TIMELINE,
+} from "@/lib/status/catalog/timeline";
 
 export const MAIN_STATUS_ORDER = [
-  "booked",
-  "checked_in",
-  "in_progress",
-  "invoiced",
-  "complete",
+  JOB_STATUSES.BOOKED,
+  JOB_STATUSES.CHECKED_IN,
+  JOB_STATUSES.IN_PROGRESS,
+  JOB_STATUSES.INVOICED,
+  JOB_STATUSES.COMPLETE,
 ];
 
 export const SERVICE_STATUS_FLOW = {
   BOOKED: {
-    id: "booked",
-    label: "Booked",
+    id: JOB_STATUSES.BOOKED,
+    label: JOB_DISPLAY[JOB_STATUSES.BOOKED],
     color: "var(--info)",
-    next: ["checked_in", "in_progress"],
+    next: [JOB_STATUSES.CHECKED_IN, JOB_STATUSES.IN_PROGRESS],
     department: "Service Reception",
     canClockOn: false,
     pausesTime: true,
   },
 
   CHECKED_IN: {
-    id: "checked_in",
-    label: "Checked In",
+    id: JOB_STATUSES.CHECKED_IN,
+    label: JOB_DISPLAY[JOB_STATUSES.CHECKED_IN],
     color: "var(--accent-purple)",
-    next: ["in_progress"],
+    next: [JOB_STATUSES.IN_PROGRESS],
     department: "Service Reception",
     canClockOn: false,
     pausesTime: true,
   },
 
   IN_PROGRESS: {
-    id: "in_progress",
-    label: "In Progress",
+    id: JOB_STATUSES.IN_PROGRESS,
+    label: JOB_DISPLAY[JOB_STATUSES.IN_PROGRESS],
     color: "var(--info)",
-    next: ["invoiced"],
+    next: [JOB_STATUSES.INVOICED],
     department: "Workshop",
     canClockOn: true,
     pausesTime: false,
@@ -42,18 +54,18 @@ export const SERVICE_STATUS_FLOW = {
   },
 
   INVOICED: {
-    id: "invoiced",
-    label: "Invoiced",
+    id: JOB_STATUSES.INVOICED,
+    label: JOB_DISPLAY[JOB_STATUSES.INVOICED],
     color: "var(--info)",
-    next: ["complete"],
+    next: [JOB_STATUSES.COMPLETE],
     department: "Accounts",
     canClockOn: false,
     pausesTime: true,
   },
 
   COMPLETE: {
-    id: "complete",
-    label: "Complete",
+    id: JOB_STATUSES.COMPLETE,
+    label: JOB_DISPLAY[JOB_STATUSES.COMPLETE],
     color: "var(--success)",
     next: null,
     department: "Accounts",
@@ -65,190 +77,103 @@ export const SERVICE_STATUS_FLOW = {
 
 export const JOB_SUB_STATUS_FLOW = {
   TECHNICIAN_STARTED: {
-    id: "technician_started",
-    label: "Technician Started",
+    id: TIMELINE_STATUSES.TECHNICIAN_STARTED,
+    label: TIMELINE_DISPLAY[TIMELINE_STATUSES.TECHNICIAN_STARTED],
     color: "var(--info)",
     department: "Workshop",
     category: "Workshop",
   },
   TECHNICIAN_WORK_COMPLETED: {
-    id: "technician_work_completed",
-    label: "Technician Work Completed",
+    id: TIMELINE_STATUSES.TECHNICIAN_WORK_COMPLETED,
+    label: TIMELINE_DISPLAY[TIMELINE_STATUSES.TECHNICIAN_WORK_COMPLETED],
     color: "var(--success)",
     department: "Workshop",
     category: "Workshop",
   },
   VHC_STARTED: {
-    id: "vhc_started",
-    label: "VHC Started",
+    id: TIMELINE_STATUSES.VHC_STARTED,
+    label: TIMELINE_DISPLAY[TIMELINE_STATUSES.VHC_STARTED],
     color: "var(--accent-purple)",
     department: "VHC",
     category: "VHC",
   },
   VHC_REOPENED: {
-    id: "vhc_reopened",
-    label: "VHC Reopened",
+    id: TIMELINE_STATUSES.VHC_REOPENED,
+    label: TIMELINE_DISPLAY[TIMELINE_STATUSES.VHC_REOPENED],
     color: "var(--warning)",
     department: "VHC",
     category: "VHC",
   },
   VHC_COMPLETED: {
-    id: "vhc_completed",
-    label: "VHC Completed",
+    id: TIMELINE_STATUSES.VHC_COMPLETED,
+    label: TIMELINE_DISPLAY[TIMELINE_STATUSES.VHC_COMPLETED],
     color: "var(--success)",
     department: "VHC",
     category: "VHC",
   },
   WAITING_FOR_PRICING: {
-    id: "waiting_for_pricing",
-    label: "Waiting for Pricing",
+    id: TIMELINE_STATUSES.WAITING_FOR_PRICING,
+    label: TIMELINE_DISPLAY[TIMELINE_STATUSES.WAITING_FOR_PRICING],
     color: "var(--warning)",
     department: "VHC",
     category: "VHC",
   },
   PRICING_COMPLETED: {
-    id: "pricing_completed",
-    label: "Pricing Completed",
+    id: TIMELINE_STATUSES.PRICING_COMPLETED,
+    label: TIMELINE_DISPLAY[TIMELINE_STATUSES.PRICING_COMPLETED],
     color: "var(--info)",
     department: "VHC",
     category: "VHC",
   },
   SENT_TO_CUSTOMER: {
-    id: "sent_to_customer",
-    label: "Sent to Customer",
+    id: TIMELINE_STATUSES.SENT_TO_CUSTOMER,
+    label: TIMELINE_DISPLAY[TIMELINE_STATUSES.SENT_TO_CUSTOMER],
     color: "var(--info)",
     department: "VHC",
     category: "VHC",
   },
   CUSTOMER_AUTHORISED: {
-    id: "customer_authorised",
-    label: "Customer Authorised",
+    id: TIMELINE_STATUSES.CUSTOMER_AUTHORISED,
+    label: TIMELINE_DISPLAY[TIMELINE_STATUSES.CUSTOMER_AUTHORISED],
     color: "var(--success)",
     department: "VHC",
     category: "VHC",
   },
   CUSTOMER_DECLINED: {
-    id: "customer_declined",
-    label: "Customer Declined",
+    id: TIMELINE_STATUSES.CUSTOMER_DECLINED,
+    label: TIMELINE_DISPLAY[TIMELINE_STATUSES.CUSTOMER_DECLINED],
     color: "var(--danger)",
     department: "VHC",
     category: "VHC",
   },
   WAITING_FOR_PARTS: {
-    id: "waiting_for_parts",
-    label: "Waiting for Parts",
+    id: TIMELINE_STATUSES.WAITING_FOR_PARTS,
+    label: TIMELINE_DISPLAY[TIMELINE_STATUSES.WAITING_FOR_PARTS],
     color: "var(--danger)",
     department: "Parts",
     category: "Parts",
   },
   PARTS_READY: {
-    id: "parts_ready",
-    label: "Parts Ready",
+    id: TIMELINE_STATUSES.PARTS_READY,
+    label: TIMELINE_DISPLAY[TIMELINE_STATUSES.PARTS_READY],
     color: "var(--success)",
     department: "Parts",
     category: "Parts",
   },
   READY_FOR_INVOICE: {
-    id: "ready_for_invoice",
-    label: "Ready for Invoice",
+    id: TIMELINE_STATUSES.READY_FOR_INVOICE,
+    label: TIMELINE_DISPLAY[TIMELINE_STATUSES.READY_FOR_INVOICE],
     color: "var(--accent-orange)",
     department: "Admin",
     category: "Admin",
   },
 };
 
-const LEGACY_STATUS_TO_MAIN_ID = {
-  appointment_booked: "booked",
-  customer_checkin_pending: "booked",
-  customer_arrived: "checked_in",
-  job_accepted: "checked_in",
-  assigned_to_tech: "checked_in",
-  in_progress: "in_progress",
-  in_mot: "in_progress",
-  waiting_for_parts: "in_progress",
-  tea_break: "in_progress",
-  parts_arrived: "in_progress",
-  vhc_waiting: "in_progress",
-  vhc_in_progress: "in_progress",
-  vhc_complete: "in_progress",
-  vhc_reopened: "in_progress",
-  vhc_sent_to_service: "in_progress",
-  waiting_for_pricing: "in_progress",
-  vhc_priced: "in_progress",
-  vhc_sent_to_customer: "in_progress",
-  vhc_approved: "in_progress",
-  vhc_declined: "in_progress",
-  work_complete: "in_progress",
-  ready_for_valet: "in_progress",
-  being_valeted: "in_progress",
-  valet_complete: "in_progress",
-  ready_for_release: "in_progress",
-  delivered_to_customer: "in_progress",
-  invoicing: "invoiced",
-  invoiced: "invoiced",
-  released: "complete",
-  completed: "complete",
-  complete: "complete",
-  collected: "complete",
-  cancelled: "complete",
-  workshop_mot: "in_progress",
-  vhc_sent: "in_progress",
-  additional_work_required: "in_progress",
-  additional_work_being_carried_out: "in_progress",
-  retail_parts_on_order: "in_progress",
-  warranty_parts_on_order: "in_progress",
-  raise_tsr: "in_progress",
-  waiting_for_tsr_response: "in_progress",
-  warranty_quality_control: "in_progress",
-  warranty_ready_to_claim: "in_progress",
-  being_washed: "in_progress",
-  tech_done: "in_progress",
-  tech_complete: "in_progress",
-};
+export const normalizeStatusId = (status) => normalizeCatalogStatusId(status);
 
-const LEGACY_STATUS_TO_SUB_ID = {
-  workshop_mot: "technician_started",
-  assigned_to_tech: "technician_started",
-  in_progress: "technician_started",
-  vhc_in_progress: "vhc_started",
-  vhc_reopened: "vhc_reopened",
-  vhc_complete: "vhc_completed",
-  vhc_sent: "sent_to_customer",
-  vhc_sent_to_customer: "sent_to_customer",
-  waiting_for_pricing: "waiting_for_pricing",
-  vhc_priced: "pricing_completed",
-  vhc_approved: "customer_authorised",
-  vhc_declined: "customer_declined",
-  work_complete: "technician_work_completed",
-  tech_done: "technician_work_completed",
-  tech_complete: "technician_work_completed",
-  waiting_for_parts: "waiting_for_parts",
-  parts_arrived: "parts_ready",
-  retail_parts_on_order: "waiting_for_parts",
-  warranty_parts_on_order: "waiting_for_parts",
-};
+export const resolveMainStatusId = (status) => NORMALIZE_JOB(status);
 
-export const normalizeStatusId = (status) => {
-  if (!status) return null;
-  return String(status)
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_");
-};
-
-export const resolveMainStatusId = (status) => {
-  const normalized = normalizeStatusId(status);
-  if (!normalized) return null;
-  if (SERVICE_STATUS_FLOW[normalized.toUpperCase()]) return normalized;
-  return LEGACY_STATUS_TO_MAIN_ID[normalized] || null;
-};
-
-export const resolveSubStatusId = (status) => {
-  const normalized = normalizeStatusId(status);
-  if (!normalized) return null;
-  if (JOB_SUB_STATUS_FLOW[normalized.toUpperCase()]) return normalized;
-  return LEGACY_STATUS_TO_SUB_ID[normalized] || null;
-};
+export const resolveSubStatusId = (status) => NORMALIZE_TIMELINE(status);
 
 export const getMainStatusMetadata = (status) => {
   const mainId = resolveMainStatusId(status);

@@ -168,6 +168,7 @@ export default function ViewJobCards() {
   const [orders, setOrders] = useState([]); // store parts orders
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [popupJob, setPopupJob] = useState(null); // store selected job for popup
+  const [popupSnapshot, setPopupSnapshot] = useState(null);
   const [searchValues, setSearchValues] = useState({
     today: "",
     carryOver: "",
@@ -196,6 +197,30 @@ export default function ViewJobCards() {
       setDivisionFilter("All");
     }
   }, [router.query?.division]);
+  useEffect(() => {
+    if (!popupJob?.id) {
+      setPopupSnapshot(null);
+      return;
+    }
+    let isActive = true;
+    const loadSnapshot = async () => {
+      try {
+        const response = await fetch(`/api/status/snapshot?jobId=${popupJob.id}`);
+        const payload = await response.json();
+        if (!isActive) return;
+        if (payload?.success && payload?.snapshot) {
+          setPopupSnapshot(payload.snapshot);
+        }
+      } catch (snapshotError) {
+        if (!isActive) return;
+        console.error("Failed to load status snapshot:", snapshotError);
+      }
+    };
+    loadSnapshot();
+    return () => {
+      isActive = false;
+    };
+  }, [popupJob?.id]);
   const [divisionFilter, setDivisionFilter] = useState("All"); // Retail vs Sales filter
   const { triggerNextAction } = useNextAction(); // next action dispatcher
   const { user } = useUser();
@@ -486,13 +511,23 @@ export default function ViewJobCards() {
     .slice()
     .sort((a, b) => getSortValue(a) - getSortValue(b));
 
+  const popupStatusLabel = useMemo(() => {
+    if (!popupJob) return "";
+    const snapshotStatus = popupSnapshot?.job?.status || null;
+    const snapshotLabel = popupSnapshot?.job?.statusLabel || null;
+    if (snapshotLabel && (popupJob.status === snapshotStatus || popupJob.status === snapshotLabel)) {
+      return snapshotLabel;
+    }
+    return popupJob.status || snapshotLabel || "";
+  }, [popupJob, popupSnapshot]);
+
   const combinedStatusOptions = useMemo(() => {
     const union = new Set([...TODAY_STATUSES, ...CARRY_OVER_STATUSES]);
-    if (popupJob?.status) {
-      union.add(popupJob.status);
+    if (popupStatusLabel) {
+      union.add(popupStatusLabel);
     }
     return Array.from(union);
-  }, [popupJob]);
+  }, [popupJob, popupStatusLabel]);
 
   const handleQuickView = (job) => {
     setPopupJob(job);
@@ -1079,7 +1114,7 @@ export default function ViewJobCards() {
                   Update Status
                 </label>
                 <select
-                  value={popupJob.status}
+                  value={popupStatusLabel || ""}
                   onChange={(e) => handleStatusChange(popupJob.id, e.target.value)}
                   style={{
                     width: "100%",

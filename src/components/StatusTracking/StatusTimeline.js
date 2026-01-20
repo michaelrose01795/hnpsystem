@@ -4,8 +4,9 @@
 import { getStatusTimeline } from '@/lib/status/statusFlow';
 
 // Visual timeline showing all statuses in order with progress indication
-export default function StatusTimeline({ currentStatus, statusHistory, getTimeInStatus }) {
+export default function StatusTimeline({ currentStatus, currentStatusId = null, statusHistory, getTimeInStatus }) {
   const allStatuses = getStatusTimeline(); // Get ordered list of all possible statuses
+  const resolvedCurrent = currentStatus || currentStatusId;
   
   // Check if a status has been completed
   const isStatusCompleted = (statusId) => {
@@ -14,12 +15,12 @@ export default function StatusTimeline({ currentStatus, statusHistory, getTimeIn
 
   // Check if this is the current active status
   const isCurrentStatus = (statusId) => {
-    return currentStatus?.toUpperCase() === statusId.toUpperCase();
+    return resolvedCurrent?.toUpperCase() === statusId.toUpperCase();
   };
 
   // Get the index of current status in the timeline
   const currentIndex = allStatuses.findIndex(
-    s => s.id === currentStatus?.toLowerCase()
+    s => s.id === resolvedCurrent?.toLowerCase()
   );
 
   return (

@@ -7,6 +7,7 @@ import {
   resolveMainStatusId,
   resolveSubStatusId,
 } from "@/lib/status/statusFlow";
+import { NORMALIZE as NORMALIZE_TECH, STATUSES as TECH_STATUSES } from "@/lib/status/catalog/tech";
 
 const db = getDatabaseClient();
 
@@ -31,7 +32,7 @@ const ensureIsoString = (value, fallback = null) => {
   return parsed.toISOString();
 };
 
-const buildStatusPayload = (statusText) => {
+const buildStatusPayload = (statusText, addWarning) => {
   const subStatusId = resolveSubStatusId(statusText);
   if (subStatusId) {
     const subConfig = getSubStatusMetadata(statusText) || {};
@@ -62,6 +63,14 @@ const buildStatusPayload = (statusText) => {
   }
 
   const normalizedFallback = normalizeStatusId(statusText);
+  if (addWarning && statusText) {
+    const rawValue = typeof statusText === "string" ? statusText.trim() : String(statusText);
+    if (rawValue) {
+      addWarning(
+        `Unknown status value "${rawValue}"${normalizedFallback ? ` normalized to "${normalizedFallback}"` : ""}.`
+      );
+    }
+  }
   return {
     id: normalizedFallback,
     label: statusText || normalizedFallback || null,
@@ -72,6 +81,14 @@ const buildStatusPayload = (statusText) => {
     eventType: "status_update",
     isSubStatus: true,
   };
+};
+
+const resolveTechStatus = ({ status, techCompletionStatus }) => {
+  const completionStatus = NORMALIZE_TECH(techCompletionStatus);
+  if (completionStatus === TECH_STATUSES.COMPLETE) {
+    return completionStatus;
+  }
+  return NORMALIZE_TECH(status) || TECH_STATUSES.IN_PROGRESS;
 };
 
 const buildClockingSummary = (clockingRows = []) => {
@@ -211,10 +228,17 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
     return { success: false, error: "Missing job identifier" };
   }
 
+  const normalizationWarnings = new Set();
+  const addWarning = (message) => {
+    if (message) {
+      normalizationWarnings.add(message);
+    }
+  };
+
   const jobQuery = db
     .from("jobs")
     .select(
-      `id, job_number, vehicle_reg, status, waiting_status, updated_at, status_updated_at, status_updated_by, vhc_required, vhc_completed_at, vhc_sent_at, additional_work_authorized_at, job_source`
+      `id, job_number, vehicle_reg, status, tech_completion_status, waiting_status, updated_at, status_updated_at, status_updated_by, vhc_required, vhc_completed_at, vhc_sent_at, additional_work_authorized_at, job_source`
     )
     .limit(1);
 
@@ -323,7 +347,7 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
     console.error("Failed to load job status history", historyRes.error);
   } else {
     (historyRes.data || []).forEach((row) => {
-      const statusPayload = buildStatusPayload(row.to_status);
+      const statusPayload = buildStatusPayload(row.to_status, addWarning);
       const baseEntry = {
         id: row.id,
         status: statusPayload.id,
@@ -357,6 +381,9 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
   if (statusEntries.length === 0 && jobRow.status) {
     const mainId = resolveMainStatusId(jobRow.status);
     const mainMeta = getMainStatusMetadata(jobRow.status) || {};
+    if (!mainId && jobRow.status) {
+      addWarning(`Unknown main status \"${jobRow.status}\".`);
+    }
     statusEntries.push({
       id: null,
       status: mainId,
@@ -515,6 +542,14 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
     (clockingRes.data || []).filter((row) => !row.clock_out).slice(-1)[0] || null;
 
   const jobStatusMeta = getMainStatusMetadata(jobRow.status) || {};
+  const overallStatus = resolveMainStatusId(jobRow.status);
+  if (!overallStatus && jobRow.status) {
+    addWarning(`Unknown main status \"${jobRow.status}\".`);
+  }
+  const techStatus = resolveTechStatus({
+    status: jobRow.status,
+    techCompletionStatus: jobRow.tech_completion_status,
+  });
 
   const vhcRequired = Boolean(jobRow.vhc_required);
   const vhcCompletedAt = jobRow.vhc_completed_at || null;
@@ -531,6 +566,7 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
       jobNumber: jobRow.job_number,
       reg: jobRow.vehicle_reg || null,
       status: jobRow.status || null,
+      overallStatus,
       statusLabel: jobStatusMeta?.label || jobRow.status || null,
       statusMeta: {
         color: jobStatusMeta?.color || null,
@@ -541,6 +577,9 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
       updatedAt:
         jobRow.status_updated_at || jobRow.updated_at || new Date().toISOString(),
       updatedBy: jobRow.status_updated_by || null,
+    },
+    tech: {
+      status: techStatus || null,
     },
     workflows: {
       vhc: {
@@ -597,6 +636,7 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
       writeUpStatus,
     }),
     clockingSummary,
+    normalizationWarnings: Array.from(normalizationWarnings),
     generatedAt: new Date().toISOString(),
   };
 

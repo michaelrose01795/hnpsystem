@@ -356,8 +356,9 @@ function GoodsInPage() {
     setPartError("");
     setPartForm((prev) => {
       const next = { ...prev, [field]: value };
-      // Keep retail/cost prices in sync with a fixed £30 delta.
-      if (field === "retailPrice") {
+      const isTyreFranchise = (next.franchise || "").toLowerCase() === "tyre" || (next.franchise || "").toLowerCase() === "tyres";
+      // Keep retail/cost prices in sync with a fixed £30 delta only for Tyre/Tyres.
+      if (isTyreFranchise && field === "retailPrice") {
         if (!value) {
           next.costPrice = "";
         } else {
@@ -366,7 +367,7 @@ function GoodsInPage() {
             next.costPrice = (retailNum - 30).toFixed(2);
           }
         }
-      } else if (field === "costPrice") {
+      } else if (isTyreFranchise && field === "costPrice") {
         if (!value) {
           next.retailPrice = "";
         } else {
@@ -374,6 +375,14 @@ function GoodsInPage() {
           if (!isNaN(costNum)) {
             next.retailPrice = (costNum + 30).toFixed(2);
           }
+        }
+      } else if (field === "franchise" && isTyreFranchise) {
+        const retailNum = parseFloat(next.retailPrice);
+        const costNum = parseFloat(next.costPrice);
+        if (!isNaN(retailNum) && isNaN(costNum)) {
+          next.costPrice = (retailNum - 30).toFixed(2);
+        } else if (!isNaN(costNum) && isNaN(retailNum)) {
+          next.retailPrice = (costNum + 30).toFixed(2);
         }
       }
 
@@ -1792,6 +1801,38 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish }) {
     }
   };
 
+  const infoCalloutStyle = {
+    background: "var(--layer-section-level-2)",
+    border: "1px solid var(--surface-light)",
+    borderRadius: "12px",
+    padding: "10px 12px",
+    color: "var(--text-secondary)",
+    fontSize: "0.9rem",
+    lineHeight: 1.4,
+  };
+
+  const modalSectionStyle = {
+    background: "var(--surface)",
+    border: "1px solid var(--surface-light)",
+    borderRadius: "16px",
+    padding: "16px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "12px",
+  };
+
+  const jobCardStyle = (isSelected) => ({
+    width: "100%",
+    textAlign: "left",
+    border: "1px solid var(--surface-light)",
+    borderRadius: "12px",
+    padding: "12px",
+    marginBottom: "8px",
+    cursor: "pointer",
+    background: isSelected ? "var(--layer-section-level-2)" : "var(--surface)",
+    color: "var(--text-primary)",
+  });
+
   return (
     <div style={popupOverlayStyles}>
       <div style={{ ...popupCardStyles, padding: "24px", maxWidth: "720px" }}>
@@ -1801,131 +1842,128 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish }) {
             Cancel
           </button>
         </div>
-        <p style={{ marginTop: 0, color: "var(--text-secondary)" }}>
+        <div style={infoCalloutStyle}>
           Select one job and the parts to add. Part number, description, and quantity will be sent to the job.
-        </p>
-        <label style={labelStyle}>Search job number or customer</label>
-        <input
-          style={inputStyle}
-          value={searchTerm}
-          onChange={(event) => setSearchTerm(event.target.value)}
-          placeholder="e.g., GJ12345"
-          disabled={submitting}
-        />
-        {loading && <div style={{ marginTop: "8px" }}>Searching...</div>}
-        {error && <div style={{ marginTop: "8px", color: "var(--danger)" }}>{error}</div>}
-        <div style={{ maxHeight: "260px", overflowY: "auto", marginTop: "12px" }}>
-          {jobResults.map((job) => {
-            const isSelected = selectedJob?.id === job.id;
-                  return (
-                    <button
-                      key={job.id}
-                      style={{
-                        width: "100%",
-                        textAlign: "left",
-                  border: "1px solid var(--surface-light)",
-                  borderRadius: "12px",
-                  padding: "12px",
-                  marginBottom: "8px",
-                  cursor: "pointer",
-                  background: isSelected ? "var(--surface-light)" : "transparent",
-                      }}
-                      onClick={() => {
-                        setSelectedJob(job);
-                        setError("");
-                      }}
-                      disabled={submitting}
-                    >
-                <div style={{ fontWeight: 600 }}>
-                  {job.job_number} · {job.customer || "Unknown customer"}
-                </div>
-                <div style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>{job.description || "No description"}</div>
-                <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
-                  {job.vehicle_reg || "No reg"} · Updated {job.updated_at ? formatRelativeTime(job.updated_at) : "recently"}
-                </div>
-              </button>
+        </div>
+        <div style={{ display: "grid", gap: "16px", marginTop: "16px" }}>
+          <div style={modalSectionStyle}>
+            <label style={labelStyle}>Search job number or customer</label>
+            <input
+              style={inputStyle}
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="e.g., GJ12345"
+              disabled={submitting}
+            />
+            {loading && <div style={{ color: "var(--text-secondary)" }}>Searching...</div>}
+            {error && <div style={{ color: "var(--danger)" }}>{error}</div>}
+            <div style={{ maxHeight: "260px", overflowY: "auto" }}>
+              {jobResults.map((job) => {
+                const isSelected = selectedJob?.id === job.id;
+                return (
+                  <button
+                    key={job.id}
+                    style={jobCardStyle(isSelected)}
+                    onClick={() => {
+                      setSelectedJob(job);
+                      setError("");
+                    }}
+                    disabled={submitting}
+                  >
+                    <div style={{ fontWeight: 600 }}>
+                      {job.job_number} · {job.customer || "Unknown customer"}
+                    </div>
+                    <div style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>
+                      {job.description || "No description"}
+                    </div>
+                    <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+                      {job.vehicle_reg || "No reg"} · Updated{" "}
+                      {job.updated_at ? formatRelativeTime(job.updated_at) : "recently"}
+                    </div>
+                  </button>
                 );
               })}
-        </div>
-        {selectedJob && (
-          <div style={{ marginTop: "8px", fontSize: "0.9rem", color: "var(--text-secondary)" }}>
-            Selected job: <strong>{selectedJob.job_number}</strong>
+            </div>
+            {selectedJob && (
+              <div style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>
+                Selected job: <strong>{selectedJob.job_number}</strong>
+              </div>
+            )}
           </div>
-        )}
-        <div style={{ marginTop: "16px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <label style={labelStyle}>Select parts to add</label>
-            <div style={{ display: "flex", gap: "8px" }}>
-              <button
-                style={secondaryButtonStyle}
-                onClick={() => setSelectedItems(new Set(availableItems.map((item) => item.id)))}
-                disabled={availableItems.length === 0 || submitting}
-              >
-                Select all
-              </button>
-              <button
-                style={secondaryButtonStyle}
-                onClick={() => setSelectedItems(new Set())}
-                disabled={selectedItems.size === 0 || submitting}
-              >
-                Clear
-              </button>
+          <div style={modalSectionStyle}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <label style={labelStyle}>Select parts to add</label>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button
+                  style={secondaryButtonStyle}
+                  onClick={() => setSelectedItems(new Set(availableItems.map((item) => item.id)))}
+                  disabled={availableItems.length === 0 || submitting}
+                >
+                  Select all
+                </button>
+                <button
+                  style={secondaryButtonStyle}
+                  onClick={() => setSelectedItems(new Set())}
+                  disabled={selectedItems.size === 0 || submitting}
+                >
+                  Clear
+                </button>
+              </div>
             </div>
+            {availableItems.length === 0 ? (
+              <div style={{ color: "var(--text-secondary)" }}>
+                All parts from this goods-in are already linked to a job.
+              </div>
+            ) : (
+              <div
+                style={{
+                  border: "1px solid var(--surface-light)",
+                  borderRadius: "12px",
+                  overflow: "hidden",
+                }}
+              >
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead style={{ background: "var(--layer-section-level-2)" }}>
+                    <tr>
+                      <th style={{ ...invoiceHeaderCellStyle, width: "44px" }}></th>
+                      <th style={invoiceHeaderCellStyle}>Part number</th>
+                      <th style={invoiceHeaderCellStyle}>Description</th>
+                      <th style={invoiceHeaderCellStyle}>Qty</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {availableItems.map((item) => {
+                      const isSelected = selectedItems.has(item.id);
+                      return (
+                        <tr key={item.id} style={{ borderTop: "1px solid var(--surface-light)" }}>
+                          <td style={{ ...invoiceCellStyle, width: "44px" }}>
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(event) => {
+                                const next = new Set(selectedItems);
+                                if (event.target.checked) {
+                                  next.add(item.id);
+                                } else {
+                                  next.delete(item.id);
+                                }
+                                setSelectedItems(next);
+                                setError("");
+                              }}
+                              disabled={submitting}
+                            />
+                          </td>
+                          <td style={{ ...invoiceCellStyle, fontWeight: 600 }}>{item.part_number}</td>
+                          <td style={{ ...invoiceCellStyle, color: "var(--text-secondary)" }}>{item.description}</td>
+                          <td style={invoiceCellStyle}>{item.quantity}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
-          {availableItems.length === 0 ? (
-            <div style={{ marginTop: "12px", color: "var(--text-secondary)" }}>
-              All parts from this goods-in are already linked to a job.
-            </div>
-          ) : (
-            <div
-              style={{
-                marginTop: "12px",
-                border: "1px solid var(--surface-light)",
-                borderRadius: "12px",
-                overflow: "hidden",
-              }}
-            >
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead style={{ background: "var(--surface-light)" }}>
-                  <tr>
-                    <th style={{ ...invoiceHeaderCellStyle, width: "44px" }}></th>
-                    <th style={invoiceHeaderCellStyle}>Part number</th>
-                    <th style={invoiceHeaderCellStyle}>Description</th>
-                    <th style={invoiceHeaderCellStyle}>Qty</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {availableItems.map((item) => {
-                    const isSelected = selectedItems.has(item.id);
-                    return (
-                      <tr key={item.id} style={{ borderTop: "1px solid var(--surface-light)" }}>
-                        <td style={{ ...invoiceCellStyle, width: "44px" }}>
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={(event) => {
-                              const next = new Set(selectedItems);
-                              if (event.target.checked) {
-                                next.add(item.id);
-                              } else {
-                                next.delete(item.id);
-                              }
-                              setSelectedItems(next);
-                              setError("");
-                            }}
-                            disabled={submitting}
-                          />
-                        </td>
-                        <td style={{ ...invoiceCellStyle, fontWeight: 600 }}>{item.part_number}</td>
-                        <td style={{ ...invoiceCellStyle, color: "var(--text-secondary)" }}>{item.description}</td>
-                        <td style={invoiceCellStyle}>{item.quantity}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
         </div>
         <div style={{ display: "flex", gap: "12px", marginTop: "16px", justifyContent: "flex-end" }}>
           <button style={secondaryButtonStyle} onClick={onFinish} disabled={submitting}>

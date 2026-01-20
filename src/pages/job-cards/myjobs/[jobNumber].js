@@ -24,6 +24,7 @@ import {
   resolveMainStatusId,
   resolveSubStatusId,
 } from "@/lib/status/statusFlow";
+import { DISPLAY as TECH_DISPLAY } from "@/lib/status/catalog/tech";
 
 // VHC Section Modals
 import WheelsTyresDetailsModal from "@/components/VHC/WheelsTyresDetailsModal";
@@ -334,6 +335,7 @@ export default function TechJobDetailPage() {
 
   // State management
   const [jobData, setJobData] = useState(null);
+  const [statusSnapshot, setStatusSnapshot] = useState(null);
   const [vhcChecks, setVhcChecks] = useState([]);
   const [clockingStatus, setClockingStatus] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -660,6 +662,31 @@ export default function TechJobDetailPage() {
   useEffect(() => {
     fetchJobData();
   }, [fetchJobData]);
+
+  useEffect(() => {
+    if (!jobCardId) {
+      setStatusSnapshot(null);
+      return;
+    }
+    let isActive = true;
+    const loadSnapshot = async () => {
+      try {
+        const response = await fetch(`/api/status/snapshot?jobId=${jobCardId}`);
+        const payload = await response.json();
+        if (!isActive) return;
+        if (payload?.success && payload?.snapshot) {
+          setStatusSnapshot(payload.snapshot);
+        }
+      } catch (snapshotError) {
+        if (!isActive) return;
+        console.error("Failed to load status snapshot:", snapshotError);
+      }
+    };
+    loadSnapshot();
+    return () => {
+      isActive = false;
+    };
+  }, [jobCardId]);
 
   useEffect(() => {
     fetchClockedHoursTotal();
@@ -1872,7 +1899,10 @@ export default function TechJobDetailPage() {
   // Extract job data
   const { jobCard, customer, vehicle } = jobData;
   const jobRequiresVhc = jobCard?.vhcRequired === true;
-  const techStatusDisplay = resolveTechStatusLabel(jobCard);
+  const snapshotTechStatus = statusSnapshot?.tech?.status || null;
+  const techStatusDisplay =
+    (snapshotTechStatus && TECH_DISPLAY[snapshotTechStatus]) ||
+    resolveTechStatusLabel(jobCard);
   const jobStatusColor = STATUS_COLORS[techStatusDisplay] || "var(--info)";
   const jobStatusBadgeStyle = getStatusBadgeStyle(techStatusDisplay, jobStatusColor);
   const partsCount =

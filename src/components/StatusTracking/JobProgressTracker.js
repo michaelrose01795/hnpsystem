@@ -44,12 +44,14 @@ const isTechCompleteStatus = (value) => {
 export default function JobProgressTracker({
   statuses = [],
   currentStatus,
+  currentStatusId = null,
   currentStatusMeta = null,
   isWide = false,
 }) {
   const [selectedUser, setSelectedUser] = useState("all");
   const [selectedAction, setSelectedAction] = useState("all");
-  const normalizedCurrent = currentStatus?.toLowerCase() || null;
+  const normalizedCurrent =
+    typeof currentStatus === "string" ? currentStatus.toLowerCase() : currentStatusId || null;
   const orderedStatuses = Array.isArray(statuses) ? statuses : [];
 
   const chronologicalStatuses = useMemo(
