@@ -14,26 +14,38 @@ import { DropdownField } from "@/components/dropdownAPI";
 import { addMonths } from "date-fns";
 
 const CAR_LOCATIONS = [
-  { id: "service-side", label: "Service side" },
-  { id: "sales-side", label: "Sales side" },
-  { id: "staff-parking", label: "Staff parking" },
+  { id: "na", label: "N/A" },
+  { id: "service", label: "Service" },
+  { id: "sales-1", label: "Sales 1" },
+  { id: "sales-2", label: "Sales 2" },
+  { id: "sales-3", label: "Sales 3" },
+  { id: "sales-4", label: "Sales 4" },
+  { id: "sales-5", label: "Sales 5" },
+  { id: "sales-6", label: "Sales 6" },
+  { id: "sales-7", label: "Sales 7" },
+  { id: "sales-8", label: "Sales 8" },
+  { id: "sales-9", label: "Sales 9" },
+  { id: "sales-10", label: "Sales 10" },
+  { id: "staff", label: "Staff" },
+  { id: "trade", label: "Trade" },
 ];
 
 const KEY_LOCATION_GROUPS = [
   {
-    title: "Showroom Cupboard",
-    options: [
-      { id: "showroom-main", label: "Main" },
-    ],
+    title: "General",
+    options: [{ id: "na", label: "N/A" }],
   },
   {
-    title: "Workshop Cupboard",
+    title: "Key Locations",
     options: [
-      { id: "workshop-jobs-to-start", label: "Jobs to be Started" },
-      { id: "workshop-jobs-in-progress", label: "Jobs in Progress" },
-      { id: "workshop-mot", label: "MOT" },
-      { id: "workshop-wash", label: "Wash" },
-      { id: "workshop-complete", label: "Complete" },
+      { id: "service-showroom", label: "Service showroom" },
+      { id: "sales-show-room", label: "Sales show room" },
+      { id: "red-board", label: "Red board" },
+      { id: "workshop", label: "Workshop" },
+      { id: "valet", label: "Valet" },
+      { id: "paint", label: "Paint" },
+      { id: "sales", label: "Sales" },
+      { id: "prep", label: "Prep" },
     ],
   },
 ];
@@ -41,7 +53,7 @@ const KEY_LOCATION_GROUPS = [
 const KEY_LOCATIONS = KEY_LOCATION_GROUPS.flatMap((group) =>
   group.options.map((option) => ({
     id: option.id,
-    label: `${group.title} – ${option.label}`,
+    label: option.label,
     group: group.title,
   }))
 );
@@ -58,6 +70,29 @@ const KEY_LOCATION_OPTIONS = KEY_LOCATIONS.map((location) => ({
   label: location.label,
   description: location.group,
 }));
+
+const normalizeKeyLocationLabel = (value = "") => {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  return text
+    .replace(/^Keys (received|hung|updated)\s*[-–]\s*/i, "")
+    .replace(/^Key location\s*[-:–]\s*/i, "")
+    .replace(/^Key locations?\s*[-:–]\s*/i, "");
+};
+
+const ensureDropdownOption = (options = [], value = "") => {
+  const normalizedValue = String(value || "").trim();
+  if (!normalizedValue) return options;
+  const match = options.some((option) => {
+    const optionValue = option?.value ?? option?.label ?? option;
+    return String(optionValue || "").trim().toLowerCase() === normalizedValue.toLowerCase();
+  });
+  if (match) return options;
+  return [
+    { key: `current-${normalizedValue}`, value: normalizedValue, label: normalizedValue },
+    ...options,
+  ];
+};
 
 const AUTO_MOVEMENT_RULES = {
   "workshop in progress": {
@@ -302,8 +337,8 @@ const emptyForm = {
   reg: "",
   customer: "",
   serviceType: "",
-  vehicleLocation: CAR_LOCATIONS[0].label,
-  keyLocation: KEY_LOCATIONS[0].label,
+  vehicleLocation: "N/A",
+  keyLocation: "N/A",
   keyTip: "",
   status: "Waiting For Collection",
   notes: "",
@@ -415,8 +450,9 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
               width: "38px",
               height: "38px",
               borderRadius: "50%",
-              border: "1px solid rgba(var(--shadow-rgb),0.15)",
-              backgroundColor: "var(--surface)",
+              border: "none",
+              backgroundColor: "var(--search-surface)",
+              color: "var(--search-text)",
               cursor: "pointer",
               fontWeight: 700,
             }}
@@ -600,8 +636,9 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
               width: "38px",
               height: "38px",
               borderRadius: "50%",
-              border: "1px solid rgba(var(--shadow-rgb),0.15)",
+              border: "none",
               backgroundColor: "var(--surface)",
+              color: "var(--text-primary)",
               cursor: "pointer",
               fontWeight: 700,
             }}
@@ -814,8 +851,9 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
               width: "38px",
               height: "38px",
               borderRadius: "50%",
-              border: "1px solid rgba(var(--shadow-rgb),0.15)",
+              border: "none",
               backgroundColor: "var(--surface)",
+              color: "var(--text-primary)",
               cursor: "pointer",
               fontWeight: 700,
             }}
@@ -1071,8 +1109,9 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
               width: "38px",
               height: "38px",
               borderRadius: "50%",
-              border: "1px solid rgba(var(--shadow-rgb),0.15)",
+              border: "none",
               backgroundColor: "var(--surface)",
+              color: "var(--text-primary)",
               cursor: "pointer",
               fontWeight: 700,
             }}
@@ -1278,9 +1317,17 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
     ...emptyForm,
     ...entry,
     vehicleLocation: entry?.vehicleLocation || CAR_LOCATIONS[0].label,
-    keyLocation: entry?.keyLocation || KEY_LOCATIONS[0].label,
+    keyLocation: normalizeKeyLocationLabel(entry?.keyLocation) || KEY_LOCATIONS[0].label,
     status: entry?.status || "Waiting For Collection",
   }));
+  const vehicleLocationOptions = useMemo(
+    () => ensureDropdownOption(CAR_LOCATION_OPTIONS, form.vehicleLocation),
+    [form.vehicleLocation]
+  );
+  const keyLocationOptions = useMemo(
+    () => ensureDropdownOption(KEY_LOCATION_OPTIONS, form.keyLocation),
+    [form.keyLocation]
+  );
 
   const handleChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -1332,8 +1379,9 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
               width: "38px",
               height: "38px",
               borderRadius: "50%",
-              border: "1px solid rgba(var(--shadow-rgb),0.15)",
+              border: "none",
               backgroundColor: "var(--surface)",
+              color: "var(--text-primary)",
               cursor: "pointer",
               fontWeight: 700,
             }}
@@ -1389,7 +1437,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
               Vehicle Location
             </label>
             <DropdownField
-              options={CAR_LOCATION_OPTIONS}
+              options={vehicleLocationOptions}
               value={form.vehicleLocation}
               onValueChange={(value) => handleChange("vehicleLocation", value)}
               placeholder="Select location"
@@ -1403,7 +1451,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
             </label>
             <DropdownField
               required
-              options={KEY_LOCATION_OPTIONS}
+              options={keyLocationOptions}
               value={form.keyLocation}
               onValueChange={(value) => handleChange("keyLocation", value)}
               placeholder="Select key location"

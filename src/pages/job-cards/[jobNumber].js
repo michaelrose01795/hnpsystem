@@ -10,6 +10,7 @@ import { useUser } from "@/context/UserContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
 import { supabase } from "@/lib/supabaseClient";
 import { getJobByNumber, updateJob, updateJobStatus, addJobFile, deleteJobFile } from "@/lib/database/jobs";
+import { fetchTrackingSnapshot } from "@/lib/database/tracking";
 import { logJobSubStatus } from "@/lib/services/jobStatusService";
 import { autoSetCheckedInStatus } from "@/lib/services/jobStatusService";
 import {
@@ -36,6 +37,8 @@ import { DropdownField } from "@/components/dropdownAPI";
 import { CalendarField } from "@/components/calendarAPI";
 import { TimePickerField } from "@/components/timePickerAPI";
 import ClockingHistorySection from "@/components/JobCards/ClockingHistorySection";
+import { buildApiUrl } from "@/utils/apiClient";
+import { popupCardStyles, popupOverlayStyles } from "@/styles/appTheme";
 
 const deriveVhcSeverity = (check = {}) => {
   const fields = [
@@ -164,6 +167,100 @@ const buildDateTimeFromInputs = (dateValue = "", timeValue = "") => {
   return date;
 };
 
+const CAR_LOCATIONS = [
+  { id: "na", label: "N/A" },
+  { id: "service", label: "Service" },
+  { id: "sales-1", label: "Sales 1" },
+  { id: "sales-2", label: "Sales 2" },
+  { id: "sales-3", label: "Sales 3" },
+  { id: "sales-4", label: "Sales 4" },
+  { id: "sales-5", label: "Sales 5" },
+  { id: "sales-6", label: "Sales 6" },
+  { id: "sales-7", label: "Sales 7" },
+  { id: "sales-8", label: "Sales 8" },
+  { id: "sales-9", label: "Sales 9" },
+  { id: "sales-10", label: "Sales 10" },
+  { id: "staff", label: "Staff" },
+  { id: "trade", label: "Trade" },
+];
+
+const KEY_LOCATION_GROUPS = [
+  {
+    title: "General",
+    options: [{ id: "na", label: "N/A" }],
+  },
+  {
+    title: "Key Locations",
+    options: [
+      { id: "service-showroom", label: "Service showroom" },
+      { id: "sales-show-room", label: "Sales show room" },
+      { id: "red-board", label: "Red board" },
+      { id: "workshop", label: "Workshop" },
+      { id: "valet", label: "Valet" },
+      { id: "paint", label: "Paint" },
+      { id: "sales", label: "Sales" },
+      { id: "prep", label: "Prep" },
+    ],
+  },
+];
+
+const KEY_LOCATIONS = KEY_LOCATION_GROUPS.flatMap((group) =>
+  group.options.map((option) => ({
+    id: option.id,
+    label: option.label,
+    group: group.title,
+  }))
+);
+
+const CAR_LOCATION_OPTIONS = CAR_LOCATIONS.map((location) => ({
+  key: location.id,
+  value: location.label,
+  label: location.label,
+}));
+
+const KEY_LOCATION_OPTIONS = KEY_LOCATIONS.map((location) => ({
+  key: location.id,
+  value: location.label,
+  label: location.label,
+  description: location.group,
+}));
+
+const normalizeKeyLocationLabel = (value = "") => {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  return text
+    .replace(/^Keys (received|hung|updated)\s*[-–]\s*/i, "")
+    .replace(/^Key location\s*[-:–]\s*/i, "")
+    .replace(/^Key locations?\s*[-:–]\s*/i, "");
+};
+
+const ensureDropdownOption = (options = [], value = "") => {
+  const normalizedValue = String(value || "").trim();
+  if (!normalizedValue) return options;
+  const match = options.some((option) => {
+    const optionValue = option?.value ?? option?.label ?? option;
+    return String(optionValue || "").trim().toLowerCase() === normalizedValue.toLowerCase();
+  });
+  if (match) return options;
+  return [
+    { key: `current-${normalizedValue}`, value: normalizedValue, label: normalizedValue },
+    ...options,
+  ];
+};
+
+const emptyTrackingForm = {
+  id: null,
+  jobNumber: "",
+  reg: "",
+  customer: "",
+  serviceType: "",
+  vehicleLocation: "N/A",
+  keyLocation: "N/A",
+  keyTip: "",
+  status: "Waiting For Collection",
+  notes: "",
+};
+
 const formatBookingDescriptionInput = (value = "") => {
   const normalized = String(value || "").replace(/\r/g, "");
   if (!normalized.trim()) {
@@ -227,6 +324,9 @@ export default function JobCardDetailPage() {
   const [showDocumentsPopup, setShowDocumentsPopup] = useState(false);
   const [vhcFinancialTotalsFromPanel, setVhcFinancialTotalsFromPanel] = useState(null);
   const [checkingIn, setCheckingIn] = useState(false);
+  const [trackerEntry, setTrackerEntry] = useState(null);
+  const [trackerQuickModalOpen, setTrackerQuickModalOpen] = useState(false);
+  const trackerUpdateRef = useRef(null);
 
   const isArchiveMode = router.query.archive === "1";
 
@@ -371,6 +471,131 @@ export default function JobCardDetailPage() {
   useEffect(() => {
     fetchJobData();
   }, [fetchJobData]);
+
+  const loadTrackerEntry = useCallback(async () => {
+    const targetJobNumber = jobData?.jobNumber || jobNumber;
+    if (!targetJobNumber) return;
+    try {
+      const snapshot = await fetchTrackingSnapshot();
+      if (!snapshot.success) {
+        throw new Error(snapshot.error?.message || "Failed to load tracking data");
+      }
+      const summary = Array.isArray(snapshot.data)
+        ? snapshot.data.map((entry) => ({
+            jobId: entry?.jobId ?? null,
+            jobNumber: entry?.jobNumber ?? "",
+            reg: entry?.vehicleReg ?? entry?.reg ?? "",
+            keyLocation: entry?.keyLocation ?? "",
+            vehicleLocation: entry?.vehicleLocation ?? "",
+            updatedAt: entry?.updatedAt ?? "",
+          }))
+        : [];
+      // Debug logs removed after troubleshooting.
+      const normalizedTarget = String(targetJobNumber).trim().toLowerCase();
+      const normalizedReg = String(jobData?.reg || "").trim().toLowerCase();
+      const normalizedJobId = jobData?.id ? String(jobData.id) : "";
+      const matches = (snapshot.data || []).filter((entry) => {
+        if (!entry) return false;
+        const entryJobId = entry.jobId !== null && entry.jobId !== undefined ? String(entry.jobId) : "";
+        const entryJobNumber = String(entry.jobNumber || "").trim().toLowerCase();
+        const entryReg = String(entry.vehicleReg || entry.reg || "").trim().toLowerCase();
+        return (
+          (normalizedJobId && entryJobId === normalizedJobId) ||
+          (normalizedTarget && entryJobNumber === normalizedTarget) ||
+          (normalizedReg && entryReg === normalizedReg)
+        );
+      });
+      const match = matches.sort((a, b) => {
+        const aTime = new Date(a?.updatedAt || 0).getTime();
+        const bTime = new Date(b?.updatedAt || 0).getTime();
+        return bTime - aTime;
+      })[0];
+      // Debug logs removed after troubleshooting.
+      if (match && trackerUpdateRef.current) {
+        const snapshotTime = new Date(match.updatedAt || 0).getTime();
+        const localTime = new Date(trackerUpdateRef.current).getTime();
+        if (snapshotTime && localTime && snapshotTime < localTime) {
+          // Debug logs removed after troubleshooting.
+          return;
+        }
+      }
+      setTrackerEntry(match || null);
+    } catch (loadError) {
+      console.error("Failed to load tracking entry", loadError);
+      setTrackerEntry(null);
+    }
+  }, [jobData?.jobNumber, jobData?.reg, jobNumber]);
+
+  useEffect(() => {
+    if (!jobData?.jobNumber && !jobNumber) return;
+    loadTrackerEntry();
+  }, [jobData?.jobNumber, jobNumber, loadTrackerEntry]);
+
+
+  const handleTrackerSave = useCallback(
+    async (form) => {
+      try {
+        const resolvedJobNumber =
+          (jobData?.jobNumber || form.jobNumber || "").trim().toUpperCase();
+        const resolvedReg = (jobData?.reg || form.reg || "").trim().toUpperCase();
+        const payload = {
+          actionType: form.actionType || "job_checked_in",
+          jobId: jobData?.id || null,
+          jobNumber: resolvedJobNumber,
+          vehicleId: jobData?.vehicleId || jobData?.vehicle_id || null,
+          vehicleReg: resolvedReg,
+          keyLocation: form.keyLocation,
+          vehicleLocation: form.vehicleLocation,
+          notes: form.notes,
+          performedBy: dbUserId || null,
+          vehicleStatus: form.vehicleStatus || form.status,
+        };
+        // Debug logs removed after troubleshooting.
+
+        const response = await fetch(buildApiUrl("/api/tracking/next-action"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const responsePayload = await response
+          .json()
+          .catch(() => ({ message: "Failed to read tracking response" }));
+
+        if (!response.ok) {
+          console.error("Tracking update failed", response.status, responsePayload);
+          throw new Error(responsePayload?.message || "Failed to save tracking entry");
+        }
+
+        const keyEvent = responsePayload?.data?.keyEvent;
+        const vehicleEvent = responsePayload?.data?.vehicleEvent;
+        // Debug logs removed after troubleshooting.
+        const localUpdatedAt =
+          vehicleEvent?.occurred_at || keyEvent?.occurred_at || new Date().toISOString();
+        trackerUpdateRef.current = localUpdatedAt;
+        setTrackerEntry((prev) => ({
+          ...prev,
+          jobId: jobData?.id ?? prev?.jobId ?? null,
+          jobNumber: resolvedJobNumber || prev?.jobNumber,
+          vehicleReg: resolvedReg || prev?.vehicleReg,
+          reg: resolvedReg || prev?.reg,
+          customer: jobData?.customer || prev?.customer,
+          serviceType: jobData?.type || jobData?.serviceType || prev?.serviceType,
+          makeModel: jobData?.makeModel || prev?.makeModel,
+          status: vehicleEvent?.status || form.vehicleStatus || form.status || prev?.status,
+          vehicleLocation: vehicleEvent?.location || form.vehicleLocation,
+          keyLocation: keyEvent?.action || form.keyLocation,
+          updatedAt: localUpdatedAt,
+        }));
+        // Debug logs removed after troubleshooting.
+        await loadTrackerEntry();
+        setTrackerQuickModalOpen(false);
+      } catch (saveError) {
+        console.error("Failed to save tracking entry", saveError);
+      }
+    },
+    [dbUserId, jobData, loadTrackerEntry]
+  );
 
   const handleCheckIn = useCallback(async () => {
     if (!jobData?.id) {
@@ -1364,32 +1589,6 @@ export default function JobCardDetailPage() {
           </div>
           
           <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
-            {/* Button to redirect to car and key tracking page with job details pre-filled */}
-            <button
-              onClick={() => {
-                const params = new URLSearchParams({
-                  jobNumber: jobData.jobNumber || "",
-                  reg: jobData.reg || "",
-                  customer: jobData.customer || ""
-                });
-                router.push(`/tracking?${params.toString()}`);
-              }}
-              style={{
-                padding: "10px 20px",
-                backgroundColor: "var(--primary)",
-                color: "white",
-                border: "none",
-                borderRadius: "8px",
-                cursor: "pointer",
-                fontWeight: "600",
-                fontSize: "14px",
-                transition: "background-color 0.2s"
-              }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = "var(--primary-dark)"}
-              onMouseLeave={(e) => e.target.style.backgroundColor = "var(--primary)"}
-            >
-              Car and Key Tracker
-            </button>
             {isBookedStatus && (
               <button
                 onClick={handleCheckIn}
@@ -1474,7 +1673,7 @@ export default function JobCardDetailPage() {
         {/* ✅ Vehicle & Customer Info Bar */}
         <section style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr 0.8fr 0.8fr",
+          gridTemplateColumns: "1fr 1fr 0.9fr 1fr",
           gap: "16px",
           flexShrink: 0
         }}>
@@ -1517,28 +1716,58 @@ export default function JobCardDetailPage() {
             boxShadow: "none",
             border: "1px solid var(--surface-light)"
           }}>
-            <div style={{ fontSize: "12px", color: "var(--success)", marginBottom: "4px" }}>AUTHORISED</div>
-            <div style={{ fontSize: "18px", fontWeight: "700", color: "var(--success)", marginBottom: "4px" }}>
-              {formatCurrency(vhcFinancialTotals.authorized)}
-            </div>
-            <div style={{ fontSize: "11px", color: "var(--grey-accent)" }}>
-              VHC Total
+            <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: "12px", color: "var(--danger)", marginBottom: "4px" }}>DECLINED</div>
+                <div style={{ fontSize: "18px", fontWeight: "700", color: "var(--danger)", marginBottom: "4px" }}>
+                  {formatCurrency(vhcFinancialTotals.declined)}
+                </div>
+                <div style={{ fontSize: "11px", color: "var(--grey-accent)" }}>
+                  VHC Total
+                </div>
+              </div>
+              <div style={{ width: "1px", backgroundColor: "var(--surface-light)" }} />
+              <div style={{ flex: 1, textAlign: "right" }}>
+                <div style={{ fontSize: "12px", color: "var(--success)", marginBottom: "4px" }}>AUTHORISED</div>
+                <div style={{ fontSize: "18px", fontWeight: "700", color: "var(--success)", marginBottom: "4px" }}>
+                  {formatCurrency(vhcFinancialTotals.authorized)}
+                </div>
+                <div style={{ fontSize: "11px", color: "var(--grey-accent)" }}>
+                  VHC Total
+                </div>
+              </div>
             </div>
           </div>
 
-          <div style={{
-            padding: "16px 20px",
-            backgroundColor: "var(--layer-section-level-3)",
-            borderRadius: "12px",
-            boxShadow: "none",
-            border: "1px solid var(--surface-light)"
-          }}>
-            <div style={{ fontSize: "12px", color: "var(--danger)", marginBottom: "4px" }}>DECLINED</div>
-            <div style={{ fontSize: "18px", fontWeight: "700", color: "var(--danger)", marginBottom: "4px" }}>
-              {formatCurrency(vhcFinancialTotals.declined)}
+          <div
+            onClick={() => setTrackerQuickModalOpen(true)}
+            style={{
+              padding: "16px 20px",
+              backgroundColor: "var(--layer-section-level-3)",
+              borderRadius: "12px",
+              boxShadow: "none",
+              border: "1px solid var(--surface-light)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px",
+              cursor: "pointer"
+            }}
+          >
+            <div>
+              <div style={{ fontSize: "14px", fontWeight: "700", color: "var(--text-primary)", marginBottom: "4px" }}>
+                Key location
+              </div>
+              <div style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
+                {normalizeKeyLocationLabel(trackerEntry?.keyLocation) || "Jobs In Hooks – Service Desk"}
+              </div>
             </div>
-            <div style={{ fontSize: "11px", color: "var(--grey-accent)" }}>
-              VHC Total
+            <div>
+              <div style={{ fontSize: "14px", fontWeight: "700", color: "var(--text-primary)", marginBottom: "4px" }}>
+                Car location
+              </div>
+              <div style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
+                {trackerEntry?.vehicleLocation || "Front Row – Bay B"}
+              </div>
             </div>
           </div>
         </section>
@@ -1794,6 +2023,25 @@ export default function JobCardDetailPage() {
           userId={user?.user_id || actingUserId || null}
           onAfterUpload={() => fetchJobData({ silent: true })}
         />
+        {trackerQuickModalOpen && (
+          <LocationUpdateModal
+            entry={{
+              ...emptyTrackingForm,
+              jobNumber: jobData?.jobNumber || "",
+              reg: jobData?.reg || "",
+              customer: jobData?.customer || "",
+              serviceType: jobData?.type || jobData?.serviceType || "",
+              vehicleLocation: trackerEntry?.vehicleLocation
+                ? trackerEntry.vehicleLocation
+                : emptyTrackingForm.vehicleLocation,
+              keyLocation: trackerEntry?.keyLocation
+                ? normalizeKeyLocationLabel(trackerEntry.keyLocation)
+                : emptyTrackingForm.keyLocation,
+            }}
+            onClose={() => setTrackerQuickModalOpen(false)}
+            onSave={handleTrackerSave}
+          />
+        )}
 
       </div>
 
@@ -2333,6 +2581,304 @@ function CustomerRequestsTab({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function LocationUpdateModal({ entry, onClose, onSave }) {
+  const [form, setForm] = useState(() => ({
+    ...emptyTrackingForm,
+    ...entry,
+    vehicleLocation: entry?.vehicleLocation || CAR_LOCATIONS[0].label,
+    keyLocation: normalizeKeyLocationLabel(entry?.keyLocation) || KEY_LOCATIONS[0].label,
+    status: entry?.status || "Waiting For Collection",
+  }));
+  const vehicleLocationOptions = useMemo(
+    () => ensureDropdownOption(CAR_LOCATION_OPTIONS, form.vehicleLocation),
+    [form.vehicleLocation]
+  );
+  const keyLocationOptions = useMemo(
+    () => ensureDropdownOption(KEY_LOCATION_OPTIONS, form.keyLocation),
+    [form.keyLocation]
+  );
+
+  const handleChange = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    onSave({ ...form, actionType: "location_update", context: "update" });
+  };
+
+  return (
+    <div
+      style={{
+        ...popupOverlayStyles,
+        zIndex: 220,
+      }}
+    >
+      <form
+        onSubmit={handleSubmit}
+        style={{
+          ...popupCardStyles,
+          width: "min(520px, 100%)",
+          padding: "24px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "16px",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <h2 style={{ margin: 0 }}>Edit existing</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              width: "36px",
+              height: "36px",
+              borderRadius: "50%",
+              border: "none",
+              backgroundColor: "var(--surface)",
+              color: "var(--text-primary)",
+              cursor: "pointer",
+              fontWeight: 700,
+            }}
+          >
+            ✕
+          </button>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "12px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+              Vehicle Location
+            </label>
+            <DropdownField
+              options={vehicleLocationOptions}
+              value={form.vehicleLocation}
+              onValueChange={(value) => handleChange("vehicleLocation", value)}
+              placeholder="Select location"
+              size="md"
+            />
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+              Key Location
+            </label>
+            <DropdownField
+              options={keyLocationOptions}
+              value={form.keyLocation}
+              onValueChange={(value) => handleChange("keyLocation", value)}
+              placeholder="Select key location"
+              size="md"
+            />
+          </div>
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              padding: "10px 16px",
+              borderRadius: "12px",
+              border: "1px solid var(--accent-purple-surface)",
+              backgroundColor: "transparent",
+              cursor: "pointer",
+              fontWeight: 600,
+              color: "var(--text)",
+            }}
+          >
+            Close
+          </button>
+          <button
+            type="submit"
+            style={{
+              padding: "10px 16px",
+              borderRadius: "12px",
+              border: "none",
+              background: "var(--primary)",
+              color: "white",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Update
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function LocationEntryModal({ context, entry, mode = "edit", onClose, onSave }) {
+  const [form, setForm] = useState(() => ({
+    ...emptyTrackingForm,
+    ...entry,
+    vehicleLocation: entry?.vehicleLocation || CAR_LOCATIONS[0].label,
+    keyLocation: normalizeKeyLocationLabel(entry?.keyLocation) || KEY_LOCATIONS[0].label,
+    status: entry?.status || "Waiting For Collection",
+  }));
+  const isEdit = mode === "edit";
+  const vehicleLocationOptions = useMemo(
+    () => ensureDropdownOption(CAR_LOCATION_OPTIONS, form.vehicleLocation),
+    [form.vehicleLocation]
+  );
+  const keyLocationOptions = useMemo(
+    () => ensureDropdownOption(KEY_LOCATION_OPTIONS, form.keyLocation),
+    [form.keyLocation]
+  );
+
+  const handleChange = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+
+    const hasJobNumber = form.jobNumber && form.jobNumber.trim();
+    const hasReg = form.reg && form.reg.trim();
+    const hasCustomer = form.customer && form.customer.trim();
+
+    if (!hasJobNumber && !hasReg && !hasCustomer) {
+      alert("Please fill in at least one of: Job Number, Registration, or Customer name");
+      return;
+    }
+
+    const actionType = context === "car" ? "job_checked_in" : "job_complete";
+    onSave({ ...form, actionType, context });
+  };
+
+  return (
+    <div
+      style={{
+        ...popupOverlayStyles,
+        zIndex: 220,
+      }}
+    >
+      <form
+        onSubmit={handleSubmit}
+        style={{
+          ...popupCardStyles,
+          width: "min(640px, 100%)",
+          padding: "28px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "18px",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <h2 style={{ margin: 0 }}>{isEdit ? "Edit existing" : "Log new"}</h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              width: "38px",
+              height: "38px",
+              borderRadius: "50%",
+              border: "none",
+              backgroundColor: "var(--surface)",
+              color: "var(--text-primary)",
+              cursor: "pointer",
+              fontWeight: 700,
+            }}
+          >
+            ✕
+          </button>
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: "10px",
+          }}
+        >
+          {[
+            { label: "Job Number", field: "jobNumber", placeholder: "HNP-4821", required: false },
+            { label: "Registration", field: "reg", placeholder: "GY21 HNP", required: false },
+            { label: "Customer", field: "customer", placeholder: "Customer name", required: false },
+            { label: "Service Type", field: "serviceType", placeholder: "MOT, Service...", required: false },
+          ].map((input) => (
+            <div key={input.field} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+                {input.label}
+                {["jobNumber", "reg", "customer"].includes(input.field) && (
+                  <span style={{ fontSize: "0.75rem", color: "var(--info)", fontWeight: 400 }}>
+                    {" "}
+                    (at least one required)
+                  </span>
+                )}
+              </label>
+              <input
+                value={form[input.field]}
+                onChange={(event) => handleChange(input.field, event.target.value)}
+                placeholder={input.placeholder}
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: "12px",
+                  border: "1px solid var(--accent-purple-surface)",
+                  fontSize: "0.95rem",
+                }}
+              />
+            </div>
+          ))}
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            gap: "10px",
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+              Vehicle Location
+            </label>
+            <DropdownField
+              options={vehicleLocationOptions}
+              value={form.vehicleLocation}
+              onValueChange={(value) => handleChange("vehicleLocation", value)}
+              placeholder="Select location"
+              size="md"
+            />
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+              Key Location
+            </label>
+            <DropdownField
+              options={keyLocationOptions}
+              value={form.keyLocation}
+              onValueChange={(value) => handleChange("keyLocation", value)}
+              placeholder="Select key location"
+              size="md"
+            />
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          style={{
+            padding: "12px 20px",
+            borderRadius: "12px",
+            border: "none",
+            background: "var(--success)",
+            color: "white",
+            fontWeight: 600,
+            cursor: "pointer",
+            fontSize: "0.95rem",
+          }}
+        >
+          Update
+        </button>
+      </form>
     </div>
   );
 }

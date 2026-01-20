@@ -2350,7 +2350,6 @@ export const assignTechnicianToJob = async (
 
   return updateJob(jobId, {
     assigned_to: resolvedTechnicianId,
-    status: "Assigned",
   });
 };
 

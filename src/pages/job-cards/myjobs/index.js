@@ -13,6 +13,7 @@ import JobCardModal from "@/components/JobCards/JobCardModal"; // Import Start J
 import { getUserActiveJobs } from "@/lib/database/jobClocking";
 import { supabase } from "@/lib/supabaseClient";
 import { summarizePartsPipeline } from "@/lib/partsPipeline";
+import { normalizeDisplayName } from "@/utils/nameUtils";
 
 const STATUS_BADGE_STYLES = {
   Waiting: { background: "var(--warning-surface)", color: "var(--danger-dark)" },
@@ -137,6 +138,18 @@ export default function MyJobsPage() {
     [techsList, motTestersList]
   );
 
+  const normalizedUserNames = useMemo(() => {
+    const candidates = new Set();
+    if (user?.username) candidates.add(user.username);
+    if (user?.email) candidates.add(user.email);
+    if (user?.name) candidates.add(user.name);
+    return new Set(
+      Array.from(candidates)
+        .map((value) => normalizeDisplayName(value))
+        .filter(Boolean)
+    );
+  }, [user]);
+
   // Some contexts store a single `role`, others expose an array of `roles`
   const userRoles = Array.isArray(user?.roles)
     ? user.roles
@@ -153,7 +166,7 @@ export default function MyJobsPage() {
 
   const isAssignedToTechnician = useCallback(
     (job) => {
-      if (!dbUserId || !job) return false;
+      if (!job) return false;
 
       const assignedNumeric =
         typeof job.assignedTo === "number"
@@ -162,17 +175,27 @@ export default function MyJobsPage() {
           ? Number(job.assignedTo)
           : null;
 
-      if (assignedNumeric === dbUserId) {
+      if (Number.isInteger(assignedNumeric) && assignedNumeric === dbUserId) {
         return true;
       }
 
-      if (job.assignedTech?.id && job.assignedTech.id === dbUserId) {
+      const assignedTechNumeric = Number(job.assignedTech?.id);
+      if (Number.isFinite(assignedTechNumeric) && assignedTechNumeric === dbUserId) {
+        return true;
+      }
+
+      const assignedNameRaw =
+        job.assignedTech?.name ||
+        job.technician ||
+        (typeof job.assignedTo === "string" ? job.assignedTo : "");
+      const normalizedAssignedName = normalizeDisplayName(assignedNameRaw);
+      if (normalizedAssignedName && normalizedUserNames.has(normalizedAssignedName)) {
         return true;
       }
 
       return false;
     },
-    [dbUserId]
+    [dbUserId, normalizedUserNames]
   );
 
   const fetchJobsForTechnician = useCallback(async () => {
@@ -266,10 +289,12 @@ export default function MyJobsPage() {
   useEffect(() => {
     if (!dbUserId) return;
 
-    const toAssignedId = (value) => {
-      if (value === null || value === undefined) return null;
+    const matchesUserAssignment = (value) => {
+      if (value === null || value === undefined) return false;
       const numeric = Number(value);
-      return Number.isFinite(numeric) ? numeric : null;
+      if (Number.isFinite(numeric) && numeric === dbUserId) return true;
+      const normalized = normalizeDisplayName(value);
+      return normalized ? normalizedUserNames.has(normalized) : false;
     };
 
     const channel = supabase
@@ -282,9 +307,9 @@ export default function MyJobsPage() {
           table: "jobs"
         },
         (payload) => {
-          const nextAssigned = toAssignedId(payload?.new?.assigned_to);
-          const previousAssigned = toAssignedId(payload?.old?.assigned_to);
-          if (nextAssigned === dbUserId || previousAssigned === dbUserId) {
+          const nextAssigned = payload?.new?.assigned_to;
+          const previousAssigned = payload?.old?.assigned_to;
+          if (matchesUserAssignment(nextAssigned) || matchesUserAssignment(previousAssigned)) {
             fetchJobsForTechnician();
           }
         }
@@ -297,7 +322,7 @@ export default function MyJobsPage() {
         supabase.removeChannel(channel);
       }
     };
-  }, [dbUserId, fetchJobsForTechnician]);
+  }, [dbUserId, fetchJobsForTechnician, normalizedUserNames]);
 
   useEffect(() => {
     if (!dbUserId || !jobIdsFilterString) return;

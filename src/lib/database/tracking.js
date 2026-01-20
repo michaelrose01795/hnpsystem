@@ -10,6 +10,13 @@ const statusLabelForAction = (actionType) => {
   return "Ready For Collection";
 };
 
+const buildKeyActionLabel = (actionType, keyLocation) => {
+  if (!keyLocation) return "Keys updated";
+  if (actionType === "job_checked_in") return `Keys received – ${keyLocation}`;
+  if (actionType === "location_update") return `Keys updated – ${keyLocation}`;
+  return `Keys hung – ${keyLocation}`;
+};
+
 const buildKeyNotes = ({ jobNumber, vehicleReg, notes }) => {
   const parts = [];
   if (jobNumber) parts.push(`Job ${jobNumber}`);
@@ -37,9 +44,7 @@ export const logNextActionEvents = async ({
   const keyPayload = {
     job_id: jobId || null,
     vehicle_id: vehicleId || null,
-    action: keyLocation
-      ? `${actionType === "job_checked_in" ? "Keys received" : "Keys hung"} – ${keyLocation}`
-      : "Keys updated",
+    action: buildKeyActionLabel(actionType, keyLocation),
     notes: buildKeyNotes({ jobNumber, vehicleReg, notes }),
     performed_by: performedBy || null,
   };
@@ -71,6 +76,137 @@ export const logNextActionEvents = async ({
     data: {
       keyEvent,
       vehicleEvent,
+    },
+  };
+};
+
+const fetchLatestEvent = async (table, idField, idValue, selectFields) => {
+  if (!idValue) return { data: null, error: null };
+  const { data, error } = await supabase
+    .from(table)
+    .select(selectFields)
+    .eq(idField, idValue)
+    .order("occurred_at", { ascending: false })
+    .limit(1);
+  return { data: data?.[0] || null, error };
+};
+
+export const updateTrackingLocations = async ({
+  actionType,
+  jobId,
+  jobNumber,
+  vehicleId,
+  vehicleReg,
+  keyLocation,
+  vehicleLocation,
+  notes,
+  performedBy,
+  vehicleStatus,
+}) => {
+  const timestamp = new Date().toISOString();
+  const targetJobId = jobId || null;
+  const targetVehicleId = vehicleId || null;
+  const filterField = targetJobId ? "job_id" : "vehicle_id";
+  const filterValue = targetJobId || targetVehicleId;
+
+  if (!filterValue) {
+    return { success: false, error: { message: "Missing jobId or vehicleId for tracking update" } };
+  }
+
+  const nextKeyAction = buildKeyActionLabel(actionType, keyLocation);
+  const nextVehicleStatus = vehicleStatus || statusLabelForAction(actionType);
+
+  const keyPayload =
+    keyLocation !== undefined
+      ? {
+          action: nextKeyAction,
+          notes: buildKeyNotes({ jobNumber, vehicleReg, notes }),
+          performed_by: performedBy || null,
+          occurred_at: timestamp,
+        }
+      : null;
+  const vehiclePayload =
+    vehicleLocation !== undefined
+      ? {
+          status: nextVehicleStatus,
+          location: vehicleLocation || null,
+          notes: buildVehicleNotes({ notes }),
+          created_by: performedBy || null,
+          occurred_at: timestamp,
+        }
+      : null;
+
+  let keyResult = { data: null, error: null };
+  let vehicleResult = { data: null, error: null };
+
+  if (keyPayload) {
+    const { data, error } = await supabase
+      .from("key_tracking_events")
+      .update(keyPayload)
+      .eq(filterField, filterValue)
+      .select();
+    if (error) {
+      console.error("Failed to update key tracking entries", error);
+      return { success: false, error };
+    }
+    if (!data || data.length === 0) {
+      const insertRes = await supabase
+        .from("key_tracking_events")
+        .insert({
+          job_id: targetJobId,
+          vehicle_id: targetVehicleId,
+          action: nextKeyAction,
+          notes: buildKeyNotes({ jobNumber, vehicleReg, notes }),
+          performed_by: performedBy || null,
+        })
+        .select()
+        .single();
+      keyResult = insertRes;
+    } else {
+      keyResult = { data: data[0], error: null };
+    }
+  }
+
+  if (vehiclePayload) {
+    const { data, error } = await supabase
+      .from("vehicle_tracking_events")
+      .update(vehiclePayload)
+      .eq(filterField, filterValue)
+      .select();
+    if (error) {
+      console.error("Failed to update vehicle tracking entries", error);
+      return { success: false, error };
+    }
+    if (!data || data.length === 0) {
+      const insertRes = await supabase
+        .from("vehicle_tracking_events")
+        .insert({
+          job_id: targetJobId,
+          vehicle_id: targetVehicleId,
+          status: nextVehicleStatus,
+          location: vehicleLocation || null,
+          notes: buildVehicleNotes({ notes }),
+          created_by: performedBy || null,
+        })
+        .select()
+        .single();
+      vehicleResult = insertRes;
+    } else {
+      vehicleResult = { data: data[0], error: null };
+    }
+  }
+
+  if (keyResult.error || vehicleResult.error) {
+    console.error("Failed to update tracking entries", keyResult.error || vehicleResult.error);
+    return { success: false, error: keyResult.error || vehicleResult.error };
+  }
+
+  // Debug logs removed after troubleshooting.
+  return {
+    success: true,
+    data: {
+      keyEvent: keyResult.data || null,
+      vehicleEvent: vehicleResult.data || null,
     },
   };
 };

@@ -74,6 +74,7 @@ const STATUS_COMPLETED = new Set([
   "FINISHED",
   "CANCELLED",
 ]);
+const STATUS_EXCLUDED_TECH_PANEL = new Set(["BOOKED"]);
 
 const toStatusKey = (status) => (status ? String(status).trim().toUpperCase() : "");
 const OUTSTANDING_VISIBLE_ROWS = 1;
@@ -313,6 +314,19 @@ export default function NextJobsPage() {
   };
 
   const waitingJobs = useMemo(() => jobs.filter(isWaitingJob), [jobs]);
+
+  const isTechPanelJob = useCallback(
+    (job) => {
+      if (!job) return false;
+      const statusKey = toStatusKey(job.status);
+      if (STATUS_COMPLETED.has(statusKey)) return false;
+      if (STATUS_EXCLUDED_TECH_PANEL.has(statusKey)) return false;
+      return true;
+    },
+    []
+  );
+
+  const techPanelJobs = useMemo(() => jobs.filter(isTechPanelJob), [jobs, isTechPanelJob]);
 
   const jobsByNumber = useMemo(() => {
     const map = new Map();
@@ -642,7 +656,7 @@ export default function NextJobsPage() {
     const motSource = dbMotTesters.length > 0 ? dbMotTesters : fallbackMot;
     motSource.forEach((person, index) => mergePerson(person, "mot", index, "mot"));
 
-    waitingJobs.forEach((job, index) => {
+    techPanelJobs.forEach((job, index) => {
       const assignedTech = job?.assignedTech;
       if (!assignedTech) return;
       const role = assignedTech.role || "";
@@ -667,7 +681,7 @@ export default function NextJobsPage() {
       normalizedName: normalized,
       roles: Array.from(entry.roles),
     }));
-  }, [dbTechnicians, dbMotTesters, fallbackTechs, fallbackMot, waitingJobs]);
+  }, [dbTechnicians, dbMotTesters, fallbackTechs, fallbackMot, techPanelJobs]);
 
   const techPanelList = useMemo(
     () => staffDirectory.filter((person) => person.roles.includes("tech")),
@@ -725,7 +739,7 @@ export default function NextJobsPage() {
     const normalizedAssignee = normalizeDisplayName(assignee?.name);
     const assigneeIdKey = toUserIdKey(assignee?.id);
 
-    return waitingJobs
+    return techPanelJobs
       .filter((job) => {
         const jobAssignedIdKey = toUserIdKey(
           job.assignedTech?.id ?? job.assignedTo
@@ -752,7 +766,7 @@ export default function NextJobsPage() {
         panelKey: `${tech.id || tech.normalizedName || "tech"}-tech-${index}`,
         jobs: getJobsForAssignee(tech),
       })),
-    [waitingJobs, techPanelList]
+    [techPanelJobs, techPanelList]
   );
 
   const assignedMotJobs = useMemo(
@@ -762,7 +776,7 @@ export default function NextJobsPage() {
         panelKey: `${tester.id || tester.normalizedName || "mot"}-mot-${index}`,
         jobs: getJobsForAssignee(tester),
       })),
-    [waitingJobs, motPanelList]
+    [techPanelJobs, motPanelList]
   );
 
   const handleOpenJobDetails = (job) => {
