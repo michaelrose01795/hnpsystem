@@ -813,6 +813,20 @@ export default function VhcDetailsPanel({
   const [selectedParts, setSelectedParts] = useState([]);
   const [addingParts, setAddingParts] = useState(false);
   const [addPartsMessage, setAddPartsMessage] = useState("");
+  const [showNewPartForm, setShowNewPartForm] = useState(false);
+  const [newPartSaving, setNewPartSaving] = useState(false);
+  const [newPartError, setNewPartError] = useState("");
+  const [newPartForm, setNewPartForm] = useState({
+    partNumber: "",
+    name: "",
+    supplier: "",
+    category: "",
+    storageLocation: "",
+    unitCost: "",
+    unitPrice: "",
+    description: "",
+    notes: "",
+  });
 
   const resolveCanonicalVhcId = useCallback(
     (vhcId) => {
@@ -1769,6 +1783,15 @@ export default function VhcDetailsPanel({
 
     return items;
   }, [summaryItems, partsIdentified, resolveCanonicalVhcId]);
+
+  const existingPartsForModal = useMemo(() => {
+    if (!addPartsTarget?.vhcId) return [];
+    const canonicalId = resolveCanonicalVhcId(addPartsTarget.vhcId);
+    if (!canonicalId) return [];
+    return partsIdentified.filter(
+      (part) => String(part?.vhc_item_id || "") === String(canonicalId)
+    );
+  }, [addPartsTarget?.vhcId, partsIdentified, resolveCanonicalVhcId]);
 
   // Combined VHC items with their parts for Parts Authorized section
   const vhcItemsWithPartsAuthorized = useMemo(() => {
@@ -3499,6 +3522,8 @@ export default function VhcDetailsPanel({
     setAddPartsError("");
     setSelectedParts([]);
     setAddPartsMessage("");
+    setShowNewPartForm(false);
+    setNewPartError("");
     setIsAddPartsModalOpen(true);
   }, []);
 
@@ -3510,6 +3535,8 @@ export default function VhcDetailsPanel({
     setAddPartsError("");
     setSelectedParts([]);
     setAddPartsMessage("");
+    setShowNewPartForm(false);
+    setNewPartError("");
   }, []);
 
   const handleSelectSearchPart = useCallback((part) => {
@@ -3542,6 +3569,98 @@ export default function VhcDetailsPanel({
       )
     );
   }, []);
+
+  const handleOpenNewPart = useCallback(() => {
+    const trimmed = addPartsSearch.trim();
+    setShowNewPartForm((prev) => !prev);
+    setNewPartError("");
+    setNewPartForm((prev) => ({
+      ...prev,
+      partNumber: trimmed || prev.partNumber,
+    }));
+  }, [addPartsSearch]);
+
+  const handleNewPartFieldChange = useCallback((field, value) => {
+    setNewPartForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  }, []);
+
+  const handleCreateNewPart = useCallback(async () => {
+    const fieldLabels = {
+      partNumber: "Part Number",
+      name: "Name",
+      supplier: "Supplier",
+      category: "Category",
+      storageLocation: "Storage Location",
+      unitCost: "Unit Cost",
+      unitPrice: "Unit Price",
+    };
+    const requiredFields = Object.keys(fieldLabels);
+    const missing = requiredFields.filter((field) => !String(newPartForm[field] || "").trim());
+    if (missing.length > 0) {
+      setNewPartError(`Missing: ${missing.map((field) => fieldLabels[field]).join(", ")}.`);
+      return;
+    }
+
+    const unitCostValue = Number(newPartForm.unitCost);
+    const unitPriceValue = Number(newPartForm.unitPrice);
+    if (!Number.isFinite(unitCostValue) || !Number.isFinite(unitPriceValue)) {
+      setNewPartError("Unit cost and unit price must be valid numbers.");
+      return;
+    }
+
+    setNewPartSaving(true);
+    setNewPartError("");
+    try {
+      const response = await fetch("/api/parts/catalog", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          partNumber: newPartForm.partNumber.trim(),
+          name: newPartForm.name.trim(),
+          supplier: newPartForm.supplier.trim(),
+          category: newPartForm.category.trim(),
+          storageLocation: newPartForm.storageLocation.trim(),
+          unitCost: unitCostValue,
+          unitPrice: unitPriceValue,
+          description: newPartForm.description.trim(),
+          notes: newPartForm.notes.trim(),
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload?.success) {
+        if (Array.isArray(payload?.missing) && payload.missing.length > 0) {
+          setNewPartError(`Missing: ${payload.missing.join(", ")}.`);
+          return;
+        }
+        throw new Error(payload?.message || "Unable to create part");
+      }
+
+      const newPart = payload.part;
+      setAddPartsMessage("New part created. Select it to add to the VHC item.");
+      setAddPartsSearch(newPart?.part_number || newPartForm.partNumber.trim());
+      setAddPartsResults(newPart ? [newPart] : []);
+      setShowNewPartForm(false);
+      setNewPartForm({
+        partNumber: "",
+        name: "",
+        supplier: "",
+        category: "",
+        storageLocation: "",
+        unitCost: "",
+        unitPrice: "",
+        description: "",
+        notes: "",
+      });
+    } catch (error) {
+      console.error("Failed to create new part:", error);
+      setNewPartError(error.message || "Unable to create new part.");
+    } finally {
+      setNewPartSaving(false);
+    }
+  }, [newPartForm]);
 
   useEffect(() => {
     if (!isAddPartsModalOpen) return;
@@ -3794,9 +3913,40 @@ export default function VhcDetailsPanel({
 
     const canonicalId = resolveCanonicalVhcId(addPartsTarget.vhcId);
     const parsedId = Number(canonicalId);
-    const vhcItemId = Number.isInteger(parsedId) ? parsedId : null;
+    let vhcItemId = Number.isInteger(parsedId) ? parsedId : null;
 
     try {
+      if (!Number.isInteger(vhcItemId)) {
+        const item = summaryItems.find((entry) => String(entry.id) === String(addPartsTarget.vhcId));
+        if (item && job?.id) {
+          const createResponse = await fetch("/api/jobcards/create-vhc-item", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              jobId: job.id,
+              jobNumber: resolvedJobNumber,
+              section: item.sectionName || item.category?.label || "Vehicle Health Check",
+              issueTitle: item.label,
+              issueDescription: item.notes || item.concernText || "",
+              measurement: item.measurement || null,
+              labourHours: 0,
+            }),
+          });
+
+          if (createResponse.ok) {
+            const createResult = await createResponse.json();
+            if (createResult.success && createResult.vhcId) {
+              vhcItemId = createResult.vhcId;
+              await upsertVhcItemAlias(addPartsTarget.vhcId, vhcItemId);
+            }
+          }
+        }
+      }
+
+      if (!Number.isInteger(vhcItemId)) {
+        throw new Error("Unable to link parts to this VHC item.");
+      }
+
       let lastJobPart = null;
       for (const entry of selectedParts) {
         const part = entry.part || {};
@@ -3860,6 +4010,8 @@ export default function VhcDetailsPanel({
     resolvedJobNumber,
     resolveCanonicalVhcId,
     selectedParts,
+    summaryItems,
+    upsertVhcItemAlias,
   ]);
 
   const handleRemovePart = useCallback(
@@ -4031,7 +4183,7 @@ export default function VhcDetailsPanel({
         }}
       >
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
             <thead>
               <tr
                 style={{
@@ -4039,14 +4191,14 @@ export default function VhcDetailsPanel({
                   textTransform: "uppercase",
                   letterSpacing: "0.04em",
                   color: "var(--info)",
-                  fontSize: "11px",
+                  fontSize: "10px",
                 }}
               >
-                <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "280px" }}>VHC Item</th>
-                <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "200px" }}>Linked Parts</th>
-                <th style={{ textAlign: "right", padding: "12px 16px", minWidth: "120px" }}>Parts Cost</th>
-                <th style={{ textAlign: "center", padding: "12px 16px", minWidth: "100px" }}>Warranty</th>
-                <th style={{ textAlign: "center", padding: "12px 16px", minWidth: "180px" }}>Parts Not Required</th>
+                <th style={{ textAlign: "left", padding: "10px 12px", minWidth: "200px" }}>VHC Item</th>
+                <th style={{ textAlign: "left", padding: "10px 12px", minWidth: "160px" }}>Linked Parts</th>
+                <th style={{ textAlign: "right", padding: "10px 12px", minWidth: "90px" }}>Parts Cost</th>
+                <th style={{ textAlign: "center", padding: "10px 12px", minWidth: "70px" }}>Warranty</th>
+                <th style={{ textAlign: "center", padding: "10px 12px", minWidth: "140px" }}>Parts Not Required</th>
               </tr>
             </thead>
             <tbody>
@@ -4108,7 +4260,7 @@ export default function VhcDetailsPanel({
                       e.currentTarget.style.background = rowBackground;
                     }}
                   >
-                    <td style={{ padding: "12px 16px" }}>
+                    <td style={{ padding: "10px 12px", wordBreak: "break-word" }}>
                       <div>
                         <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
                           {vhcCategory}
@@ -4128,7 +4280,7 @@ export default function VhcDetailsPanel({
                         )}
                       </div>
                     </td>
-                    <td style={{ padding: "12px 16px" }}>
+                    <td style={{ padding: "10px 12px", wordBreak: "break-word" }}>
                       {hasParts ? (
                         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                           {linkedParts.map((part) => (
@@ -4148,7 +4300,7 @@ export default function VhcDetailsPanel({
                         </div>
                       )}
                     </td>
-                    <td style={{ padding: "12px 16px", textAlign: "right" }}>
+                    <td style={{ padding: "10px 12px", textAlign: "right" }}>
                       <div
                         style={{
                           fontSize: "16px",
@@ -4165,7 +4317,7 @@ export default function VhcDetailsPanel({
                         </div>
                       )}
                     </td>
-                    <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                    <td style={{ padding: "10px 12px", textAlign: "center" }}>
                       {isWarranty ? (
                         <span
                           style={{
@@ -4189,7 +4341,7 @@ export default function VhcDetailsPanel({
                         <span style={{ color: "var(--info-light)", fontSize: "12px" }}>—</span>
                       )}
                     </td>
-                    <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                    <td style={{ padding: "10px 12px", textAlign: "center" }}>
                       <button
                         type="button"
                         onClick={(event) => {
@@ -4224,7 +4376,7 @@ export default function VhcDetailsPanel({
                       <td colSpan="5" style={{ padding: "0", borderBottom: "1px solid var(--info-surface)" }}>
                         <div style={{ padding: "24px", background: rowBackground }}>
                           {!isCustomerView ? (
-                            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "16px" }}>
+                            <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: "12px" }}>
                               <button
                                 type="button"
                                 onClick={(event) => {
@@ -4332,288 +4484,6 @@ export default function VhcDetailsPanel({
                                   </tbody>
                                 </table>
                               </div>
-
-                              {linkedParts.map((part) => {
-                                const partKey = `${vhcId}-${part.id}`;
-                                const details = partDetails[partKey] || {};
-                                const partNumber = details.partNumber || part.part?.part_number || "";
-                                const partName = details.partName || part.part?.name || "";
-                                const costToCustomer = details.costToCustomer !== undefined ? details.costToCustomer : (Number(part.unit_price || part.part?.unit_price || 0));
-                                const costToCompany = details.costToCompany !== undefined ? details.costToCompany : (Number(part.unit_cost || part.part?.unit_cost || 0));
-                                const vat = details.vat !== undefined ? details.vat : (costToCustomer * 0.2);
-                                const totalWithVat = details.totalWithVat !== undefined ? details.totalWithVat : (costToCustomer + vat);
-                                const inStock = details.inStock !== undefined ? details.inStock : ((part.part?.qty_in_stock || 0) > 0);
-                                const backOrder = details.backOrder || false;
-                                const warranty = details.warranty || false;
-                                const isRemovingPart = removingPartIds.has(part.id);
-
-                                return (
-                                  <div
-                                    key={partKey}
-                                    style={{
-                                      padding: "20px",
-                                      borderRadius: "12px",
-                                      background: "var(--surface)",
-                                      border: "1px solid var(--accent-purple-surface)",
-                                      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
-                                    }}
-                                  >
-                                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
-                                      {/* Part Number */}
-                                      <div>
-                                        <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "var(--info)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                                          Part Number
-                                        </label>
-                                        <input
-                                          type="text"
-                                          value={partNumber}
-                                          readOnly
-                                          style={{
-                                            width: "100%",
-                                            padding: "10px",
-                                            borderRadius: "8px",
-                                            border: "1px solid var(--accent-purple-surface)",
-                                            background: "var(--info-surface)",
-                                            fontSize: "13px",
-                                            color: "var(--info-dark)",
-                                          }}
-                                        />
-                                      </div>
-
-                                      {/* Part Name */}
-                                      <div>
-                                        <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "var(--info)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                                          Part Name
-                                        </label>
-                                        <input
-                                          type="text"
-                                          value={partName}
-                                          readOnly
-                                          style={{
-                                            width: "100%",
-                                            padding: "10px",
-                                            borderRadius: "8px",
-                                            border: "1px solid var(--accent-purple-surface)",
-                                            background: "var(--info-surface)",
-                                            fontSize: "13px",
-                                            color: "var(--info-dark)",
-                                          }}
-                                        />
-                                      </div>
-
-                                      {/* Cost to Customer */}
-                                      <div>
-                                        <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "var(--info)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                                          Cost to Customer (ex VAT)
-                                        </label>
-                                        <input
-                                          type="text"
-                                          value={`£${costToCustomer.toFixed(2)}`}
-                                          readOnly
-                                          style={{
-                                            width: "100%",
-                                            padding: "10px",
-                                            borderRadius: "8px",
-                                            border: "1px solid var(--accent-purple-surface)",
-                                            background: "var(--info-surface)",
-                                            fontSize: "13px",
-                                            fontWeight: 600,
-                                            color: "var(--accent-purple)",
-                                          }}
-                                        />
-                                      </div>
-
-                                      {/* Cost to Company */}
-                                      <div>
-                                        <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "var(--info)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                                          Cost to Company
-                                        </label>
-                                        <input
-                                          type="text"
-                                          value={`£${costToCompany.toFixed(2)}`}
-                                          readOnly
-                                          style={{
-                                            width: "100%",
-                                            padding: "10px",
-                                            borderRadius: "8px",
-                                            border: "1px solid var(--accent-purple-surface)",
-                                            background: "var(--info-surface)",
-                                            fontSize: "13px",
-                                            color: "var(--info-dark)",
-                                          }}
-                                        />
-                                      </div>
-
-                                      {/* VAT (20%) */}
-                                      <div>
-                                        <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "var(--info)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                                          VAT (20%)
-                                        </label>
-                                        <input
-                                          type="text"
-                                          value={`£${vat.toFixed(2)}`}
-                                          readOnly
-                                          style={{
-                                            width: "100%",
-                                            padding: "10px",
-                                            borderRadius: "8px",
-                                            border: "1px solid var(--accent-purple-surface)",
-                                            background: "var(--info-surface)",
-                                            fontSize: "13px",
-                                            color: "var(--info-dark)",
-                                          }}
-                                        />
-                                      </div>
-
-                                    </div>
-                                    <div
-                                      style={{
-                                        display: "grid",
-                                        gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                                        gap: "16px",
-                                        marginTop: "16px",
-                                        alignItems: "end",
-                                      }}
-                                    >
-                                      <div>
-                                        <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "var(--info)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                                          Total (inc VAT)
-                                        </label>
-                                        <input
-                                          type="text"
-                                          value={`£${totalWithVat.toFixed(2)}`}
-                                          readOnly
-                                          style={{
-                                            width: "100%",
-                                            padding: "10px",
-                                            borderRadius: "8px",
-                                            border: "1px solid var(--primary)",
-                                            background: "var(--accent-purple-surface)",
-                                            fontSize: "13px",
-                                            fontWeight: 700,
-                                            color: "var(--primary)",
-                                          }}
-                                        />
-                                      </div>
-                                      <div>
-                                        <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "var(--info)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                                          Stock Status
-                                        </label>
-                                        <label style={{
-                                          display: "flex",
-                                          alignItems: "center",
-                                          gap: "8px",
-                                          padding: "10px",
-                                          cursor: "pointer",
-                                          userSelect: "none",
-                                          border: "1px solid var(--accent-purple-surface)",
-                                          borderRadius: "8px",
-                                        }}>
-                                          <input
-                                            type="checkbox"
-                                            checked={inStock}
-                                            onChange={(e) => handlePartDetailChange(partKey, "inStock", e.target.checked)}
-                                          />
-                                          <span style={{
-                                            fontSize: "13px",
-                                            fontWeight: 600,
-                                            color: inStock ? "var(--success)" : "var(--info-dark)",
-                                          }}>
-                                            {inStock ? "In Stock" : "Out of Stock"}
-                                          </span>
-                                        </label>
-                                      </div>
-                                      <div>
-                                        <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "var(--info)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                                          Order Status
-                                        </label>
-                                        <label style={{
-                                          display: "flex",
-                                          alignItems: "center",
-                                          gap: "8px",
-                                          padding: "10px",
-                                          cursor: "pointer",
-                                          userSelect: "none",
-                                          border: "1px solid var(--accent-purple-surface)",
-                                          borderRadius: "8px",
-                                        }}>
-                                          <input
-                                            type="checkbox"
-                                            checked={backOrder}
-                                            onChange={(e) => handlePartDetailChange(partKey, "backOrder", e.target.checked)}
-                                          />
-                                          <span style={{
-                                            fontSize: "13px",
-                                            fontWeight: 600,
-                                            color: backOrder ? "var(--warning)" : "var(--info-dark)",
-                                          }}>
-                                            {backOrder ? "On Back Order" : "Regular Order"}
-                                          </span>
-                                        </label>
-                                      </div>
-                                      <div>
-                                        <label style={{ display: "block", fontSize: "11px", fontWeight: 600, color: "var(--info)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                                          Warranty
-                                        </label>
-                                        <label style={{
-                                          display: "flex",
-                                          alignItems: "center",
-                                          gap: "8px",
-                                          padding: "10px",
-                                          cursor: "pointer",
-                                          userSelect: "none",
-                                          borderRadius: "8px",
-                                          border: "1px solid var(--accent-purple-surface)",
-                                        }}>
-                                          <input
-                                            type="checkbox"
-                                            checked={warranty}
-                                            onChange={(e) => handlePartDetailChange(partKey, "warranty", e.target.checked)}
-                                          />
-                                          <span style={{
-                                            fontSize: "13px",
-                                            fontWeight: 600,
-                                            color: warranty ? "var(--primary)" : "var(--info-dark)",
-                                          }}>
-                                            {warranty ? "Warranty Item" : "Standard Item"}
-                                          </span>
-                                        </label>
-                                      </div>
-                                      <div
-                                        style={{
-                                          display: "flex",
-                                          justifyContent: "flex-end",
-                                          alignItems: "flex-end",
-                                        }}
-                                      >
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            if (!isLocked) {
-                                              handleRemovePart(part, vhcId);
-                                            }
-                                          }}
-                                          disabled={isRemovingPart || isLocked}
-                                          style={{
-                                            padding: "10px 18px",
-                                            borderRadius: "8px",
-                                            border: "1px solid var(--danger)",
-                                            background: (isRemovingPart || isLocked) ? "var(--danger-surface)" : "var(--surface)",
-                                            color: "var(--danger)",
-                                            fontWeight: 600,
-                                            cursor: (isRemovingPart || isLocked) ? "not-allowed" : "pointer",
-                                            transition: "all 0.2s ease",
-                                            opacity: isLocked ? 0.5 : 1,
-                                          }}
-                                          title={isLocked ? "Cannot remove parts from authorized or declined items" : ""}
-                                        >
-                                          {isRemovingPart ? "Removing…" : "Remove"}
-                                        </button>
-                                      </div>
-                                    </div>
-                                  </div>
-                                );
-                              })}
                             </div>
                           )}
                         </div>
@@ -6128,6 +5998,7 @@ export default function VhcDetailsPanel({
         width="960px"
         height="720px"
         onClose={closeAddPartsModal}
+        hideCloseButton
         footer={
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
             <span style={{ fontSize: "12px", color: "var(--info)" }}>{addPartsMessage}</span>
@@ -6172,22 +6043,40 @@ export default function VhcDetailsPanel({
             <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
               Search parts catalogue
             </label>
-            <input
-              type="text"
-              value={addPartsSearch}
-              onChange={(event) => setAddPartsSearch(event.target.value)}
-              placeholder="Search by part number, name, or supplier"
-              style={{
-                width: "100%",
-                marginTop: "6px",
-                padding: "10px 12px",
-                borderRadius: "8px",
-                border: "1px solid var(--accent-purple-surface)",
-                background: "var(--surface)",
-                fontSize: "14px",
-                color: "var(--text-primary)",
-              }}
-            />
+            <div style={{ display: "flex", gap: "10px", marginTop: "6px", flexWrap: "wrap" }}>
+              <input
+                type="text"
+                value={addPartsSearch}
+                onChange={(event) => setAddPartsSearch(event.target.value)}
+                placeholder="Search by part number, name, or supplier"
+                style={{
+                  flex: 1,
+                  minWidth: "220px",
+                  padding: "10px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid var(--accent-purple-surface)",
+                  background: "var(--surface)",
+                  fontSize: "14px",
+                  color: "var(--text-primary)",
+                }}
+              />
+              <button
+                type="button"
+                onClick={handleOpenNewPart}
+                style={{
+                  padding: "10px 14px",
+                  borderRadius: "8px",
+                  border: "1px solid var(--primary)",
+                  background: "var(--surface)",
+                  color: "var(--primary)",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {showNewPartForm ? "Close new part" : "Add new part"}
+              </button>
+            </div>
             {addPartsLoading && (
               <div style={{ marginTop: "8px", fontSize: "12px", color: "var(--info)" }}>
                 Searching…
@@ -6199,6 +6088,178 @@ export default function VhcDetailsPanel({
               </div>
             )}
           </div>
+
+          {showNewPartForm && (
+            <div style={{ border: "1px solid var(--accent-purple-surface)", borderRadius: "12px", padding: "16px", background: "var(--surface)" }}>
+              <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--accent-purple)", marginBottom: "12px" }}>
+                New part details
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
+                <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", fontWeight: 600, color: "var(--info)" }}>
+                  Part Number
+                  <input
+                    type="text"
+                    value={newPartForm.partNumber}
+                    onChange={(event) => handleNewPartFieldChange("partNumber", event.target.value)}
+                    style={{
+                      padding: "8px 10px",
+                      borderRadius: "8px",
+                      border: "1px solid var(--accent-purple-surface)",
+                      background: "var(--surface)",
+                      color: "var(--text-primary)",
+                    }}
+                  />
+                </label>
+                <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", fontWeight: 600, color: "var(--info)" }}>
+                  Name
+                  <input
+                    type="text"
+                    value={newPartForm.name}
+                    onChange={(event) => handleNewPartFieldChange("name", event.target.value)}
+                    style={{
+                      padding: "8px 10px",
+                      borderRadius: "8px",
+                      border: "1px solid var(--accent-purple-surface)",
+                      background: "var(--surface)",
+                      color: "var(--text-primary)",
+                    }}
+                  />
+                </label>
+                <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", fontWeight: 600, color: "var(--info)" }}>
+                  Supplier
+                  <input
+                    type="text"
+                    value={newPartForm.supplier}
+                    onChange={(event) => handleNewPartFieldChange("supplier", event.target.value)}
+                    style={{
+                      padding: "8px 10px",
+                      borderRadius: "8px",
+                      border: "1px solid var(--accent-purple-surface)",
+                      background: "var(--surface)",
+                      color: "var(--text-primary)",
+                    }}
+                  />
+                </label>
+                <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", fontWeight: 600, color: "var(--info)" }}>
+                  Category
+                  <input
+                    type="text"
+                    value={newPartForm.category}
+                    onChange={(event) => handleNewPartFieldChange("category", event.target.value)}
+                    style={{
+                      padding: "8px 10px",
+                      borderRadius: "8px",
+                      border: "1px solid var(--accent-purple-surface)",
+                      background: "var(--surface)",
+                      color: "var(--text-primary)",
+                    }}
+                  />
+                </label>
+                <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", fontWeight: 600, color: "var(--info)" }}>
+                  Storage Location
+                  <input
+                    type="text"
+                    value={newPartForm.storageLocation}
+                    onChange={(event) => handleNewPartFieldChange("storageLocation", event.target.value)}
+                    style={{
+                      padding: "8px 10px",
+                      borderRadius: "8px",
+                      border: "1px solid var(--accent-purple-surface)",
+                      background: "var(--surface)",
+                      color: "var(--text-primary)",
+                    }}
+                  />
+                </label>
+                <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", fontWeight: 600, color: "var(--info)" }}>
+                  Unit Cost
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={newPartForm.unitCost}
+                    onChange={(event) => handleNewPartFieldChange("unitCost", event.target.value)}
+                    style={{
+                      padding: "8px 10px",
+                      borderRadius: "8px",
+                      border: "1px solid var(--accent-purple-surface)",
+                      background: "var(--surface)",
+                      color: "var(--text-primary)",
+                    }}
+                  />
+                </label>
+                <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", fontWeight: 600, color: "var(--info)" }}>
+                  Unit Price
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={newPartForm.unitPrice}
+                    onChange={(event) => handleNewPartFieldChange("unitPrice", event.target.value)}
+                    style={{
+                      padding: "8px 10px",
+                      borderRadius: "8px",
+                      border: "1px solid var(--accent-purple-surface)",
+                      background: "var(--surface)",
+                      color: "var(--text-primary)",
+                    }}
+                  />
+                </label>
+                <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", fontWeight: 600, color: "var(--info)" }}>
+                  Description
+                  <input
+                    type="text"
+                    value={newPartForm.description}
+                    onChange={(event) => handleNewPartFieldChange("description", event.target.value)}
+                    style={{
+                      padding: "8px 10px",
+                      borderRadius: "8px",
+                      border: "1px solid var(--accent-purple-surface)",
+                      background: "var(--surface)",
+                      color: "var(--text-primary)",
+                    }}
+                  />
+                </label>
+                <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", fontWeight: 600, color: "var(--info)" }}>
+                  Notes
+                  <input
+                    type="text"
+                    value={newPartForm.notes}
+                    onChange={(event) => handleNewPartFieldChange("notes", event.target.value)}
+                    style={{
+                      padding: "8px 10px",
+                      borderRadius: "8px",
+                      border: "1px solid var(--accent-purple-surface)",
+                      background: "var(--surface)",
+                      color: "var(--text-primary)",
+                    }}
+                  />
+                </label>
+              </div>
+              {newPartError && (
+                <div style={{ marginTop: "10px", fontSize: "12px", color: "var(--danger)" }}>
+                  {newPartError}
+                </div>
+              )}
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "12px" }}>
+                <button
+                  type="button"
+                  onClick={handleCreateNewPart}
+                  disabled={newPartSaving}
+                  style={{
+                    padding: "10px 16px",
+                    borderRadius: "8px",
+                    border: "1px solid var(--primary)",
+                    background: newPartSaving ? "var(--surface-light)" : "var(--primary)",
+                    color: newPartSaving ? "var(--info)" : "var(--surface)",
+                    fontWeight: 700,
+                    cursor: newPartSaving ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {newPartSaving ? "Saving…" : "Save new part"}
+                </button>
+              </div>
+            </div>
+          )}
 
           <div style={{ border: "1px solid var(--accent-purple-surface)", borderRadius: "12px", overflow: "hidden" }}>
             <div style={{ padding: "10px 12px", background: "var(--info-surface)", fontSize: "12px", fontWeight: 600, color: "var(--info-dark)" }}>
@@ -6259,6 +6320,89 @@ export default function VhcDetailsPanel({
             <div style={{ padding: "10px 12px", background: "var(--info-surface)", fontSize: "12px", fontWeight: 600, color: "var(--info-dark)" }}>
               Selected parts
             </div>
+            {existingPartsForModal.length > 0 && (
+              <div style={{ padding: "12px" }}>
+                <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)", marginBottom: "8px" }}>
+                  Already added to this VHC item
+                </div>
+                <div style={{ border: "1px solid var(--accent-purple-surface)", borderRadius: "10px", overflow: "hidden" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                    <thead>
+                      <tr style={{ background: "var(--surface-light)", color: "var(--info)" }}>
+                        <th style={{ textAlign: "left", padding: "8px 12px" }}>Part</th>
+                        <th style={{ textAlign: "left", padding: "8px 12px" }}>Description</th>
+                        <th style={{ textAlign: "right", padding: "8px 12px" }}>Cost</th>
+                        <th style={{ textAlign: "left", padding: "8px 12px" }}>Location</th>
+                        <th style={{ textAlign: "center", padding: "8px 12px" }}>Warranty</th>
+                        <th style={{ textAlign: "center", padding: "8px 12px" }}>Back Order</th>
+                        <th style={{ textAlign: "center", padding: "8px 12px" }}>Surcharge</th>
+                        <th style={{ textAlign: "center", padding: "8px 12px" }}>Remove</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {existingPartsForModal.map((part) => {
+                        const partKey = `${addPartsTarget?.vhcId}-${part.id}`;
+                        const details = partDetails[partKey] || {};
+                        return (
+                          <tr key={`existing-${part.id}`} style={{ borderBottom: "1px solid var(--info-surface)" }}>
+                            <td style={{ padding: "8px 12px", fontWeight: 600, color: "var(--accent-purple)" }}>
+                              {part.part?.name || "Part"}
+                            </td>
+                            <td style={{ padding: "8px 12px", color: "var(--info-dark)" }}>
+                              {part.part?.description || "—"}
+                            </td>
+                            <td style={{ padding: "8px 12px", textAlign: "right", color: "var(--info-dark)" }}>
+                              £{Number(part.unit_price || part.part?.unit_price || 0).toFixed(2)}
+                            </td>
+                            <td style={{ padding: "8px 12px", color: "var(--info-dark)" }}>
+                              {part.storage_location || part.part?.storage_location || "—"}
+                            </td>
+                            <td style={{ padding: "8px 12px", textAlign: "center" }}>
+                              <input
+                                type="checkbox"
+                                checked={details.warranty || false}
+                                onChange={(event) => handlePartDetailChange(partKey, "warranty", event.target.checked)}
+                              />
+                            </td>
+                            <td style={{ padding: "8px 12px", textAlign: "center" }}>
+                              <input
+                                type="checkbox"
+                                checked={details.backOrder || false}
+                                onChange={(event) => handlePartDetailChange(partKey, "backOrder", event.target.checked)}
+                              />
+                            </td>
+                            <td style={{ padding: "8px 12px", textAlign: "center" }}>
+                              <input
+                                type="checkbox"
+                                checked={details.surcharge || false}
+                                onChange={(event) => handlePartDetailChange(partKey, "surcharge", event.target.checked)}
+                              />
+                            </td>
+                            <td style={{ padding: "8px 12px", textAlign: "center" }}>
+                              <button
+                                type="button"
+                                onClick={() => handleRemovePart(part, addPartsTarget?.vhcId)}
+                                style={{
+                                  padding: "6px 10px",
+                                  borderRadius: "6px",
+                                  border: "1px solid var(--danger)",
+                                  background: "var(--danger-surface)",
+                                  color: "var(--danger)",
+                                  fontWeight: 600,
+                                  cursor: "pointer",
+                                }}
+                              >
+                                Remove
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
             {selectedParts.length === 0 ? (
               <div style={{ padding: "14px 12px", fontSize: "12px", color: "var(--info)" }}>
                 No parts selected yet.

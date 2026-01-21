@@ -55,8 +55,104 @@ const buildSearchQuery = (query, term) => {
 };
 
 export default async function handler(req, res) {
+  if (req.method === "POST") {
+    const {
+      partNumber,
+      name,
+      supplier,
+      category,
+      storageLocation,
+      unitCost,
+      unitPrice,
+      description,
+      notes,
+    } = req.body || {};
+
+    const required = [
+      ["partNumber", partNumber],
+      ["name", name],
+      ["supplier", supplier],
+      ["category", category],
+      ["storageLocation", storageLocation],
+      ["unitCost", unitCost],
+      ["unitPrice", unitPrice],
+    ];
+
+    const missing = required.filter(([, value]) => !String(value || "").trim()).map(([key]) => key);
+    if (missing.length > 0) {
+      const labels = {
+        partNumber: "Part Number",
+        name: "Name",
+        supplier: "Supplier",
+        category: "Category",
+        storageLocation: "Storage Location",
+        unitCost: "Unit Cost",
+        unitPrice: "Unit Price",
+      };
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required to create a part.",
+        missing: missing.map((key) => labels[key] || key),
+      });
+    }
+
+    const parsedUnitCost = Number.parseFloat(unitCost);
+    const parsedUnitPrice = Number.parseFloat(unitPrice);
+    if (!Number.isFinite(parsedUnitCost) || !Number.isFinite(parsedUnitPrice)) {
+      return res.status(400).json({
+        success: false,
+        message: "Unit cost and unit price must be valid numbers.",
+      });
+    }
+
+    try {
+      const payload = {
+        part_number: String(partNumber).trim(),
+        name: String(name).trim(),
+        supplier: String(supplier).trim(),
+        category: String(category).trim(),
+        storage_location: String(storageLocation).trim(),
+        unit_cost: parsedUnitCost,
+        unit_price: parsedUnitPrice,
+        description: String(description || "").trim() || null,
+        notes: String(notes || "").trim() || null,
+        is_active: true,
+        qty_in_stock: 0,
+        qty_reserved: 0,
+        qty_on_order: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      const { data, error } = await supabaseService
+        .from("parts_catalog")
+        .insert([payload])
+        .select(PART_COLUMNS)
+        .single();
+
+      if (error) {
+        console.error("[parts-catalog] create failed", error);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to create part catalogue record.",
+        });
+      }
+
+      return res.status(201).json({
+        success: true,
+        part: data,
+      });
+    } catch (error) {
+      console.error("[parts-catalog] create unexpected error", error);
+      return res.status(500).json({
+        success: false,
+        message: "Unexpected server error.",
+      });
+    }
+  }
+
   if (req.method !== "GET") {
-    res.setHeader("Allow", ["GET"]);
+    res.setHeader("Allow", ["GET", "POST"]);
     return res.status(405).json({
       success: false,
       message: `Method ${req.method} not allowed`,

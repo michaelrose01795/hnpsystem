@@ -237,6 +237,8 @@ function StockCataloguePage() {
     partNumber: queryPartNumber,
     part: queryPart,
     search: querySearch,
+    newPart: queryNewPart,
+    partName: queryNewPartName,
   } = router.query || {};
 
   const inventorySearchQueryParam = useMemo(
@@ -244,6 +246,17 @@ function StockCataloguePage() {
     [queryInventorySearch, queryPartNumber, queryPart, querySearch]
   );
   const lastInventoryQueryApplied = useRef("");
+
+  useEffect(() => {
+    if (!router.isReady) return;
+    if (String(queryNewPart) !== "1") return;
+    setShowNewPartForm(true);
+    setNewPartForm((prev) => ({
+      ...prev,
+      partNumber: queryPartNumber ? String(queryPartNumber) : prev.partNumber,
+      name: queryNewPartName ? String(queryNewPartName) : prev.name,
+    }));
+  }, [router.isReady, queryNewPart, queryPartNumber, queryNewPartName]);
 
   const selectedDeliveryPart = useMemo(
     () => inventory.find((part) => part.id === deliveryForm.partId),

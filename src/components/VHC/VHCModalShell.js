@@ -1,5 +1,6 @@
 // file location: src/components/VHC/VHCModalShell.js
 import React from "react";
+import { createPortal } from "react-dom";
 import { vhcModalStyles, createVhcButtonStyle } from "@/styles/appTheme";
 import { useTheme } from "@/styles/themeProvider";
 
@@ -16,9 +17,9 @@ export default function VHCModalShell({
 }) {
   const { resolvedMode } = useTheme();
   const closeButtonColor = resolvedMode === "dark" ? "var(--accent-purple)" : "var(--danger)";
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === "undefined") return null;
 
-  return (
+  return createPortal(
     <div style={vhcModalStyles.overlay}>
       <div style={vhcModalStyles.container({ width, height })}>
         <div style={vhcModalStyles.header}>
@@ -56,7 +57,8 @@ export default function VHCModalShell({
           <div style={vhcModalStyles.footer}>{footer}</div>
         ) : null}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
