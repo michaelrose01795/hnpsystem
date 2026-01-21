@@ -3,8 +3,8 @@ TO DO:
 Continue flow with job number 54
 
 test jsut a popup with nothing in works fine first.
-Add a button within the drop down section which is shown when row wihtin parts identified section is pressed named "add part"
-Create a Add Parts to VHC Item popup. this popup will have a title which is the item from the row it was clicked from. it gives the user a search section to add 1 or multiple parts to a parts identified row within parts identifed tab. inside the popup will show a search section which is linked to the parts stock from the database. so when the user searchs the part number it brings up the list of items whihc has that part number. that row is then clicked and added to the selected part section. 
+
+Create a Add Parts to VHC Item popup. this popup will have a title which is the item from the row it was clicked from. it gives the user a search section to add 1 or multiple parts to a parts identified row within parts identifed tab. inside the popup will show a search section which is linked to the parts stock from the database. so when the user searchs the part number it brings up the list of items whihc has that part number. that row is then clicked and added to the selected part section within the popup, multiple parts can be selected. once selected parts are within that section "add parts" button is pressed which then shows the parts selected inside the "No parts added yet." section in a list view with details of the part added like cost name description, warrent (tick box), back order (tick box), surcharge (tick box) and details which will be help full like location as well. add a remove button within the popup under the selected parts and then when add parts button is pressed it then update the parts within the "No parts added yet." section as well with removing or added the parts within the selected section inside the popup. 
 
 
 

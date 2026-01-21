@@ -14,6 +14,7 @@ import ExternalDetailsModal from "@/components/VHC/ExternalDetailsModal";
 import InternalElectricsDetailsModal from "@/components/VHC/InternalElectricsDetailsModal";
 import UndersideDetailsModal from "@/components/VHC/UndersideDetailsModal";
 import PrePickLocationModal from "@/components/VHC/PrePickLocationModal";
+import VHCModalShell from "@/components/VHC/VHCModalShell";
 import { buildVhcRowStatusView, normaliseDecisionStatus, resolveSeverityKey } from "@/lib/vhc/summaryStatus";
 import {
   EmptyStateMessage,
@@ -803,6 +804,15 @@ export default function VhcDetailsPanel({
   const [removingPartIds, setRemovingPartIds] = useState(new Set());
   const [hoveredStatusId, setHoveredStatusId] = useState(null);
   const [vhcChecksData, setVhcChecksData] = useState([]);
+  const [isAddPartsModalOpen, setIsAddPartsModalOpen] = useState(false);
+  const [addPartsTarget, setAddPartsTarget] = useState(null);
+  const [addPartsSearch, setAddPartsSearch] = useState("");
+  const [addPartsResults, setAddPartsResults] = useState([]);
+  const [addPartsLoading, setAddPartsLoading] = useState(false);
+  const [addPartsError, setAddPartsError] = useState("");
+  const [selectedParts, setSelectedParts] = useState([]);
+  const [addingParts, setAddingParts] = useState(false);
+  const [addPartsMessage, setAddPartsMessage] = useState("");
 
   const resolveCanonicalVhcId = useCallback(
     (vhcId) => {
@@ -1160,6 +1170,7 @@ export default function VhcDetailsPanel({
               inStock: (part.part?.qty_in_stock || 0) > 0,
               backOrder: false,
               warranty: false,
+              surcharge: false,
             };
             hasChanges = true;
           }
@@ -3481,6 +3492,182 @@ export default function VhcDetailsPanel({
     });
   }, []);
 
+  const openAddPartsModal = useCallback((vhcId, label) => {
+    setAddPartsTarget({ vhcId, label: label || "VHC Item" });
+    setAddPartsSearch("");
+    setAddPartsResults([]);
+    setAddPartsError("");
+    setSelectedParts([]);
+    setAddPartsMessage("");
+    setIsAddPartsModalOpen(true);
+  }, []);
+
+  const closeAddPartsModal = useCallback(() => {
+    setIsAddPartsModalOpen(false);
+    setAddPartsTarget(null);
+    setAddPartsSearch("");
+    setAddPartsResults([]);
+    setAddPartsError("");
+    setSelectedParts([]);
+    setAddPartsMessage("");
+  }, []);
+
+  const handleSelectSearchPart = useCallback((part) => {
+    if (!part) return;
+    setSelectedParts((prev) => {
+      if (prev.some((entry) => entry.part?.id === part.id)) {
+        return prev;
+      }
+      return [
+        ...prev,
+        {
+          part,
+          quantity: 1,
+          warranty: false,
+          backOrder: false,
+          surcharge: false,
+        },
+      ];
+    });
+  }, []);
+
+  const handleRemoveSelectedPart = useCallback((partId) => {
+    setSelectedParts((prev) => prev.filter((entry) => entry.part?.id !== partId));
+  }, []);
+
+  const handleSelectedPartChange = useCallback((partId, field, value) => {
+    setSelectedParts((prev) =>
+      prev.map((entry) =>
+        entry.part?.id === partId ? { ...entry, [field]: value } : entry
+      )
+    );
+  }, []);
+
+  useEffect(() => {
+    if (!isAddPartsModalOpen) return;
+    const trimmed = addPartsSearch.trim();
+    if (!trimmed) {
+      setAddPartsResults([]);
+      setAddPartsError("");
+      return;
+    }
+    if (trimmed.length < 2) {
+      setAddPartsResults([]);
+      setAddPartsError("Enter at least 2 characters to search parts.");
+      return;
+    }
+
+    let isActive = true;
+    const timer = setTimeout(async () => {
+      setAddPartsLoading(true);
+      setAddPartsError("");
+      try {
+        const params = new URLSearchParams({ search: trimmed, limit: "25" });
+        const response = await fetch(`/api/parts/catalog?${params.toString()}`);
+        const payload = await response.json();
+        if (!response.ok || !payload?.success) {
+          throw new Error(payload?.message || "Unable to search parts catalogue");
+        }
+        if (!isActive) return;
+        const results = Array.isArray(payload.parts) ? payload.parts : [];
+        setAddPartsResults(results);
+        setAddPartsError(results.length === 0 ? "No matching parts found." : "");
+      } catch (error) {
+        if (!isActive) return;
+        setAddPartsResults([]);
+        setAddPartsError(error.message || "Unable to search parts catalogue");
+      } finally {
+        if (isActive) {
+          setAddPartsLoading(false);
+        }
+      }
+    }, 300);
+
+    return () => {
+      isActive = false;
+      clearTimeout(timer);
+    };
+  }, [addPartsSearch, isAddPartsModalOpen]);
+
+  const handleAddSelectedParts = useCallback(async () => {
+    if (!job?.id || !addPartsTarget?.vhcId) return;
+    if (selectedParts.length === 0) {
+      setAddPartsMessage("Select at least one part to add.");
+      return;
+    }
+    setAddingParts(true);
+    setAddPartsMessage("");
+
+    const canonicalId = resolveCanonicalVhcId(addPartsTarget.vhcId);
+    const parsedId = Number(canonicalId);
+    const vhcItemId = Number.isInteger(parsedId) ? parsedId : null;
+
+    try {
+      let lastJobPart = null;
+      for (const entry of selectedParts) {
+        const part = entry.part || {};
+        const response = await fetch("/api/parts/jobs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            jobId: job.id,
+            partId: part.id,
+            quantityRequested: entry.quantity || 1,
+            allocateFromStock: false,
+            storageLocation: part.storage_location || null,
+            status: "pending",
+            requestNotes: `Added from VHC Parts Identified - Job #${resolvedJobNumber}`,
+            origin: "vhc",
+            vhcItemId: vhcItemId,
+            userId: authUserId,
+            userNumericId: dbUserId,
+            unitCost: part.unit_cost || 0,
+            unitPrice: part.unit_price || 0,
+          }),
+        });
+
+        const data = await response.json();
+        if (!response.ok || !data?.success) {
+          throw new Error(data?.message || "Failed to add part to job");
+        }
+
+        const jobPart = data?.jobPart;
+        lastJobPart = jobPart || lastJobPart;
+        if (jobPart?.id) {
+          const partKey = `${addPartsTarget.vhcId}-${jobPart.id}`;
+          setPartDetails((prev) => ({
+            ...prev,
+            [partKey]: {
+              ...(prev[partKey] || {}),
+              warranty: entry.warranty,
+              backOrder: entry.backOrder,
+              surcharge: entry.surcharge,
+            },
+          }));
+        }
+      }
+
+      await handlePartAdded({ sourceVhcId: addPartsTarget.vhcId, jobPart: lastJobPart });
+      setAddPartsMessage("Parts added to this VHC item.");
+      setIsAddPartsModalOpen(false);
+      setSelectedParts([]);
+    } catch (error) {
+      console.error("Failed to add parts to VHC item:", error);
+      setAddPartsMessage(error.message || "Unable to add parts to VHC item.");
+    } finally {
+      setAddingParts(false);
+    }
+  }, [
+    addPartsTarget,
+    authUserId,
+    dbUserId,
+    handlePartAdded,
+    job?.id,
+    resolvedJobNumber,
+    resolveCanonicalVhcId,
+    selectedParts,
+  ]);
+
   // Handler for updating part detail fields
   const handlePartDetailChange = useCallback((partKey, field, value) => {
     setPartDetails((prev) => ({
@@ -3886,6 +4073,7 @@ export default function VhcDetailsPanel({
                 const entry = getEntryForItem(vhcId);
                 const entryDecision = normaliseDecisionStatus(entry.status);
                 const isLocked = entryDecision === "authorized" || entryDecision === "declined";
+                const canAddPart = !isCustomerView && !readOnly && !isLocked;
 
                 // Determine background color based on status
                 let rowBackground = "var(--surface)";
@@ -4034,6 +4222,34 @@ export default function VhcDetailsPanel({
                     <tr>
                       <td colSpan="5" style={{ padding: "0", borderBottom: "1px solid var(--info-surface)" }}>
                         <div style={{ padding: "24px", background: rowBackground }}>
+                          {!isCustomerView ? (
+                            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "16px" }}>
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  if (canAddPart) {
+                                    openAddPartsModal(vhcId, vhcLabel);
+                                  }
+                                }}
+                                disabled={!canAddPart}
+                                style={{
+                                  padding: "8px 14px",
+                                  borderRadius: "8px",
+                                  border: "1px solid var(--primary)",
+                                  background: canAddPart ? "var(--primary)" : "var(--surface-light)",
+                                  color: canAddPart ? "var(--surface)" : "var(--info)",
+                                  fontWeight: 600,
+                                  cursor: canAddPart ? "pointer" : "not-allowed",
+                                  fontSize: "12px",
+                                  opacity: canAddPart ? 1 : 0.6,
+                                }}
+                                title={isLocked ? "Cannot add parts to authorized or declined items" : ""}
+                              >
+                                Add Part
+                              </button>
+                            </div>
+                          ) : null}
                           {/* Part Details Sections */}
                           {linkedParts.length === 0 ? (
                             <div style={{
@@ -4049,6 +4265,73 @@ export default function VhcDetailsPanel({
                             </div>
                           ) : (
                             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                              <div style={{ border: "1px solid var(--accent-purple-surface)", borderRadius: "12px", overflow: "hidden" }}>
+                                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                                  <thead>
+                                    <tr style={{ background: "var(--info-surface)", color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.04em", fontSize: "10px" }}>
+                                      <th style={{ textAlign: "left", padding: "10px 12px" }}>Part</th>
+                                      <th style={{ textAlign: "left", padding: "10px 12px" }}>Description</th>
+                                      <th style={{ textAlign: "right", padding: "10px 12px" }}>Cost</th>
+                                      <th style={{ textAlign: "left", padding: "10px 12px" }}>Location</th>
+                                      <th style={{ textAlign: "center", padding: "10px 12px" }}>Warranty</th>
+                                      <th style={{ textAlign: "center", padding: "10px 12px" }}>Back Order</th>
+                                      <th style={{ textAlign: "center", padding: "10px 12px" }}>Surcharge</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {linkedParts.map((part) => {
+                                      const partKey = `${vhcId}-${part.id}`;
+                                      const details = partDetails[partKey] || {};
+                                      const partName = details.partName || part.part?.name || "Part";
+                                      const partDescription = part.part?.description || "—";
+                                      const costToCustomer = details.costToCustomer !== undefined ? details.costToCustomer : Number(part.unit_price || part.part?.unit_price || 0);
+                                      const location = part.storage_location || part.part?.storage_location || "—";
+                                      const warranty = details.warranty || false;
+                                      const backOrder = details.backOrder || false;
+                                      const surcharge = details.surcharge || false;
+
+                                      return (
+                                        <tr key={`${partKey}-summary`} style={{ borderBottom: "1px solid var(--info-surface)" }}>
+                                          <td style={{ padding: "10px 12px", fontWeight: 600, color: "var(--accent-purple)" }}>
+                                            {partName}
+                                          </td>
+                                          <td style={{ padding: "10px 12px", color: "var(--info-dark)" }}>
+                                            {partDescription}
+                                          </td>
+                                          <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: "var(--accent-purple)" }}>
+                                            £{Number(costToCustomer || 0).toFixed(2)}
+                                          </td>
+                                          <td style={{ padding: "10px 12px", color: "var(--info-dark)" }}>
+                                            {location}
+                                          </td>
+                                          <td style={{ padding: "10px 12px", textAlign: "center" }}>
+                                            <input
+                                              type="checkbox"
+                                              checked={warranty}
+                                              onChange={(event) => handlePartDetailChange(partKey, "warranty", event.target.checked)}
+                                            />
+                                          </td>
+                                          <td style={{ padding: "10px 12px", textAlign: "center" }}>
+                                            <input
+                                              type="checkbox"
+                                              checked={backOrder}
+                                              onChange={(event) => handlePartDetailChange(partKey, "backOrder", event.target.checked)}
+                                            />
+                                          </td>
+                                          <td style={{ padding: "10px 12px", textAlign: "center" }}>
+                                            <input
+                                              type="checkbox"
+                                              checked={surcharge}
+                                              onChange={(event) => handlePartDetailChange(partKey, "surcharge", event.target.checked)}
+                                            />
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+
                               {linkedParts.map((part) => {
                                 const partKey = `${vhcId}-${part.id}`;
                                 const details = partDetails[partKey] || {};
@@ -4344,7 +4627,7 @@ export default function VhcDetailsPanel({
         </div>
       </div>
     );
-  }, [vhcItemsWithParts, severityLists, resolveCanonicalVhcId, partsNotRequired, warrantyRows, partsCostByVhcItem, handlePartsNotRequiredToggle, handleVhcItemRowClick, expandedVhcItems, partDetails, handlePartDetailChange, handleRemovePart, removingPartIds]);
+  }, [vhcItemsWithParts, severityLists, resolveCanonicalVhcId, partsNotRequired, warrantyRows, partsCostByVhcItem, handlePartsNotRequiredToggle, handleVhcItemRowClick, expandedVhcItems, partDetails, handlePartDetailChange, handleRemovePart, removingPartIds, isCustomerView, openAddPartsModal, readOnly]);
 
   // Render VHC authorized items panel (similar to Parts Identified but for authorized items)
   const renderVhcAuthorizedPanel = useCallback(() => {
@@ -5836,6 +6119,226 @@ export default function VhcDetailsPanel({
           onComplete={(data) => handleSectionComplete("underside", data)}
         />
       )}
+
+      <VHCModalShell
+        isOpen={isAddPartsModalOpen}
+        title={`Add Parts - ${addPartsTarget?.label || "VHC Item"}`}
+        subtitle="Search the parts catalogue and add one or more items to this VHC row."
+        width="960px"
+        height="720px"
+        onClose={closeAddPartsModal}
+        footer={
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+            <span style={{ fontSize: "12px", color: "var(--info)" }}>{addPartsMessage}</span>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <button
+                type="button"
+                onClick={closeAddPartsModal}
+                style={{
+                  padding: "10px 16px",
+                  borderRadius: "8px",
+                  border: "1px solid var(--accent-purple-surface)",
+                  background: "var(--surface)",
+                  color: "var(--info-dark)",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAddSelectedParts}
+                disabled={addingParts || selectedParts.length === 0}
+                style={{
+                  padding: "10px 18px",
+                  borderRadius: "8px",
+                  border: "1px solid var(--primary)",
+                  background: addingParts || selectedParts.length === 0 ? "var(--surface-light)" : "var(--primary)",
+                  color: addingParts || selectedParts.length === 0 ? "var(--info)" : "var(--surface)",
+                  fontWeight: 700,
+                  cursor: addingParts || selectedParts.length === 0 ? "not-allowed" : "pointer",
+                }}
+              >
+                {addingParts ? "Adding…" : "Add Parts"}
+              </button>
+            </div>
+          </div>
+        }
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+          <div>
+            <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              Search parts catalogue
+            </label>
+            <input
+              type="text"
+              value={addPartsSearch}
+              onChange={(event) => setAddPartsSearch(event.target.value)}
+              placeholder="Search by part number, name, or supplier"
+              style={{
+                width: "100%",
+                marginTop: "6px",
+                padding: "10px 12px",
+                borderRadius: "8px",
+                border: "1px solid var(--accent-purple-surface)",
+                background: "var(--surface)",
+                fontSize: "14px",
+                color: "var(--text-primary)",
+              }}
+            />
+            {addPartsLoading && (
+              <div style={{ marginTop: "8px", fontSize: "12px", color: "var(--info)" }}>
+                Searching…
+              </div>
+            )}
+            {addPartsError && !addPartsLoading && (
+              <div style={{ marginTop: "8px", fontSize: "12px", color: "var(--danger)" }}>
+                {addPartsError}
+              </div>
+            )}
+          </div>
+
+          <div style={{ border: "1px solid var(--accent-purple-surface)", borderRadius: "12px", overflow: "hidden" }}>
+            <div style={{ padding: "10px 12px", background: "var(--info-surface)", fontSize: "12px", fontWeight: 600, color: "var(--info-dark)" }}>
+              Search results
+            </div>
+            {addPartsResults.length === 0 ? (
+              <div style={{ padding: "14px 12px", fontSize: "12px", color: "var(--info)" }}>
+                {addPartsLoading ? "Loading results…" : "No parts to show yet."}
+              </div>
+            ) : (
+              <div style={{ maxHeight: "200px", overflowY: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                  <thead>
+                    <tr style={{ background: "var(--surface-light)", color: "var(--info)" }}>
+                      <th style={{ textAlign: "left", padding: "8px 12px" }}>Part</th>
+                      <th style={{ textAlign: "left", padding: "8px 12px" }}>Number</th>
+                      <th style={{ textAlign: "left", padding: "8px 12px" }}>Location</th>
+                      <th style={{ textAlign: "right", padding: "8px 12px" }}>Stock</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {addPartsResults.map((part) => (
+                      <tr
+                        key={part.id}
+                        onClick={() => handleSelectSearchPart(part)}
+                        style={{
+                          cursor: "pointer",
+                          borderBottom: "1px solid var(--info-surface)",
+                        }}
+                        onMouseEnter={(event) => {
+                          event.currentTarget.style.background = "var(--accent-purple-surface)";
+                        }}
+                        onMouseLeave={(event) => {
+                          event.currentTarget.style.background = "transparent";
+                        }}
+                      >
+                        <td style={{ padding: "8px 12px", fontWeight: 600, color: "var(--accent-purple)" }}>
+                          {part.name || "Part"}
+                        </td>
+                        <td style={{ padding: "8px 12px", color: "var(--info-dark)" }}>
+                          {part.part_number || "—"}
+                        </td>
+                        <td style={{ padding: "8px 12px", color: "var(--info-dark)" }}>
+                          {part.storage_location || "—"}
+                        </td>
+                        <td style={{ padding: "8px 12px", textAlign: "right", color: "var(--info)" }}>
+                          {part.qty_in_stock ?? 0}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          <div style={{ border: "1px solid var(--accent-purple-surface)", borderRadius: "12px", overflow: "hidden" }}>
+            <div style={{ padding: "10px 12px", background: "var(--info-surface)", fontSize: "12px", fontWeight: 600, color: "var(--info-dark)" }}>
+              Selected parts
+            </div>
+            {selectedParts.length === 0 ? (
+              <div style={{ padding: "14px 12px", fontSize: "12px", color: "var(--info)" }}>
+                No parts selected yet.
+              </div>
+            ) : (
+              <div style={{ maxHeight: "240px", overflowY: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                  <thead>
+                    <tr style={{ background: "var(--surface-light)", color: "var(--info)" }}>
+                      <th style={{ textAlign: "left", padding: "8px 12px" }}>Part</th>
+                      <th style={{ textAlign: "left", padding: "8px 12px" }}>Description</th>
+                      <th style={{ textAlign: "right", padding: "8px 12px" }}>Cost</th>
+                      <th style={{ textAlign: "left", padding: "8px 12px" }}>Location</th>
+                      <th style={{ textAlign: "center", padding: "8px 12px" }}>Warranty</th>
+                      <th style={{ textAlign: "center", padding: "8px 12px" }}>Back Order</th>
+                      <th style={{ textAlign: "center", padding: "8px 12px" }}>Surcharge</th>
+                      <th style={{ textAlign: "center", padding: "8px 12px" }}>Remove</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedParts.map((entry) => (
+                      <tr key={entry.part?.id} style={{ borderBottom: "1px solid var(--info-surface)" }}>
+                        <td style={{ padding: "8px 12px", fontWeight: 600, color: "var(--accent-purple)" }}>
+                          {entry.part?.name || "Part"}
+                        </td>
+                        <td style={{ padding: "8px 12px", color: "var(--info-dark)" }}>
+                          {entry.part?.description || "—"}
+                        </td>
+                        <td style={{ padding: "8px 12px", textAlign: "right", color: "var(--info-dark)" }}>
+                          £{Number(entry.part?.unit_price || 0).toFixed(2)}
+                        </td>
+                        <td style={{ padding: "8px 12px", color: "var(--info-dark)" }}>
+                          {entry.part?.storage_location || "—"}
+                        </td>
+                        <td style={{ padding: "8px 12px", textAlign: "center" }}>
+                          <input
+                            type="checkbox"
+                            checked={entry.warranty}
+                            onChange={(event) => handleSelectedPartChange(entry.part?.id, "warranty", event.target.checked)}
+                          />
+                        </td>
+                        <td style={{ padding: "8px 12px", textAlign: "center" }}>
+                          <input
+                            type="checkbox"
+                            checked={entry.backOrder}
+                            onChange={(event) => handleSelectedPartChange(entry.part?.id, "backOrder", event.target.checked)}
+                          />
+                        </td>
+                        <td style={{ padding: "8px 12px", textAlign: "center" }}>
+                          <input
+                            type="checkbox"
+                            checked={entry.surcharge}
+                            onChange={(event) => handleSelectedPartChange(entry.part?.id, "surcharge", event.target.checked)}
+                          />
+                        </td>
+                        <td style={{ padding: "8px 12px", textAlign: "center" }}>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSelectedPart(entry.part?.id)}
+                            style={{
+                              padding: "6px 10px",
+                              borderRadius: "6px",
+                              border: "1px solid var(--danger)",
+                              background: "var(--danger-surface)",
+                              color: "var(--danger)",
+                              fontWeight: 600,
+                              cursor: "pointer",
+                            }}
+                          >
+                            Remove
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      </VHCModalShell>
 
       {/* Pre-Pick Location Modal */}
       <PrePickLocationModal
