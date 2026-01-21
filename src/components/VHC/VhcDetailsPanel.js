@@ -3589,85 +3589,6 @@ export default function VhcDetailsPanel({
     };
   }, [addPartsSearch, isAddPartsModalOpen]);
 
-  const handleAddSelectedParts = useCallback(async () => {
-    if (!job?.id || !addPartsTarget?.vhcId) return;
-    if (selectedParts.length === 0) {
-      setAddPartsMessage("Select at least one part to add.");
-      return;
-    }
-    setAddingParts(true);
-    setAddPartsMessage("");
-
-    const canonicalId = resolveCanonicalVhcId(addPartsTarget.vhcId);
-    const parsedId = Number(canonicalId);
-    const vhcItemId = Number.isInteger(parsedId) ? parsedId : null;
-
-    try {
-      let lastJobPart = null;
-      for (const entry of selectedParts) {
-        const part = entry.part || {};
-        const response = await fetch("/api/parts/jobs", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            jobId: job.id,
-            partId: part.id,
-            quantityRequested: entry.quantity || 1,
-            allocateFromStock: false,
-            storageLocation: part.storage_location || null,
-            status: "pending",
-            requestNotes: `Added from VHC Parts Identified - Job #${resolvedJobNumber}`,
-            origin: "vhc",
-            vhcItemId: vhcItemId,
-            userId: authUserId,
-            userNumericId: dbUserId,
-            unitCost: part.unit_cost || 0,
-            unitPrice: part.unit_price || 0,
-          }),
-        });
-
-        const data = await response.json();
-        if (!response.ok || !data?.success) {
-          throw new Error(data?.message || "Failed to add part to job");
-        }
-
-        const jobPart = data?.jobPart;
-        lastJobPart = jobPart || lastJobPart;
-        if (jobPart?.id) {
-          const partKey = `${addPartsTarget.vhcId}-${jobPart.id}`;
-          setPartDetails((prev) => ({
-            ...prev,
-            [partKey]: {
-              ...(prev[partKey] || {}),
-              warranty: entry.warranty,
-              backOrder: entry.backOrder,
-              surcharge: entry.surcharge,
-            },
-          }));
-        }
-      }
-
-      await handlePartAdded({ sourceVhcId: addPartsTarget.vhcId, jobPart: lastJobPart });
-      setAddPartsMessage("Parts added to this VHC item.");
-      setIsAddPartsModalOpen(false);
-      setSelectedParts([]);
-    } catch (error) {
-      console.error("Failed to add parts to VHC item:", error);
-      setAddPartsMessage(error.message || "Unable to add parts to VHC item.");
-    } finally {
-      setAddingParts(false);
-    }
-  }, [
-    addPartsTarget,
-    authUserId,
-    dbUserId,
-    handlePartAdded,
-    job?.id,
-    resolvedJobNumber,
-    resolveCanonicalVhcId,
-    selectedParts,
-  ]);
-
   // Handler for updating part detail fields
   const handlePartDetailChange = useCallback((partKey, field, value) => {
     setPartDetails((prev) => ({
@@ -3826,6 +3747,7 @@ export default function VhcDetailsPanel({
             inStock: (part.qty_in_stock || 0) > 0,
             backOrder: false,
             warranty: false,
+            surcharge: false,
           };
 
           setPartDetails((prev) => {
@@ -3860,6 +3782,85 @@ export default function VhcDetailsPanel({
       });
     }
   }, [fetchJobPartsViaApi, resolvedJobNumber, upsertVhcItemAlias]);
+
+  const handleAddSelectedParts = useCallback(async () => {
+    if (!job?.id || !addPartsTarget?.vhcId) return;
+    if (selectedParts.length === 0) {
+      setAddPartsMessage("Select at least one part to add.");
+      return;
+    }
+    setAddingParts(true);
+    setAddPartsMessage("");
+
+    const canonicalId = resolveCanonicalVhcId(addPartsTarget.vhcId);
+    const parsedId = Number(canonicalId);
+    const vhcItemId = Number.isInteger(parsedId) ? parsedId : null;
+
+    try {
+      let lastJobPart = null;
+      for (const entry of selectedParts) {
+        const part = entry.part || {};
+        const response = await fetch("/api/parts/jobs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            jobId: job.id,
+            partId: part.id,
+            quantityRequested: entry.quantity || 1,
+            allocateFromStock: false,
+            storageLocation: part.storage_location || null,
+            status: "pending",
+            requestNotes: `Added from VHC Parts Identified - Job #${resolvedJobNumber}`,
+            origin: "vhc",
+            vhcItemId: vhcItemId,
+            userId: authUserId,
+            userNumericId: dbUserId,
+            unitCost: part.unit_cost || 0,
+            unitPrice: part.unit_price || 0,
+          }),
+        });
+
+        const data = await response.json();
+        if (!response.ok || !data?.success) {
+          throw new Error(data?.message || "Failed to add part to job");
+        }
+
+        const jobPart = data?.jobPart;
+        lastJobPart = jobPart || lastJobPart;
+        if (jobPart?.id) {
+          const partKey = `${addPartsTarget.vhcId}-${jobPart.id}`;
+          setPartDetails((prev) => ({
+            ...prev,
+            [partKey]: {
+              ...(prev[partKey] || {}),
+              warranty: entry.warranty,
+              backOrder: entry.backOrder,
+              surcharge: entry.surcharge,
+            },
+          }));
+        }
+      }
+
+      await handlePartAdded({ sourceVhcId: addPartsTarget.vhcId, jobPart: lastJobPart });
+      setAddPartsMessage("Parts added to this VHC item.");
+      setIsAddPartsModalOpen(false);
+      setSelectedParts([]);
+    } catch (error) {
+      console.error("Failed to add parts to VHC item:", error);
+      setAddPartsMessage(error.message || "Unable to add parts to VHC item.");
+    } finally {
+      setAddingParts(false);
+    }
+  }, [
+    addPartsTarget,
+    authUserId,
+    dbUserId,
+    handlePartAdded,
+    job?.id,
+    resolvedJobNumber,
+    resolveCanonicalVhcId,
+    selectedParts,
+  ]);
 
   const handleRemovePart = useCallback(
     async (partItem, displayVhcId) => {
