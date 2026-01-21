@@ -2,6 +2,11 @@ TO DO:
 
 Continue flow with job number 54
 
+test jsut a popup with nothing in works fine first.
+Add a button within the drop down section which is shown when row wihtin parts identified section is pressed named "add part"
+Create a Add Parts to VHC Item popup. this popup will have a title which is the item from the row it was clicked from. it gives the user a search section to add 1 or multiple parts to a parts identified row within parts identifed tab. inside the popup will show a search section which is linked to the parts stock from the database. so when the user searchs the part number it brings up the list of items whihc has that part number. that row is then clicked and added to the selected part section. 
+
+
 
 Check VHC summary to go to correct section after change and check all status
 

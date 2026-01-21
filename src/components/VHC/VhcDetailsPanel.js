@@ -13,7 +13,6 @@ import ServiceIndicatorDetailsModal from "@/components/VHC/ServiceIndicatorDetai
 import ExternalDetailsModal from "@/components/VHC/ExternalDetailsModal";
 import InternalElectricsDetailsModal from "@/components/VHC/InternalElectricsDetailsModal";
 import UndersideDetailsModal from "@/components/VHC/UndersideDetailsModal";
-import PartSearchModal from "@/components/VHC/PartSearchModal";
 import PrePickLocationModal from "@/components/VHC/PrePickLocationModal";
 import { buildVhcRowStatusView, normaliseDecisionStatus, resolveSeverityKey } from "@/lib/vhc/summaryStatus";
 import {
@@ -794,8 +793,6 @@ export default function VhcDetailsPanel({
   const [sectionSaveError, setSectionSaveError] = useState("");
   const [lastSectionSavedAt, setLastSectionSavedAt] = useState(null);
   const [partsNotRequired, setPartsNotRequired] = useState(new Set());
-  const [selectedVhcItem, setSelectedVhcItem] = useState(null);
-  const [isPartSearchModalOpen, setIsPartSearchModalOpen] = useState(false);
   const [isPrePickModalOpen, setIsPrePickModalOpen] = useState(false);
   const [selectedPartForJob, setSelectedPartForJob] = useState(null);
   const [addingPartToJob, setAddingPartToJob] = useState(false);
@@ -3484,12 +3481,6 @@ export default function VhcDetailsPanel({
     });
   }, []);
 
-  const handleAddPartButtonClick = useCallback((vhcItemData, e) => {
-    e.stopPropagation();
-    setSelectedVhcItem(vhcItemData);
-    setIsPartSearchModalOpen(true);
-  }, []);
-
   // Handler for updating part detail fields
   const handlePartDetailChange = useCallback((partKey, field, value) => {
     setPartDetails((prev) => ({
@@ -3501,18 +3492,10 @@ export default function VhcDetailsPanel({
     }));
   }, []);
 
-  // Handler for closing part search modal
-  const handleClosePartSearchModal = useCallback(() => {
-    setIsPartSearchModalOpen(false);
-    setSelectedVhcItem(null);
-  }, []);
-
   // Handler for when a part is added
-  const selectedVhcRowId = selectedVhcItem?.vhcId ? String(selectedVhcItem.vhcId) : null;
-
   const handlePartAdded = useCallback(async (payload) => {
     const partData = payload?.jobPart || payload;
-    const sourceVhcId = payload?.sourceVhcId ? String(payload.sourceVhcId) : selectedVhcRowId;
+    const sourceVhcId = payload?.sourceVhcId ? String(payload.sourceVhcId) : null;
 
     if (sourceVhcId && partData?.vhc_item_id) {
       await upsertVhcItemAlias(sourceVhcId, partData.vhc_item_id);
@@ -3689,7 +3672,7 @@ export default function VhcDetailsPanel({
         };
       });
     }
-  }, [fetchJobPartsViaApi, resolvedJobNumber, selectedVhcRowId, upsertVhcItemAlias]);
+  }, [fetchJobPartsViaApi, resolvedJobNumber, upsertVhcItemAlias]);
 
   const handleRemovePart = useCallback(
     async (partItem, displayVhcId) => {
@@ -4051,34 +4034,6 @@ export default function VhcDetailsPanel({
                     <tr>
                       <td colSpan="5" style={{ padding: "0", borderBottom: "1px solid var(--info-surface)" }}>
                         <div style={{ padding: "24px", background: rowBackground }}>
-                          {/* Add Part Button */}
-                          <div style={{ marginBottom: "20px" }}>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                if (!isLocked) {
-                                  handleAddPartButtonClick(item, e);
-                                }
-                              }}
-                              disabled={isLocked}
-                              style={{
-                                padding: "10px 20px",
-                                borderRadius: "8px",
-                                border: "1px solid var(--primary)",
-                                background: isLocked ? "var(--surface-light)" : "var(--primary)",
-                                color: isLocked ? "var(--info)" : "var(--surface)",
-                                fontWeight: 600,
-                                cursor: isLocked ? "not-allowed" : "pointer",
-                                fontSize: "13px",
-                                transition: "all 0.2s ease",
-                                opacity: isLocked ? 0.5 : 1,
-                              }}
-                              title={isLocked ? "Cannot add parts to authorized or declined items" : ""}
-                            >
-                              + Add New Part
-                            </button>
-                          </div>
-
                           {/* Part Details Sections */}
                           {linkedParts.length === 0 ? (
                             <div style={{
@@ -4090,7 +4045,7 @@ export default function VhcDetailsPanel({
                               color: "var(--info)",
                               fontSize: "13px",
                             }}>
-                              No parts added yet. Click "Add New Part" to add parts to this VHC item.
+                              No parts added yet.
                             </div>
                           ) : (
                             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -4389,7 +4344,7 @@ export default function VhcDetailsPanel({
         </div>
       </div>
     );
-  }, [vhcItemsWithParts, severityLists, resolveCanonicalVhcId, partsNotRequired, warrantyRows, partsCostByVhcItem, handlePartsNotRequiredToggle, handleVhcItemRowClick, expandedVhcItems, partDetails, handleAddPartButtonClick, handlePartDetailChange, handleRemovePart, removingPartIds]);
+  }, [vhcItemsWithParts, severityLists, resolveCanonicalVhcId, partsNotRequired, warrantyRows, partsCostByVhcItem, handlePartsNotRequiredToggle, handleVhcItemRowClick, expandedVhcItems, partDetails, handlePartDetailChange, handleRemovePart, removingPartIds]);
 
   // Render VHC authorized items panel (similar to Parts Identified but for authorized items)
   const renderVhcAuthorizedPanel = useCallback(() => {
@@ -5881,17 +5836,6 @@ export default function VhcDetailsPanel({
           onComplete={(data) => handleSectionComplete("underside", data)}
         />
       )}
-
-      {/* Part Search Modal */}
-      <PartSearchModal
-        isOpen={isPartSearchModalOpen}
-        onClose={handleClosePartSearchModal}
-        vhcItemData={selectedVhcItem}
-        jobNumber={resolvedJobNumber}
-        onPartSelected={handlePartAdded}
-        userId={authUserId || null}
-        userNumericId={dbUserId || null}
-      />
 
       {/* Pre-Pick Location Modal */}
       <PrePickLocationModal
