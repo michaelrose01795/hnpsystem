@@ -15,6 +15,7 @@ import InternalElectricsDetailsModal from "@/components/VHC/InternalElectricsDet
 import UndersideDetailsModal from "@/components/VHC/UndersideDetailsModal";
 import PartSearchModal from "@/components/VHC/PartSearchModal";
 import PrePickLocationModal from "@/components/VHC/PrePickLocationModal";
+import { buildVhcRowStatusView, normaliseDecisionStatus, resolveSeverityKey } from "@/lib/vhc/summaryStatus";
 import {
   EmptyStateMessage,
   SeverityBadge,
@@ -1281,7 +1282,7 @@ export default function VhcDetailsPanel({
     vhcChecksData.forEach((check) => {
       if (check.vhc_id) {
         map.set(String(check.vhc_id), {
-          approvalStatus: check.approval_status || 'pending',
+          approvalStatus: normaliseDecisionStatus(check.approval_status) || "pending",
           displayStatus: check.display_status || null,
           approvedBy: check.approved_by,
           approvedAt: check.approved_at,
@@ -1307,7 +1308,7 @@ export default function VhcDetailsPanel({
         if (part.vhc_item_id) {
           const canonicalId = String(part.vhc_item_id);
           const approvalData = vhcApprovalLookup.get(canonicalId);
-          if (approvalData && approvalData.approvalStatus === 'authorized') {
+          if (approvalData && approvalData.approvalStatus === "authorized") {
             return true;
           }
         }
@@ -1333,7 +1334,7 @@ export default function VhcDetailsPanel({
         if (part.vhc_item_id) {
           const canonicalId = String(part.vhc_item_id);
           const approvalData = vhcApprovalLookup.get(canonicalId);
-          if (approvalData && approvalData.approvalStatus === 'authorized') {
+          if (approvalData && approvalData.approvalStatus === "authorized") {
             return true;
           }
         }
@@ -1381,6 +1382,8 @@ export default function VhcDetailsPanel({
         // Get approval status from database - resolve display ID to canonical vhc_id first
         const canonicalId = vhcIdAliases[String(id)] || String(id);
         const approvalData = vhcApprovalLookup.get(canonicalId) || {};
+        const decisionKey = normaliseDecisionStatus(approvalData.approvalStatus) || "pending";
+        const severityKey = resolveSeverityKey(severity, approvalData.displayStatus);
 
         items.push({
           id: String(id),
@@ -1394,22 +1397,13 @@ export default function VhcDetailsPanel({
           rawSeverity: severity,
           concerns,
           wheelKey: item.wheelKey || null,
-          approvalStatus: approvalData.approvalStatus || 'pending',
+          approvalStatus: decisionKey,
           displayStatus: approvalData.displayStatus,
+          severityKey,
           approvedBy: approvalData.approvedBy,
           approvedAt: approvalData.approvedAt,
         });
       });
-    });
-
-    items.forEach((item) => {
-      // Use display_status from database if available, otherwise use original severity
-      // Completed items should stay in the "authorized" section but show completed visual status
-      if (item.displayStatus === 'completed') {
-        item.displaySeverity = 'authorized';
-      } else {
-        item.displaySeverity = item.displayStatus || item.rawSeverity;
-      }
     });
 
     items.forEach((item) => {
@@ -1428,6 +1422,10 @@ export default function VhcDetailsPanel({
 
     return items;
   }, [sections, wheelTreadLookup, vhcApprovalLookup, vhcIdAliases]);
+
+  const summaryItemLookup = useMemo(() => {
+    return new Map(summaryItems.map((item) => [String(item.id), item]));
+  }, [summaryItems]);
 
   const greenItems = useMemo(() => {
     const items = [];
@@ -1618,7 +1616,7 @@ export default function VhcDetailsPanel({
       if (!locationKey) return [];
       const context = brakeSupplementaryByLocation.get(locationKey);
       if (!context || context.entries.length === 0) return [];
-      const shouldShow = context.entries.length > 1 || context.hasRed || item.displaySeverity === "red";
+      const shouldShow = context.entries.length > 1 || context.hasRed || item.severityKey === "red";
       return shouldShow ? context.entries : [];
     },
     [brakeSupplementaryByLocation]
@@ -1643,14 +1641,28 @@ export default function VhcDetailsPanel({
 
     // Build sections map
     summaryItems.forEach((item) => {
-      const severity = item.displaySeverity;
-      if (!sections[severity]) return; // Skip unknown severities
+      const entryStatus = normaliseDecisionStatus(itemEntries[item.id]?.status);
+      const decisionKey = entryStatus || normaliseDecisionStatus(item.approvalStatus) || "pending";
+      const severityKey = item.severityKey || normaliseColour(item.rawSeverity);
+      const sectionKey =
+        decisionKey === "authorized" || decisionKey === "completed"
+          ? "authorized"
+          : decisionKey === "declined"
+          ? "declined"
+          : severityKey;
+
+      if (!sections[sectionKey]) return; // Skip unknown severities
 
       const categoryId = item.category.id;
-      if (!sections[severity].has(categoryId)) {
-        sections[severity].set(categoryId, { category: item.category, items: [] });
+      if (!sections[sectionKey].has(categoryId)) {
+        sections[sectionKey].set(categoryId, { category: item.category, items: [] });
       }
-      sections[severity].get(categoryId).items.push(item);
+      sections[sectionKey].get(categoryId).items.push({
+        ...item,
+        decisionKey,
+        sectionKey,
+        severityKey,
+      });
     });
 
     // Flatten sections to lists
@@ -1670,7 +1682,7 @@ export default function VhcDetailsPanel({
     });
 
     return lists;
-  }, [summaryItems]);
+  }, [summaryItems, itemEntries]);
 
   const labourHoursByVhcItem = useMemo(() => {
     const map = new Map();
@@ -1885,8 +1897,14 @@ export default function VhcDetailsPanel({
     }
 
     // Convert null to 'pending' for database
-    const dbStatus = status || 'pending';
-    const newDisplayStatus = dbStatus === 'authorized' ? 'authorized' : dbStatus === 'declined' ? 'declined' : null;
+    const dbStatus = normaliseDecisionStatus(status) || "pending";
+    const summaryItem = summaryItemLookup.get(String(itemId));
+    const severityKey = resolveSeverityKey(summaryItem?.rawSeverity, summaryItem?.displayStatus);
+    let newDisplayStatus = null;
+    if (dbStatus === "authorized") newDisplayStatus = "authorized";
+    if (dbStatus === "declined") newDisplayStatus = "declined";
+    if (dbStatus === "completed") newDisplayStatus = "completed";
+    if (dbStatus === "pending" && severityKey) newDisplayStatus = severityKey;
 
 
     try {
@@ -1899,6 +1917,9 @@ export default function VhcDetailsPanel({
         approvedBy: authUserId || dbUserId || "system",
         labourComplete: labourCompleteValue,
       };
+      if (newDisplayStatus) {
+        requestBody.displayStatus = newDisplayStatus;
+      }
       if (resolvedLabourHours !== "" && resolvedLabourHours !== null && resolvedLabourHours !== undefined) {
         requestBody.labourHours = resolvedLabourHours;
       }
@@ -2168,9 +2189,10 @@ export default function VhcDetailsPanel({
         totals[severity] += rowTotal;
         totals.overall += rowTotal;
         const entry = getEntryForItem(item.id);
-        if (entry.status === "authorized") {
+        const decisionKey = normaliseDecisionStatus(entry.status);
+        if (decisionKey === "authorized") {
           totals.authorized += rowTotal;
-        } else if (entry.status === "declined") {
+        } else if (decisionKey === "declined") {
           totals.declined += rowTotal;
         }
       });
@@ -2197,72 +2219,25 @@ export default function VhcDetailsPanel({
     return `£${value.toFixed(2)}`;
   };
 
-  const resolveRowStatusState = (entry, resolvedPartsCost, itemId, labourHoursValue) => {
-    if (entry.status === "completed") {
-      return {
-        color: "var(--success)",
-        label: "Completed",
-        showTick: true,
-      };
-    }
-    if (entry.status === "authorized") {
-      return {
-        color: "var(--success)",
-        label: "Approved",
-      };
-    }
-    if (entry.status === "declined") {
-      return {
-        color: "var(--danger)",
-        label: "Declined",
-        showCross: true,
-      };
-    }
+  const resolveVhcRowDecisionKey = (item, entry) => {
+    const entryDecision = normaliseDecisionStatus(entry?.status);
+    if (entryDecision) return entryDecision;
+    return normaliseDecisionStatus(item?.decisionKey || item?.approvalStatus) || "pending";
+  };
 
-    // Labour is considered "added" if:
-    // 1. Labour hours is set to any value (including 0), OR
-    // 2. The labourComplete checkbox is checked
-    const hasLabour = resolveLabourCompleteValue(entry, labourHoursValue) ||
-      (labourHoursValue !== null && labourHoursValue !== undefined && labourHoursValue !== "");
-
-    // Parts/costs are considered "added" if:
-    // 1. Parts have a cost > 0, OR
-    // 2. Total override > 0, OR
-    // 3. Parts are marked as "not required"
-    const isPartsNotRequired = partsNotRequired.has(String(itemId));
-    const hasCosts =
-      (resolvedPartsCost ?? parseNumericValue(entry.partsCost)) > 0 ||
-      parseNumericValue(entry.totalOverride) > 0 ||
-      isPartsNotRequired;
-
-    const missingLabour = !hasLabour;
-    const missingParts = !hasCosts;
-
-    if (missingLabour && missingParts) {
-      return {
-        color: "var(--warning-dark)",
-        label: "Add labour & parts",
-      };
-    }
-
-    if (missingLabour) {
-      return {
-        color: "var(--warning-dark)",
-        label: "Add labour",
-      };
-    }
-
-    if (missingParts) {
-      return {
-        color: "var(--warning-dark)",
-        label: "Add parts",
-      };
-    }
-
-    return {
-      color: "var(--warning)",
-      label: "Awaiting decision",
-    };
+  const resolveVhcRowStatusView = (item, entry, resolvedPartsCost, labourHoursValue) => {
+    const labourCompleteValue = resolveLabourCompleteValue(entry, labourHoursValue);
+    return buildVhcRowStatusView({
+      decisionValue: entry?.status || item?.decisionKey || item?.approvalStatus,
+      rawSeverity: item?.rawSeverity,
+      displayStatus: item?.displayStatus,
+      labourHoursValue,
+      labourComplete: labourCompleteValue,
+      partsNotRequired: partsNotRequired.has(String(item?.id)),
+      resolvedPartsCost,
+      partsCost: entry?.partsCost,
+      totalOverride: entry?.totalOverride,
+    });
   };
 
   const toggleRowSelection = (severity, itemId) => {
@@ -2320,19 +2295,19 @@ export default function VhcDetailsPanel({
         }
 
         const item = itemsMap.get(itemId);
-        const dbStatus = status || 'pending';
+        const dbStatus = normaliseDecisionStatus(status) || "pending";
 
         // Determine the display_status based on the action
         let displayStatus = null;
-        if (status === 'authorized') {
+        if (dbStatus === "authorized") {
           displayStatus = 'authorized';
-        } else if (status === 'declined') {
+        } else if (dbStatus === "declined") {
           displayStatus = 'declined';
-        } else if (status === 'completed') {
+        } else if (dbStatus === "completed") {
           displayStatus = 'completed';
-        } else if (status === 'pending' && item?.rawSeverity) {
-          // For Reset: restore original red/amber severity
-          displayStatus = item.rawSeverity;
+        } else if (dbStatus === "pending") {
+          // For Reset: restore original severity
+          displayStatus = item?.severityKey || resolveSeverityKey(item?.rawSeverity, item?.displayStatus);
         }
 
         try {
@@ -2385,10 +2360,10 @@ export default function VhcDetailsPanel({
             if (matchingUpdate) {
               return {
                 ...check,
-                approval_status: status || 'pending',
+                approval_status: dbStatus,
                 display_status: matchingUpdate.displayStatus || check.display_status,
                 approved_by: authUserId || dbUserId || "system",
-                approved_at: status ? new Date().toISOString() : null,
+                approved_at: dbStatus === "pending" ? null : new Date().toISOString(),
                 labour_hours: matchingUpdate.labourHours !== "" ? Number(matchingUpdate.labourHours) : check.labour_hours,
                 labour_complete: matchingUpdate.labourComplete,
               };
@@ -2539,15 +2514,17 @@ export default function VhcDetailsPanel({
                     : totalCost.toFixed(2);
                 const partsDisplayValue =
                   resolvedPartsCost !== undefined ? resolvedPartsCost.toFixed(2) : "";
-                const statusState = resolveRowStatusState(entry, resolvedPartsCost, item.id, resolvedLabourHours);
+                const statusState = resolveVhcRowStatusView(item, entry, resolvedPartsCost, resolvedLabourHours);
                 const locationLabel = item.location
                   ? LOCATION_LABELS[item.location] || item.location.replace(/_/g, " ")
                   : null;
                 const isChecked = selectedSet.has(item.id);
                 const isWarranty = warrantyRows.has(String(item.id));
-                const rowSeverity = item.displaySeverity || severity;
-                // For authorized/declined items, use rawSeverity for background color to show original red/amber status
-                const backgroundSeverity = (severity === "authorized" || severity === "declined") ? (item.rawSeverity || rowSeverity) : rowSeverity;
+                const rowSeverity = item.severityKey || item.rawSeverity || severity;
+                // For authorized/declined items, use original severity for background color
+                const backgroundSeverity = (severity === "authorized" || severity === "declined")
+                  ? (item.severityKey || item.rawSeverity || rowSeverity)
+                  : rowSeverity;
                 const rowTheme = SEVERITY_THEME[backgroundSeverity] || {};
 
                 // Explicitly set background color for authorized/declined items based on original severity
@@ -2977,8 +2954,9 @@ export default function VhcDetailsPanel({
     const detailContent = item.concernText || item.notes || "";
     const measurement = item.measurement || "";
     const categoryLabel = item.categoryLabel || item.sectionName || "Recorded Section";
-    const isAuthorized = entry.status === "authorized" || severity === "authorized";
-    const isDeclined = entry.status === "declined" || severity === "declined";
+    const decisionKey = resolveVhcRowDecisionKey(item, entry);
+    const isAuthorized = decisionKey === "authorized" || severity === "authorized";
+    const isDeclined = decisionKey === "declined" || severity === "declined";
     // Only show authorize/decline checkboxes for pending red/amber items
     const showDecision = (severity === "red" || severity === "amber") && !isAuthorized && !isDeclined;
 
@@ -3090,9 +3068,10 @@ export default function VhcDetailsPanel({
         const rowTotal = resolveCustomerRowTotal(item.id);
         if (!rowTotal) return;
         const entry = getEntryForItem(item.id);
-        if (entry.status === "authorized") {
+        const decisionKey = normaliseDecisionStatus(entry.status);
+        if (decisionKey === "authorized") {
           authorized += rowTotal;
-        } else if (entry.status === "declined") {
+        } else if (decisionKey === "declined") {
           declined += rowTotal;
         }
       });
@@ -3910,7 +3889,7 @@ export default function VhcDetailsPanel({
                 // VHC item details
                 const vhcLabel = vhcItem?.label || "VHC Item";
                 const vhcNotes = vhcItem?.notes || vhcItem?.concernText || "";
-                const vhcSeverity = vhcItem?.rawSeverity || vhcItem?.displaySeverity;
+                const vhcSeverity = vhcItem?.severityKey || vhcItem?.rawSeverity;
                 const vhcCategory = vhcItem?.categoryLabel || vhcItem?.category?.label || "";
                 const locationLabel = vhcItem?.location
                   ? LOCATION_LABELS[vhcItem.location] || vhcItem.location.replace(/_/g, " ")
@@ -3922,16 +3901,17 @@ export default function VhcDetailsPanel({
 
                 // Check if row is locked (authorized or declined)
                 const entry = getEntryForItem(vhcId);
-                const isLocked = entry.status === "authorized" || entry.status === "declined";
+                const entryDecision = normaliseDecisionStatus(entry.status);
+                const isLocked = entryDecision === "authorized" || entryDecision === "declined";
 
                 // Determine background color based on status
                 let rowBackground = "var(--surface)";
                 let rowHoverBackground = "var(--accent-purple-surface)";
 
-                if (entry.status === "authorized") {
+                if (entryDecision === "authorized") {
                   rowBackground = "var(--success-surface)";
                   rowHoverBackground = "rgba(34, 197, 94, 0.15)";
-                } else if (entry.status === "declined") {
+                } else if (entryDecision === "declined") {
                   rowBackground = "var(--danger-surface)";
                   rowHoverBackground = "rgba(239, 68, 68, 0.15)";
                 } else if (vhcSeverity) {
@@ -5274,6 +5254,7 @@ export default function VhcDetailsPanel({
 
                     items.forEach((item) => {
                       const entry = getEntryForItem(item.id);
+                      const decisionKey = resolveVhcRowDecisionKey(item, entry);
                       const resolvedPartsCost = resolvePartsCost(item.id, entry);
                       const resolvedLabourHours = resolveLabourHoursValue(item.id, entry);
                       const totalCost = computeRowTotal(entry, resolvedPartsCost, resolvedLabourHours);
@@ -5284,9 +5265,9 @@ export default function VhcDetailsPanel({
                       if (selectedSet.has(item.id)) {
                         selectedTotal += finalTotal;
                       }
-                      if (entry.status === "authorized") {
+                      if (decisionKey === "authorized") {
                         authorisedTotal += finalTotal;
-                      } else if (entry.status === "declined") {
+                      } else if (decisionKey === "declined") {
                         declinedTotal += finalTotal;
                       }
                     });
@@ -5578,6 +5559,7 @@ export default function VhcDetailsPanel({
 
                   items.forEach((item) => {
                     const entry = getEntryForItem(item.id);
+                    const decisionKey = resolveVhcRowDecisionKey(item, entry);
                     const resolvedPartsCost = resolvePartsCost(item.id, entry);
                     const resolvedLabourHours = resolveLabourHoursValue(item.id, entry);
                     const totalCost = computeRowTotal(entry, resolvedPartsCost, resolvedLabourHours);
@@ -5588,9 +5570,9 @@ export default function VhcDetailsPanel({
                     if (selectedSet.has(item.id)) {
                       selectedTotal += finalTotal;
                     }
-                    if (entry.status === "authorized") {
+                    if (decisionKey === "authorized") {
                       authorisedTotal += finalTotal;
-                    } else if (entry.status === "declined") {
+                    } else if (decisionKey === "declined") {
                       declinedTotal += finalTotal;
                     }
                   });
