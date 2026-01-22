@@ -2,9 +2,11 @@ TO DO:
 
 Continue flow with job number 54
 
-
+FIX
 authorsed parts to show pre pick location when added. 
 
+
+FIX
 within the parts tab inside th ejob-cards/[jobnumber] page, have it so the "SEARCH PARTS STOCK" is only shown when a "Book part" button is pressed within that tab, and the Allocate to request section is only shown as well when "Allocate to request' button is pressed as well. 
 
 
