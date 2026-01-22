@@ -1713,8 +1713,10 @@ export default function VhcDetailsPanel({
     // First, get labour hours from vhc_checks (primary source of truth)
     vhcChecksData.forEach((check) => {
       if (!check?.vhc_id) return;
+      if (check.labour_hours === null || check.labour_hours === undefined || check.labour_hours === "") return;
       const hours = Number(check.labour_hours);
       if (!Number.isFinite(hours) || hours < 0) return; // Allow 0 values
+      if (hours === 0 && !check.labour_complete) return;
       const key = String(check.vhc_id);
       map.set(key, hours);
       fromVhcChecks.add(key); // Mark as coming from vhc_checks
@@ -1724,7 +1726,7 @@ export default function VhcDetailsPanel({
     partsIdentified.forEach((part) => {
       if (!part?.vhc_item_id) return;
       const hours = Number(part.labour_hours);
-      if (!Number.isFinite(hours) || hours < 0) return; // Allow 0 values
+      if (!Number.isFinite(hours) || hours <= 0) return;
       const key = String(part.vhc_item_id);
       const current = map.get(key) || 0;
       map.set(key, Math.max(current, hours));
@@ -1884,7 +1886,7 @@ export default function VhcDetailsPanel({
   }, [partsIdentified, partsNotRequired, summaryItems, vhcIdAliases]);
 
   const ensureEntryValue = (state, itemId) =>
-    state[itemId] || { partsCost: "", laborHours: "", totalOverride: "", status: null, labourComplete: false, partsComplete: false };
+    state[itemId] || { partsCost: "", laborHours: null, totalOverride: "", status: null, labourComplete: false, partsComplete: false };
 
   const updateEntryValue = (itemId, field, value) => {
     setItemEntries((prev) => ({
@@ -1897,17 +1899,15 @@ export default function VhcDetailsPanel({
 
   const resolveLabourHoursValue = (itemId, entry) => {
     const localValue = entry?.laborHours;
-    if (localValue !== "" && localValue !== null && localValue !== undefined) {
-      return localValue;
-    }
+    if (localValue === "") return "";
+    if (localValue !== null && localValue !== undefined) return localValue;
     const canonicalId = resolveCanonicalVhcId(itemId);
     const hours = labourHoursByVhcItem.map.get(canonicalId);
     return Number.isFinite(hours) ? String(hours) : "";
   };
 
   const resolveLabourCompleteValue = (entry, labourHoursValue) => {
-    if (entry?.labourComplete) return true;
-    return labourHoursValue !== "" && labourHoursValue !== null && labourHoursValue !== undefined;
+    return Boolean(entry?.labourComplete);
   };
 
   const updateEntryStatus = async (itemId, status) => {
@@ -2061,7 +2061,7 @@ export default function VhcDetailsPanel({
       items.forEach((item) => {
         const entry = ensureEntryValue(prev, item.id);
         // Skip if labour hours already set from database or user input
-        if (entry.laborHours !== "" && entry.laborHours !== null && entry.laborHours !== undefined) {
+        if (entry.laborHours !== null && entry.laborHours !== undefined) {
           return;
         }
         const canonicalId = resolveCanonicalVhcId(item.id);
@@ -2102,10 +2102,12 @@ export default function VhcDetailsPanel({
           };
 
           // Update labour hours if present in database
-          if (approvalData.labourHours !== null && approvalData.labourHours !== undefined) {
+          const hasLabourHours = approvalData.labourHours !== null && approvalData.labourHours !== undefined;
+          const labourHoursValue = hasLabourHours ? Number(approvalData.labourHours) : null;
+          if (hasLabourHours && !(labourHoursValue === 0 && !approvalData.labourComplete)) {
             updatedEntry.laborHours = String(approvalData.labourHours);
-            updatedEntry.labourComplete = true;
-          } else if (approvalData.labourComplete !== null && approvalData.labourComplete !== undefined) {
+          }
+          if (approvalData.labourComplete !== null && approvalData.labourComplete !== undefined) {
             updatedEntry.labourComplete = approvalData.labourComplete;
           }
 
@@ -2684,37 +2686,7 @@ export default function VhcDetailsPanel({
                         <input
                           type="checkbox"
                           checked={resolveLabourCompleteValue(entry, resolvedLabourHours)}
-                          onChange={async (e) => {
-                            // Don't allow changes in authorized/declined sections
-                            if (severity === "authorized" || severity === "declined") return;
-
-                            const isChecked = e.target.checked;
-                            updateEntryValue(item.id, "labourComplete", isChecked);
-
-                            // Save labour complete status to database
-                            const canonicalId = resolveCanonicalVhcId(item.id);
-                            const parsedId = Number(canonicalId);
-                            if (Number.isInteger(parsedId)) {
-                              try {
-                                await fetch("/api/vhc/update-item-status", {
-                                  method: "PATCH",
-                                  headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({
-                                    vhcItemId: parsedId,
-                                    labourComplete: isChecked,
-                                    approvedBy: authUserId || dbUserId || "system"
-                                  }),
-                                });
-                              } catch (error) {
-                                console.error("Failed to save labour complete status", error);
-                              }
-                            }
-
-                            if (isChecked && (!entry.laborHours || entry.laborHours === "")) {
-                              updateEntryValue(item.id, "laborHours", "0");
-                              persistLabourHours(item.id, 0);
-                            }
-                          }}
+                          onChange={(event) => event.preventDefault()}
                           disabled={readOnly || severity === "authorized" || severity === "declined"}
                         />
                         <input
@@ -2727,11 +2699,15 @@ export default function VhcDetailsPanel({
                             if (severity === "authorized" || severity === "declined") return;
 
                             const value = event.target.value;
-                            updateEntryValue(item.id, "laborHours", value);
-                            // Auto-check the checkbox if a number is entered manually (including 0)
-                            if (value !== "" && value !== null && value !== undefined) {
-                              updateEntryValue(item.id, "labourComplete", true);
-                            }
+                            const isBlank = value === "";
+                            setItemEntries((prev) => ({
+                              ...prev,
+                              [item.id]: {
+                                ...ensureEntryValue(prev, item.id),
+                                laborHours: value,
+                                labourComplete: !isBlank,
+                              },
+                            }));
                           }}
                           onBlur={(event) => {
                             // Don't persist in authorized/declined sections
@@ -3339,8 +3315,9 @@ export default function VhcDetailsPanel({
       if (!job?.id) return;
       const canonicalId = resolveCanonicalVhcId(displayVhcId);
       const parsedId = Number(canonicalId);
+      const isBlank = hoursValue === "" || hoursValue === null || hoursValue === undefined;
       const parsedHours = Number(hoursValue);
-      const labourHours = Number.isFinite(parsedHours) ? parsedHours : 0;
+      const labourHours = !isBlank && Number.isFinite(parsedHours) ? parsedHours : null;
 
       // Find the item to get its details for potential vhc_checks record creation
       const item = summaryItems.find(i => String(i.id) === String(displayVhcId));
@@ -3350,6 +3327,9 @@ export default function VhcDetailsPanel({
 
         // If we don't have a valid numeric ID (no alias exists), we need to create a vhc_checks record
         if (!Number.isInteger(parsedId) && item) {
+          if (isBlank) {
+            return;
+          }
 
           // Create a vhc_checks record for this item
           const createResponse = await fetch("/api/jobcards/create-vhc-item", {
@@ -3362,7 +3342,7 @@ export default function VhcDetailsPanel({
               issueTitle: item.label,
               issueDescription: item.notes || item.concernText || "",
               measurement: item.measurement || null,
-              labourHours,
+              labourHours: isBlank ? null : labourHours,
             }),
           });
 
@@ -3385,14 +3365,19 @@ export default function VhcDetailsPanel({
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               vhcItemId: vhcItemIdToUse,
-              labourHours,
-              labourComplete: true,
+              labourHours: isBlank ? null : labourHours,
+              labourComplete: !isBlank,
               approvedBy: authUserId || dbUserId || null,
             }),
           });
           const vhcResult = await vhcResponse.json();
           if (!vhcResponse.ok || !vhcResult?.success) {
             console.warn("Failed to update vhc_checks labour hours:", vhcResult?.message);
+          } else {
+            setVhcChecksData((prev) => prev.map((check) => {
+              if (String(check.vhc_id) !== String(vhcItemIdToUse)) return check;
+              return { ...check, labour_hours: labourHours, labour_complete: !isBlank };
+            }));
           }
 
           // Update parts_job_items if there are any parts linked to this VHC item

@@ -36,7 +36,7 @@ export default async function handler(req, res) {
       issue_title: issueTitle,
       issue_description: issueDescription || null,
       measurement: measurement || null,
-      labour_hours: labourHours !== undefined && labourHours !== null ? parseFloat(labourHours) : 0,
+      labour_hours: labourHours === "" || labourHours === null || labourHours === undefined ? null : parseFloat(labourHours) || 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };

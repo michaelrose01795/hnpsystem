@@ -56,8 +56,12 @@ export default async function handler(req, res) {
       }
     }
 
-    if (labourHours !== undefined && labourHours !== null) {
-      updateData.labour_hours = parseFloat(labourHours) || 0;
+    if (labourHours !== undefined) {
+      if (labourHours === "" || labourHours === null) {
+        updateData.labour_hours = null;
+      } else {
+        updateData.labour_hours = parseFloat(labourHours) || 0;
+      }
     }
 
     if (partsCost !== undefined && partsCost !== null) {

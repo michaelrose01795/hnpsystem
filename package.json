@@ -31,7 +31,7 @@
   },
   "devDependencies": {
     "@types/node": "24.10.0",
-    "baseline-browser-mapping": "^2.9.11",
+    "baseline-browser-mapping": "^2.9.17",
     "typescript": "5.9.3"
   }
 }
