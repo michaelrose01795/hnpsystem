@@ -25,6 +25,14 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId, onN
       ),
     [jobData?.vhcChecks]
   );
+  const authorisedParts = useMemo(() => {
+    const parts = Array.isArray(jobData?.partsAllocations)
+      ? jobData.partsAllocations
+      : Array.isArray(jobData?.parts_job_items)
+      ? jobData.parts_job_items
+      : [];
+    return parts.filter((part) => part?.authorised === true);
+  }, [jobData?.partsAllocations, jobData?.parts_job_items]);
 
   // Load notes
   useEffect(() => {
@@ -157,10 +165,14 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId, onN
     const vhcCount = Array.isArray(note.linkedVhcIds)
       ? note.linkedVhcIds.length
       : 0;
-    if (!requestCount && !vhcCount) return "";
+    const partCount = Array.isArray(note.linkedPartIds)
+      ? note.linkedPartIds.length
+      : 0;
+    if (!requestCount && !vhcCount && !partCount) return "";
     const parts = [];
     if (requestCount) parts.push(`Requests ${requestCount}`);
     if (vhcCount) parts.push(`Authorised ${vhcCount}`);
+    if (partCount) parts.push(`Parts ${partCount}`);
     return parts.join(" • ");
   };
 
@@ -172,12 +184,17 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId, onN
     const currentVhcLinks = Array.isArray(note.linkedVhcIds)
       ? note.linkedVhcIds
       : [];
+    const currentPartLinks = Array.isArray(note.linkedPartIds)
+      ? note.linkedPartIds
+      : [];
     let nextRequestLinks = currentRequestLinks;
     let nextVhcLinks = currentVhcLinks;
+    let nextPartLinks = currentPartLinks;
 
     if (link?.clear) {
       nextRequestLinks = [];
       nextVhcLinks = [];
+      nextPartLinks = [];
     } else if (Number.isInteger(link?.linkedRequestIndex)) {
       if (currentRequestLinks.includes(link.linkedRequestIndex)) {
         nextRequestLinks = currentRequestLinks.filter((value) => value !== link.linkedRequestIndex);
@@ -190,6 +207,12 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId, onN
       } else {
         nextVhcLinks = [...currentVhcLinks, link.linkedVhcId];
       }
+    } else if (Number.isInteger(link?.linkedPartId)) {
+      if (currentPartLinks.includes(link.linkedPartId)) {
+        nextPartLinks = currentPartLinks.filter((value) => value !== link.linkedPartId);
+      } else {
+        nextPartLinks = [...currentPartLinks, link.linkedPartId];
+      }
     }
     try {
       const result = await updateJobNote(
@@ -197,8 +220,10 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId, onN
         {
           linkedRequestIndex: nextRequestLinks[0] ?? null,
           linkedVhcId: nextVhcLinks[0] ?? null,
+          linkedPartId: nextPartLinks[0] ?? null,
           linkedRequestIndices: nextRequestLinks,
           linkedVhcIds: nextVhcLinks,
+          linkedPartIds: nextPartLinks,
         },
         actingUserNumericId
       );
@@ -219,6 +244,8 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId, onN
   const isLinkedToAuthorised = (note, item) =>
     Array.isArray(note?.linkedVhcIds) &&
     note.linkedVhcIds.includes(item?.vhc_id ?? item?.id ?? null);
+  const isLinkedToPart = (note, partId) =>
+    Array.isArray(note?.linkedPartIds) && note.linkedPartIds.includes(partId);
 
   const formatDateTime = (dateString) => {
     if (!dateString) return "Unknown";
@@ -719,9 +746,61 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId, onN
                   </div>
                 )}
               </div>
+              <div>
+                <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--info-dark)", marginBottom: "8px" }}>
+                  Authorised parts
+                </div>
+                {authorisedParts.length === 0 ? (
+                  <div style={{ fontSize: "13px", color: "var(--info)" }}>No authorised parts available.</div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {authorisedParts.map((part) => {
+                      const activeNote =
+                        notes.find((note) => note.noteId === linkingNote.noteId) || linkingNote;
+                      const partId = part.partId ?? part.part_id ?? part.id;
+                      const partLabel =
+                        part.part?.name ||
+                        part.part?.part_number ||
+                        part.part_number ||
+                        part.partNumber ||
+                        "Authorised part";
+                      const isSelected = isLinkedToPart(activeNote, partId);
+                      return (
+                        <button
+                          key={`authorized-part-link-${partId}`}
+                          type="button"
+                          onClick={() => handleLinkNote(activeNote, { linkedPartId: partId })}
+                          style={{
+                            padding: "10px 12px",
+                            borderRadius: "10px",
+                            border: isSelected ? "1px solid var(--success)" : "1px solid var(--surface-light)",
+                            backgroundColor: isSelected ? "var(--success-surface)" : "var(--layer-section-level-3)",
+                            textAlign: "left",
+                            cursor: "pointer",
+                            fontSize: "13px",
+                            color: isSelected ? "var(--success)" : "var(--info-dark)",
+                            fontWeight: 600,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: "8px",
+                          }}
+                        >
+                          <span>{partLabel}</span>
+                          {isSelected && (
+                            <span style={{ fontSize: "11px", fontWeight: 700 }}>
+                              Selected
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
-            </div>
-          </div>,
+          </div>
+        </div>,
           document.body
         )}
     </div>

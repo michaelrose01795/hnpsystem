@@ -455,11 +455,12 @@ export const getAllJobs = async () => {
       ),
       technician:assigned_to(user_id, first_name, last_name, email, role),
       appointments(appointment_id, scheduled_time, status, notes, created_at, updated_at),
-      vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at, approval_status, display_status, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by),
+      vhc_checks(vhc_id, section, issue_title, issue_description, data, measurement, created_at, updated_at, approval_status, display_status, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by),
       parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, pre_pick_location, created_at, updated_at),
       parts_job_items(
         id,
         part_id,
+        authorised,
         quantity_requested,
         quantity_allocated,
         quantity_fitted,
@@ -512,7 +513,7 @@ export const getAllJobs = async () => {
           invoice_number
         )
       ),
-      job_notes(note_id, note_text, user_id, created_at, updated_at, linked_request_index, linked_vhc_id),
+      job_notes(note_id, note_text, user_id, created_at, updated_at, linked_request_index, linked_vhc_id, linked_request_indices, linked_vhc_ids, linked_part_id, linked_part_ids),
       job_writeups(writeup_id, work_performed, parts_used, recommendations, labour_time, technician_id, completion_status, created_at, updated_at),
       job_files(file_id, file_name, file_url, file_type, folder, uploaded_by, uploaded_at),
       vhc_authorizations(id, authorized_items, authorized_at),
@@ -848,6 +849,7 @@ export const getJobByNumber = async (jobNumber) => {
       parts_job_items(
         id,
         part_id,
+        authorised,
         quantity_requested,
         quantity_allocated,
         quantity_fitted,
@@ -900,7 +902,7 @@ export const getJobByNumber = async (jobNumber) => {
           invoice_number
         )
       ),
-      job_notes(note_id, note_text, user_id, created_at, updated_at),
+      job_notes(note_id, note_text, user_id, created_at, updated_at, linked_request_index, linked_vhc_id, linked_request_indices, linked_vhc_ids, linked_part_id, linked_part_ids),
       job_writeups(writeup_id, work_performed, parts_used, recommendations, labour_time, technician_id, completion_status, created_at, updated_at),
       job_files(file_id, file_name, file_url, file_type, folder, uploaded_by, uploaded_at)
     `)
@@ -936,11 +938,12 @@ export const getJobByNumber = async (jobNumber) => {
         description,
         vehicle_reg,
         vehicle_make_model,
-        vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at, approval_status, display_status, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by),
+        vhc_checks(vhc_id, section, issue_title, issue_description, data, measurement, created_at, updated_at, approval_status, display_status, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by),
         parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, pre_pick_location, created_at, updated_at),
         parts_job_items(
           id,
           part_id,
+          authorised,
           quantity_requested,
           quantity_allocated,
           quantity_fitted,
@@ -1847,6 +1850,7 @@ const formatJobData = (data) => {
     return {
       id: item.id,
       partId: item.part_id,
+      authorised: item.authorised === true,
       allocatedToRequestId: item.allocated_to_request_id ?? item.allocatedToRequestId ?? null,
       quantityRequested: item.quantity_requested ?? 0,
       quantityAllocated: item.quantity_allocated ?? 0,

@@ -36,6 +36,8 @@ const CHECK_COLUMNS = [ // Canonical column list for vhc_checks.
   "issue_title", // Short title describing the issue.
   "issue_description", // Longer description of the issue.
   "measurement", // Optional measurement captured during inspection.
+  "approval_status", // Decision status for the VHC item.
+  "display_status", // UI status override for the VHC item.
   "created_at", // Timestamp when the record was created.
   "updated_at", // Timestamp when the record was last updated.
 ].join(", "); // Join the columns for Supabase select statements.
@@ -88,6 +90,8 @@ const mapCheckRow = (row = {}) => { // Convert snake_case database row into came
     issueDescription: row.issue_description, // Issue description text (raw).
     data: structuredData, // Parsed JSON data if available.
     measurement: row.measurement, // Optional measurement.
+    approvalStatus: row.approval_status, // Approval status.
+    displayStatus: row.display_status, // Display status override.
     createdAt: row.created_at, // Creation timestamp.
     updatedAt: row.updated_at, // Update timestamp.
   };
@@ -346,4 +350,3 @@ export const getVHCChecksByJob = async (jobId) => {
     throw error; // Preserve existing error behaviour so callers can handle failures
   }
 };
-

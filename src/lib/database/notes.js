@@ -39,6 +39,12 @@ export const createJobNote = async (noteData) => {
         linked_vhc_ids: Array.isArray(noteData.linked_vhc_ids)
           ? noteData.linked_vhc_ids.filter((value) => Number.isInteger(value))
           : null,
+        linked_part_id: Number.isInteger(noteData.linked_part_id)
+          ? noteData.linked_part_id
+          : null,
+        linked_part_ids: Array.isArray(noteData.linked_part_ids)
+          ? noteData.linked_part_ids.filter((value) => Number.isInteger(value))
+          : null,
         created_at: new Date().toISOString()
       }])
       .select(`
@@ -52,6 +58,8 @@ export const createJobNote = async (noteData) => {
         linked_vhc_id,
         linked_request_indices,
         linked_vhc_ids,
+        linked_part_id,
+        linked_part_ids,
         created_at,
         updated_at,
         user:user_id(
@@ -100,6 +108,8 @@ export const getNotesByJob = async (jobId) => {
         linked_vhc_id,
         linked_request_indices,
         linked_vhc_ids,
+        linked_part_id,
+        linked_part_ids,
         created_at,
         updated_at,
         last_updated_by,
@@ -140,6 +150,7 @@ export const getNotesByJob = async (jobId) => {
         hiddenFromCustomer: note.hidden_from_customer !== null ? note.hidden_from_customer : true,
         linkedRequestIndex: note.linked_request_index ?? null,
         linkedVhcId: note.linked_vhc_id ?? null,
+        linkedPartId: note.linked_part_id ?? null,
         linkedRequestIndices: Array.isArray(note.linked_request_indices)
           ? note.linked_request_indices
           : note.linked_request_index !== null && note.linked_request_index !== undefined
@@ -149,6 +160,11 @@ export const getNotesByJob = async (jobId) => {
           ? note.linked_vhc_ids
           : note.linked_vhc_id !== null && note.linked_vhc_id !== undefined
           ? [note.linked_vhc_id]
+          : [],
+        linkedPartIds: Array.isArray(note.linked_part_ids)
+          ? note.linked_part_ids
+          : note.linked_part_id !== null && note.linked_part_id !== undefined
+          ? [note.linked_part_id]
           : [],
         createdAt: note.created_at,
         updatedAt: note.updated_at,
@@ -226,7 +242,9 @@ export const updateJobNote = async (noteId, updates, userId = null) => {
           ...(updates.linkedRequestIndex !== undefined && { linked_request_index: updates.linkedRequestIndex }),
           ...(updates.linkedVhcId !== undefined && { linked_vhc_id: updates.linkedVhcId }),
           ...(updates.linkedRequestIndices !== undefined && { linked_request_indices: updates.linkedRequestIndices }),
-          ...(updates.linkedVhcIds !== undefined && { linked_vhc_ids: updates.linkedVhcIds })
+          ...(updates.linkedVhcIds !== undefined && { linked_vhc_ids: updates.linkedVhcIds }),
+          ...(updates.linkedPartId !== undefined && { linked_part_id: updates.linkedPartId }),
+          ...(updates.linkedPartIds !== undefined && { linked_part_ids: updates.linkedPartIds })
         };
 
     // ✅ Validate
@@ -253,6 +271,8 @@ export const updateJobNote = async (noteId, updates, userId = null) => {
         linked_vhc_id,
         linked_request_indices,
         linked_vhc_ids,
+        linked_part_id,
+        linked_part_ids,
         created_at,
         updated_at,
         user:user_id(

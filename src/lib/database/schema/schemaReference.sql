@@ -569,6 +569,8 @@ CREATE TABLE public.job_notes (
   linked_vhc_id integer,
   linked_request_indices ARRAY,
   linked_vhc_ids ARRAY,
+  linked_part_id integer,
+  linked_part_ids ARRAY,
   CONSTRAINT job_notes_pkey PRIMARY KEY (note_id),
   CONSTRAINT job_notes_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT job_notes_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id),

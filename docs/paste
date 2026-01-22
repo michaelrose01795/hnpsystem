@@ -3,9 +3,7 @@ TO DO:
 Continue flow with job number 54
 
 
-
-inside the Job Details section withi the overview tab inside the job-cards/myjobs/[jobnumber] page it shows the custoner requests as well as the authorised parts, including the notes linked to the row in small print as well. 
-
+authorsed parts to show pre pick location when added. 
 
 
 If warrenty is ticked then add a "W" within the warrently column inside the parts identified and within the parts authorised section if the tick was checked. also within the summary section add a "W" to the right of the total cost column for that row (dont add a new column just show a W next to that total field box). 

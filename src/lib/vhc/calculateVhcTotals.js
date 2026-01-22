@@ -53,7 +53,10 @@ export function calculateVhcFinancialTotals(vhcChecks = [], partsJobItems = []) 
 
   try {
     // Step 1: Find and parse the VHC builder data
-    const builderRecord = vhcChecks.find(check => check.section === 'VHC_CHECKSHEET');
+    const builderRecord = vhcChecks.find((check) => {
+      const section = (check?.section || "").toString().trim();
+      return section === "VHC_CHECKSHEET" || section === "VHC Checksheet";
+    });
     if (!builderRecord) {
       // No VHC builder data found, return zero totals
       console.log('[VHC Totals] No VHC_CHECKSHEET record found');

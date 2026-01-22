@@ -350,6 +350,8 @@ export default function TechJobDetailPage() {
   const [clockingNow, setClockingNow] = useState(() => Date.now());
   const [partsRequests, setPartsRequests] = useState([]);
   const [partsRequestsLoading, setPartsRequestsLoading] = useState(false);
+  const [authorizedParts, setAuthorizedParts] = useState([]);
+  const [authorizedPartsLoading, setAuthorizedPartsLoading] = useState(false);
   const [partRequestDescription, setPartRequestDescription] = useState("");
   const [partRequestQuantity, setPartRequestQuantity] = useState(1);
   const [partsSubmitting, setPartsSubmitting] = useState(false);
@@ -472,6 +474,72 @@ export default function TechJobDetailPage() {
         setNotes([]);
       } finally {
         setNotesLoading(false);
+      }
+    },
+    [jobCardId]
+  );
+
+  const loadAuthorizedParts = useCallback(
+    async (overrideJobId = null) => {
+      const targetJobId = overrideJobId ?? jobCardId;
+      if (!targetJobId) {
+        setAuthorizedParts([]);
+        return;
+      }
+
+      setAuthorizedPartsLoading(true);
+      try {
+        const { data: partsData, error: partsError } = await supabase
+          .from("parts_job_items")
+          .select(
+            `
+            id,
+            job_id,
+            part_id,
+            authorised,
+            quantity_requested,
+            unit_price,
+            status,
+            vhc_item_id,
+            part:part_id(
+              id,
+              part_number,
+              name
+            )
+          `
+          )
+          .eq("job_id", targetJobId)
+          .order("created_at", { ascending: false });
+
+        if (partsError) {
+          throw partsError;
+        }
+
+        const { data: vhcChecksData, error: vhcChecksError } = await supabase
+          .from("vhc_checks")
+          .select("vhc_id, approval_status")
+          .eq("job_id", targetJobId)
+          .eq("approval_status", "authorized");
+
+        if (vhcChecksError) {
+          throw vhcChecksError;
+        }
+
+        const approvedVhcIds = new Set(
+          (vhcChecksData || []).map((check) => String(check.vhc_id))
+        );
+        const filtered = (partsData || []).filter((part) => {
+          if (part?.authorised === true) return true;
+          if (part?.vhc_item_id && approvedVhcIds.has(String(part.vhc_item_id))) return true;
+          return false;
+        });
+
+        setAuthorizedParts(filtered);
+      } catch (loadError) {
+        console.error("Failed to load authorised parts:", loadError);
+        setAuthorizedParts([]);
+      } finally {
+        setAuthorizedPartsLoading(false);
       }
     },
     [jobCardId]
@@ -650,6 +718,7 @@ export default function TechJobDetailPage() {
       await refreshClockingStatus();
       await fetchClockedHoursTotal();
       await loadPartsRequests(jobCardIdForFetch);
+      await loadAuthorizedParts(jobCardIdForFetch);
       await loadNotes(jobCardIdForFetch);
     } catch (fetchError) {
       console.error("Error fetching job:", fetchError);
@@ -657,7 +726,7 @@ export default function TechJobDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [jobNumber, router, refreshClockingStatus, loadPartsRequests, loadNotes]);
+  }, [jobNumber, router, refreshClockingStatus, loadPartsRequests, loadAuthorizedParts, loadNotes]);
 
   useEffect(() => {
     fetchJobData();
@@ -2385,37 +2454,92 @@ export default function TechJobDetailPage() {
                     </div>
                   </div>
                 )}
-                {vhcChecks.filter((check) => String(check?.approval_status || "").toLowerCase() === "authorized").length > 0 && (
-                  <div style={{ marginBottom: "16px" }}>
-                    <strong style={{ fontSize: "14px", color: "var(--info)", letterSpacing: "0.04em" }}>Authorised Items:</strong>
-                    <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "12px" }}>
-                      {vhcChecks
-                        .filter((check) => String(check?.approval_status || "").toLowerCase() === "authorized")
-                        .map((check) => (
-                          <div key={check.vhc_id || check.id} style={{
-                            padding: "14px 16px",
-                            backgroundColor: "var(--surface-light)",
-                            borderLeft: "4px solid var(--success)",
-                            borderRadius: "10px",
-                            color: "var(--info-dark)",
-                          }}>
-                            <div>{check.issue_title || check.section}</div>
-                            {notes
-                              .filter((note) =>
-                                Array.isArray(note.linkedVhcIds)
-                                  ? note.linkedVhcIds.includes(check.vhc_id)
-                                  : note.linkedVhcId === check.vhc_id
-                              )
-                              .map((note) => (
-                                <div key={note.noteId} style={{ fontSize: "11px", color: "var(--info)", marginTop: "6px" }}>
-                                  Note: {note.noteText}
-                                </div>
-                              ))}
-                          </div>
-                        ))}
+                <div style={{ marginTop: "24px" }}>
+                  <h4 style={{ fontSize: "16px", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "12px" }}>
+                    Additional Information
+                  </h4>
+                  <div style={{
+                    padding: "16px",
+                    backgroundColor: "var(--info-surface)",
+                    borderRadius: "12px",
+                    border: "1px solid var(--accent-purple-surface)",
+                    boxShadow: "none"
+                  }}>
+                    <div style={{ fontSize: "13px", fontWeight: "700", color: "var(--info-dark)", marginBottom: "6px" }}>
+                      Vehicle Health Check
                     </div>
+                    {(() => {
+                      const vhcSource = Array.isArray(jobData?.vhcChecks) && jobData.vhcChecks.length > 0
+                        ? jobData.vhcChecks
+                        : vhcChecks;
+                      const authorisedItems = vhcSource.filter((check) => {
+                        const status =
+                          String(check?.approval_status || check?.approvalStatus || "").toLowerCase();
+                        return status === "authorized";
+                      });
+                      if (authorisedItems.length === 0) {
+                        return (
+                          <div style={{ fontSize: "13px", color: "var(--info)" }}>
+                            No authorised VHC items yet.
+                          </div>
+                        );
+                      }
+                      return (
+                      <div>
+                        <div style={{ fontSize: "12px", fontWeight: "600", color: "var(--info-dark)", marginBottom: "6px" }}>
+                          Authorised items
+                        </div>
+                        <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+                          {authorisedItems.map((check) => {
+                            const resolvedVhcId = check.vhc_id ?? check.id;
+                            return (
+                              <div
+                                key={resolvedVhcId || check.id}
+                                style={{
+                                  fontSize: "13px",
+                                  color: "var(--info-dark)",
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: "4px",
+                                  alignItems: "flex-start",
+                                }}
+                              >
+                                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                                  <span style={{
+                                    padding: "4px 8px",
+                                    borderRadius: "8px",
+                                    fontWeight: "700",
+                                    color: "var(--surface)",
+                                    backgroundColor: "var(--success)",
+                                    fontSize: "11px",
+                                    letterSpacing: "0.04em"
+                                  }}>
+                                    AUTHORISED
+                                  </span>
+                                  <span style={{ fontWeight: "600", color: "var(--success)" }}>
+                                    {check.issue_title || check.issueTitle || check.section}
+                                  </span>
+                                </div>
+                                {notes
+                                  .filter((note) =>
+                                    Array.isArray(note.linkedVhcIds)
+                                      ? note.linkedVhcIds.includes(resolvedVhcId)
+                                      : note.linkedVhcId === resolvedVhcId
+                                  )
+                                  .map((note) => (
+                                    <div key={note.noteId} style={{ fontSize: "11px", color: "var(--info)" }}>
+                                      Note: {note.noteText}
+                                    </div>
+                                  ))}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      );
+                    })()}
                   </div>
-                )}
+                </div>
                 {jobCard.cosmeticNotes && (
                   <div>
                     <strong style={{ fontSize: "14px", color: "var(--info)", letterSpacing: "0.04em" }}>Cosmetic Notes:</strong>
