@@ -1985,14 +1985,14 @@ export default function JobCardDetailPage() {
             </div>
           )}
 
-          {/* VHC Tab */}
-          {activeTab === "vhc" && (
+          {/* VHC Tab (preload on page load) */}
+          <div style={{ display: activeTab === "vhc" ? "block" : "none" }}>
             <VHCTab
               jobNumber={jobNumber}
               jobData={jobData}
               onFinancialTotalsChange={setVhcFinancialTotalsFromPanel}
             />
-          )}
+          </div>
 
           {/* Warranty Tab */}
           {activeTab === "warranty" && (
