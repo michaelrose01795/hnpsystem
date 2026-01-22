@@ -2218,6 +2218,7 @@ function CustomerRequestsTab({
   const [requests, setRequests] = useState(() => normalizeRequests(jobData.requests));
   const [editing, setEditing] = useState(false);
   const [prePickOverrides, setPrePickOverrides] = useState(new Map());
+  const [vhcItemAliases, setVhcItemAliases] = useState([]);
   const authorisedItems = (vhcChecks || []).filter((check) => {
     return String(check?.approval_status || "").toLowerCase() === "authorized";
   });
@@ -2248,8 +2249,22 @@ function CustomerRequestsTab({
       }
       locations.forEach((location) => map.get(key).add(location));
     });
+    (Array.isArray(vhcItemAliases) ? vhcItemAliases : []).forEach((alias) => {
+      const displayId = alias?.display_id;
+      const canonicalId = alias?.vhc_item_id;
+      if (!displayId || !canonicalId) return;
+      const canonicalKey = String(canonicalId);
+      const displayKey = String(displayId);
+      const canonicalSet = map.get(canonicalKey);
+      if (!canonicalSet || canonicalSet.size === 0) return;
+      if (!map.has(displayKey)) {
+        map.set(displayKey, new Set());
+      }
+      const displaySet = map.get(displayKey);
+      canonicalSet.forEach((location) => displaySet.add(location));
+    });
     return map;
-  }, [partsJobItems, prePickOverrides]);
+  }, [partsJobItems, prePickOverrides, vhcItemAliases]);
 
   useEffect(() => {
     if (!jobData?.id) return;
@@ -2278,6 +2293,26 @@ function CustomerRequestsTab({
       }
     };
     loadPrePicks();
+  }, [jobData?.id]);
+
+  useEffect(() => {
+    if (!jobData?.id) return;
+    const loadAliases = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("vhc_item_aliases")
+          .select("display_id, vhc_item_id")
+          .eq("job_id", jobData.id);
+        if (error) {
+          throw error;
+        }
+        setVhcItemAliases(data || []);
+      } catch (err) {
+        console.error("Failed to load VHC item aliases:", err);
+        setVhcItemAliases([]);
+      }
+    };
+    loadAliases();
   }, [jobData?.id]);
   const authorisedColumns = useMemo(() => {
     const columns = [[], [], []];
@@ -2669,7 +2704,7 @@ function CustomerRequestsTab({
                         if (!prePickSet || prePickSet.size === 0) return null;
                         return Array.from(prePickSet).map((location) => (
                           <div key={`${resolvedVhcId}-${location}`} style={{ fontSize: "11px", color: "var(--info)" }}>
-                            Pre pick: {formatPrePickLabel(location)}
+                            pre picked: {formatPrePickLabel(location)}
                           </div>
                         ));
                       })()}

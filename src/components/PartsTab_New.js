@@ -62,6 +62,8 @@ const PartsTabNew = forwardRef(function PartsTabNew(
   const [allocatingPart, setAllocatingPart] = useState(false);
   const [showBookPartPanel, setShowBookPartPanel] = useState(false);
   const [showAllocatePanel, setShowAllocatePanel] = useState(false);
+  const [assignMode, setAssignMode] = useState(false);
+  const [assignTargetRequestId, setAssignTargetRequestId] = useState(null);
 
   const [partAllocations, setPartAllocations] = useState({});
   const [selectedPartIds, setSelectedPartIds] = useState([]);
@@ -98,6 +100,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       storageLocation: item.storageLocation || item.part?.storage_location || "Not assigned",
       status: item.status || "pending",
       allocatedToRequestId: item.allocatedToRequestId || null,
+      vhcItemId: item.vhc_item_id || item.vhcItemId || null,
       createdAt: item.createdAt,
       source: "allocation",
       origin: item.origin || "",
@@ -109,7 +112,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     }));
 
     // Also include parts_job_items (which includes VHC parts with origin field)
-    const jobItems = (Array.isArray(jobData.parts_job_items) ? jobData.parts_job_items : [])
+      const jobItems = (Array.isArray(jobData.parts_job_items) ? jobData.parts_job_items : [])
       .filter(Boolean)
       .map((item) => ({
         id: item.id,
@@ -124,6 +127,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         storageLocation: item.storage_location || item.storageLocation || "Not assigned",
         status: item.status || "pending",
         allocatedToRequestId: item.allocated_to_request_id || item.allocatedToRequestId || null,
+        vhcItemId: item.vhc_item_id || item.vhcItemId || null,
         createdAt: item.created_at || item.createdAt,
         source: "job_item",
         origin: item.origin || "",
@@ -203,6 +207,18 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       }
     });
     setPartAllocations(allocations);
+  }, [jobParts]);
+
+  const vhcPartsByItemId = useMemo(() => {
+    const map = new Map();
+    jobParts.forEach((part) => {
+      if (!part.vhcItemId) return;
+      const key = String(part.vhcItemId);
+      const existing = map.get(key) || [];
+      existing.push(part);
+      map.set(key, existing);
+    });
+    return map;
   }, [jobParts]);
 
   // Parts on order - ALL parts for this job with "on_order" status
@@ -534,8 +550,18 @@ const PartsTabNew = forwardRef(function PartsTabNew(
 
   const handleAssignSelectedToRequest = useCallback(
     async (requestId) => {
-      if (!canEdit || !invoiceReady || !requestId) return;
-      if (selectedPartIds.length === 0) return;
+      if (!canEdit || !requestId) return;
+
+      if (!assignMode || assignTargetRequestId !== requestId) {
+        setAssignMode(true);
+        setAssignTargetRequestId(requestId);
+        return;
+      }
+
+      if (selectedPartIds.length === 0) {
+        alert("Select at least one part to assign.");
+        return;
+      }
 
       const selectedParts = leftPanelParts.filter((part) => selectedPartIds.includes(part.id));
       const allocatableParts = selectedParts.filter((part) => part.source !== "goods-in");
@@ -567,6 +593,8 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         );
 
         setSelectedPartIds([]);
+        setAssignMode(false);
+        setAssignTargetRequestId(null);
         if (typeof onRefreshJob === "function") {
           onRefreshJob();
         }
@@ -577,18 +605,44 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         setAllocatingSelection(false);
       }
     },
-    [canEdit, invoiceReady, jobId, leftPanelParts, onRefreshJob, selectedPartIds]
+    [assignMode, assignTargetRequestId, canEdit, jobId, leftPanelParts, onRefreshJob, selectedPartIds]
   );
 
-  useEffect(() => {
-    if (!invoiceReady) {
-      setSelectedPartIds([]);
-    }
-  }, [invoiceReady]);
+  const handleUnassignPart = useCallback(
+    async (partId) => {
+      if (!canEdit || !partId) return;
+      try {
+        const response = await fetch(`/api/parts/job-items/${partId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ allocated_to_request_id: null }),
+        });
+        const data = await response.json();
+        if (!response.ok || !data?.ok) {
+          throw new Error(data?.error || data?.message || "Failed to unassign part");
+        }
+        if (typeof onRefreshJob === "function") {
+          onRefreshJob();
+        }
+      } catch (error) {
+        console.error("Failed to unassign part:", error);
+        alert(`Error: ${error.message}`);
+      }
+    },
+    [canEdit, onRefreshJob]
+  );
 
   useEffect(() => {
     setSelectedPartIds((prev) => prev.filter((id) => leftPanelParts.some((part) => part.id === id)));
   }, [leftPanelParts]);
+
+  useEffect(() => {
+    if (!showAllocatePanel) {
+      setAssignMode(false);
+      setAssignTargetRequestId(null);
+      setSelectedPartIds([]);
+    }
+  }, [showAllocatePanel]);
 
 
   return (
@@ -725,26 +779,25 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           >
             {showBookPartPanel ? "Hide Book Part" : "Book Part"}
           </button>
-          {invoiceReady && (
-            <button
-              type="button"
-              onClick={toggleAllocatePanel}
-              style={{
-                padding: "10px 14px",
-                borderRadius: "8px",
-                border: "1px solid var(--accent-purple)",
-                background: showAllocatePanel ? "var(--accent-purple)" : "var(--surface)",
-                color: showAllocatePanel ? "white" : "var(--accent-purple)",
-                fontSize: "12px",
-                fontWeight: 600,
-                cursor: "pointer",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-              }}
-            >
-              {showAllocatePanel ? "Hide Allocate" : "Allocate To Request"}
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={toggleAllocatePanel}
+            title="Show allocate-to-request panel"
+            style={{
+              padding: "10px 14px",
+              borderRadius: "8px",
+              border: "1px solid var(--accent-purple)",
+              background: showAllocatePanel ? "var(--accent-purple)" : "var(--surface)",
+              color: showAllocatePanel ? "white" : "var(--accent-purple)",
+              fontSize: "12px",
+              fontWeight: 600,
+              cursor: "pointer",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+            }}
+          >
+            {showAllocatePanel ? "Hide Allocate" : "Allocate To Request"}
+          </button>
         </div>
         {/* Search Section */}
         {showBookPartPanel && (
@@ -938,7 +991,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: invoiceReady && !showAllocatePanel ? "1fr" : "1fr 1fr",
+          gridTemplateColumns: "1fr 1fr",
           gap: "16px",
         }}
       >
@@ -977,42 +1030,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 {leftPanelParts.length} unallocated · {jobParts.length + goodsInParts.length} total
               </p>
             </div>
-            {invoiceReady && (
-              <button
-                type="button"
-                disabled={!canEdit || leftPanelParts.length === 0}
-                onClick={toggleAllocatePanel}
-                title={
-                  !canEdit
-                    ? "You do not have permission to allocate parts."
-                    : leftPanelParts.length === 0
-                    ? "No parts have been added to this job yet."
-                    : "Select parts and choose a request to allocate"
-                }
-                style={{
-                  padding: "10px 14px",
-                  borderRadius: "8px",
-                  border: "1px solid var(--accent-purple)",
-                  background: !canEdit || leftPanelParts.length === 0
-                    ? "var(--surface-light)"
-                    : showAllocatePanel
-                    ? "var(--accent-purple)"
-                    : "var(--surface)",
-                  color: !canEdit || leftPanelParts.length === 0
-                    ? "var(--text-secondary)"
-                    : showAllocatePanel
-                    ? "white"
-                    : "var(--accent-purple)",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  cursor: !canEdit || leftPanelParts.length === 0 ? "not-allowed" : "pointer",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                }}
-              >
-                {showAllocatePanel ? "Hide Allocate" : "Allocate to Request"}
-              </button>
-            )}
+            {/* Allocate toggle lives in the top toolbar */}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {leftPanelParts.length === 0 ? (
@@ -1033,6 +1051,9 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
                   <thead>
                     <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
+                      {assignMode && (
+                        <th style={{ textAlign: "center", padding: "8px", width: "40px" }}>Select</th>
+                      )}
                       <th style={{ textAlign: "left", padding: "8px" }}>Part</th>
                       <th style={{ textAlign: "right", padding: "8px" }}>Qty</th>
                       <th style={{ textAlign: "left", padding: "8px" }}>Pre-pick</th>
@@ -1040,25 +1061,41 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   </thead>
                   <tbody>
                     {leftPanelParts.map((part) => {
-                      const isAllocatable = part.source !== "goods-in" && invoiceReady;
+                      const isAllocatable = part.source !== "goods-in";
                       const isSelected = selectedPartIds.includes(part.id);
 
                       return (
                         <tr
                           key={part.id}
                           onClick={() => {
-                            if (isAllocatable) {
-                              togglePartSelection(part.id);
+                            if (!assignMode) {
+                              setAssignMode(true);
+                              setAssignTargetRequestId(null);
                             }
-                            openStockCatalogue(part.partNumber || part.part_number);
+                            togglePartSelection(part.id);
                           }}
                           style={{
                             background: isSelected ? "var(--info-surface)" : "transparent",
-                            cursor: isAllocatable ? "pointer" : "default",
+                            cursor: "pointer",
                             borderTop: "1px solid var(--surface-light)",
                           }}
                           title={part.source === "goods-in" ? "Goods-in parts are view-only here." : ""}
                         >
+                          {assignMode && (
+                            <td style={{ padding: "8px", textAlign: "center", verticalAlign: "top" }}>
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => {
+                                  if (!assignMode) {
+                                    setAssignMode(true);
+                                    setAssignTargetRequestId(null);
+                                  }
+                                  togglePartSelection(part.id);
+                                }}
+                              />
+                            </td>
+                          )}
                           {/* Part Column */}
                           <td style={{ padding: "8px", verticalAlign: "top" }}>
                             <div style={{ fontWeight: 600, color: "var(--accent-purple)" }}>
@@ -1101,7 +1138,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         </div>
 
         {/* Right Side - On Order (VHC) / Allocate Parts */}
-        {(invoiceReady ? showAllocatePanel : true) && (
+        {showAllocatePanel ? (
           <div
             className="on-order-section"
             style={{
@@ -1136,92 +1173,87 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 textTransform: "uppercase",
               }}
             >
-              {invoiceReady ? "Allocate parts" : "On Order"}
+              Allocate parts
             </div>
-            {invoiceReady ? (
-              <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--info)" }}>
-                Select parts on the left, then choose a request to allocate them.
-              </p>
-            ) : (
-              <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--info)" }}>
-                {loadingPartsOnOrder
-                  ? "Loading..."
-                  : partsOnOrderFromDB.length > 0
-                  ? `${partsOnOrderFromDB.length} part${partsOnOrderFromDB.length !== 1 ? 's' : ''} on order`
-                  : "No parts currently on order"}
-              </p>
-            )}
+            <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--info)" }}>
+              Select parts on the left, then choose a request to allocate them.
+            </p>
           </div>
-          {invoiceReady ? (
-            allRequests.length === 0 ? (
-              <div
-                style={{
-                  padding: "20px",
-                  textAlign: "center",
-                  color: "var(--info)",
-                  fontSize: "13px",
-                  border: "1px dashed var(--surface-light)",
-                  borderRadius: "8px",
-                }}
-              >
-                No customer requests or authorised work found for this job.
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          {allRequests.length === 0 ? (
+            <div
+              style={{
+                padding: "20px",
+                textAlign: "center",
+                color: "var(--info)",
+                fontSize: "13px",
+                border: "1px dashed var(--surface-light)",
+                borderRadius: "8px",
+              }}
+            >
+              No customer requests or authorised work found for this job.
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                 {allRequests.map((request) => {
-                  const allocatedParts = partAllocations[request.id] || [];
-                  return (
-                    <div
-                      key={request.id}
-                      style={{
-                        padding: "12px",
-                        borderRadius: "10px",
-                        border: "1px solid var(--surface-light)",
-                        background: "var(--surface)",
-                      }}
-                    >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
-                        <div>
-                          <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--accent-purple)" }}>
-                            {request.type === "customer" ? "Customer Request" : "VHC Authorised"}
-                          </div>
-                          <div style={{ fontSize: "13px", color: "var(--info-dark)", marginTop: "2px" }}>
-                            {request.description}
-                          </div>
+                  const baseAllocated = partAllocations[request.id] || [];
+                  const vhcAllocated =
+                    request.type === "vhc"
+                      ? vhcPartsByItemId.get(String(request.id)) || []
+                      : [];
+                  const allocatedParts = [...baseAllocated, ...vhcAllocated].filter(
+                    (part, index, arr) => arr.findIndex((entry) => entry.id === part.id) === index
+                  );
+                return (
+                  <div
+                    key={request.id}
+                    style={{
+                      padding: "12px",
+                      borderRadius: "10px",
+                      border: "1px solid var(--surface-light)",
+                      background: "var(--surface)",
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+                      <div>
+                        <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--accent-purple)" }}>
+                          {request.type === "customer" ? "Customer Request" : "VHC Authorised"}
                         </div>
-                        <button
-                          type="button"
-                          disabled={!canEdit || selectedPartIds.length === 0 || allocatingSelection}
-                          onClick={() => handleAssignSelectedToRequest(request.id)}
-                          style={{
-                            padding: "6px 10px",
-                            borderRadius: "6px",
-                            border: "1px solid var(--accent-purple)",
-                            background: !canEdit || selectedPartIds.length === 0 || allocatingSelection
-                              ? "var(--surface-light)"
-                              : "var(--accent-purple)",
-                            color: !canEdit || selectedPartIds.length === 0 || allocatingSelection
-                              ? "var(--text-secondary)"
-                              : "white",
-                            fontSize: "11px",
-                            fontWeight: 600,
-                            cursor:
-                              !canEdit || selectedPartIds.length === 0 || allocatingSelection ? "not-allowed" : "pointer",
-                          }}
-                        >
-                          {allocatingSelection ? "Allocating..." : "Assign selected"}
-                        </button>
+                        <div style={{ fontSize: "13px", color: "var(--info-dark)", marginTop: "2px" }}>
+                          {request.description}
+                        </div>
                       </div>
-                      {allocatedParts.length > 0 && (
-                        <div
-                          style={{
-                            marginTop: "10px",
-                            marginLeft: "14px",
-                            paddingLeft: "12px",
-                            borderLeft: "2px solid var(--surface-light)",
-                          }}
-                        >
-                          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                      <button
+                        type="button"
+                        disabled={!canEdit}
+                        onClick={() => handleAssignSelectedToRequest(request.id)}
+                        style={{
+                          padding: "6px 10px",
+                          borderRadius: "6px",
+                          border: "1px solid var(--accent-purple)",
+                          background: !canEdit ? "var(--surface-light)" : "var(--accent-purple)",
+                          color: !canEdit ? "var(--text-secondary)" : "white",
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          cursor: !canEdit ? "not-allowed" : "pointer",
+                        }}
+                      >
+                        {assignMode && assignTargetRequestId === request.id
+                          ? selectedPartIds.length > 0
+                            ? "Assign"
+                            : "Select parts"
+                          : "Assign selected"}
+                      </button>
+                    </div>
+                    {allocatedParts.length > 0 && (
+                      <div
+                        style={{
+                          marginTop: "10px",
+                          marginLeft: "14px",
+                          paddingLeft: "12px",
+                          borderLeft: "2px solid var(--surface-light)",
+                        }}
+                      >
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
                             <thead>
                               <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
                                 <th style={{ textAlign: "left", padding: "6px" }}>Part number</th>
@@ -1229,6 +1261,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                 <th style={{ textAlign: "right", padding: "6px" }}>Qty</th>
                                 <th style={{ textAlign: "right", padding: "6px" }}>Retail</th>
                                 <th style={{ textAlign: "right", padding: "6px" }}>Cost</th>
+                                <th style={{ textAlign: "center", padding: "6px" }}>Unassign</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -1241,71 +1274,133 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                   <td style={{ padding: "6px", textAlign: "right" }}>{part.quantity}</td>
                                   <td style={{ padding: "6px", textAlign: "right" }}>{formatMoney(part.unitPrice)}</td>
                                   <td style={{ padding: "6px", textAlign: "right" }}>{formatMoney(part.unitCost)}</td>
+                                  <td style={{ padding: "6px", textAlign: "center" }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUnassignPart(part.id)}
+                                      disabled={!canEdit}
+                                      style={{
+                                        padding: "4px 8px",
+                                        borderRadius: "6px",
+                                        border: "1px solid var(--danger)",
+                                        background: !canEdit ? "var(--surface-light)" : "var(--danger-surface)",
+                                        color: !canEdit ? "var(--text-secondary)" : "var(--danger)",
+                                        fontSize: "10px",
+                                        fontWeight: 600,
+                                        cursor: !canEdit ? "not-allowed" : "pointer",
+                                      }}
+                                    >
+                                      Unassign
+                                    </button>
+                                  </td>
                                 </tr>
                               ))}
                             </tbody>
                           </table>
-                        </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          </div>
+        ) : (
+          <div
+            className="on-order-section"
+            style={{
+              background: "var(--surface)",
+              border: "1px solid var(--surface-light)",
+              borderRadius: "12px",
+              padding: "16px",
+              minHeight: "400px",
+            }}
+          >
+            {showPickerBackdrop && (
+              <div
+                className="picker-backdrop"
+                onClick={() => {
+                  const openPickers = document.querySelectorAll(
+                    ".on-order-section .calendar-api.is-open, .on-order-section .timepicker-api.is-open"
                   );
-                })}
+                  openPickers.forEach((picker) => {
+                    const button = picker.querySelector(
+                      "button.calendar-api__control, button.timepicker-api__control"
+                    );
+                    if (button) button.click();
+                  });
+                }}
+              />
+            )}
+            <div style={{ marginBottom: "12px" }}>
+              <div
+                style={{
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  color: "var(--primary)",
+                  letterSpacing: "0.05em",
+                  textTransform: "uppercase",
+                }}
+              >
+                On Order
               </div>
-            )
-          ) : loadingPartsOnOrder ? (
-            <div
-              style={{
-                padding: "20px",
-                textAlign: "center",
-                color: "var(--info)",
-                fontSize: "13px",
-              }}
-            >
-              Loading parts...
+              <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--info)" }}>
+                {loadingPartsOnOrder
+                  ? "Loading..."
+                  : partsOnOrderFromDB.length > 0
+                  ? `${partsOnOrderFromDB.length} part${partsOnOrderFromDB.length !== 1 ? "s" : ""} on order`
+                  : "No parts currently on order"}
+              </p>
             </div>
-          ) : partsOnOrderFromDB.length === 0 ? (
-            <div
-              style={{
-                padding: "20px",
-                textAlign: "center",
-                color: "var(--info)",
-                fontSize: "13px",
-                border: "1px dashed var(--surface-light)",
-                borderRadius: "8px",
-              }}
-            >
-              No parts currently on order for this job.
-            </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              <div style={{ overflowX: "auto" }}>
-                <table className="on-order-table" style={{ width: "100%", borderCollapse: "collapse" }}>
-                  <thead>
-                    <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
-                      <th style={{ textAlign: "left" }}>Part Name</th>
-                      <th style={{ textAlign: "left" }}>Part Number</th>
-                      <th style={{ textAlign: "right" }}>Qty</th>
-                      <th style={{ textAlign: "right" }}>Price</th>
-                      <th style={{ textAlign: "left" }}>ETA Date</th>
-                      <th style={{ textAlign: "left" }}>ETA Time</th>
-                      <th style={{ textAlign: "center" }}>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {partsOnOrderFromDB.map((part) => {
-                      return (
+            {loadingPartsOnOrder ? (
+              <div
+                style={{
+                  padding: "20px",
+                  textAlign: "center",
+                  color: "var(--info)",
+                  fontSize: "13px",
+                }}
+              >
+                Loading parts...
+              </div>
+            ) : partsOnOrderFromDB.length === 0 ? (
+              <div
+                style={{
+                  padding: "20px",
+                  textAlign: "center",
+                  color: "var(--info)",
+                  fontSize: "13px",
+                  border: "1px dashed var(--surface-light)",
+                  borderRadius: "8px",
+                }}
+              >
+                No parts currently on order for this job.
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <div style={{ overflowX: "auto" }}>
+                  <table className="on-order-table" style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
+                        <th style={{ textAlign: "left" }}>Part Name</th>
+                        <th style={{ textAlign: "left" }}>Part Number</th>
+                        <th style={{ textAlign: "right" }}>Qty</th>
+                        <th style={{ textAlign: "right" }}>Price</th>
+                        <th style={{ textAlign: "left" }}>ETA Date</th>
+                        <th style={{ textAlign: "left" }}>ETA Time</th>
+                        <th style={{ textAlign: "center" }}>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {partsOnOrderFromDB.map((part) => (
                         <tr
                           key={part.id}
                           style={{
                             borderTop: "1px solid var(--surface-light)",
                           }}
                         >
-                          <td style={{ color: "var(--info-dark)" }}>
-                            {part.partName}
-                          </td>
-                          <td style={{ fontWeight: 600, color: "var(--accent-purple)" }}>
-                            {part.partNumber}
-                          </td>
+                          <td style={{ color: "var(--info-dark)" }}>{part.partName}</td>
+                          <td style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{part.partNumber}</td>
                           <td style={{ textAlign: "right" }}>{part.quantity}</td>
                           <td style={{ textAlign: "right" }}>{formatMoney(part.unitPrice)}</td>
                           <td>
@@ -1349,13 +1444,12 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             </button>
                           </td>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
-          )}
+            )}
           </div>
         )}
       </div>
