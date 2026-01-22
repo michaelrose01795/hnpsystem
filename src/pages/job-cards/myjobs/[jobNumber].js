@@ -2368,9 +2368,51 @@ export default function TechJobDetailPage() {
                           borderRadius: "10px",
                           color: "var(--info-dark)",
                         }}>
-                          {req.text || req}
+                          <div>{req.text || req}</div>
+                          {notes
+                            .filter((note) =>
+                              Array.isArray(note.linkedRequestIndices)
+                                ? note.linkedRequestIndices.includes(i + 1)
+                                : note.linkedRequestIndex === i + 1
+                            )
+                            .map((note) => (
+                              <div key={note.noteId} style={{ fontSize: "11px", color: "var(--info)", marginTop: "6px" }}>
+                                Note: {note.noteText}
+                              </div>
+                            ))}
                         </div>
                       ))}
+                    </div>
+                  </div>
+                )}
+                {vhcChecks.filter((check) => String(check?.approval_status || "").toLowerCase() === "authorized").length > 0 && (
+                  <div style={{ marginBottom: "16px" }}>
+                    <strong style={{ fontSize: "14px", color: "var(--info)", letterSpacing: "0.04em" }}>Authorised Items:</strong>
+                    <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "12px" }}>
+                      {vhcChecks
+                        .filter((check) => String(check?.approval_status || "").toLowerCase() === "authorized")
+                        .map((check) => (
+                          <div key={check.vhc_id || check.id} style={{
+                            padding: "14px 16px",
+                            backgroundColor: "var(--surface-light)",
+                            borderLeft: "4px solid var(--success)",
+                            borderRadius: "10px",
+                            color: "var(--info-dark)",
+                          }}>
+                            <div>{check.issue_title || check.section}</div>
+                            {notes
+                              .filter((note) =>
+                                Array.isArray(note.linkedVhcIds)
+                                  ? note.linkedVhcIds.includes(check.vhc_id)
+                                  : note.linkedVhcId === check.vhc_id
+                              )
+                              .map((note) => (
+                                <div key={note.noteId} style={{ fontSize: "11px", color: "var(--info)", marginTop: "6px" }}>
+                                  Note: {note.noteText}
+                                </div>
+                              ))}
+                          </div>
+                        ))}
                     </div>
                   </div>
                 )}
@@ -3397,7 +3439,7 @@ export default function TechJobDetailPage() {
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                  {notes.map((note) => {
+                  {notes.map((note, index) => {
                     const noteId = note.noteId || note.note_id || note.id;
                     const creatorName = note.createdBy || "Unknown";
                     const createdAt = formatDateTime(note.createdAt || note.created_at);
@@ -3416,7 +3458,21 @@ export default function TechJobDetailPage() {
                         }}
                       >
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "8px" }}>
-                          <div style={{ fontWeight: 600 }}>{creatorName}</div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <span
+                              style={{
+                                padding: "4px 10px",
+                                borderRadius: "999px",
+                                backgroundColor: "var(--info-surface)",
+                                color: "var(--info)",
+                                fontSize: "11px",
+                                fontWeight: 700,
+                              }}
+                            >
+                              Note {index + 1}
+                            </span>
+                            <span style={{ fontWeight: 600 }}>{creatorName}</span>
+                          </div>
                           <div style={{ fontSize: "12px", color: "var(--info)" }}>
                             {createdAt}
                             {updatedLabel}

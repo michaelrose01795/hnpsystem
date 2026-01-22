@@ -466,11 +466,13 @@ export const getAllJobs = async () => {
         allocated_to_request_id,
         status,
         origin,
+        vhc_item_id,
         pre_pick_location,
         storage_location,
         unit_cost,
         unit_price,
         request_notes,
+        labour_hours,
         allocated_by,
         picked_by,
         fitted_by,
@@ -510,7 +512,7 @@ export const getAllJobs = async () => {
           invoice_number
         )
       ),
-      job_notes(note_id, note_text, user_id, created_at, updated_at),
+      job_notes(note_id, note_text, user_id, created_at, updated_at, linked_request_index, linked_vhc_id),
       job_writeups(writeup_id, work_performed, parts_used, recommendations, labour_time, technician_id, completion_status, created_at, updated_at),
       job_files(file_id, file_name, file_url, file_type, folder, uploaded_by, uploaded_at),
       vhc_authorizations(id, authorized_items, authorized_at),
@@ -677,8 +679,49 @@ export const getAuthorizedAdditionalWorkByJob = async (jobId) => {
       console.error("⚠️ Error fetching authorized parts:", partsError);
     }
 
+    // Fetch authorized VHC checks directly (fallback when vhc_authorizations is not populated)
+    const { data: vhcChecksData, error: vhcChecksError } = await supabase
+      .from("vhc_checks")
+      .select("vhc_id, section, issue_title, issue_description, approval_status")
+      .eq("job_id", jobId)
+      .eq("approval_status", "authorized");
+
+    if (vhcChecksError && vhcChecksError.code !== "PGRST116") {
+      console.error("⚠️ Error fetching authorized VHC checks:", vhcChecksError);
+    }
+
     // Extract VHC authorized items
     const vhcItems = extractAuthorizedItems(vhcData || []);
+    const vhcItemIds = new Set(
+      vhcItems
+        .map((item) => item?.vhcItemId)
+        .filter((value) => value !== null && value !== undefined)
+        .map((value) => String(value))
+    );
+
+    // Add authorized items from vhc_checks if missing
+    const vhcChecksItems = (vhcChecksData || []).reduce((acc, check) => {
+      const description =
+        (check.issue_title || check.issue_description || check.section || "").toString().trim();
+      if (!description) return acc;
+      const vhcId = check.vhc_id ?? null;
+      if (vhcId !== null && vhcItemIds.has(String(vhcId))) {
+        return acc;
+      }
+      acc.push({
+        recordId: null,
+        description,
+        label: description || `Authorised item ${acc.length + 1}`,
+        status: "additional_work",
+        isAdditionalWork: true,
+        vhcItemId: vhcId,
+        authorizationId: null,
+        authorizedAmount: null,
+        source: "vhc_check",
+        sourceKey: `vhc-check-${vhcId ?? description}`,
+      });
+      return acc;
+    }, []);
 
     // Extract authorized parts and format them
     const partsItems = (partsData || []).map((part, index) => {
@@ -690,7 +733,7 @@ export const getAuthorizedAdditionalWorkByJob = async (jobId) => {
       return {
         recordId: null,
         description,
-        label: `Authorized Part: ${description}`,
+        label: description || `Authorised part ${index + 1}`,
         status: "additional_work",
         isAdditionalWork: true,
         vhcItemId: null,
@@ -702,7 +745,7 @@ export const getAuthorizedAdditionalWorkByJob = async (jobId) => {
     });
 
     // Combine both sources
-    return [...vhcItems, ...partsItems];
+    return [...vhcItems, ...vhcChecksItems, ...partsItems];
   } catch (error) {
     console.error("❌ getAuthorizedAdditionalWorkByJob error:", error);
     return [];
@@ -811,11 +854,13 @@ export const getJobByNumber = async (jobNumber) => {
         allocated_to_request_id,
         status,
         origin,
+        vhc_item_id,
         pre_pick_location,
         storage_location,
         unit_cost,
         unit_price,
         request_notes,
+        labour_hours,
         allocated_by,
         picked_by,
         fitted_by,

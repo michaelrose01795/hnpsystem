@@ -313,6 +313,7 @@ export default function JobCardDetailPage() {
   const [sharedNote, setSharedNote] = useState("");
   const [sharedNoteMeta, setSharedNoteMeta] = useState(null);
   const [sharedNoteSaving, setSharedNoteSaving] = useState(false);
+  const [jobNotes, setJobNotes] = useState([]);
   const sharedNoteSaveRef = useRef(null);
   const jobRealtimeRefreshRef = useRef(null);
   const [vehicleJobHistory, setVehicleJobHistory] = useState([]);
@@ -388,6 +389,12 @@ export default function JobCardDetailPage() {
     }
   }, [router.query.tab]);
 
+  useEffect(() => {
+    if (router.query.tab === "vhc") {
+      setActiveTab("vhc");
+    }
+  }, [router.query.tab]);
+
   // Watch for job completion and redirect to invoice tab
   const previousStatusRef = useRef(null);
   useEffect(() => {
@@ -416,9 +423,11 @@ export default function JobCardDetailPage() {
 
     try {
       const notes = await getNotesByJob(jobId);
+      setJobNotes(notes || []);
       return notes[0] || null;
     } catch (noteError) {
       console.error("❌ Failed to load shared note:", noteError);
+      setJobNotes([]);
       return null;
     }
   }, []);
@@ -1892,6 +1901,7 @@ export default function JobCardDetailPage() {
               onToggleVhcRequired={handleToggleVhcRequired}
               vhcSummary={vhcSummaryCounts}
               vhcChecks={jobVhcChecks}
+              notes={jobNotes}
             />
           )}
 
@@ -1949,6 +1959,11 @@ export default function JobCardDetailPage() {
               jobData={jobData}
               canEdit={canEdit}
               actingUserNumericId={actingUserNumericId}
+              onNotesChange={(nextNotes) => {
+                setJobNotes(nextNotes || []);
+                setSharedNote(nextNotes?.[0]?.noteText || "");
+                setSharedNoteMeta(nextNotes?.[0] || null);
+              }}
             />
           )}
 
@@ -2195,13 +2210,25 @@ function CustomerRequestsTab({
   onUpdate,
   onToggleVhcRequired = () => {},
   vhcSummary = { total: 0, red: 0, amber: 0 },
-  vhcChecks = []
+  vhcChecks = [],
+  notes = []
 }) {
   const [requests, setRequests] = useState(() => normalizeRequests(jobData.requests));
   const [editing, setEditing] = useState(false);
-  const highlightedItems = (vhcChecks || [])
-    .map((check) => ({ check, severity: resolveVhcSeverity(check) }))
-    .filter(({ severity }) => severity === "red" || severity === "amber");
+  const authorisedItems = (vhcChecks || []).filter((check) => {
+    return String(check?.approval_status || "").toLowerCase() === "authorized";
+  });
+  const linkedNotes = Array.isArray(notes) ? notes : [];
+  const authorisedColumns = useMemo(() => {
+    const columns = [[], [], []];
+    authorisedItems.forEach((item, index) => {
+      const baseColumn = Math.floor(index / 3);
+      const columnIndex = baseColumn < 3 ? baseColumn : index % 3;
+      columns[columnIndex].push(item);
+    });
+    return columns.filter((column) => column.length > 0);
+  }, [authorisedItems]);
+
 
   useEffect(() => {
     setRequests(normalizeRequests(jobData.requests));
@@ -2228,27 +2255,53 @@ function CustomerRequestsTab({
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", gap: "12px", flexWrap: "wrap" }}>
         <h2 style={{ margin: 0, fontSize: "20px", fontWeight: "600", color: "var(--text-primary)" }}>
           Customer Requests
         </h2>
-        {canEdit && !editing && (
-          <button
-            onClick={() => setEditing(true)}
-            style={{
-              padding: "8px 16px",
-              backgroundColor: "var(--danger)",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontWeight: "600",
-              fontSize: "14px"
-            }}
-          >
-            Edit Requests
-          </button>
-        )}
+        <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+          {canEdit && (
+            <button
+              onClick={() => onToggleVhcRequired(!jobData.vhcRequired)}
+              style={{
+                padding: "8px 16px",
+                borderRadius: "10px",
+                border: "none",
+                fontSize: "14px",
+                fontWeight: "600",
+                cursor: "pointer",
+                backgroundColor: jobData.vhcRequired ? "var(--danger)" : "var(--success)",
+                color: "white",
+                boxShadow: "none"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.opacity = "0.9";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.opacity = "1";
+              }}
+            >
+              {jobData.vhcRequired ? "Mark VHC Not Required" : "Mark VHC Required"}
+            </button>
+          )}
+          {canEdit && !editing && (
+            <button
+              onClick={() => setEditing(true)}
+              style={{
+                padding: "8px 16px",
+                backgroundColor: "var(--danger)",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer",
+                fontWeight: "600",
+                fontSize: "14px"
+              }}
+            >
+              Edit Requests
+            </button>
+          )}
+        </div>
         {editing && (
           <div style={{ display: "flex", gap: "8px" }}>
             <button
@@ -2410,10 +2463,21 @@ function CustomerRequestsTab({
                 justifyContent: "space-between",
                 alignItems: "center"
               }}>
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
                   <span style={{ fontSize: "14px", color: "var(--text-secondary)" }}>
                     {req.text || req}
                   </span>
+                  {linkedNotes
+                    .filter((note) =>
+                      Array.isArray(note.linkedRequestIndices)
+                        ? note.linkedRequestIndices.includes(index + 1)
+                        : note.linkedRequestIndex === index + 1
+                    )
+                    .map((note) => (
+                      <span key={note.noteId} style={{ fontSize: "11px", color: "var(--info)" }}>
+                        Note: {note.noteText}
+                      </span>
+                    ))}
                 </div>
                 <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
                   {req.time && (
@@ -2478,129 +2542,77 @@ function CustomerRequestsTab({
             <div style={{ fontSize: "13px", fontWeight: "700", color: "var(--info-dark)", marginBottom: "6px" }}>
               Vehicle Health Check
             </div>
-            <p style={{ margin: "0 0 12px 0", fontSize: "14px", color: "var(--info-dark)" }}>
-              {jobData.vhcRequired
-                ? "A VHC is required for this job card."
-                : "VHC has been selected as not Required, Service or management can enable the VHC if it becomes required."}
-            </p>
-
-            {jobData.vhcRequired && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginBottom: "12px" }}>
-                <span style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "6px 10px",
-                  borderRadius: "999px",
-                  backgroundColor: "var(--danger-surface)",
-                  color: "var(--danger)",
-                  fontSize: "12px",
-                  fontWeight: "600"
-                }}>
-                  Red: {vhcSummary.red}
-                </span>
-                <span style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "6px 10px",
-                  borderRadius: "999px",
-                  backgroundColor: "var(--warning-surface)",
-                  color: "var(--warning)",
-                  fontSize: "12px",
-                  fontWeight: "600"
-                }}>
-                  Amber: {vhcSummary.amber}
-                </span>
-                <span style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "6px 10px",
-                  borderRadius: "999px",
-                  backgroundColor: "var(--info-surface)",
-                  color: "var(--info-dark)",
-                  fontSize: "12px",
-                  fontWeight: "600"
-                }}>
-                  Total Checks: {vhcSummary.total}
-                </span>
-              </div>
-            )}
-
-            {jobData.vhcRequired ? (
-              highlightedItems.length > 0 ? (
-                <div>
-                  <div style={{ fontSize: "12px", fontWeight: "600", color: "var(--info-dark)", marginBottom: "6px" }}>
-                    Items requiring attention
-                  </div>
-                  <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "6px" }}>
-                    {highlightedItems.slice(0, 3).map(({ check, severity }) => {
-                      const severityStyle = severity === "red"
-                        ? { label: "Red", color: "var(--danger)" }
-                        : { label: "Amber", color: "var(--warning)" };
-                      return (
-                        <li key={check.vhc_id} style={{ fontSize: "13px", color: "var(--info-dark)", display: "flex", gap: "8px", alignItems: "center" }}>
-                          <span style={{
-                            padding: "4px 8px",
-                            borderRadius: "8px",
-                            fontWeight: "700",
-                            color: "var(--surface)",
-                            backgroundColor: severity === "red" ? "var(--danger)" : "var(--warning)",
-                            fontSize: "11px",
-                            letterSpacing: "0.04em"
-                          }}>
-                            {severityStyle.label.toUpperCase()}
-                          </span>
-                          <span style={{ fontWeight: "600", color: severityStyle.color }}>
-                            {check.issue_title || check.section}
-                          </span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                  {highlightedItems.length > 3 && (
-                    <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "6px" }}>
-                      +{highlightedItems.length - 3} more issues logged
-                    </div>
-                  )}
+            {authorisedItems.length > 0 ? (
+              <div>
+                <div style={{ fontSize: "12px", fontWeight: "600", color: "var(--info-dark)", marginBottom: "6px" }}>
+                  Authorised items
                 </div>
-              ) : (
-                <p style={{ margin: 0, fontSize: "13px", color: "var(--info)" }}>
-                  No red or amber items have been logged yet.
-                </p>
-              )
+                <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+                  {authorisedColumns.map((column, columnIndex) => (
+                    <ul
+                      key={`authorized-column-${columnIndex}`}
+                      style={{
+                        listStyle: "none",
+                        padding: 0,
+                        margin: 0,
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "6px",
+                        flex: "1 1 180px",
+                        minWidth: "180px",
+                      }}
+                    >
+                      {column.map((check) => (
+                        <li
+                          key={check.vhc_id || check.id}
+                          style={{
+                            fontSize: "13px",
+                            color: "var(--info-dark)",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "4px",
+                            alignItems: "flex-start",
+                          }}
+                        >
+                          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                            <span style={{
+                              padding: "4px 8px",
+                              borderRadius: "8px",
+                              fontWeight: "700",
+                              color: "var(--surface)",
+                              backgroundColor: "var(--success)",
+                              fontSize: "11px",
+                              letterSpacing: "0.04em"
+                            }}>
+                              AUTHORISED
+                            </span>
+                            <span style={{ fontWeight: "600", color: "var(--success)" }}>
+                              {check.issue_title || check.section}
+                            </span>
+                          </div>
+                      {linkedNotes
+                        .filter((note) =>
+                          Array.isArray(note.linkedVhcIds)
+                            ? note.linkedVhcIds.includes(check.vhc_id)
+                            : note.linkedVhcId === check.vhc_id
+                        )
+                        .map((note) => (
+                          <div key={note.noteId} style={{ fontSize: "11px", color: "var(--info)" }}>
+                            Note: {note.noteText}
+                          </div>
+                        ))}
+                        </li>
+                      ))}
+                    </ul>
+                  ))}
+                </div>
+              </div>
             ) : (
               <p style={{ margin: 0, fontSize: "13px", color: "var(--info)" }}>
-                Service or management can enable the VHC if it becomes required.
+                No authorised VHC items yet.
               </p>
             )}
           </div>
-          {canEdit && (
-            <button
-              onClick={() => onToggleVhcRequired(!jobData.vhcRequired)}
-              style={{
-                padding: "12px 20px",
-                borderRadius: "10px",
-                border: "none",
-                fontSize: "14px",
-                fontWeight: "600",
-                cursor: "pointer",
-                backgroundColor: jobData.vhcRequired ? "var(--danger)" : "var(--success)",
-                color: "white",
-                boxShadow: "none",
-                alignSelf: "center"
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.opacity = "0.9";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.opacity = "1";
-              }}
-            >
-              {jobData.vhcRequired ? "Mark VHC Not Required" : "Mark VHC Required"}
-            </button>
-          )}
         </div>
         
         {jobData.cosmeticNotes && (

@@ -27,6 +27,18 @@ export const createJobNote = async (noteData) => {
         last_updated_by: noteData.user_id || null,
         note_text: noteData.note_text.trim(),
         hidden_from_customer: noteData.hidden_from_customer !== undefined ? noteData.hidden_from_customer : true, // Default: hidden
+        linked_request_index: Number.isInteger(noteData.linked_request_index)
+          ? noteData.linked_request_index
+          : null,
+        linked_vhc_id: Number.isInteger(noteData.linked_vhc_id)
+          ? noteData.linked_vhc_id
+          : null,
+        linked_request_indices: Array.isArray(noteData.linked_request_indices)
+          ? noteData.linked_request_indices.filter((value) => Number.isInteger(value))
+          : null,
+        linked_vhc_ids: Array.isArray(noteData.linked_vhc_ids)
+          ? noteData.linked_vhc_ids.filter((value) => Number.isInteger(value))
+          : null,
         created_at: new Date().toISOString()
       }])
       .select(`
@@ -36,6 +48,10 @@ export const createJobNote = async (noteData) => {
         last_updated_by,
         note_text,
         hidden_from_customer,
+        linked_request_index,
+        linked_vhc_id,
+        linked_request_indices,
+        linked_vhc_ids,
         created_at,
         updated_at,
         user:user_id(
@@ -80,6 +96,10 @@ export const getNotesByJob = async (jobId) => {
         user_id,
         note_text,
         hidden_from_customer,
+        linked_request_index,
+        linked_vhc_id,
+        linked_request_indices,
+        linked_vhc_ids,
         created_at,
         updated_at,
         last_updated_by,
@@ -118,6 +138,18 @@ export const getNotesByJob = async (jobId) => {
         userId: note.user_id,
         noteText: note.note_text,
         hiddenFromCustomer: note.hidden_from_customer !== null ? note.hidden_from_customer : true,
+        linkedRequestIndex: note.linked_request_index ?? null,
+        linkedVhcId: note.linked_vhc_id ?? null,
+        linkedRequestIndices: Array.isArray(note.linked_request_indices)
+          ? note.linked_request_indices
+          : note.linked_request_index !== null && note.linked_request_index !== undefined
+          ? [note.linked_request_index]
+          : [],
+        linkedVhcIds: Array.isArray(note.linked_vhc_ids)
+          ? note.linked_vhc_ids
+          : note.linked_vhc_id !== null && note.linked_vhc_id !== undefined
+          ? [note.linked_vhc_id]
+          : [],
         createdAt: note.created_at,
         updatedAt: note.updated_at,
         createdBy: creatorName || "Unknown",
@@ -190,7 +222,11 @@ export const updateJobNote = async (noteId, updates, userId = null) => {
       ? { note_text: updates.trim() }
       : {
           ...(updates.noteText !== undefined && { note_text: updates.noteText.trim() }),
-          ...(updates.hiddenFromCustomer !== undefined && { hidden_from_customer: updates.hiddenFromCustomer })
+          ...(updates.hiddenFromCustomer !== undefined && { hidden_from_customer: updates.hiddenFromCustomer }),
+          ...(updates.linkedRequestIndex !== undefined && { linked_request_index: updates.linkedRequestIndex }),
+          ...(updates.linkedVhcId !== undefined && { linked_vhc_id: updates.linkedVhcId }),
+          ...(updates.linkedRequestIndices !== undefined && { linked_request_indices: updates.linkedRequestIndices }),
+          ...(updates.linkedVhcIds !== undefined && { linked_vhc_ids: updates.linkedVhcIds })
         };
 
     // ✅ Validate
@@ -213,6 +249,10 @@ export const updateJobNote = async (noteId, updates, userId = null) => {
         last_updated_by,
         note_text,
         hidden_from_customer,
+        linked_request_index,
+        linked_vhc_id,
+        linked_request_indices,
+        linked_vhc_ids,
         created_at,
         updated_at,
         user:user_id(

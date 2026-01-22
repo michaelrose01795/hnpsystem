@@ -828,6 +828,15 @@ export default function VhcDetailsPanel({
     notes: "",
   });
 
+  useEffect(() => {
+    const requestedTab = router.query?.vhcTab;
+    if (!requestedTab || typeof requestedTab !== "string") return;
+    const isValid = TAB_OPTIONS.some((tab) => tab.id === requestedTab);
+    if (isValid && requestedTab !== activeTab) {
+      setActiveTab(requestedTab);
+    }
+  }, [router.query?.vhcTab, activeTab]);
+
   const resolveCanonicalVhcId = useCallback(
     (vhcId) => {
       if (vhcId === null || vhcId === undefined) return "";
@@ -2298,6 +2307,7 @@ export default function VhcDetailsPanel({
     async (severity, status) => {
 
       const selectedIds = severitySelections[severity] || [];
+      const dbStatus = normaliseDecisionStatus(status) || "pending";
 
       if (selectedIds.length === 0) {
         return;
@@ -2328,7 +2338,6 @@ export default function VhcDetailsPanel({
         }
 
         const item = itemsMap.get(itemId);
-        const dbStatus = normaliseDecisionStatus(status) || "pending";
 
         // Determine the display_status based on the action
         let displayStatus = null;
@@ -4503,7 +4512,7 @@ export default function VhcDetailsPanel({
         }}
       >
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", tableLayout: "fixed" }}>
             <thead>
               <tr
                 style={{
@@ -4514,12 +4523,12 @@ export default function VhcDetailsPanel({
                   fontSize: "11px",
                 }}
               >
-                <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "280px" }}>VHC Item</th>
-                <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "200px" }}>Linked Parts</th>
-                <th style={{ textAlign: "right", padding: "12px 16px", minWidth: "120px" }}>Parts Cost</th>
-                <th style={{ textAlign: "center", padding: "12px 16px", minWidth: "100px" }}>Warranty</th>
-                <th style={{ textAlign: "center", padding: "12px 16px", minWidth: "180px" }}>Status</th>
-                <th style={{ textAlign: "left", padding: "12px 16px", minWidth: "180px" }}>Pre-Pick Location</th>
+                <th style={{ textAlign: "left", padding: "12px 16px", width: "32%", whiteSpace: "normal" }}>VHC Item</th>
+                <th style={{ textAlign: "left", padding: "12px 16px", width: "22%", whiteSpace: "normal" }}>Linked Parts</th>
+                <th style={{ textAlign: "right", padding: "12px 16px", width: "10%" }}>Parts Cost</th>
+                <th style={{ textAlign: "center", padding: "12px 16px", width: "8%" }}>Warranty</th>
+                <th style={{ textAlign: "center", padding: "12px 16px", width: "14%" }}>Status</th>
+                <th style={{ textAlign: "left", padding: "12px 16px", width: "14%", whiteSpace: "normal" }}>Pre-Pick Location</th>
               </tr>
             </thead>
             <tbody>
@@ -4550,7 +4559,7 @@ export default function VhcDetailsPanel({
                         transition: "background 0.2s ease",
                       }}
                     >
-                      <td style={{ padding: "12px 16px" }}>
+                      <td style={{ padding: "12px 16px", whiteSpace: "normal", wordBreak: "break-word" }}>
                         <div>
                           <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
                             {vhcCategory}
@@ -4570,7 +4579,7 @@ export default function VhcDetailsPanel({
                           )}
                         </div>
                       </td>
-                      <td style={{ padding: "12px 16px" }}>
+                      <td style={{ padding: "12px 16px", whiteSpace: "normal", wordBreak: "break-word" }}>
                         <span style={{ color: "var(--info-light)", fontSize: "12px" }}>No parts linked</span>
                       </td>
                       <td style={{ padding: "12px 16px", textAlign: "right" }}>
@@ -4601,7 +4610,7 @@ export default function VhcDetailsPanel({
                       <td style={{ padding: "12px 16px", textAlign: "center" }}>
                         <span style={{ color: "var(--info-light)", fontSize: "12px" }}>—</span>
                       </td>
-                      <td style={{ padding: "12px 16px" }}>
+                      <td style={{ padding: "12px 16px", whiteSpace: "normal", wordBreak: "break-word" }}>
                         <span style={{ color: "var(--info-light)", fontSize: "12px" }}>—</span>
                       </td>
                     </tr>
@@ -4630,7 +4639,7 @@ export default function VhcDetailsPanel({
                         e.currentTarget.style.background = rowBackground;
                       }}
                     >
-                      <td style={{ padding: "12px 16px" }}>
+                      <td style={{ padding: "12px 16px", whiteSpace: "normal", wordBreak: "break-word" }}>
                         {partIndex === 0 && (
                           <div>
                             <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
@@ -4652,7 +4661,7 @@ export default function VhcDetailsPanel({
                           </div>
                         )}
                       </td>
-                      <td style={{ padding: "12px 16px" }}>
+                      <td style={{ padding: "12px 16px", whiteSpace: "normal", wordBreak: "break-word" }}>
                         <div style={{ fontSize: "12px", color: "var(--info-dark)" }}>
                           <div style={{ fontWeight: 600, color: "var(--success)" }}>
                             {part.part?.name || "Unknown Part"}
@@ -4735,7 +4744,7 @@ export default function VhcDetailsPanel({
                           {currentStatus === "on_order" ? "Ordered" : "Order"}
                         </button>
                       </td>
-                      <td style={{ padding: "12px 16px" }}>
+                      <td style={{ padding: "12px 16px", whiteSpace: "normal", wordBreak: "break-word" }}>
                         <select
                           value={part.pre_pick_location || ""}
                           onChange={async (e) => {

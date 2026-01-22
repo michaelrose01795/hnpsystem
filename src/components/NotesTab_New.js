@@ -1,9 +1,11 @@
 // ✅ New NotesTab with Multiple Notes Support
 // file location: src/components/NotesTab_New.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { getNotesByJob, createJobNote, updateJobNote, deleteJobNote } from "@/lib/database/notes";
+import { normalizeRequests } from "@/lib/jobcards/utils";
 
-export default function NotesTabNew({ jobData, canEdit, actingUserNumericId }) {
+export default function NotesTabNew({ jobData, canEdit, actingUserNumericId, onNotesChange }) {
   const jobId = jobData?.id;
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,6 +15,16 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId }) {
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [editingNoteText, setEditingNoteText] = useState("");
   const [error, setError] = useState("");
+  const [linkingNote, setLinkingNote] = useState(null);
+
+  const requestOptions = useMemo(() => normalizeRequests(jobData?.requests), [jobData?.requests]);
+  const authorisedItems = useMemo(
+    () =>
+      (jobData?.vhcChecks || []).filter(
+        (check) => String(check?.approval_status || "").toLowerCase() === "authorized"
+      ),
+    [jobData?.vhcChecks]
+  );
 
   // Load notes
   useEffect(() => {
@@ -25,7 +37,11 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId }) {
     setError("");
     try {
       const fetchedNotes = await getNotesByJob(jobId);
-      setNotes(fetchedNotes || []);
+      const nextNotes = fetchedNotes || [];
+      setNotes(nextNotes);
+      if (typeof onNotesChange === "function") {
+        onNotesChange(nextNotes);
+      }
     } catch (err) {
       console.error("Failed to load notes:", err);
       setError("Failed to load notes");
@@ -133,6 +149,76 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId }) {
       setError("Failed to delete note");
     }
   };
+
+  const resolveLinkLabel = (note) => {
+    const requestCount = Array.isArray(note.linkedRequestIndices)
+      ? note.linkedRequestIndices.length
+      : 0;
+    const vhcCount = Array.isArray(note.linkedVhcIds)
+      ? note.linkedVhcIds.length
+      : 0;
+    if (!requestCount && !vhcCount) return "";
+    const parts = [];
+    if (requestCount) parts.push(`Requests ${requestCount}`);
+    if (vhcCount) parts.push(`Authorised ${vhcCount}`);
+    return parts.join(" • ");
+  };
+
+  const handleLinkNote = async (note, link) => {
+    if (!note?.noteId) return;
+    const currentRequestLinks = Array.isArray(note.linkedRequestIndices)
+      ? note.linkedRequestIndices
+      : [];
+    const currentVhcLinks = Array.isArray(note.linkedVhcIds)
+      ? note.linkedVhcIds
+      : [];
+    let nextRequestLinks = currentRequestLinks;
+    let nextVhcLinks = currentVhcLinks;
+
+    if (link?.clear) {
+      nextRequestLinks = [];
+      nextVhcLinks = [];
+    } else if (Number.isInteger(link?.linkedRequestIndex)) {
+      if (currentRequestLinks.includes(link.linkedRequestIndex)) {
+        nextRequestLinks = currentRequestLinks.filter((value) => value !== link.linkedRequestIndex);
+      } else {
+        nextRequestLinks = [...currentRequestLinks, link.linkedRequestIndex].sort((a, b) => a - b);
+      }
+    } else if (Number.isInteger(link?.linkedVhcId)) {
+      if (currentVhcLinks.includes(link.linkedVhcId)) {
+        nextVhcLinks = currentVhcLinks.filter((value) => value !== link.linkedVhcId);
+      } else {
+        nextVhcLinks = [...currentVhcLinks, link.linkedVhcId];
+      }
+    }
+    try {
+      const result = await updateJobNote(
+        note.noteId,
+        {
+          linkedRequestIndex: nextRequestLinks[0] ?? null,
+          linkedVhcId: nextVhcLinks[0] ?? null,
+          linkedRequestIndices: nextRequestLinks,
+          linkedVhcIds: nextVhcLinks,
+        },
+        actingUserNumericId
+      );
+      if (!result.success) {
+        setError(result.error?.message || "Failed to link note");
+        return;
+      }
+      await loadNotes();
+    } catch (err) {
+      console.error("Failed to link note:", err);
+      setError("Failed to link note");
+    }
+  };
+
+  const isLinkedToRequest = (note, index) =>
+    Array.isArray(note?.linkedRequestIndices) &&
+    note.linkedRequestIndices.includes(index + 1);
+  const isLinkedToAuthorised = (note, item) =>
+    Array.isArray(note?.linkedVhcIds) &&
+    note.linkedVhcIds.includes(item?.vhc_id ?? item?.id ?? null);
 
   const formatDateTime = (dateString) => {
     if (!dateString) return "Unknown";
@@ -262,8 +348,9 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId }) {
             </p>
           </div>
         ) : (
-          notes.map((note) => {
+          notes.map((note, index) => {
             const isEditing = editingNoteId === note.noteId;
+            const linkLabel = resolveLinkLabel(note);
 
             return (
               <div
@@ -278,6 +365,34 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId }) {
                 {/* Header */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
                   <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                      <span
+                        style={{
+                          padding: "4px 10px",
+                          borderRadius: "999px",
+                          backgroundColor: "var(--info-surface)",
+                          color: "var(--info)",
+                          fontSize: "11px",
+                          fontWeight: 700,
+                        }}
+                      >
+                        Note {index + 1}
+                      </span>
+                      {linkLabel && (
+                        <span
+                          style={{
+                            padding: "4px 10px",
+                            borderRadius: "999px",
+                            backgroundColor: "var(--accent-purple-surface)",
+                            color: "var(--accent-purple)",
+                            fontSize: "11px",
+                            fontWeight: 600,
+                          }}
+                        >
+                          Linked: {linkLabel}
+                        </span>
+                      )}
+                    </div>
                     <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--accent-purple)" }}>
                       {note.createdBy}
                       {note.createdByEmail && (
@@ -397,6 +512,21 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId }) {
                       Edit
                     </button>
                     <button
+                      onClick={() => setLinkingNote(note)}
+                      style={{
+                        padding: "6px 12px",
+                        borderRadius: "6px",
+                        border: "1px solid var(--surface-light)",
+                        backgroundColor: "var(--surface)",
+                        color: "var(--info-dark)",
+                        fontWeight: 600,
+                        fontSize: "12px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Link
+                    </button>
+                    <button
                       onClick={() => handleToggleHiddenFromCustomer(note)}
                       style={{
                         padding: "6px 12px",
@@ -433,6 +563,167 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId }) {
           })
         )}
       </div>
+      {linkingNote && typeof document !== "undefined" &&
+        createPortal(
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              backgroundColor: "rgba(10, 10, 20, 0.45)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 220,
+              padding: "20px",
+            }}
+          >
+            <div
+              style={{
+                backgroundColor: "var(--surface)",
+                borderRadius: "16px",
+                padding: "20px",
+                width: "min(520px, 100%)",
+                border: "1px solid var(--surface-light)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "16px",
+              }}
+            >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ fontSize: "16px", fontWeight: 700, color: "var(--accent-purple)" }}>
+                Link note
+              </div>
+              <button
+                type="button"
+                onClick={() => setLinkingNote(null)}
+                style={{
+                  border: "1px solid var(--surface-light)",
+                  backgroundColor: "var(--surface)",
+                  color: "var(--info)",
+                  borderRadius: "8px",
+                  padding: "6px 10px",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                }}
+              >
+                Close
+              </button>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <button
+                type="button"
+                onClick={() => handleLinkNote(linkingNote, { clear: true })}
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid var(--surface-light)",
+                  backgroundColor: "var(--surface)",
+                  color: "var(--info-dark)",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  alignSelf: "flex-start",
+                }}
+              >
+                Clear link
+              </button>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div>
+                <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--info-dark)", marginBottom: "8px" }}>
+                  Customer requests
+                </div>
+                {requestOptions.length === 0 ? (
+                  <div style={{ fontSize: "13px", color: "var(--info)" }}>No requests available.</div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {requestOptions.map((req, index) => {
+                      const activeNote =
+                        notes.find((note) => note.noteId === linkingNote.noteId) || linkingNote;
+                      const isSelected = isLinkedToRequest(activeNote, index);
+                      return (
+                      <button
+                        key={`request-link-${index}`}
+                        type="button"
+                        onClick={() => handleLinkNote(activeNote, { linkedRequestIndex: index + 1 })}
+                        style={{
+                          padding: "10px 12px",
+                          borderRadius: "10px",
+                          border: isSelected ? "1px solid var(--success)" : "1px solid var(--surface-light)",
+                          backgroundColor: isSelected ? "var(--success-surface)" : "var(--layer-section-level-3)",
+                          textAlign: "left",
+                          cursor: "pointer",
+                          fontSize: "13px",
+                          color: isSelected ? "var(--success)" : "var(--info-dark)",
+                          fontWeight: 600,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: "8px",
+                        }}
+                      >
+                        <span>Request {index + 1}: {req?.text || req}</span>
+                        {isSelected && (
+                          <span style={{ fontSize: "11px", fontWeight: 700 }}>
+                            Selected
+                          </span>
+                        )}
+                      </button>
+                    );
+                    })}
+                  </div>
+                )}
+              </div>
+              <div>
+                <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--info-dark)", marginBottom: "8px" }}>
+                  Authorised items
+                </div>
+                {authorisedItems.length === 0 ? (
+                  <div style={{ fontSize: "13px", color: "var(--info)" }}>No authorised items available.</div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {authorisedItems.map((item) => {
+                      const itemId = item.vhc_id ?? item.id;
+                      const activeNote =
+                        notes.find((note) => note.noteId === linkingNote.noteId) || linkingNote;
+                      const isSelected = isLinkedToAuthorised(activeNote, item);
+                      return (
+                      <button
+                        key={`authorized-link-${itemId}`}
+                        type="button"
+                        onClick={() => handleLinkNote(activeNote, { linkedVhcId: itemId })}
+                        style={{
+                          padding: "10px 12px",
+                          borderRadius: "10px",
+                          border: isSelected ? "1px solid var(--success)" : "1px solid var(--surface-light)",
+                          backgroundColor: isSelected ? "var(--success-surface)" : "var(--layer-section-level-3)",
+                          textAlign: "left",
+                          cursor: "pointer",
+                          fontSize: "13px",
+                          color: isSelected ? "var(--success)" : "var(--info-dark)",
+                          fontWeight: 600,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: "8px",
+                        }}
+                      >
+                        <span>{item.issue_title || item.section}</span>
+                        {isSelected && (
+                          <span style={{ fontSize: "11px", fontWeight: 700 }}>
+                            Selected
+                          </span>
+                        )}
+                      </button>
+                    );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

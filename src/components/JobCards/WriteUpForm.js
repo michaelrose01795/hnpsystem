@@ -216,6 +216,12 @@ const createAuthorizedSourceKey = (item, index, jobId) => {
   return `vhc-${authSegment}-${vhcSegment}`;
 };
 
+const stripAuthorizedPrefix = (value = "") => {
+  return value
+    .toString()
+    .replace(/^(authori[sz]ed\s+work|authorized\s+part|authorised\s+part):\s*/i, "");
+};
+
 const tasksAreEqual = (left = [], right = []) => {
   if (left === right) {
     return true;
@@ -740,9 +746,7 @@ export default function WriteUpForm({
               ...item,
               source: "vhc",
               sourceKey: createAuthorizedSourceKey(item || {}, index, writeUpMeta.jobId),
-              label: description
-                ? `Authorized Work: ${description}`
-                : `Authorized Work ${index + 1}`,
+              label: description || `Authorised item ${index + 1}`,
               status: item?.status === "complete" ? "complete" : "additional_work",
             };
           }
@@ -1009,6 +1013,60 @@ export default function WriteUpForm({
         filter: `job_id=eq.${writeUpMeta.jobId}`,
       },
       handleAuthorizationChange
+    );
+
+    void channel.subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [writeUpMeta.jobId, refreshAuthorizedWork]);
+
+  useEffect(() => {
+    if (!writeUpMeta.jobId) {
+      return undefined;
+    }
+
+    const channel = supabase.channel(`vhc-checks-${writeUpMeta.jobId}`);
+    const handleVhcCheckChange = () => {
+      refreshAuthorizedWork();
+    };
+
+    channel.on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "vhc_checks",
+        filter: `job_id=eq.${writeUpMeta.jobId}`,
+      },
+      handleVhcCheckChange
+    );
+
+    void channel.subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [writeUpMeta.jobId, refreshAuthorizedWork]);
+
+  useEffect(() => {
+    if (!writeUpMeta.jobId) {
+      return undefined;
+    }
+
+    const channel = supabase.channel(`authorized-parts-${writeUpMeta.jobId}`);
+    const handlePartsChange = () => {
+      refreshAuthorizedWork();
+    };
+
+    channel.on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "parts_job_items",
+        filter: `job_id=eq.${writeUpMeta.jobId}`,
+      },
+      handlePartsChange
     );
 
     void channel.subscribe();
@@ -1307,21 +1365,25 @@ export default function WriteUpForm({
       return { ...prev, tasks: updatedTasks, completionStatus };
     });
     if (timelineEventLabel && writeUpMeta.jobId) {
-      supabase
-        .from("job_status_history")
-        .insert([
-          {
-            job_id: writeUpMeta.jobId,
-            from_status: null,
-            to_status: timelineEventLabel,
-            changed_by: userId || null,
-            reason: "write_up_task",
-            changed_at: new Date().toISOString(),
-          },
-        ])
-        .catch((error) => {
+      void (async () => {
+        try {
+          const { error } = await supabase.from("job_status_history").insert([
+            {
+              job_id: writeUpMeta.jobId,
+              from_status: null,
+              to_status: timelineEventLabel,
+              changed_by: userId || null,
+              reason: "write_up_task",
+              changed_at: new Date().toISOString(),
+            },
+          ]);
+          if (error) {
+            console.error("Failed to log write-up task timeline event:", error);
+          }
+        } catch (error) {
           console.error("Failed to log write-up task timeline event:", error);
-        });
+        }
+      })();
     }
     if (nextCompletionStatus && typeof onCompletionChange === "function") {
       onCompletionChange(nextCompletionStatus);
@@ -1905,7 +1967,13 @@ const renderLastSaved = () => (
                   </div>
                   <span style={statusBadgeStyle}>Requests</span>
                 </div>
-                <div style={sectionScrollerStyle}>
+                <div
+                  style={{
+                    ...sectionScrollerStyle,
+                    overflowY: requestSlots.length > 3 ? "auto" : "visible",
+                    paddingRight: requestSlots.length > 3 ? "4px" : 0,
+                  }}
+                >
                   {requestSlots.map((task, index) => {
                     const slotKey = composeTaskKey(task);
                     const isComplete = task?.status === "complete";
@@ -1926,11 +1994,6 @@ const renderLastSaved = () => (
                           onChange={handleRequestLabelChange(slotKey)}
                           style={modernTextareaStyle}
                         />
-                        {isComplete && (
-                          <div style={{ fontSize: "12px", color: "var(--info-dark)" }}>
-                            Completed work: {stripRequestPrefix(toPastTenseRequest(task.originalLabel || task.label || ""))}
-                          </div>
-                        )}
                       </div>
                     );
                   })}
@@ -2025,7 +2088,13 @@ const renderLastSaved = () => (
                     </span>
                   )}
                 </div>
-                <div style={sectionScrollerStyle}>
+                <div
+                  style={{
+                    ...sectionScrollerStyle,
+                    overflowY: rectificationTasks.length > 3 ? "auto" : "visible",
+                    paddingRight: rectificationTasks.length > 3 ? "4px" : 0,
+                  }}
+                >
                   {rectificationTasks.length === 0 ? (
                     <p style={{ margin: 0, color: "var(--info)", fontSize: "13px" }}>
                       Add authorised additional work to record rectifications.
@@ -2035,23 +2104,21 @@ const renderLastSaved = () => (
                       const taskKey = composeTaskKey(task);
                       const isComplete = task.status === "complete";
                       return (
-                        <div key={taskKey} style={rectificationCardStyle(isComplete)}>
-                          <div style={rectRowHeaderStyle}>
-                            <label style={checkboxLabelStyle(isComplete)}>
-                              <input
-                                type="checkbox"
-                                checked={isComplete}
-                                onChange={() => toggleTaskStatus(taskKey)}
-                                style={checkboxStyle}
-                              />
-                              Completed
-                            </label>
-                            <span style={{ fontSize: "12px", color: "var(--info)" }}>Item {index + 1}</span>
-                          </div>
+                        <div key={taskKey} style={cardRowStyle(isComplete)}>
+                          <label style={checkboxLabelStyle(isComplete)}>
+                            <input
+                              type="checkbox"
+                              checked={isComplete}
+                              onChange={() => toggleTaskStatus(taskKey)}
+                              style={checkboxStyle}
+                            />
+                            {isComplete ? "Completed" : "Mark complete"}
+                          </label>
+                          <div style={{ fontSize: "12px", color: "var(--info)" }}>Item {index + 1}</div>
                           <textarea
-                            value={task.label}
+                            value={stripAuthorizedPrefix(task.label)}
                             onChange={handleTaskLabelChange(taskKey)}
-                            style={{ ...modernTextareaStyle, minHeight: "90px" }}
+                            style={modernTextareaStyle}
                           />
                         </div>
                       );
