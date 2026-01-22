@@ -60,6 +60,8 @@ const PartsTabNew = forwardRef(function PartsTabNew(
   const [catalogSubmitError, setCatalogSubmitError] = useState("");
   const [catalogSuccessMessage, setCatalogSuccessMessage] = useState("");
   const [allocatingPart, setAllocatingPart] = useState(false);
+  const [showBookPartPanel, setShowBookPartPanel] = useState(false);
+  const [showAllocatePanel, setShowAllocatePanel] = useState(false);
 
   const [partAllocations, setPartAllocations] = useState({});
   const [selectedPartIds, setSelectedPartIds] = useState([]);
@@ -404,6 +406,14 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     setCatalogSuccessMessage("");
   }, []);
 
+  const toggleBookPartPanel = useCallback(() => {
+    setShowBookPartPanel((prev) => !prev);
+  }, []);
+
+  const toggleAllocatePanel = useCallback(() => {
+    setShowAllocatePanel((prev) => !prev);
+  }, []);
+
   useEffect(() => {
     if (!canAllocateParts) {
       setCatalogSearch("");
@@ -696,15 +706,56 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         }
       `}</style>
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          <button
+            type="button"
+            onClick={toggleBookPartPanel}
+            style={{
+              padding: "10px 14px",
+              borderRadius: "8px",
+              border: "1px solid var(--primary)",
+              background: showBookPartPanel ? "var(--primary)" : "var(--surface)",
+              color: showBookPartPanel ? "white" : "var(--primary)",
+              fontSize: "12px",
+              fontWeight: 600,
+              cursor: "pointer",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+            }}
+          >
+            {showBookPartPanel ? "Hide Book Part" : "Book Part"}
+          </button>
+          {invoiceReady && (
+            <button
+              type="button"
+              onClick={toggleAllocatePanel}
+              style={{
+                padding: "10px 14px",
+                borderRadius: "8px",
+                border: "1px solid var(--accent-purple)",
+                background: showAllocatePanel ? "var(--accent-purple)" : "var(--surface)",
+                color: showAllocatePanel ? "white" : "var(--accent-purple)",
+                fontSize: "12px",
+                fontWeight: 600,
+                cursor: "pointer",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+              }}
+            >
+              {showAllocatePanel ? "Hide Allocate" : "Allocate To Request"}
+            </button>
+          )}
+        </div>
         {/* Search Section */}
-      <div
-        style={{
-          background: "var(--surface)",
-          border: "1px solid var(--surface-light)",
-          borderRadius: "12px",
-          padding: "16px",
-        }}
-      >
+        {showBookPartPanel && (
+          <div
+            style={{
+              background: "var(--surface)",
+              border: "1px solid var(--surface-light)",
+              borderRadius: "12px",
+              padding: "16px",
+            }}
+          >
         <div style={{ marginBottom: "12px" }}>
           <div
             style={{
@@ -879,10 +930,18 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             </button>
           </div>
         )}
+          </div>
+        )}
       </div>
 
       {/* 50/50 Layout: Parts List (Left) and Requests (Right) */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: invoiceReady && !showAllocatePanel ? "1fr" : "1fr 1fr",
+          gap: "16px",
+        }}
+      >
         {/* Left Side - Parts Added to Job */}
         <div
           style={{
@@ -922,6 +981,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
               <button
                 type="button"
                 disabled={!canEdit || leftPanelParts.length === 0}
+                onClick={toggleAllocatePanel}
                 title={
                   !canEdit
                     ? "You do not have permission to allocate parts."
@@ -933,8 +993,16 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   padding: "10px 14px",
                   borderRadius: "8px",
                   border: "1px solid var(--accent-purple)",
-                  background: !canEdit || leftPanelParts.length === 0 ? "var(--surface-light)" : "var(--accent-purple)",
-                  color: !canEdit || leftPanelParts.length === 0 ? "var(--text-secondary)" : "white",
+                  background: !canEdit || leftPanelParts.length === 0
+                    ? "var(--surface-light)"
+                    : showAllocatePanel
+                    ? "var(--accent-purple)"
+                    : "var(--surface)",
+                  color: !canEdit || leftPanelParts.length === 0
+                    ? "var(--text-secondary)"
+                    : showAllocatePanel
+                    ? "white"
+                    : "var(--accent-purple)",
                   fontSize: "12px",
                   fontWeight: 600,
                   cursor: !canEdit || leftPanelParts.length === 0 ? "not-allowed" : "pointer",
@@ -942,7 +1010,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   letterSpacing: "0.05em",
                 }}
               >
-                Allocate to Request
+                {showAllocatePanel ? "Hide Allocate" : "Allocate to Request"}
               </button>
             )}
           </div>
@@ -1033,16 +1101,17 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         </div>
 
         {/* Right Side - On Order (VHC) / Allocate Parts */}
-        <div
-          className="on-order-section"
-          style={{
-            background: "var(--surface)",
-            border: "1px solid var(--surface-light)",
-            borderRadius: "12px",
-            padding: "16px",
-            minHeight: "400px",
-          }}
-        >
+        {(invoiceReady ? showAllocatePanel : true) && (
+          <div
+            className="on-order-section"
+            style={{
+              background: "var(--surface)",
+              border: "1px solid var(--surface-light)",
+              borderRadius: "12px",
+              padding: "16px",
+              minHeight: "400px",
+            }}
+          >
           {/* Backdrop for pickers */}
           {showPickerBackdrop && (
             <div
@@ -1287,8 +1356,8 @@ const PartsTabNew = forwardRef(function PartsTabNew(
               </div>
             </div>
           )}
-        </div>
-      </div>
+          </div>
+        )}
       </div>
     </>
   );

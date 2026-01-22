@@ -33,6 +33,29 @@ const STATUS_BADGES = {
   grey: "var(--info)",
 };
 
+const PART_META_PREFIX = "VHC_META:";
+
+const extractPartMeta = (requestNotes) => {
+  if (!requestNotes || typeof requestNotes !== "string") return {};
+  const markerIndex = requestNotes.indexOf(PART_META_PREFIX);
+  if (markerIndex === -1) return {};
+  const raw = requestNotes.slice(markerIndex + PART_META_PREFIX.length).trim();
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (_error) {
+    return {};
+  }
+};
+
+const buildRequestNotesWithMeta = (baseNotes, meta) => {
+  const cleanBase = typeof baseNotes === "string" ? baseNotes.split(PART_META_PREFIX)[0].trim() : "";
+  const metaPayload = JSON.stringify(meta || {});
+  return cleanBase
+    ? `${cleanBase} | ${PART_META_PREFIX}${metaPayload}`
+    : `${PART_META_PREFIX}${metaPayload}`;
+};
+
 const TAB_OPTIONS = [
   { id: "summary", label: "Summary" },
   { id: "health-check", label: "Health Check" },
@@ -936,9 +959,9 @@ export default function VhcDetailsPanel({
 
   const warrantyRows = useMemo(() => {
     const rows = new Set();
-    Object.entries(partDetails).forEach(([key, detail]) => {
+    Object.values(partDetails).forEach((detail) => {
       if (!detail || detail.warranty !== true) return;
-      const [vhcKey] = key.split("-");
+      const vhcKey = detail.vhcId ? String(detail.vhcId) : "";
       if (vhcKey) {
         rows.add(vhcKey);
       }
@@ -1176,24 +1199,29 @@ export default function VhcDetailsPanel({
           const displayId = canonicalToDisplayMap.get(vhcId) || vhcId;
           const partKey = `${displayId}-${part.id}`;
 
-          // Only initialize if not already present
-          if (!newPartDetails[partKey]) {
+          const existing = newPartDetails[partKey];
+          const needsInit = !existing || existing.vhcId !== displayId;
+
+          // Only initialize if not already present (or missing vhcId)
+          if (needsInit) {
             const unitPrice = Number(part.unit_price || part.part?.unit_price || 0);
             const unitCost = Number(part.unit_cost || part.part?.unit_cost || 0);
             const vatAmount = unitPrice * 0.2;
             const priceWithVat = unitPrice + vatAmount;
+            const meta = extractPartMeta(part.request_notes || "");
 
             newPartDetails[partKey] = {
-              partNumber: part.part?.part_number || "",
-              partName: part.part?.name || "",
-              costToCustomer: unitPrice,
-              costToCompany: unitCost,
-              vat: vatAmount,
-              totalWithVat: priceWithVat,
-              inStock: (part.part?.qty_in_stock || 0) > 0,
-              backOrder: false,
-              warranty: false,
-              surcharge: false,
+              vhcId: displayId,
+              partNumber: existing?.partNumber ?? part.part?.part_number ?? "",
+              partName: existing?.partName ?? part.part?.name ?? "",
+              costToCustomer: existing?.costToCustomer ?? unitPrice,
+              costToCompany: existing?.costToCompany ?? unitCost,
+              vat: existing?.vat ?? vatAmount,
+              totalWithVat: existing?.totalWithVat ?? priceWithVat,
+              inStock: existing?.inStock ?? (part.part?.qty_in_stock || 0) > 0,
+              backOrder: existing?.backOrder ?? Boolean(meta.backOrder),
+              warranty: existing?.warranty ?? Boolean(meta.warranty),
+              surcharge: existing?.surcharge ?? Boolean(meta.surcharge),
             };
             hasChanges = true;
           }
@@ -3702,16 +3730,63 @@ export default function VhcDetailsPanel({
     };
   }, [addPartsSearch, isAddPartsModalOpen]);
 
+  const persistPartMeta = useCallback(
+    async (partId, meta) => {
+      if (!partId) return;
+      const partRecord = job?.parts_job_items?.find((part) => part.id === partId);
+      const baseNotes = partRecord?.request_notes || partRecord?.requestNotes || "";
+      const requestNotes = buildRequestNotesWithMeta(baseNotes, meta);
+
+      try {
+        const response = await fetch(`/api/parts/job-items/${partId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ request_notes: requestNotes }),
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload?.ok) {
+          throw new Error(payload?.error || payload?.message || "Failed to save part details");
+        }
+
+        setJob((prev) => {
+          if (!prev) return prev;
+          const updatedParts = Array.isArray(prev.parts_job_items)
+            ? prev.parts_job_items.map((part) =>
+                part.id === partId ? { ...part, request_notes: requestNotes } : part
+              )
+            : prev.parts_job_items;
+          return { ...prev, parts_job_items: updatedParts };
+        });
+      } catch (error) {
+        console.error("Failed to persist part metadata:", error);
+      }
+    },
+    [job?.parts_job_items]
+  );
+
   // Handler for updating part detail fields
-  const handlePartDetailChange = useCallback((partKey, field, value) => {
-    setPartDetails((prev) => ({
-      ...prev,
-      [partKey]: {
-        ...(prev[partKey] || {}),
-        [field]: value,
-      },
-    }));
-  }, []);
+  const handlePartDetailChange = useCallback(
+    (partKey, field, value, partId) => {
+      setPartDetails((prev) => {
+        const nextEntry = {
+          ...(prev[partKey] || {}),
+          [field]: value,
+        };
+        const next = { ...prev, [partKey]: nextEntry };
+
+        if (partId) {
+          persistPartMeta(partId, {
+            warranty: Boolean(nextEntry.warranty),
+            backOrder: Boolean(nextEntry.backOrder),
+            surcharge: Boolean(nextEntry.surcharge),
+          });
+        }
+
+        return next;
+      });
+    },
+    [persistPartMeta]
+  );
 
   // Handler for when a part is added
   const handlePartAdded = useCallback(async (payload) => {
@@ -3851,6 +3926,7 @@ export default function VhcDetailsPanel({
           const priceWithVat = unitPrice + vatAmount;
 
           const newPartDetail = {
+            vhcId: displayVhcId,
             partNumber: part.part_number || "",
             partName: part.name || "",
             costToCustomer: unitPrice,
@@ -3944,6 +4020,14 @@ export default function VhcDetailsPanel({
       let lastJobPart = null;
       for (const entry of selectedParts) {
         const part = entry.part || {};
+        const requestNotes = buildRequestNotesWithMeta(
+          `Added from VHC Parts Identified - Job #${resolvedJobNumber}`,
+          {
+            warranty: entry.warranty,
+            backOrder: entry.backOrder,
+            surcharge: entry.surcharge,
+          }
+        );
         const response = await fetch("/api/parts/jobs", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -3954,7 +4038,7 @@ export default function VhcDetailsPanel({
             allocateFromStock: false,
             storageLocation: part.storage_location || null,
             status: "pending",
-            requestNotes: `Added from VHC Parts Identified - Job #${resolvedJobNumber}`,
+            requestNotes,
             origin: "vhc",
             vhcItemId: vhcItemId,
             userId: authUserId,
@@ -3977,6 +4061,7 @@ export default function VhcDetailsPanel({
             ...prev,
             [partKey]: {
               ...(prev[partKey] || {}),
+              vhcId: addPartsTarget.vhcId,
               warranty: entry.warranty,
               backOrder: entry.backOrder,
               surcharge: entry.surcharge,
@@ -4455,21 +4540,21 @@ export default function VhcDetailsPanel({
                                             <input
                                               type="checkbox"
                                               checked={warranty}
-                                              onChange={(event) => handlePartDetailChange(partKey, "warranty", event.target.checked)}
+                                              onChange={(event) => handlePartDetailChange(partKey, "warranty", event.target.checked, part.id)}
                                             />
                                           </td>
                                           <td style={{ padding: "10px 12px", textAlign: "center" }}>
                                             <input
                                               type="checkbox"
                                               checked={backOrder}
-                                              onChange={(event) => handlePartDetailChange(partKey, "backOrder", event.target.checked)}
+                                              onChange={(event) => handlePartDetailChange(partKey, "backOrder", event.target.checked, part.id)}
                                             />
                                           </td>
                                           <td style={{ padding: "10px 12px", textAlign: "center" }}>
                                             <input
                                               type="checkbox"
                                               checked={surcharge}
-                                              onChange={(event) => handlePartDetailChange(partKey, "surcharge", event.target.checked)}
+                                              onChange={(event) => handlePartDetailChange(partKey, "surcharge", event.target.checked, part.id)}
                                             />
                                           </td>
                                         </tr>
@@ -6355,21 +6440,21 @@ export default function VhcDetailsPanel({
                               <input
                                 type="checkbox"
                                 checked={details.warranty || false}
-                                onChange={(event) => handlePartDetailChange(partKey, "warranty", event.target.checked)}
+                                onChange={(event) => handlePartDetailChange(partKey, "warranty", event.target.checked, part.id)}
                               />
                             </td>
                             <td style={{ padding: "8px 12px", textAlign: "center" }}>
                               <input
                                 type="checkbox"
                                 checked={details.backOrder || false}
-                                onChange={(event) => handlePartDetailChange(partKey, "backOrder", event.target.checked)}
+                                onChange={(event) => handlePartDetailChange(partKey, "backOrder", event.target.checked, part.id)}
                               />
                             </td>
                             <td style={{ padding: "8px 12px", textAlign: "center" }}>
                               <input
                                 type="checkbox"
                                 checked={details.surcharge || false}
-                                onChange={(event) => handlePartDetailChange(partKey, "surcharge", event.target.checked)}
+                                onChange={(event) => handlePartDetailChange(partKey, "surcharge", event.target.checked, part.id)}
                               />
                             </td>
                             <td style={{ padding: "8px 12px", textAlign: "center" }}>

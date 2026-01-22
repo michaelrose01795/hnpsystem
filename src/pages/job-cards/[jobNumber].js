@@ -1902,6 +1902,7 @@ export default function JobCardDetailPage() {
               vhcSummary={vhcSummaryCounts}
               vhcChecks={jobVhcChecks}
               notes={jobNotes}
+              partsJobItems={jobData?.parts_job_items || []}
             />
           )}
 
@@ -2211,14 +2212,73 @@ function CustomerRequestsTab({
   onToggleVhcRequired = () => {},
   vhcSummary = { total: 0, red: 0, amber: 0 },
   vhcChecks = [],
-  notes = []
+  notes = [],
+  partsJobItems = []
 }) {
   const [requests, setRequests] = useState(() => normalizeRequests(jobData.requests));
   const [editing, setEditing] = useState(false);
+  const [prePickOverrides, setPrePickOverrides] = useState(new Map());
   const authorisedItems = (vhcChecks || []).filter((check) => {
     return String(check?.approval_status || "").toLowerCase() === "authorized";
   });
   const linkedNotes = Array.isArray(notes) ? notes : [];
+  const formatPrePickLabel = (value = "") => {
+    const trimmed = String(value || "").trim();
+    if (!trimmed) return "";
+    return trimmed
+      .split("_")
+      .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+      .join(" ");
+  };
+  const prePickByVhcId = useMemo(() => {
+    const map = new Map();
+    (Array.isArray(partsJobItems) ? partsJobItems : []).forEach((part) => {
+      const vhcId = part?.vhc_item_id ?? part?.vhcItemId ?? part?.vhcId;
+      const prePick = part?.pre_pick_location || part?.prePickLocation;
+      if (!vhcId || !prePick) return;
+      const key = String(vhcId);
+      if (!map.has(key)) {
+        map.set(key, new Set());
+      }
+      map.get(key).add(prePick);
+    });
+    prePickOverrides.forEach((locations, key) => {
+      if (!map.has(key)) {
+        map.set(key, new Set());
+      }
+      locations.forEach((location) => map.get(key).add(location));
+    });
+    return map;
+  }, [partsJobItems, prePickOverrides]);
+
+  useEffect(() => {
+    if (!jobData?.id) return;
+    const loadPrePicks = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("parts_job_items")
+          .select("vhc_item_id, pre_pick_location")
+          .eq("job_id", jobData.id)
+          .not("pre_pick_location", "is", null);
+        if (error) {
+          throw error;
+        }
+        const map = new Map();
+        (data || []).forEach((row) => {
+          if (!row?.vhc_item_id || !row?.pre_pick_location) return;
+          const key = String(row.vhc_item_id);
+          if (!map.has(key)) {
+            map.set(key, new Set());
+          }
+          map.get(key).add(row.pre_pick_location);
+        });
+        setPrePickOverrides(map);
+      } catch (err) {
+        console.error("Failed to load pre-pick locations:", err);
+      }
+    };
+    loadPrePicks();
+  }, [jobData?.id]);
   const authorisedColumns = useMemo(() => {
     const columns = [[], [], []];
     authorisedItems.forEach((item, index) => {
@@ -2593,17 +2653,29 @@ function CustomerRequestsTab({
                       {linkedNotes
                         .filter((note) =>
                           Array.isArray(note.linkedVhcIds)
-                            ? note.linkedVhcIds.includes(check.vhc_id)
-                            : note.linkedVhcId === check.vhc_id
+                            ? note.linkedVhcIds.includes(check.vhc_id ?? check.id)
+                            : note.linkedVhcId === (check.vhc_id ?? check.id)
                         )
                         .map((note) => (
                           <div key={note.noteId} style={{ fontSize: "11px", color: "var(--info)" }}>
                             Note: {note.noteText}
                           </div>
                         ))}
-                        </li>
-                      ))}
-                    </ul>
+                      {(() => {
+                        const resolvedVhcId = check.vhc_id ?? check.id;
+                        const prePickSet = resolvedVhcId
+                          ? prePickByVhcId.get(String(resolvedVhcId))
+                          : null;
+                        if (!prePickSet || prePickSet.size === 0) return null;
+                        return Array.from(prePickSet).map((location) => (
+                          <div key={`${resolvedVhcId}-${location}`} style={{ fontSize: "11px", color: "var(--info)" }}>
+                            Pre pick: {formatPrePickLabel(location)}
+                          </div>
+                        ));
+                      })()}
+                    </li>
+                  ))}
+                </ul>
                   ))}
                 </div>
               </div>

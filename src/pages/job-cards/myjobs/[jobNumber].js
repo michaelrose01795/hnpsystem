@@ -352,6 +352,31 @@ export default function TechJobDetailPage() {
   const [partsRequestsLoading, setPartsRequestsLoading] = useState(false);
   const [authorizedParts, setAuthorizedParts] = useState([]);
   const [authorizedPartsLoading, setAuthorizedPartsLoading] = useState(false);
+  const formatPrePickLabel = useCallback((value = "") => {
+    const trimmed = String(value || "").trim();
+    if (!trimmed) return "";
+    return trimmed
+      .split("_")
+      .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+      .join(" ");
+  }, []);
+  const prePickByVhcId = useMemo(() => {
+    const map = new Map();
+    const items = Array.isArray(jobData?.jobCard?.parts_job_items)
+      ? jobData.jobCard.parts_job_items
+      : [];
+    items.forEach((part) => {
+      const vhcId = part?.vhc_item_id ?? part?.vhcItemId ?? part?.vhcId;
+      const prePick = part?.pre_pick_location || part?.prePickLocation;
+      if (!vhcId || !prePick) return;
+      const key = String(vhcId);
+      if (!map.has(key)) {
+        map.set(key, new Set());
+      }
+      map.get(key).add(prePick);
+    });
+    return map;
+  }, [jobData?.jobCard?.parts_job_items]);
   const [partRequestDescription, setPartRequestDescription] = useState("");
   const [partRequestQuantity, setPartRequestQuantity] = useState(1);
   const [partsSubmitting, setPartsSubmitting] = useState(false);
@@ -2531,6 +2556,17 @@ export default function TechJobDetailPage() {
                                       Note: {note.noteText}
                                     </div>
                                   ))}
+                                {(() => {
+                                  const prePickSet = resolvedVhcId
+                                    ? prePickByVhcId.get(String(resolvedVhcId))
+                                    : null;
+                                  if (!prePickSet || prePickSet.size === 0) return null;
+                                  return Array.from(prePickSet).map((location) => (
+                                    <div key={`${resolvedVhcId}-${location}`} style={{ fontSize: "11px", color: "var(--info)" }}>
+                                      Pre pick: {formatPrePickLabel(location)}
+                                    </div>
+                                  ));
+                                })()}
                               </div>
                             );
                           })}
