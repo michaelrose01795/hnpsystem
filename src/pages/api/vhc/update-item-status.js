@@ -98,6 +98,95 @@ export default async function handler(req, res) {
       });
     }
 
+    const updatedRow = data?.[0] || null;
+
+    if (approvalStatus !== undefined) {
+      const normalizedStatus = String(approvalStatus || "").toLowerCase();
+      const shouldCreate = normalizedStatus === "authorized" || normalizedStatus === "completed";
+      const shouldRemove = normalizedStatus === "pending" || normalizedStatus === "declined";
+
+      let vhcRow = updatedRow;
+      if (!vhcRow?.job_id) {
+        const { data: vhcFetch } = await supabase
+          .from("vhc_checks")
+          .select("job_id, issue_title, issue_description, section")
+          .eq("vhc_id", vhcItemId)
+          .single();
+        vhcRow = vhcFetch || vhcRow;
+      }
+
+      const jobId = vhcRow?.job_id ?? null;
+      if (jobId && shouldCreate) {
+        const description =
+          (vhcRow?.issue_title || vhcRow?.issue_description || vhcRow?.section || "")
+            .toString()
+            .trim() || `Authorised item ${vhcItemId}`;
+
+        const { data: prePickRows } = await supabase
+          .from("parts_job_items")
+          .select("id, pre_pick_location, updated_at")
+          .eq("job_id", jobId)
+          .eq("vhc_item_id", vhcItemId)
+          .not("pre_pick_location", "is", null)
+          .order("updated_at", { ascending: false })
+          .limit(1);
+
+        const prePickLocation = prePickRows?.[0]?.pre_pick_location || null;
+        const partsJobItemId = prePickRows?.[0]?.id || null;
+
+        const { data: noteRows } = await supabase
+          .from("job_notes")
+          .select("note_text, updated_at")
+          .eq("job_id", jobId)
+          .or(`linked_vhc_id.eq.${vhcItemId},linked_vhc_ids.cs.{${vhcItemId}}`)
+          .order("updated_at", { ascending: false })
+          .limit(1);
+
+        const noteText = noteRows?.[0]?.note_text || null;
+
+        const { data: existingRequest } = await supabase
+          .from("job_requests")
+          .select("request_id")
+          .eq("job_id", jobId)
+          .eq("request_source", "vhc_authorised")
+          .eq("vhc_item_id", vhcItemId)
+          .maybeSingle();
+
+        const payload = {
+          job_id: jobId,
+          description,
+          hours: null,
+          job_type: "Customer",
+          sort_order: 0,
+          status: "inprogress",
+          request_source: "vhc_authorised",
+          vhc_item_id: vhcItemId,
+          parts_job_item_id: partsJobItemId,
+          pre_pick_location: prePickLocation,
+          note_text: noteText,
+          updated_at: new Date().toISOString()
+        };
+
+        if (existingRequest?.request_id) {
+          await supabase
+            .from("job_requests")
+            .update(payload)
+            .eq("request_id", existingRequest.request_id);
+        } else {
+          await supabase.from("job_requests").insert([
+            { ...payload, created_at: payload.updated_at }
+          ]);
+        }
+      } else if (jobId && shouldRemove) {
+        await supabase
+          .from("job_requests")
+          .delete()
+          .eq("job_id", jobId)
+          .eq("request_source", "vhc_authorised")
+          .eq("vhc_item_id", vhcItemId);
+      }
+    }
+
     return res.status(200).json({
       success: true,
       data: data?.[0] || null,

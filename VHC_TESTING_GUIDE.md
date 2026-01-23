@@ -75,6 +75,19 @@ npm run dev
 
 ---
 
+## ✅ Customer Requests Pre-picked Location Check
+
+1. Open a job card with VHC required.
+2. Authorise a VHC item.
+3. In VHC → Parts Authorized, select a location from the dropdown for that item.
+4. Refresh the browser and confirm the dropdown still shows the selected location (persistence check).
+5. Go to Customer Requests tab → Vehicle Health Check → Authorised items.
+6. Confirm the authorised item shows `Pre-picked: <location>` in small text (same style as Note).
+7. Clear the dropdown location (set it blank), refresh, confirm the `Pre-picked` line disappears.
+8. If a note exists for that item, confirm `Note: ...` shows only when there is no pre-pick.
+
+---
+
 ## 📋 What To Look For In Console
 
 ### On Page Load:

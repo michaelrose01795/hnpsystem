@@ -32,11 +32,14 @@ const ITEM_SUMMARY_SELECT = `
   id,
   goods_in_id,
   line_number,
+  part_catalog_id,
   part_number,
   description,
   quantity,
   retail_price,
   cost_price,
+  bin_location,
+  franchise,
   added_to_job,
   job_number
 `;
@@ -83,6 +86,8 @@ async function handler(req, res, session) {
           continue; // Skip invalid items
         }
 
+        const applyStock = !item.added_to_job;
+
         // Check if part exists in catalog
         const { data: existingPart } = await supabase
           .from("parts_catalog")
@@ -92,18 +97,20 @@ async function handler(req, res, session) {
 
         if (existingPart) {
           // UPDATE existing part: increase stock quantity
-          const { error: updateError } = await supabase
-            .from("parts_catalog")
-            .update({
-              qty_in_stock: existingPart.qty_in_stock + item.quantity,
-              unit_cost: item.cost_price || existingPart.unit_cost,
-              unit_price: item.retail_price || existingPart.unit_price,
-              storage_location: item.bin_location || existingPart.storage_location,
-              updated_at: timestamp,
-            })
-            .eq("id", existingPart.id);
+          if (applyStock) {
+            const { error: updateError } = await supabase
+              .from("parts_catalog")
+              .update({
+                qty_in_stock: existingPart.qty_in_stock + item.quantity,
+                unit_cost: item.cost_price || existingPart.unit_cost,
+                unit_price: item.retail_price || existingPart.unit_price,
+                storage_location: item.bin_location || existingPart.storage_location,
+                updated_at: timestamp,
+              })
+              .eq("id", existingPart.id);
 
-          if (updateError) throw updateError;
+            if (updateError) throw updateError;
+          }
 
           // Link goods-in item to catalog part
           await supabase
@@ -113,9 +120,9 @@ async function handler(req, res, session) {
 
           catalogUpdates.push({
             partNumber: item.part_number,
-            action: "updated",
+            action: applyStock ? "updated" : "linked",
             catalogId: existingPart.id,
-            quantityAdded: item.quantity,
+            quantityAdded: applyStock ? item.quantity : 0,
           });
         } else {
           // INSERT new part into catalog
@@ -124,7 +131,7 @@ async function handler(req, res, session) {
             .insert({
               part_number: item.part_number,
               name: item.description || item.part_number,
-              qty_in_stock: item.quantity,
+              qty_in_stock: applyStock ? item.quantity : 0,
               unit_cost: item.cost_price || 0,
               unit_price: item.retail_price || 0,
               storage_location: item.bin_location || null,
@@ -149,7 +156,7 @@ async function handler(req, res, session) {
             partNumber: item.part_number,
             action: "created",
             catalogId: newPart.id,
-            quantityAdded: item.quantity,
+            quantityAdded: applyStock ? item.quantity : 0,
           });
         }
       } catch (err) {

@@ -497,6 +497,7 @@ export const getAllJobs = async () => {
         goods_in_id,
         job_id,
         job_number,
+        part_catalog_id,
         part_number,
         description,
         quantity,
@@ -844,6 +845,22 @@ export const getJobByNumber = async (jobNumber) => {
       ),
       technician:assigned_to(user_id, first_name, last_name, email, role, phone),
       appointments(appointment_id, scheduled_time, status, notes, created_at, updated_at),
+      job_requests(
+        request_id,
+        job_id,
+        description,
+        hours,
+        job_type,
+        sort_order,
+        status,
+        request_source,
+        vhc_item_id,
+        parts_job_item_id,
+        pre_pick_location,
+        note_text,
+        created_at,
+        updated_at
+      ),
       vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at, approval_status, display_status, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by),
       parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, pre_pick_location, created_at, updated_at),
       parts_job_items(
@@ -938,6 +955,22 @@ export const getJobByNumber = async (jobNumber) => {
         description,
         vehicle_reg,
         vehicle_make_model,
+        job_requests(
+          request_id,
+          job_id,
+          description,
+          hours,
+          job_type,
+          sort_order,
+          status,
+          request_source,
+          vhc_item_id,
+          parts_job_item_id,
+          pre_pick_location,
+          note_text,
+          created_at,
+          updated_at
+        ),
         vhc_checks(vhc_id, section, issue_title, issue_description, data, measurement, created_at, updated_at, approval_status, display_status, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by),
         parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, pre_pick_location, created_at, updated_at),
         parts_job_items(
@@ -1843,6 +1876,26 @@ const formatJobData = (data) => {
       : null,
   }));
 
+  const jobRequests = (data.job_requests || []).map((request) => ({
+    requestId: request.request_id ?? null,
+    jobId: request.job_id ?? null,
+    description: request.description || "",
+    hours: request.hours ?? null,
+    jobType: request.job_type || "Customer",
+    sortOrder:
+      request.sort_order !== null && request.sort_order !== undefined
+        ? Number(request.sort_order)
+        : null,
+    status: request.status || null,
+    requestSource: request.request_source || "customer_request",
+    vhcItemId: request.vhc_item_id ?? null,
+    partsJobItemId: request.parts_job_item_id ?? null,
+    prePickLocation: request.pre_pick_location || null,
+    noteText: request.note_text || "",
+    createdAt: request.created_at || null,
+    updatedAt: request.updated_at || null,
+  }));
+
   const partsAllocations = (data.parts_job_items || []).map((item) => {
     // Handle both 'part' (old) and 'parts_catalog' (new) field names for backward compatibility
     const partData = item.parts_catalog || item.part;
@@ -1890,6 +1943,7 @@ const formatJobData = (data) => {
     goodsInNumber: item.goods_in?.goods_in_number || null,
     supplierName: item.goods_in?.supplier_name || null,
     invoiceNumber: item.goods_in?.invoice_number || null,
+    partCatalogId: item.part_catalog_id || null,
     partNumber: item.part_number || "",
     description: item.description || "",
     quantity: Number(item.quantity || 0),
@@ -2002,6 +2056,7 @@ const formatJobData = (data) => {
     
     // ✅ Related data
     vhcChecks: hydrateVhcChecks(data.vhc_checks),
+    jobRequests,
     partsRequests,
     partsAllocations,
     parts_job_items: data.parts_job_items || [], // ✅ Raw parts_job_items for Parts tab
@@ -2337,6 +2392,117 @@ export const updateJob = async (jobId, updates) => {
     return { success: true, data: formatJobData(data) };
   } catch (error) {
     console.error("❌ Exception updating job:", error);
+    return { success: false, error: { message: error.message } };
+  }
+};
+
+/* ============================================
+   UPSERT JOB REQUESTS (customer_request only)
+   Keeps job_requests in sync without touching VHC-authorised rows
+============================================ */
+export const upsertJobRequestsForJob = async (jobId, requestEntries = []) => {
+  try {
+    if (!jobId) {
+      return { success: false, error: { message: "Job ID is required" } };
+    }
+
+    const timestamp = new Date().toISOString();
+    const normalized = (Array.isArray(requestEntries) ? requestEntries : [])
+      .map((entry, index) => {
+        const description = (entry.text ?? entry.description ?? "").toString().trim();
+        if (!description) return null;
+        const rawHours = entry.time ?? entry.hours ?? null;
+        const parsedHours =
+          rawHours === "" || rawHours === null || rawHours === undefined
+            ? null
+            : Number(rawHours);
+        const hours = Number.isFinite(parsedHours) ? parsedHours : null;
+        const jobType = (entry.paymentType ?? entry.jobType ?? "Customer").toString().trim() || "Customer";
+        const requestId = entry.requestId ?? entry.request_id ?? null;
+        const noteText = entry.noteText ?? entry.note_text ?? null;
+
+        return {
+          requestId,
+          description,
+          hours,
+          jobType,
+          sortOrder: index + 1,
+          noteText: noteText ? noteText.toString().trim() : null,
+        };
+      })
+      .filter(Boolean);
+
+    const { data: existingRows, error: existingError } = await supabase
+      .from("job_requests")
+      .select("request_id, request_source")
+      .eq("job_id", jobId)
+      .or("request_source.is.null,request_source.eq.customer_request");
+
+    if (existingError) {
+      throw existingError;
+    }
+
+    const existingIds = new Set(
+      (existingRows || []).map((row) => String(row.request_id))
+    );
+    const keepIds = new Set(
+      normalized
+        .map((row) => row.requestId)
+        .filter(Boolean)
+        .map((value) => String(value))
+    );
+
+    const idsToDelete = (existingRows || [])
+      .filter((row) => !keepIds.has(String(row.request_id)))
+      .map((row) => row.request_id);
+
+    if (idsToDelete.length > 0) {
+      const { error: deleteError } = await supabase
+        .from("job_requests")
+        .delete()
+        .in("request_id", idsToDelete);
+      if (deleteError) throw deleteError;
+    }
+
+    for (const row of normalized) {
+      if (row.requestId && existingIds.has(String(row.requestId))) {
+        const { error: updateError } = await supabase
+          .from("job_requests")
+          .update({
+            description: row.description,
+            hours: row.hours,
+            job_type: row.jobType,
+            sort_order: row.sortOrder,
+            note_text: row.noteText,
+            request_source: "customer_request",
+            updated_at: timestamp,
+          })
+          .eq("request_id", row.requestId);
+        if (updateError) throw updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from("job_requests")
+          .insert([
+            {
+              job_id: jobId,
+              description: row.description,
+              hours: row.hours,
+              job_type: row.jobType,
+              sort_order: row.sortOrder,
+              status: "inprogress",
+              request_source: "customer_request",
+              note_text: row.noteText,
+              created_at: timestamp,
+              updated_at: timestamp,
+            },
+          ]);
+        if (insertError) throw insertError;
+      }
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("❌ upsertJobRequestsForJob error:", error);
     return { success: false, error: { message: error.message } };
   }
 };

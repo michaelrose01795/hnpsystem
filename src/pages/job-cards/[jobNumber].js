@@ -9,7 +9,7 @@ import InvoiceBuilderPopup from "@/components/popups/InvoiceBuilderPopup";
 import { useUser } from "@/context/UserContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
 import { supabase } from "@/lib/supabaseClient";
-import { getJobByNumber, updateJob, updateJobStatus, addJobFile, deleteJobFile } from "@/lib/database/jobs";
+import { getJobByNumber, updateJob, updateJobStatus, addJobFile, deleteJobFile, upsertJobRequestsForJob } from "@/lib/database/jobs";
 import { fetchTrackingSnapshot } from "@/lib/database/tracking";
 import { logJobSubStatus } from "@/lib/services/jobStatusService";
 import { autoSetCheckedInStatus } from "@/lib/services/jobStatusService";
@@ -1310,16 +1310,39 @@ export default function JobCardDetailPage() {
     if (!canEdit || !jobData?.id) return;
 
     try {
+      const normalized = (Array.isArray(updatedRequests) ? updatedRequests : []).map((entry, index) => ({
+        requestId: entry.requestId ?? entry.request_id ?? null,
+        text: entry.text ?? entry.description ?? "",
+        time: entry.time ?? entry.hours ?? "",
+        paymentType: entry.paymentType ?? entry.jobType ?? "Customer",
+        noteText: entry.noteText ?? entry.note_text ?? null,
+        sortOrder: index + 1,
+      }));
+
+      const syncResult = await upsertJobRequestsForJob(jobData.id, normalized);
+      if (!syncResult?.success) {
+        throw syncResult?.error || new Error("Failed to update job requests");
+      }
+
+      const requestPayload = normalized.map((entry) => ({
+        text: entry.text,
+        time: entry.time,
+        paymentType: entry.paymentType,
+      }));
+
       const result = await updateJob(jobData.id, {
-        requests: updatedRequests
+        requests: requestPayload,
       });
 
-      if (result.success) {
-        setJobData({ ...jobData, requests: updatedRequests });
-        alert("✅ Job requests updated successfully");
-      } else {
-        alert("Failed to update job requests");
+      if (!result?.success) {
+        throw result?.error || new Error("Failed to update job requests");
       }
+
+      setJobData((prev) =>
+        prev ? { ...prev, requests: requestPayload } : prev
+      );
+      await fetchJobData({ silent: true });
+      alert("✅ Job requests updated successfully");
     } catch (error) {
       console.error("Error updating requests:", error);
       alert("Failed to update job requests");
@@ -2217,12 +2240,7 @@ function CustomerRequestsTab({
 }) {
   const [requests, setRequests] = useState(() => normalizeRequests(jobData.requests));
   const [editing, setEditing] = useState(false);
-  const [prePickOverrides, setPrePickOverrides] = useState(new Map());
-  const [vhcItemAliases, setVhcItemAliases] = useState([]);
-  const authorisedItems = (vhcChecks || []).filter((check) => {
-    return String(check?.approval_status || "").toLowerCase() === "authorized";
-  });
-  const linkedNotes = Array.isArray(notes) ? notes : [];
+  const smallPrintStyle = { fontSize: "11px", color: "var(--info)" };
   const formatPrePickLabel = (value = "") => {
     const trimmed = String(value || "").trim();
     if (!trimmed) return "";
@@ -2231,103 +2249,81 @@ function CustomerRequestsTab({
       .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
       .join(" ");
   };
-  const prePickByVhcId = useMemo(() => {
-    const map = new Map();
-    (Array.isArray(partsJobItems) ? partsJobItems : []).forEach((part) => {
-      const vhcId = part?.vhc_item_id ?? part?.vhcItemId ?? part?.vhcId;
-      const prePick = part?.pre_pick_location || part?.prePickLocation;
-      if (!vhcId || !prePick) return;
-      const key = String(vhcId);
-      if (!map.has(key)) {
-        map.set(key, new Set());
-      }
-      map.get(key).add(prePick);
-    });
-    prePickOverrides.forEach((locations, key) => {
-      if (!map.has(key)) {
-        map.set(key, new Set());
-      }
-      locations.forEach((location) => map.get(key).add(location));
-    });
-    (Array.isArray(vhcItemAliases) ? vhcItemAliases : []).forEach((alias) => {
-      const displayId = alias?.display_id;
-      const canonicalId = alias?.vhc_item_id;
-      if (!displayId || !canonicalId) return;
-      const canonicalKey = String(canonicalId);
-      const displayKey = String(displayId);
-      const canonicalSet = map.get(canonicalKey);
-      if (!canonicalSet || canonicalSet.size === 0) return;
-      if (!map.has(displayKey)) {
-        map.set(displayKey, new Set());
-      }
-      const displaySet = map.get(displayKey);
-      canonicalSet.forEach((location) => displaySet.add(location));
-    });
-    return map;
-  }, [partsJobItems, prePickOverrides, vhcItemAliases]);
+  const unifiedRequests = useMemo(() => {
+    const source = Array.isArray(jobData?.jobRequests)
+      ? jobData.jobRequests
+      : Array.isArray(jobData?.job_requests)
+      ? jobData.job_requests
+      : [];
 
-  useEffect(() => {
-    if (!jobData?.id) return;
-    const loadPrePicks = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("parts_job_items")
-          .select("vhc_item_id, pre_pick_location")
-          .eq("job_id", jobData.id)
-          .not("pre_pick_location", "is", null);
-        if (error) {
-          throw error;
-        }
-        const map = new Map();
-        (data || []).forEach((row) => {
-          if (!row?.vhc_item_id || !row?.pre_pick_location) return;
-          const key = String(row.vhc_item_id);
-          if (!map.has(key)) {
-            map.set(key, new Set());
-          }
-          map.get(key).add(row.pre_pick_location);
-        });
-        setPrePickOverrides(map);
-      } catch (err) {
-        console.error("Failed to load pre-pick locations:", err);
-      }
-    };
-    loadPrePicks();
-  }, [jobData?.id]);
+    if (source.length === 0) {
+      return normalizeRequests(jobData.requests).map((req, index) => ({
+        requestId: null,
+        description: req?.text || req?.description || req || "",
+        hours: req?.time ?? req?.hours ?? "",
+        jobType: req?.paymentType || req?.jobType || "Customer",
+        sortOrder: index + 1,
+        status: null,
+        requestSource: "customer_request",
+        prePickLocation: null,
+        noteText: "",
+        vhcItemId: null,
+        partsJobItemId: null,
+      }));
+    }
 
-  useEffect(() => {
-    if (!jobData?.id) return;
-    const loadAliases = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("vhc_item_aliases")
-          .select("display_id, vhc_item_id")
-          .eq("job_id", jobData.id);
-        if (error) {
-          throw error;
-        }
-        setVhcItemAliases(data || []);
-      } catch (err) {
-        console.error("Failed to load VHC item aliases:", err);
-        setVhcItemAliases([]);
-      }
-    };
-    loadAliases();
-  }, [jobData?.id]);
+    return source.map((row, index) => ({
+      requestId: row.requestId ?? row.request_id ?? null,
+      description: row.description ?? row.text ?? "",
+      hours: row.hours ?? row.time ?? "",
+      jobType: row.jobType ?? row.job_type ?? row.paymentType ?? "Customer",
+      sortOrder:
+        row.sortOrder ?? row.sort_order ?? (index + 1),
+      status: row.status ?? null,
+      requestSource: row.requestSource ?? row.request_source ?? "customer_request",
+      prePickLocation: row.prePickLocation ?? row.pre_pick_location ?? null,
+      noteText: row.noteText ?? row.note_text ?? "",
+      vhcItemId: row.vhcItemId ?? row.vhc_item_id ?? null,
+      partsJobItemId: row.partsJobItemId ?? row.parts_job_item_id ?? null,
+    }));
+  }, [jobData?.jobRequests, jobData?.job_requests, jobData?.requests]);
+
+  const customerRequestRows = useMemo(() => {
+    return unifiedRequests
+      .filter((row) => (row.requestSource || "customer_request") === "customer_request")
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  }, [unifiedRequests]);
+
+  const authorisedRows = useMemo(() => {
+    return unifiedRequests.filter((row) => row.requestSource === "vhc_authorised");
+  }, [unifiedRequests]);
+
   const authorisedColumns = useMemo(() => {
     const columns = [[], [], []];
-    authorisedItems.forEach((item, index) => {
+    authorisedRows.forEach((item, index) => {
       const baseColumn = Math.floor(index / 3);
       const columnIndex = baseColumn < 3 ? baseColumn : index % 3;
       columns[columnIndex].push(item);
     });
     return columns.filter((column) => column.length > 0);
-  }, [authorisedItems]);
+  }, [authorisedRows]);
 
+  const buildEditableRequests = useCallback(
+    (rows) =>
+      (Array.isArray(rows) ? rows : []).map((row, index) => ({
+        requestId: row.requestId ?? null,
+        text: row.description || "",
+        time: row.hours ?? "",
+        paymentType: row.jobType || "Customer",
+        noteText: row.noteText || "",
+        sortOrder: row.sortOrder ?? index + 1,
+      })),
+    []
+  );
 
   useEffect(() => {
-    setRequests(normalizeRequests(jobData.requests));
-  }, [jobData.requests]);
+    setRequests(buildEditableRequests(customerRequestRows));
+  }, [buildEditableRequests, customerRequestRows]);
 
   const handleSave = () => {
     onUpdate(requests);
@@ -2335,7 +2331,7 @@ function CustomerRequestsTab({
   };
 
   const handleAddRequest = () => {
-    setRequests([...requests, { text: "", time: "", paymentType: "Customer" }]);
+    setRequests([...requests, { text: "", time: "", paymentType: "Customer", noteText: "" }]);
   };
 
   const handleRemoveRequest = (index) => {
@@ -2546,8 +2542,8 @@ function CustomerRequestsTab({
         </div>
       ) : (
         <div>
-          {requests && requests.length > 0 ? (
-            requests.map((req, index) => (
+      {customerRequestRows && customerRequestRows.length > 0 ? (
+            customerRequestRows.map((req, index) => (
               <div key={index} style={{
                 padding: "14px",
                 backgroundColor: "var(--surface)",
@@ -2560,22 +2556,32 @@ function CustomerRequestsTab({
               }}>
                 <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
                   <span style={{ fontSize: "14px", color: "var(--text-secondary)" }}>
-                    {req.text || req}
+                    {req.description || req.text || req}
                   </span>
-                  {linkedNotes
-                    .filter((note) =>
-                      Array.isArray(note.linkedRequestIndices)
-                        ? note.linkedRequestIndices.includes(index + 1)
-                        : note.linkedRequestIndex === index + 1
-                    )
-                    .map((note) => (
-                      <span key={note.noteId} style={{ fontSize: "11px", color: "var(--info)" }}>
-                        Note: {note.noteText}
-                      </span>
-                    ))}
+                  {(() => {
+                    const prePickLabel = req.prePickLocation
+                      ? formatPrePickLabel(req.prePickLocation)
+                      : "";
+                    const noteText = (req.noteText || "").trim();
+                    if (prePickLabel) {
+                      return (
+                        <span style={smallPrintStyle}>
+                          Pre-picked: {prePickLabel}
+                        </span>
+                      );
+                    }
+                    if (noteText) {
+                      return (
+                        <span style={smallPrintStyle}>
+                          Note: {noteText}
+                        </span>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
                 <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                  {req.time && (
+                  {req.hours && (
                     <span style={{
                       padding: "4px 10px",
                       backgroundColor: "var(--info-surface)",
@@ -2584,25 +2590,25 @@ function CustomerRequestsTab({
                       fontSize: "12px",
                       fontWeight: "600"
                     }}>
-                      {req.time}h
+                      {req.hours}h
                     </span>
                   )}
-                  {req.paymentType && (
+                  {req.jobType && (
                     <span style={{
                       padding: "4px 10px",
                       backgroundColor: 
-                        req.paymentType === "Warranty" ? "var(--warning-surface)" : 
-                        req.paymentType === "Customer" ? "var(--success)" : 
+                        req.jobType === "Warranty" ? "var(--warning-surface)" : 
+                        req.jobType === "Customer" ? "var(--success)" : 
                         "var(--danger-surface)",
                       color: 
-                        req.paymentType === "Warranty" ? "var(--warning-dark)" : 
-                        req.paymentType === "Customer" ? "var(--success-dark)" : 
+                        req.jobType === "Warranty" ? "var(--warning-dark)" : 
+                        req.jobType === "Customer" ? "var(--success-dark)" : 
                         "var(--danger-dark)",
                       borderRadius: "12px",
                       fontSize: "12px",
                       fontWeight: "600"
                     }}>
-                      {req.paymentType}
+                      {req.jobType}
                     </span>
                   )}
                 </div>
@@ -2637,7 +2643,7 @@ function CustomerRequestsTab({
             <div style={{ fontSize: "13px", fontWeight: "700", color: "var(--info-dark)", marginBottom: "6px" }}>
               Vehicle Health Check
             </div>
-            {authorisedItems.length > 0 ? (
+            {authorisedRows.length > 0 ? (
               <div>
                 <div style={{ fontSize: "12px", fontWeight: "600", color: "var(--info-dark)", marginBottom: "6px" }}>
                   Authorised items
@@ -2657,9 +2663,9 @@ function CustomerRequestsTab({
                         minWidth: "180px",
                       }}
                     >
-                      {column.map((check) => (
+                      {column.map((row, rowIndex) => (
                         <li
-                          key={check.vhc_id || check.id}
+                          key={row.requestId || row.vhcItemId || rowIndex}
                           style={{
                             fontSize: "13px",
                             color: "var(--info-dark)",
@@ -2682,32 +2688,30 @@ function CustomerRequestsTab({
                               AUTHORISED
                             </span>
                             <span style={{ fontWeight: "600", color: "var(--success)" }}>
-                              {check.issue_title || check.section}
+                              {row.description || "Authorised item"}
                             </span>
                           </div>
-                      {linkedNotes
-                        .filter((note) =>
-                          Array.isArray(note.linkedVhcIds)
-                            ? note.linkedVhcIds.includes(check.vhc_id ?? check.id)
-                            : note.linkedVhcId === (check.vhc_id ?? check.id)
-                        )
-                        .map((note) => (
-                          <div key={note.noteId} style={{ fontSize: "11px", color: "var(--info)" }}>
-                            Note: {note.noteText}
-                          </div>
-                        ))}
-                      {(() => {
-                        const resolvedVhcId = check.vhc_id ?? check.id;
-                        const prePickSet = resolvedVhcId
-                          ? prePickByVhcId.get(String(resolvedVhcId))
-                          : null;
-                        if (!prePickSet || prePickSet.size === 0) return null;
-                        return Array.from(prePickSet).map((location) => (
-                          <div key={`${resolvedVhcId}-${location}`} style={{ fontSize: "11px", color: "var(--info)" }}>
-                            pre picked: {formatPrePickLabel(location)}
-                          </div>
-                        ));
-                      })()}
+                          {(() => {
+                            const prePickLabel = row.prePickLocation
+                              ? formatPrePickLabel(row.prePickLocation)
+                              : "";
+                            const noteText = (row.noteText || "").trim();
+                            if (prePickLabel) {
+                              return (
+                                <div style={smallPrintStyle}>
+                                  Pre-picked: {prePickLabel}
+                                </div>
+                              );
+                            }
+                            if (noteText) {
+                              return (
+                                <div style={smallPrintStyle}>
+                                  Note: {noteText}
+                                </div>
+                              );
+                            }
+                            return null;
+                          })()}
                     </li>
                   ))}
                 </ul>

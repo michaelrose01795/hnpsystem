@@ -156,7 +156,9 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       .filter((item) => item.addedToJob !== false)
       .map((item) => ({
         id: `goods-in-${item.id}`,
-        partId: null,
+        goodsInItemId: item.id,
+        partCatalogId: item.partCatalogId || item.part_catalog_id || null,
+        partId: item.partCatalogId || item.part_catalog_id || null,
         partNumber: item.partNumber || item.part_number || "N/A",
         name: item.partNumber || item.description || "Part",
         description: item.description || "",
@@ -548,6 +550,53 @@ const PartsTabNew = forwardRef(function PartsTabNew(
   const unallocatedParts = jobParts.filter((part) => !part.allocatedToRequestId);
   const leftPanelParts = [...unallocatedParts, ...goodsInParts];
 
+  const createJobItemFromGoodsIn = useCallback(
+    async (part) => {
+      if (!jobId) {
+        throw new Error("Job must be loaded before allocating parts.");
+      }
+
+      let resolvedPartId = part?.partId;
+
+      if (!resolvedPartId && part?.partNumber && part.partNumber !== "N/A") {
+        const params = new URLSearchParams({ partNumber: part.partNumber });
+        const lookupResponse = await fetch(`/api/parts/catalog?${params.toString()}`);
+        const lookupPayload = await lookupResponse.json();
+        if (lookupResponse.ok && lookupPayload?.success && lookupPayload?.part?.id) {
+          resolvedPartId = lookupPayload.part.id;
+        }
+      }
+
+      if (!resolvedPartId) {
+        throw new Error("Goods-in part is missing a catalog link.");
+      }
+
+      const response = await fetch("/api/parts/job-items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobId,
+          partId: resolvedPartId,
+          status: "stock",
+          quantityRequested: part.quantity ?? 0,
+          quantityAllocated: part.quantity ?? 0,
+          unitCost: part.unitCost ?? 0,
+          unitPrice: part.unitPrice ?? 0,
+          storageLocation: part.storageLocation || null,
+          origin: "goods-in",
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data?.ok) {
+        throw new Error(data?.error || data?.message || "Failed to create job item");
+      }
+
+      return data?.data?.id || null;
+    },
+    [jobId]
+  );
+
   const handleAssignSelectedToRequest = useCallback(
     async (requestId) => {
       if (!canEdit || !requestId) return;
@@ -564,22 +613,35 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       }
 
       const selectedParts = leftPanelParts.filter((part) => selectedPartIds.includes(part.id));
-      const allocatableParts = selectedParts.filter((part) => part.source !== "goods-in");
-
-      if (allocatableParts.length === 0) {
-        alert("Select parts from the job list to allocate.");
-        return;
-      }
 
       setAllocatingSelection(true);
       try {
         await Promise.all(
-          allocatableParts.map(async (part) => {
+          selectedParts.map(async (part) => {
+            let partAllocationId = part.id;
+
+            if (part.source === "goods-in") {
+              const existing = jobParts.find(
+                (jobPart) =>
+                  jobPart.origin === "goods-in" &&
+                  jobPart.partId &&
+                  part.partId &&
+                  String(jobPart.partId) === String(part.partId) &&
+                  !jobPart.allocatedToRequestId
+              );
+
+              partAllocationId = existing?.id || (await createJobItemFromGoodsIn(part));
+            }
+
+            if (!partAllocationId) {
+              throw new Error("Unable to allocate selected part.");
+            }
+
             const response = await fetch("/api/parts/allocate-to-request", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                partAllocationId: part.id,
+                partAllocationId,
                 requestId,
                 jobId,
               }),
@@ -605,7 +667,17 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         setAllocatingSelection(false);
       }
     },
-    [assignMode, assignTargetRequestId, canEdit, jobId, leftPanelParts, onRefreshJob, selectedPartIds]
+    [
+      assignMode,
+      assignTargetRequestId,
+      canEdit,
+      createJobItemFromGoodsIn,
+      jobParts,
+      jobId,
+      leftPanelParts,
+      onRefreshJob,
+      selectedPartIds,
+    ]
   );
 
   const handleUnassignPart = useCallback(
@@ -1061,7 +1133,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   </thead>
                   <tbody>
                     {leftPanelParts.map((part) => {
-                      const isAllocatable = part.source !== "goods-in";
                       const isSelected = selectedPartIds.includes(part.id);
 
                       return (
@@ -1079,13 +1150,18 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             cursor: "pointer",
                             borderTop: "1px solid var(--surface-light)",
                           }}
-                          title={part.source === "goods-in" ? "Goods-in parts are view-only here." : ""}
+                          title={
+                            part.source === "goods-in"
+                              ? "Goods-in parts will be added as job items when assigned."
+                              : ""
+                          }
                         >
                           {assignMode && (
                             <td style={{ padding: "8px", textAlign: "center", verticalAlign: "top" }}>
                               <input
                                 type="checkbox"
                                 checked={isSelected}
+                                onClick={(event) => event.stopPropagation()}
                                 onChange={() => {
                                   if (!assignMode) {
                                     setAssignMode(true);

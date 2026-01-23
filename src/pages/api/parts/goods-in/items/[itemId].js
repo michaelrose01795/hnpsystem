@@ -40,6 +40,7 @@ const ITEM_SELECT = `
   additional_fields,
   online_store,
   attributes,
+  part_catalog_id,
   added_to_job,
   job_id,
   job_number,
@@ -63,6 +64,70 @@ const normaliseJson = (value, fallback) => {
     console.warn("Unable to parse JSON payload, using fallback.", value);
     return fallback;
   }
+};
+
+const ensureCatalogLink = async (item, { applyStock }) => {
+  if (!item?.part_number) {
+    return null;
+  }
+
+  const { data: existing, error: lookupError } = await supabase
+    .from("parts_catalog")
+    .select("id, qty_in_stock, unit_cost, unit_price, storage_location")
+    .eq("part_number", item.part_number)
+    .maybeSingle();
+
+  if (lookupError && lookupError.code !== "PGRST116") {
+    throw lookupError;
+  }
+
+  const timestamp = new Date().toISOString();
+  const unitCost = item.cost_price ?? 0;
+  const unitPrice = item.retail_price ?? 0;
+  const storageLocation = item.bin_location || null;
+
+  if (existing) {
+    if (applyStock) {
+      const nextStock = Number(existing.qty_in_stock || 0) + Number(item.quantity || 0);
+      const { error: updateError } = await supabase
+        .from("parts_catalog")
+        .update({
+          qty_in_stock: nextStock,
+          unit_cost: unitCost || existing.unit_cost,
+          unit_price: unitPrice || existing.unit_price,
+          storage_location: storageLocation || existing.storage_location,
+          updated_at: timestamp,
+        })
+        .eq("id", existing.id);
+      if (updateError) throw updateError;
+    }
+    return existing.id;
+  }
+
+  const { data: created, error: insertError } = await supabase
+    .from("parts_catalog")
+    .insert({
+      part_number: item.part_number,
+      name: item.description || item.part_number,
+      description: item.description || null,
+      supplier: item.franchise || null,
+      category: item.franchise || null,
+      storage_location: storageLocation,
+      unit_cost: unitCost || 0,
+      unit_price: unitPrice || 0,
+      qty_in_stock: applyStock ? Number(item.quantity || 0) : 0,
+      qty_reserved: 0,
+      qty_on_order: 0,
+      is_active: true,
+      created_at: timestamp,
+      updated_at: timestamp,
+    })
+    .select("id")
+    .single();
+
+  if (insertError) throw insertError;
+
+  return created?.id || null;
 };
 
 async function handler(req, res, session) {
@@ -208,6 +273,25 @@ async function handler(req, res, session) {
         return res.status(404).json({ success: false, message: "Goods-in item not found" });
       }
       throw error;
+    }
+
+    if (addedToJob === true) {
+      const catalogId = data.part_catalog_id
+        ? data.part_catalog_id
+        : await ensureCatalogLink(data, { applyStock: false });
+
+      if (catalogId && catalogId !== data.part_catalog_id) {
+        const { data: relinked, error: relinkError } = await supabase
+          .from("parts_goods_in_items")
+          .update({ part_catalog_id: catalogId, updated_at: new Date().toISOString() })
+          .eq("id", itemId)
+          .select(ITEM_SELECT)
+          .single();
+
+        if (!relinkError && relinked) {
+          return res.status(200).json({ success: true, item: relinked });
+        }
+      }
     }
 
     return res.status(200).json({ success: true, item: data });
