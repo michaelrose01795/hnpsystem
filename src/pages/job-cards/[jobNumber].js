@@ -2295,8 +2295,18 @@ function CustomerRequestsTab({
   }, [unifiedRequests]);
 
   const authorisedRows = useMemo(() => {
-    return unifiedRequests.filter((row) => row.requestSource === "vhc_authorised");
-  }, [unifiedRequests]);
+    // Get authorized items directly from vhcChecks (same approach as Parts tab and Rectification section)
+    const vhcAuthorized = (Array.isArray(jobData?.vhcChecks) ? jobData.vhcChecks : [])
+      .filter((check) => check.approval_status === "authorized")
+      .map((check) => ({
+        vhcItemId: check.vhc_id || check.vhcId,
+        description: check.issue_title || check.issueTitle || check.issue_description || check.section || "Authorised item",
+        section: check.section || "",
+        labourHours: check.labour_hours || null,
+        partsCost: check.parts_cost || null,
+      }));
+    return vhcAuthorized;
+  }, [jobData?.vhcChecks]);
 
   const authorisedColumns = useMemo(() => {
     const columns = [[], [], []];
@@ -2625,107 +2635,77 @@ function CustomerRequestsTab({
         <h3 style={{ fontSize: "16px", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "16px" }}>
           Additional Information
         </h3>
-        <div style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "16px",
-          alignItems: "stretch",
-          marginBottom: "16px"
-        }}>
+
+        {/* Authorised VHC Items */}
+        {authorisedRows.length > 0 && (
           <div style={{
-            flex: "1 1 320px",
             padding: "16px",
-            backgroundColor: "var(--info-surface)",
+            backgroundColor: "var(--success-surface)",
             borderRadius: "12px",
-            border: "1px solid var(--accent-purple-surface)",
-            boxShadow: "none"
+            border: "1px solid var(--success)",
+            marginBottom: "16px"
           }}>
-            <div style={{ fontSize: "13px", fontWeight: "700", color: "var(--info-dark)", marginBottom: "6px" }}>
-              Vehicle Health Check
+            <div style={{ fontSize: "13px", fontWeight: "700", color: "var(--success-dark)", marginBottom: "10px" }}>
+              Authorised VHC Items
             </div>
-            {authorisedRows.length > 0 ? (
-              <div>
-                <div style={{ fontSize: "12px", fontWeight: "600", color: "var(--info-dark)", marginBottom: "6px" }}>
-                  Authorised items
-                </div>
-                <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
-                  {authorisedColumns.map((column, columnIndex) => (
-                    <ul
-                      key={`authorized-column-${columnIndex}`}
+            <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+              {authorisedColumns.map((column, columnIndex) => (
+                <ul
+                  key={`authorized-column-${columnIndex}`}
+                  style={{
+                    listStyle: "none",
+                    padding: 0,
+                    margin: 0,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "6px",
+                    flex: "1 1 180px",
+                    minWidth: "180px",
+                  }}
+                >
+                  {column.map((row, rowIndex) => (
+                    <li
+                      key={row.requestId || row.vhcItemId || rowIndex}
                       style={{
-                        listStyle: "none",
-                        padding: 0,
-                        margin: 0,
+                        fontSize: "13px",
+                        color: "var(--text-primary)",
                         display: "flex",
                         flexDirection: "column",
-                        gap: "6px",
-                        flex: "1 1 180px",
-                        minWidth: "180px",
+                        gap: "4px",
+                        alignItems: "flex-start",
                       }}
                     >
-                      {column.map((row, rowIndex) => (
-                        <li
-                          key={row.requestId || row.vhcItemId || rowIndex}
-                          style={{
-                            fontSize: "13px",
-                            color: "var(--info-dark)",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "4px",
-                            alignItems: "flex-start",
-                          }}
-                        >
-                          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                            <span style={{
-                              padding: "4px 8px",
-                              borderRadius: "8px",
-                              fontWeight: "700",
-                              color: "var(--surface)",
-                              backgroundColor: "var(--success)",
-                              fontSize: "11px",
-                              letterSpacing: "0.04em"
-                            }}>
-                              AUTHORISED
-                            </span>
-                            <span style={{ fontWeight: "600", color: "var(--success)" }}>
-                              {row.description || "Authorised item"}
-                            </span>
-                          </div>
-                          {(() => {
-                            const prePickLabel = row.prePickLocation
-                              ? formatPrePickLabel(row.prePickLocation)
-                              : "";
-                            const noteText = (row.noteText || "").trim();
-                            if (prePickLabel) {
-                              return (
-                                <div style={smallPrintStyle}>
-                                  Pre-picked: {prePickLabel}
-                                </div>
-                              );
-                            }
-                            if (noteText) {
-                              return (
-                                <div style={smallPrintStyle}>
-                                  Note: {noteText}
-                                </div>
-                              );
-                            }
-                            return null;
-                          })()}
+                      <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                        <span style={{
+                          padding: "4px 8px",
+                          borderRadius: "8px",
+                          fontWeight: "700",
+                          color: "var(--surface)",
+                          backgroundColor: "var(--success)",
+                          fontSize: "11px",
+                          letterSpacing: "0.04em"
+                        }}>
+                          AUTHORISED
+                        </span>
+                        <span style={{ fontWeight: "600", color: "var(--success)" }}>
+                          {row.description || "Authorised item"}
+                        </span>
+                      </div>
+                      {(row.labourHours || row.partsCost) && (
+                        <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "2px" }}>
+                          {row.labourHours && <span>Labour: {row.labourHours}h</span>}
+                          {row.labourHours && row.partsCost && <span> | </span>}
+                          {row.partsCost && <span>Parts: £{Number(row.partsCost).toFixed(2)}</span>}
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <p style={{ margin: 0, fontSize: "13px", color: "var(--info)" }}>
-                No authorised VHC items yet.
-              </p>
-            )}
+              ))}
+            </div>
           </div>
-        </div>
-        
+        )}
+
         {jobData.cosmeticNotes && (
           <div style={{ marginBottom: "16px" }}>
             <strong style={{ fontSize: "14px", color: "var(--grey-accent)", display: "block", marginBottom: "8px" }}>
@@ -5641,6 +5621,7 @@ function VHCTab({ jobNumber, jobData, onFinancialTotalsChange }) {
         customActions={customActions}
         onCheckboxesComplete={setAllCheckboxesComplete}
         onFinancialTotalsChange={onFinancialTotalsChange}
+        onJobDataRefresh={() => fetchJobData({ silent: true })}
         enableTabs
       />
     </div>

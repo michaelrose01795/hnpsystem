@@ -796,6 +796,7 @@ export default function VhcDetailsPanel({
   customActions = null,
   onCheckboxesComplete = null,
   onFinancialTotalsChange = null,
+  onJobDataRefresh = null,
   viewMode = "full",
   enableTabs = false,
 }) {
@@ -2025,6 +2026,12 @@ export default function VhcDetailsPanel({
         });
         return updated;
       });
+
+      // Refresh parent job data when authorization status changes
+      // This ensures Customer Requests and Parts tabs see the updated data
+      if (onJobDataRefresh && (dbStatus === "authorized" || dbStatus === "declined" || dbStatus === "pending")) {
+        onJobDataRefresh();
+      }
 
     } catch (error) {
       console.error(`❌ ━━━ [VHC STATUS ERROR] EXCEPTION ━━━`);

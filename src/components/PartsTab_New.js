@@ -176,26 +176,49 @@ const PartsTabNew = forwardRef(function PartsTabNew(
 
   // Get customer requests and authorized work
   const allRequests = useMemo(() => {
-    const customerReqs = (Array.isArray(jobData.requests) ? jobData.requests : []).map((req, idx) => ({
-      id: req.request_id || req.requestId || `customer-${idx}`,
-      type: "customer",
-      description: typeof req === "string" ? req : req.text || req.description || "",
-      jobType: req.job_type || req.jobType || "Customer",
-      hours: req.hours || null,
-    }));
+    // Prefer jobRequests/job_requests from the database (has proper request_id)
+    const requestsSource = Array.isArray(jobData.jobRequests)
+      ? jobData.jobRequests
+      : Array.isArray(jobData.job_requests)
+      ? jobData.job_requests
+      : Array.isArray(jobData.requests)
+      ? jobData.requests
+      : [];
 
-    const vhcReqs = (Array.isArray(jobData.vhcChecks) ? jobData.vhcChecks : [])
-      .filter((check) => check.approval_status === "authorized")
-      .map((check, idx) => ({
-        id: check.vhc_id || check.vhcId || `vhc-${idx}`,
+    const customerReqs = requestsSource
+      .filter((req) => {
+        // Only include customer requests that have a valid database ID
+        const id = req.request_id || req.requestId;
+        const source = req.request_source || req.requestSource || "customer_request";
+        return id != null && source === "customer_request";
+      })
+      .map((req) => ({
+        id: req.request_id || req.requestId,
+        type: "customer",
+        description: typeof req === "string" ? req : req.text || req.description || "",
+        jobType: req.job_type || req.jobType || "Customer",
+        hours: req.hours || null,
+      }));
+
+    // VHC authorized work - filter by request_source from requestsSource (which includes VHC items from job_requests)
+    // These are VHC items that have been added to job_requests table with proper request_id
+    const vhcReqs = requestsSource
+      .filter((req) => {
+        const source = req.request_source || req.requestSource;
+        const id = req.request_id || req.requestId;
+        return source === "vhc_authorised" && id != null;
+      })
+      .map((req) => ({
+        id: req.request_id || req.requestId,
         type: "vhc",
-        description: check.issue_title || check.issueTitle || check.issue_description || "VHC Item",
-        section: check.section || "",
-        severity: check.severity || check.traffic_light || "grey",
+        description: req.description || req.text || "VHC Item",
+        section: "",
+        severity: "grey",
+        vhcItemId: req.vhc_item_id || req.vhcItemId,
       }));
 
     return [...customerReqs, ...vhcReqs];
-  }, [jobData.requests, jobData.vhcChecks]);
+  }, [jobData.jobRequests, jobData.job_requests, jobData.requests]);
 
   // Group parts by allocated request
   useEffect(() => {

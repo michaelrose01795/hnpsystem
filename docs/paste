@@ -11,6 +11,10 @@ within the job-cards/[jobnumber] page Have it so within the authorised parts tab
 FIX
 within the parts tab inside th ejob-cards/[jobnumber] page, have it so the "SEARCH PARTS STOCK" is only shown when a "Book part" button is pressed within that tab, and the Allocate to request section is only shown as well when "Allocate to request' button is pressed as well. 
 
+CHECKKKKKK
+Book a goods‑in item to a job via the popup and confirm the catalog entry exists with qty_in_stock = 0.
+Complete a goods‑in record with mixed booked/not‑booked items and confirm only the not‑booked parts increase stock.
+
 
 Check 
 have iut so the Retaail price and cost price use the £30 sum when the "Franchise" dropdown "Tyres" is selected, if other are selected then do not apply the £30 difference and make it so "Retail price " and "Cost price " are indiviual. Have it so within the "Add goods-in parts to a job " popup it shoes show "Select one job and the parts to add. Part number, description, and quantity will be sent to the job." text nad better layed out and all sections follows the light and dark theme
