@@ -1,7 +1,7 @@
 TO DO:
 
 Continue flow with job number 54
-
+Add notes and pre picked location
 
 Fix
 within the job-cards/[jobnumber] page Have it so within the authorised parts table inside the VHC tab there is a pre picked location for each row and from that when the item is selected a pre pick location it shows in small print (like the notes small print) "pre picked: {location selected} in small print within the customer details tab.
