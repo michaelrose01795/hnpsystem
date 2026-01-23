@@ -2015,6 +2015,7 @@ export default function JobCardDetailPage() {
               jobNumber={jobNumber}
               jobData={jobData}
               onFinancialTotalsChange={setVhcFinancialTotalsFromPanel}
+              onJobDataRefresh={() => fetchJobData({ silent: true })}
             />
           </div>
 
@@ -2294,19 +2295,10 @@ function CustomerRequestsTab({
       .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
   }, [unifiedRequests]);
 
+  // Use pre-joined authorized VHC items from server (canonical source)
   const authorisedRows = useMemo(() => {
-    // Get authorized items directly from vhcChecks (same approach as Parts tab and Rectification section)
-    const vhcAuthorized = (Array.isArray(jobData?.vhcChecks) ? jobData.vhcChecks : [])
-      .filter((check) => check.approval_status === "authorized")
-      .map((check) => ({
-        vhcItemId: check.vhc_id || check.vhcId,
-        description: check.issue_title || check.issueTitle || check.issue_description || check.section || "Authorised item",
-        section: check.section || "",
-        labourHours: check.labour_hours || null,
-        partsCost: check.parts_cost || null,
-      }));
-    return vhcAuthorized;
-  }, [jobData?.vhcChecks]);
+    return Array.isArray(jobData?.authorizedVhcItems) ? jobData.authorizedVhcItems : [];
+  }, [jobData?.authorizedVhcItems]);
 
   const authorisedColumns = useMemo(() => {
     const columns = [[], [], []];
@@ -2691,11 +2683,24 @@ function CustomerRequestsTab({
                           {row.description || "Authorised item"}
                         </span>
                       </div>
+                      {/* Labour hours and parts cost */}
                       {(row.labourHours || row.partsCost) && (
                         <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "2px" }}>
                           {row.labourHours && <span>Labour: {row.labourHours}h</span>}
                           {row.labourHours && row.partsCost && <span> | </span>}
                           {row.partsCost && <span>Parts: £{Number(row.partsCost).toFixed(2)}</span>}
+                        </div>
+                      )}
+                      {/* Pre-pick location */}
+                      {row.prePickLocation && (
+                        <div style={smallPrintStyle}>
+                          Pre-pick: {formatPrePickLabel(row.prePickLocation)}
+                        </div>
+                      )}
+                      {/* Linked notes */}
+                      {row.noteText && (
+                        <div style={smallPrintStyle}>
+                          Note: {row.noteText}
                         </div>
                       )}
                     </li>
@@ -5540,7 +5545,7 @@ function NotesTab({ value, onChange, canEdit, saving, meta }) {
 }
 
 // ✅ VHC Tab
-function VHCTab({ jobNumber, jobData, onFinancialTotalsChange }) {
+function VHCTab({ jobNumber, jobData, onFinancialTotalsChange, onJobDataRefresh }) {
   const [copied, setCopied] = useState(false);
 
   // Check if customer view should be enabled
@@ -5621,7 +5626,7 @@ function VHCTab({ jobNumber, jobData, onFinancialTotalsChange }) {
         customActions={customActions}
         onCheckboxesComplete={setAllCheckboxesComplete}
         onFinancialTotalsChange={onFinancialTotalsChange}
-        onJobDataRefresh={() => fetchJobData({ silent: true })}
+        onJobDataRefresh={onJobDataRefresh}
         enableTabs
       />
     </div>

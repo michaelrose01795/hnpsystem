@@ -200,25 +200,19 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         hours: req.hours || null,
       }));
 
-    // VHC authorized work - filter by request_source from requestsSource (which includes VHC items from job_requests)
-    // These are VHC items that have been added to job_requests table with proper request_id
-    const vhcReqs = requestsSource
-      .filter((req) => {
-        const source = req.request_source || req.requestSource;
-        const id = req.request_id || req.requestId;
-        return source === "vhc_authorised" && id != null;
-      })
-      .map((req) => ({
-        id: req.request_id || req.requestId,
+    // VHC authorized work - use canonical pre-joined data from server
+    const vhcReqs = (Array.isArray(jobData.authorizedVhcItems) ? jobData.authorizedVhcItems : [])
+      .map((item) => ({
+        id: `vhc-${item.vhcItemId}`,
         type: "vhc",
-        description: req.description || req.text || "VHC Item",
-        section: "",
-        severity: "grey",
-        vhcItemId: req.vhc_item_id || req.vhcItemId,
+        description: item.description || "VHC Item",
+        section: item.section || "",
+        severity: "authorized",
+        vhcItemId: item.vhcItemId,
       }));
 
     return [...customerReqs, ...vhcReqs];
-  }, [jobData.jobRequests, jobData.job_requests, jobData.requests]);
+  }, [jobData.jobRequests, jobData.job_requests, jobData.requests, jobData.authorizedVhcItems]);
 
   // Group parts by allocated request
   useEffect(() => {

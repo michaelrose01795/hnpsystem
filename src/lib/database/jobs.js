@@ -755,6 +755,91 @@ export const getAuthorizedAdditionalWorkByJob = async (jobId) => {
 };
 
 /* ============================================
+   GET AUTHORIZED VHC ITEMS WITH DETAILS
+   Returns authorized VHC items with pre-joined:
+   - labour hours, parts cost (from vhc_checks)
+   - linked notes (from job_notes)
+   - pre-pick location (from parts_job_items)
+   This is the canonical source for all tabs.
+============================================ */
+export const getAuthorizedVhcItemsWithDetails = async (jobId) => {
+  try {
+    // 1. Fetch authorized VHC checks
+    const { data: vhcChecks, error: vhcError } = await supabase
+      .from("vhc_checks")
+      .select("vhc_id, section, issue_title, issue_description, approval_status, labour_hours, parts_cost, approved_at, approved_by")
+      .eq("job_id", jobId)
+      .eq("approval_status", "authorized");
+
+    if (vhcError) {
+      console.error("❌ Error fetching authorized VHC checks:", vhcError);
+      return [];
+    }
+
+    if (!vhcChecks || vhcChecks.length === 0) {
+      return [];
+    }
+
+    const vhcIds = vhcChecks.map((c) => c.vhc_id);
+
+    // 2. Fetch linked notes for these VHC items
+    const { data: notes, error: notesError } = await supabase
+      .from("job_notes")
+      .select("note_id, note_text, linked_vhc_id, linked_vhc_ids")
+      .eq("job_id", jobId);
+
+    if (notesError) {
+      console.error("⚠️ Error fetching notes:", notesError);
+    }
+
+    // 3. Fetch parts with pre-pick locations linked to these VHC items
+    const { data: parts, error: partsError } = await supabase
+      .from("parts_job_items")
+      .select("id, vhc_item_id, pre_pick_location, status")
+      .eq("job_id", jobId)
+      .in("vhc_item_id", vhcIds);
+
+    if (partsError) {
+      console.error("⚠️ Error fetching parts:", partsError);
+    }
+
+    // 4. Build the joined result
+    const authorizedItems = vhcChecks.map((check) => {
+      const vhcId = check.vhc_id;
+
+      // Find linked notes
+      const linkedNotes = (notes || []).filter((note) => {
+        const linkedVhcId = note.linked_vhc_id;
+        const linkedVhcIds = note.linked_vhc_ids || [];
+        return linkedVhcId === vhcId || (Array.isArray(linkedVhcIds) && linkedVhcIds.includes(vhcId));
+      });
+      const noteText = linkedNotes.map((n) => n.note_text || "").filter(Boolean).join("; ");
+
+      // Find pre-pick location from linked parts
+      const linkedPart = (parts || []).find((p) => p.vhc_item_id === vhcId && p.pre_pick_location);
+      const prePickLocation = linkedPart?.pre_pick_location || null;
+
+      return {
+        vhcItemId: vhcId,
+        description: check.issue_title || check.issue_description || check.section || "Authorised item",
+        section: check.section || "",
+        labourHours: check.labour_hours || null,
+        partsCost: check.parts_cost || null,
+        approvedAt: check.approved_at || null,
+        approvedBy: check.approved_by || null,
+        noteText: noteText,
+        prePickLocation: prePickLocation,
+      };
+    });
+
+    return authorizedItems;
+  } catch (error) {
+    console.error("❌ getAuthorizedVhcItemsWithDetails error:", error);
+    return [];
+  }
+};
+
+/* ============================================
    FETCH JOB BY JOB NUMBER
    Retrieves complete job data by job number
 ============================================ */
@@ -1044,9 +1129,14 @@ export const getJobByNumber = async (jobNumber) => {
       formattedJob.partsAllocations = masterFormatted.partsAllocations;
     }
   }
-  
+
+  // Fetch authorized VHC items with all related data pre-joined
+  // This is the canonical source for Customer Requests, Parts, and WriteUp tabs
+  const authorizedVhcItems = await getAuthorizedVhcItemsWithDetails(jobData.id);
+  formattedJob.authorizedVhcItems = authorizedVhcItems;
+
   // Return structured data with customer and vehicle history
-  return { 
+  return {
     data: {
       jobCard: formattedJob,
       customer: jobData.vehicle?.customer ? {

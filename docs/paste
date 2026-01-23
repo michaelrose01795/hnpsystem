@@ -1,15 +1,9 @@
 TO DO:
 
 Continue flow with job number 54
-Add notes and pre picked location
-
-Fix
-within the job-cards/[jobnumber] page Have it so within the authorised parts table inside the VHC tab there is a pre picked location for each row and from that when the item is selected a pre pick location it shows in small print (like the notes small print) "pre picked: {location selected} in small print within the customer details tab.
+pre pricked loaction error see if database tables needa dding, chatgpt prompts
 
 
-
-FIX
-within the parts tab inside th ejob-cards/[jobnumber] page, have it so the "SEARCH PARTS STOCK" is only shown when a "Book part" button is pressed within that tab, and the Allocate to request section is only shown as well when "Allocate to request' button is pressed as well. 
 
 CHECKKKKKK
 Book a goods‑in item to a job via the popup and confirm the catalog entry exists with qty_in_stock = 0.

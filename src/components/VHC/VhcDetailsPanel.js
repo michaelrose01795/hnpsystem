@@ -3341,6 +3341,11 @@ export default function VhcDetailsPanel({
 
       const result = await response.json();
 
+      // Refresh parent job data so other tabs see the updated part status/pre-pick location
+      if (onJobDataRefresh) {
+        onJobDataRefresh();
+      }
+
       return result;
     } catch (err) {
       console.error(`[PART STATUS UPDATE] Error:`, err);
@@ -3352,7 +3357,7 @@ export default function VhcDetailsPanel({
       });
       throw err;
     }
-  }, [job, resolvedJobNumber, setJob, setVhcChecksData]);
+  }, [job, resolvedJobNumber, setJob, setVhcChecksData, onJobDataRefresh]);
 
   const persistLabourHours = useCallback(
     async (displayVhcId, hoursValue) => {
@@ -3463,12 +3468,17 @@ export default function VhcDetailsPanel({
               setVhcChecksData(updatedVhcChecks);
             }
           }
+
+          // Refresh parent job data so other tabs see the updated labour hours
+          if (onJobDataRefresh) {
+            onJobDataRefresh();
+          }
         }
       } catch (error) {
         console.error("Failed to persist labour hours", error);
       }
     },
-    [authUserId, dbUserId, job?.id, resolveCanonicalVhcId, summaryItems, resolvedJobNumber, upsertVhcItemAlias]
+    [authUserId, dbUserId, job?.id, resolveCanonicalVhcId, summaryItems, resolvedJobNumber, upsertVhcItemAlias, onJobDataRefresh]
   );
 
   // Handler for Pre-Pick Location dropdown change
