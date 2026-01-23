@@ -5,6 +5,32 @@ pre pricked loaction error see if database tables needa dding, chatgpt prompts
 
 
 
+Have it so when rows are clicked wihtin the parts tab inside the parts added to job section doesnt do anything, make sure it doesnt direct the user, it is just text. remove the pre picked kocation column in that section. have it so when the row is clicked it opens a popup where there is a remove button, this removes the row from the par however shows it still with a line though the text. 
+
+Have it so the On order section is a fix size of the table, even when there is no rows within that seciton. Change the "Marked as arrived" button to "Arrived?" with an amber backgorund, have it so when the button is clicked the text changes to "arrived" with a green background. all backgrounds follows the light and dark mode. 
+
+have it so the "ETA DATE" and ETA time pcikers use the hwole of the On order section and operates like normal. override the api styles if needed. 
+
+Have it so the this section loads when the job card is loaded.and refreshes in the background, not front end.
+
+
+Have it so the "Quantity" field within the goods in page is defualt to 1(dont change this as already good) but have it if the user wants to remove everything in the field it can go blank without having a "0" in the field. Have "Franchise" dropdown to default show "stock". Make the "Bin location" field the widths of three characters. Add the discount code seciton to the right of the "Bin location" field on the same row. 
+
+"Bin location" dropdown to follow dropdown style api but override the dropdown style api so the dropdown button doesnt change size and follows the same style as the other fields within the goods in page. 
+
+Make the "Quantity", "Retail price", "Cost price", "Discount code" fields all the length of the title.
+
+have it so within the "Add goods-in parts to a job" popup the quantity can be edited to how many are required to adding to the job, example is 2 items are added to the GIN but when booking to the job number only 1 wants to be booked, so we are going to add a selected section and a section for the rows to be selected (add a remove button which moves the row (or quantity correctly)back into the select section). if 1 is added the row with the details are shown with quantity 1 unselected section will also show the row with detauls and quantity of 1 for this example. 
+
+Remove the "New part details" section fields from iniside the "Add Parts" popup within the job-cards/[jobnumber] page and replace it with "Add part" section within the GOODs in page except from the "search catalogue" button. 
+
+Does the "Supplier search" button work inside goods in page!!!!
+
+have it so the "STATUS" column within the job-cards/[jobnumber] page always shows the order button or ORdered button, this button resets to Order if the part has been removed for the Parts identified inside the add parts popup. 
+
+
+
+
 CHECKKKKKK
 Book a goods‑in item to a job via the popup and confirm the catalog entry exists with qty_in_stock = 0.
 Complete a goods‑in record with mixed booked/not‑booked items and confirm only the not‑booked parts increase stock.
