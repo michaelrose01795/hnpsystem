@@ -586,7 +586,14 @@ CREATE TABLE public.job_requests (
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   status text NOT NULL DEFAULT 'inprogress'::text,
+  request_source text NOT NULL DEFAULT 'customer_request'::text,
+  vhc_item_id integer,
+  parts_job_item_id uuid,
+  pre_pick_location text CHECK (pre_pick_location IS NULL OR (pre_pick_location = ANY (ARRAY['service_rack_1'::text, 'service_rack_2'::text, 'service_rack_3'::text, 'service_rack_4'::text, 'sales_rack_1'::text, 'sales_rack_2'::text, 'sales_rack_3'::text, 'sales_rack_4'::text, 'stairs_pre_pick'::text, 'no_pick'::text, 'on_order'::text]))),
+  note_text text,
   CONSTRAINT job_requests_pkey PRIMARY KEY (request_id),
+  CONSTRAINT job_requests_vhc_item_id_fkey FOREIGN KEY (vhc_item_id) REFERENCES public.vhc_checks(vhc_id),
+  CONSTRAINT job_requests_parts_job_item_id_fkey FOREIGN KEY (parts_job_item_id) REFERENCES public.parts_job_items(id),
   CONSTRAINT job_requests_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
 );
 CREATE TABLE public.job_status_history (

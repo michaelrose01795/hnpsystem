@@ -185,7 +185,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     }));
 
     const vhcReqs = (Array.isArray(jobData.vhcChecks) ? jobData.vhcChecks : [])
-      .filter((check) => check.authorized || check.status === "authorized")
+      .filter((check) => check.approval_status === "authorized")
       .map((check, idx) => ({
         id: check.vhc_id || check.vhcId || `vhc-${idx}`,
         type: "vhc",
