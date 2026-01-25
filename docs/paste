@@ -3,16 +3,7 @@ TO DO:
 Continue flow with job number 54
 pre pricked loaction error see if database tables needa dding, chatgpt prompts
 
-
-
-Have it so when rows are clicked wihtin the parts tab inside the parts added to job section doesnt do anything, make sure it doesnt direct the user, it is just text. remove the pre picked kocation column in that section. have it so when the row is clicked it opens a popup where there is a remove button, this removes the row from the par however shows it still with a line though the text. 
-
-Have it so the On order section is a fix size of the table, even when there is no rows within that seciton. Change the "Marked as arrived" button to "Arrived?" with an amber backgorund, have it so when the button is clicked the text changes to "arrived" with a green background. all backgrounds follows the light and dark mode. Have it so the "PART NAME" coplumn has a max withs and ayhting text past that uses a horizontal scroll and is hiden behind the next column. 
-
-have it so the "ETA DATE" and ETA time pcikers use the hwole of the On order section and operates like normal. override the api styles if needed. 
-
-Have it so the this section loads when the job card is loaded.and refreshes in the background, not front end.
-
+check
 When "Add to Job" button is pressed within the "SEARCH PARTS STOCK" section within the parts tab, the part row is added to the "PARTS ADDED TO JOB" section. 
 
 

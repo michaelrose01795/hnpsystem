@@ -69,12 +69,19 @@ const PartsTabNew = forwardRef(function PartsTabNew(
   const [selectedPartIds, setSelectedPartIds] = useState([]);
   const [allocatingSelection, setAllocatingSelection] = useState(false);
 
-  // State for parts on order - fetched directly from database
+  // State for parts on order - initialized from jobData, refreshed in background
   const [partsOnOrderFromDB, setPartsOnOrderFromDB] = useState([]);
-  const [loadingPartsOnOrder, setLoadingPartsOnOrder] = useState(false);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
-  // State for picker backdrop
-  const [showPickerBackdrop, setShowPickerBackdrop] = useState(false);
+
+  // State for removed parts (shown with strikethrough)
+  const [removedPartIds, setRemovedPartIds] = useState([]);
+  // State for part removal popup
+  const [partPopup, setPartPopup] = useState({ open: false, part: null });
+  // State for tracking parts marked as arrived (before API call completes)
+  const [arrivedPartIds, setArrivedPartIds] = useState([]);
+  // State for locally added parts (instant UI update before job refresh completes)
+  const [locallyAddedParts, setLocallyAddedParts] = useState([]);
 
 
   const canAllocateParts = Boolean(canEdit && jobId);
@@ -84,7 +91,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     ? "Job must be loaded before allocating parts."
     : "";
 
-  // Get all parts added to the job (from allocations and parts_job_items for VHC parts)
+  // Get all parts added to the job (from allocations, parts_job_items, and locally added)
   const jobParts = useMemo(() => {
     // Start with partsAllocations
     const allocations = (Array.isArray(jobData.partsAllocations) ? jobData.partsAllocations : []).map((item) => ({
@@ -112,35 +119,40 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     }));
 
     // Also include parts_job_items (which includes VHC parts with origin field)
-      const jobItems = (Array.isArray(jobData.parts_job_items) ? jobData.parts_job_items : [])
+    const jobItems = (Array.isArray(jobData.parts_job_items) ? jobData.parts_job_items : [])
       .filter(Boolean)
-      .map((item) => ({
-        id: item.id,
-        partId: item.part?.id || item.part_id,
-        partNumber: item.part?.part_number || item.part?.partNumber || "N/A",
-        name: item.part?.name || "Part",
-        description: item.part?.description || "",
-        quantity: item.quantity_requested ?? item.quantityRequested ?? 1,
-        unitPrice: item.unit_price ?? item.part?.unit_price ?? 0,
-        unitCost: item.unit_cost ?? item.part?.unit_cost ?? 0,
-        qtyInStock: item.part?.qty_in_stock ?? 0,
-        storageLocation: item.storage_location || item.storageLocation || "Not assigned",
-        status: item.status || "pending",
-        allocatedToRequestId: item.allocated_to_request_id || item.allocatedToRequestId || null,
-        vhcItemId: item.vhc_item_id || item.vhcItemId || null,
-        createdAt: item.created_at || item.createdAt,
-        source: "job_item",
-        origin: item.origin || "",
-        eta_date: item.eta_date || null,
-        eta_time: item.eta_time || null,
-        supplier_reference: item.supplier_reference || null,
-        prePickLocation: item.pre_pick_location || item.prePickLocation || null,
-        part: item.part,
-      }));
+      .map((item) => {
+        // Handle both 'part' and 'parts_catalog' field names (API uses parts_catalog)
+        const partData = item.part || item.parts_catalog;
+        return {
+          id: item.id,
+          partId: partData?.id || item.part_id,
+          partNumber: partData?.part_number || partData?.partNumber || "N/A",
+          name: partData?.name || "Part",
+          description: partData?.description || "",
+          quantity: item.quantity_requested ?? item.quantityRequested ?? 1,
+          unitPrice: item.unit_price ?? partData?.unit_price ?? 0,
+          unitCost: item.unit_cost ?? partData?.unit_cost ?? 0,
+          qtyInStock: partData?.qty_in_stock ?? 0,
+          storageLocation: item.storage_location || item.storageLocation || partData?.storage_location || "Not assigned",
+          status: item.status || "pending",
+          allocatedToRequestId: item.allocated_to_request_id || item.allocatedToRequestId || null,
+          vhcItemId: item.vhc_item_id || item.vhcItemId || null,
+          createdAt: item.created_at || item.createdAt,
+          source: "job_item",
+          origin: item.origin || "",
+          eta_date: item.eta_date || null,
+          eta_time: item.eta_time || null,
+          supplier_reference: item.supplier_reference || null,
+          prePickLocation: item.pre_pick_location || item.prePickLocation || null,
+          part: partData,
+        };
+      });
 
-    // Merge and deduplicate by id
-    const allParts = [...allocations, ...jobItems];
+    // Merge allocations, job items, and locally added parts
+    const allParts = [...allocations, ...jobItems, ...locallyAddedParts];
 
+    // Deduplicate by id - prefer server data over local
     const uniqueParts = allParts.reduce((acc, part) => {
       if (!acc.some(p => p.id === part.id)) {
         acc.push(part);
@@ -149,7 +161,22 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     }, []);
 
     return uniqueParts;
-  }, [jobData.partsAllocations, jobData.parts_job_items]);
+  }, [jobData.partsAllocations, jobData.parts_job_items, locallyAddedParts]);
+
+  // Clear locally added parts when they appear in the server data (to avoid duplicates)
+  useEffect(() => {
+    if (locallyAddedParts.length === 0) return;
+
+    const serverPartIds = new Set([
+      ...(jobData.partsAllocations || []).map(p => p.id),
+      ...(jobData.parts_job_items || []).map(p => p.id),
+    ]);
+
+    const stillLocalOnly = locallyAddedParts.filter(p => !serverPartIds.has(p.id));
+    if (stillLocalOnly.length !== locallyAddedParts.length) {
+      setLocallyAddedParts(stillLocalOnly);
+    }
+  }, [jobData.partsAllocations, jobData.parts_job_items, locallyAddedParts]);
 
   const goodsInParts = useMemo(() => {
     return (Array.isArray(jobData.goodsInParts) ? jobData.goodsInParts : [])
@@ -240,63 +267,75 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     return map;
   }, [jobParts]);
 
-  // Parts on order - ALL parts for this job with "on_order" status
-  const partsOnOrder = useMemo(
+  // Parts on order - derived from jobData (loads immediately with job card)
+  const partsOnOrderFromJobData = useMemo(
     () => {
       const filtered = jobParts.filter((part) => {
         const partStatus = normalizePartStatus(part.status);
-        const isOnOrder = partStatus === "on_order";
-
-        // Include ALL parts with "on_order" status regardless of origin
-        return isOnOrder;
+        return partStatus === "on_order";
       });
 
-      return filtered;
+      // Transform to match the API response format
+      return filtered.map((part) => ({
+        id: part.id,
+        partId: part.partId,
+        partNumber: part.partNumber,
+        partName: part.name || part.description,
+        quantity: part.quantity,
+        unitPrice: part.unitPrice,
+        unitCost: part.unitCost,
+        etaDate: part.eta_date || null,
+        etaTime: part.eta_time || null,
+        supplierReference: part.supplier_reference || null,
+        status: part.status,
+      }));
     },
     [jobParts]
   );
 
-  // Fetch parts on order directly from database
-  const fetchPartsOnOrder = useCallback(async () => {
+  // Initialize partsOnOrderFromDB with jobData on first load
+  useEffect(() => {
+    if (!initialLoadComplete && partsOnOrderFromJobData.length > 0) {
+      setPartsOnOrderFromDB(partsOnOrderFromJobData);
+    }
+  }, [partsOnOrderFromJobData, initialLoadComplete]);
+
+  // Background fetch - no loading indicator shown
+  const fetchPartsOnOrderBackground = useCallback(async () => {
     if (!jobId) return;
 
-    setLoadingPartsOnOrder(true);
     try {
       const response = await fetch(`/api/parts/on-order?jobId=${jobId}`);
       const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to fetch parts on order");
+      if (response.ok && data.parts) {
+        setPartsOnOrderFromDB(data.parts);
+        setInitialLoadComplete(true);
       }
-
-      setPartsOnOrderFromDB(data.parts || []);
     } catch (error) {
-      setPartsOnOrderFromDB([]);
-    } finally {
-      setLoadingPartsOnOrder(false);
+      // Silent fail for background refresh - keep existing data
+      console.error("Background refresh failed:", error);
     }
   }, [jobId]);
 
-  // Fetch parts on order when component mounts or jobId changes
+  // Initial fetch and periodic background refresh
   useEffect(() => {
-    fetchPartsOnOrder();
-  }, [fetchPartsOnOrder]);
+    if (!jobId) return;
 
-  // Monitor for open calendar/time pickers in the on-order section
-  useEffect(() => {
-    const checkForOpenPickers = () => {
-      const section = document.querySelector('.on-order-section');
-      if (section) {
-        const hasOpenPicker = section.querySelector('.calendar-api.is-open, .timepicker-api.is-open');
-        setShowPickerBackdrop(!!hasOpenPicker);
-      }
-    };
+    // Initial background fetch
+    fetchPartsOnOrderBackground();
 
-    // Check periodically
-    const interval = setInterval(checkForOpenPickers, 100);
+    // Set up background polling every 30 seconds
+    const intervalId = setInterval(() => {
+      fetchPartsOnOrderBackground();
+    }, 30000);
 
-    return () => clearInterval(interval);
-  }, []);
+    return () => clearInterval(intervalId);
+  }, [jobId, fetchPartsOnOrderBackground]);
+
+  // Legacy alias for compatibility with existing handlers
+  const fetchPartsOnOrder = fetchPartsOnOrderBackground;
+
 
   // Handler for updating ETA date/time
   const handleUpdateETA = useCallback(async (partId, field, value) => {
@@ -438,7 +477,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     setSelectedCatalogPart(null);
     setCatalogQuantity(1);
     setCatalogSubmitError("");
-    setCatalogSuccessMessage("");
+    // Note: Don't clear success message here - it's cleared when selecting a new part
   }, []);
 
   const toggleBookPartPanel = useCallback(() => {
@@ -498,10 +537,43 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         throw new Error(data.message || "Failed to allocate part from stock");
       }
 
-      setCatalogSuccessMessage(`${selectedCatalogPart.part_number || selectedCatalogPart.name} added to job.`);
+      // Immediately add to local state for instant UI feedback
+      const newJobPart = data.jobPart;
+      if (newJobPart) {
+        const partData = newJobPart.part || newJobPart.parts_catalog || selectedCatalogPart;
+        const localPart = {
+          id: newJobPart.id,
+          partId: partData?.id || selectedCatalogPart.id,
+          partNumber: partData?.part_number || selectedCatalogPart.part_number || "N/A",
+          name: partData?.name || selectedCatalogPart.name || "Part",
+          description: partData?.description || selectedCatalogPart.description || "",
+          quantity: newJobPart.quantity_requested || catalogQuantity,
+          unitPrice: newJobPart.unit_price ?? partData?.unit_price ?? selectedCatalogPart.unit_price ?? 0,
+          unitCost: newJobPart.unit_cost ?? partData?.unit_cost ?? selectedCatalogPart.unit_cost ?? 0,
+          qtyInStock: partData?.qty_in_stock ?? selectedCatalogPart.qty_in_stock ?? 0,
+          storageLocation: newJobPart.storage_location || partData?.storage_location || selectedCatalogPart.storage_location || "Not assigned",
+          status: newJobPart.status || "stock",
+          allocatedToRequestId: null,
+          vhcItemId: null,
+          createdAt: newJobPart.created_at || new Date().toISOString(),
+          source: "local",
+          origin: newJobPart.origin || "job_card",
+          eta_date: null,
+          eta_time: null,
+          supplier_reference: null,
+          prePickLocation: newJobPart.pre_pick_location || null,
+          part: partData,
+        };
+        setLocallyAddedParts((prev) => [...prev, localPart]);
+      }
+
+      const partName = selectedCatalogPart.part_number || selectedCatalogPart.name;
       clearSelectedCatalogPart();
+      setCatalogSuccessMessage(`${partName} added to job.`);
+
+      // Refresh job data in background to sync with database
       if (typeof onRefreshJob === "function") {
-        onRefreshJob();
+        onRefreshJob(); // Don't await - let it refresh in background
       }
       if ((catalogSearch || "").trim().length >= 2) {
         searchStockCatalog(catalogSearch.trim());
@@ -761,35 +833,86 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           font-size: 10px !important;
         }
 
-        /* Create a backdrop overlay within the on-order section when picker is open */
+        /* ========================================
+           On-Order Section Picker Centering
+           ========================================
+           The calendar/time picker menus need to be centered
+           within the on-order section and appear above all content.
+
+           Strategy:
+           1. Make .on-order-section the ONLY positioning context
+           2. Force all intermediate elements to position: static
+           3. Use position: fixed on menus with calculated centering
+        ======================================== */
+
+        /* The on-order section is the positioning reference */
         .on-order-section {
-          position: relative;
-          overflow: visible;
+          position: relative !important;
+          z-index: 1;
         }
 
-        .picker-backdrop {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.5);
-          z-index: 9998;
-          backdrop-filter: blur(4px);
-          border-radius: 12px;
+        /* Force ALL intermediate elements to static positioning
+           so they don't create new positioning contexts */
+        .on-order-section > div,
+        .on-order-section table,
+        .on-order-section thead,
+        .on-order-section tbody,
+        .on-order-section tr,
+        .on-order-section th,
+        .on-order-section td,
+        .on-order-section .calendar-api,
+        .on-order-section .timepicker-api,
+        .on-order-section .compact-input,
+        .on-order-section .compact-input > * {
+          position: static !important;
         }
 
-        /* Center the calendar and time picker menus within the on-order section */
-        .on-order-section .compact-input .calendar-api__menu,
-        .on-order-section .compact-input .timepicker-api__menu {
-          position: absolute !important;
+        /* When picker is open, create an overlay to capture the section bounds */
+        .on-order-section .calendar-api.is-open,
+        .on-order-section .timepicker-api.is-open {
+          position: static !important;
+        }
+
+        /* The dropdown menu - positioned fixed in center of viewport
+           but constrained visually to appear within the section */
+        .on-order-section .calendar-api__menu,
+        .on-order-section .timepicker-api__menu {
+          position: fixed !important;
           top: 50% !important;
           left: 50% !important;
           transform: translate(-50%, -50%) !important;
-          z-index: 9999 !important;
-          box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4) !important;
-          max-height: 400px;
-          overflow-y: auto;
+          z-index: 999999 !important;
+          box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5), 0 0 0 9999px rgba(0, 0, 0, 0.3) !important;
+          max-height: 400px !important;
+          background: var(--surface) !important;
+          border-radius: 12px !important;
+          border: 2px solid var(--primary) !important;
+        }
+
+        /* Calendar specific sizing */
+        .on-order-section .calendar-api__menu {
+          width: auto !important;
+          min-width: 300px !important;
+          padding: 16px !important;
+        }
+
+        /* Time picker specific sizing */
+        .on-order-section .timepicker-api__menu {
+          width: auto !important;
+          min-width: 240px !important;
+          padding: 16px !important;
+        }
+
+        /* Ensure menu content is scrollable if needed */
+        .on-order-section .calendar-api__menu,
+        .on-order-section .timepicker-api__menu {
+          overflow: auto !important;
+        }
+
+        /* Time picker options scrolling */
+        .on-order-section .timepicker-api__options {
+          max-height: 200px !important;
+          overflow-y: auto !important;
         }
 
         /* Optimize the on-order table to use maximum space */
@@ -817,10 +940,24 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           white-space: nowrap !important;
         }
 
-        /* Make part name and number columns flexible */
-        .on-order-table td:nth-child(1),
+        /* Part Name column - max width with horizontal scroll */
+        .on-order-table th:nth-child(1),
+        .on-order-table td:nth-child(1) {
+          max-width: 120px;
+          width: 120px;
+        }
+
+        .on-order-table td:nth-child(1) .part-name-cell {
+          max-width: 120px;
+          overflow-x: auto;
+          overflow-y: hidden;
+          white-space: nowrap;
+          display: block;
+        }
+
+        /* Part Number column */
         .on-order-table td:nth-child(2) {
-          max-width: 200px;
+          max-width: 150px;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
@@ -1072,6 +1209,17 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             </button>
           </div>
         )}
+        {/* Success/Error messages - shown outside selectedCatalogPart block so they remain visible */}
+        {catalogSuccessMessage && !selectedCatalogPart && (
+          <div style={{ padding: "10px", borderRadius: "8px", background: "var(--success-surface)", color: "var(--success-dark)", fontSize: "13px", marginTop: "12px", textAlign: "center" }}>
+            {catalogSuccessMessage}
+          </div>
+        )}
+        {catalogSubmitError && !selectedCatalogPart && (
+          <div style={{ padding: "10px", borderRadius: "8px", background: "var(--warning-surface)", color: "var(--danger)", fontSize: "13px", marginTop: "12px", textAlign: "center" }}>
+            {catalogSubmitError}
+          </div>
+        )}
           </div>
         )}
       </div>
@@ -1145,32 +1293,30 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                       )}
                       <th style={{ textAlign: "left", padding: "8px" }}>Part</th>
                       <th style={{ textAlign: "right", padding: "8px" }}>Qty</th>
-                      <th style={{ textAlign: "left", padding: "8px" }}>Pre-pick</th>
                     </tr>
                   </thead>
                   <tbody>
                     {leftPanelParts.map((part) => {
                       const isSelected = selectedPartIds.includes(part.id);
+                      const isRemoved = removedPartIds.includes(part.id);
 
                       return (
                         <tr
                           key={part.id}
                           onClick={() => {
-                            if (!assignMode) {
-                              setAssignMode(true);
-                              setAssignTargetRequestId(null);
-                            }
-                            togglePartSelection(part.id);
+                            // Open popup for this part
+                            setPartPopup({ open: true, part });
                           }}
                           style={{
                             background: isSelected ? "var(--info-surface)" : "transparent",
                             cursor: "pointer",
                             borderTop: "1px solid var(--surface-light)",
+                            opacity: isRemoved ? 0.6 : 1,
                           }}
                           title={
                             part.source === "goods-in"
                               ? "Goods-in parts will be added as job items when assigned."
-                              : ""
+                              : "Click to view options"
                           }
                         >
                           {assignMode && (
@@ -1191,34 +1337,30 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                           )}
                           {/* Part Column */}
                           <td style={{ padding: "8px", verticalAlign: "top" }}>
-                            <div style={{ fontWeight: 600, color: "var(--accent-purple)" }}>
+                            <div style={{
+                              fontWeight: 600,
+                              color: "var(--accent-purple)",
+                              textDecoration: isRemoved ? "line-through" : "none",
+                            }}>
                               {part.partNumber}
                             </div>
-                            <div style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>
+                            <div style={{
+                              fontSize: "0.85rem",
+                              color: "var(--info-dark)",
+                              textDecoration: isRemoved ? "line-through" : "none",
+                            }}>
                               {part.description || part.name}
                             </div>
                           </td>
 
                           {/* Qty Column */}
-                          <td style={{ padding: "8px", textAlign: "right", verticalAlign: "top" }}>
+                          <td style={{
+                            padding: "8px",
+                            textAlign: "right",
+                            verticalAlign: "top",
+                            textDecoration: isRemoved ? "line-through" : "none",
+                          }}>
                             {part.quantity}
-                          </td>
-
-                          {/* Pre-pick Column */}
-                          <td
-                            style={{ padding: "8px", verticalAlign: "top" }}
-                            onClick={(event) => event.stopPropagation()}
-                          >
-                            <DropdownField
-                              options={PRE_PICK_OPTIONS}
-                              value={part.prePickLocation || part.pre_pick_location || ""}
-                              onChange={(event) =>
-                                handleUpdatePrePickLocation(part, event.target.value)
-                              }
-                              disabled={!canEdit || part.source === "goods-in"}
-                              size="sm"
-                              className="compact-input"
-                            />
                           </td>
                         </tr>
                       );
@@ -1242,20 +1384,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
               minHeight: "400px",
             }}
           >
-          {/* Backdrop for pickers */}
-          {showPickerBackdrop && (
-            <div
-              className="picker-backdrop"
-              onClick={() => {
-                // Close any open pickers by clicking outside
-                const openPickers = document.querySelectorAll('.on-order-section .calendar-api.is-open, .on-order-section .timepicker-api.is-open');
-                openPickers.forEach((picker) => {
-                  const button = picker.querySelector('button.calendar-api__control, button.timepicker-api__control');
-                  if (button) button.click();
-                });
-              }}
-            />
-          )}
           <div style={{ marginBottom: "12px" }}>
             <div
               style={{
@@ -1409,22 +1537,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
               minHeight: "400px",
             }}
           >
-            {showPickerBackdrop && (
-              <div
-                className="picker-backdrop"
-                onClick={() => {
-                  const openPickers = document.querySelectorAll(
-                    ".on-order-section .calendar-api.is-open, .on-order-section .timepicker-api.is-open"
-                  );
-                  openPickers.forEach((picker) => {
-                    const button = picker.querySelector(
-                      "button.calendar-api__control, button.timepicker-api__control"
-                    );
-                    if (button) button.click();
-                  });
-                }}
-              />
-            )}
             <div style={{ marginBottom: "12px" }}>
               <div
                 style={{
@@ -1438,114 +1550,217 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 On Order
               </div>
               <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--info)" }}>
-                {loadingPartsOnOrder
-                  ? "Loading..."
-                  : partsOnOrderFromDB.length > 0
+                {partsOnOrderFromDB.length > 0
                   ? `${partsOnOrderFromDB.length} part${partsOnOrderFromDB.length !== 1 ? "s" : ""} on order`
                   : "No parts currently on order"}
               </p>
             </div>
-            {loadingPartsOnOrder ? (
-              <div
-                style={{
-                  padding: "20px",
-                  textAlign: "center",
-                  color: "var(--info)",
-                  fontSize: "13px",
-                }}
-              >
-                Loading parts...
-              </div>
-            ) : partsOnOrderFromDB.length === 0 ? (
-              <div
-                style={{
-                  padding: "20px",
-                  textAlign: "center",
-                  color: "var(--info)",
-                  fontSize: "13px",
-                  border: "1px dashed var(--surface-light)",
-                  borderRadius: "8px",
-                }}
-              >
-                No parts currently on order for this job.
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                <div style={{ overflowX: "auto" }}>
-                  <table className="on-order-table" style={{ width: "100%", borderCollapse: "collapse" }}>
-                    <thead>
-                      <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
-                        <th style={{ textAlign: "left" }}>Part Name</th>
-                        <th style={{ textAlign: "left" }}>Part Number</th>
-                        <th style={{ textAlign: "right" }}>Qty</th>
-                        <th style={{ textAlign: "right" }}>Price</th>
-                        <th style={{ textAlign: "left" }}>ETA Date</th>
-                        <th style={{ textAlign: "left" }}>ETA Time</th>
-                        <th style={{ textAlign: "center" }}>Action</th>
+            {/* Fixed-size table container */}
+            <div style={{ minHeight: "200px", display: "flex", flexDirection: "column" }}>
+              <div style={{ overflowX: "auto", flex: 1 }}>
+                <table className="on-order-table" style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
+                      <th style={{ textAlign: "left" }}>Part Name</th>
+                      <th style={{ textAlign: "left" }}>Part Number</th>
+                      <th style={{ textAlign: "right" }}>Qty</th>
+                      <th style={{ textAlign: "right" }}>Price</th>
+                      <th style={{ textAlign: "left" }}>ETA Date</th>
+                      <th style={{ textAlign: "left" }}>ETA Time</th>
+                      <th style={{ textAlign: "center" }}>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {partsOnOrderFromDB.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} style={{ textAlign: "center", padding: "40px", color: "var(--info)" }}>
+                          No parts currently on order for this job.
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {partsOnOrderFromDB.map((part) => (
-                        <tr
-                          key={part.id}
-                          style={{
-                            borderTop: "1px solid var(--surface-light)",
-                          }}
-                        >
-                          <td style={{ color: "var(--info-dark)" }}>{part.partName}</td>
-                          <td style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{part.partNumber}</td>
-                          <td style={{ textAlign: "right" }}>{part.quantity}</td>
-                          <td style={{ textAlign: "right" }}>{formatMoney(part.unitPrice)}</td>
-                          <td>
-                            <CalendarField
-                              value={part.etaDate || ""}
-                              onChange={(e) => handleUpdateETA(part.id, "etaDate", e.target.value)}
-                              disabled={!canEdit}
-                              placeholder="Date"
-                              size="sm"
-                              className="compact-input"
-                            />
-                          </td>
-                          <td>
-                            <TimePickerField
-                              value={part.etaTime || ""}
-                              onChange={(e) => handleUpdateETA(part.id, "etaTime", e.target.value)}
-                              disabled={!canEdit}
-                              placeholder="Time"
-                              size="sm"
-                              format="24"
-                              minuteStep={15}
-                              className="compact-input"
-                            />
-                          </td>
-                          <td style={{ textAlign: "center" }}>
-                            <button
-                              type="button"
-                              onClick={() => handlePartArrived(part.id)}
-                              disabled={!canEdit}
-                              style={{
-                                borderRadius: "6px",
-                                border: "1px solid var(--warning)",
-                                background: !canEdit ? "var(--surface-light)" : "var(--warning)",
-                                color: !canEdit ? "var(--info)" : "var(--surface)",
-                                fontWeight: 600,
-                                cursor: !canEdit ? "not-allowed" : "pointer",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              Mark as Arrived
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                    ) : (
+                      partsOnOrderFromDB.map((part) => {
+                        const isArrived = arrivedPartIds.includes(part.id);
+                        return (
+                          <tr
+                            key={part.id}
+                            style={{
+                              borderTop: "1px solid var(--surface-light)",
+                            }}
+                          >
+                            <td style={{ color: "var(--info-dark)" }}>
+                              <span className="part-name-cell">{part.partName}</span>
+                            </td>
+                            <td style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{part.partNumber}</td>
+                            <td style={{ textAlign: "right" }}>{part.quantity}</td>
+                            <td style={{ textAlign: "right" }}>{formatMoney(part.unitPrice)}</td>
+                            <td>
+                              <CalendarField
+                                value={part.etaDate || ""}
+                                onChange={(e) => handleUpdateETA(part.id, "etaDate", e.target.value)}
+                                disabled={!canEdit || isArrived}
+                                placeholder="Date"
+                                size="sm"
+                                className="compact-input"
+                              />
+                            </td>
+                            <td>
+                              <TimePickerField
+                                value={part.etaTime || ""}
+                                onChange={(e) => handleUpdateETA(part.id, "etaTime", e.target.value)}
+                                disabled={!canEdit || isArrived}
+                                placeholder="Time"
+                                size="sm"
+                                format="24"
+                                minuteStep={15}
+                                className="compact-input"
+                              />
+                            </td>
+                            <td style={{ textAlign: "center" }}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (!isArrived) {
+                                    setArrivedPartIds((prev) => [...prev, part.id]);
+                                    handlePartArrived(part.id);
+                                  }
+                                }}
+                                disabled={!canEdit}
+                                style={{
+                                  borderRadius: "6px",
+                                  border: "none",
+                                  background: !canEdit
+                                    ? "var(--surface-light)"
+                                    : isArrived
+                                    ? "var(--success)"
+                                    : "var(--warning)",
+                                  color: !canEdit ? "var(--info)" : "white",
+                                  fontWeight: 600,
+                                  cursor: !canEdit || isArrived ? "not-allowed" : "pointer",
+                                  whiteSpace: "nowrap",
+                                  padding: "6px 12px",
+                                }}
+                              >
+                                {isArrived ? "Arrived" : "Arrived?"}
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
               </div>
-            )}
+            </div>
           </div>
         )}
       </div>
+
+      {/* Part Removal Popup Modal */}
+      {partPopup.open && partPopup.part && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10000,
+          }}
+          onClick={() => setPartPopup({ open: false, part: null })}
+        >
+          <div
+            style={{
+              background: "var(--surface)",
+              borderRadius: "12px",
+              padding: "20px",
+              minWidth: "300px",
+              maxWidth: "400px",
+              boxShadow: "0 25px 50px rgba(0, 0, 0, 0.3)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ marginBottom: "16px" }}>
+              <div
+                style={{
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  color: "var(--primary)",
+                  marginBottom: "8px",
+                }}
+              >
+                Part Details
+              </div>
+              <div
+                style={{
+                  padding: "12px",
+                  background: "var(--info-surface)",
+                  borderRadius: "8px",
+                }}
+              >
+                <div style={{ fontWeight: 600, color: "var(--accent-purple)", marginBottom: "4px" }}>
+                  {partPopup.part.partNumber}
+                </div>
+                <div style={{ fontSize: "13px", color: "var(--info-dark)", marginBottom: "4px" }}>
+                  {partPopup.part.description || partPopup.part.name}
+                </div>
+                <div style={{ fontSize: "12px", color: "var(--info)" }}>
+                  Quantity: {partPopup.part.quantity}
+                </div>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                onClick={() => setPartPopup({ open: false, part: null })}
+                style={{
+                  padding: "10px 16px",
+                  borderRadius: "8px",
+                  border: "1px solid var(--surface-light)",
+                  background: "var(--surface)",
+                  color: "var(--info-dark)",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const partId = partPopup.part.id;
+                  if (removedPartIds.includes(partId)) {
+                    // If already removed, restore it
+                    setRemovedPartIds((prev) => prev.filter((id) => id !== partId));
+                  } else {
+                    // Mark as removed (strikethrough)
+                    setRemovedPartIds((prev) => [...prev, partId]);
+                  }
+                  setPartPopup({ open: false, part: null });
+                }}
+                style={{
+                  padding: "10px 16px",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: removedPartIds.includes(partPopup.part.id)
+                    ? "var(--success)"
+                    : "var(--danger)",
+                  color: "white",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                {removedPartIds.includes(partPopup.part.id) ? "Restore" : "Remove"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 });
