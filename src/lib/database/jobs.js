@@ -457,7 +457,7 @@ export const getAllJobs = async () => {
       appointments(appointment_id, scheduled_time, status, notes, created_at, updated_at),
       vhc_checks(vhc_id, section, issue_title, issue_description, data, measurement, created_at, updated_at, approval_status, display_status, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by),
       parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, pre_pick_location, created_at, updated_at),
-      parts_job_items(
+      parts_job_items!job_id(
         id,
         part_id,
         authorised,
@@ -948,7 +948,7 @@ export const getJobByNumber = async (jobNumber) => {
       ),
       vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at, approval_status, display_status, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by),
       parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, pre_pick_location, created_at, updated_at),
-      parts_job_items(
+      parts_job_items!job_id(
         id,
         part_id,
         authorised,
@@ -1021,6 +1021,13 @@ export const getJobByNumber = async (jobNumber) => {
     return { data: null, error: { message: "Job not found" } };
   }
 
+  // Debug: Log parts data from query
+  console.log("🔍 getJobByNumber parts data:", {
+    job_number: jobData.job_number,
+    parts_job_items_count: jobData.parts_job_items?.length || 0,
+    parts_job_items_ids: (jobData.parts_job_items || []).map(p => p.id).slice(0, 5),
+  });
+
   const messagingThread = await fetchJobMessagingThread(jobData.job_number);
   const formattedJob = formatJobData(jobData);
   formattedJob.messagingThread = messagingThread;
@@ -1058,7 +1065,7 @@ export const getJobByNumber = async (jobNumber) => {
         ),
         vhc_checks(vhc_id, section, issue_title, issue_description, data, measurement, created_at, updated_at, approval_status, display_status, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by),
         parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, pre_pick_location, created_at, updated_at),
-        parts_job_items(
+        parts_job_items!job_id(
           id,
           part_id,
           authorised,
@@ -1247,7 +1254,7 @@ export const getJobByNumberOrReg = async (searchTerm) => {
       appointments(appointment_id, scheduled_time, status, notes),
       vhc_checks(vhc_id, section, issue_title, issue_description),
       parts_requests(request_id, part_id, quantity, status, pre_pick_location),
-      parts_job_items(
+      parts_job_items!job_id(
         id,
         part_id,
         quantity_requested,
@@ -1366,7 +1373,7 @@ export const getJobByNumberOrReg = async (searchTerm) => {
         appointments(appointment_id, scheduled_time, status, notes),
         vhc_checks(vhc_id, section, issue_title, issue_description),
         parts_requests(request_id, part_id, quantity, status, pre_pick_location),
-        parts_job_items(
+        parts_job_items!job_id(
           id,
           part_id,
           quantity_requested,

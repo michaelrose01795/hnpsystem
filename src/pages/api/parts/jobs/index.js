@@ -178,14 +178,16 @@ export default async function handler(req, res) {
       vhcItemId,
     } = req.body || {};
 
-    console.log("[api/parts/jobs] POST", {
+    console.log("[api/parts/jobs] POST request received", {
       jobId,
       partId,
       vhcItemId,
       quantityRequested,
       quantity,
       origin,
+      originType: typeof origin,
       status,
+      allocateFromStock,
       userId,
       userNumericId,
     });
@@ -275,12 +277,14 @@ export default async function handler(req, res) {
 
       if (insertError) throw insertError;
 
-      console.log("[api/parts/jobs] Inserted", {
+      console.log("[api/parts/jobs] Inserted successfully", {
         id: newJobPart?.id,
         job_id: newJobPart?.job_id,
-        vhc_item_id: newJobPart?.vhc_item_id,
-        origin: newJobPart?.origin,
+        part_id: newJobPart?.part_id,
         status: newJobPart?.status,
+        origin: newJobPart?.origin,
+        vhc_item_id: newJobPart?.vhc_item_id,
+        hasPartData: !!newJobPart?.part,
       });
 
       if (shouldAllocate) {
@@ -288,16 +292,34 @@ export default async function handler(req, res) {
         // For VHC/other origins: decrement stock AND add to reserved
         const isBookedPart = resolvedOrigin === "job_card";
 
+        console.log("[api/parts/jobs] Stock allocation check", {
+          resolvedOrigin,
+          isBookedPart,
+          willIncrementReserved: !isBookedPart,
+          currentStock: part.qty_in_stock,
+          currentReserved: part.qty_reserved,
+          quantityToAllocate: resolvedQuantity,
+        });
+
+        // For "booked" parts (job_card origin): only decrement stock, DON'T touch reserved
+        // For VHC/reserved parts: decrement stock AND increment reserved
         const stockUpdate = {
           qty_in_stock: part.qty_in_stock - resolvedQuantity,
           updated_at: new Date().toISOString(),
           updated_by: auditUserId || null,
         };
 
-        // Only increment qty_reserved for non-job_card parts (VHC authorized parts)
+        // IMPORTANT: Only add qty_reserved to update if NOT a booked part
         if (!isBookedPart) {
           stockUpdate.qty_reserved = (part.qty_reserved || 0) + resolvedQuantity;
         }
+
+        console.log("[api/parts/jobs] Stock update payload", {
+          partId,
+          isBookedPart,
+          stockUpdate,
+          hasQtyReservedField: "qty_reserved" in stockUpdate,
+        });
 
         const { error: stockError } = await supabase
           .from("parts_catalog")
@@ -309,7 +331,7 @@ export default async function handler(req, res) {
           throw stockError;
         }
 
-        await supabase.from("parts_stock_movements").insert([
+        const { error: movementError } = await supabase.from("parts_stock_movements").insert([
           {
             part_id: partId,
             job_item_id: newJobPart.id,
@@ -323,6 +345,11 @@ export default async function handler(req, res) {
             created_at: new Date().toISOString(),
           },
         ]);
+
+        // Log movement error but don't fail the request - the job part was already created
+        if (movementError) {
+          console.warn("[api/parts/jobs] Stock movement insert failed:", movementError.message);
+        }
       }
 
       return res.status(201).json({

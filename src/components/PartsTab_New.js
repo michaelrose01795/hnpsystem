@@ -92,6 +92,18 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     ? "Job must be loaded before allocating parts."
     : "";
 
+  // Debug: Log parts data received from server
+  useEffect(() => {
+    if (jobId) {
+      console.log("[PartsTab] Data received:", {
+        jobId,
+        partsAllocations: jobData?.partsAllocations?.length || 0,
+        parts_job_items: jobData?.parts_job_items?.length || 0,
+        locallyAddedParts: locallyAddedParts?.length || 0,
+      });
+    }
+  }, [jobId, jobData?.partsAllocations, jobData?.parts_job_items, locallyAddedParts]);
+
   // Get all parts added to the job (from allocations, parts_job_items, and locally added)
   const jobParts = useMemo(() => {
     // Start with partsAllocations
