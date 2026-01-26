@@ -344,7 +344,9 @@ export default function JobCardDetailPage() {
     "service manager",
     "workshop manager",
     "admin",
-    "admin manager"
+    "admin manager",
+    "parts",
+    "parts manager"
   ].some((role) => userRoles.includes(role));
   const canManageDocumentsBase = [
     "service manager",

@@ -12,7 +12,8 @@ const normalizePartStatus = (status = "") => {
   if (["priced"].includes(normalized)) return "priced";
   if (["pre_pick", "pre-pick", "picked"].includes(normalized)) return "pre_pick";
   if (["on_order", "on-order", "awaiting_stock"].includes(normalized)) return "on_order";
-  if (["stock", "allocated", "fitted"].includes(normalized)) return "stock";
+  if (["booked"].includes(normalized)) return "booked";
+  if (["stock", "allocated", "fitted", "reserved"].includes(normalized)) return "stock";
   return "pending";
 };
 
@@ -265,6 +266,20 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       map.set(key, existing);
     });
     return map;
+  }, [jobParts]);
+
+  // Set of part numbers that exist in PARTS ADDED TO JOB (non-on_order status)
+  // Used to auto-detect "arrived" parts in the ON ORDER section
+  const arrivedPartNumbers = useMemo(() => {
+    const partNumbers = new Set();
+    jobParts.forEach((part) => {
+      const status = normalizePartStatus(part.status);
+      // If part is NOT on_order, it's considered "arrived" (booked, stock, allocated, etc.)
+      if (status !== "on_order" && part.partNumber && part.partNumber !== "N/A") {
+        partNumbers.add(part.partNumber.toLowerCase().trim());
+      }
+    });
+    return partNumbers;
   }, [jobParts]);
 
   // Parts on order - derived from jobData (loads immediately with job card)
@@ -552,7 +567,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           unitCost: newJobPart.unit_cost ?? partData?.unit_cost ?? selectedCatalogPart.unit_cost ?? 0,
           qtyInStock: partData?.qty_in_stock ?? selectedCatalogPart.qty_in_stock ?? 0,
           storageLocation: newJobPart.storage_location || partData?.storage_location || selectedCatalogPart.storage_location || "Not assigned",
-          status: newJobPart.status || "stock",
+          status: newJobPart.status || "booked",
           allocatedToRequestId: null,
           vhcItemId: null,
           createdAt: newJobPart.created_at || new Date().toISOString(),
@@ -1579,7 +1594,10 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                       </tr>
                     ) : (
                       partsOnOrderFromDB.map((part) => {
-                        const isArrived = arrivedPartIds.includes(part.id);
+                        // Check if manually marked as arrived OR auto-detected via part number match
+                        const isManuallyArrived = arrivedPartIds.includes(part.id);
+                        const isAutoArrived = part.partNumber && arrivedPartNumbers.has(part.partNumber.toLowerCase().trim());
+                        const isArrived = isManuallyArrived || isAutoArrived;
                         return (
                           <tr
                             key={part.id}
@@ -1624,7 +1642,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                     handlePartArrived(part.id);
                                   }
                                 }}
-                                disabled={!canEdit}
+                                disabled={!canEdit || isArrived}
                                 style={{
                                   borderRadius: "6px",
                                   border: "none",

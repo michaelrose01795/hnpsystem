@@ -235,8 +235,16 @@ export default async function handler(req, res) {
           ? prePickLocation
           : null;
 
-      const resolvedStatus = status || (shouldAllocate ? "stock" : "on_order");
+      // Determine status based on origin:
+      // - job_card: "booked" (added to job, not VHC reserved)
+      // - vhc: "stock" (VHC authorized, reserved)
+      // - other: "stock" or "on_order" based on allocation
       const resolvedOrigin = origin || "parts_workspace";
+      const resolvedStatus = status || (
+        shouldAllocate
+          ? (resolvedOrigin === "job_card" ? "booked" : "stock")
+          : "on_order"
+      );
 
       const payload = {
         job_id: jobId,
@@ -276,14 +284,24 @@ export default async function handler(req, res) {
       });
 
       if (shouldAllocate) {
+        // For job_card origin: only decrement stock, don't add to reserved (booked parts)
+        // For VHC/other origins: decrement stock AND add to reserved
+        const isBookedPart = resolvedOrigin === "job_card";
+
+        const stockUpdate = {
+          qty_in_stock: part.qty_in_stock - resolvedQuantity,
+          updated_at: new Date().toISOString(),
+          updated_by: auditUserId || null,
+        };
+
+        // Only increment qty_reserved for non-job_card parts (VHC authorized parts)
+        if (!isBookedPart) {
+          stockUpdate.qty_reserved = (part.qty_reserved || 0) + resolvedQuantity;
+        }
+
         const { error: stockError } = await supabase
           .from("parts_catalog")
-          .update({
-            qty_in_stock: part.qty_in_stock - resolvedQuantity,
-            qty_reserved: (part.qty_reserved || 0) + resolvedQuantity,
-            updated_at: new Date().toISOString(),
-            updated_by: auditUserId || null,
-          })
+          .update(stockUpdate)
           .eq("id", partId);
 
         if (stockError) {
@@ -295,7 +313,7 @@ export default async function handler(req, res) {
           {
             part_id: partId,
             job_item_id: newJobPart.id,
-            movement_type: "allocation",
+            movement_type: isBookedPart ? "booked" : "allocation",
             quantity: resolvedQuantity,
             unit_cost: resolvedUnitCost,
             unit_price: resolvedUnitPrice,

@@ -3,8 +3,8 @@ TO DO:
 Continue flow with job number 54
 pre pricked loaction error see if database tables needa dding, chatgpt prompts
 
-check
-When "Add to Job" button is pressed within the "SEARCH PARTS STOCK" section within the parts tab, the part row is added to the "PARTS ADDED TO JOB" section. 
+CHECKKK auto arrived when part added to job. 
+
 
 
 Have is so within the "/stock-catalogue" pagee, when a part is cliked and it opens the popup secition, add a button "Add part to job" within the "LINKED JOBS" section on the same row as the title. this then opens a popup for the user to seach for a job number (links to database) and when clicked to add to job number selected it will then show within the On order section inside the parts Parts tab inside the job-cards/[jobnumber] page.
