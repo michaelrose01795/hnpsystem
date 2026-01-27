@@ -55,6 +55,25 @@ const cleanText = (value) => {
   return trimmed.length ? trimmed : null;
 };
 
+const normaliseNumber = (value, { defaultValue = null, min = null } = {}) => {
+  if (value === null || value === undefined || value === "") {
+    return defaultValue;
+  }
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return defaultValue;
+  }
+  if (min !== null && parsed < min) {
+    return min;
+  }
+  return parsed;
+};
+
+const normaliseQuantity = (value) => {
+  const parsed = normaliseNumber(value, { defaultValue: null, min: 0 });
+  return parsed === null ? null : parsed;
+};
+
 const normaliseJson = (value, fallback) => {
   if (value === null || value === undefined) return fallback;
   if (typeof value === "object") return value;
@@ -175,6 +194,7 @@ async function handler(req, res, session) {
     discountCode,
     packSize,
     vatRate,
+    quantity,
     addedToJob,
     jobId,
     jobNumber,
@@ -207,6 +227,9 @@ async function handler(req, res, session) {
   }
   if (vatRate !== undefined) {
     updates.vat_rate = cleanText(vatRate);
+  }
+  if (quantity !== undefined) {
+    updates.quantity = normaliseQuantity(quantity);
   }
   if (addedToJob !== undefined) {
     updates.added_to_job = Boolean(addedToJob);

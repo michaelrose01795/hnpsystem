@@ -2,16 +2,7 @@ TO DO:
 
 Continue flow with job number 54
 
-
-pre pricked loaction error see if database tables needa dding, chatgpt prompts
-
-Bin location fix dropdown, remove dropdown and add normal field, have it so it creates a list of the content of the list first 
-
-
-Make the "Quantity", "Retail price", "Cost price", "Discount code" fields all the length of the title.
-
-have it so within the "Add goods-in parts to a job" popup the quantity can be edited to how many are required to adding to the job, example is 2 items are added to the GIN but when booking to the job number only 1 wants to be booked, so we are going to add a selected section and a section for the rows to be selected (add a remove button which moves the row (or quantity correctly)back into the select section). if 1 is added the row with the details are shown with quantity 1 unselected section will also show the row with detauls and quantity of 1 for this example. 
-
+checkkkk
 Remove the "New part details" section fields from iniside the "Add Parts" popup within the job-cards/[jobnumber] page and replace it with "Add part" section within the GOODs in page except from the "search catalogue" button. 
 
 Does the "Supplier search" button work inside goods in page!!!!
@@ -19,6 +10,8 @@ Does the "Supplier search" button work inside goods in page!!!!
 have it so the "STATUS" column within the job-cards/[jobnumber] page always shows the order button or ORdered button, this button resets to Order if the part has been removed for the Parts identified inside the add parts popup. 
 
 
+
+fix Insufficient permissions within the Supplier accounts popup
 
 
 CHECKKKKKK

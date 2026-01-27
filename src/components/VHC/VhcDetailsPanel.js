@@ -35,6 +35,16 @@ const STATUS_BADGES = {
 
 const PART_META_PREFIX = "VHC_META:";
 
+const createDefaultNewPartForm = () => ({
+  partNumber: "",
+  quantity: 1,
+  binLocation: "",
+  discountCode: "",
+  description: "",
+  retailPrice: "",
+  costPrice: "",
+});
+
 const extractPartMeta = (requestNotes) => {
   if (!requestNotes || typeof requestNotes !== "string") return {};
   const markerIndex = requestNotes.indexOf(PART_META_PREFIX);
@@ -840,17 +850,7 @@ export default function VhcDetailsPanel({
   const [showNewPartForm, setShowNewPartForm] = useState(false);
   const [newPartSaving, setNewPartSaving] = useState(false);
   const [newPartError, setNewPartError] = useState("");
-  const [newPartForm, setNewPartForm] = useState({
-    partNumber: "",
-    name: "",
-    supplier: "",
-    category: "",
-    storageLocation: "",
-    unitCost: "",
-    unitPrice: "",
-    description: "",
-    notes: "",
-  });
+  const [newPartForm, setNewPartForm] = useState(() => createDefaultNewPartForm());
   const refreshJobData = useCallback(
     (...args) => {
       if (typeof onJobDataRefresh !== "function") {
@@ -3638,13 +3638,9 @@ export default function VhcDetailsPanel({
 
   const handleCreateNewPart = useCallback(async () => {
     const fieldLabels = {
-      partNumber: "Part Number",
-      name: "Name",
-      supplier: "Supplier",
-      category: "Category",
-      storageLocation: "Storage Location",
-      unitCost: "Unit Cost",
-      unitPrice: "Unit Price",
+      partNumber: "Part number",
+      costPrice: "Cost price",
+      retailPrice: "Retail price",
     };
     const requiredFields = Object.keys(fieldLabels);
     const missing = requiredFields.filter((field) => !String(newPartForm[field] || "").trim());
@@ -3653,12 +3649,20 @@ export default function VhcDetailsPanel({
       return;
     }
 
-    const unitCostValue = Number(newPartForm.unitCost);
-    const unitPriceValue = Number(newPartForm.unitPrice);
+    const unitCostValue = Number(newPartForm.costPrice);
+    const unitPriceValue = Number(newPartForm.retailPrice);
     if (!Number.isFinite(unitCostValue) || !Number.isFinite(unitPriceValue)) {
-      setNewPartError("Unit cost and unit price must be valid numbers.");
+      setNewPartError("Cost price and retail price must be valid numbers.");
       return;
     }
+
+    const nameValue = String(newPartForm.description || newPartForm.partNumber).trim();
+    const supplierValue = "Unspecified";
+    const categoryValue = "General";
+    const storageLocationValue = String(newPartForm.binLocation || "Unassigned").trim();
+    const notesValue = newPartForm.discountCode
+      ? `Discount code: ${String(newPartForm.discountCode).trim()}`
+      : "";
 
     setNewPartSaving(true);
     setNewPartError("");
@@ -3668,14 +3672,14 @@ export default function VhcDetailsPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           partNumber: newPartForm.partNumber.trim(),
-          name: newPartForm.name.trim(),
-          supplier: newPartForm.supplier.trim(),
-          category: newPartForm.category.trim(),
-          storageLocation: newPartForm.storageLocation.trim(),
+          name: nameValue || newPartForm.partNumber.trim(),
+          supplier: supplierValue,
+          category: categoryValue,
+          storageLocation: storageLocationValue,
           unitCost: unitCostValue,
           unitPrice: unitPriceValue,
-          description: newPartForm.description.trim(),
-          notes: newPartForm.notes.trim(),
+          description: String(newPartForm.description || "").trim(),
+          notes: notesValue,
         }),
       });
       const payload = await response.json();
@@ -3688,21 +3692,28 @@ export default function VhcDetailsPanel({
       }
 
       const newPart = payload.part;
-      setAddPartsMessage("New part created. Select it to add to the VHC item.");
+      setAddPartsMessage("New part created and added to selection.");
       setAddPartsSearch(newPart?.part_number || newPartForm.partNumber.trim());
       setAddPartsResults(newPart ? [newPart] : []);
+      if (newPart?.id) {
+        setSelectedParts((prev) => {
+          if (prev.some((entry) => entry.part?.id === newPart.id)) {
+            return prev;
+          }
+          return [
+            ...prev,
+            {
+              part: newPart,
+              quantity: newPartForm.quantity || 1,
+              warranty: false,
+              backOrder: false,
+              surcharge: false,
+            },
+          ];
+        });
+      }
       setShowNewPartForm(false);
-      setNewPartForm({
-        partNumber: "",
-        name: "",
-        supplier: "",
-        category: "",
-        storageLocation: "",
-        unitCost: "",
-        unitPrice: "",
-        description: "",
-        notes: "",
-      });
+      setNewPartForm(createDefaultNewPartForm());
     } catch (error) {
       console.error("Failed to create new part:", error);
       setNewPartError(error.message || "Unable to create new part.");
@@ -6197,156 +6208,167 @@ export default function VhcDetailsPanel({
 
           {showNewPartForm && (
             <div style={{ border: "1px solid var(--accent-purple-surface)", borderRadius: "12px", padding: "16px", background: "var(--surface)" }}>
-              <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--accent-purple)", marginBottom: "12px" }}>
-                New part details
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                <h2 style={{ margin: 0, fontSize: "16px", color: "var(--text-primary)" }}>Add part</h2>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
-                <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", fontWeight: 600, color: "var(--info)" }}>
-                  Part Number
+              {newPartError && (
+                <div
+                  style={{
+                    border: "1px solid var(--danger)",
+                    borderRadius: "12px",
+                    padding: "10px 14px",
+                    color: "var(--danger)",
+                    background: "var(--danger-surface, rgba(239, 68, 68, 0.08))",
+                    marginBottom: "12px",
+                  }}
+                >
+                  {newPartError}
+                </div>
+              )}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--info)", marginBottom: "6px" }}>Part number</label>
                   <input
                     type="text"
                     value={newPartForm.partNumber}
                     onChange={(event) => handleNewPartFieldChange("partNumber", event.target.value)}
+                    placeholder="e.g., FPAD1"
                     style={{
-                      padding: "8px 10px",
-                      borderRadius: "8px",
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: "10px",
                       border: "1px solid var(--accent-purple-surface)",
                       background: "var(--surface)",
                       color: "var(--text-primary)",
                     }}
                   />
-                </label>
-                <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", fontWeight: 600, color: "var(--info)" }}>
-                  Name
-                  <input
-                    type="text"
-                    value={newPartForm.name}
-                    onChange={(event) => handleNewPartFieldChange("name", event.target.value)}
-                    style={{
-                      padding: "8px 10px",
-                      borderRadius: "8px",
-                      border: "1px solid var(--accent-purple-surface)",
-                      background: "var(--surface)",
-                      color: "var(--text-primary)",
-                    }}
-                  />
-                </label>
-                <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", fontWeight: 600, color: "var(--info)" }}>
-                  Supplier
-                  <input
-                    type="text"
-                    value={newPartForm.supplier}
-                    onChange={(event) => handleNewPartFieldChange("supplier", event.target.value)}
-                    style={{
-                      padding: "8px 10px",
-                      borderRadius: "8px",
-                      border: "1px solid var(--accent-purple-surface)",
-                      background: "var(--surface)",
-                      color: "var(--text-primary)",
-                    }}
-                  />
-                </label>
-                <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", fontWeight: 600, color: "var(--info)" }}>
-                  Category
-                  <input
-                    type="text"
-                    value={newPartForm.category}
-                    onChange={(event) => handleNewPartFieldChange("category", event.target.value)}
-                    style={{
-                      padding: "8px 10px",
-                      borderRadius: "8px",
-                      border: "1px solid var(--accent-purple-surface)",
-                      background: "var(--surface)",
-                      color: "var(--text-primary)",
-                    }}
-                  />
-                </label>
-                <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", fontWeight: 600, color: "var(--info)" }}>
-                  Storage Location
-                  <input
-                    type="text"
-                    value={newPartForm.storageLocation}
-                    onChange={(event) => handleNewPartFieldChange("storageLocation", event.target.value)}
-                    style={{
-                      padding: "8px 10px",
-                      borderRadius: "8px",
-                      border: "1px solid var(--accent-purple-surface)",
-                      background: "var(--surface)",
-                      color: "var(--text-primary)",
-                    }}
-                  />
-                </label>
-                <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", fontWeight: 600, color: "var(--info)" }}>
-                  Unit Cost
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--info)", marginBottom: "6px" }}>Quantity</label>
                   <input
                     type="number"
                     min="0"
-                    step="0.01"
-                    value={newPartForm.unitCost}
-                    onChange={(event) => handleNewPartFieldChange("unitCost", event.target.value)}
+                    value={newPartForm.quantity}
+                    onChange={(event) => {
+                      const nextValue = event.target.value;
+                      handleNewPartFieldChange("quantity", nextValue === "" ? "" : Number(nextValue));
+                    }}
                     style={{
-                      padding: "8px 10px",
-                      borderRadius: "8px",
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: "10px",
                       border: "1px solid var(--accent-purple-surface)",
                       background: "var(--surface)",
                       color: "var(--text-primary)",
                     }}
                   />
-                </label>
-                <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", fontWeight: 600, color: "var(--info)" }}>
-                  Unit Price
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={newPartForm.unitPrice}
-                    onChange={(event) => handleNewPartFieldChange("unitPrice", event.target.value)}
-                    style={{
-                      padding: "8px 10px",
-                      borderRadius: "8px",
-                      border: "1px solid var(--accent-purple-surface)",
-                      background: "var(--surface)",
-                      color: "var(--text-primary)",
-                    }}
-                  />
-                </label>
-                <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", fontWeight: 600, color: "var(--info)" }}>
-                  Description
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--info)", marginBottom: "6px" }}>Bin location</label>
                   <input
                     type="text"
+                    value={newPartForm.binLocation}
+                    onChange={(event) => handleNewPartFieldChange("binLocation", event.target.value)}
+                    placeholder="A1"
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: "10px",
+                      border: "1px solid var(--accent-purple-surface)",
+                      background: "var(--surface)",
+                      color: "var(--text-primary)",
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--info)", marginBottom: "6px" }}>Discount code</label>
+                  <input
+                    type="text"
+                    value={newPartForm.discountCode}
+                    onChange={(event) => handleNewPartFieldChange("discountCode", event.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: "10px",
+                      border: "1px solid var(--accent-purple-surface)",
+                      background: "var(--surface)",
+                      color: "var(--text-primary)",
+                    }}
+                  />
+                </div>
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--info)", marginBottom: "6px" }}>Description</label>
+                  <textarea
                     value={newPartForm.description}
                     onChange={(event) => handleNewPartFieldChange("description", event.target.value)}
+                    rows={2}
                     style={{
-                      padding: "8px 10px",
-                      borderRadius: "8px",
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: "10px",
                       border: "1px solid var(--accent-purple-surface)",
                       background: "var(--surface)",
                       color: "var(--text-primary)",
+                      resize: "vertical",
                     }}
                   />
-                </label>
-                <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", fontWeight: 600, color: "var(--info)" }}>
-                  Notes
-                  <input
-                    type="text"
-                    value={newPartForm.notes}
-                    onChange={(event) => handleNewPartFieldChange("notes", event.target.value)}
-                    style={{
-                      padding: "8px 10px",
-                      borderRadius: "8px",
-                      border: "1px solid var(--accent-purple-surface)",
-                      background: "var(--surface)",
-                      color: "var(--text-primary)",
-                    }}
-                  />
-                </label>
-              </div>
-              {newPartError && (
-                <div style={{ marginTop: "10px", fontSize: "12px", color: "var(--danger)" }}>
-                  {newPartError}
                 </div>
-              )}
-              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "12px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--info)", marginBottom: "6px" }}>Retail price</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={newPartForm.retailPrice}
+                    onChange={(event) => handleNewPartFieldChange("retailPrice", event.target.value)}
+                    placeholder="0.00"
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: "10px",
+                      border: "1px solid var(--accent-purple-surface)",
+                      background: "var(--surface)",
+                      color: "var(--text-primary)",
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--info)", marginBottom: "6px" }}>Cost price</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={newPartForm.costPrice}
+                    onChange={(event) => handleNewPartFieldChange("costPrice", event.target.value)}
+                    placeholder="0.00"
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: "10px",
+                      border: "1px solid var(--accent-purple-surface)",
+                      background: "var(--surface)",
+                      color: "var(--text-primary)",
+                    }}
+                  />
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "12px" }}>
+                <button
+                  type="button"
+                  onClick={() => setNewPartForm(createDefaultNewPartForm())}
+                  style={{
+                    padding: "10px 16px",
+                    borderRadius: "8px",
+                    border: "1px solid var(--accent-purple-surface)",
+                    background: "var(--surface)",
+                    color: "var(--info-dark)",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                  disabled={newPartSaving}
+                >
+                  Clear
+                </button>
                 <button
                   type="button"
                   onClick={handleCreateNewPart}
@@ -6361,7 +6383,7 @@ export default function VhcDetailsPanel({
                     cursor: newPartSaving ? "not-allowed" : "pointer",
                   }}
                 >
-                  {newPartSaving ? "Saving…" : "Save new part"}
+                  {newPartSaving ? "Adding…" : "Add part"}
                 </button>
               </div>
             </div>
