@@ -6,13 +6,6 @@ Continue flow with job number 54
 pre pricked loaction error see if database tables needa dding, chatgpt prompts
 
 
-
-Have is so within the "/stock-catalogue" pagee, when a part is cliked and it opens the popup secition, add a button "Add part to job" within the "LINKED JOBS" section on the same row as the title. this then opens a popup for the user to seach for a job number (links to database) and when clicked to add to job number selected it will then show within the On order section inside the parts Parts tab inside the job-cards/[jobnumber] page.
-
-Have it so the "Quantity" field within the goods in page is defualt to 1(dont change this as already good) but have it if the user wants to remove everything in the field it can go blank without having a "0" in the field. Have "Franchise" dropdown to default show "stock". Make the "Bin location" field the widths of three characters. Add the discount code seciton to the right of the "Bin location" field on the same row. 
-
-"Bin location" dropdown to follow dropdown style api but override the dropdown style api so the dropdown button doesnt change size and follows the same style as the other fields within the goods in page. 
-
 Make the "Quantity", "Retail price", "Cost price", "Discount code" fields all the length of the title.
 
 have it so within the "Add goods-in parts to a job" popup the quantity can be edited to how many are required to adding to the job, example is 2 items are added to the GIN but when booking to the job number only 1 wants to be booked, so we are going to add a selected section and a section for the rows to be selected (add a remove button which moves the row (or quantity correctly)back into the select section). if 1 is added the row with the details are shown with quantity 1 unselected section will also show the row with detauls and quantity of 1 for this example. 

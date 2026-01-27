@@ -30,8 +30,6 @@ const BIN_LOCATION_OPTIONS = (() => {
   return options;
 })();
 
-const BIN_LOCATION_DATALIST_ID = "goods-in-bin-options";
-
 const VAT_RATE_OPTIONS = [
   { value: "standard", label: "Standard" },
   { value: "reduced", label: "Reduced" },
@@ -187,7 +185,7 @@ const createDefaultPartForm = () => ({
   description: "",
   quantity: 1,
   binLocation: "",
-  franchise: FRANCHISE_OPTIONS[0],
+  franchise: "Stock",
   retailPrice: "",
   costPrice: "",
   discountCode: "",
@@ -740,6 +738,20 @@ function GoodsInPage() {
         .compact-dropdown :global(.dropdown-api__chevron) {
           right: 12px;
         }
+        .goods-in-bin-dropdown :global(.dropdown-api__control) {
+          min-height: 40px !important;
+          padding: 10px 32px 10px 12px !important;
+          border-radius: 10px !important;
+          font-size: 0.95rem !important;
+          border: 1px solid var(--surface-light) !important;
+          background: var(--layer-section-level-1) !important;
+          box-shadow: none !important;
+        }
+        .goods-in-bin-dropdown :global(.dropdown-api__control:focus-visible) {
+          background: var(--layer-section-level-1) !important;
+          border: 1px solid var(--surface-light) !important;
+          box-shadow: none !important;
+        }
         .compact-calendar :global(.calendar-api__control) {
           padding: 10px 40px 10px 12px;
           border-radius: 10px;
@@ -987,24 +999,37 @@ function GoodsInPage() {
                 style={inputStyle}
                 min="0"
                 value={partForm.quantity}
-                onChange={(event) => handlePartChange("quantity", Number(event.target.value))}
+                onChange={(event) => {
+                  const nextValue = event.target.value;
+                  handlePartChange("quantity", nextValue === "" ? "" : Number(nextValue));
+                }}
               />
             </div>
             <div>
               <label style={labelStyle}>Bin location</label>
-              <input
-                type="search"
-                list={BIN_LOCATION_DATALIST_ID}
-                style={inputStyle}
+              <DropdownField
+                className="goods-in-bin-dropdown"
                 value={partForm.binLocation}
                 onChange={(event) => handlePartChange("binLocation", event.target.value)}
+                searchable
+                searchPlaceholder="Search bin"
+                style={{ width: "6ch" }}
                 placeholder="A1"
-              />
-              <datalist id={BIN_LOCATION_DATALIST_ID}>
+              >
                 {BIN_LOCATION_OPTIONS.map((location) => (
-                  <option key={location} value={location} />
+                  <option key={location} value={location}>
+                    {location}
+                  </option>
                 ))}
-              </datalist>
+              </DropdownField>
+            </div>
+            <div>
+              <label style={labelStyle}>Discount code</label>
+              <input
+                style={inputStyle}
+                value={partForm.discountCode}
+                onChange={(event) => handlePartChange("discountCode", event.target.value)}
+              />
             </div>
             <div>
               <label style={labelStyle}>Description</label>
@@ -1037,14 +1062,6 @@ function GoodsInPage() {
                 value={partForm.costPrice}
                 onChange={(event) => handlePartChange("costPrice", event.target.value)}
                 placeholder="0.00"
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Discount code</label>
-              <input
-                style={inputStyle}
-                value={partForm.discountCode}
-                onChange={(event) => handlePartChange("discountCode", event.target.value)}
               />
             </div>
           </div>

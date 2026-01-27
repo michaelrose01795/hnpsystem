@@ -905,6 +905,25 @@ body:has(.login-page-wrapper) {
   backdrop-filter: blur(12px);
 }
 
+.dropdown-api__search {
+  padding: 4px;
+}
+
+.dropdown-api__search-input {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid var(--surface-light);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  padding: 8px 10px;
+  outline: none;
+}
+
+.dropdown-api__search-input:focus-visible {
+  border-color: var(--primary);
+}
+
 .dropdown-api__menu[hidden] {
   display: none;
 }

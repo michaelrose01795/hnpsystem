@@ -31,6 +31,8 @@ export default function Dropdown({
   className = "",
   size = "md",
   emptyState = "No results found",
+  searchable = false,
+  searchPlaceholder = "Search options",
   id,
   style,
   ...rest
@@ -52,8 +54,10 @@ export default function Dropdown({
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [menuPosition, setMenuPosition] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef(null);
   const menuRef = useRef(null);
+  const searchInputRef = useRef(null);
 
   const normalizedOptions = useMemo(
     () =>
@@ -125,6 +129,17 @@ export default function Dropdown({
     );
   }, [value, normalizedOptions]);
 
+  const visibleOptions = useMemo(() => {
+    if (!searchable || !searchTerm.trim()) return normalizedOptions;
+    const needle = searchTerm.trim().toLowerCase();
+    return normalizedOptions.filter((option) => {
+      const label = String(option.label ?? "").toLowerCase();
+      const description = String(option.description ?? "").toLowerCase();
+      const meta = String(option.meta ?? "").toLowerCase();
+      return label.includes(needle) || description.includes(needle) || meta.includes(needle);
+    });
+  }, [normalizedOptions, searchable, searchTerm]);
+
   const toggle = () => {
     if (disabled) return;
     setIsOpen((prev) => !prev);
@@ -160,9 +175,10 @@ export default function Dropdown({
           return;
         }
         setActiveIndex((prev) => {
+          if (visibleOptions.length === 0) return -1;
           const nextIndex = event.key === "ArrowDown" ? prev + 1 : prev - 1;
-          if (nextIndex < 0) return normalizedOptions.length - 1;
-          if (nextIndex >= normalizedOptions.length) return 0;
+          if (nextIndex < 0) return visibleOptions.length - 1;
+          if (nextIndex >= visibleOptions.length) return 0;
           return nextIndex;
         });
         break;
@@ -181,7 +197,8 @@ export default function Dropdown({
     } else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
       const offset = event.key === "ArrowDown" ? 1 : -1;
-      const nextIndex = (index + offset + normalizedOptions.length) % normalizedOptions.length;
+      if (visibleOptions.length === 0) return;
+      const nextIndex = (index + offset + visibleOptions.length) % visibleOptions.length;
       setActiveIndex(nextIndex);
       menuRef.current?.querySelectorAll("[data-option-button]")[nextIndex]?.focus();
     } else if (event.key === "Escape") {
@@ -194,11 +211,31 @@ export default function Dropdown({
   useEffect(() => {
     if (isOpen) {
       const selectedIndex = selectedOption
-        ? normalizedOptions.findIndex((option) => option.key === selectedOption.key)
+        ? visibleOptions.findIndex((option) => option.key === selectedOption.key)
         : -1;
-      setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0);
+      setActiveIndex(selectedIndex >= 0 ? selectedIndex : visibleOptions.length > 0 ? 0 : -1);
+      if (searchable) {
+        setTimeout(() => searchInputRef.current?.focus(), 0);
+      }
     }
-  }, [isOpen, normalizedOptions, selectedOption]);
+  }, [isOpen, searchable, selectedOption, visibleOptions]);
+
+  useEffect(() => {
+    if (!isOpen && searchTerm) {
+      setSearchTerm("");
+    }
+  }, [isOpen, searchTerm]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (visibleOptions.length === 0) {
+      setActiveIndex(-1);
+      return;
+    }
+    if (activeIndex >= visibleOptions.length) {
+      setActiveIndex(0);
+    }
+  }, [activeIndex, isOpen, visibleOptions.length]);
 
   // Close when clicking outside
   useEffect(() => {
@@ -328,10 +365,38 @@ export default function Dropdown({
             ref={menuRef}
             style={menuPosition ?? undefined}
           >
-            {normalizedOptions.length === 0 && (
+            {searchable && (
+              <div className="dropdown-api__search">
+                <input
+                  ref={searchInputRef}
+                  type="search"
+                  className="dropdown-api__search-input"
+                  placeholder={searchPlaceholder}
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+                      event.preventDefault();
+                      if (visibleOptions.length === 0) return;
+                      setActiveIndex((prev) => {
+                        const nextIndex = event.key === "ArrowDown" ? prev + 1 : prev - 1;
+                        if (nextIndex < 0) return visibleOptions.length - 1;
+                        if (nextIndex >= visibleOptions.length) return 0;
+                        return nextIndex;
+                      });
+                      menuRef.current?.querySelectorAll("[data-option-button]")[0]?.focus();
+                    } else if (event.key === "Escape") {
+                      event.preventDefault();
+                      close();
+                    }
+                  }}
+                />
+              </div>
+            )}
+            {visibleOptions.length === 0 && (
               <div className="dropdown-api__empty">{emptyState}</div>
             )}
-            {normalizedOptions.map((option, index) => {
+            {visibleOptions.map((option, index) => {
               const isSelected = selectedOption?.key === option.key;
               return (
                 <button
