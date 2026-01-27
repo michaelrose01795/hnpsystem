@@ -740,17 +740,9 @@ function GoodsInPage() {
         }
         .goods-in-bin-dropdown :global(.dropdown-api__control) {
           min-height: 40px !important;
-          padding: 10px 32px 10px 12px !important;
+          padding: 10px 40px 10px 12px !important;
           border-radius: 10px !important;
           font-size: 0.95rem !important;
-          border: 1px solid var(--surface-light) !important;
-          background: var(--layer-section-level-1) !important;
-          box-shadow: none !important;
-        }
-        .goods-in-bin-dropdown :global(.dropdown-api__control:focus-visible) {
-          background: var(--layer-section-level-1) !important;
-          border: 1px solid var(--surface-light) !important;
-          box-shadow: none !important;
         }
         .compact-calendar :global(.calendar-api__control) {
           padding: 10px 40px 10px 12px;
@@ -1008,11 +1000,9 @@ function GoodsInPage() {
             <div>
               <label style={labelStyle}>Bin location</label>
               <DropdownField
-                className="goods-in-bin-dropdown"
+                className="compact-dropdown goods-in-bin-dropdown"
                 value={partForm.binLocation}
                 onChange={(event) => handlePartChange("binLocation", event.target.value)}
-                searchable
-                searchPlaceholder="Search bin"
                 style={{ width: "6ch" }}
                 placeholder="A1"
               >
