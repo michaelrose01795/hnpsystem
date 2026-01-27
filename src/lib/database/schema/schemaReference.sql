@@ -1073,7 +1073,7 @@ CREATE TABLE public.parts_job_items (
   quantity_requested integer NOT NULL DEFAULT 1,
   quantity_allocated integer NOT NULL DEFAULT 0,
   quantity_fitted integer NOT NULL DEFAULT 0,
-  status text NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'waiting_authorisation'::text, 'awaiting_stock'::text, 'on_order'::text, 'booked'::text, 'allocated'::text, 'pre_picked'::text, 'picked'::text, 'stock'::text, 'fitted'::text, 'cancelled'::text])),
+  status text NOT NULL DEFAULT 'pending'::text CHECK (status IS NULL OR (status = ANY (ARRAY['pending'::text, 'waiting_authorisation'::text, 'awaiting_stock'::text, 'on_order'::text, 'booked'::text, 'allocated'::text, 'pre_picked'::text, 'picked'::text, 'stock'::text, 'fitted'::text, 'cancelled'::text, 'removed'::text]))),
   origin text DEFAULT 'vhc'::text,
   pre_pick_location text CHECK (pre_pick_location IS NULL OR (pre_pick_location = ANY (ARRAY['service_rack_1'::text, 'service_rack_2'::text, 'service_rack_3'::text, 'service_rack_4'::text, 'sales_rack_1'::text, 'sales_rack_2'::text, 'sales_rack_3'::text, 'sales_rack_4'::text, 'stairs_pre_pick'::text, 'no_pick'::text, 'on_order'::text]))),
   storage_location text,

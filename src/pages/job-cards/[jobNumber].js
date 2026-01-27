@@ -2297,10 +2297,70 @@ function CustomerRequestsTab({
       .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
   }, [unifiedRequests]);
 
-  // Use pre-joined authorized VHC items from server (canonical source)
+  // Authorised VHC items shown in the Parts Authorized tab (union of authorized checks + legacy authorised parts)
   const authorisedRows = useMemo(() => {
-    return Array.isArray(jobData?.authorizedVhcItems) ? jobData.authorizedVhcItems : [];
-  }, [jobData?.authorizedVhcItems]);
+    const baseItems = Array.isArray(jobData?.authorizedVhcItems) ? jobData.authorizedVhcItems : [];
+    const vhcChecks = Array.isArray(jobData?.vhcChecks) ? jobData.vhcChecks : [];
+    const jobParts = Array.isArray(jobData?.parts_job_items) ? jobData.parts_job_items : [];
+
+    const approvalLookup = new Map();
+    vhcChecks.forEach((check) => {
+      if (!check?.vhc_id) return;
+      approvalLookup.set(
+        String(check.vhc_id),
+        (check.approval_status || "").toString().toLowerCase()
+      );
+    });
+
+    const partsAuthorized = jobParts.filter((part) => {
+      const origin = (part?.origin || "").toString().toLowerCase();
+      const isVhc = origin.includes("vhc");
+      if (!isVhc) return false;
+
+      if (part?.vhc_item_id) {
+        const status = approvalLookup.get(String(part.vhc_item_id));
+        if (status === "authorized") {
+          return true;
+        }
+      }
+
+      return part?.authorised === true;
+    });
+
+    const vhcChecksById = new Map();
+    vhcChecks.forEach((check) => {
+      if (!check?.vhc_id) return;
+      vhcChecksById.set(String(check.vhc_id), check);
+    });
+
+    const rowsByVhcId = new Map();
+    baseItems.forEach((item) => {
+      if (!item?.vhcItemId) return;
+      rowsByVhcId.set(String(item.vhcItemId), item);
+    });
+
+    partsAuthorized.forEach((part) => {
+      const vhcId = part?.vhc_item_id;
+      if (!vhcId) return;
+      const key = String(vhcId);
+      if (rowsByVhcId.has(key)) return;
+
+      const check = vhcChecksById.get(key);
+      rowsByVhcId.set(key, {
+        vhcItemId: vhcId,
+        description: check?.issue_title || check?.issue_description || check?.section || "Authorised item",
+        section: check?.section || "",
+        labourHours: check?.labour_hours ?? null,
+        partsCost: check?.parts_cost ?? null,
+        approvedAt: check?.approved_at ?? null,
+        approvedBy: check?.approved_by ?? null,
+        noteText: "",
+        prePickLocation: part?.pre_pick_location ?? null,
+      });
+    });
+
+    return Array.from(rowsByVhcId.values());
+  }, [jobData?.authorizedVhcItems, jobData?.vhcChecks, jobData?.parts_job_items]);
 
   const authorisedColumns = useMemo(() => {
     const columns = [[], [], []];

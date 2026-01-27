@@ -1,9 +1,9 @@
 TO DO:
 
 Continue flow with job number 54
-pre pricked loaction error see if database tables needa dding, chatgpt prompts
 
-CHECKKK auto arrived when part added to job. cintinue with claud chat
+
+pre pricked loaction error see if database tables needa dding, chatgpt prompts
 
 
 
@@ -48,11 +48,6 @@ Next jobs and my jobs check, add multiple jobs within one tech
 FIXXXING
 Check status changes for complete job
 
-
-
-
-CHECKKKKKKKKKKKKKK
-Automate with parts in and parts on order, have it so when the part is goods in and added to the Parts booked to job section it auto dectects the part thought the part number, and changes the "here" button to "added" automatically. Also within the PArts added to job section inside the parts tab, remove the stage column, the status column will alwasys have added to job so keep this backend within the database not front end inside the table column so remove the coloum from the ui, inside the prepick column add a drop down which has all of the pre pick location inside them, make sure to use the dropdown style api however make the button for the drop down the same as style and size as the button for the data and time picker inside the "On Order" section, remove the Notes column. if the row is clicked it opens the part number stock amout which is linked to the stock catalogue. 
 
 
 
@@ -103,124 +98,3 @@ Add any database tables / columns to file location: src/lib/database/schema/addt
 
 
 npm i next@latest
-
-
-DONE:
-
-Inside the job-card/view page make sure the job type in the row are set to the “detected job type” from creating the job card in the “job-cards/create” page. Remove the quick action button from each row. Add the  actual customer request wording in the section. Lay the rows out so the information inside the rows are fitted better and in a clean modern layout (do not add a glow to anything in this page) and so the information fits more organised inside the row making the height of the rows smaller. Add any times which requires being added to the database into the "-- file location: src/lib/database/schema/addtable.sql" file and read the "-- file location: src/lib/database/schema/schemaReference.sql" to find all of the database tables and columns
-
-Make it so the waiting, loan, collection, neither buttons in the scheduling tab in the job-cards/[jobnumber] page are set to dark background white text purple border, and when selected it changes to purple background (same as the border colour) white text. Change the “save booking details” to a purple background and white text and the same with “schedule appointment”
-
-Only create and add the job number and details to the database if no errors have occurred after clicking the save button on the create page.
-
-Build the parts tab, under this tab in the job-cards/[jobnumber] page add two 50/50 sections, the left side is where parts are added to the job number, there is a search for part section which links to the parts stock and then the item and all of the details are added into the row on the left. The right side is the allocated request section. In this section it will show all of the requests which have been added when creating the job card and all of the authorised requests, to allocate a part once it’s been added to the left side the row can be click and dragged under the request box, this will add the part to that request with the price quantity etc (all info the customer would want/need to see) when moving a line is shown, this uses the same click and drag design as the next job page, also add an assign drop down at the end of the row inside the left side which lists the requests and authorised work requests (multiple parts can be added to one request).
-
-Multiple separate job notes can be added inside the notes tab in the job-cards/[jobnumber] page as well as the job-cards/myjob/[jobnumber] page as well. Each job note gets added to the database and linked to the job number. The notes can be hidden from the customer with a toggle (set this to hidden as default), however the notes are shared between every user which has access to the notes tab. 
-
-Remove the job details under the VHC tab job-cards/[jobnumber], move the customer view into the same row as the summery, health check etc tabs, only allow the customer view page be active when the parts price and labour time have been added to the summary page. For the customer view page, make this a generic link which opens with all the information the customer sees for their health check. Add a copy to clip board button to the right of the customer view button which copy’s that generic link to the clipboard (make this inactive until the customer view button is active). 
-
-In the popup log new change the close button text to white when in dark mode. 
-
-Make the car and key tracker button purple background and white text when in dark mode. Have it so this button opens the the popup for the job number showing the details of the (job number, car make, reg and colour, customers name) all in the top row of the popup, next in the popup it has a button for add location (this popup u enter either the reg, customer name or job number into the field box and auto fills the details of the off fields. And under that information it shows the vehicle location with a drop down selecting the location and where the keys are put nothing else (remove the rest of the details from the Log new popup as well). Underneath that section is a button which says update this shows a new section where is has the Vehicle location and key location in drop downs, update is pressed and this changes the location of the vehicle and keys in the database for everyone.) make sure the button which is pressed from a [jobnumber] page opens the popup with the details from that job number auto filled. 
-
-Inside the myjobs/[jobnumber] page the notes when added doesn’t show in the notes tab in that section, when are part has been authorised it doesn’t show in the write up page
-
-Add a button in the VHC section in the (ADD FILE LOCATION) to open the camera, here the user can take a photo (all within the web browser, open a camera view so this doesn’t connect to the devices camera roll/file system (all internal)) or video, when this photo/video is taken the user clicks complete, has an option to view the photo/video taken, option to highlight the photo, trim and or mute the video and then upload this to the VHC photo/video table in the database. The photos or videos can are then placed into the photo or video tab inside the VHC tab within the job-cards/[jobnumber] page. Where the video/picture can be toggled to send to customers (which gets attached to the customer view link) or not sent and saved for users reference. 
-
-in the cant fint part? add it now tab, cahnge to "add new part", inside that sectin add a bulk add which is where id paste soemthing like this "ORD001
-OILF1
-Oil Filter
-Euro Car Parts
-A1
-£4.00
-£9.99
-10
-ORD002"
-
-This is where the data should be auto filled out in, order Ref, Part number, Parts name, supplier, loaction, unit cost, unit price, quantity ordered (and quantily recived), this is so i can paste this whole detail in one paste and it auto fills it into the correct sections within the "Add new part" section. 
-
-Add a button which says update ”Add to job” (or along those lines) at the end of each row inside the parts authorised tab inside the job-cards/[jobnumber] page, when this is clicked it auto added the parts into the left section inside the parts tab and opens a popup asking for a pre pick location (an input can be added then or later inside the left section of the parts tab where it will have a button which will open the popup again. WAITING TO BE DONE
-
-example the search for part number auto adds the part number and name into the search when the row is clicked, example i searched FPAD1 which came up with the row but when clicked it auto fills the part number search bar with "FPAD1 · Front brake pads" insead of auto fillin gthe Supplier, orderr reference, Qty Ordered, Qty Received (auto put as the "Qty Ordered" but can be changed to 0 or higher if needed), Unit Cost from the last time that part was logged, keep a record of all of the logs inside the database Add any database tables / columns to file location: src/lib/database/schema/addtable.sql, can to see if the table is already inside the file location: src/lib/database/schema/schemaReference.sql file first.
-
-Remove the "Bulk Import" tab in "the Add Parts to VHC Item" popup. Make it so when adding the "selected part" the quantity can be 1 or 2 or however many, atm it doesnt remove the first number as 1 from the quantiy to if i want 5 it enters 15. it comes up with "Error adding part. Please try again." can we make this more of a direct error so we can fix it. Remove labour hours from the selected aprt section and move the selected part section to under neath the "VHC ITEM DETAILS" section. 
-
-
-when there are users inside the table with the same first name, something somewhere switches one of those users with the same first same with the role of th eother users with the first name so example there are now two Scotts with in the Parts Manager role when one scott as Scott (first name) W (last name) and Scott (first name) Parts (Last name)
-
-
-When i click of the searched by part number, have it so the data fills out the supplier, order reference, Part search only adds the Part number, not the name as well, Qty Ordered (same as the "Qty Received") and Unit Cost
-
-
-Have it so the page doesnt refresh when adding adding a part to the VHC item inside the "Add Parts to VHC Item" popup. have it so it just fills the column "Linked Parts" and "vParts Cost" with in the "Parts Identified" tab 
-
-
-Document tab inside the job-cards/[jobnumber] page needs to link to the upload documents popup in the create page so it loads the attachments into that section. This section needs to be simplified to only show the documents which we uploaded to the database and shown in the list view.
-
-
-The invoice tab can only be complete once the VHC is marked as complete, the write up is marked as complete, every part which is booked to the job number has been allocated to a request or additional request. 
-
-
-When adding a "Add new consumable" add these consuamblke to the "Consumable stock" list as well. 
-
-
-Find what has a status like in progress complete waiting to be started and make find what all of the status under that section has and what they don’t have 
-
-
-Fix "Could not find a relationship between 'job_notes' and 'last_updated_by' in the schema cache" search the "-- file location: src/lib/database/schema/schemaReference.sql" for the database tables and add to "-- file location: src/lib/database/schema/addtable.sql"
-
-
-Link the status bar to everything which gets done such as "is checked in", "added to parking and key tracking", "[tech] is clocked on", "ready for collection". "completed and invoice is ready", "washed complete", "parts on orded". All of these links to the Job number and hwos in the tree like view with on the left a bullet point ad the middle beginning of the action which has been marked ([teh] clocked on) the first action never has a ling going above or down off the buttlet point, only when a section bullet point as been added then a line connecting the top bullet point meets the section bullet point to create a line with clear bullet points for each action which gets complete which is to do with that job number. 
-
-
-Add a "Add deleiver" button inside the "parts/delivery-planner" page, this button opens a popup where the users has options to search to invoice number, from the invoice number it adds all of the detals into the row with the chosen data for deleiver inside each row (date gets added for the deleiver Drivers page ("parts/deliveries")), when the row is clicked it brings up a popup with "Close", "Delete", "Save" button in the bottom right, this shows the information from the invoice with the part name, part number, deleiver date (which can be changed) and payment method (can be marked as "Paid" in green) if already paided for, Customers name, amout of parts, address, . Inside the "parts/deliveries" page this shows all of the rows of jobs which have been chosen to be deleivered for the selected data, when the row is clicked this give the same popup but to only view the part number, name, price, date of deleiver, name of customer, customer contract details, address, and a close button (no delete or save button). On each row inside this page there is a marked as deleivered button which updates the status of that row as complete taking it to the bottom of the list and turning it green background. Have it so that page can be clicked organised with up and down arrows for each row to move them above the other rows or below etc. have it so this page is really Iphone vertical view orientated as well as windows (only for the "parts/deliveries" page). make it so this data is linked to the dataabse with the marking complete, Add any database tables / columns to file location: src/lib/database/schema/addtable.sql, can to see if the table is already inside the file location: src/lib/database/schema/schemaReference.sql file first. 
-
-
-Make the "Employment Details" in the "Employee Directory" page more modern and in a clearer layout to read. 
-
-
-add a search bar inside the "Employee Directory" with in the "hr/manager" page. make sure this search bar only searches for the users names. 
-
-
-Remove all of the .md files and migration files. 
-
-
-add a write up tab inbetween the Notes and VHC tab, have it so this mirrors the exact thing that the tech write up section shows and any cahnges mades to the techs updates live to the job-cards/[jobnumber] page
-
-
-
-
-Have it so the workshop/consumables-tracker page follows more of the dark theme when in dark mode than the light them (use less red and more purple)
-
-
-
-within the "Technician Focus" section removet text "Live callouts from the floor". within that section add a row of the 6 techs plus what ever MOT tester is loged on, if non loged on then show one bhut greyed out. remove the "Bay Readiness" section. have it so the "Technician Focus" is that full section but the techs are in two columns and however many rows requried. add to each tech the eta of the time the tech will be finishing. "Clocking Overview" section shows all 6 techs and there clocking status it shows "in progress" with their jobnumber they are clocked onto, "tea break" or "waiting for job". show this in a 2 column 3 row layout. remove the "Consumables" and "Important Notices" section. "Technicians Clocked In" links to the tech clocking and how many are set to "in progress", "Awaiting Parts" is linked to how many jobs are set to "Awaiting Parts" status, swich "QC / Road Test" to "Awaiting authoriseation" which is linked to when the VHC is set to send and is in the middle of being send and working being declinded or authorised. "Jobs On Site" this shows all of the jobnumners which are insdie the "/job-cards/view" within either the "Today's workload" or "Carry over" tab 
-
-
-
-LOOK INTO TRACKING PAGE
-Remove the "Equipment services  Equipment & tools
-Track shared kit maintenance, upcoming inspections and who is responsible for each tool" and "Oil & stock checks   Oil / Stock
-Capture when to inspect service fluids and replenish stock for busy workshop days." and "Live tracker  Active jobs  Last updated: 22:33" text from the /tracking page. remove any mock data from any of the tabs within the /tracking page. inside the "Equipment & tools" section add a button in the top right which shows "Add Equipment/tools" this then opens the popup to the name, the Last checked, Next due. thats all the info, Add any database tables / columns to file location: src/lib/database/schema/addtable.sql, can to see if the table is already inside the file location: src/lib/database/schema/schemaReference.sql file first. do the same with the "Oil / Stock" section just have the button say "Add Oil / Stock". this section will have a link to the Scheduled Consumables inside the "/workshop/consumables-tracker" page, these will mirror here. this popup will show the Stock, title, last check, next check, last topped up. 
-
-
-
-
-
-link messages to job numbers with /controls inside the messages tab within the job-cards/[jobnumber] page and within the message page as well so when a message is sent users can use a /commant example /job[jobnumber] this will then show the jobnumber with a link which opens that page as well as linking it to the messages tab within that job, the same with /cust[customerfirsstandlastname] which will then give a link to the customer detail page etc create multiple commands, add these comands inside a popup within the page hiden inside a "?" button with details how to use them as well. Hvae it so with Group chats when the Groupchat name is clicked it opens a popup which shows everyone who is in the chat, remove the names from being shown inside the section where the names are curreentl shown insdie the group chat name section. make sure these are within a differnt section. 
-
-
-
-
-Create a custoemr page which when search for a customer if brings up the full details of the customer, the cars attached, history jobs linked to the customer etc all from the database. Add any database tables / columns to file location: src/lib/database/schema/addtable.sql, can to see if the table is already inside the file location: src/lib/database/schema/schemaReference.sql file first, have it so the items which are linked to the customer are shown in the tab layout at the top eg Vehciles tab shows all the vehciles, history tab shows all of the history tab, have it so the cust details stays at the top section of the page and the tabs are underneath the cust section and shows the tab sections at the bottom within the tabs. have it so this page follows the light and dark mode theme. link this poage to the global search, if a customer is searched dont show the job numbers or anything apart from this page. have it so the details within this page is linked to the other derauls liek the job numbers within the history tab etc 
-
-
-
-
-Goods in: - create a goods in page with an Invoice / Delivery’s note details section (Have name of section as “Invoice details”) inside this section it has a supplier (links to the accounts company thought the database), Invoice number, Delivery Note No, date (set as [todaysdate] in DD/MM/YY), add a note box, Price level drop down with Stock order rate (add other which will be within this drop down), “Scan doc” button which pulls the information from the uploaded from files document and adds it into the correct locations. Next section is “Add Part” section in here is a part number (when ENTER and add a search button which opens a popup which search’s though every part added to the database and when clicked loads the details, is pressed it auto fills the other sections if the information has been added into the database already, quantity, Bin location, bin location 2 (have bin location side by side), Description, Franchise (have dropdown as Mitsubishi, Suzuki, other, tyre, stock, consumables), Retail price, cost price, discount code, add an update button next to the Retail section which opens a section within the page which has multiple tabs inside (Global, dealer, stock, user defined, links, sales history, Audi, additional fields, online store) within the global tab have these fields auto filled with the correct details, franchise, retail price, surcharge, VAT rate (drop down with standard Add others if required), Pack size, discount code, sales price section with 1-4 sale prices, Purchase detail section with Stock order, VOR, Local cost. Fill the other tabs which will have the relevant fields and sections in for each tab. When a part is filed out the add button is clicked, this then saves the part to the database which is now goods in with a good in number created to the row for reference, and a row of that part inside the invoice is added to the bottom section where a table with titles Part number, Man part number, description, Bin location , Bin location 2, Retail price, Cost price, Surcharge, quantity, Cost total, claim number is. Once all of the parts are added into this section which are inside the inlovce complete button is pressed, this shows then When the complete button is pressed and the goods in number received as user if they want to add to job or not, if yes is pressed then open a popup to with the part number auto filled and job number tonne entered, when the job number is entered it then shows the job with description, part number, cost, retail cost, quantity inside the parts added to job section within the job-cards/jobnumber page. good in number (save to database with all the other details. accounts with other businesses (create this within the database so other businesses used have accounts, example a tyre place just search for the company and this links to their company account with us) this popup will shows the Account No, Name, and Address with a search box inside. The popup opens when the Supplier “Search” button is clicked.
-
-
-
-
-
-create company accounts within the acconts secton add a button in the sidebar only visible to accounts and account manager users. inside this page show a list view of all the acconnts a-z, have a searhc bar which searches for this, and next to the dearch bar add an "Add new accounts" button which eopens a new section within the page (hides everything else) with fields to fill out all of the details about the company and dedicating an account number this accounts from when clicking add new accounts. make sure everyrhuig within the section adds to a database table which will link to the accounts and can be search for in other sections. have it so the list view shows all of the accounts and breath details in the list view, when clicked it oepsn the /company-accounts/[accountnumber] or along those lines which lays out all the information about the account made with an edit button and delete button at very bottom. 

@@ -289,7 +289,57 @@ async function handler(req, res, session) {
           .single();
 
         if (!relinkError && relinked) {
-          return res.status(200).json({ success: true, item: relinked });
+          data.part_catalog_id = relinked.part_catalog_id;
+        }
+      }
+
+      if (jobId && catalogId) {
+        const requestNoteMarker = `goods-in item ${itemId}`;
+        const { data: existingJobItem } = await supabase
+          .from("parts_job_items")
+          .select("id")
+          .eq("job_id", jobId)
+          .eq("part_id", catalogId)
+          .eq("origin", "goods-in")
+          .ilike("request_notes", `%${requestNoteMarker}%`)
+          .maybeSingle();
+
+        if (!existingJobItem) {
+          const timestamp = new Date().toISOString();
+          await supabase.from("parts_job_items").insert([
+            {
+              job_id: jobId,
+              part_id: catalogId,
+              quantity_requested: Number(data.quantity || 0),
+              quantity_allocated: Number(data.quantity || 0),
+              quantity_fitted: 0,
+              status: "booked",
+              origin: "goods-in",
+              storage_location: data.bin_location || null,
+              unit_cost: data.cost_price || 0,
+              unit_price: data.retail_price || 0,
+              request_notes: requestNoteMarker,
+              created_at: timestamp,
+              updated_at: timestamp,
+            },
+          ]);
+
+          const { data: partRow } = await supabase
+            .from("parts_catalog")
+            .select("qty_reserved")
+            .eq("id", catalogId)
+            .single();
+
+          if (partRow) {
+            const currentReserved = Number(partRow.qty_reserved || 0);
+            const nextReserved = Math.max(0, currentReserved - Number(data.quantity || 0));
+            if (nextReserved !== currentReserved) {
+              await supabase
+                .from("parts_catalog")
+                .update({ qty_reserved: nextReserved, updated_at: new Date().toISOString() })
+                .eq("id", catalogId);
+            }
+          }
         }
       }
     }

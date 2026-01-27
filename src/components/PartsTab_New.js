@@ -11,8 +11,10 @@ const normalizePartStatus = (status = "") => {
   if (["pending"].includes(normalized)) return "pending";
   if (["priced"].includes(normalized)) return "priced";
   if (["pre_pick", "pre-pick", "picked"].includes(normalized)) return "pre_pick";
-  if (["on_order", "on-order", "awaiting_stock"].includes(normalized)) return "on_order";
+  if (["on_order", "on-order", "awaiting_stock", "order", "ordered"].includes(normalized)) return "on_order";
   if (["booked"].includes(normalized)) return "booked";
+  if (["removed"].includes(normalized)) return "removed";
+  if (["reserved"].includes(normalized)) return "reserved";
   if (["stock", "allocated", "fitted", "reserved"].includes(normalized)) return "stock";
   return "pending";
 };
@@ -61,6 +63,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
   const [catalogSubmitError, setCatalogSubmitError] = useState("");
   const [catalogSuccessMessage, setCatalogSuccessMessage] = useState("");
   const [allocatingPart, setAllocatingPart] = useState(false);
+  const [addJobDiagnostics, setAddJobDiagnostics] = useState(null);
   const [showBookPartPanel, setShowBookPartPanel] = useState(false);
   const [showAllocatePanel, setShowAllocatePanel] = useState(false);
   const [assignMode, setAssignMode] = useState(false);
@@ -81,10 +84,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
   const [partPopup, setPartPopup] = useState({ open: false, part: null });
   // State for tracking parts marked as arrived (before API call completes)
   const [arrivedPartIds, setArrivedPartIds] = useState([]);
-  // State for locally added parts (instant UI update before job refresh completes)
-  const [locallyAddedParts, setLocallyAddedParts] = useState([]);
-
-
+  const [removingPart, setRemovingPart] = useState(false);
   const canAllocateParts = Boolean(canEdit && jobId);
   const allocationDisabledReason = !canEdit
     ? "You don't have permission to add parts."
@@ -99,10 +99,12 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         jobId,
         partsAllocations: jobData?.partsAllocations?.length || 0,
         parts_job_items: jobData?.parts_job_items?.length || 0,
-        locallyAddedParts: locallyAddedParts?.length || 0,
+        removedParts: (jobData?.parts_job_items || []).filter((item) =>
+          String(item?.status || "").toLowerCase() === "removed"
+        ).length,
       });
     }
-  }, [jobId, jobData?.partsAllocations, jobData?.parts_job_items, locallyAddedParts]);
+  }, [jobId, jobData?.partsAllocations, jobData?.parts_job_items]);
 
   // Get all parts added to the job (from allocations, parts_job_items, and locally added)
   const jobParts = useMemo(() => {
@@ -162,8 +164,8 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         };
       });
 
-    // Merge allocations, job items, and locally added parts
-    const allParts = [...allocations, ...jobItems, ...locallyAddedParts];
+    // Merge allocations and job items
+    const allParts = [...allocations, ...jobItems];
 
     // Deduplicate by id - prefer server data over local
     const uniqueParts = allParts.reduce((acc, part) => {
@@ -174,26 +176,23 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     }, []);
 
     return uniqueParts;
-  }, [jobData.partsAllocations, jobData.parts_job_items, locallyAddedParts]);
-
-  // Clear locally added parts when they appear in the server data (to avoid duplicates)
-  useEffect(() => {
-    if (locallyAddedParts.length === 0) return;
-
-    const serverPartIds = new Set([
-      ...(jobData.partsAllocations || []).map(p => p.id),
-      ...(jobData.parts_job_items || []).map(p => p.id),
-    ]);
-
-    const stillLocalOnly = locallyAddedParts.filter(p => !serverPartIds.has(p.id));
-    if (stillLocalOnly.length !== locallyAddedParts.length) {
-      setLocallyAddedParts(stillLocalOnly);
-    }
-  }, [jobData.partsAllocations, jobData.parts_job_items, locallyAddedParts]);
+  }, [jobData.partsAllocations, jobData.parts_job_items]);
 
   const goodsInParts = useMemo(() => {
+    const existingGoodsInPartIds = new Set(
+      (Array.isArray(jobData.parts_job_items) ? jobData.parts_job_items : [])
+        .filter((item) => item?.origin === "goods-in")
+        .map((item) => String(item.part_id))
+        .filter(Boolean)
+    );
+
     return (Array.isArray(jobData.goodsInParts) ? jobData.goodsInParts : [])
       .filter((item) => item.addedToJob !== false)
+      .filter((item) => {
+        const partKey = item.partCatalogId || item.part_catalog_id || null;
+        if (!partKey) return true;
+        return !existingGoodsInPartIds.has(String(partKey));
+      })
       .map((item) => ({
         id: `goods-in-${item.id}`,
         goodsInItemId: item.id,
@@ -212,7 +211,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         createdAt: item.createdAt,
         source: "goods-in",
       }));
-  }, [jobData.goodsInParts]);
+  }, [jobData.goodsInParts, jobData.parts_job_items]);
 
   // Get customer requests and authorized work
   const allRequests = useMemo(() => {
@@ -299,7 +298,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     () => {
       const filtered = jobParts.filter((part) => {
         const partStatus = normalizePartStatus(part.status);
-        return partStatus === "on_order";
+        return partStatus === "on_order" || partStatus === "booked";
       });
 
       // Transform to match the API response format
@@ -527,15 +526,61 @@ const PartsTabNew = forwardRef(function PartsTabNew(
   const handleAddPartFromStock = useCallback(async () => {
     if (!canAllocateParts || !selectedCatalogPart || !jobId) {
       setCatalogSubmitError("Select a part to allocate from stock.");
+      setAddJobDiagnostics({
+        startedAt: new Date().toISOString(),
+        stage: "validation",
+        reason: !canAllocateParts
+          ? "No permission"
+          : !jobId
+          ? "Missing job"
+          : "No part selected",
+      });
+      console.warn("[PartsTab] Add to job blocked:", {
+        canAllocateParts,
+        jobId,
+        selectedCatalogPart,
+      });
       return;
     }
     if (catalogQuantity <= 0) {
       setCatalogSubmitError("Quantity must be at least 1.");
+      setAddJobDiagnostics({
+        startedAt: new Date().toISOString(),
+        stage: "validation",
+        reason: "Quantity must be at least 1",
+        jobId,
+        jobNumber,
+        partId: selectedCatalogPart.id,
+        partNumber: selectedCatalogPart.part_number,
+        quantity: catalogQuantity,
+      });
+      console.warn("[PartsTab] Add to job blocked: invalid quantity", {
+        jobId,
+        partId: selectedCatalogPart.id,
+        quantity: catalogQuantity,
+      });
       return;
     }
     const availableStock = Number(selectedCatalogPart.qty_in_stock || 0);
     if (catalogQuantity > availableStock) {
       setCatalogSubmitError(`Only ${availableStock} in stock for this part.`);
+      setAddJobDiagnostics({
+        startedAt: new Date().toISOString(),
+        stage: "validation",
+        reason: "Insufficient stock",
+        jobId,
+        jobNumber,
+        partId: selectedCatalogPart.id,
+        partNumber: selectedCatalogPart.part_number,
+        quantity: catalogQuantity,
+        availableStock,
+      });
+      console.warn("[PartsTab] Add to job blocked: insufficient stock", {
+        jobId,
+        partId: selectedCatalogPart.id,
+        quantity: catalogQuantity,
+        availableStock,
+      });
       return;
     }
 
@@ -543,6 +588,16 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     setCatalogSubmitError("");
     setCatalogSuccessMessage("");
     try {
+      setAddJobDiagnostics({
+        startedAt: new Date().toISOString(),
+        jobId,
+        jobNumber,
+        partId: selectedCatalogPart.id,
+        partNumber: selectedCatalogPart.part_number,
+        quantity: catalogQuantity,
+        stage: "request",
+      });
+
       const response = await fetch("/api/parts/jobs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -560,39 +615,28 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       });
 
       const data = await response.json();
+      console.info("[PartsTab] Add to job response", {
+        ok: response.ok,
+        status: response.status,
+        body: data,
+      });
       if (!response.ok || !data.success) {
-        throw new Error(data.message || "Failed to allocate part from stock");
+        setAddJobDiagnostics((prev) => ({
+          ...prev,
+          stage: "error",
+          responseStatus: response.status,
+          responseBody: data,
+        }));
+        throw new Error(data.message || `Failed to allocate part from stock (HTTP ${response.status})`);
       }
 
-      // Immediately add to local state for instant UI feedback
-      const newJobPart = data.jobPart;
-      if (newJobPart) {
-        const partData = newJobPart.part || newJobPart.parts_catalog || selectedCatalogPart;
-        const localPart = {
-          id: newJobPart.id,
-          partId: partData?.id || selectedCatalogPart.id,
-          partNumber: partData?.part_number || selectedCatalogPart.part_number || "N/A",
-          name: partData?.name || selectedCatalogPart.name || "Part",
-          description: partData?.description || selectedCatalogPart.description || "",
-          quantity: newJobPart.quantity_requested || catalogQuantity,
-          unitPrice: newJobPart.unit_price ?? partData?.unit_price ?? selectedCatalogPart.unit_price ?? 0,
-          unitCost: newJobPart.unit_cost ?? partData?.unit_cost ?? selectedCatalogPart.unit_cost ?? 0,
-          qtyInStock: partData?.qty_in_stock ?? selectedCatalogPart.qty_in_stock ?? 0,
-          storageLocation: newJobPart.storage_location || partData?.storage_location || selectedCatalogPart.storage_location || "Not assigned",
-          status: newJobPart.status || "booked",
-          allocatedToRequestId: null,
-          vhcItemId: null,
-          createdAt: newJobPart.created_at || new Date().toISOString(),
-          source: "local",
-          origin: newJobPart.origin || "job_card",
-          eta_date: null,
-          eta_time: null,
-          supplier_reference: null,
-          prePickLocation: newJobPart.pre_pick_location || null,
-          part: partData,
-        };
-        setLocallyAddedParts((prev) => [...prev, localPart]);
-      }
+      setAddJobDiagnostics((prev) => ({
+        ...prev,
+        stage: "success",
+        responseStatus: response.status,
+        responseBody: data,
+        jobPartId: data?.jobPart?.id || null,
+      }));
 
       const partName = selectedCatalogPart.part_number || selectedCatalogPart.name;
       clearSelectedCatalogPart();
@@ -608,6 +652,11 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     } catch (error) {
       console.error("Unable to add part from stock", error);
       setCatalogSubmitError(error.message || "Unable to add part to job");
+      setAddJobDiagnostics((prev) => ({
+        ...prev,
+        stage: prev?.stage === "error" ? "error" : "exception",
+        error: error?.message || String(error),
+      }));
     } finally {
       setAllocatingPart(false);
     }
@@ -662,9 +711,29 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     window.open(`/stock-catalogue?partNumber=${encoded}`, "_blank", "noopener");
   }, []);
 
-  // Get unallocated parts
-  const unallocatedParts = jobParts.filter((part) => !part.allocatedToRequestId);
-  const leftPanelParts = [...unallocatedParts, ...goodsInParts];
+  // Get unallocated booked parts only
+  const bookedParts = jobParts.filter(
+    (part) => normalizePartStatus(part.status) === "booked"
+  );
+  const removedParts = jobParts.filter(
+    (part) => normalizePartStatus(part.status) === "removed"
+  );
+  const unallocatedParts = bookedParts.filter((part) => !part.allocatedToRequestId);
+  const leftPanelParts = [...bookedParts, ...removedParts];
+
+  useEffect(() => {
+    if (!jobId) return;
+    const removedFromDb = (jobData?.parts_job_items || []).filter(
+      (item) => String(item?.status || "").toLowerCase() === "removed"
+    );
+    console.info("[PartsTab] Parts Added filter snapshot", {
+      jobId,
+      totalPartsJobItems: (jobData?.parts_job_items || []).length,
+      removedFromDb: removedFromDb.map((item) => ({ id: item.id, status: item.status })),
+      bookedCount: bookedParts.length,
+      leftPanelCount: leftPanelParts.length,
+    });
+  }, [jobId, jobData?.parts_job_items, bookedParts.length, leftPanelParts.length]);
 
   const createJobItemFromGoodsIn = useCallback(
     async (part) => {
@@ -693,7 +762,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         body: JSON.stringify({
           jobId,
           partId: resolvedPartId,
-          status: "stock",
+          status: "booked",
           quantityRequested: part.quantity ?? 0,
           quantityAllocated: part.quantity ?? 0,
           unitCost: part.unitCost ?? 0,
@@ -821,7 +890,13 @@ const PartsTabNew = forwardRef(function PartsTabNew(
   );
 
   useEffect(() => {
-    setSelectedPartIds((prev) => prev.filter((id) => leftPanelParts.some((part) => part.id === id)));
+    setSelectedPartIds((prev) => {
+      const next = prev.filter((id) => leftPanelParts.some((part) => part.id === id));
+      if (next.length === prev.length && next.every((id, index) => id === prev[index])) {
+        return prev;
+      }
+      return next;
+    });
   }, [leftPanelParts]);
 
   useEffect(() => {
@@ -1247,6 +1322,41 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             {catalogSubmitError}
           </div>
         )}
+        {addJobDiagnostics && (
+          <div
+            style={{
+              marginTop: "12px",
+              padding: "10px 12px",
+              borderRadius: "8px",
+              border: "1px dashed var(--surface-light)",
+              background: "var(--surface)",
+              fontSize: "12px",
+              color: "var(--text-secondary)",
+            }}
+          >
+            <div style={{ fontWeight: 600, color: "var(--primary)", marginBottom: "6px" }}>
+              Add to Job Diagnostics
+            </div>
+            <div>Stage: {addJobDiagnostics.stage || "unknown"}</div>
+            <div>Job: {addJobDiagnostics.jobNumber || addJobDiagnostics.jobId || "—"}</div>
+            <div>Part: {addJobDiagnostics.partNumber || addJobDiagnostics.partId || "—"}</div>
+            <div>Qty: {addJobDiagnostics.quantity ?? "—"}</div>
+            {addJobDiagnostics.responseStatus && (
+              <div>HTTP: {addJobDiagnostics.responseStatus}</div>
+            )}
+            {addJobDiagnostics.jobPartId && (
+              <div>Job Part ID: {addJobDiagnostics.jobPartId}</div>
+            )}
+            {addJobDiagnostics.error && (
+              <div style={{ color: "var(--danger)" }}>Error: {addJobDiagnostics.error}</div>
+            )}
+            {addJobDiagnostics.responseBody?.message && (
+              <div style={{ color: "var(--danger)" }}>
+                Server: {addJobDiagnostics.responseBody.message}
+              </div>
+            )}
+          </div>
+        )}
           </div>
         )}
       </div>
@@ -1291,7 +1401,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 Parts Added to Job
               </div>
               <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--info)" }}>
-                {leftPanelParts.length} unallocated · {jobParts.length + goodsInParts.length} total
+                {unallocatedParts.length} unallocated · {bookedParts.length} total
               </p>
             </div>
             {/* Allocate toggle lives in the top toolbar */}
@@ -1325,7 +1435,11 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   <tbody>
                     {leftPanelParts.map((part) => {
                       const isSelected = selectedPartIds.includes(part.id);
-                      const isRemoved = removedPartIds.includes(part.id);
+                      const isRemoved =
+                        removedPartIds.includes(part.id) ||
+                        normalizePartStatus(part.status) === "removed";
+
+                      const isAllocated = Boolean(part.allocatedToRequestId);
 
                       return (
                         <tr
@@ -1335,10 +1449,14 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             setPartPopup({ open: true, part });
                           }}
                           style={{
-                            background: isSelected ? "var(--info-surface)" : "transparent",
+                            background: isRemoved
+                              ? "var(--danger-surface)"
+                              : isSelected
+                              ? "var(--info-surface)"
+                              : "transparent",
                             cursor: "pointer",
                             borderTop: "1px solid var(--surface-light)",
-                            opacity: isRemoved ? 0.6 : 1,
+                            opacity: isRemoved ? 0.7 : 1,
                           }}
                           title={
                             part.source === "goods-in"
@@ -1346,22 +1464,25 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                               : "Click to view options"
                           }
                         >
-                          {assignMode && (
-                            <td style={{ padding: "8px", textAlign: "center", verticalAlign: "top" }}>
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                onClick={(event) => event.stopPropagation()}
-                                onChange={() => {
-                                  if (!assignMode) {
-                                    setAssignMode(true);
-                                    setAssignTargetRequestId(null);
-                                  }
-                                  togglePartSelection(part.id);
-                                }}
-                              />
-                            </td>
-                          )}
+                      {assignMode && (
+                        <td style={{ padding: "8px", textAlign: "center", verticalAlign: "top" }}>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            disabled={isRemoved}
+                            onClick={(event) => event.stopPropagation()}
+                            onChange={() => {
+                              if (!assignMode) {
+                                setAssignMode(true);
+                                setAssignTargetRequestId(null);
+                              }
+                              if (!isRemoved) {
+                                togglePartSelection(part.id);
+                              }
+                            }}
+                          />
+                        </td>
+                      )}
                           {/* Part Column */}
                           <td style={{ padding: "8px", verticalAlign: "top" }}>
                             <div style={{
@@ -1378,6 +1499,26 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             }}>
                               {part.description || part.name}
                             </div>
+                            {isAllocated && (
+                              <div style={{ marginTop: "6px" }}>
+                                <span
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    padding: "2px 8px",
+                                    borderRadius: "999px",
+                                    background: "var(--success-surface)",
+                                    color: "var(--success)",
+                                    fontSize: "10px",
+                                    fontWeight: 700,
+                                    textTransform: "uppercase",
+                                    letterSpacing: "0.06em",
+                                  }}
+                                >
+                                  Allocated
+                                </span>
+                              </div>
+                            )}
                           </td>
 
                           {/* Qty Column */}
@@ -1763,29 +1904,52 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 type="button"
                 onClick={() => {
                   const partId = partPopup.part.id;
-                  if (removedPartIds.includes(partId)) {
-                    // If already removed, restore it
-                    setRemovedPartIds((prev) => prev.filter((id) => id !== partId));
-                  } else {
-                    // Mark as removed (strikethrough)
-                    setRemovedPartIds((prev) => [...prev, partId]);
-                  }
-                  setPartPopup({ open: false, part: null });
+                  const removeFromJob = async () => {
+                    setRemovedPartIds((prev) =>
+                      prev.includes(partId) ? prev : [...prev, partId]
+                    );
+                    try {
+                      const response = await fetch(`/api/parts/job-items/${partId}`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ status: "removed" }),
+                      });
+                      const data = await response.json();
+                      console.info("[PartsTab] Remove response", {
+                        partId,
+                        ok: response.ok,
+                        status: response.status,
+                        body: data,
+                      });
+                      if (!response.ok || !data?.ok) {
+                        throw new Error(data?.error || data?.message || "Failed to remove part");
+                      }
+                      if (typeof onRefreshJob === "function") {
+                        onRefreshJob();
+                      }
+                    } catch (error) {
+                      console.error("Failed to remove part:", error);
+                      alert(`Error: ${error.message}`);
+                      setRemovedPartIds((prev) => prev.filter((id) => id !== partId));
+                    } finally {
+                      setPartPopup({ open: false, part: null });
+                    }
+                  };
+
+                  removeFromJob();
                 }}
                 style={{
                   padding: "10px 16px",
                   borderRadius: "8px",
                   border: "none",
-                  background: removedPartIds.includes(partPopup.part.id)
-                    ? "var(--success)"
-                    : "var(--danger)",
+                  background: "var(--danger)",
                   color: "white",
                   fontSize: "13px",
                   fontWeight: 600,
                   cursor: "pointer",
                 }}
               >
-                {removedPartIds.includes(partPopup.part.id) ? "Restore" : "Remove"}
+                Remove
               </button>
             </div>
           </div>

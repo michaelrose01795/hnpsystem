@@ -237,16 +237,14 @@ export default async function handler(req, res) {
           ? prePickLocation
           : null;
 
-      // Determine status based on origin:
-      // - job_card: "booked" (added to job, not VHC reserved)
-      // - vhc: "stock" (VHC authorized, reserved)
-      // - other: "stock" or "on_order" based on allocation
+      // Determine status based on allocation:
+      // - allocateFromStock true => booked to the job
+      // - allocateFromStock false => remains on_order unless explicit status supplied
       const resolvedOrigin = origin || "parts_workspace";
-      const resolvedStatus = status || (
-        shouldAllocate
-          ? (resolvedOrigin === "job_card" ? "booked" : "stock")
-          : "on_order"
-      );
+      const resolvedStatus = status || (shouldAllocate ? "booked" : "on_order");
+      const isBookedPart =
+        shouldAllocate &&
+        (resolvedStatus === "booked" || resolvedOrigin === "job_card" || resolvedOrigin === "vhc");
 
       const payload = {
         job_id: jobId,
@@ -288,30 +286,27 @@ export default async function handler(req, res) {
       });
 
       if (shouldAllocate) {
-        // For job_card origin: only decrement stock, don't add to reserved (booked parts)
-        // For VHC/other origins: decrement stock AND add to reserved
-        const isBookedPart = resolvedOrigin === "job_card";
-
         console.log("[api/parts/jobs] Stock allocation check", {
           resolvedOrigin,
+          resolvedStatus,
           isBookedPart,
-          willIncrementReserved: !isBookedPart,
           currentStock: part.qty_in_stock,
           currentReserved: part.qty_reserved,
           quantityToAllocate: resolvedQuantity,
         });
 
-        // For "booked" parts (job_card origin): only decrement stock, DON'T touch reserved
-        // For VHC/reserved parts: decrement stock AND increment reserved
+        const nextReserved = isBookedPart
+          ? Math.max(0, (part.qty_reserved || 0) - resolvedQuantity)
+          : (part.qty_reserved || 0) + resolvedQuantity;
+
         const stockUpdate = {
           qty_in_stock: part.qty_in_stock - resolvedQuantity,
           updated_at: new Date().toISOString(),
           updated_by: auditUserId || null,
         };
 
-        // IMPORTANT: Only add qty_reserved to update if NOT a booked part
-        if (!isBookedPart) {
-          stockUpdate.qty_reserved = (part.qty_reserved || 0) + resolvedQuantity;
+        if (nextReserved !== (part.qty_reserved || 0)) {
+          stockUpdate.qty_reserved = nextReserved;
         }
 
         console.log("[api/parts/jobs] Stock update payload", {

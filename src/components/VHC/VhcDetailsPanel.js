@@ -851,6 +851,20 @@ export default function VhcDetailsPanel({
     description: "",
     notes: "",
   });
+  const refreshJobData = useCallback(
+    (...args) => {
+      if (typeof onJobDataRefresh !== "function") {
+        return null;
+      }
+      try {
+        return onJobDataRefresh(...args);
+      } catch (refreshError) {
+        console.warn("[JOB REFRESH] Failed to refresh job data:", refreshError);
+        return null;
+      }
+    },
+    [onJobDataRefresh]
+  );
 
   useEffect(() => {
     const requestedTab = router.query?.vhcTab;
@@ -2029,8 +2043,8 @@ export default function VhcDetailsPanel({
 
       // Refresh parent job data when authorization status changes
       // This ensures Customer Requests and Parts tabs see the updated data
-      if (onJobDataRefresh && (dbStatus === "authorized" || dbStatus === "declined" || dbStatus === "pending")) {
-        onJobDataRefresh();
+      if (dbStatus === "authorized" || dbStatus === "declined" || dbStatus === "pending") {
+        refreshJobData();
       }
 
     } catch (error) {
@@ -3342,9 +3356,7 @@ export default function VhcDetailsPanel({
       const result = await response.json();
 
       // Refresh parent job data so other tabs see the updated part status/pre-pick location
-      if (onJobDataRefresh) {
-        onJobDataRefresh();
-      }
+      refreshJobData();
 
       return result;
     } catch (err) {
@@ -3357,7 +3369,7 @@ export default function VhcDetailsPanel({
       });
       throw err;
     }
-  }, [job, resolvedJobNumber, setJob, setVhcChecksData, onJobDataRefresh]);
+  }, [job, resolvedJobNumber, setJob, setVhcChecksData, refreshJobData]);
 
   const persistLabourHours = useCallback(
     async (displayVhcId, hoursValue) => {
@@ -3470,15 +3482,13 @@ export default function VhcDetailsPanel({
           }
 
           // Refresh parent job data so other tabs see the updated labour hours
-          if (onJobDataRefresh) {
-            onJobDataRefresh();
-          }
+          refreshJobData();
         }
       } catch (error) {
         console.error("Failed to persist labour hours", error);
       }
     },
-    [authUserId, dbUserId, job?.id, resolveCanonicalVhcId, summaryItems, resolvedJobNumber, upsertVhcItemAlias, onJobDataRefresh]
+    [authUserId, dbUserId, job?.id, resolveCanonicalVhcId, summaryItems, resolvedJobNumber, upsertVhcItemAlias, refreshJobData]
   );
 
   // Handler for Pre-Pick Location dropdown change

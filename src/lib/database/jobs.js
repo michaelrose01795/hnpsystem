@@ -845,6 +845,28 @@ export const getAuthorizedVhcItemsWithDetails = async (jobId) => {
 ============================================ */
 export const getJobByNumber = async (jobNumber) => {
   console.log("🔍 getJobByNumber: Searching for:", jobNumber); // Debug log
+
+  if (typeof window !== "undefined") {
+    try {
+      const response = await fetch(`/api/jobcards/${encodeURIComponent(jobNumber)}`);
+      const payload = await response.json();
+      if (!response.ok || !payload?.job) {
+        return {
+          data: null,
+          error: { message: payload?.message || "Job not found" },
+        };
+      }
+      return {
+        data: { jobCard: payload.job },
+        error: null,
+      };
+    } catch (error) {
+      return {
+        data: null,
+        error: { message: error?.message || "Failed to load job card" },
+      };
+    }
+  }
   
   const { data: jobData, error: jobError } = await supabase
     .from("jobs")

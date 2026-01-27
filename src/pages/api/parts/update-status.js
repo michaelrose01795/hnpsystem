@@ -24,6 +24,32 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "partItemId is required" });
     }
 
+    let reservationDelta = 0;
+    let reservationPartId = null;
+    if (authorised !== undefined) {
+      const { data: existingItem, error: itemError } = await supabase
+        .from("parts_job_items")
+        .select("id, part_id, quantity_requested, authorised")
+        .eq("id", partItemId)
+        .single();
+
+      if (itemError || !existingItem) {
+        return res.status(404).json({
+          error: "Part item not found",
+          details: itemError?.message,
+        });
+      }
+
+      const wasAuthorised = existingItem.authorised === true;
+      const nextAuthorised = Boolean(authorised);
+      const quantity = Number(existingItem.quantity_requested || 0);
+
+      if (quantity > 0 && nextAuthorised !== wasAuthorised) {
+        reservationDelta = nextAuthorised ? quantity : -quantity;
+        reservationPartId = existingItem.part_id;
+      }
+    }
+
     // Build update object dynamically based on provided fields
     const updates = {
       updated_at: new Date().toISOString(),
@@ -57,6 +83,40 @@ export default async function handler(req, res) {
     if (error) {
       console.error("Error updating part status:", error);
       return res.status(500).json({ error: "Failed to update part status", details: error.message });
+    }
+
+    if (reservationDelta !== 0 && reservationPartId) {
+      const { data: partRow, error: partError } = await supabase
+        .from("parts_catalog")
+        .select("qty_reserved")
+        .eq("id", reservationPartId)
+        .single();
+
+      if (partError) {
+        console.error("Error fetching part for reservation update:", partError);
+        return res.status(500).json({
+          error: "Failed to update reserved stock",
+          details: partError.message,
+        });
+      }
+
+      const currentReserved = Number(partRow?.qty_reserved || 0);
+      const nextReserved = Math.max(0, currentReserved + reservationDelta);
+
+      if (nextReserved !== currentReserved) {
+        const { error: updateError } = await supabase
+          .from("parts_catalog")
+          .update({ qty_reserved: nextReserved, updated_at: new Date().toISOString() })
+          .eq("id", reservationPartId);
+
+        if (updateError) {
+          console.error("Error updating reserved stock:", updateError);
+          return res.status(500).json({
+            error: "Failed to update reserved stock",
+            details: updateError.message,
+          });
+        }
+      }
     }
 
     return res.status(200).json({ success: true, data });

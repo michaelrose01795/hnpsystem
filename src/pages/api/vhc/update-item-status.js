@@ -116,6 +116,87 @@ export default async function handler(req, res) {
       }
 
       const jobId = vhcRow?.job_id ?? null;
+      const shouldReserve = normalizedStatus === "authorized";
+      const shouldRelease = normalizedStatus === "declined" || normalizedStatus === "pending";
+
+      if (jobId) {
+        const { data: jobParts, error: partsError } = await supabase
+          .from("parts_job_items")
+          .select("id, part_id, quantity_requested, status, authorised")
+          .eq("job_id", jobId)
+          .eq("vhc_item_id", vhcItemId);
+
+        if (partsError) {
+          console.error("Failed to load VHC parts for reservation update:", partsError);
+        } else {
+          for (const part of jobParts || []) {
+            if (!part?.part_id) continue;
+            if (String(part.status || "").toLowerCase() === "booked") {
+              continue;
+            }
+
+            const qty = Number(part.quantity_requested || 0);
+            if (qty <= 0) continue;
+
+            const nextAuthorised = shouldReserve ? true : shouldRelease ? false : part.authorised === true;
+            const statusUpdate = shouldReserve
+              ? (["on_order", "awaiting_stock"].includes(String(part.status || "").toLowerCase())
+                ? part.status
+                : "waiting_authorisation")
+              : shouldRelease
+              ? "pending"
+              : part.status;
+
+            if (nextAuthorised !== part.authorised || statusUpdate !== part.status) {
+              await supabase
+                .from("parts_job_items")
+                .update({
+                  authorised: nextAuthorised,
+                  status: statusUpdate,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq("id", part.id);
+            }
+
+            if (shouldReserve || shouldRelease) {
+              const { data: partRow, error: partError } = await supabase
+                .from("parts_catalog")
+                .select("qty_reserved")
+                .eq("id", part.part_id)
+                .single();
+
+              if (partError) {
+                console.error("Failed to load catalog part for reservation update:", partError);
+                continue;
+              }
+
+              const currentReserved = Number(partRow?.qty_reserved || 0);
+              const nextReserved = shouldReserve
+                ? currentReserved + qty
+                : Math.max(0, currentReserved - qty);
+
+              if (nextReserved !== currentReserved) {
+                if (nextReserved === 0 && currentReserved - qty < 0) {
+                  console.warn("Reserved stock clamped at zero", {
+                    partId: part.part_id,
+                    jobId,
+                    qty,
+                    currentReserved,
+                  });
+                }
+                await supabase
+                  .from("parts_catalog")
+                  .update({
+                    qty_reserved: nextReserved,
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq("id", part.part_id);
+              }
+            }
+          }
+        }
+      }
+
       if (jobId && shouldCreate) {
         const description =
           (vhcRow?.issue_title || vhcRow?.issue_description || vhcRow?.section || "")

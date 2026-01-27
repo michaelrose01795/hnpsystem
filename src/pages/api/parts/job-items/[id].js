@@ -14,6 +14,7 @@ const VALID_STATUSES = new Set([
   "picked",
   "fitted",
   "cancelled",
+  "removed",
 ])
 
 const normaliseRole = (role) => (typeof role === "string" ? role.trim().toLowerCase() : "")
@@ -59,6 +60,23 @@ export default async function handler(req, res) {
 
       updates.updated_at = new Date().toISOString()
 
+      const needsStockReturn = updates.status === "removed"
+
+      let existing = null
+      if (needsStockReturn) {
+        const { data: existingRow, error: existingError } = await supabase
+          .from("parts_job_items")
+          .select("id, part_id, quantity_requested, quantity_allocated, status, authorised")
+          .eq("id", id)
+          .single()
+
+        if (existingError || !existingRow) {
+          return res.status(404).json({ ok: false, error: "Job item not found" })
+        }
+
+        existing = existingRow
+      }
+
       const { data: updated, error } = await supabase
         .from('parts_job_items')
         .update(updates)
@@ -70,6 +88,41 @@ export default async function handler(req, res) {
         return res.status(404).json({ ok: false, error: "Job item not found" })
       }
 
+      if (needsStockReturn && existing && existing.status !== "removed") {
+        const returnQty = Math.max(
+          Number(existing.quantity_allocated || 0),
+          Number(existing.quantity_requested || 0),
+          0
+        )
+
+        if (returnQty > 0) {
+          const { data: partRow, error: partError } = await supabase
+            .from("parts_catalog")
+            .select("qty_in_stock, qty_reserved")
+            .eq("id", existing.part_id)
+            .single()
+
+          if (partError) {
+            throw partError
+          }
+
+          const currentStock = Number(partRow.qty_in_stock || 0)
+          const currentReserved = Number(partRow.qty_reserved || 0)
+          const nextReserved = existing.authorised
+            ? Math.max(0, currentReserved - returnQty)
+            : currentReserved
+
+          await supabase
+            .from("parts_catalog")
+            .update({
+              qty_in_stock: currentStock + returnQty,
+              qty_reserved: nextReserved,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", existing.part_id)
+        }
+      }
+
       return res.status(200).json({ ok: true, data: updated })
     }
 
@@ -79,10 +132,52 @@ export default async function handler(req, res) {
         return res.status(403).json({ ok: false, error: "Insufficient permissions" })
       }
 
+      const { data: existing, error: fetchError } = await supabase
+        .from("parts_job_items")
+        .select("id, part_id, quantity_requested, quantity_allocated, status, authorised")
+        .eq("id", id)
+        .single()
+
+      if (fetchError || !existing) {
+        return res.status(404).json({ ok: false, error: "Job item not found" })
+      }
+
+      const returnQty = Math.max(
+        Number(existing.quantity_allocated || 0),
+        Number(existing.quantity_requested || 0),
+        0
+      )
+
+      if (returnQty > 0) {
+        const { data: partRow, error: partError } = await supabase
+          .from("parts_catalog")
+          .select("qty_in_stock, qty_reserved")
+          .eq("id", existing.part_id)
+          .single()
+
+        if (partError) {
+          throw partError
+        }
+
+        const currentReserved = Number(partRow.qty_reserved || 0)
+        const currentStock = Number(partRow.qty_in_stock || 0)
+        const nextReserved = existing.authorised ? Math.max(0, currentReserved - returnQty) : currentReserved
+        const nextStock = currentStock + returnQty
+
+        await supabase
+          .from("parts_catalog")
+          .update({
+            qty_in_stock: nextStock,
+            qty_reserved: nextReserved,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existing.part_id)
+      }
+
       const { error } = await supabase
-        .from('parts_job_items')
+        .from("parts_job_items")
         .delete()
-        .eq('id', id)
+        .eq("id", id)
 
       if (error) throw error
 
