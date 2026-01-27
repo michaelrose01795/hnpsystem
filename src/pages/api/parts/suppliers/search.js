@@ -13,16 +13,15 @@ const GOODS_IN_ROLES = [
   "aftersales manager",
 ];
 const SUPPLIER_SELECT = `
-  account_id,
-  billing_name,
-  billing_email,
-  billing_phone,
+  account_number,
+  company_name,
+  trading_name,
+  contact_email,
+  contact_phone,
   billing_address_line1,
   billing_address_line2,
   billing_city,
-  billing_postcode,
-  account_type,
-  status
+  billing_postcode
 `;
 
 async function handler(req, res, session) {
@@ -36,15 +35,15 @@ async function handler(req, res, session) {
 
   try {
     let query = supabase
-      .from("accounts")
+      .from("company_accounts")
       .select(SUPPLIER_SELECT)
-      .order("updated_at", { ascending: false })
+      .order("company_name", { ascending: true })
       .limit(size);
 
     if (q) {
       const term = `%${q.trim()}%`;
       query = query.or(
-        `account_id.ilike.${term},billing_name.ilike.${term},billing_phone.ilike.${term},billing_city.ilike.${term}`
+        `account_number.ilike.${term},company_name.ilike.${term},trading_name.ilike.${term},contact_email.ilike.${term},contact_phone.ilike.${term},billing_city.ilike.${term}`
       );
     }
 

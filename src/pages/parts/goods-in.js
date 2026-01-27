@@ -66,6 +66,13 @@ const fieldGridStyle = {
   gap: "14px",
 };
 
+const splitFieldRowStyle = {
+  display: "grid",
+  gridTemplateColumns: "1fr 1fr",
+  gap: "14px",
+  alignItems: "stretch",
+};
+
 const labelStyle = {
   fontWeight: 600,
   fontSize: "0.9rem",
@@ -92,6 +99,32 @@ const autoExpandTextareaStyle = {
   minHeight: "40px",
   resize: "vertical",
   overflow: "auto",
+};
+
+const notesTextareaStyle = {
+  ...textareaStyle,
+  minHeight: "56px",
+  height: "56px",
+  resize: "vertical",
+};
+
+const addressFieldStyle = {
+  padding: "10px 12px",
+  borderRadius: "10px",
+  border: "1px solid var(--surface-light)",
+  background: "var(--layer-section-level-1)",
+  color: "var(--text-primary)",
+  minHeight: "56px",
+  display: "flex",
+  alignItems: "center",
+};
+
+const compactFieldWrapStyle = {
+  display: "inline-flex",
+  flexDirection: "column",
+  justifySelf: "start",
+  alignSelf: "start",
+  width: "fit-content",
 };
 
 const compactDropdownOverride = {
@@ -751,9 +784,25 @@ function GoodsInPage() {
           padding: 10px 40px 10px 12px;
           border-radius: 10px;
           font-size: 0.95rem;
+          border: 1px solid var(--surface-light);
+          background: var(--layer-section-level-1);
+          color: var(--text-primary);
+          box-shadow: none;
+          width: fit-content;
+          min-width: 0;
+        }
+        .compact-dropdown {
+          width: fit-content;
         }
         .compact-dropdown :global(.dropdown-api__chevron) {
           right: 12px;
+        }
+        .compact-dropdown :global(.dropdown-api.is-open .dropdown-api__control),
+        .compact-dropdown :global(.dropdown-api__control:focus-visible) {
+          border: 1px solid var(--surface-light);
+          background: var(--layer-section-level-1);
+          box-shadow: none;
+          outline: none;
         }
         .bin-suggestions {
           border: 1px solid var(--surface-light);
@@ -781,9 +830,26 @@ function GoodsInPage() {
           border-radius: 10px;
           font-size: 0.95rem;
           min-height: 40px;
+          border: 1px solid var(--surface-light);
+          background: var(--layer-section-level-1);
+          color: var(--text-primary);
+          box-shadow: none;
+          backdrop-filter: none;
+          -webkit-backdrop-filter: none;
+          width: fit-content;
+          min-width: 0;
+        }
+        .compact-calendar {
+          width: fit-content;
         }
         .compact-calendar :global(.calendar-api__icon) {
           right: 12px;
+        }
+        .compact-calendar :global(.calendar-api__control:hover:not(:disabled)),
+        .compact-calendar :global(.calendar-api__control:focus) {
+          border-color: var(--surface-light);
+          background: var(--layer-section-level-1);
+          box-shadow: none;
         }
       `}</style>
       <div style={{ display: "flex", flexDirection: "column", gap: "18px", padding: "12px" }}>
@@ -908,10 +974,10 @@ function GoodsInPage() {
                 placeholder="DN-001"
               />
             </div>
-            <div>
+            <div style={compactFieldWrapStyle}>
+              <label style={labelStyle}>Invoice date</label>
               <div className="compact-calendar">
                 <CalendarField
-                  label="Invoice date"
                   value={invoiceForm.invoiceDate}
                   onChange={(event) => handleInvoiceChange("invoiceDate", event.target.value)}
                   name="invoiceDate"
@@ -920,7 +986,7 @@ function GoodsInPage() {
                 />
               </div>
             </div>
-            <div>
+            <div style={compactFieldWrapStyle}>
               <label style={labelStyle}>Price level</label>
               <div className="compact-dropdown">
                 <DropdownField
@@ -937,7 +1003,7 @@ function GoodsInPage() {
                 </DropdownField>
               </div>
             </div>
-            <div>
+            <div style={compactFieldWrapStyle}>
               <label style={labelStyle}>Franchise</label>
               <div className="compact-dropdown">
                 <DropdownField
@@ -955,22 +1021,22 @@ function GoodsInPage() {
               </div>
             </div>
           </div>
-          {invoiceForm.supplierAddress && (
+          <div style={splitFieldRowStyle}>
             <div>
               <label style={labelStyle}>Supplier address</label>
-              <div style={{ padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)" }}>
-                {invoiceForm.supplierAddress}
+              <div style={addressFieldStyle}>
+                {invoiceForm.supplierAddress || "—"}
               </div>
             </div>
-          )}
-          <div>
-            <label style={labelStyle}>Notes</label>
-            <textarea
-              style={textareaStyle}
-              value={invoiceForm.notes}
-              onChange={(event) => handleInvoiceChange("notes", event.target.value)}
-              placeholder="Internal notes"
-            />
+            <div>
+              <label style={labelStyle}>Notes</label>
+              <textarea
+                style={notesTextareaStyle}
+                value={invoiceForm.notes}
+                onChange={(event) => handleInvoiceChange("notes", event.target.value)}
+                placeholder="Internal notes"
+              />
+            </div>
           </div>
           {invoiceScanPayload && (
             <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
@@ -1090,6 +1156,26 @@ function GoodsInPage() {
                 </div>
               )}
             </div>
+            <div style={{ display: "flex", gap: "12px", alignItems: "flex-end" }}>
+              <div>
+                <label style={labelStyle}>Retail price</label>
+                <input
+                  style={{ ...inputStyle, width: "12ch" }}
+                  value={partForm.retailPrice}
+                  onChange={(event) => handlePartChange("retailPrice", event.target.value)}
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Cost price</label>
+                <input
+                  style={{ ...inputStyle, width: "10ch" }}
+                  value={partForm.costPrice}
+                  onChange={(event) => handlePartChange("costPrice", event.target.value)}
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
             <div>
               <label style={labelStyle}>Discount code</label>
               <input
@@ -1109,26 +1195,6 @@ function GoodsInPage() {
                   event.target.style.height = "auto";
                   event.target.style.height = `${event.target.scrollHeight}px`;
                 }}
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Retail price</label>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <input
-                  style={{ ...inputStyle, width: "12ch" }}
-                  value={partForm.retailPrice}
-                  onChange={(event) => handlePartChange("retailPrice", event.target.value)}
-                  placeholder="0.00"
-                />
-              </div>
-            </div>
-            <div>
-              <label style={labelStyle}>Cost price</label>
-              <input
-                style={{ ...inputStyle, width: "10ch" }}
-                value={partForm.costPrice}
-                onChange={(event) => handlePartChange("costPrice", event.target.value)}
-                placeholder="0.00"
               />
             </div>
           </div>
@@ -1545,6 +1611,7 @@ function GoodsInPage() {
         <SupplierSearchModal
           onClose={() => setSupplierModalOpen(false)}
           onSelect={handleSupplierSelected}
+          initialQuery={invoiceForm.supplierName}
         />
       )}
       {partSearchOpen && (
@@ -1581,8 +1648,8 @@ function GoodsInPage() {
   );
 }
 
-function SupplierSearchModal({ onClose, onSelect }) {
-  const [query, setQuery] = useState("");
+function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
+  const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -1593,15 +1660,17 @@ function SupplierSearchModal({ onClose, onSelect }) {
         setLoading(true);
         const params = new URLSearchParams();
         if (term.trim()) {
-          params.set("search", term.trim());
+          params.set("q", term.trim());
         }
-        const response = await fetch(`/api/company-accounts?${params.toString()}`);
+        params.set("limit", "30");
+        const response = await fetch(`/api/parts/suppliers/search?${params.toString()}`);
         const payload = await response.json();
         if (!response.ok || !payload?.success) {
           throw new Error(payload?.message || "Unable to search suppliers");
         }
-        setResults(payload.data || []);
-        setError(payload.data?.length ? "" : "No suppliers found");
+        const suppliers = payload.suppliers || [];
+        setResults(suppliers);
+        setError(suppliers.length ? "" : "No suppliers found");
       } catch (err) {
         console.error(err);
         setError(err.message);
@@ -1613,8 +1682,16 @@ function SupplierSearchModal({ onClose, onSelect }) {
   );
 
   useEffect(() => {
-    searchSuppliers();
-  }, [searchSuppliers]);
+    const trimmed = initialQuery.trim();
+    setQuery(initialQuery);
+    if (!trimmed) {
+      setResults([]);
+      setError("");
+      setLoading(false);
+      return;
+    }
+    searchSuppliers(trimmed);
+  }, [initialQuery, searchSuppliers]);
 
   return (
     <div style={popupOverlayStyles}>
@@ -1628,15 +1705,25 @@ function SupplierSearchModal({ onClose, onSelect }) {
         <div style={{ marginBottom: "12px" }}>
           <input
             style={inputStyle}
-            placeholder="Search name, account number or city"
+            placeholder="Search name, account number, phone, or city"
             value={query}
             onChange={(event) => {
-              setQuery(event.target.value);
-              searchSuppliers(event.target.value);
+              const nextValue = event.target.value;
+              setQuery(nextValue);
+              if (!nextValue.trim()) {
+                setResults([]);
+                setError("");
+                return;
+              }
+              searchSuppliers(nextValue);
             }}
           />
         </div>
-        {loading ? (
+        {!query.trim() ? (
+          <div style={{ padding: "16px", color: "var(--text-secondary)" }}>
+            Enter a supplier name, account number, phone, or city to see results.
+          </div>
+        ) : loading ? (
           <div style={{ padding: "24px", textAlign: "center" }}>Searching...</div>
         ) : error ? (
           <div style={{ padding: "12px", color: "var(--danger)" }}>{error}</div>
@@ -1653,10 +1740,23 @@ function SupplierSearchModal({ onClose, onSelect }) {
                   borderRadius: "10px",
                   marginBottom: "8px",
                   cursor: "pointer",
+                  background: "var(--surface)",
+                  color: "var(--text-primary)",
+                  transition: "background 0.15s ease, border-color 0.15s ease",
+                }}
+                onMouseEnter={(event) => {
+                  event.currentTarget.style.background = "var(--surface-light)";
+                  event.currentTarget.style.borderColor = "var(--primary)";
+                }}
+                onMouseLeave={(event) => {
+                  event.currentTarget.style.background = "var(--surface)";
+                  event.currentTarget.style.borderColor = "var(--surface-light)";
                 }}
                 onClick={() => onSelect(result)}
               >
-                <div style={{ fontWeight: 600 }}>{result.company_name || result.trading_name || result.account_number}</div>
+                <div style={{ fontWeight: 600 }}>
+                  {result.company_name || result.trading_name || result.account_number}
+                </div>
                 <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
                   Account {result.account_number} · {result.billing_city || "Unknown city"}
                 </div>

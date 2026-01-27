@@ -4731,7 +4731,24 @@ export default function VhcDetailsPanel({
                         )}
                       </td>
                       <td style={{ padding: "12px 16px", textAlign: "center" }}>
-                        <span style={{ color: "var(--info-light)", fontSize: "12px" }}>—</span>
+                        <button
+                          type="button"
+                          disabled
+                          style={{
+                            padding: "8px 16px",
+                            borderRadius: "8px",
+                            border: "1px solid var(--surface-light)",
+                            background: "var(--surface-light)",
+                            color: "var(--info)",
+                            fontWeight: 600,
+                            cursor: "not-allowed",
+                            fontSize: "12px",
+                            width: "100%",
+                          }}
+                          title="Add a part first"
+                        >
+                          Order
+                        </button>
                       </td>
                       <td style={{ padding: "12px 16px", whiteSpace: "normal", wordBreak: "break-word" }}>
                         <span style={{ color: "var(--info-light)", fontSize: "12px" }}>—</span>
@@ -4745,7 +4762,9 @@ export default function VhcDetailsPanel({
                   const partPrice = Number(part.unit_price ?? part.part?.unit_price ?? 0);
                   const partQty = Number(part.quantity_requested || 1);
                   const partTotal = partPrice * partQty;
-                  const currentStatus = part.status || 'authorized';
+                  const normalizedStatus = normalisePartStatus(part.status);
+                  const currentStatus = normalizedStatus || "authorized";
+                  const isOrdered = currentStatus === "on_order";
 
                   return (
                     <tr
@@ -4826,7 +4845,7 @@ export default function VhcDetailsPanel({
                           type="button"
                           onClick={async () => {
                             // Only allow ordering if not already ordered
-                            if (currentStatus !== "on_order") {
+                            if (!isOrdered) {
                               try {
                                 await handlePartStatusUpdate(part.id, {
                                   status: "on_order",
@@ -4842,29 +4861,29 @@ export default function VhcDetailsPanel({
                           style={{
                             padding: "8px 16px",
                             borderRadius: "8px",
-                            border: currentStatus === "on_order" ? "1px solid var(--success)" : "1px solid var(--primary)",
-                            background: currentStatus === "on_order" ? "var(--success)" : "var(--primary)",
+                            border: isOrdered ? "1px solid var(--success)" : "1px solid var(--primary)",
+                            background: isOrdered ? "var(--success)" : "var(--primary)",
                             color: "var(--surface)",
                             fontWeight: 600,
-                            cursor: currentStatus === "on_order" ? "default" : "pointer",
+                            cursor: isOrdered ? "default" : "pointer",
                             fontSize: "12px",
                             transition: "all 0.2s ease",
                             width: "100%",
                           }}
                           onMouseEnter={(e) => {
-                            if (currentStatus !== "on_order") {
+                            if (!isOrdered) {
                               e.target.style.background = "var(--primary-dark)";
                             }
                           }}
                           onMouseLeave={(e) => {
-                            if (currentStatus !== "on_order") {
+                            if (!isOrdered) {
                               e.target.style.background = "var(--primary)";
                             } else {
                               e.target.style.background = "var(--success)";
                             }
                           }}
                         >
-                          {currentStatus === "on_order" ? "Ordered" : "Order"}
+                          {isOrdered ? "Ordered" : "Order"}
                         </button>
                       </td>
                       <td style={{ padding: "12px 16px", whiteSpace: "normal", wordBreak: "break-word" }}>
