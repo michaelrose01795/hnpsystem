@@ -157,6 +157,12 @@ const resolveSourceMeta = (origin = "") => {
   return SOURCE_META.manual;
 };
 
+const LINKED_JOB_DISPLAY_STATUSES = new Set(["booked", "allocated"]);
+const matchesLinkedJobStatus = (status) => {
+  const normalized = String(status || "").toLowerCase();
+  return LINKED_JOB_DISPLAY_STATUSES.has(normalized);
+};
+
 const RequirementBadge = ({ label, background, color }) => (
   <span
     style={{
@@ -203,6 +209,13 @@ function StockCataloguePage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedPart, setEditedPart] = useState(null);
   const [isSavingPart, setIsSavingPart] = useState(false);
+  const [showAddToJobModal, setShowAddToJobModal] = useState(false);
+  const [addToJobSearch, setAddToJobSearch] = useState("");
+  const [addToJobQuantity, setAddToJobQuantity] = useState(1);
+  const [addToJobSearching, setAddToJobSearching] = useState(false);
+  const [addToJobSubmitting, setAddToJobSubmitting] = useState(false);
+  const [addToJobError, setAddToJobError] = useState("");
+  const [addToJobResult, setAddToJobResult] = useState(null);
   const [filterType, setFilterType] = useState("status");
   const [statusFilter, setStatusFilter] = useState("all");
   const [locationFilter, setLocationFilter] = useState("all");
@@ -295,6 +308,7 @@ function StockCataloguePage() {
       .slice(0, 3);
   }, [categorySearch, categories]);
 
+
   const pendingJobParts = useMemo(
     () =>
       jobParts.filter(
@@ -332,7 +346,7 @@ function StockCataloguePage() {
     value ? new Date(value).toLocaleString(undefined, { hour12: false }) : "—";
 
   const renderLinkedJobs = (part) => {
-    const links = part.linked_jobs || [];
+    const links = (part.linked_jobs || []).filter((link) => matchesLinkedJobStatus(link.status));
     if (links.length === 0) return null;
     return (
       <div style={{ marginTop: "8px", fontSize: "0.8rem", color: "var(--info-dark)" }}>
@@ -377,6 +391,7 @@ function StockCataloguePage() {
           throw new Error(payload?.message || "Failed to load inventory");
         }
         setInventory(payload.parts || []);
+        return payload.parts || [];
       } else {
         const query = new URLSearchParams({
           search: trimmed,
@@ -389,9 +404,11 @@ function StockCataloguePage() {
           throw new Error(data?.message || "Failed to load inventory");
         }
         setInventory(data.parts || []);
+        return data.parts || [];
       }
     } catch (err) {
       setInventoryError(err.message || "Unable to load inventory");
+      return [];
     } finally {
       setInventoryLoading(false);
     }
@@ -457,6 +474,127 @@ function StockCataloguePage() {
     []
   );
 
+  const resetAddToJobModal = useCallback(() => {
+    setAddToJobSearch("");
+    setAddToJobQuantity(1);
+    setAddToJobSearching(false);
+    setAddToJobSubmitting(false);
+    setAddToJobError("");
+    setAddToJobResult(null);
+  }, []);
+
+  const refreshSelectedPartFromDb = useCallback(async () => {
+    if (!selectedPart?.part_number) return;
+    const controller = new AbortController();
+    try {
+      const query = new URLSearchParams({
+        search: String(selectedPart.part_number),
+        includeInactive: "true",
+        limit: "25",
+      });
+      const response = await fetch(`/api/parts/inventory?${query.toString()}`, {
+        signal: controller.signal,
+      });
+      const data = await response.json();
+      if (!response.ok || !data?.success || !Array.isArray(data.parts)) return;
+
+      const updated = data.parts.find((part) => part.id === selectedPart.id) ||
+        data.parts.find((part) => part.part_number === selectedPart.part_number);
+      if (updated) {
+        setSelectedPart((prev) => (prev?.id === updated.id ? { ...prev, ...updated } : updated));
+      }
+    } catch (error) {
+      if (error?.name !== "AbortError") {
+        console.error("Failed to refresh part links:", error);
+      }
+    }
+    return () => controller.abort();
+  }, [selectedPart?.id, selectedPart?.part_number]);
+
+  const handleAddToJobSearch = useCallback(async () => {
+    const term = (addToJobSearch || "").trim();
+    if (!term) {
+      setAddToJobError("Enter a job number or registration to search.");
+      return;
+    }
+
+    setAddToJobSearching(true);
+    setAddToJobError("");
+    setAddToJobResult(null);
+    try {
+      const query = new URLSearchParams({ search: term });
+      const response = await fetch(`/api/parts/jobs?${query}`);
+      const data = await response.json();
+
+      if (!response.ok || !data.success || !data.job) {
+        throw new Error(data.message || "Job card not found");
+      }
+
+      setAddToJobResult(data.job);
+    } catch (err) {
+      setAddToJobError(err.message || "Unable to find job");
+    } finally {
+      setAddToJobSearching(false);
+    }
+  }, [addToJobSearch]);
+
+  const handleAddPartToJob = useCallback(async () => {
+    const partId = selectedPart?.id;
+    const jobId = addToJobResult?.id;
+    const quantity = Math.max(1, Number.parseInt(addToJobQuantity, 10) || 1);
+
+    if (!partId) {
+      setAddToJobError("Select a part before adding to a job.");
+      return;
+    }
+
+    if (!jobId) {
+      setAddToJobError("Search and select a job first.");
+      return;
+    }
+
+    setAddToJobSubmitting(true);
+    setAddToJobError("");
+    try {
+      const response = await fetch("/api/parts/jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobId,
+          partId,
+          quantityRequested: quantity,
+          allocateFromStock: false,
+          status: "booked",
+          origin: "parts_workspace",
+          userId: actingUserId,
+          userNumericId: actingUserNumericId,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Failed to add part to job");
+      }
+
+      await refreshSelectedPartFromDb();
+
+      setShowAddToJobModal(false);
+      resetAddToJobModal();
+    } catch (err) {
+      setAddToJobError(err.message || "Unable to add part to job");
+    } finally {
+      setAddToJobSubmitting(false);
+    }
+  }, [
+    addToJobQuantity,
+    addToJobResult?.id,
+    actingUserId,
+    actingUserNumericId,
+    refreshSelectedPartFromDb,
+    resetAddToJobModal,
+    selectedPart?.id,
+  ]);
+
   const refreshJob = useCallback(() => {
     if (jobData?.jobNumber) {
       searchJob(jobData.jobNumber);
@@ -481,6 +619,11 @@ function StockCataloguePage() {
     lastInventoryQueryApplied.current = inventorySearchQueryParam;
     setInventorySearch(inventorySearchQueryParam);
   }, [router.isReady, inventorySearchQueryParam]);
+
+  useEffect(() => {
+    if (!isPartModalOpen || !selectedPart?.part_number || isEditMode) return;
+    refreshSelectedPartFromDb();
+  }, [isEditMode, isPartModalOpen, refreshSelectedPartFromDb, selectedPart?.part_number]);
 
   useEffect(() => {
     fetchInventory("");
@@ -1010,6 +1153,172 @@ useEffect(() => {
     } catch (err) {
       setDeliveryFormError(err.message || "Unable to log delivery");
     }
+  };
+
+  const renderAddToJobModal = () => {
+    if (!showAddToJobModal || !selectedPart) return null;
+
+    return (
+      <div
+        style={{
+          ...popupOverlayStyles,
+          zIndex: 1500,
+        }}
+        onClick={() => {
+          setShowAddToJobModal(false);
+          resetAddToJobModal();
+        }}
+      >
+        <div
+          style={{
+            ...popupCardStyles,
+            width: "min(540px, 92vw)",
+            maxHeight: "90vh",
+            overflowY: "auto",
+            padding: "24px",
+          }}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+            <h2 style={{ ...sectionTitleStyle, margin: 0 }}>Add part to job</h2>
+            <button
+              type="button"
+              onClick={() => {
+                setShowAddToJobModal(false);
+                resetAddToJobModal();
+              }}
+              style={{
+                background: "var(--surface-light)",
+                border: "none",
+                borderRadius: "8px",
+                fontSize: "1.1rem",
+                cursor: "pointer",
+                color: "var(--text-secondary)",
+                padding: "6px 10px",
+              }}
+            >
+              ×
+            </button>
+          </div>
+
+          <div
+            style={{
+              marginTop: "12px",
+              padding: "12px",
+              borderRadius: "10px",
+              border: "1px solid var(--surface-light)",
+              background: "var(--surface)",
+            }}
+          >
+            <div style={{ fontWeight: 600, color: "var(--primary)" }}>{selectedPart.part_number}</div>
+            <div style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
+              {selectedPart.name || "Unnamed part"}
+            </div>
+          </div>
+
+          <div style={{ marginTop: "16px" }}>
+            <label style={{ display: "block", marginBottom: "10px" }}>
+              <span style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>Search job number</span>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <input
+                  type="text"
+                  value={addToJobSearch}
+                  onChange={(event) => setAddToJobSearch(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      handleAddToJobSearch();
+                    }
+                  }}
+                  placeholder="Enter job number or reg"
+                  style={{
+                    flex: 1,
+                    padding: "10px",
+                    borderRadius: "8px",
+                    border: "1px solid var(--surface-light)",
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddToJobSearch}
+                  disabled={addToJobSearching}
+                  style={{
+                    ...buttonStyle,
+                    padding: "10px 16px",
+                    background: addToJobSearching ? "var(--surface-light)" : "var(--primary)",
+                    cursor: addToJobSearching ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {addToJobSearching ? "Searching..." : "Search"}
+                </button>
+              </div>
+            </label>
+
+            {addToJobError && (
+              <div style={{ color: "var(--danger)", fontSize: "0.9rem", marginBottom: "10px" }}>
+                {addToJobError}
+              </div>
+            )}
+
+            {addToJobResult && (
+              <div
+                style={{
+                  border: "1px solid var(--surface-light)",
+                  borderRadius: "10px",
+                  padding: "12px",
+                  marginBottom: "12px",
+                  background: "var(--surface)",
+                }}
+              >
+                <div style={{ fontWeight: 700, color: "var(--primary)" }}>
+                  Job #{addToJobResult.jobNumber}
+                </div>
+                <div style={{ color: "var(--text-secondary)", fontSize: "0.9rem", marginTop: "4px" }}>
+                  {[addToJobResult.reg, addToJobResult.makeModel].filter(Boolean).join(" • ")}
+                </div>
+                {addToJobResult.description && (
+                  <div style={{ color: "var(--info)", fontSize: "0.85rem", marginTop: "4px" }}>
+                    {addToJobResult.description}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <label style={{ display: "block", marginBottom: "12px" }}>
+              <span style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>Quantity</span>
+              <input
+                type="number"
+                min={1}
+                value={addToJobQuantity}
+                onChange={(event) =>
+                  setAddToJobQuantity(Math.max(1, Number.parseInt(event.target.value, 10) || 1))
+                }
+                style={{
+                  width: "120px",
+                  padding: "8px",
+                  borderRadius: "8px",
+                  border: "1px solid var(--surface-light)",
+                }}
+              />
+            </label>
+
+            <button
+              type="button"
+              onClick={handleAddPartToJob}
+              disabled={!addToJobResult || addToJobSearching || addToJobSubmitting}
+              style={{
+                ...buttonStyle,
+                width: "100%",
+                background: !addToJobResult || addToJobSearching || addToJobSubmitting ? "var(--surface-light)" : "var(--primary)",
+                cursor: !addToJobResult || addToJobSearching || addToJobSubmitting ? "not-allowed" : "pointer",
+              }}
+            >
+              {addToJobSubmitting ? "Adding..." : "Add part to job"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const renderDeliveryModal = () => {
@@ -2883,11 +3192,41 @@ useEffect(() => {
                   padding: "16px",
                   border: "1px solid var(--surface-light)",
                 }}>
-                  <h3 style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                    Linked Jobs {selectedPart.linked_jobs && selectedPart.linked_jobs.filter((link) => link.status !== "added").length > 0 && `(${selectedPart.linked_jobs.filter((link) => link.status !== "added").length})`}
-                  </h3>
-                  {selectedPart.linked_jobs && selectedPart.linked_jobs.filter((link) => link.status !== "added").length > 0 ? (
-                    <div style={{ overflowX: "auto" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", marginBottom: "12px" }}>
+                    <h3 style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-secondary)", margin: 0, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                      Linked Jobs {selectedPart.linked_jobs && selectedPart.linked_jobs.filter((link) => matchesLinkedJobStatus(link.status)).length > 0 && `(${selectedPart.linked_jobs.filter((link) => matchesLinkedJobStatus(link.status)).length})`}
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAddToJobModal(true);
+                        resetAddToJobModal();
+                      }}
+                      style={{
+                        ...secondaryButtonStyle,
+                        padding: "6px 12px",
+                        fontSize: "0.75rem",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.04em",
+                      }}
+                    >
+                      Add part to job
+                    </button>
+                  </div>
+                  {selectedPart.linked_jobs && selectedPart.linked_jobs.filter((link) => matchesLinkedJobStatus(link.status)).length > 0 ? (
+                    <div
+                      style={{
+                        overflowX: "auto",
+                        overflowY:
+                          selectedPart.linked_jobs.filter((link) => matchesLinkedJobStatus(link.status)).length > 4
+                            ? "auto"
+                            : "visible",
+                        maxHeight:
+                          selectedPart.linked_jobs.filter((link) => matchesLinkedJobStatus(link.status)).length > 4
+                            ? "240px"
+                            : "none",
+                      }}
+                    >
                       <table style={{ ...tableStyle, fontSize: "0.85rem" }}>
                         <thead>
                           <tr style={{ background: "var(--surface)", color: "var(--text-secondary)", fontSize: "0.75rem", textTransform: "uppercase" }}>
@@ -2899,7 +3238,7 @@ useEffect(() => {
                         </thead>
                         <tbody>
                           {selectedPart.linked_jobs
-                            .filter((link) => link.status !== "added")
+                            .filter((link) => matchesLinkedJobStatus(link.status))
                             .map((link) => {
                               const sourceMeta = resolveSourceMeta(link.source);
                               const statusMeta = resolveStatusStyles(link.status);
@@ -2977,6 +3316,7 @@ useEffect(() => {
           </div>
         )}
 
+        {renderAddToJobModal()}
         {renderDeliveryModal()}
       </div>
     </Layout>
