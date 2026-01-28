@@ -230,6 +230,13 @@ async function handler(req, res, session) {
       return res.status(400).json({ success: false, message: "Supplier name is required" });
     }
 
+    if (!supplierAccountId) {
+      return res.status(400).json({
+        success: false,
+        message: "Supplier account is missing a linked ledger account. Open the supplier and set a linked account.",
+      });
+    }
+
     if (!invoiceNumber) {
       return res.status(400).json({ success: false, message: "Invoice number is required" });
     }
@@ -257,10 +264,21 @@ async function handler(req, res, session) {
       return res.status(201).json({ success: true, goodsIn: created });
     } catch (error) {
       console.error("Failed to create goods-in record:", error);
+      let message = "Unable to create goods-in record";
+      if (
+        error?.code === "23503" ||
+        error?.message?.includes("supplier_account_id_fkey") ||
+        error?.message?.includes("parts_goods_in_supplier_account_id_fkey")
+      ) {
+        message =
+          "The selected supplier does not have a valid linked ledger account. Open the supplier and set a linked account.";
+      } else if (error?.message) {
+        message = `Unable to create goods-in record: ${error.message}`;
+      }
       return res.status(500).json({
         success: false,
-        message: "Unable to create goods-in record",
-        error: error.message,
+        message,
+        error: error?.message || "Unknown error",
       });
     }
   }

@@ -3,9 +3,6 @@ TO DO:
 Continue flow with job number 54
 
 
-
-Add part section inside goods in page. discound swap to end of row 
-
 CHECKKKKKK
 Book a goods‑in item to a job via the popup and confirm the catalog entry exists with qty_in_stock = 0.
 Complete a goods‑in record with mixed booked/not‑booked items and confirm only the not‑booked parts increase stock.

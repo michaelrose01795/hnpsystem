@@ -21,7 +21,9 @@ const SUPPLIER_SELECT = `
   billing_address_line1,
   billing_address_line2,
   billing_city,
-  billing_postcode
+  billing_postcode,
+  linked_account_id,
+  linked_account_label
 `;
 
 async function handler(req, res, session) {

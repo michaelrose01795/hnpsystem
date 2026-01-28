@@ -201,6 +201,7 @@ const invoiceRowStyle = {
 
 const createDefaultInvoiceForm = (invoiceDate) => ({
   supplierAccountId: "",
+  supplierAccountNumber: "",
   supplierName: "",
   supplierAddress: "",
   supplierContact: "",
@@ -367,6 +368,7 @@ function GoodsInPage() {
         setInvoiceForm((prev) => ({
           ...prev,
           supplierAccountId: payload.goodsIn?.supplier_account_id || "",
+          supplierAccountNumber: prev.supplierAccountNumber || "",
           supplierName: payload.goodsIn?.supplier_name || "",
           supplierAddress: payload.goodsIn?.supplier_address || "",
           invoiceNumber: payload.goodsIn?.invoice_number || "",
@@ -452,6 +454,14 @@ function GoodsInPage() {
       setPartError(message);
       return false;
     }
+    if (!invoiceForm.supplierAccountId) {
+      const message = invoiceForm.supplierAccountNumber
+        ? "Supplier account is missing a linked ledger account. Open the supplier and set a linked account."
+        : "Supplier account is required before adding parts";
+      setToast({ type: "error", message });
+      setPartError(message);
+      return false;
+    }
     if (!invoiceForm.invoiceNumber.trim()) {
       const message = "Invoice number is required before adding parts";
       setToast({ type: "error", message });
@@ -487,7 +497,7 @@ function GoodsInPage() {
       });
       const payload = await response.json();
       if (!response.ok || !payload?.success) {
-        throw new Error(payload?.message || "Unable to create goods-in record");
+        throw new Error(payload?.message || payload?.error || "Unable to create goods-in record");
       }
       setGoodsInRecord(payload.goodsIn);
       setToast({ type: "success", message: `Goods in ${payload.goodsIn.goods_in_number} started` });
@@ -551,7 +561,6 @@ function GoodsInPage() {
 
     const record = await ensureGoodsInRecord();
     if (!record?.id) {
-      setPartError("Unable to start goods-in record. Check invoice details.");
       return;
     }
 
@@ -695,7 +704,8 @@ function GoodsInPage() {
   const handleSupplierSelected = (supplier) => {
     setInvoiceForm((prev) => ({
       ...prev,
-      supplierAccountId: supplier.account_number,
+      supplierAccountId: supplier.linked_account_id || "",
+      supplierAccountNumber: supplier.account_number || "",
       supplierName: supplier.company_name || supplier.trading_name || supplier.account_number,
       supplierAddress: [
         supplier.billing_address_line1,
@@ -950,9 +960,9 @@ function GoodsInPage() {
                 onChange={(event) => handleInvoiceChange("supplierName", event.target.value)}
                 placeholder="Supplier name"
               />
-              {invoiceForm.supplierAccountId && (
+              {invoiceForm.supplierAccountNumber && (
                 <small style={{ color: "var(--text-secondary)" }}>
-                  Account #{invoiceForm.supplierAccountId}
+                  Account #{invoiceForm.supplierAccountNumber}
                 </small>
               )}
             </div>
@@ -1729,39 +1739,55 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
           <div style={{ padding: "12px", color: "var(--danger)" }}>{error}</div>
         ) : (
           <div style={{ maxHeight: "420px", overflowY: "auto" }}>
-            {results.map((result) => (
-              <button
-                key={result.account_number}
-                style={{
-                  width: "100%",
-                  textAlign: "left",
-                  padding: "12px",
-                  border: "1px solid var(--surface-light)",
-                  borderRadius: "10px",
-                  marginBottom: "8px",
-                  cursor: "pointer",
-                  background: "var(--surface)",
-                  color: "var(--text-primary)",
-                  transition: "background 0.15s ease, border-color 0.15s ease",
-                }}
-                onMouseEnter={(event) => {
-                  event.currentTarget.style.background = "var(--surface-light)";
-                  event.currentTarget.style.borderColor = "var(--primary)";
-                }}
-                onMouseLeave={(event) => {
-                  event.currentTarget.style.background = "var(--surface)";
-                  event.currentTarget.style.borderColor = "var(--surface-light)";
-                }}
-                onClick={() => onSelect(result)}
-              >
-                <div style={{ fontWeight: 600 }}>
-                  {result.company_name || result.trading_name || result.account_number}
-                </div>
-                <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-                  Account {result.account_number} · {result.billing_city || "Unknown city"}
-                </div>
-              </button>
-            ))}
+            {results.map((result) => {
+              const missingLinkedAccount = !result.linked_account_id;
+              return (
+                <button
+                  key={result.account_number}
+                  style={{
+                    width: "100%",
+                    textAlign: "left",
+                    padding: "12px",
+                    border: "1px solid var(--surface-light)",
+                    borderRadius: "10px",
+                    marginBottom: "8px",
+                    cursor: "pointer",
+                    background: "var(--surface)",
+                    color: "var(--text-primary)",
+                    transition: "background 0.15s ease, border-color 0.15s ease",
+                  }}
+                  onMouseEnter={(event) => {
+                    event.currentTarget.style.background = "var(--surface-light)";
+                    event.currentTarget.style.borderColor = "var(--primary)";
+                  }}
+                  onMouseLeave={(event) => {
+                    event.currentTarget.style.background = "var(--surface)";
+                    event.currentTarget.style.borderColor = "var(--surface-light)";
+                  }}
+                  onClick={() => {
+                    if (missingLinkedAccount) {
+                      setError(
+                        "Supplier account has no linked ledger account. Open the supplier and set a linked account."
+                      );
+                      return;
+                    }
+                    onSelect(result);
+                  }}
+                >
+                  <div style={{ fontWeight: 600 }}>
+                    {result.company_name || result.trading_name || result.account_number}
+                  </div>
+                  <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                    Account {result.account_number} · {result.billing_city || "Unknown city"}
+                  </div>
+                  {missingLinkedAccount && (
+                    <div style={{ fontSize: "0.8rem", color: "var(--danger)", marginTop: "4px" }}>
+                      No linked ledger account
+                    </div>
+                  )}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
