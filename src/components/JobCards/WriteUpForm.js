@@ -9,7 +9,6 @@ import {
   saveWriteUpToDatabase,
   getJobByNumber,
   updateJobStatus,
-  getAuthorizedAdditionalWorkByJob,
 } from "@/lib/database/jobs";
 import { logJobSubStatus } from "@/lib/services/jobStatusService";
 import { resolveSubStatusId } from "@/lib/status/statusFlow";
@@ -157,34 +156,26 @@ const toPastTenseRequest = (value = "") => {
 };
 
 const ensureAuthorizedTasks = (tasks = [], authorizedItems = []) => {
-  const mergedTasks = Array.isArray(tasks) ? [...tasks] : [];
-  if (!Array.isArray(authorizedItems) || authorizedItems.length === 0) {
-    return mergedTasks;
-  }
+  const baseTasks = (Array.isArray(tasks) ? tasks : []).filter(Boolean);
+  const normalizedAuthorized = Array.isArray(authorizedItems) ? authorizedItems.filter(Boolean) : [];
 
-  const existingKeys = new Set(
-    mergedTasks
-      .map((task) => {
-        if (!task || !task.source || !task.sourceKey) {
-          return null;
-        }
-        return composeTaskKey(task);
-      })
-      .filter(Boolean)
-  );
+  // Keep request tasks and any non-VHC manual tasks as-is, but replace VHC tasks with the current authorised list.
+  const requestTasks = baseTasks.filter((task) => task.source === "request");
+  const manualTasks = baseTasks.filter((task) => task.source !== "request" && task.source !== "vhc");
 
-  authorizedItems.forEach((item, index) => {
-    if (!item) {
-      return;
-    }
+  const existingVhcTasks = baseTasks.filter((task) => task.source === "vhc");
+  const existingByKey = new Map(existingVhcTasks.map((task) => [composeTaskKey(task), task]));
 
+  const nextVhcTasks = [];
+  normalizedAuthorized.forEach((item, index) => {
     const source = item.source || "vhc";
-    const sourceKey =
-      item.sourceKey || `${source}-${item.authorizationId || "auth"}-${index + 1}`;
-    const label = item.label || item.description || "";
-    if (!label) {
+    if (source !== "vhc") {
       return;
     }
+
+    const sourceKey = item.sourceKey || `${source}-${item.authorizationId || "auth"}-${index + 1}`;
+    const label = item.label || item.description || "";
+    if (!label) return;
 
     const candidate = {
       taskId: item.taskId || null,
@@ -194,14 +185,22 @@ const ensureAuthorizedTasks = (tasks = [], authorizedItems = []) => {
       status: item.status === "complete" ? "complete" : "additional_work",
     };
 
-    const candidateKey = composeTaskKey(candidate);
-    if (!existingKeys.has(candidateKey)) {
-      mergedTasks.push(candidate);
-      existingKeys.add(candidateKey);
+    const key = composeTaskKey(candidate);
+    const existing = existingByKey.get(key);
+    if (existing) {
+      // Preserve existing status/label edits for the same row.
+      nextVhcTasks.push({
+        ...candidate,
+        taskId: existing.taskId ?? candidate.taskId ?? null,
+        status: existing.status || candidate.status,
+        label: existing.label || candidate.label,
+      });
+    } else {
+      nextVhcTasks.push(candidate);
     }
   });
 
-  return mergedTasks;
+  return [...requestTasks, ...nextVhcTasks, ...manualTasks];
 };
 
 // ✅ Generate a reusable empty checkbox array
@@ -616,6 +615,7 @@ const hydrateCauseEntries = (entries) => {
 
 export default function WriteUpForm({
   jobNumber,
+  jobCardData = null,
   showHeader = true,
   onSaveSuccess,
   onCompletionChange,
@@ -635,7 +635,7 @@ export default function WriteUpForm({
   const isDarkMode = resolvedMode === "dark";
   const closeButtonColor = isDarkMode ? "var(--accent-purple)" : "var(--danger)";
 
-  const [jobData, setJobData] = useState(null);
+  const [jobData, setJobData] = useState(jobCardData);
   const [, setAuthorizedItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -661,6 +661,12 @@ export default function WriteUpForm({
     sectionEditors: sanitizeSectionEditors()
   });
 
+  useEffect(() => {
+    if (jobCardData?.jobCard) {
+      setJobData(jobCardData);
+    }
+  }, [jobCardData]);
+
   const [showCheckSheetPopup, setShowCheckSheetPopup] = useState(false);
   const [showDocumentsPopup, setShowDocumentsPopup] = useState(false);
   const [activeTab, setActiveTab] = useState("writeup");
@@ -682,6 +688,37 @@ export default function WriteUpForm({
     signature: "",
   });
   const [writeUpMeta, setWriteUpMeta] = useState({ jobId: null, writeupId: null });
+
+  // When the parent job card refreshes, keep Rectification in sync immediately (no tab-local refetch required).
+  useEffect(() => {
+    const resolved = Array.isArray(jobCardData?.jobCard?.authorizedVhcItems)
+      ? jobCardData.jobCard.authorizedVhcItems
+      : null;
+
+    if (!resolved) {
+      return;
+    }
+
+    setAuthorizedItems(resolved);
+    setWriteUpData((prev) => {
+      const normalizedEntries = resolved.map((item, index) => {
+        const description = (item?.description || item?.label || "").toString().trim();
+        return {
+          ...item,
+          source: "vhc",
+          sourceKey: createAuthorizedSourceKey(item || {}, index, jobCardData?.jobCard?.id || writeUpMeta.jobId),
+          label: description || `Authorised item ${index + 1}`,
+          status: item?.status === "complete" ? "complete" : "additional_work",
+        };
+      });
+
+      const mergedTasks = ensureAuthorizedTasks(prev.tasks, normalizedEntries);
+      if (tasksAreEqual(prev.tasks, mergedTasks)) {
+        return prev;
+      }
+      return { ...prev, tasks: mergedTasks };
+    });
+  }, [jobCardData?.jobCard?.authorizedVhcItems, jobCardData?.jobCard?.id, writeUpMeta.jobId]);
   const markFieldsSynced = useCallback((fields) => {
     lastSyncedFieldsRef.current = {
       fault: fields.fault || "",
@@ -731,27 +768,41 @@ export default function WriteUpForm({
   );
 
   const refreshAuthorizedWork = useCallback(async () => {
-    if (!writeUpMeta.jobId) {
+    if (!jobNumber) {
       return;
     }
 
     try {
-      const latestAuthorizedItems = await getAuthorizedAdditionalWorkByJob(writeUpMeta.jobId);
-      setAuthorizedItems(Array.isArray(latestAuthorizedItems) ? latestAuthorizedItems : []);
+      // IMPORTANT: Rectification must use the exact same source as Job Card "Authorised VHC Items".
+      // Prefer job payload from the parent job card page; fall back to fetching if needed.
+      let jobPayload = jobCardData;
+      if (!jobPayload || !jobPayload?.jobCard) {
+        const jobResponse = await getJobByNumber(jobNumber);
+        jobPayload = jobResponse?.data || null;
+      }
+      if (jobPayload) {
+        setJobData(jobPayload);
+      }
+
+      const resolved = Array.isArray(jobPayload?.jobCard?.authorizedVhcItems)
+        ? jobPayload.jobCard.authorizedVhcItems
+        : Array.isArray(jobData?.jobCard?.authorizedVhcItems)
+        ? jobData.jobCard.authorizedVhcItems
+        : [];
+      setAuthorizedItems(resolved);
 
       setWriteUpData((prev) => {
-        const normalizedEntries = (Array.isArray(latestAuthorizedItems) ? latestAuthorizedItems : []).map(
-          (item, index) => {
-            const description = (item?.description || item?.label || "").toString().trim();
-            return {
-              ...item,
-              source: "vhc",
-              sourceKey: createAuthorizedSourceKey(item || {}, index, writeUpMeta.jobId),
-              label: description || `Authorised item ${index + 1}`,
-              status: item?.status === "complete" ? "complete" : "additional_work",
-            };
-          }
-        );
+        const normalizedEntries = resolved.map((item, index) => {
+          const description = (item?.description || item?.label || "").toString().trim();
+          return {
+            ...item,
+            source: "vhc",
+            sourceKey: createAuthorizedSourceKey(item || {}, index, jobPayload?.jobCard?.id || writeUpMeta.jobId || jobData?.jobCard?.id),
+            label: description || `Authorised item ${index + 1}`,
+            status: item?.status === "complete" ? "complete" : "additional_work",
+          };
+        });
+
         const mergedTasks = ensureAuthorizedTasks(prev.tasks, normalizedEntries);
         if (tasksAreEqual(prev.tasks, mergedTasks)) {
           return prev;
@@ -762,9 +813,9 @@ export default function WriteUpForm({
         };
       });
     } catch (error) {
-      console.error("❌ Failed to refresh authorized work:", error);
+      console.error("Failed to refresh authorized work:", error);
     }
-  }, [writeUpMeta.jobId]);
+  }, [jobNumber, jobCardData, jobData?.jobCard?.authorizedVhcItems, jobData?.jobCard?.id, writeUpMeta.jobId]);
 
   const requestTasks = useMemo(
     () => writeUpData.tasks.filter((task) => task && task.source === "request"),
@@ -882,8 +933,8 @@ export default function WriteUpForm({
       try {
         setLoading(true);
 
-        const jobResponse = await getJobByNumber(jobNumber);
-        const jobPayload = jobResponse?.data || null;
+        // Prefer job payload passed down from the job card page to avoid re-loading per tab.
+        const jobPayload = jobCardData?.jobCard ? jobCardData : (await getJobByNumber(jobNumber))?.data || null;
         if (jobPayload) {
           setJobData(jobPayload);
         }
@@ -893,11 +944,26 @@ export default function WriteUpForm({
 
         if (writeUpResponse) {
           const incomingCauseEntries = hydrateCauseEntries(writeUpResponse.causeEntries || []);
-          const authorisedItems = writeUpResponse.authorisedItems || [];
-          const mergedTasks = ensureAuthorizedTasks(writeUpResponse.tasks || [], authorisedItems);
+
+          // Use the same canonical source as the Job Card "Authorised VHC Items" section.
+          // (Server-derived list on the job payload; avoids client-side RLS issues.)
+          const canonicalAuthorised = Array.isArray(jobPayload?.jobCard?.authorizedVhcItems)
+            ? jobPayload.jobCard.authorizedVhcItems
+            : [];
+          const canonicalEntries = canonicalAuthorised.map((item, index) => {
+            const description = (item?.description || item?.label || "").toString().trim();
+            return {
+              ...item,
+              source: "vhc",
+              sourceKey: createAuthorizedSourceKey(item || {}, index, jobPayload?.jobCard?.id),
+              label: description || `Authorised item ${index + 1}`,
+              status: item?.status === "complete" ? "complete" : "additional_work",
+            };
+          });
+          const mergedTasks = ensureAuthorizedTasks(writeUpResponse.tasks || [], canonicalEntries);
           const normalizedEditors = sanitizeSectionEditors(writeUpResponse.sectionEditors);
           const completionStatusValue = writeUpResponse.completionStatus || "additional_work";
-          setAuthorizedItems(authorisedItems);
+          setAuthorizedItems(canonicalAuthorised);
           setWriteUpData((prev) => ({
             ...prev,
             fault: writeUpResponse.fault || "",

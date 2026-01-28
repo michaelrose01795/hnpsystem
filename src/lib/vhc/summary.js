@@ -49,11 +49,18 @@ const SPARE_TYPE_LABELS = {
 const SERVICE_CHOICE_LABELS = {
   reset: "Service Reminder Reset",
   not_required: "Service Reminder Not Required",
-  no_reminder: "No Service Reminder",
+  no_reminder: "Doesn't Have a Service Reminder",
   indicator_on: "Service Indicator On",
 };
 
 // ✅ Friendly names for service related concern sources
+const SERVICE_CHOICE_STATUS = {
+  reset: "Green",
+  not_required: "Green",
+  no_reminder: "Amber",
+  indicator_on: "Amber",
+};
+
 const SERVICE_SOURCE_LABELS = {
   service: "Service Reminder",
   oil: "Engine Oil",
@@ -491,47 +498,89 @@ const buildServiceIndicatorSection = (serviceSection) => {
 
   entries.forEach((service) => {
     if (!service || typeof service !== "object") return;
+
+    const recordStatus = (value) => {
+      const normalised = normaliseStatus(value);
+      if (!normalised) return;
+      if (normalised === "Red") red += 1;
+      else if (normalised === "Amber") amber += 1;
+      else if (normalised === "Green" || normalised === "Grey") grey += 1;
+    };
+
+    const choiceStatus = service.serviceChoice ? SERVICE_CHOICE_STATUS[service.serviceChoice] || null : null;
+    const choiceLabel = service.serviceChoice ? SERVICE_CHOICE_LABELS[service.serviceChoice] || service.serviceChoice : null;
     const derivedOilStatus =
       service.oilStatus === "Bad"
         ? "Red"
         : service.oilStatus === "Good" || service.oilStatus === "EV"
         ? "Green"
         : null;
-    const badgeStatus =
-      normaliseStatus(service.status) ||
-      determineDominantStatus([service.serviceChoice, derivedOilStatus].filter(Boolean));
-    const rows = [];
-    if (service.serviceChoice) {
-      const label = SERVICE_CHOICE_LABELS[service.serviceChoice] || service.serviceChoice;
-      rows.push(label);
-    }
-    if (service.oilStatus) {
-      rows.push(`Oil level: ${service.oilStatus}`);
-      if (service.oilStatus === "Bad") red += 1;
-      if (service.oilStatus === "Good" || service.oilStatus === "EV") grey += 1;
-    }
-    if (service.oilLevel) rows.push(`Oil level: ${service.oilLevel}`);
-    if (service.oilCondition) rows.push(`Oil condition: ${service.oilCondition}`);
-    if (service.notes) rows.push(service.notes);
-    const concerns = Array.isArray(service.concerns)
-      ? service.concerns.map((entry) => {
-          const normalised = normaliseConcern(entry);
-          if (!normalised) return null;
-          const sourceLabel = entry.source && SERVICE_SOURCE_LABELS[entry.source] ? `${SERVICE_SOURCE_LABELS[entry.source]} – ` : "";
-          return { ...normalised, text: `${sourceLabel}${normalised.text}` };
-        })
+
+    const normaliseConcernWithSource = (entry) => {
+      if (!entry || typeof entry !== "object") return null;
+      const normalised = normaliseConcern(entry);
+      if (!normalised) return null;
+      return { ...normalised, source: entry.source || null };
+    };
+
+    const allConcerns = Array.isArray(service.concerns)
+      ? service.concerns.map(normaliseConcernWithSource).filter(Boolean)
       : [];
-    concerns.filter(Boolean).forEach((entry) => {
-      if (entry.status === "Red") red += 1;
-      if (entry.status === "Amber") amber += 1;
-      if (entry.status === "Grey") grey += 1;
-    });
-    items.push({
-      heading: service.heading || "Service reminder / oil",
-      status: badgeStatus,
-      rows,
-      concerns: concerns.filter(Boolean),
-    });
+
+    const serviceConcerns = allConcerns
+      .filter((concern) => concern.source === "service")
+      .map((concern) => ({ ...concern, text: concern.text }));
+
+    const oilConcerns = allConcerns
+      .filter((concern) => concern.source === "oil")
+      .map((concern) => ({ ...concern, text: concern.text }));
+
+    const underBonnetConcerns = allConcerns.filter(
+      (concern) => concern.source && concern.source !== "service" && concern.source !== "oil"
+    );
+
+    if (choiceLabel || serviceConcerns.length > 0) {
+      recordStatus(choiceStatus);
+      serviceConcerns.forEach((concern) => recordStatus(concern.status));
+
+      items.push({
+        heading: "Service Reminder",
+        status: determineDominantStatus([choiceStatus, ...serviceConcerns.map((concern) => concern.status)].filter(Boolean)),
+        rows: choiceLabel ? [choiceLabel] : [],
+        concerns: serviceConcerns,
+      });
+    }
+
+    if (service.oilStatus || service.oilLevel || service.oilCondition || oilConcerns.length > 0) {
+      recordStatus(derivedOilStatus);
+      oilConcerns.forEach((concern) => recordStatus(concern.status));
+
+      const rows = [];
+      if (service.oilStatus) rows.push(service.oilStatus);
+      if (service.oilLevel) rows.push(`Oil level: ${service.oilLevel}`);
+      if (service.oilCondition) rows.push(`Oil condition: ${service.oilCondition}`);
+      if (service.notes) rows.push(service.notes);
+
+      items.push({
+        heading: "Oil Level",
+        status: determineDominantStatus([derivedOilStatus, ...oilConcerns.map((concern) => concern.status)].filter(Boolean)),
+        rows,
+        concerns: oilConcerns,
+      });
+    }
+
+    if (underBonnetConcerns.length > 0) {
+      // Render each under bonnet report as its own summary row so we don't lose entries.
+      underBonnetConcerns.forEach((concern) => {
+        recordStatus(concern.status);
+        items.push({
+          heading: "Under Bonnet Items",
+          status: concern.status,
+          rows: [concern.text],
+          concerns: [],
+        });
+      });
+    }
   });
 
   if (items.length === 0) return null;

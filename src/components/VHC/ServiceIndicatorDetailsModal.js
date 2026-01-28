@@ -14,7 +14,7 @@ const palette = themeConfig.palette;
 const SERVICE_OPTIONS = [
   { key: "reset", label: "Service Reminder Reset" },
   { key: "not_required", label: "Service Reminder Not Required" },
-  { key: "no_reminder", label: "Doesn’t Have a Service Reminder" },
+  { key: "no_reminder", label: "Doesn't Have a Service Reminder" },
   { key: "indicator_on", label: "Service Indicator On" },
 ];
 
@@ -33,6 +33,27 @@ const UNDER_BONNET_ITEMS = [
 ];
 
 const STATUS_OPTIONS = ["Red", "Amber", "Green"];
+
+const SERVICE_CHOICE_STATUS = {
+  reset: "Green",
+  not_required: "Green",
+  no_reminder: "Amber",
+  indicator_on: "Amber",
+};
+
+const deriveServiceIndicatorStatus = ({ serviceChoice, oilStatus }) => {
+  const statuses = [];
+  const choiceStatus = serviceChoice ? SERVICE_CHOICE_STATUS[serviceChoice] || null : null;
+  if (choiceStatus) statuses.push(choiceStatus);
+
+  if (oilStatus === "Bad") statuses.push("Red");
+  else if (oilStatus === "Good" || oilStatus === "EV") statuses.push("Green");
+
+  if (statuses.includes("Red")) return "Red";
+  if (statuses.includes("Amber")) return "Amber";
+  if (statuses.includes("Green")) return "Green";
+  return null;
+};
 
 const normaliseOilStatus = (value) => {
   if (!value) return null;
@@ -253,7 +274,12 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
 
   const handleClose = () => {
     if (!onClose) return;
-    onClose({ serviceChoice, oilStatus, concerns });
+    onClose({
+      serviceChoice,
+      oilStatus,
+      concerns,
+      status: deriveServiceIndicatorStatus({ serviceChoice, oilStatus }),
+    });
   };
 
   const footer = (
@@ -263,7 +289,14 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
       </button>
       <button
         type="button"
-        onClick={() => onComplete({ serviceChoice, oilStatus, concerns })}
+        onClick={() =>
+          onComplete({
+            serviceChoice,
+            oilStatus,
+            concerns,
+            status: deriveServiceIndicatorStatus({ serviceChoice, oilStatus }),
+          })
+        }
         style={buildModalButton("primary", { disabled: !canComplete })}
         disabled={!canComplete}
       >
@@ -299,6 +332,8 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
               {SERVICE_OPTIONS.map((option) => {
                 const isActive = serviceChoice === option.key;
+                const optionStatus = SERVICE_CHOICE_STATUS[option.key] || "Amber";
+                const toneColor = optionStatus === "Green" ? palette.success : palette.warning;
                 return (
                   <button
                     key={option.key}
@@ -307,8 +342,8 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                     style={{
                       borderRadius: "16px",
                       padding: "14px 16px",
-                      border: `1px solid ${isActive ? palette.accent : palette.border}`,
-                      background: isActive ? palette.accent : palette.surface,
+                      border: `1px solid ${isActive ? toneColor : palette.border}`,
+                      background: isActive ? toneColor : palette.surface,
                       color: isActive ? "var(--text-inverse)" : palette.textPrimary,
                       fontWeight: 600,
                       fontSize: "14px",

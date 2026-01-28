@@ -457,7 +457,7 @@ export const getAllJobs = async () => {
       appointments(appointment_id, scheduled_time, status, notes, created_at, updated_at),
       vhc_checks(vhc_id, section, issue_title, issue_description, data, measurement, created_at, updated_at, approval_status, display_status, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by),
       parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, pre_pick_location, created_at, updated_at),
-      parts_job_items!job_id(
+      parts_job_items!parts_job_items_job_id_fkey(
         id,
         part_id,
         authorised,
@@ -540,7 +540,12 @@ export const getAllJobs = async () => {
     .order('created_at', { ascending: false }); // Order by newest first
 
   if (error) {
-    console.error("❌ getAllJobs error:", error);
+    console.error("❌ getAllJobs error:", {
+      message: error?.message,
+      details: error?.details,
+      hint: error?.hint,
+      code: error?.code,
+    });
     return [];
   }
 
@@ -803,8 +808,14 @@ export const getAuthorizedVhcItemsWithDetails = async (jobId) => {
       console.error("⚠️ Error fetching parts:", partsError);
     }
 
+    // Only include authorised VHC checks that have at least one linked VHC part.
+    // This keeps the server-side "authorised VHC items" list aligned with the VHC "Parts Authorized" view.
+    const vhcIdsWithParts = new Set((parts || []).map((p) => p?.vhc_item_id).filter(Boolean));
+
     // 4. Build the joined result
-    const authorizedItems = vhcChecks.map((check) => {
+    const authorizedItems = vhcChecks
+      .filter((check) => vhcIdsWithParts.has(check.vhc_id))
+      .map((check) => {
       const vhcId = check.vhc_id;
 
       // Find linked notes
@@ -844,8 +855,6 @@ export const getAuthorizedVhcItemsWithDetails = async (jobId) => {
    Retrieves complete job data by job number
 ============================================ */
 export const getJobByNumber = async (jobNumber) => {
-  console.log("🔍 getJobByNumber: Searching for:", jobNumber); // Debug log
-
   if (typeof window !== "undefined") {
     try {
       const response = await fetch(`/api/jobcards/${encodeURIComponent(jobNumber)}`);
@@ -970,7 +979,7 @@ export const getJobByNumber = async (jobNumber) => {
       ),
       vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at, approval_status, display_status, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by),
       parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, pre_pick_location, created_at, updated_at),
-      parts_job_items!job_id(
+      parts_job_items!parts_job_items_job_id_fkey(
         id,
         part_id,
         authorised,
@@ -1098,7 +1107,7 @@ export const getJobByNumber = async (jobNumber) => {
         ),
         vhc_checks(vhc_id, section, issue_title, issue_description, data, measurement, created_at, updated_at, approval_status, display_status, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by),
         parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, pre_pick_location, created_at, updated_at),
-        parts_job_items!job_id(
+        parts_job_items!parts_job_items_job_id_fkey(
           id,
           part_id,
           authorised,
@@ -1287,7 +1296,7 @@ export const getJobByNumberOrReg = async (searchTerm) => {
       appointments(appointment_id, scheduled_time, status, notes),
       vhc_checks(vhc_id, section, issue_title, issue_description),
       parts_requests(request_id, part_id, quantity, status, pre_pick_location),
-      parts_job_items!job_id(
+      parts_job_items!parts_job_items_job_id_fkey(
         id,
         part_id,
         quantity_requested,
@@ -1406,7 +1415,7 @@ export const getJobByNumberOrReg = async (searchTerm) => {
         appointments(appointment_id, scheduled_time, status, notes),
         vhc_checks(vhc_id, section, issue_title, issue_description),
         parts_requests(request_id, part_id, quantity, status, pre_pick_location),
-        parts_job_items!job_id(
+        parts_job_items!parts_job_items_job_id_fkey(
           id,
           part_id,
           quantity_requested,
@@ -1813,7 +1822,14 @@ const buildWriteUpTaskList = ({ storedTasks = [], requestItems = [], authorisedI
     }
   });
 
+  // Drop stale request/VHC tasks that no longer exist in live sources.
+  // Keep only "manual"/other task sources that aren't driven by requests or VHC authorisations.
   registry.forEach((task) => {
+    if (!task) return;
+    const source = (task.source || "").toString();
+    if (source === "request" || source === "vhc") {
+      return;
+    }
     merged.push(task);
   });
 
@@ -3051,6 +3067,7 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
       taskRowsResponse,
       authorizationRowsResponse,
       rectificationRows,
+      authorisedVhcItems,
     ] = await Promise.all([
       supabase
         .from("job_writeups")
@@ -3069,6 +3086,8 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
         .eq("job_id", job.id)
         .order("authorized_at", { ascending: false }),
       getRectificationItemsByJob(job.id),
+      // Canonical "Authorised VHC Items" source: vhc_checks (authorized) + linked parts.
+      getAuthorizedVhcItemsWithDetails(job.id),
     ]);
 
     const { data: writeUp, error } = writeUpResponse;
@@ -3089,20 +3108,33 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
     }
 
     const requestItems = normaliseRequestsForWriteUp(job.requests);
-    const authorisedItems = deriveAuthorisedWorkItems(authorizationRows || []);
+
+    // Keep the write-up Rectification list aligned with the Job Card "Authorised VHC Items" section.
+    const canonicalAuthorisedVhcItems = Array.isArray(authorisedVhcItems) ? authorisedVhcItems : [];
+    const authorisedTaskItems = canonicalAuthorisedVhcItems.map((item, index) => {
+      const vhcId =
+        item?.vhcItemId !== null && item?.vhcItemId !== undefined
+          ? String(item.vhcItemId)
+          : `idx-${index + 1}`;
+      const labelBase = (item?.description || "").toString().trim() || `Authorised item ${index + 1}`;
+      return {
+        source: "vhc",
+        sourceKey: `vhc-${job.id}-${vhcId}`,
+        label: `Authorized Work: ${labelBase}`,
+        vhcItemId: item?.vhcItemId ?? null,
+      };
+    });
+
     const tasks = buildWriteUpTaskList({
       storedTasks: taskRows || [],
       requestItems,
-      authorisedItems,
+      authorisedItems: authorisedTaskItems,
     });
 
     // ⚠️ Verify: table or column not found in Supabase schema
     const completionStatus = determineCompletionStatus(tasks, writeUp?.completion_status);
-    const latestAuthorizationId = authorisedItems.length > 0 ? authorisedItems[0].authorizationId : null;
-    const rectificationItems = mergeRectificationSources(
-      rectificationRows,
-      extractAuthorizedItems(authorizationRows || [])
-    );
+    const latestAuthorizationId = authorizationRows?.[0]?.id ?? null;
+    const rectificationItems = mergeRectificationSources(rectificationRows, canonicalAuthorisedVhcItems);
 
     const sectionEditors = extractSectionEditorsFromChecklist(writeUp?.task_checklist);
 
@@ -3116,7 +3148,7 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
       ),
       tasks,
       requests: requestItems,
-      authorisedItems,
+      authorisedItems: canonicalAuthorisedVhcItems,
       rectificationItems,
       jobRequests: job.requests || [],
       vhcAuthorizationId: latestAuthorizationId,

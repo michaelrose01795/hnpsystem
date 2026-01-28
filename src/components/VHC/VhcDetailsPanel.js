@@ -131,7 +131,7 @@ const createDefaultUnderside = () => ({
 const baseVhcPayload = () => ({
   wheelsTyres: null,
   brakesHubs: null,
-  serviceIndicator: { serviceChoice: "", oilStatus: "", concerns: [] },
+  serviceIndicator: { serviceChoice: "", oilStatus: "", concerns: [], status: "" },
   externalInspection: null,
   internalElectrics: createDefaultInternalElectrics(),
   underside: createDefaultUnderside(),
@@ -246,6 +246,7 @@ const buildVhcPayload = (source = {}) => {
       serviceChoice: source.serviceIndicator?.serviceChoice || "",
       oilStatus: source.serviceIndicator?.oilStatus || "",
       concerns: ensureArray(source.serviceIndicator?.concerns),
+      status: source.serviceIndicator?.status || "",
     },
     externalInspection: normaliseExternalInspectionPayload(source.externalInspection),
     internalElectrics: mergeEntries(base.internalElectrics, source.internalElectrics),
@@ -1465,6 +1466,7 @@ export default function VhcDetailsPanel({
           notes: item.notes || item.issue_description || "",
           measurement: formatMeasurement(item.measurement),
           concernText: primaryConcern?.text || "",
+          rows: Array.isArray(item.rows) ? item.rows : [],
           sectionName,
           category,
           location,
@@ -1518,6 +1520,7 @@ export default function VhcDetailsPanel({
           label: heading || "Recorded item",
           notes: item.notes || item.issue_description || "",
           measurement: formatMeasurement(item.measurement),
+          rows: Array.isArray(item.rows) ? item.rows : [],
           sectionName,
           category,
           location,
@@ -1963,6 +1966,8 @@ export default function VhcDetailsPanel({
   };
 
   const updateEntryStatus = async (itemId, status) => {
+    const previousEntry = getEntryForItem(itemId);
+    const previousStatus = previousEntry?.status ?? null;
 
     // Update local state immediately
     setItemEntries((prev) => ({
@@ -2017,6 +2022,11 @@ export default function VhcDetailsPanel({
       if (!response.ok || !result?.success) {
         console.error(`❌ [VHC STATUS ERROR] API Failed:`, result?.message);
         console.error(`❌ [VHC STATUS ERROR] Full Response:`, result);
+        // Revert optimistic update so UI matches persisted state.
+        setItemEntries((prev) => ({
+          ...prev,
+          [itemId]: { ...ensureEntryValue(prev, itemId), status: previousStatus },
+        }));
         return;
       }
 
@@ -2633,10 +2643,34 @@ export default function VhcDetailsPanel({
                 const detailLabel = item.label || item.sectionName || "Recorded item";
                 const concernDetail = item.concernText || "";
                 const detailContent = concernDetail || item.notes || "";
+                const rawDetailRows = Array.isArray(item.rows)
+                  ? item.rows.map((row) => (row ? String(row).trim() : "")).filter(Boolean)
+                  : [];
+                // Wheels & Tyres already has a compact preview card (OSF Tyre + tread depths + make/size/run flat).
+                // Don't repeat the extended tyre spec rows in the Summary table.
+                const detailRows = item.categoryId === "wheels_tyres" ? [] : rawDetailRows;
                 const supplementaryRows = [
                   ...getBrakeSupplementaryRows(item),
                   ...getTyreSupplementaryRows(item),
                 ];
+
+                // Avoid repeating the same phrase twice (e.g. "Service reminder / oil - Service reminder/Oil...").
+                // If the "notes/concern" already contains the label, render just the content under the category title.
+                const normalizeCompareText = (value = "") =>
+                  value
+                    .toString()
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, " ")
+                    .replace(/\s+/g, " ")
+                    .trim();
+                const labelKey = normalizeCompareText(detailLabel);
+                const contentKey = normalizeCompareText(detailContent);
+                const suppressDetailLabel =
+                  Boolean(detailContent) &&
+                  Boolean(detailLabel) &&
+                  labelKey.length > 0 &&
+                  contentKey.length > 0 &&
+                  (contentKey.includes(labelKey) || labelKey.includes(contentKey));
                 const statusKey = `${severity}-${item.id}`;
                 const isStatusHovered = hoveredStatusId === statusKey;
 
@@ -2655,10 +2689,20 @@ export default function VhcDetailsPanel({
                       </div>
                       <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--accent-purple)", marginTop: "2px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
                         <span>{detailLabel}</span>
-                        {detailContent ? (
-                          <span style={{ fontWeight: 500, color: "var(--info-dark)" }}>- {detailContent}</span>
-                        ) : null}
                       </div>
+                      {detailRows.length > 0 ? (
+                        <div style={{ marginTop: "6px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                          {detailRows.map((row, rowIdx) => (
+                            <div key={`${statusKey}-detail-row-${rowIdx}`} style={{ fontWeight: 600, color: "var(--info-dark)" }}>
+                              - {row}
+                            </div>
+                          ))}
+                        </div>
+                      ) : suppressDetailLabel ? (
+                        <div style={{ marginTop: "6px", fontWeight: 600, color: "var(--info-dark)" }}>{`- ${detailContent}`}</div>
+                      ) : detailContent ? (
+                        <div style={{ marginTop: "6px", fontWeight: 500, color: "var(--info-dark)" }}>- {detailContent}</div>
+                      ) : null}
                       {item.measurement ? (
                         <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>{item.measurement}</div>
                       ) : null}
@@ -4331,6 +4375,10 @@ export default function VhcDetailsPanel({
                 const vhcNotes = vhcItem?.notes || vhcItem?.concernText || "";
                 const vhcSeverity = vhcItem?.severityKey || vhcItem?.rawSeverity;
                 const vhcCategory = vhcItem?.categoryLabel || vhcItem?.category?.label || "";
+                const vhcRows = Array.isArray(vhcItem?.rows)
+                  ? vhcItem.rows.map((row) => (row ? String(row).trim() : "")).filter(Boolean)
+                  : [];
+                const isServiceIndicatorRow = vhcItem?.category?.id === "service_indicator";
                 const locationLabel = vhcItem?.location
                   ? LOCATION_LABELS[vhcItem.location] || vhcItem.location.replace(/_/g, " ")
                   : null;
@@ -4385,6 +4433,15 @@ export default function VhcDetailsPanel({
                         <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--accent-purple)", marginTop: "2px" }}>
                           {vhcLabel}
                         </div>
+                        {isServiceIndicatorRow && vhcRows.length > 0 ? (
+                          <div style={{ marginTop: "6px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                            {vhcRows.map((row, rowIdx) => (
+                              <div key={`${vhcId}-service-indicator-row-${rowIdx}`} style={{ fontSize: "12px", fontWeight: 600, color: "var(--info-dark)" }}>
+                                - {row}
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
                         {vhcNotes && (
                           <div style={{ fontSize: "12px", color: "var(--info-dark)", marginTop: "4px" }}>
                             {vhcNotes}
@@ -4757,190 +4814,205 @@ export default function VhcDetailsPanel({
                   );
                 }
 
-                // Show one row per part
-                return linkedParts.map((part, partIndex) => {
+                // Show a single row per VHC item, with parts stacked inside cells.
+                const partLines = linkedParts.map((part) => {
                   const partPrice = Number(part.unit_price ?? part.part?.unit_price ?? 0);
                   const partQty = Number(part.quantity_requested || 1);
                   const partTotal = partPrice * partQty;
                   const normalizedStatus = normalisePartStatus(part.status);
                   const currentStatus = normalizedStatus || "authorized";
                   const isOrdered = currentStatus === "on_order";
+                  return { part, partQty, partTotal, isOrdered };
+                });
 
-                  return (
-                    <tr
-                      key={`${vhcId}-part-${part.id}`}
-                      style={{
-                        borderBottom: "1px solid var(--info-surface)",
-                        background: rowBackground,
-                        transition: "background 0.2s ease",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = rowHoverBackground;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = rowBackground;
-                      }}
-                    >
-                      <td style={{ padding: "12px 16px", whiteSpace: "normal", wordBreak: "break-word" }}>
-                        {partIndex === 0 && (
-                          <div>
-                            <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
-                              {vhcCategory}
-                            </div>
-                            <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--success)", marginTop: "2px" }}>
-                              {vhcLabel}
-                            </div>
-                            {vhcNotes && (
-                              <div style={{ fontSize: "12px", color: "var(--info-dark)", marginTop: "4px" }}>
-                                {vhcNotes}
-                              </div>
-                            )}
-                            {locationLabel && (
-                              <div style={{ fontSize: "11px", color: "var(--info)", marginTop: "4px" }}>
-                                Location: {locationLabel}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </td>
-                      <td style={{ padding: "12px 16px", whiteSpace: "normal", wordBreak: "break-word" }}>
-                        <div style={{ fontSize: "12px", color: "var(--info-dark)" }}>
-                          <div style={{ fontWeight: 600, color: "var(--success)" }}>
-                            {part.part?.name || "Unknown Part"}
-                          </div>
-                          <div style={{ fontSize: "11px", color: "var(--info)" }}>
-                            {part.part?.part_number || "No part number"} • Qty: {partQty}
-                          </div>
+                const totalPartsCost = partLines.reduce((sum, entry) => sum + (entry.partTotal || 0), 0);
+
+                return (
+                  <tr
+                    key={vhcId}
+                    style={{
+                      borderBottom: "1px solid var(--info-surface)",
+                      background: rowBackground,
+                      transition: "background 0.2s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = rowHoverBackground;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = rowBackground;
+                    }}
+                  >
+                    <td style={{ padding: "12px 16px", whiteSpace: "normal", wordBreak: "break-word" }}>
+                      <div>
+                        <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+                          {vhcCategory}
                         </div>
-                      </td>
-                      <td style={{ padding: "12px 16px", textAlign: "right" }}>
-                        <span style={{ fontWeight: 700, color: "var(--success)", fontSize: "14px" }}>
-                          £{partTotal.toFixed(2)}
-                        </span>
-                      </td>
-                      <td style={{ padding: "12px 16px", textAlign: "center" }}>
-                        {partIndex === 0 && isWarranty ? (
-                          <span
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              width: "28px",
-                              height: "28px",
-                              borderRadius: "999px",
-                              background: "var(--warning-surface)",
-                              color: "var(--warning)",
-                              fontWeight: 700,
-                              fontSize: "13px",
-                            }}
-                          >
-                            W
-                          </span>
-                        ) : (
-                          <span style={{ color: "var(--info-light)", fontSize: "12px" }}>—</span>
+                        <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--success)", marginTop: "2px" }}>
+                          {vhcLabel}
+                        </div>
+                        {vhcNotes && (
+                          <div style={{ fontSize: "12px", color: "var(--info-dark)", marginTop: "4px" }}>
+                            {vhcNotes}
+                          </div>
                         )}
-                      </td>
-                      <td style={{ padding: "12px 16px", textAlign: "center" }}>
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            // Only allow ordering if not already ordered
-                            if (!isOrdered) {
+                        {locationLabel && (
+                          <div style={{ fontSize: "11px", color: "var(--info)", marginTop: "4px" }}>
+                            Location: {locationLabel}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+
+                    <td style={{ padding: "12px 16px", whiteSpace: "normal", wordBreak: "break-word" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                        {partLines.map(({ part, partQty }) => (
+                          <div key={part.id} style={{ fontSize: "12px", color: "var(--info-dark)" }}>
+                            <div style={{ fontWeight: 600, color: "var(--success)" }}>
+                              {part.part?.name || "Unknown Part"}
+                            </div>
+                            <div style={{ fontSize: "11px", color: "var(--info)" }}>
+                              {part.part?.part_number || "No part number"} • Qty: {partQty}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </td>
+
+                    <td style={{ padding: "12px 16px", textAlign: "right" }}>
+                      <span style={{ fontWeight: 700, color: "var(--success)", fontSize: "14px" }}>
+                        £{totalPartsCost.toFixed(2)}
+                      </span>
+                    </td>
+
+                    <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                      {isWarranty ? (
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: "28px",
+                            height: "28px",
+                            borderRadius: "999px",
+                            background: "var(--warning-surface)",
+                            color: "var(--warning)",
+                            fontWeight: 700,
+                            fontSize: "13px",
+                          }}
+                        >
+                          W
+                        </span>
+                      ) : (
+                        <span style={{ color: "var(--info-light)", fontSize: "12px" }}>—</span>
+                      )}
+                    </td>
+
+                    <td style={{ padding: "12px 16px", textAlign: "center" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                        {partLines.map(({ part, isOrdered }) => (
+                          <button
+                            key={`order-${part.id}`}
+                            type="button"
+                            onClick={async () => {
+                              if (isOrdered) return;
                               try {
                                 await handlePartStatusUpdate(part.id, {
                                   status: "on_order",
                                   authorised: true,
-                                  stockStatus: "no_stock"
+                                  stockStatus: "no_stock",
                                 });
                               } catch (error) {
-                                console.error(`❌ Failed to mark part ${part.id} as ordered:`, error);
+                                console.error(`[VHC] Failed to mark part ${part.id} as ordered:`, error);
                                 alert(`Failed to mark part as ordered: ${error.message}`);
                               }
-                            }
-                          }}
-                          style={{
-                            padding: "8px 16px",
-                            borderRadius: "8px",
-                            border: isOrdered ? "1px solid var(--success)" : "1px solid var(--primary)",
-                            background: isOrdered ? "var(--success)" : "var(--primary)",
-                            color: "var(--surface)",
-                            fontWeight: 600,
-                            cursor: isOrdered ? "default" : "pointer",
-                            fontSize: "12px",
-                            transition: "all 0.2s ease",
-                            width: "100%",
-                          }}
-                          onMouseEnter={(e) => {
-                            if (!isOrdered) {
-                              e.target.style.background = "var(--primary-dark)";
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!isOrdered) {
-                              e.target.style.background = "var(--primary)";
-                            } else {
-                              e.target.style.background = "var(--success)";
-                            }
-                          }}
-                        >
-                          {isOrdered ? "Ordered" : "Order"}
-                        </button>
-                      </td>
-                      <td style={{ padding: "12px 16px", whiteSpace: "normal", wordBreak: "break-word" }}>
-                        <select
-                          value={part.pre_pick_location || ""}
-                          onChange={async (e) => {
-                            const newLocation = e.target.value;
-                            try {
-                              const updates = { prePickLocation: newLocation };
-
-                              // If "on_order" is selected, also update status
-                              if (newLocation === "on_order") {
-                                updates.status = "on_order";
-                                updates.stockStatus = "no_stock";
-                              } else if (newLocation && newLocation !== "") {
-                                // If a valid location is selected, mark as pre-picked and in stock
-                                updates.status = "pre_picked";
-                                updates.stockStatus = "in_stock";
+                            }}
+                            style={{
+                              padding: "8px 16px",
+                              borderRadius: "8px",
+                              border: isOrdered ? "1px solid var(--success)" : "1px solid var(--primary)",
+                              background: isOrdered ? "var(--success)" : "var(--primary)",
+                              color: "var(--surface)",
+                              fontWeight: 600,
+                              cursor: isOrdered ? "default" : "pointer",
+                              fontSize: "12px",
+                              transition: "all 0.2s ease",
+                              width: "100%",
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!isOrdered) {
+                                e.target.style.background = "var(--primary-dark)";
                               }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isOrdered) {
+                                e.target.style.background = "var(--primary)";
+                              } else {
+                                e.target.style.background = "var(--success)";
+                              }
+                            }}
+                          >
+                            {isOrdered ? "Ordered" : "Order"}
+                          </button>
+                        ))}
+                      </div>
+                    </td>
 
-                              await handlePartStatusUpdate(part.id, updates);
-                            } catch (error) {
-                              console.error(`❌ Failed to update part ${part.id}:`, error);
-                              alert(`Failed to update part location: ${error.message}`);
-                              // Reset dropdown to previous value
-                              e.target.value = part.pre_pick_location || "";
-                            }
-                          }}
-                          style={{
-                            padding: "8px 12px",
-                            borderRadius: "8px",
-                            border: "1px solid var(--accent-purple-surface)",
-                            background: "var(--surface)",
-                            color: "var(--accent-purple)",
-                            fontWeight: 500,
-                            cursor: "pointer",
-                            width: "100%",
-                            fontSize: "12px",
-                          }}
-                        >
-                          <option value="">Select Location</option>
-                          <option value="service_rack_1">Service Rack 1</option>
-                          <option value="service_rack_2">Service Rack 2</option>
-                          <option value="service_rack_3">Service Rack 3</option>
-                          <option value="service_rack_4">Service Rack 4</option>
-                          <option value="sales_rack_1">Sales Rack 1</option>
-                          <option value="sales_rack_2">Sales Rack 2</option>
-                          <option value="sales_rack_3">Sales Rack 3</option>
-                          <option value="sales_rack_4">Sales Rack 4</option>
-                          <option value="stairs_pre_pick">Stairs Pre-Pick</option>
-                          <option value="no_pick">No Pick</option>
-                          <option value="on_order">On Order</option>
-                        </select>
-                      </td>
-                    </tr>
-                  );
-                });
+                    <td style={{ padding: "12px 16px", whiteSpace: "normal", wordBreak: "break-word" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                        {partLines.map(({ part }) => (
+                          <select
+                            key={`prepick-${part.id}`}
+                            value={part.pre_pick_location || ""}
+                            onChange={async (e) => {
+                              const newLocation = e.target.value;
+                              try {
+                                const updates = { prePickLocation: newLocation };
+
+                                if (newLocation === "on_order") {
+                                  updates.status = "on_order";
+                                  updates.stockStatus = "no_stock";
+                                } else if (newLocation && newLocation !== "") {
+                                  updates.status = "pre_picked";
+                                  updates.stockStatus = "in_stock";
+                                }
+
+                                await handlePartStatusUpdate(part.id, updates);
+                              } catch (error) {
+                                console.error(`[VHC] Failed to update part ${part.id}:`, error);
+                                alert(`Failed to update part location: ${error.message}`);
+                                e.target.value = part.pre_pick_location || "";
+                              }
+                            }}
+                            style={{
+                              padding: "8px 12px",
+                              borderRadius: "8px",
+                              border: "1px solid var(--accent-purple-surface)",
+                              background: "var(--surface)",
+                              color: "var(--accent-purple)",
+                              fontWeight: 500,
+                              cursor: "pointer",
+                              width: "100%",
+                              fontSize: "12px",
+                            }}
+                          >
+                            <option value="">Select Location</option>
+                            <option value="service_rack_1">Service Rack 1</option>
+                            <option value="service_rack_2">Service Rack 2</option>
+                            <option value="service_rack_3">Service Rack 3</option>
+                            <option value="service_rack_4">Service Rack 4</option>
+                            <option value="sales_rack_1">Sales Rack 1</option>
+                            <option value="sales_rack_2">Sales Rack 2</option>
+                            <option value="sales_rack_3">Sales Rack 3</option>
+                            <option value="sales_rack_4">Sales Rack 4</option>
+                            <option value="stairs_pre_pick">Stairs Pre-Pick</option>
+                            <option value="no_pick">No Pick</option>
+                            <option value="on_order">On Order</option>
+                          </select>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                );
               }).flat()}
             </tbody>
           </table>

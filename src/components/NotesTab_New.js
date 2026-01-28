@@ -265,15 +265,28 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId, onN
 
   if (loading) {
     return (
-      <div style={{ padding: "20px", textAlign: "center", color: "var(--info)" }}>
+      <div style={{ padding: "20px", textAlign: "center", color: "var(--text-secondary)" }}>
         Loading notes...
       </div>
     );
   }
 
+  const panelStyle = {
+    background: "var(--surface)",
+    border: "1px solid var(--surface-light)",
+    borderRadius: "16px",
+    padding: "18px",
+  };
+  const panelHeaderStyle = {
+    margin: "0 0 16px 0",
+    fontSize: "20px",
+    fontWeight: "700",
+    color: "var(--text-primary)",
+  };
+
   return (
-    <div>
-      <h2 style={{ margin: "0 0 20px 0", fontSize: "20px", fontWeight: "600", color: "var(--text-primary)" }}>
+    <div style={panelStyle}>
+      <h2 style={panelHeaderStyle}>
         Job Notes
       </h2>
 
@@ -297,35 +310,43 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId, onN
         <div
           style={{
             padding: "16px",
-            backgroundColor: "var(--surface)",
+            backgroundColor: "var(--layer-section-level-1)",
             borderRadius: "12px",
-            border: "1px solid var(--surface-light)",
+            border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
             marginBottom: "20px",
           }}
         >
-          <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--primary)", marginBottom: "12px" }}>
+          <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-primary)", marginBottom: "12px" }}>
             Add New Note
           </div>
           <textarea
             value={newNoteText}
             onChange={(e) => setNewNoteText(e.target.value)}
+            onInput={(e) => {
+              e.currentTarget.style.height = "auto";
+              const next = Math.min(e.currentTarget.scrollHeight, 220);
+              e.currentTarget.style.height = `${next}px`;
+            }}
             placeholder="Type your note here..."
             style={{
               width: "100%",
-              minHeight: "100px",
+              height: "56px",
+              minHeight: "56px",
+              maxHeight: "220px",
               padding: "12px",
               borderRadius: "8px",
-              border: "1px solid var(--surface-light)",
+              border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
               fontSize: "14px",
               lineHeight: 1.6,
-              resize: "vertical",
+              resize: "none",
+              overflowY: "auto",
               backgroundColor: "var(--surface)",
-              color: "var(--info-dark)",
+              color: "var(--text-primary)",
               marginBottom: "12px",
             }}
           />
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "var(--info-dark)", cursor: "pointer" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "var(--text-secondary)", cursor: "pointer" }}>
               <input
                 type="checkbox"
                 checked={newNoteHidden}
@@ -341,9 +362,9 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId, onN
                 padding: "10px 20px",
                 borderRadius: "8px",
                 border: "none",
-                backgroundColor: !newNoteText.trim() || savingNewNote ? "var(--info)" : "var(--accent-purple)",
-                color: "white",
-                fontWeight: 600,
+                backgroundColor: !newNoteText.trim() || savingNewNote ? "var(--surface-light)" : "var(--primary)",
+                color: !newNoteText.trim() || savingNewNote ? "var(--text-secondary)" : "var(--text-inverse)",
+                fontWeight: 700,
                 fontSize: "14px",
                 cursor: !newNoteText.trim() || savingNewNote ? "not-allowed" : "pointer",
               }}
@@ -355,22 +376,29 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId, onN
       )}
 
       {/* Notes List */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+      <div
+        style={{
+          maxHeight: notes.length > 2 ? "460px" : "none",
+          overflowY: notes.length > 2 ? "auto" : "visible",
+          paddingRight: notes.length > 2 ? "6px" : 0,
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
         {notes.length === 0 ? (
           <div
             style={{
               padding: "40px",
               textAlign: "center",
-              backgroundColor: "var(--info-surface)",
+              backgroundColor: "var(--layer-section-level-1)",
               borderRadius: "12px",
-              border: "1px solid var(--surface-light)",
+              border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
             }}
           >
             <div style={{ fontSize: "48px", marginBottom: "12px" }}>📝</div>
-            <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--accent-purple)", marginBottom: "4px" }}>
+            <div style={{ fontSize: "16px", fontWeight: 700, color: "var(--text-primary)", marginBottom: "4px" }}>
               No Notes Yet
             </div>
-            <p style={{ color: "var(--info)", fontSize: "14px", margin: 0 }}>
+            <p style={{ color: "var(--text-secondary)", fontSize: "14px", margin: 0 }}>
               {canEdit ? "Add your first note above" : "No notes have been added to this job"}
             </p>
           </div>
@@ -383,23 +411,23 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId, onN
               <div
                 key={note.noteId}
                 style={{
-                  padding: "16px",
-                  backgroundColor: "var(--surface)",
+                  padding: "14px",
+                  backgroundColor: "var(--layer-section-level-1)",
                   borderRadius: "12px",
-                  border: `2px solid ${note.hiddenFromCustomer ? "var(--warning-surface)" : "var(--success-surface)"}`,
+                  border: `1px solid ${note.hiddenFromCustomer ? "var(--warning)" : "var(--success)"}`,
                 }}
               >
                 {/* Header */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
                   <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", rowGap: "6px", flexWrap: "wrap", marginBottom: "6px" }}>
                       <span
                         style={{
-                          padding: "4px 10px",
+                          padding: "3px 8px",
                           borderRadius: "999px",
-                          backgroundColor: "var(--info-surface)",
-                          color: "var(--info)",
-                          fontSize: "11px",
+                          backgroundColor: "var(--surface-light)",
+                          color: "var(--text-primary)",
+                          fontSize: "10px",
                           fontWeight: 700,
                         }}
                       >
@@ -408,11 +436,11 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId, onN
                       {linkLabel && (
                         <span
                           style={{
-                            padding: "4px 10px",
+                            padding: "3px 8px",
                             borderRadius: "999px",
                             backgroundColor: "var(--accent-purple-surface)",
                             color: "var(--accent-purple)",
-                            fontSize: "11px",
+                            fontSize: "10px",
                             fontWeight: 600,
                           }}
                         >
@@ -420,15 +448,15 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId, onN
                         </span>
                       )}
                     </div>
-                    <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--accent-purple)" }}>
+                    <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-primary)" }}>
                       {note.createdBy}
                       {note.createdByEmail && (
-                        <span style={{ fontSize: "11px", color: "var(--info)", fontWeight: 400, marginLeft: "6px" }}>
+                        <span style={{ fontSize: "11px", color: "var(--text-secondary)", fontWeight: 400, marginLeft: "6px" }}>
                           ({note.createdByEmail})
                         </span>
                       )}
                     </div>
-                    <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "2px" }}>
+                    <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "2px" }}>
                       Created: {formatDateTime(note.createdAt)}
                       {note.updatedAt !== note.createdAt && (
                         <span style={{ marginLeft: "8px" }}>
@@ -437,20 +465,20 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId, onN
                       )}
                     </div>
                   </div>
-                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                    <span
-                      style={{
-                        padding: "4px 10px",
-                        borderRadius: "999px",
-                        backgroundColor: note.hiddenFromCustomer ? "var(--warning-surface)" : "var(--success-surface)",
-                        color: note.hiddenFromCustomer ? "var(--warning)" : "var(--success-dark)",
-                        fontSize: "11px",
-                        fontWeight: 600,
-                      }}
-                    >
-                      {note.hiddenFromCustomer ? "Hidden" : "Visible"}
-                    </span>
-                  </div>
+                    <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                      <span
+                        style={{
+                          padding: "3px 8px",
+                          borderRadius: "999px",
+                          backgroundColor: note.hiddenFromCustomer ? "var(--warning-surface)" : "var(--success-surface)",
+                          color: note.hiddenFromCustomer ? "var(--warning)" : "var(--success-dark)",
+                          fontSize: "10px",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {note.hiddenFromCustomer ? "Hidden" : "Visible"}
+                      </span>
+                    </div>
                 </div>
 
                 {/* Note Content */}
@@ -459,17 +487,25 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId, onN
                     <textarea
                       value={editingNoteText}
                       onChange={(e) => setEditingNoteText(e.target.value)}
+                      onInput={(e) => {
+                        e.currentTarget.style.height = "auto";
+                        const next = Math.min(e.currentTarget.scrollHeight, 260);
+                        e.currentTarget.style.height = `${next}px`;
+                      }}
                       style={{
                         width: "100%",
-                        minHeight: "100px",
+                        height: "80px",
+                        minHeight: "80px",
+                        maxHeight: "260px",
                         padding: "12px",
                         borderRadius: "8px",
-                        border: "1px solid var(--surface-light)",
+                        border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
                         fontSize: "14px",
                         lineHeight: 1.6,
-                        resize: "vertical",
+                        resize: "none",
+                        overflowY: "auto",
                         backgroundColor: "var(--surface)",
-                        color: "var(--info-dark)",
+                        color: "var(--text-primary)",
                         marginBottom: "10px",
                       }}
                     />
@@ -480,9 +516,9 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId, onN
                           padding: "8px 16px",
                           borderRadius: "6px",
                           border: "none",
-                          backgroundColor: "var(--accent-purple)",
-                          color: "white",
-                          fontWeight: 600,
+                          backgroundColor: "var(--primary)",
+                          color: "var(--text-inverse)",
+                          fontWeight: 700,
                           fontSize: "13px",
                           cursor: "pointer",
                         }}
@@ -494,10 +530,10 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId, onN
                         style={{
                           padding: "8px 16px",
                           borderRadius: "6px",
-                          border: "1px solid var(--surface-light)",
-                          backgroundColor: "var(--surface)",
-                          color: "var(--info-dark)",
-                          fontWeight: 600,
+                          border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
+                          backgroundColor: "var(--surface-light)",
+                          color: "var(--text-primary)",
+                          fontWeight: 700,
                           fontSize: "13px",
                           cursor: "pointer",
                         }}
@@ -510,7 +546,7 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId, onN
                   <div
                     style={{
                       fontSize: "14px",
-                      color: "var(--info-dark)",
+                      color: "var(--text-primary)",
                       lineHeight: 1.7,
                       whiteSpace: "pre-wrap",
                       marginBottom: "12px",
@@ -528,10 +564,10 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId, onN
                       style={{
                         padding: "6px 12px",
                         borderRadius: "6px",
-                        border: "1px solid var(--surface-light)",
-                        backgroundColor: "var(--surface)",
-                        color: "var(--accent-purple)",
-                        fontWeight: 600,
+                        border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
+                        backgroundColor: "var(--surface-light)",
+                        color: "var(--primary)",
+                        fontWeight: 700,
                         fontSize: "12px",
                         cursor: "pointer",
                       }}
@@ -543,10 +579,10 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId, onN
                       style={{
                         padding: "6px 12px",
                         borderRadius: "6px",
-                        border: "1px solid var(--surface-light)",
-                        backgroundColor: "var(--surface)",
-                        color: "var(--info-dark)",
-                        fontWeight: 600,
+                        border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
+                        backgroundColor: "var(--surface-light)",
+                        color: "var(--text-primary)",
+                        fontWeight: 700,
                         fontSize: "12px",
                         cursor: "pointer",
                       }}
@@ -558,10 +594,10 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId, onN
                       style={{
                         padding: "6px 12px",
                         borderRadius: "6px",
-                        border: "1px solid var(--surface-light)",
-                        backgroundColor: "var(--surface)",
-                        color: "var(--info-dark)",
-                        fontWeight: 600,
+                        border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
+                        backgroundColor: "var(--surface-light)",
+                        color: "var(--text-primary)",
+                        fontWeight: 700,
                         fontSize: "12px",
                         cursor: "pointer",
                       }}
@@ -576,7 +612,7 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId, onN
                         border: "1px solid var(--danger-surface)",
                         backgroundColor: "var(--warning-surface)",
                         color: "var(--danger)",
-                        fontWeight: 600,
+                        fontWeight: 700,
                         fontSize: "12px",
                         cursor: "pointer",
                       }}
@@ -589,6 +625,7 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId, onN
             );
           })
         )}
+        </div>
       </div>
       {linkingNote && typeof document !== "undefined" &&
         createPortal(

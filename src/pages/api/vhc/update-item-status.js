@@ -23,32 +23,51 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: "vhcItemId is required" });
     }
 
+    const normaliseApproval = (value) => {
+      if (value === null || value === undefined) return value;
+      const normalised = String(value).trim().toLowerCase();
+      if (!normalised) return normalised;
+      if (normalised === "authorised") return "authorized";
+      if (normalised === "approved") return "authorized";
+      return normalised;
+    };
+
+    const normaliseDisplay = (value) => {
+      if (value === null || value === undefined) return value;
+      const normalised = String(value).trim().toLowerCase();
+      if (!normalised) return normalised;
+      if (normalised === "authorised") return "authorized";
+      if (normalised === "approved") return "authorized";
+      return normalised;
+    };
+
     // Build update object with only provided fields
     const updateData = {};
 
     if (approvalStatus !== undefined) {
-      if (!['pending', 'authorized', 'declined', 'completed'].includes(approvalStatus)) {
+      const nextApprovalStatus = normaliseApproval(approvalStatus);
+      if (!["pending", "authorized", "declined", "completed"].includes(nextApprovalStatus)) {
         return res.status(400).json({
           success: false,
           message: "approvalStatus must be 'pending', 'authorized', 'declined', or 'completed'"
         });
       }
-      updateData.approval_status = approvalStatus;
+      updateData.approval_status = nextApprovalStatus;
 
       // Use displayStatus from request if provided, otherwise set based on approvalStatus
       if (displayStatus !== undefined) {
-        updateData.display_status = displayStatus;
-      } else if (approvalStatus === 'authorized') {
-        updateData.display_status = 'authorized';
-      } else if (approvalStatus === 'declined') {
-        updateData.display_status = 'declined';
-      } else if (approvalStatus === 'completed') {
-        updateData.display_status = 'completed';
+        updateData.display_status = normaliseDisplay(displayStatus);
+      } else if (nextApprovalStatus === "authorized") {
+        updateData.display_status = "authorized";
+      } else if (nextApprovalStatus === "declined") {
+        updateData.display_status = "declined";
+      } else if (nextApprovalStatus === "completed") {
+        updateData.display_status = "completed";
       }
       // If returning to pending, displayStatus should be passed from UI to restore original severity
 
       // Set approved_at and approved_by when status changes to authorized, declined, or completed
-      if (approvalStatus === 'authorized' || approvalStatus === 'declined' || approvalStatus === 'completed') {
+      if (nextApprovalStatus === "authorized" || nextApprovalStatus === "declined" || nextApprovalStatus === "completed") {
         updateData.approved_at = new Date().toISOString();
         if (approvedBy) {
           updateData.approved_by = approvedBy;
@@ -98,10 +117,18 @@ export default async function handler(req, res) {
       });
     }
 
+    if (!data || data.length === 0) {
+      // Supabase can return no error but also no updated rows if the filter didn't match.
+      return res.status(404).json({
+        success: false,
+        message: `No vhc_checks row found for vhc_id ${vhcItemId}`,
+      });
+    }
+
     const updatedRow = data?.[0] || null;
 
     if (approvalStatus !== undefined) {
-      const normalizedStatus = String(approvalStatus || "").toLowerCase();
+      const normalizedStatus = normaliseApproval(approvalStatus);
       const shouldCreate = normalizedStatus === "authorized" || normalizedStatus === "completed";
       const shouldRemove = normalizedStatus === "pending" || normalizedStatus === "declined";
 
