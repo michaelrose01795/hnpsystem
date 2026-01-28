@@ -1382,12 +1382,12 @@ export default function VhcDetailsPanel({
         if (part.vhc_item_id) {
           const canonicalId = String(part.vhc_item_id);
           const approvalData = vhcApprovalLookup.get(canonicalId);
-          if (approvalData && approvalData.approvalStatus === "authorized") {
-            return true;
+          if (approvalData) {
+            return approvalData.approvalStatus === "authorized";
           }
         }
 
-        // Also include parts that are marked as authorised in the old way
+        // Also include parts that are marked as authorised in the old way (no VHC status)
         return part.authorised === true;
       });
     },

@@ -2297,17 +2297,48 @@ function CustomerRequestsTab({
       .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
   }, [unifiedRequests]);
 
+  const vhcAliasMap = useMemo(() => {
+    const rows = Array.isArray(jobData?.vhcItemAliases)
+      ? jobData.vhcItemAliases
+      : Array.isArray(jobData?.vhc_item_aliases)
+      ? jobData.vhc_item_aliases
+      : [];
+    const map = new Map();
+    rows.forEach((row) => {
+      const displayId = row?.display_id ?? row?.displayId ?? null;
+      const vhcItemId = row?.vhc_item_id ?? row?.vhcItemId ?? null;
+      if (displayId === null || displayId === undefined) return;
+      if (vhcItemId === null || vhcItemId === undefined) return;
+      map.set(String(displayId), String(vhcItemId));
+    });
+    return map;
+  }, [jobData?.vhcItemAliases, jobData?.vhc_item_aliases]);
+
+  const resolveCanonicalVhcId = useCallback(
+    (value) => {
+      if (value === null || value === undefined) return "";
+      const key = String(value);
+      return vhcAliasMap.get(key) || key;
+    },
+    [vhcAliasMap]
+  );
+
   // Authorised VHC items shown in the Parts Authorized tab (union of authorized checks + legacy authorised parts)
   const authorisedRows = useMemo(() => {
     const baseItems = Array.isArray(jobData?.authorizedVhcItems) ? jobData.authorizedVhcItems : [];
     const vhcChecks = Array.isArray(jobData?.vhcChecks) ? jobData.vhcChecks : [];
     const jobParts = Array.isArray(jobData?.parts_job_items) ? jobData.parts_job_items : [];
+    const vhcRequestRows = unifiedRequests.filter(
+      (row) => (row.requestSource || "customer_request") === "vhc_authorised" && row.vhcItemId
+    );
 
     const approvalLookup = new Map();
     vhcChecks.forEach((check) => {
       if (!check?.vhc_id) return;
+      const canonicalId = resolveCanonicalVhcId(check.vhc_id);
+      if (!canonicalId) return;
       approvalLookup.set(
-        String(check.vhc_id),
+        canonicalId,
         (check.approval_status || "").toString().toLowerCase()
       );
     });
@@ -2318,49 +2349,118 @@ function CustomerRequestsTab({
       if (!isVhc) return false;
 
       if (part?.vhc_item_id) {
-        const status = approvalLookup.get(String(part.vhc_item_id));
-        if (status === "authorized") {
-          return true;
+        const canonicalId = resolveCanonicalVhcId(part.vhc_item_id);
+        const status = approvalLookup.get(canonicalId);
+        if (status !== undefined) {
+          return status === "authorized" || status === "completed";
         }
       }
 
+      // Legacy: allow authorised parts only when there's no VHC status available
       return part?.authorised === true;
     });
 
     const vhcChecksById = new Map();
     vhcChecks.forEach((check) => {
       if (!check?.vhc_id) return;
-      vhcChecksById.set(String(check.vhc_id), check);
+      const canonicalId = resolveCanonicalVhcId(check.vhc_id);
+      if (!canonicalId) return;
+      vhcChecksById.set(canonicalId, check);
+    });
+
+    const vhcRequestsById = new Map();
+    vhcRequestRows.forEach((row) => {
+      if (!row?.vhcItemId) return;
+      const canonicalId = resolveCanonicalVhcId(row.vhcItemId);
+      if (!canonicalId) return;
+      vhcRequestsById.set(canonicalId, row);
     });
 
     const rowsByVhcId = new Map();
     baseItems.forEach((item) => {
       if (!item?.vhcItemId) return;
-      rowsByVhcId.set(String(item.vhcItemId), item);
+      const canonicalId = resolveCanonicalVhcId(item.vhcItemId);
+      if (!canonicalId) return;
+      const request = vhcRequestsById.get(canonicalId);
+      rowsByVhcId.set(canonicalId, {
+        ...item,
+        vhcItemId: canonicalId,
+        noteText: request?.noteText || item.noteText || "",
+        prePickLocation: request?.prePickLocation ?? item.prePickLocation ?? null,
+      });
     });
 
-    partsAuthorized.forEach((part) => {
-      const vhcId = part?.vhc_item_id;
-      if (!vhcId) return;
-      const key = String(vhcId);
-      if (rowsByVhcId.has(key)) return;
-
-      const check = vhcChecksById.get(key);
-      rowsByVhcId.set(key, {
-        vhcItemId: vhcId,
+    vhcChecks.forEach((check) => {
+      if (!check?.vhc_id) return;
+      const status = (check?.approval_status || "").toString().toLowerCase();
+      if (status !== "authorized" && status !== "completed") return;
+      const canonicalId = resolveCanonicalVhcId(check.vhc_id);
+      if (!canonicalId) return;
+      if (rowsByVhcId.has(canonicalId)) return;
+      const request = vhcRequestsById.get(canonicalId);
+      rowsByVhcId.set(canonicalId, {
+        vhcItemId: canonicalId,
         description: check?.issue_title || check?.issue_description || check?.section || "Authorised item",
         section: check?.section || "",
         labourHours: check?.labour_hours ?? null,
         partsCost: check?.parts_cost ?? null,
         approvedAt: check?.approved_at ?? null,
         approvedBy: check?.approved_by ?? null,
-        noteText: "",
-        prePickLocation: part?.pre_pick_location ?? null,
+        noteText: request?.noteText || "",
+        prePickLocation: request?.prePickLocation ?? null,
+      });
+    });
+
+    vhcRequestRows.forEach((row) => {
+      const canonicalId = resolveCanonicalVhcId(row.vhcItemId);
+      if (!canonicalId) return;
+      const status = approvalLookup.get(canonicalId);
+      if (status && status !== "authorized" && status !== "completed") {
+        return;
+      }
+      if (rowsByVhcId.has(canonicalId)) return;
+      rowsByVhcId.set(canonicalId, {
+        vhcItemId: canonicalId,
+        description: row.description || "Authorised item",
+        section: "",
+        labourHours: null,
+        partsCost: null,
+        approvedAt: null,
+        approvedBy: null,
+        noteText: row.noteText || "",
+        prePickLocation: row.prePickLocation ?? null,
+      });
+    });
+
+    partsAuthorized.forEach((part) => {
+      const vhcId = part?.vhc_item_id;
+      if (!vhcId) return;
+      const canonicalId = resolveCanonicalVhcId(vhcId);
+      if (!canonicalId) return;
+      if (rowsByVhcId.has(canonicalId)) return;
+
+      const check = vhcChecksById.get(canonicalId);
+      const request = vhcRequestsById.get(canonicalId);
+      rowsByVhcId.set(canonicalId, {
+        vhcItemId: canonicalId,
+        description:
+          check?.issue_title ||
+          check?.issue_description ||
+          check?.section ||
+          request?.description ||
+          "Authorised item",
+        section: check?.section || "",
+        labourHours: check?.labour_hours ?? null,
+        partsCost: check?.parts_cost ?? null,
+        approvedAt: check?.approved_at ?? null,
+        approvedBy: check?.approved_by ?? null,
+        noteText: request?.noteText || "",
+        prePickLocation: request?.prePickLocation ?? part?.pre_pick_location ?? null,
       });
     });
 
     return Array.from(rowsByVhcId.values());
-  }, [jobData?.authorizedVhcItems, jobData?.vhcChecks, jobData?.parts_job_items]);
+  }, [jobData?.authorizedVhcItems, jobData?.vhcChecks, jobData?.parts_job_items, resolveCanonicalVhcId, unifiedRequests]);
 
   const authorisedColumns = useMemo(() => {
     const columns = [[], [], []];

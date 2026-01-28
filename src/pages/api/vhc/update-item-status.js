@@ -265,6 +265,51 @@ export default async function handler(req, res) {
           .eq("job_id", jobId)
           .eq("request_source", "vhc_authorised")
           .eq("vhc_item_id", vhcItemId);
+
+        await supabase
+          .from("parts_job_items")
+          .update({
+            pre_pick_location: null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("job_id", jobId)
+          .eq("vhc_item_id", vhcItemId);
+
+        const { data: notesToUpdate, error: notesError } = await supabase
+          .from("job_notes")
+          .select("note_id, linked_vhc_id, linked_vhc_ids")
+          .eq("job_id", jobId)
+          .or(`linked_vhc_id.eq.${vhcItemId},linked_vhc_ids.cs.{${vhcItemId}}`);
+
+        if (notesError) {
+          console.error("Failed to load VHC-linked notes for cleanup:", notesError);
+        } else {
+          for (const note of notesToUpdate || []) {
+            const nextLinkedVhcId =
+              String(note.linked_vhc_id ?? "") === String(vhcItemId)
+                ? null
+                : note.linked_vhc_id;
+            const nextLinkedVhcIds = Array.isArray(note.linked_vhc_ids)
+              ? note.linked_vhc_ids.filter((id) => String(id) !== String(vhcItemId))
+              : note.linked_vhc_ids;
+
+            if (
+              nextLinkedVhcId === note.linked_vhc_id &&
+              nextLinkedVhcIds === note.linked_vhc_ids
+            ) {
+              continue;
+            }
+
+            await supabase
+              .from("job_notes")
+              .update({
+                linked_vhc_id: nextLinkedVhcId,
+                linked_vhc_ids: nextLinkedVhcIds,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("note_id", note.note_id);
+          }
+        }
       }
     }
 

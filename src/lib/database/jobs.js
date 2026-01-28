@@ -1053,6 +1053,17 @@ export const getJobByNumber = async (jobNumber) => {
   const messagingThread = await fetchJobMessagingThread(jobData.job_number);
   const formattedJob = formatJobData(jobData);
   formattedJob.messagingThread = messagingThread;
+
+  const { data: vhcItemAliases, error: vhcAliasError } = await supabase
+    .from("vhc_item_aliases")
+    .select("display_id, vhc_item_id, created_at, updated_at")
+    .eq("job_id", jobData.id);
+
+  if (vhcAliasError) {
+    console.warn("⚠️ Unable to load VHC item aliases:", vhcAliasError.message || vhcAliasError);
+  } else {
+    formattedJob.vhcItemAliases = vhcItemAliases || [];
+  }
   
   if (
     jobData.warranty_vhc_master_job_id &&
