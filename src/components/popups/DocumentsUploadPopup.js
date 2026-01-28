@@ -3,6 +3,7 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { useTheme } from "@/styles/themeProvider";
+import ModalPortal from "./ModalPortal";
 
 const generateTempJobId = () => `temp-${Date.now()}`;
 
@@ -264,28 +265,29 @@ export default function DocumentsUploadPopup({
   }
 
   return (
-    <div
-      style={{ ...popupOverlayStyles, zIndex: 1300 }}
-      onClick={() => {
-        setBackgroundUploads(true);
-        handleClose();
-      }}
-    >
+    <ModalPortal>
       <div
-        onClick={(event) => event.stopPropagation()}
-        style={{
-          ...popupCardStyles,
-          width: uploadProgress.length > 0 ? "920px" : "520px",
-          maxWidth: "95%",
-          maxHeight: "90vh",
-          overflowY: "auto",
-          padding: "28px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "16px",
-          transition: "width 0.3s ease"
+        style={{ ...popupOverlayStyles, zIndex: 1300 }}
+        onClick={() => {
+          setBackgroundUploads(true);
+          handleClose();
         }}
       >
+        <div
+          onClick={(event) => event.stopPropagation()}
+          style={{
+            ...popupCardStyles,
+            width: uploadProgress.length > 0 ? "920px" : "520px",
+            maxWidth: "95%",
+            maxHeight: "90vh",
+            overflowY: "auto",
+            padding: "28px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px",
+            transition: "width 0.3s ease"
+          }}
+        >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "600", color: "var(--accent-purple)" }}>
@@ -565,7 +567,8 @@ export default function DocumentsUploadPopup({
             </div>
           )}
         </div>
+        </div>
       </div>
-    </div>
+    </ModalPortal>
   );
 }

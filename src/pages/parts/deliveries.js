@@ -4,6 +4,7 @@ import { useUser } from "@/context/UserContext";
 import { supabase } from "@/lib/supabaseClient";
 import { useTheme } from "@/styles/themeProvider";
 import { CalendarField } from "@/components/calendarAPI";
+import ModalPortal from "@/components/popups/ModalPortal";
 
 const pageStyles = {
   container: {
@@ -529,8 +530,9 @@ function DeliveryJobViewModal({ job, onClose }) {
   const closeButtonColor = resolvedMode === "dark" ? "var(--accent-purple)" : "var(--danger)";
 
   return (
-    <div style={modalOverlayStyle}>
-      <div style={modalContentStyle}>
+    <ModalPortal>
+      <div style={modalOverlayStyle}>
+        <div style={modalContentStyle}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
           <div>
             <p
@@ -652,7 +654,8 @@ function DeliveryJobViewModal({ job, onClose }) {
             Close
           </button>
         </div>
+        </div>
       </div>
-    </div>
+    </ModalPortal>
   );
 }

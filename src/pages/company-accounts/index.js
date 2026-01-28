@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import CompanyAccountForm from "@/components/companyAccounts/CompanyAccountForm";
+import AccountTable from "@/components/accounts/AccountTable";
 import { useUser } from "@/context/UserContext";
 import { deriveAccountPermissions } from "@/lib/accounts/permissions";
 
@@ -20,11 +21,24 @@ export default function CompanyAccountsIndexPage() {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState("");
+  const [activeTab, setActiveTab] = useState("companies");
+  const [ledgerAccounts, setLedgerAccounts] = useState([]);
+  const [ledgerLoading, setLedgerLoading] = useState(true);
+  const [ledgerPagination, setLedgerPagination] = useState({ page: 1, pageSize: 20, total: 0 });
+  const [ledgerSortState, setLedgerSortState] = useState({ field: "updated_at", direction: "desc" });
+  const [ledgerSearch, setLedgerSearch] = useState("");
+  const [debouncedLedgerSearch, setDebouncedLedgerSearch] = useState("");
+  const [ledgerFeedback, setLedgerFeedback] = useState("");
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search.trim()), 350);
     return () => clearTimeout(timer);
   }, [search]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedLedgerSearch(ledgerSearch.trim()), 350);
+    return () => clearTimeout(timer);
+  }, [ledgerSearch]);
 
   const fetchAccounts = useCallback(async () => {
     setLoading(true);
@@ -56,6 +70,56 @@ export default function CompanyAccountsIndexPage() {
     fetchAccounts();
   }, [fetchAccounts]);
 
+  const fetchLedgerAccounts = useCallback(async () => {
+    setLedgerLoading(true);
+    setLedgerFeedback("");
+    try {
+      const params = new URLSearchParams();
+      params.set("page", ledgerPagination.page.toString());
+      params.set("pageSize", ledgerPagination.pageSize.toString());
+      params.set("sortField", ledgerSortState.field);
+      params.set("sortDirection", ledgerSortState.direction);
+      if (debouncedLedgerSearch) {
+        params.set("search", debouncedLedgerSearch);
+      }
+      if (permissions.restrictedAccountTypes && permissions.restrictedAccountTypes.length > 0) {
+        params.set("accountType", permissions.restrictedAccountTypes[0]);
+      }
+      const response = await fetch(`/api/accounts?${params.toString()}`);
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload?.message || "Failed to load ledger accounts");
+      }
+      setLedgerAccounts(payload.data || []);
+      setLedgerPagination((prev) => ({ ...prev, total: payload.pagination?.total || prev.total }));
+      if (!payload.data?.length) {
+        setLedgerFeedback(debouncedLedgerSearch ? "No ledger accounts match the search." : "No ledger accounts available.");
+      }
+    } catch (error) {
+      console.error("Unable to fetch ledger accounts", error);
+      setLedgerFeedback(error.message || "Unable to load ledger accounts");
+    } finally {
+      setLedgerLoading(false);
+    }
+  }, [
+    debouncedLedgerSearch,
+    ledgerPagination.page,
+    ledgerPagination.pageSize,
+    ledgerSortState.direction,
+    ledgerSortState.field,
+    permissions.restrictedAccountTypes,
+  ]);
+
+  useEffect(() => {
+    if (activeTab !== "ledgers") return;
+    fetchLedgerAccounts();
+  }, [activeTab, fetchLedgerAccounts]);
+
+  useEffect(() => {
+    if (activeTab === "companies") return;
+    if (showForm) setShowForm(false);
+  }, [activeTab, showForm]);
+
   const handleCreate = async (values) => {
     setSaving(true);
     try {
@@ -75,6 +139,54 @@ export default function CompanyAccountsIndexPage() {
       setSaving(false);
     }
   };
+
+  const handleLedgerAccountSelect = (account, action) => {
+    if (!account) return;
+    if (action === "edit") {
+      router.push(`/accounts/edit/${account.account_id}`);
+      return;
+    }
+    router.push(`/accounts/view/${account.account_id}`);
+  };
+
+  const tabs = useMemo(
+    () => [
+      { id: "companies", label: "Company accounts" },
+      { id: "ledgers", label: "Ledgers" },
+    ],
+    []
+  );
+
+  const renderLedgerTab = () => (
+    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+      <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+        <input
+          type="search"
+          placeholder="Search ledger accounts"
+          value={ledgerSearch}
+          onChange={(event) => setLedgerSearch(event.target.value)}
+          style={{
+            flex: "1 1 260px",
+            padding: "10px 14px",
+            borderRadius: "999px",
+            border: "1px solid var(--surface-light)",
+          }}
+        />
+      </div>
+      {ledgerFeedback && !ledgerAccounts.length && !ledgerLoading && (
+        <p style={{ margin: 0, color: "var(--text-secondary)" }}>{ledgerFeedback}</p>
+      )}
+      <AccountTable
+        accounts={ledgerAccounts}
+        loading={ledgerLoading}
+        pagination={ledgerPagination}
+        onPageChange={(nextPage) => setLedgerPagination((prev) => ({ ...prev, page: Math.max(1, nextPage) }))}
+        sortState={ledgerSortState}
+        onSortChange={setLedgerSortState}
+        onSelectAccount={handleLedgerAccountSelect}
+      />
+    </div>
+  );
 
   const renderList = () => {
     if (loading) {
@@ -198,70 +310,122 @@ export default function CompanyAccountsIndexPage() {
             <h1 style={{ margin: 0 }}>Company Accounts</h1>
             <p style={{ margin: 0, color: "var(--text-secondary)" }}>Central directory of partner businesses linked to accounts.</p>
           </div>
-          {showForm && permissions.canCreateAccount && (
-            <button
-              type="button"
-              onClick={() => setShowForm(false)}
-              style={{
-                alignSelf: "flex-start",
-                padding: "10px 18px",
-                borderRadius: "10px",
-                border: "1px solid var(--surface-light)",
-                background: "transparent",
-                fontWeight: 600,
-              }}
-            >
-              Back to company list
-            </button>
-          )}
-          {showForm ? (
-            <CompanyAccountForm
-              autoGenerateAccountNumber
-              isSubmitting={saving}
-              onSubmit={async (values) => {
-                await handleCreate(values);
-                fetchAccounts();
-              }}
-              onCancel={() => setShowForm(false)}
-            />
-          ) : (
-            <>
-              <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
-                <input
-                  type="search"
-                  placeholder="Search companies A-Z"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
+          <div
+            style={{
+              borderRadius: "999px",
+              border: "1px solid var(--surface-light)",
+              background: "var(--surface)",
+              padding: "6px",
+              display: "flex",
+              gap: "6px",
+              width: "100%",
+              overflowX: "auto",
+              flexShrink: 0,
+              scrollbarWidth: "thin",
+              scrollbarColor: "var(--scrollbar-thumb) transparent",
+              scrollBehavior: "smooth",
+              WebkitOverflowScrolling: "touch",
+            }}
+          >
+            {tabs.map((tab) => {
+              const isActive = tab.id === activeTab;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
                   style={{
-                    flex: "1 1 260px",
-                    padding: "10px 14px",
+                    flex: "0 0 auto",
                     borderRadius: "999px",
-                    border: "1px solid var(--surface-light)",
+                    border: "1px solid transparent",
+                    padding: "10px 20px",
+                    fontSize: "0.9rem",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    background: isActive ? "var(--primary)" : "transparent",
+                    color: isActive ? "var(--text-inverse)" : "var(--text-primary)",
+                    transition: "all 0.15s ease",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    whiteSpace: "nowrap",
                   }}
-                />
-                {permissions.canCreateAccount && (
-                  <button
-                    type="button"
-                    onClick={() => setShowForm(true)}
-                    style={{
-                      flex: "0 0 auto",
-                      padding: "10px 18px",
-                      borderRadius: "999px",
-                      border: "none",
-                      background: "var(--primary)",
-                      color: "white",
-                      fontWeight: 700,
-                    }}
-                  >
-                    Add new account
-                  </button>
-                )}
-              </div>
-              {feedback && !accounts.length && !loading && (
-                <p style={{ margin: 0, color: "var(--text-secondary)" }}>{feedback}</p>
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+          {activeTab === "companies" ? (
+            <>
+              {showForm && permissions.canCreateAccount && (
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  style={{
+                    alignSelf: "flex-start",
+                    padding: "10px 18px",
+                    borderRadius: "10px",
+                    border: "1px solid var(--surface-light)",
+                    background: "transparent",
+                    fontWeight: 600,
+                  }}
+                >
+                  Back to company list
+                </button>
               )}
-              {renderList()}
+              {showForm ? (
+                <CompanyAccountForm
+                  autoGenerateAccountNumber
+                  isSubmitting={saving}
+                  onSubmit={async (values) => {
+                    await handleCreate(values);
+                    fetchAccounts();
+                  }}
+                  onCancel={() => setShowForm(false)}
+                />
+              ) : (
+                <>
+                  <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+                    <input
+                      type="search"
+                      placeholder="Search companies A-Z"
+                      value={search}
+                      onChange={(event) => setSearch(event.target.value)}
+                      style={{
+                        flex: "1 1 260px",
+                        padding: "10px 14px",
+                        borderRadius: "999px",
+                        border: "1px solid var(--surface-light)",
+                      }}
+                    />
+                    {permissions.canCreateAccount && (
+                      <button
+                        type="button"
+                        onClick={() => setShowForm(true)}
+                        style={{
+                          flex: "0 0 auto",
+                          padding: "10px 18px",
+                          borderRadius: "999px",
+                          border: "none",
+                          background: "var(--primary)",
+                          color: "white",
+                          fontWeight: 700,
+                        }}
+                      >
+                        Add new account
+                      </button>
+                    )}
+                  </div>
+                  {feedback && !accounts.length && !loading && (
+                    <p style={{ margin: 0, color: "var(--text-secondary)" }}>{feedback}</p>
+                  )}
+                  {renderList()}
+                </>
+              )}
             </>
+          ) : (
+            renderLedgerTab()
           )}
         </div>
       </Layout>

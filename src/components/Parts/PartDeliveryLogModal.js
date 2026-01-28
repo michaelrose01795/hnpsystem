@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useUser } from "@/context/UserContext";
 import { CalendarField } from "@/components/calendarAPI";
+import ModalPortal from "@/components/popups/ModalPortal";
 
 export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, onDeliveryLogged }) {
   const { dbUserId } = useUser();
@@ -144,35 +145,36 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
   if (!isOpen) return null;
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0, 0, 0, 0.7)",
-        backdropFilter: "blur(4px)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        zIndex: 1300,
-        padding: "24px",
-      }}
-      onClick={onClose}
-    >
+    <ModalPortal>
       <div
         style={{
-          width: "600px",
-          maxWidth: "95vw",
-          maxHeight: "90vh",
-          background: "var(--surface)",
-          borderRadius: "18px",
-          border: "1px solid var(--accent-purple-surface)",
-          boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
+          position: "fixed",
+          inset: 0,
+          background: "rgba(0, 0, 0, 0.7)",
+          backdropFilter: "blur(4px)",
           display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
+          justifyContent: "center",
+          alignItems: "center",
+          zIndex: 1300,
+          padding: "24px",
         }}
-        onClick={(e) => e.stopPropagation()}
+        onClick={onClose}
       >
+        <div
+          style={{
+            width: "600px",
+            maxWidth: "95vw",
+            maxHeight: "90vh",
+            background: "var(--surface)",
+            borderRadius: "18px",
+            border: "1px solid var(--accent-purple-surface)",
+            boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
         {/* Header */}
         <div
           style={{
@@ -451,7 +453,8 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
             {submitting ? "Logging..." : "Log Delivery"}
           </button>
         </div>
+        </div>
       </div>
-    </div>
+    </ModalPortal>
   );
 }

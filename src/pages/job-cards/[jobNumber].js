@@ -4722,6 +4722,8 @@ function GoodsInPartsPanel({ goodsInParts = [], onAllocateParts, canAllocate }) 
             border: "1px solid var(--surface-light)",
             background: "var(--surface)",
             overflowX: "auto",
+            overflowY: "auto",
+            maxHeight: "300px",
           }}
         >
           <table
@@ -4733,14 +4735,14 @@ function GoodsInPartsPanel({ goodsInParts = [], onAllocateParts, canAllocate }) 
           >
             <thead>
               <tr style={{ background: "var(--layer-section-level-2)", textTransform: "uppercase", fontSize: "11px", letterSpacing: "0.08em" }}>
-                <th style={{ textAlign: "left", padding: "12px 16px" }}>Goods in #</th>
-                <th style={{ textAlign: "left", padding: "12px 16px" }}>Part number</th>
-                <th style={{ textAlign: "left", padding: "12px 16px" }}>Description</th>
-                <th style={{ textAlign: "center", padding: "12px 16px" }}>Qty</th>
-                <th style={{ textAlign: "right", padding: "12px 16px" }}>Retail</th>
-                <th style={{ textAlign: "right", padding: "12px 16px" }}>Cost</th>
-                <th style={{ textAlign: "left", padding: "12px 16px" }}>Invoice</th>
-                <th style={{ textAlign: "left", padding: "12px 16px" }}>Added</th>
+                <th style={{ textAlign: "left", padding: "12px 16px", position: "sticky", top: 0, background: "var(--layer-section-level-2)", zIndex: 1 }}>Goods in #</th>
+                <th style={{ textAlign: "left", padding: "12px 16px", position: "sticky", top: 0, background: "var(--layer-section-level-2)", zIndex: 1 }}>Part number</th>
+                <th style={{ textAlign: "left", padding: "12px 16px", position: "sticky", top: 0, background: "var(--layer-section-level-2)", zIndex: 1 }}>Description</th>
+                <th style={{ textAlign: "center", padding: "12px 16px", position: "sticky", top: 0, background: "var(--layer-section-level-2)", zIndex: 1 }}>Qty</th>
+                <th style={{ textAlign: "right", padding: "12px 16px", position: "sticky", top: 0, background: "var(--layer-section-level-2)", zIndex: 1 }}>Retail</th>
+                <th style={{ textAlign: "right", padding: "12px 16px", position: "sticky", top: 0, background: "var(--layer-section-level-2)", zIndex: 1 }}>Cost</th>
+                <th style={{ textAlign: "left", padding: "12px 16px", position: "sticky", top: 0, background: "var(--layer-section-level-2)", zIndex: 1 }}>Invoice</th>
+                <th style={{ textAlign: "left", padding: "12px 16px", position: "sticky", top: 0, background: "var(--layer-section-level-2)", zIndex: 1 }}>Added</th>
               </tr>
             </thead>
             <tbody>

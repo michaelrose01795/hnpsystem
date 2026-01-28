@@ -6,6 +6,7 @@ import Layout from "@/components/Layout";
 import { supabase } from "@/lib/supabaseClient";
 import { clockInToJob, clockOutFromJob } from "@/lib/database/jobClocking";
 import { generateTechnicianSlug } from "@/utils/technicianSlug";
+import ModalPortal from "@/components/popups/ModalPortal";
 
 const TECH_ROLES = ["Techs", "Technician", "Technician Lead", "Lead Technician"];
 const MOT_ROLES = ["MOT Tester", "Tester"];
@@ -958,35 +959,36 @@ function ClockingOverviewTab({ onSummaryChange }) {
       </section>
 
       {modalOpen && selectedTechnician && (
-        <div
-          className="clocking-modal-overlay"
-          style={{
-            position: "fixed",
-            inset: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "24px",
-            zIndex: 50,
-            backdropFilter: "blur(4px)",
-          }}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="clocking-modal-title"
-        >
+        <ModalPortal>
           <div
+            className="clocking-modal-overlay"
             style={{
-              width: "min(460px, 100%)",
-              borderRadius: "22px",
-              background: "var(--surface)",
-              border: "1px solid var(--surface-light)",
-              boxShadow: "0 25px 60px rgba(15, 15, 15, 0.25)",
-              padding: "24px",
+              position: "fixed",
+              inset: 0,
               display: "flex",
-              flexDirection: "column",
-              gap: "16px",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "24px",
+              zIndex: 50,
+              backdropFilter: "blur(4px)",
             }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="clocking-modal-title"
           >
+            <div
+              style={{
+                width: "min(460px, 100%)",
+                borderRadius: "22px",
+                background: "var(--surface)",
+                border: "1px solid var(--surface-light)",
+                boxShadow: "0 25px 60px rgba(15, 15, 15, 0.25)",
+                padding: "24px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "16px",
+              }}
+            >
             <div>
               <p style={{ margin: 0, fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
                 {selectedTechnician.name} · {selectedTechnician.role}
@@ -1095,8 +1097,9 @@ function ClockingOverviewTab({ onSummaryChange }) {
                 {modalActionLabel}
               </button>
             </div>
+            </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
       <style jsx>{`
         #${jobNumberInputId}::placeholder {

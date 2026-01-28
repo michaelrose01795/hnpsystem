@@ -2,6 +2,7 @@
 // ✅ File location: src/components/popups/ExistingCustomerPopup.js
 import React, { useState, useEffect } from "react";
 import { searchCustomers } from "@/lib/database/customers"; // ✅ use shared function
+import ModalPortal from "./ModalPortal";
 
 // ExistingCustomerPopup component
 export default function ExistingCustomerPopup({ onClose, onSelect }) {
@@ -41,18 +42,19 @@ export default function ExistingCustomerPopup({ onClose, onSelect }) {
      RENDER POPUP
   ============================================ */
   return (
-    <div className="popup-backdrop">
-      <div
-        className="popup-card"
-        style={{
-          padding: "24px",
-          borderRadius: "10px",
-          width: "420px",
-          maxHeight: "90vh",
-          overflowY: "auto",
-        }}
-      >
-        <h3 style={{ marginTop: 0 }}>Select Existing Customer</h3>
+    <ModalPortal>
+      <div className="popup-backdrop">
+        <div
+          className="popup-card"
+          style={{
+            padding: "24px",
+            borderRadius: "10px",
+            width: "420px",
+            maxHeight: "90vh",
+            overflowY: "auto",
+          }}
+        >
+          <h3 style={{ marginTop: 0 }}>Select Existing Customer</h3>
 
         {/* Search input */}
         <input
@@ -149,7 +151,8 @@ export default function ExistingCustomerPopup({ onClose, onSelect }) {
             Add Customer
           </button>
         </div>
+        </div>
       </div>
-    </div>
+    </ModalPortal>
   );
 }

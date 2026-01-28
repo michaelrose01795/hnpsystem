@@ -3,28 +3,6 @@ TO DO:
 Continue flow with job number 54
 
 
-CHECKKKKKK
-Book a goods‑in item to a job via the popup and confirm the catalog entry exists with qty_in_stock = 0.
-Complete a goods‑in record with mixed booked/not‑booked items and confirm only the not‑booked parts increase stock.
-
-
-Check 
-have iut so the Retaail price and cost price use the £30 sum when the "Franchise" dropdown "Tyres" is selected, if other are selected then do not apply the £30 difference and make it so "Retail price " and "Cost price " are indiviual. Have it so within the "Add goods-in parts to a job " popup it shoes show "Select one job and the parts to add. Part number, description, and quantity will be sent to the job." text nad better layed out and all sections follows the light and dark theme
-
- 
-
-
-
-CHECKK??
-Have it so any check in, in progress, etc (or status apart from booked and inoviced and comlete) that if a job is assinged to a tech user then it shows within that the users card inside the "job-cards/waiting/nextjobs" page. make sure that the jobs within the todays workflow tab and carry over tab if a tech is assinged that job then it shows within that section until the assingment is unassinged or the assingment is swapped to another tech user. 
-
-
-CHECKKKKKKKKKKK
-When the "Complete" button is pressed and the popup opnes and "Not now" is pressed take the user back to the "parts/goods-in" page with all of the data cleared from the fields. when "Add to job" button is pressed the next popup shows the "Part number" and "Pirelli P Zero, 235/40 R18 95Y XL" with quantity wanting to add to the job with job number, 1 or multiple rows of the parts can be selected to add to the job number at once, after 1 or all of the parts are added (doesnt matter how many) the cancel button which takes the user back to the "Goods in complete" popup is pressed or the finish button is pressed which saves the changes to the database, any parts which we not added to a job number we added to the stock catalog and the user is taken back to the "parts/goods-in" page with the fields empty. 
-
-
-CHECKKKKKKKKK
-When search in global for "goods in number" have it so it opens the page "/parts/goods-in/[GINnumber]" not "/parts/goods-in?goodsIn=GIN[number], this will take the users to a new page, inside this page build a invoice recreation with Supplier details at the top section, invoice lines in the middle, totals at the bottom, history section for where the parts were added once goods in was complete either to a job number or to stock, if to job number how many what invocie line and how many and the same with stock. 
 
 
 

@@ -15,6 +15,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { appShellTheme } from "@/styles/appTheme";
 import useMessagesApi from "@/hooks/api/useMessagesApi";
 import { useTheme } from "@/styles/themeProvider";
+import ModalPortal from "@/components/popups/ModalPortal";
 
 const palette = appShellTheme.palette;
 const radii = appShellTheme.radii;
@@ -2194,33 +2195,34 @@ function MessagesPage() {
       </div>
 
       {groupEditModalOpen && isGroupChat && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.45)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "20px",
-            zIndex: 1100,
-          }}
-        >
+        <ModalPortal>
           <div
             style={{
-              width: "min(560px, 100%)",
-              maxHeight: "90vh",
-              overflowY: "auto",
-              backgroundColor: "var(--surface)",
-              borderRadius: "20px",
-              border: `1px solid ${palette.border}`,
-              boxShadow: shadows.lg,
-              padding: "24px",
+              position: "fixed",
+              inset: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.45)",
               display: "flex",
-              flexDirection: "column",
-              gap: "16px",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "20px",
+              zIndex: 1100,
             }}
           >
+            <div
+              style={{
+                width: "min(560px, 100%)",
+                maxHeight: "90vh",
+                overflowY: "auto",
+                backgroundColor: "var(--surface)",
+                borderRadius: "20px",
+                border: `1px solid ${palette.border}`,
+                boxShadow: shadows.lg,
+                padding: "24px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "16px",
+              }}
+            >
             <div>
               <h3 style={{ margin: 0, color: systemTitleColor }}>Edit group chat</h3>
               <p style={{ margin: "4px 0 0", color: palette.textMuted }}>
@@ -2461,38 +2463,40 @@ function MessagesPage() {
                 {groupEditBusy ? "Saving…" : "Save changes"}
               </button>
             </div>
+            </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
 
       {newChatModalOpen && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.45)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "20px",
-            zIndex: 1000,
-          }}
-        >
+        <ModalPortal>
           <div
             style={{
-              width: "min(640px, 100%)",
-              maxHeight: "90vh",
-              overflowY: "auto",
-              backgroundColor: "var(--surface)",
-              borderRadius: "20px",
-              border: `1px solid ${palette.border}`,
-              boxShadow: shadows.lg,
-              padding: "24px",
+              position: "fixed",
+              inset: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.45)",
               display: "flex",
-              flexDirection: "column",
-              gap: "16px",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "20px",
+              zIndex: 1000,
             }}
           >
+            <div
+              style={{
+                width: "min(640px, 100%)",
+                maxHeight: "90vh",
+                overflowY: "auto",
+                backgroundColor: "var(--surface)",
+                borderRadius: "20px",
+                border: `1px solid ${palette.border}`,
+                boxShadow: shadows.lg,
+                padding: "24px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "16px",
+              }}
+            >
             <div>
               <h3 style={{ margin: 0, color: systemTitleColor }}>Start New Chat</h3>
             </div>
@@ -2682,35 +2686,37 @@ function MessagesPage() {
                 Start Chat
               </button>
             </div>
+            </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
 
       {/* Command Help Modal */}
       {commandHelpOpen && (
-        <div
-          onClick={() => setCommandHelpOpen(false)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.6)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 9999,
-          }}
-        >
+        <ModalPortal>
           <div
-            onClick={(e) => e.stopPropagation()}
+            onClick={() => setCommandHelpOpen(false)}
             style={{
-              ...cardStyle,
-              maxWidth: "600px",
-              width: "90%",
-              maxHeight: "80vh",
-              overflowY: "auto",
-              gap: "20px",
+              position: "fixed",
+              inset: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.6)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 9999,
             }}
           >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                ...cardStyle,
+                maxWidth: "600px",
+                width: "90%",
+                maxHeight: "80vh",
+                overflowY: "auto",
+                gap: "20px",
+              }}
+            >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <h3 style={{ margin: 0, color: palette.textPrimary }}>Slash Commands Help</h3>
               <button
@@ -2847,35 +2853,37 @@ function MessagesPage() {
               </div>
               </div>
             </div>
+            </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
 
       {/* Group Members Modal */}
       {groupMembersModalOpen && activeThread && isGroupChat && (
-        <div
-          onClick={() => setGroupMembersModalOpen(false)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.6)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 9999,
-          }}
-        >
+        <ModalPortal>
           <div
-            onClick={(e) => e.stopPropagation()}
+            onClick={() => setGroupMembersModalOpen(false)}
             style={{
-              ...cardStyle,
-              maxWidth: "500px",
-              width: "90%",
-              maxHeight: "70vh",
-              overflowY: "auto",
-              gap: "20px",
+              position: "fixed",
+              inset: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.6)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 9999,
             }}
           >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                ...cardStyle,
+                maxWidth: "500px",
+                width: "90%",
+                maxHeight: "70vh",
+                overflowY: "auto",
+                gap: "20px",
+              }}
+            >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <h3 style={{ margin: 0, color: palette.textPrimary }}>
                 {activeThread.title || "Group Chat"}
@@ -2939,8 +2947,9 @@ function MessagesPage() {
                 ))}
               </div>
             </div>
+            </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
     </Layout>
   );

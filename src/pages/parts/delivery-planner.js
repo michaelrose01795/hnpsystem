@@ -6,6 +6,7 @@ import Layout from "@/components/Layout";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useTheme } from "@/styles/themeProvider";
 import { CalendarField } from "@/components/calendarAPI";
+import ModalPortal from "@/components/popups/ModalPortal";
 
 const sectionStyle = {
   background: "var(--surface)",
@@ -1447,8 +1448,9 @@ function DeliveryJobModal({
     1;
 
   return (
-    <div style={modalOverlayStyle}>
-      <div style={modalContentStyle}>
+    <ModalPortal>
+      <div style={modalOverlayStyle}>
+        <div style={modalContentStyle}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
           <div>
             <p
@@ -1794,7 +1796,8 @@ function DeliveryJobModal({
             {saving ? "Saving…" : "Save"}
           </button>
         </div>
+        </div>
       </div>
-    </div>
+    </ModalPortal>
   );
 }

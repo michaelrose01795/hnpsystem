@@ -5,6 +5,7 @@ import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
 import { supabase } from "@/lib/supabaseClient";
+import ModalPortal from "@/components/popups/ModalPortal";
 
 const STATUS_META = {
   planned: { label: "Planned", background: "rgba(var(--warning-rgb), 0.15)", color: "var(--danger-dark)" },
@@ -845,32 +846,33 @@ export default function DeliveryRoutePage() {
         </div>
 
         {modalOpen && (
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              background: "rgba(var(--accent-purple-rgb), 0.6)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: 40,
-              padding: "24px",
-            }}
-          >
+          <ModalPortal>
             <div
               style={{
-                background: "var(--surface)",
-                borderRadius: "18px",
-                width: "min(540px, 100%)",
-                maxHeight: "90vh",
-                overflowY: "auto",
-                padding: "24px",
-                boxShadow: "none",
+                position: "fixed",
+                inset: 0,
+                background: "rgba(var(--accent-purple-rgb), 0.6)",
                 display: "flex",
-                flexDirection: "column",
-                gap: "16px",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 40,
+                padding: "24px",
               }}
             >
+              <div
+                style={{
+                  background: "var(--surface)",
+                  borderRadius: "18px",
+                  width: "min(540px, 100%)",
+                  maxHeight: "90vh",
+                  overflowY: "auto",
+                  padding: "24px",
+                  boxShadow: "none",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "16px",
+                }}
+              >
               <div
                 style={{
                   display: "flex",
@@ -1013,8 +1015,9 @@ export default function DeliveryRoutePage() {
                   {savingStop ? "Saving…" : "Save stop"}
                 </button>
               </div>
+              </div>
             </div>
-          </div>
+          </ModalPortal>
         )}
 
         <section style={{ display: "flex", flexDirection: "column", gap: "14px" }}>

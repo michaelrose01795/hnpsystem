@@ -7,6 +7,7 @@ import { useUser } from "@/context/UserContext";
 import { supabaseClient } from "@/lib/supabaseClient";
 import ExistingCustomerPopup from "@/components/popups/ExistingCustomerPopup";
 import NewCustomerPopup from "@/components/popups/NewCustomerPopup";
+import ModalPortal from "@/components/popups/ModalPortal";
 import { useTheme } from "@/styles/themeProvider";
 import { updateCustomer } from "@/lib/database/customers";
 import { CalendarField } from "@/components/calendarAPI";
@@ -1100,8 +1101,9 @@ export default function PartsJobCardPage() {
       </div>
     </Layout>
     {partSearchOpen && (
-      <div style={partLookupOverlayStyle}>
-        <div style={partLookupContentStyle}>
+      <ModalPortal>
+        <div style={partLookupOverlayStyle}>
+          <div style={partLookupContentStyle}>
           <div
             style={{
               display: "flex",
@@ -1212,8 +1214,9 @@ export default function PartsJobCardPage() {
               })}
             </div>
           )}
+          </div>
         </div>
-      </div>
+      </ModalPortal>
     )}
     {showExistingCustomer && (
       <ExistingCustomerPopup

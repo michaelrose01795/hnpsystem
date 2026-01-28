@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Layout from "@/components/Layout";
+import ModalPortal from "@/components/popups/ModalPortal";
 import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@/context/UserContext";
 import { MultiSelectDropdown } from "@/components/dropdownAPI";
@@ -376,29 +377,30 @@ export default function NewsFeed() {
       </div>
 
       {modalOpen && (
-        <div
-          className="popup-backdrop"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setModalOpen(false);
-              resetModal();
-            }
-          }}
-        >
+        <ModalPortal>
           <div
-            className="popup-card"
-            role="dialog"
-            aria-modal="true"
-            style={{
-              borderRadius: "32px",
-              width: "100%",
-              maxWidth: "650px",
-              maxHeight: "90vh",
-              overflowY: "auto",
-              border: "1px solid var(--surface-light)",
+            className="popup-backdrop"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setModalOpen(false);
+                resetModal();
+              }
             }}
-            onClick={(e) => e.stopPropagation()}
           >
+            <div
+              className="popup-card"
+              role="dialog"
+              aria-modal="true"
+              style={{
+                borderRadius: "32px",
+                width: "100%",
+                maxWidth: "650px",
+                maxHeight: "90vh",
+                overflowY: "auto",
+                border: "1px solid var(--surface-light)",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
             {/* Header */}
             <div
               style={{
@@ -638,8 +640,9 @@ export default function NewsFeed() {
                 {saving ? "Publishing…" : "Publish Update"}
               </button>
             </div>
+            </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
     </Layout>
   );

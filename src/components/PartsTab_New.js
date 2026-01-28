@@ -4,6 +4,7 @@ import React, { useState, useCallback, useEffect, useMemo, forwardRef } from "re
 import CalendarField from "@/components/calendarAPI/CalendarField";
 import TimePickerField from "@/components/timePickerAPI/TimePickerField";
 import { DropdownField } from "@/components/dropdownAPI";
+import ModalPortal from "@/components/popups/ModalPortal";
 
 // Helper functions (keep existing)
 const normalizePartStatus = (status = "") => {
@@ -1088,21 +1089,37 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         }
       `}</style>
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+        <div
+          style={{
+            borderRadius: "999px",
+            border: "1px solid var(--surface-light)",
+            background: "var(--layer-section-level-1)",
+            padding: "6px",
+            display: "flex",
+            gap: "6px",
+            width: "fit-content",
+            maxWidth: "100%",
+            overflowX: "auto",
+            marginBottom: "14px",
+          }}
+        >
           <button
             type="button"
             onClick={toggleBookPartPanel}
             style={{
-              padding: "10px 14px",
-              borderRadius: "8px",
-              border: "1px solid var(--primary)",
-              background: showBookPartPanel ? "var(--primary)" : "var(--surface)",
-              color: showBookPartPanel ? "white" : "var(--primary)",
-              fontSize: "12px",
+              padding: "10px 20px",
+              borderRadius: "999px",
+              border: "1px solid transparent",
+              background: showBookPartPanel ? "var(--danger)" : "var(--danger-surface)",
+              color: showBookPartPanel ? "var(--text-inverse)" : "var(--danger)",
+              fontSize: "0.9rem",
               fontWeight: 600,
               cursor: "pointer",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
+              transition: "all 0.15s ease",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              whiteSpace: "nowrap",
             }}
           >
             {showBookPartPanel ? "Hide Book Part" : "Book Part"}
@@ -1112,16 +1129,19 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             onClick={toggleAllocatePanel}
             title="Show allocate-to-request panel"
             style={{
-              padding: "10px 14px",
-              borderRadius: "8px",
-              border: "1px solid var(--accent-purple)",
-              background: showAllocatePanel ? "var(--accent-purple)" : "var(--surface)",
-              color: showAllocatePanel ? "white" : "var(--accent-purple)",
-              fontSize: "12px",
+              padding: "10px 20px",
+              borderRadius: "999px",
+              border: "1px solid transparent",
+              background: showAllocatePanel ? "var(--accent-purple)" : "var(--accent-purple-surface)",
+              color: showAllocatePanel ? "var(--text-inverse)" : "var(--accent-purple)",
+              fontSize: "0.9rem",
               fontWeight: 600,
               cursor: "pointer",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
+              transition: "all 0.15s ease",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              whiteSpace: "nowrap",
             }}
           >
             {showAllocatePanel ? "Hide Allocate" : "Allocate To Request"}
@@ -1421,15 +1441,15 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 No unallocated parts. Add parts using the search above.
               </div>
             ) : (
-              <div style={{ overflowX: "auto" }}>
+              <div style={{ overflowX: "auto", overflowY: "auto", maxHeight: "300px" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
                   <thead>
                     <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
                       {assignMode && (
-                        <th style={{ textAlign: "center", padding: "8px", width: "40px" }}>Select</th>
+                        <th style={{ textAlign: "center", padding: "8px", width: "40px", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>Select</th>
                       )}
-                      <th style={{ textAlign: "left", padding: "8px" }}>Part</th>
-                      <th style={{ textAlign: "right", padding: "8px" }}>Qty</th>
+                      <th style={{ textAlign: "left", padding: "8px", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>Part</th>
+                      <th style={{ textAlign: "right", padding: "8px", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>Qty</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1725,17 +1745,17 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             </div>
             {/* Fixed-size table container */}
             <div style={{ minHeight: "200px", display: "flex", flexDirection: "column" }}>
-              <div style={{ overflowX: "auto", flex: 1 }}>
+              <div style={{ overflowX: "auto", overflowY: "auto", maxHeight: "320px", flex: 1 }}>
                 <table className="on-order-table" style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
                     <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
-                      <th style={{ textAlign: "left" }}>Part Name</th>
-                      <th style={{ textAlign: "left" }}>Part Number</th>
-                      <th style={{ textAlign: "right" }}>Qty</th>
-                      <th style={{ textAlign: "right" }}>Price</th>
-                      <th style={{ textAlign: "left" }}>ETA Date</th>
-                      <th style={{ textAlign: "left" }}>ETA Time</th>
-                      <th style={{ textAlign: "center" }}>Action</th>
+                      <th style={{ textAlign: "left", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>Part Name</th>
+                      <th style={{ textAlign: "left", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>Part Number</th>
+                      <th style={{ textAlign: "right", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>Qty</th>
+                      <th style={{ textAlign: "right", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>Price</th>
+                      <th style={{ textAlign: "left", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>ETA Date</th>
+                      <th style={{ textAlign: "left", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>ETA Time</th>
+                      <th style={{ textAlign: "center", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1828,32 +1848,33 @@ const PartsTabNew = forwardRef(function PartsTabNew(
 
       {/* Part Removal Popup Modal */}
       {partPopup.open && partPopup.part && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0, 0, 0, 0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 10000,
-          }}
-          onClick={() => setPartPopup({ open: false, part: null })}
-        >
+        <ModalPortal>
           <div
             style={{
-              background: "var(--surface)",
-              borderRadius: "12px",
-              padding: "20px",
-              minWidth: "300px",
-              maxWidth: "400px",
-              boxShadow: "0 25px 50px rgba(0, 0, 0, 0.3)",
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: "rgba(0, 0, 0, 0.5)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 10000,
             }}
-            onClick={(e) => e.stopPropagation()}
+            onClick={() => setPartPopup({ open: false, part: null })}
           >
+            <div
+              style={{
+                background: "var(--surface)",
+                borderRadius: "12px",
+                padding: "20px",
+                minWidth: "300px",
+                maxWidth: "400px",
+                boxShadow: "0 25px 50px rgba(0, 0, 0, 0.3)",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
             <div style={{ marginBottom: "16px" }}>
               <div
                 style={{
@@ -1952,8 +1973,9 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 Remove
               </button>
             </div>
+            </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
     </>
   );

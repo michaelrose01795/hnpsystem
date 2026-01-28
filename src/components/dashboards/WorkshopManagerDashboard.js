@@ -5,6 +5,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import { supabase } from "@/lib/supabaseClient";
 import { getWorkshopDashboardData } from "@/lib/database/dashboard/workshop";
 import { listConsumablesForTracker } from "@/lib/database/consumables";
+import ModalPortal from "@/components/popups/ModalPortal";
 
 dayjs.extend(relativeTime);
 
@@ -626,34 +627,35 @@ export default function WorkshopManagerDashboard() {
       </section>
 
       {isConsumablesModalOpen && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.4)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "20px",
-            zIndex: 1400,
-          }}
-          role="dialog"
-          aria-modal="true"
-        >
+        <ModalPortal>
           <div
             style={{
-              width: "min(960px, 100%)",
-              background: "var(--surface)",
-              borderRadius: "20px",
-              padding: "32px",
-              border: "1px solid var(--surface-light)",
-              maxHeight: "90vh",
-              overflow: "hidden",
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.4)",
               display: "flex",
-              flexDirection: "column",
-              gap: "16px",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "20px",
+              zIndex: 1400,
             }}
+            role="dialog"
+            aria-modal="true"
           >
+            <div
+              style={{
+                width: "min(960px, 100%)",
+                background: "var(--surface)",
+                borderRadius: "20px",
+                padding: "32px",
+                border: "1px solid var(--surface-light)",
+                maxHeight: "90vh",
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+                gap: "16px",
+              }}
+            >
             <div
               style={{
                 display: "flex",
@@ -807,8 +809,9 @@ export default function WorkshopManagerDashboard() {
                 </tbody>
               </table>
             </div>
+            </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
     </div>
   );

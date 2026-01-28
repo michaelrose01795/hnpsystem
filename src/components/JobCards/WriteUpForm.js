@@ -18,6 +18,7 @@ import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
 import CheckSheetPopup from "@/components/popups/CheckSheetPopup";
 import { useTheme } from "@/styles/themeProvider";
+import ModalPortal from "@/components/popups/ModalPortal";
 
 // ✅ Helper ensures every paragraph is prefixed with a bullet dash
 const formatNoteValue = (value = "") => {
@@ -2187,32 +2188,33 @@ const renderLastSaved = () => (
       )}
 
       {showDocumentsPopup && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            backgroundColor: "rgba(var(--accent-purple-rgb), 0.65)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1200,
-          }}
-          onClick={closeDocumentsPopup}
-        >
+        <ModalPortal>
           <div
-            onClick={(event) => event.stopPropagation()}
             style={{
-              width: "480px",
-              maxWidth: "90%",
-              backgroundColor: "var(--surface)",
-              borderRadius: "18px",
-              padding: "32px",
-              boxShadow: "none",
+              position: "fixed",
+              inset: 0,
+              backgroundColor: "rgba(var(--accent-purple-rgb), 0.65)",
               display: "flex",
-              flexDirection: "column",
-              gap: "16px",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1200,
             }}
+            onClick={closeDocumentsPopup}
           >
+            <div
+              onClick={(event) => event.stopPropagation()}
+              style={{
+                width: "480px",
+                maxWidth: "90%",
+                backgroundColor: "var(--surface)",
+                borderRadius: "18px",
+                padding: "32px",
+                boxShadow: "none",
+                display: "flex",
+                flexDirection: "column",
+                gap: "16px",
+              }}
+            >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "600", color: "var(--accent-purple)" }}>Vehicle Documents</h3>
@@ -2274,8 +2276,9 @@ const renderLastSaved = () => (
                 Close
               </button>
             </div>
+            </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
     </div>
   );

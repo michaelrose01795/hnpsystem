@@ -2,6 +2,7 @@
 // file location: src/components/popups/NewCustomerPopup.js
 import React, { useState } from "react"; // import React hooks
 import { addCustomerToDatabase } from "@/lib/database/customers"; // import database function
+import ModalPortal from "./ModalPortal";
 
 export default function NewCustomerPopup({ onClose, onSelect }) {
   // State for all form fields
@@ -145,26 +146,27 @@ export default function NewCustomerPopup({ onClose, onSelect }) {
 
   // ✅ UI layout for popup
   return (
-    <div
-      className="popup-backdrop"
-      onClick={(e) => {
-        if (e.target === e.currentTarget && typeof onClose === "function") {
-          onClose();
-        }
-      }}
-    >
+    <ModalPortal>
       <div
-        className="popup-card"
-        style={{
-          borderRadius: "32px",
-          width: "100%",
-          maxWidth: "650px",
-          maxHeight: "90vh",
-          overflowY: "auto",
-          border: "1px solid var(--surface-light)",
+        className="popup-backdrop"
+        onClick={(e) => {
+          if (e.target === e.currentTarget && typeof onClose === "function") {
+            onClose();
+          }
         }}
-        onClick={(e) => e.stopPropagation()}
       >
+        <div
+          className="popup-card"
+          style={{
+            borderRadius: "32px",
+            width: "100%",
+            maxWidth: "650px",
+            maxHeight: "90vh",
+            overflowY: "auto",
+            border: "1px solid var(--surface-light)",
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
         {/* Header */}
         <div
           style={{
@@ -750,7 +752,8 @@ export default function NewCustomerPopup({ onClose, onSelect }) {
             {loading ? "Saving..." : "Add Customer"}
           </button>
         </div>
+        </div>
       </div>
-    </div>
+    </ModalPortal>
   );
 }
