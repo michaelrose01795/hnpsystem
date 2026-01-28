@@ -21,6 +21,12 @@ const nextConfig = { // Exported Next.js configuration object
     NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID, // Client ID for Keycloak auth
     NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || "", // Fallback to empty string for optional API URL
   }, // Close env block
+
+  compiler: { // Keep console output minimal in production bundles
+    removeConsole: { // Strip log/info/debug while keeping warnings and errors
+      exclude: ["error", "warn"], // Preserve high-signal logs
+    },
+  },
   
   async redirects() { // Define redirects to retire outdated routes
     return [ // Return list of redirect rules

@@ -30,6 +30,7 @@ import { resolveMainStatusId } from "@/lib/status/statusFlow";
 import VhcDetailsPanel from "@/components/VHC/VhcDetailsPanel";
 import InvoiceSection from "@/components/Invoices/InvoiceSection";
 import { calculateVhcFinancialTotals } from "@/lib/vhc/calculateVhcTotals";
+import { normaliseDecisionStatus } from "@/lib/vhc/summaryStatus";
 import { isValidUuid, sanitizeNumericId } from "@/lib/utils/ids";
 import PartsTabNew from "@/components/PartsTab_New";
 import NotesTabNew from "@/components/NotesTab_New";
@@ -2323,9 +2324,8 @@ function CustomerRequestsTab({
     [vhcAliasMap]
   );
 
-  // Authorised VHC items shown in the Parts Authorized tab (union of authorized checks + legacy authorised parts)
+  // Authorised VHC items shown in the Parts Authorized tab (mirror VHC Parts Authorized logic)
   const authorisedRows = useMemo(() => {
-    const baseItems = Array.isArray(jobData?.authorizedVhcItems) ? jobData.authorizedVhcItems : [];
     const vhcChecks = Array.isArray(jobData?.vhcChecks) ? jobData.vhcChecks : [];
     const jobParts = Array.isArray(jobData?.parts_job_items) ? jobData.parts_job_items : [];
     const vhcRequestRows = unifiedRequests.filter(
@@ -2339,7 +2339,7 @@ function CustomerRequestsTab({
       if (!canonicalId) return;
       approvalLookup.set(
         canonicalId,
-        (check.approval_status || "").toString().toLowerCase()
+        normaliseDecisionStatus(check.approval_status)
       );
     });
 
@@ -2352,7 +2352,7 @@ function CustomerRequestsTab({
         const canonicalId = resolveCanonicalVhcId(part.vhc_item_id);
         const status = approvalLookup.get(canonicalId);
         if (status !== undefined) {
-          return status === "authorized" || status === "completed";
+          return status === "authorized";
         }
       }
 
@@ -2377,22 +2377,10 @@ function CustomerRequestsTab({
     });
 
     const rowsByVhcId = new Map();
-    baseItems.forEach((item) => {
-      if (!item?.vhcItemId) return;
-      const canonicalId = resolveCanonicalVhcId(item.vhcItemId);
-      if (!canonicalId) return;
-      const request = vhcRequestsById.get(canonicalId);
-      rowsByVhcId.set(canonicalId, {
-        ...item,
-        vhcItemId: canonicalId,
-        noteText: request?.noteText || item.noteText || "",
-        prePickLocation: request?.prePickLocation ?? item.prePickLocation ?? null,
-      });
-    });
 
     vhcChecks.forEach((check) => {
       if (!check?.vhc_id) return;
-      const status = (check?.approval_status || "").toString().toLowerCase();
+      const status = normaliseDecisionStatus(check?.approval_status);
       if (status !== "authorized" && status !== "completed") return;
       const canonicalId = resolveCanonicalVhcId(check.vhc_id);
       if (!canonicalId) return;
@@ -2408,27 +2396,6 @@ function CustomerRequestsTab({
         approvedBy: check?.approved_by ?? null,
         noteText: request?.noteText || "",
         prePickLocation: request?.prePickLocation ?? null,
-      });
-    });
-
-    vhcRequestRows.forEach((row) => {
-      const canonicalId = resolveCanonicalVhcId(row.vhcItemId);
-      if (!canonicalId) return;
-      const status = approvalLookup.get(canonicalId);
-      if (status && status !== "authorized" && status !== "completed") {
-        return;
-      }
-      if (rowsByVhcId.has(canonicalId)) return;
-      rowsByVhcId.set(canonicalId, {
-        vhcItemId: canonicalId,
-        description: row.description || "Authorised item",
-        section: "",
-        labourHours: null,
-        partsCost: null,
-        approvedAt: null,
-        approvedBy: null,
-        noteText: row.noteText || "",
-        prePickLocation: row.prePickLocation ?? null,
       });
     });
 
@@ -2460,7 +2427,7 @@ function CustomerRequestsTab({
     });
 
     return Array.from(rowsByVhcId.values());
-  }, [jobData?.authorizedVhcItems, jobData?.vhcChecks, jobData?.parts_job_items, resolveCanonicalVhcId, unifiedRequests]);
+  }, [jobData?.vhcChecks, jobData?.parts_job_items, resolveCanonicalVhcId, unifiedRequests]);
 
   const authorisedColumns = useMemo(() => {
     const columns = [[], [], []];

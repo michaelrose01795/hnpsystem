@@ -67,10 +67,7 @@ export default function Layout({ children, jobNumber }) {
     (router.pathname.startsWith("/hr") && router.pathname !== "/hr/manager") ||
     router.pathname.startsWith("/admin/users");
 
-  const getViewportWidth = () =>
-    typeof window !== "undefined" && window.innerWidth ? window.innerWidth : 1440;
-
-  const [viewportWidth, setViewportWidth] = useState(getViewportWidth());
+  const [viewportWidth, setViewportWidth] = useState(1440);
   const { unreadCount: messagesUnread } = useMessagesBadge(dbUserId);
 
   const isTablet = viewportWidth <= 1024;
@@ -197,7 +194,10 @@ export default function Layout({ children, jobNumber }) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const handleResize = () => setViewportWidth(getViewportWidth());
+    const handleResize = () => {
+      const nextWidth = window.innerWidth || 1440;
+      setViewportWidth(nextWidth);
+    };
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);

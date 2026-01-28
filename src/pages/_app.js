@@ -1,6 +1,7 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/_app.js
 import "@/utils/polyfills"; // ensure polyfills load globally
+import "@/utils/quietConsole"; // minimize console noise unless LOG_LEVEL is raised
 import "@/styles/theme.css"; // register CSS variables before globals
 import "../styles/globals.css"; // import global base styles
 import React, { useEffect } from "react"; // import React helpers
