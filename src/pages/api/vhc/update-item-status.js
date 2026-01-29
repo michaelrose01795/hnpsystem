@@ -1,5 +1,6 @@
 // API endpoint to update VHC item approval status and related fields
 import { supabase } from "@/lib/supabaseClient";
+import { syncVhcPartsAuthorisation } from "@/lib/database/vhcPartsSync";
 
 export default async function handler(req, res) {
   if (req.method !== "PATCH" && req.method !== "POST") {
@@ -129,8 +130,6 @@ export default async function handler(req, res) {
 
     if (approvalStatus !== undefined) {
       const normalizedStatus = normaliseApproval(approvalStatus);
-      const shouldCreate = normalizedStatus === "authorized" || normalizedStatus === "completed";
-      const shouldRemove = normalizedStatus === "pending" || normalizedStatus === "declined";
 
       let vhcRow = updatedRow;
       if (!vhcRow?.job_id) {
@@ -222,121 +221,12 @@ export default async function handler(req, res) {
             }
           }
         }
-      }
 
-      if (jobId && shouldCreate) {
-        const description =
-          (vhcRow?.issue_title || vhcRow?.issue_description || vhcRow?.section || "")
-            .toString()
-            .trim() || `Authorised item ${vhcItemId}`;
-
-        const { data: prePickRows } = await supabase
-          .from("parts_job_items")
-          .select("id, pre_pick_location, updated_at")
-          .eq("job_id", jobId)
-          .eq("vhc_item_id", vhcItemId)
-          .not("pre_pick_location", "is", null)
-          .order("updated_at", { ascending: false })
-          .limit(1);
-
-        const prePickLocation = prePickRows?.[0]?.pre_pick_location || null;
-        const partsJobItemId = prePickRows?.[0]?.id || null;
-
-        const { data: noteRows } = await supabase
-          .from("job_notes")
-          .select("note_text, updated_at")
-          .eq("job_id", jobId)
-          .or(`linked_vhc_id.eq.${vhcItemId},linked_vhc_ids.cs.{${vhcItemId}}`)
-          .order("updated_at", { ascending: false })
-          .limit(1);
-
-        const noteText = noteRows?.[0]?.note_text || null;
-
-        const { data: existingRequest } = await supabase
-          .from("job_requests")
-          .select("request_id")
-          .eq("job_id", jobId)
-          .eq("request_source", "vhc_authorised")
-          .eq("vhc_item_id", vhcItemId)
-          .maybeSingle();
-
-        const payload = {
-          job_id: jobId,
-          description,
-          hours: null,
-          job_type: "Customer",
-          sort_order: 0,
-          status: "inprogress",
-          request_source: "vhc_authorised",
-          vhc_item_id: vhcItemId,
-          parts_job_item_id: partsJobItemId,
-          pre_pick_location: prePickLocation,
-          note_text: noteText,
-          updated_at: new Date().toISOString()
-        };
-
-        if (existingRequest?.request_id) {
-          await supabase
-            .from("job_requests")
-            .update(payload)
-            .eq("request_id", existingRequest.request_id);
-        } else {
-          await supabase.from("job_requests").insert([
-            { ...payload, created_at: payload.updated_at }
-          ]);
-        }
-      } else if (jobId && shouldRemove) {
-        await supabase
-          .from("job_requests")
-          .delete()
-          .eq("job_id", jobId)
-          .eq("request_source", "vhc_authorised")
-          .eq("vhc_item_id", vhcItemId);
-
-        await supabase
-          .from("parts_job_items")
-          .update({
-            pre_pick_location: null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("job_id", jobId)
-          .eq("vhc_item_id", vhcItemId);
-
-        const { data: notesToUpdate, error: notesError } = await supabase
-          .from("job_notes")
-          .select("note_id, linked_vhc_id, linked_vhc_ids")
-          .eq("job_id", jobId)
-          .or(`linked_vhc_id.eq.${vhcItemId},linked_vhc_ids.cs.{${vhcItemId}}`);
-
-        if (notesError) {
-          console.error("Failed to load VHC-linked notes for cleanup:", notesError);
-        } else {
-          for (const note of notesToUpdate || []) {
-            const nextLinkedVhcId =
-              String(note.linked_vhc_id ?? "") === String(vhcItemId)
-                ? null
-                : note.linked_vhc_id;
-            const nextLinkedVhcIds = Array.isArray(note.linked_vhc_ids)
-              ? note.linked_vhc_ids.filter((id) => String(id) !== String(vhcItemId))
-              : note.linked_vhc_ids;
-
-            if (
-              nextLinkedVhcId === note.linked_vhc_id &&
-              nextLinkedVhcIds === note.linked_vhc_ids
-            ) {
-              continue;
-            }
-
-            await supabase
-              .from("job_notes")
-              .update({
-                linked_vhc_id: nextLinkedVhcId,
-                linked_vhc_ids: nextLinkedVhcIds,
-                updated_at: new Date().toISOString(),
-              })
-              .eq("note_id", note.note_id);
-          }
-        }
+        await syncVhcPartsAuthorisation({
+          jobId,
+          vhcItemId,
+          approvalStatus: normalizedStatus,
+        });
       }
     }
 

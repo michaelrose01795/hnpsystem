@@ -1977,12 +1977,7 @@ export default function VhcDetailsPanel({
 
     // Persist to database (convert null to 'pending')
     const canonicalId = resolveCanonicalVhcId(itemId);
-    const parsedId = Number(canonicalId);
-
-    if (!Number.isInteger(parsedId)) {
-      console.error(`❌ [VHC STATUS ERROR] Invalid ID - cannot update`);
-      return;
-    }
+    let parsedId = Number(canonicalId);
 
     // Convert null to 'pending' for database
     const dbStatus = normaliseDecisionStatus(status) || "pending";
@@ -1994,6 +1989,53 @@ export default function VhcDetailsPanel({
     if (dbStatus === "completed") newDisplayStatus = "completed";
     if (dbStatus === "pending" && severityKey) newDisplayStatus = severityKey;
 
+    if (!Number.isInteger(parsedId)) {
+      if (dbStatus === "pending") {
+        return;
+      }
+
+      try {
+        if (summaryItem && job?.id) {
+          const entry = getEntryForItem(itemId);
+          const resolvedLabourHours = resolveLabourHoursValue(itemId, entry);
+          const createResponse = await fetch("/api/jobcards/create-vhc-item", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              jobId: job.id,
+              jobNumber: resolvedJobNumber,
+              section: summaryItem.sectionName || summaryItem.category?.label || "Vehicle Health Check",
+              issueTitle: summaryItem.label,
+              issueDescription: summaryItem.notes || summaryItem.concernText || "",
+              measurement: summaryItem.measurement || null,
+              labourHours: resolvedLabourHours !== "" ? resolvedLabourHours : null,
+            }),
+          });
+
+          if (createResponse.ok) {
+            const createResult = await createResponse.json();
+            if (createResult.success && createResult.vhcId) {
+              parsedId = createResult.vhcId;
+              await upsertVhcItemAlias(itemId, parsedId);
+              if (createResult.data) {
+                setVhcChecksData((prev) => [...prev, createResult.data]);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Failed to create VHC check item for status update:", error);
+      }
+    }
+
+    if (!Number.isInteger(parsedId)) {
+      console.error(`❌ [VHC STATUS ERROR] Invalid ID - cannot update`);
+      setItemEntries((prev) => ({
+        ...prev,
+        [itemId]: { ...ensureEntryValue(prev, itemId), status: previousStatus },
+      }));
+      return;
+    }
 
     try {
       const entry = getEntryForItem(itemId);
@@ -4723,6 +4765,10 @@ export default function VhcDetailsPanel({
                 const locationLabel = vhcItem?.location
                   ? LOCATION_LABELS[vhcItem.location] || vhcItem.location.replace(/_/g, " ")
                   : null;
+                const vhcRows = Array.isArray(vhcItem?.rows)
+                  ? vhcItem.rows.map((row) => (row ? String(row).trim() : "")).filter(Boolean)
+                  : [];
+                const isServiceIndicatorRow = vhcItem?.category?.id === "service_indicator";
 
                 // Authorized items should have green background
                 const rowBackground = "var(--success-surface)";
@@ -4747,6 +4793,15 @@ export default function VhcDetailsPanel({
                           <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--success)", marginTop: "2px" }}>
                             {vhcLabel}
                           </div>
+                          {isServiceIndicatorRow && vhcRows.length > 0 ? (
+                            <div style={{ marginTop: "6px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                              {vhcRows.map((row, rowIdx) => (
+                                <div key={`${vhcId}-service-indicator-row-${rowIdx}`} style={{ fontSize: "12px", fontWeight: 600, color: "var(--info-dark)" }}>
+                                  - {row}
+                                </div>
+                              ))}
+                            </div>
+                          ) : null}
                           {vhcNotes && (
                             <div style={{ fontSize: "12px", color: "var(--info-dark)", marginTop: "4px" }}>
                               {vhcNotes}
@@ -4842,19 +4897,28 @@ export default function VhcDetailsPanel({
                       e.currentTarget.style.background = rowBackground;
                     }}
                   >
-                    <td style={{ padding: "12px 16px", whiteSpace: "normal", wordBreak: "break-word" }}>
-                      <div>
-                        <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
-                          {vhcCategory}
-                        </div>
-                        <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--success)", marginTop: "2px" }}>
-                          {vhcLabel}
-                        </div>
-                        {vhcNotes && (
-                          <div style={{ fontSize: "12px", color: "var(--info-dark)", marginTop: "4px" }}>
-                            {vhcNotes}
+                      <td style={{ padding: "12px 16px", whiteSpace: "normal", wordBreak: "break-word" }}>
+                        <div>
+                          <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+                            {vhcCategory}
                           </div>
-                        )}
+                          <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--success)", marginTop: "2px" }}>
+                            {vhcLabel}
+                          </div>
+                          {isServiceIndicatorRow && vhcRows.length > 0 ? (
+                            <div style={{ marginTop: "6px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                              {vhcRows.map((row, rowIdx) => (
+                                <div key={`${vhcId}-service-indicator-row-${rowIdx}`} style={{ fontSize: "12px", fontWeight: 600, color: "var(--info-dark)" }}>
+                                  - {row}
+                                </div>
+                              ))}
+                            </div>
+                          ) : null}
+                          {vhcNotes && (
+                            <div style={{ fontSize: "12px", color: "var(--info-dark)", marginTop: "4px" }}>
+                              {vhcNotes}
+                            </div>
+                          )}
                         {locationLabel && (
                           <div style={{ fontSize: "11px", color: "var(--info)", marginTop: "4px" }}>
                             Location: {locationLabel}

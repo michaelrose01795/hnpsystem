@@ -320,6 +320,8 @@ export default function JobCardDetailPage() {
   const sharedNoteSaveRef = useRef(null);
   const jobRealtimeRefreshRef = useRef(null);
   const lastRealtimeFetchAtRef = useRef(0);
+  const lastJobFetchAtRef = useRef(0);
+  const jobFetchInFlightRef = useRef(false);
   const [vehicleJobHistory, setVehicleJobHistory] = useState([]);
   const [customerVehicles, setCustomerVehicles] = useState([]);
   const [customerVehiclesLoading, setCustomerVehiclesLoading] = useState(false);
@@ -474,15 +476,27 @@ export default function JobCardDetailPage() {
   }, [fetchSharedNote]);
 
   const fetchJobData = useCallback(
-    async (options = { silent: false }) => {
+    async (options = { silent: false, force: false }) => {
       if (!jobNumber) return;
 
-      const { silent } = options;
+      const { silent, force } = options;
+      const throttleMs = process.env.NODE_ENV === "production" ? 5000 : 10000;
+      const now = Date.now();
+
+      if (silent && !force) {
+        if (jobFetchInFlightRef.current) {
+          return;
+        }
+        if (now - lastJobFetchAtRef.current < throttleMs) {
+          return;
+        }
+      }
 
       try {
         if (!silent) {
           setLoading(true);
         }
+        jobFetchInFlightRef.current = true;
         setError(null);
 
         const { data, error } = await getJobByNumber(jobNumber);
@@ -514,6 +528,8 @@ export default function JobCardDetailPage() {
         console.error("❌ Exception fetching job:", err);
         setError(err?.message || "Failed to load job card");
       } finally {
+        lastJobFetchAtRef.current = Date.now();
+        jobFetchInFlightRef.current = false;
         if (!silent) {
           setLoading(false);
         }
@@ -713,7 +729,7 @@ export default function JobCardDetailPage() {
           `Time: ${new Date().toLocaleTimeString()}`
       );
 
-      await fetchJobData({ silent: true });
+      await fetchJobData({ silent: true, force: true });
     } catch (error) {
       console.error("❌ Error checking in:", error);
       alert("❌ Error checking in customer. Please try again.");
@@ -919,7 +935,7 @@ export default function JobCardDetailPage() {
           throw jobError;
         }
 
-        await fetchJobData({ silent: true });
+        await fetchJobData({ silent: true, force: true });
 
         return { success: true };
       } catch (saveError) {
@@ -985,7 +1001,7 @@ export default function JobCardDetailPage() {
           }
         }
 
-        await fetchJobData({ silent: true });
+        await fetchJobData({ silent: true, force: true });
         return { success: true };
       } catch (appointmentError) {
         console.error("❌ Failed to update appointment:", appointmentError);
@@ -1087,7 +1103,7 @@ export default function JobCardDetailPage() {
           normalizedVehicleId &&
           normalizedVehicleId !== jobData.vehicleId
         ) {
-          await fetchJobData({ silent: true });
+          await fetchJobData({ silent: true, force: true });
         }
 
         try {
@@ -1248,7 +1264,7 @@ export default function JobCardDetailPage() {
         `✅ Invoice created. Payment link ready: ${payload.paymentLink?.checkout_url || ""}`
       );
       setInvoiceResponse(payload);
-      await fetchJobData({ silent: true });
+      await fetchJobData({ silent: true, force: true });
 
       // Redirect to invoice tab after successful invoice creation
       router.push(`/job-cards/${jobData.jobNumber}?tab=invoice`);
@@ -1418,7 +1434,7 @@ export default function JobCardDetailPage() {
       setJobData((prev) =>
         prev ? { ...prev, requests: requestPayload } : prev
       );
-      await fetchJobData({ silent: true });
+      await fetchJobData({ silent: true, force: true });
       alert("✅ Job requests updated successfully");
     } catch (error) {
       console.error("Error updating requests:", error);
@@ -2072,7 +2088,7 @@ export default function JobCardDetailPage() {
               <PartsTabNew
                 jobData={jobData}
                 canEdit={canEdit}
-                onRefreshJob={() => fetchJobData({ silent: true })}
+                onRefreshJob={() => fetchJobData({ silent: true, force: true })}
                 actingUserId={actingUserId}
                 actingUserNumericId={actingUserNumericId}
                 invoiceReady={invoicePrerequisitesMet}
@@ -2106,7 +2122,7 @@ export default function JobCardDetailPage() {
                 jobNumber={jobData?.jobNumber || jobNumber}
                 jobCardData={jobData}
                 showHeader={false}
-                onSaveSuccess={() => fetchJobData({ silent: true })}
+                onSaveSuccess={() => fetchJobData({ silent: true, force: true })}
               />
             </div>
           </div>
@@ -2116,7 +2132,7 @@ export default function JobCardDetailPage() {
               jobNumber={jobNumber}
               jobData={jobData}
               onFinancialTotalsChange={setVhcFinancialTotalsFromPanel}
-              onJobDataRefresh={() => fetchJobData({ silent: true })}
+              onJobDataRefresh={() => fetchJobData({ silent: true, force: true })}
             />
           </div>
 
@@ -2124,7 +2140,7 @@ export default function JobCardDetailPage() {
             <WarrantyTab
               jobData={jobData}
               canEdit={canEdit}
-              onLinkComplete={() => fetchJobData({ silent: true })}
+              onLinkComplete={() => fetchJobData({ silent: true, force: true })}
             />
           </div>
 
@@ -2193,7 +2209,7 @@ export default function JobCardDetailPage() {
           onClose={() => setShowDocumentsPopup(false)}
           jobId={jobData?.id ? String(jobData.id) : null}
           userId={user?.user_id || actingUserId || null}
-          onAfterUpload={() => fetchJobData({ silent: true })}
+          onAfterUpload={() => fetchJobData({ silent: true, force: true })}
         />
         {trackerQuickModalOpen && (
           <LocationUpdateModal
