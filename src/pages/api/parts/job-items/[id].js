@@ -1,6 +1,7 @@
 // file location: src/pages/api/parts/job-items/[id].js
 
 import { supabase } from "@/lib/supabaseClient";
+import { syncVhcPartsAuthorisation } from "@/lib/database/vhcPartsSync";
 
 const MANAGER_ROLE_KEYWORDS = ["parts", "manager", "admin"]
 const VALID_STATUSES = new Set([
@@ -134,7 +135,7 @@ export default async function handler(req, res) {
 
       const { data: existing, error: fetchError } = await supabase
         .from("parts_job_items")
-        .select("id, part_id, quantity_requested, quantity_allocated, status, authorised")
+        .select("id, job_id, vhc_item_id, part_id, quantity_requested, quantity_allocated, status, authorised")
         .eq("id", id)
         .single()
 
@@ -180,6 +181,13 @@ export default async function handler(req, res) {
         .eq("id", id)
 
       if (error) throw error
+
+      if (existing?.vhc_item_id) {
+        await syncVhcPartsAuthorisation({
+          jobId: existing.job_id,
+          vhcItemId: existing.vhc_item_id,
+        });
+      }
 
       return res.status(200).json({ ok: true, data: { deleted: true, id } })
     }

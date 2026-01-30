@@ -2417,118 +2417,29 @@ function CustomerRequestsTab({
     [vhcAliasMap]
   );
 
-  // Authorised VHC items (mirror VHC "Parts Authorized" tab behaviour):
-  // only include VHC items that are authorised AND have at least one VHC-linked part.
+  // Authorised VHC items (single source of truth: vhc_authorized_items -> jobData.authorizedVhcItems)
   const authorisedRows = useMemo(() => {
     const canonicalAuthorized = Array.isArray(jobData?.authorizedVhcItems)
       ? jobData.authorizedVhcItems
       : [];
-    if (canonicalAuthorized.length > 0) {
-      return canonicalAuthorized.map((row) => ({
-        requestId: row.requestId ?? row.request_id ?? null,
-        description: row.description ?? row.text ?? "",
-        hours: row.hours ?? row.time ?? row.labourHours ?? "",
-        jobType: row.jobType ?? row.job_type ?? row.paymentType ?? "Customer",
-        sortOrder: row.sortOrder ?? row.sort_order ?? null,
-        status: row.status ?? null,
-        requestSource: row.requestSource ?? row.request_source ?? "vhc_authorised",
-        prePickLocation: row.prePickLocation ?? row.pre_pick_location ?? null,
-        noteText: row.noteText ?? row.note_text ?? "",
-        vhcItemId: row.vhcItemId ?? row.vhc_item_id ?? null,
-        partsJobItemId: row.partsJobItemId ?? row.parts_job_item_id ?? null,
-        labourHours: row.labourHours ?? row.labour_hours ?? null,
-        partsCost: row.partsCost ?? row.parts_cost ?? null,
-        approvedAt: row.approvedAt ?? row.approved_at ?? null,
-        approvedBy: row.approvedBy ?? row.approved_by ?? null,
-      }));
-    }
-
-    const vhcChecks = Array.isArray(jobData?.vhcChecks) ? jobData.vhcChecks : [];
-    const jobParts = Array.isArray(jobData?.parts_job_items) ? jobData.parts_job_items : [];
-    const vhcRequestRows = unifiedRequests.filter(
-      (row) => (row.requestSource || "customer_request") === "vhc_authorised" && row.vhcItemId
-    );
-
-    const approvalLookup = new Map();
-    vhcChecks.forEach((check) => {
-      if (!check?.vhc_id) return;
-      const canonicalId = resolveCanonicalVhcId(check.vhc_id);
-      if (!canonicalId) return;
-      approvalLookup.set(
-        canonicalId,
-        normaliseDecisionStatus(check.approval_status)
-      );
-    });
-
-    const partsAuthorized = jobParts.filter((part) => {
-      const origin = (part?.origin || "").toString().toLowerCase();
-      const isVhc = origin.includes("vhc");
-      if (!isVhc) return false;
-
-      if (part?.vhc_item_id) {
-        const canonicalId = resolveCanonicalVhcId(part.vhc_item_id);
-        const status = approvalLookup.get(canonicalId);
-        return status === "authorized";
-      }
-
-      return false;
-    });
-
-    const vhcChecksById = new Map();
-    vhcChecks.forEach((check) => {
-      if (!check?.vhc_id) return;
-      const canonicalId = resolveCanonicalVhcId(check.vhc_id);
-      if (!canonicalId) return;
-      vhcChecksById.set(canonicalId, check);
-    });
-
-    const vhcRequestsById = new Map();
-    vhcRequestRows.forEach((row) => {
-      if (!row?.vhcItemId) return;
-      const canonicalId = resolveCanonicalVhcId(row.vhcItemId);
-      if (!canonicalId) return;
-      vhcRequestsById.set(canonicalId, row);
-    });
-
-    const rowsByVhcId = new Map();
-
-    partsAuthorized.forEach((part) => {
-      const vhcId = part?.vhc_item_id;
-      if (!vhcId) return;
-      const canonicalId = resolveCanonicalVhcId(vhcId);
-      if (!canonicalId) return;
-      if (rowsByVhcId.has(canonicalId)) return;
-
-      const check = vhcChecksById.get(canonicalId);
-      const request = vhcRequestsById.get(canonicalId);
-      const partUpdatedAt = part?.updated_at || part?.updatedAt || null;
-      const partPrePick = part?.pre_pick_location ?? part?.prePickLocation ?? null;
-      rowsByVhcId.set(canonicalId, {
-        vhcItemId: canonicalId,
-        description:
-          check?.issue_title ||
-          check?.issue_description ||
-          check?.section ||
-          request?.description ||
-          "Authorised item",
-        section: check?.section || "",
-        labourHours: check?.labour_hours ?? null,
-        partsCost: check?.parts_cost ?? null,
-        approvedAt: check?.approved_at ?? null,
-        approvedBy: check?.approved_by ?? null,
-        noteText: request?.noteText || "",
-        prePickLocation: partPrePick ?? request?.prePickLocation ?? null,
-        _lastPartUpdatedAt: partUpdatedAt,
-      });
-    });
-
-    // Prefer the most recently updated part's row first (matches what managers care about).
-    return Array.from(rowsByVhcId.values()).sort((a, b) => {
-      const aTime = a?._lastPartUpdatedAt ? new Date(a._lastPartUpdatedAt).getTime() : 0;
-      const bTime = b?._lastPartUpdatedAt ? new Date(b._lastPartUpdatedAt).getTime() : 0;
-      return bTime - aTime;
-    });
-  }, [jobData?.authorizedVhcItems, jobData?.vhcChecks, jobData?.parts_job_items, resolveCanonicalVhcId, unifiedRequests]);
+    return canonicalAuthorized.map((row) => ({
+      requestId: row.requestId ?? row.request_id ?? null,
+      description: row.description ?? row.text ?? "",
+      hours: row.hours ?? row.time ?? row.labourHours ?? "",
+      jobType: row.jobType ?? row.job_type ?? row.paymentType ?? "Customer",
+      sortOrder: row.sortOrder ?? row.sort_order ?? null,
+      status: row.status ?? null,
+      requestSource: row.requestSource ?? row.request_source ?? "vhc_authorised",
+      prePickLocation: row.prePickLocation ?? row.pre_pick_location ?? null,
+      noteText: row.noteText ?? row.note_text ?? "",
+      vhcItemId: row.vhcItemId ?? row.vhc_item_id ?? null,
+      partsJobItemId: row.partsJobItemId ?? row.parts_job_item_id ?? null,
+      labourHours: row.labourHours ?? row.labour_hours ?? null,
+      partsCost: row.partsCost ?? row.parts_cost ?? null,
+      approvedAt: row.approvedAt ?? row.approved_at ?? null,
+      approvedBy: row.approvedBy ?? row.approved_by ?? null,
+    }));
+  }, [jobData?.authorizedVhcItems]);
 
   const authorisedColumns = useMemo(() => {
     const columns = [[], [], []];

@@ -54,6 +54,8 @@ export default async function handler(req, res) {
         });
       }
       updateData.approval_status = nextApprovalStatus;
+      updateData.authorization_state =
+        nextApprovalStatus === "pending" ? "n/a" : nextApprovalStatus;
 
       // Use displayStatus from request if provided, otherwise set based on approvalStatus
       if (displayStatus !== undefined) {

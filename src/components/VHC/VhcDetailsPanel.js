@@ -1232,7 +1232,7 @@ export default function VhcDetailsPanel({
 
   useEffect(() => {
     if (!job?.id) return;
-    const channel = supabase
+    const checksChannel = supabase
       .channel(`vhc-checksheet-${job.id}`)
       .on(
         "postgres_changes",
@@ -1251,8 +1251,35 @@ export default function VhcDetailsPanel({
         }
       )
       .subscribe();
+
+    const authorisedChannel = supabase
+      .channel(`vhc-authorized-items-${job.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "vhc_authorized_items",
+          filter: `job_id=eq.${job.id}`,
+        },
+        async () => {
+          try {
+            const { data } = await supabase
+              .from("vhc_authorized_items")
+              .select("*")
+              .eq("job_id", job.id)
+              .order("approved_at", { ascending: false });
+            setAuthorizedViewRows(Array.isArray(data) ? data : []);
+          } catch (e) {
+            console.warn("[VHC] failed to refresh authorized items via realtime", e);
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(checksChannel);
+      supabase.removeChannel(authorisedChannel);
     };
   }, [job?.id]);
 
@@ -1785,7 +1812,7 @@ export default function VhcDetailsPanel({
     summaryItems.forEach((item) => {
       const entryStatus = normaliseDecisionStatus(itemEntries[item.id]?.status);
       let decisionKey = entryStatus || normaliseDecisionStatus(item.approvalStatus) || "pending";
-      if (decisionKey === "authorized" || decisionKey === "completed") {
+      if (!entryStatus && (decisionKey === "authorized" || decisionKey === "completed")) {
         const canonicalId = resolveCanonicalVhcId(item.id);
         if (authorizedViewLoaded && canonicalId && !authorizedViewIds.has(String(canonicalId))) {
           decisionKey = "pending";
