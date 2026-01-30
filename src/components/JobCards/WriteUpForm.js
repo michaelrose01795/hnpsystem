@@ -702,7 +702,21 @@ export default function WriteUpForm({
     setAuthorizedItems(resolved);
     setWriteUpData((prev) => {
       const normalizedEntries = resolved.map((item, index) => {
-        const description = (item?.description || item?.label || "").toString().trim();
+        const baseLabel =
+          item?.label ||
+          item?.description ||
+          item?.text ||
+          item?.section ||
+          "Authorised item";
+        const detail =
+          item?.issueDescription ||
+          item?.noteText ||
+          item?.issue_description ||
+          item?.note_text ||
+          "";
+        const cleanedDetail =
+          detail && baseLabel.toLowerCase().includes(detail.toLowerCase()) ? "" : detail;
+        const description = cleanedDetail ? `${baseLabel} - ${cleanedDetail}` : baseLabel;
         return {
           ...item,
           source: "vhc",
@@ -791,7 +805,11 @@ export default function WriteUpForm({
 
       setWriteUpData((prev) => {
         const normalizedEntries = resolved.map((item, index) => {
-          const description = (item?.description || item?.label || "").toString().trim();
+          const description = (
+            item?.label ||
+            item?.description ||
+            ""
+          ).toString().trim();
           return {
             ...item,
             source: "vhc",

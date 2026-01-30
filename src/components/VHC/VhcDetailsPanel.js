@@ -2940,7 +2940,12 @@ export default function VhcDetailsPanel({
                           type="checkbox"
                           checked={resolveLabourCompleteValue(entry, resolvedLabourHours)}
                           onChange={(event) => event.preventDefault()}
-                          disabled={readOnly || severity === "authorized" || severity === "declined"}
+                          disabled={
+                            readOnly ||
+                            severity === "authorized" ||
+                            severity === "declined" ||
+                            authorizedViewIds.has(resolveCanonicalVhcId(item.id))
+                          }
                         />
                         <input
                           type="number"
@@ -2949,7 +2954,12 @@ export default function VhcDetailsPanel({
                           value={resolvedLabourHours ?? ""}
                           onChange={(event) => {
                             // Don't allow changes in authorized/declined sections
-                            if (severity === "authorized" || severity === "declined") return;
+                            if (
+                              severity === "authorized" ||
+                              severity === "declined" ||
+                              authorizedViewIds.has(resolveCanonicalVhcId(item.id))
+                            )
+                              return;
 
                             const value = event.target.value;
                             const isBlank = value === "";
@@ -2964,7 +2974,12 @@ export default function VhcDetailsPanel({
                           }}
                           onBlur={(event) => {
                             // Don't persist in authorized/declined sections
-                            if (severity === "authorized" || severity === "declined") return;
+                            if (
+                              severity === "authorized" ||
+                              severity === "declined" ||
+                              authorizedViewIds.has(resolveCanonicalVhcId(item.id))
+                            )
+                              return;
                             persistLabourHours(item.id, event.target.value);
                           }}
                           placeholder="0.0"
@@ -2975,7 +2990,12 @@ export default function VhcDetailsPanel({
                             border: "1px solid var(--accent-purple-surface)",
                             fontSize: "13px",
                           }}
-                          disabled={readOnly || severity === "authorized" || severity === "declined"}
+                          disabled={
+                            readOnly ||
+                            severity === "authorized" ||
+                            severity === "declined" ||
+                            authorizedViewIds.has(resolveCanonicalVhcId(item.id))
+                          }
                         />
                         <span style={{ fontSize: "12px", color: "var(--info)", whiteSpace: "nowrap" }}>£{labourCost.toFixed(2)}</span>
                       </div>
@@ -4543,7 +4563,11 @@ export default function VhcDetailsPanel({
                 // Check if row is locked (authorized or declined)
                 const entry = getEntryForItem(vhcId);
                 const entryDecision = normaliseDecisionStatus(entry.status);
-                const isLocked = entryDecision === "authorized" || entryDecision === "declined";
+                const canonicalId = resolveCanonicalVhcId(vhcId);
+                const isLocked =
+                  entryDecision === "authorized" ||
+                  entryDecision === "declined" ||
+                  authorizedViewIds.has(String(canonicalId));
                 const canAddPart = !isCustomerView && !readOnly && !isLocked;
 
                 // Determine background color based on status

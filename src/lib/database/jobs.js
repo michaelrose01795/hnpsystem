@@ -848,18 +848,29 @@ export const getAuthorizedVhcItemsWithDetails = async (jobId) => {
       }
     }
 
-    return rows.map((row) => ({
-      vhcItemId: row.vhc_item_id ?? row.vhc_id ?? null,
-      description: row.issue_title || row.issue_description || row.section || "Authorised item",
-      section: row.section || "",
-      labourHours: row.labour_hours ?? null,
-      partsCost: row.parts_cost ?? null,
-      approvedAt: row.approved_at ?? null,
-      approvedBy: row.approved_by ?? null,
-      noteText: row.note_text ?? null,
-      prePickLocation: row.pre_pick_location ?? null,
-      requestId: row.request_id ?? null,
-    }));
+    return rows.map((row) => {
+      const base = row.issue_title || row.section || "Authorised item";
+      const detail =
+        row.issue_description || row.note_text || null;
+      const cleanedDetail =
+        detail && base.toLowerCase().includes(detail.toLowerCase()) ? null : detail;
+      const label = cleanedDetail ? `${base} - ${cleanedDetail}` : base;
+
+      return {
+        vhcItemId: row.vhc_item_id ?? row.vhc_id ?? null,
+        description: row.issue_title || row.issue_description || row.section || "Authorised item",
+        label,
+        issueDescription: row.issue_description || row.note_text || null,
+        section: row.section || "",
+        labourHours: row.labour_hours ?? null,
+        partsCost: row.parts_cost ?? null,
+        approvedAt: row.approved_at ?? null,
+        approvedBy: row.approved_by ?? null,
+        noteText: row.note_text ?? null,
+        prePickLocation: row.pre_pick_location ?? null,
+        requestId: row.request_id ?? null,
+      };
+    });
   } catch (error) {
     console.error("❌ getAuthorizedVhcItemsWithDetails error:", error);
     return [];

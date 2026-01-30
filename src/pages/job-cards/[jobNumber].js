@@ -2424,7 +2424,24 @@ function CustomerRequestsTab({
       : [];
     return canonicalAuthorized.map((row) => ({
       requestId: row.requestId ?? row.request_id ?? null,
-      description: row.description ?? row.text ?? "",
+      description: row.description ?? row.text ?? row.section ?? "",
+      label: (() => {
+        const base =
+          row.label ||
+          row.description ||
+          row.text ||
+          row.section ||
+          "Authorised item";
+        const detail =
+          row.issueDescription ||
+          row.noteText ||
+          row.issue_description ||
+          row.issueDescription ||
+          "";
+        const cleanedDetail =
+          detail && base.toLowerCase().includes(detail.toLowerCase()) ? "" : detail;
+        return cleanedDetail ? `${base} - ${cleanedDetail}` : base;
+      })(),
       hours: row.hours ?? row.time ?? row.labourHours ?? "",
       jobType: row.jobType ?? row.job_type ?? row.paymentType ?? "Customer",
       sortOrder: row.sortOrder ?? row.sort_order ?? null,
@@ -2817,21 +2834,8 @@ function CustomerRequestsTab({
                         alignItems: "flex-start",
                       }}
                     >
-                      <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                        <span style={{
-                          padding: "4px 8px",
-                          borderRadius: "8px",
-                          fontWeight: "700",
-                          color: "var(--surface)",
-                          backgroundColor: "var(--success)",
-                          fontSize: "11px",
-                          letterSpacing: "0.04em"
-                        }}>
-                          AUTHORISED
-                        </span>
-                        <span style={{ fontWeight: "600", color: "var(--success)" }}>
-                          {row.description || "Authorised item"}
-                        </span>
+                      <div style={{ fontWeight: "600", color: "var(--success)" }}>
+                        {row.label || row.description || "Authorised item"}
                       </div>
                       {/* Labour hours and parts cost */}
                       {(row.labourHours || row.partsCost) && (
