@@ -76,18 +76,33 @@ export const syncVhcPartsAuthorisation = async ({ jobId, vhcItemId, approvalStat
   const normalizedApproval = normaliseApprovalStatus(approvalStatus);
   const hasSummaryApproval =
     normalizedApproval === APPROVAL_AUTHORIZED || normalizedApproval === "completed";
-  const isAuthorised = hasAuthorisedParts || hasSummaryApproval;
-  const nextApprovalStatus = isAuthorised ? APPROVAL_AUTHORIZED : APPROVAL_DECLINED;
+  const isPendingReset = normalizedApproval === "pending";
+  const nextApprovalStatus = isPendingReset
+    ? "pending"
+    : hasAuthorisedParts || hasSummaryApproval
+    ? APPROVAL_AUTHORIZED
+    : normalizedApproval === APPROVAL_DECLINED
+    ? APPROVAL_DECLINED
+    : APPROVAL_DECLINED;
+  const isAuthorised = nextApprovalStatus === APPROVAL_AUTHORIZED || nextApprovalStatus === "completed";
   const now = new Date().toISOString();
+
+  const vhcUpdatePayload = {
+    approval_status: nextApprovalStatus,
+    updated_at: now,
+  };
+
+  if (nextApprovalStatus === APPROVAL_AUTHORIZED || nextApprovalStatus === APPROVAL_DECLINED) {
+    vhcUpdatePayload.display_status = nextApprovalStatus;
+    vhcUpdatePayload.approved_at = now;
+  } else if (isPendingReset) {
+    vhcUpdatePayload.approved_at = null;
+    vhcUpdatePayload.approved_by = null;
+  }
 
   const { data: vhcUpdateRows, error: vhcUpdateError } = await supabase
     .from("vhc_checks")
-    .update({
-      approval_status: nextApprovalStatus,
-      display_status: nextApprovalStatus,
-      approved_at: now,
-      updated_at: now,
-    })
+    .update(vhcUpdatePayload)
     .eq("vhc_id", canonicalVhcId)
     .select("job_id, vhc_id, issue_title, issue_description, section");
 

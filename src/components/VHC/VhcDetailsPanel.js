@@ -366,6 +366,15 @@ const TAB_CONTENT_STYLE = {
 
 const normalizeText = (value = "") => value.toString().toLowerCase();
 
+const hashString = (value = "") => {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash << 5) - hash + value.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(36);
+};
+
 const resolveCategoryForItem = (sectionName = "", itemLabel = "") => {
   const reference = normalizeText(`${sectionName} ${itemLabel}`);
   for (const definition of CATEGORY_DEFINITIONS) {
@@ -518,6 +527,27 @@ const formatMeasurement = (value) => {
     return merged || null;
   }
   return value.toString();
+};
+
+const buildStableDisplayId = (sectionName, item = {}, index = 0) => {
+  const heading =
+    item.heading || item.label || item.issue_title || item.name || item.title || sectionName || "";
+  const primaryConcern =
+    Array.isArray(item.concerns) && item.concerns.length > 0
+      ? item.concerns[0]?.text || item.concerns[0]?.issue || item.concerns[0]?.description || ""
+      : "";
+  const rowText = Array.isArray(item.rows)
+    ? item.rows.map((row) => row.toString().trim()).filter(Boolean).join("|")
+    : "";
+  const measurement = formatMeasurement(item.measurement) || "";
+  const locationKey = resolveLocationKey(item) || "";
+  const wheelKey = item.wheelKey || "";
+  const rawKey = `${sectionName}|${heading}|${primaryConcern}|${rowText}|${measurement}|${locationKey}|${wheelKey}`;
+  const hashed = hashString(normalizeText(rawKey));
+  if (hashed) {
+    return `vhc-${hashed}`;
+  }
+  return `vhc-${normalizeText(sectionName).replace(/\s+/g, "-")}-${index}`;
 };
 
 const collectStatusesFromItems = (items = []) => {
@@ -1445,7 +1475,12 @@ export default function VhcDetailsPanel({
         if (!severity || (severity !== "red" && severity !== "amber")) {
           return;
         }
-        const id = item.vhc_id || `${sectionName}-${index}`;
+        const legacyId = `${sectionName}-${index}`;
+        const id = item.vhc_id
+          ? String(item.vhc_id)
+          : vhcIdAliases[legacyId]
+          ? legacyId
+          : buildStableDisplayId(sectionName, item, index);
         const heading =
           item.heading || item.label || item.issue_title || item.name || item.title || sectionName;
         const category = resolveCategoryForItem(sectionName, heading);
@@ -1510,7 +1545,12 @@ export default function VhcDetailsPanel({
       (section.items || []).forEach((item, index) => {
         const severity = normaliseColour(item.colour || item.status || section.colour);
         if (severity !== "green") return;
-        const id = item.vhc_id || `${sectionName}-ok-${index}`;
+        const legacyId = `${sectionName}-ok-${index}`;
+        const id = item.vhc_id
+          ? String(item.vhc_id)
+          : vhcIdAliases[legacyId]
+          ? legacyId
+          : buildStableDisplayId(sectionName, item, index);
         const heading =
           item.heading || item.label || item.issue_title || item.name || item.title || sectionName;
         const category = resolveCategoryForItem(sectionName, heading);
@@ -1965,6 +2005,49 @@ export default function VhcDetailsPanel({
     return Boolean(entry?.labourComplete);
   };
 
+  const createVhcCheckForDisplayId = useCallback(
+    async (displayId) => {
+      const summaryItem = summaryItemLookup.get(String(displayId));
+      if (!summaryItem || !job?.id) return null;
+      try {
+        const entry = getEntryForItem(displayId);
+        const resolvedLabourHours = resolveLabourHoursValue(displayId, entry);
+        const createResponse = await fetch("/api/jobcards/create-vhc-item", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            jobId: job.id,
+            jobNumber: resolvedJobNumber,
+            section: summaryItem.sectionName || summaryItem.category?.label || "Vehicle Health Check",
+            issueTitle: summaryItem.label,
+            issueDescription: summaryItem.notes || summaryItem.concernText || "",
+            measurement: summaryItem.measurement || null,
+            labourHours: resolvedLabourHours !== "" ? resolvedLabourHours : null,
+          }),
+        });
+
+        if (!createResponse.ok) {
+          return null;
+        }
+
+        const createResult = await createResponse.json();
+        if (!createResult?.success || !createResult?.vhcId) {
+          return null;
+        }
+
+        await upsertVhcItemAlias(displayId, createResult.vhcId);
+        if (createResult.data) {
+          setVhcChecksData((prev) => [...prev, createResult.data]);
+        }
+        return createResult.vhcId;
+      } catch (error) {
+        console.error("Failed to create VHC check item for status update:", error);
+        return null;
+      }
+    },
+    [job?.id, resolvedJobNumber, summaryItemLookup, resolveLabourHoursValue, upsertVhcItemAlias]
+  );
+
   const updateEntryStatus = async (itemId, status) => {
     const previousEntry = getEntryForItem(itemId);
     const previousStatus = previousEntry?.status ?? null;
@@ -1993,38 +2076,9 @@ export default function VhcDetailsPanel({
       if (dbStatus === "pending") {
         return;
       }
-
-      try {
-        if (summaryItem && job?.id) {
-          const entry = getEntryForItem(itemId);
-          const resolvedLabourHours = resolveLabourHoursValue(itemId, entry);
-          const createResponse = await fetch("/api/jobcards/create-vhc-item", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              jobId: job.id,
-              jobNumber: resolvedJobNumber,
-              section: summaryItem.sectionName || summaryItem.category?.label || "Vehicle Health Check",
-              issueTitle: summaryItem.label,
-              issueDescription: summaryItem.notes || summaryItem.concernText || "",
-              measurement: summaryItem.measurement || null,
-              labourHours: resolvedLabourHours !== "" ? resolvedLabourHours : null,
-            }),
-          });
-
-          if (createResponse.ok) {
-            const createResult = await createResponse.json();
-            if (createResult.success && createResult.vhcId) {
-              parsedId = createResult.vhcId;
-              await upsertVhcItemAlias(itemId, parsedId);
-              if (createResult.data) {
-                setVhcChecksData((prev) => [...prev, createResult.data]);
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Failed to create VHC check item for status update:", error);
+      const createdId = await createVhcCheckForDisplayId(itemId);
+      if (Number.isInteger(createdId)) {
+        parsedId = createdId;
       }
     }
 
@@ -2431,7 +2485,14 @@ export default function VhcDetailsPanel({
       // Persist each item to database
       const updatePromises = selectedIds.map(async (itemId) => {
         const canonicalId = resolveCanonicalVhcId(itemId);
-        const parsedId = Number(canonicalId);
+        let parsedId = Number(canonicalId);
+
+        if (!Number.isInteger(parsedId) && dbStatus !== "pending") {
+          const createdId = await createVhcCheckForDisplayId(itemId);
+          if (Number.isInteger(createdId)) {
+            parsedId = createdId;
+          }
+        }
 
         if (!Number.isInteger(parsedId)) {
           console.error(`❌ [VHC BULK ERROR] Invalid ID for item ${itemId}`);
@@ -2525,7 +2586,7 @@ export default function VhcDetailsPanel({
       setSeveritySelections((prev) => ({ ...prev, [severity]: [] }));
 
     },
-    [severitySelections, severityLists, resolveCanonicalVhcId, resolveLabourHoursValue, resolveLabourCompleteValue, authUserId, dbUserId, refreshJobData]
+    [severitySelections, severityLists, resolveCanonicalVhcId, resolveLabourHoursValue, resolveLabourCompleteValue, authUserId, dbUserId, refreshJobData, createVhcCheckForDisplayId]
   );
 
   const handleMoveItem = useCallback(
@@ -4282,6 +4343,8 @@ export default function VhcDetailsPanel({
         if (canonicalId && otherPartsBeforeRemoval.length === 0) {
           await removeVhcItemAlias(displayVhcId, canonicalId);
         }
+
+        refreshJobData();
       } catch (error) {
         console.error("Failed to remove part from VHC row:", error);
         alert(`Failed to remove part: ${error.message || "Unknown error"}`);
@@ -4293,7 +4356,7 @@ export default function VhcDetailsPanel({
         });
       }
     },
-    [job?.parts_job_items, removeVhcItemAlias, resolveCanonicalVhcId]
+    [job?.parts_job_items, removeVhcItemAlias, resolveCanonicalVhcId, refreshJobData]
   );
 
   // Handler for "Add to Job" button click

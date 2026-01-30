@@ -73,6 +73,12 @@ export default async function handler(req, res) {
         if (approvedBy) {
           updateData.approved_by = approvedBy;
         }
+      } else if (nextApprovalStatus === "pending") {
+        updateData.approved_at = null;
+        updateData.approved_by = null;
+        if (displayStatus === undefined) {
+          updateData.display_status = null;
+        }
       }
     }
 

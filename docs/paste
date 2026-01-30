@@ -2,6 +2,9 @@ TO DO:
 
 Continue flow with job number 54
 
+The other authorised section are still not working, this is something to do with the link of the database and syncing them all together. 
+
+
 ADD more
 a new row was authorised and it didnt update within the "Authorised VHC Items" section or "Rectification" section. when the part is authorised it gets added within the authorsied parts tab, use the same funcations as what that uses. 
 
