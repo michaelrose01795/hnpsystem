@@ -2517,11 +2517,15 @@ export default function VhcDetailsPanel({
         });
       }
 
+      if (successfulUpdates.length > 0) {
+        refreshJobData();
+      }
+
       // Clear selection
       setSeveritySelections((prev) => ({ ...prev, [severity]: [] }));
 
     },
-    [severitySelections, severityLists, resolveCanonicalVhcId, resolveLabourHoursValue, resolveLabourCompleteValue, authUserId, dbUserId]
+    [severitySelections, severityLists, resolveCanonicalVhcId, resolveLabourHoursValue, resolveLabourCompleteValue, authUserId, dbUserId, refreshJobData]
   );
 
   const handleMoveItem = useCallback(
@@ -2588,11 +2592,15 @@ export default function VhcDetailsPanel({
             return check;
           });
         });
+
+        if (newStatus === "authorized" || newStatus === "declined" || newStatus === "pending") {
+          refreshJobData();
+        }
       } catch (error) {
         console.error(`❌ [VHC MOVE ERROR] Exception:`, error);
       }
     },
-    [resolveCanonicalVhcId, resolveLabourHoursValue, resolveLabourCompleteValue, authUserId, dbUserId]
+    [resolveCanonicalVhcId, resolveLabourHoursValue, resolveLabourCompleteValue, authUserId, dbUserId, refreshJobData]
   );
 
   const renderSeverityTable = (severity) => {
