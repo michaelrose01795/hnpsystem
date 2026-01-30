@@ -1207,8 +1207,8 @@ export default function VhcDetailsPanel({
   const authorizedViewIds = useMemo(() => {
     const ids = new Set();
     (authorizedViewRows || []).forEach((row) => {
-      if (row?.vhc_id) {
-        ids.add(String(row.vhc_id));
+      if (row?.vhc_item_id || row?.vhc_id) {
+        ids.add(String(row.vhc_item_id ?? row.vhc_id));
       }
     });
     return ids;

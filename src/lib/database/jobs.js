@@ -785,7 +785,7 @@ export const getAuthorizedVhcItemsWithDetails = async (jobId) => {
     }
 
     return authorizedRows.map((row) => ({
-      vhcItemId: row.vhc_id,
+      vhcItemId: row.vhc_item_id ?? row.vhc_id ?? null,
       description: row.issue_title || row.issue_description || row.section || "Authorised item",
       section: row.section || "",
       labourHours: row.labour_hours ?? null,

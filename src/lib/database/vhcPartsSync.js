@@ -133,6 +133,16 @@ export const syncVhcPartsAuthorisation = async ({ jobId, vhcItemId, approvalStat
       .trim() || `Authorised item ${canonicalVhcId}`;
 
   if (isAuthorised) {
+    const { data: jobRow, error: jobError } = await supabase
+      .from("jobs")
+      .select("job_number")
+      .eq("id", resolvedJobId)
+      .maybeSingle();
+
+    if (jobError) {
+      throw new Error(`Failed to load job number for authorized items: ${jobError.message}`);
+    }
+
     const latestPrePick = pickLatestByUpdatedAt(
       authorisedParts.filter((part) =>
         part.pre_pick_location && String(part.pre_pick_location).trim()
@@ -209,15 +219,7 @@ export const syncVhcPartsAuthorisation = async ({ jobId, vhcItemId, approvalStat
       }
     }
 
-    const { data: jobRow, error: jobError } = await supabase
-      .from("jobs")
-      .select("job_number")
-      .eq("id", resolvedJobId)
-      .maybeSingle();
-
-    if (jobError) {
-      throw new Error(`Failed to load job number for rectification sync: ${jobError.message}`);
-    }
+    const jobNumber = jobRow?.job_number || null;
 
     const { data: writeupRow, error: writeupError } = await supabase
       .from("job_writeups")
@@ -250,7 +252,7 @@ export const syncVhcPartsAuthorisation = async ({ jobId, vhcItemId, approvalStat
 
     const rectificationPayload = {
       job_id: resolvedJobId,
-      job_number: jobRow?.job_number || null,
+      job_number: jobNumber,
       writeup_id: writeupRow?.writeup_id ?? null,
       description,
       status: "waiting",
@@ -283,6 +285,34 @@ export const syncVhcPartsAuthorisation = async ({ jobId, vhcItemId, approvalStat
         );
       }
     }
+
+    await supabase
+      .from("vhc_authorized_items")
+      .upsert(
+        {
+          job_id: resolvedJobId,
+          job_number: jobNumber || "",
+          vhc_item_id: canonicalVhcId,
+          section: vhcRow?.section || null,
+          issue_title: vhcRow?.issue_title || null,
+          issue_description: vhcRow?.issue_description || null,
+          measurement: vhcRow?.measurement || null,
+          approval_status: nextApprovalStatus,
+          display_status: nextApprovalStatus,
+          labour_hours: null,
+          parts_cost: null,
+          total_override: null,
+          labour_complete: false,
+          parts_complete: false,
+          approved_at: now,
+          approved_by: null,
+          note_text: noteText,
+          pre_pick_location: latestPrePickLocation,
+          request_id: primaryRequestId,
+          updated_at: now,
+        },
+        { onConflict: "job_number,vhc_item_id" }
+      );
   } else {
     const { error: requestDeleteError } = await supabase
       .from("job_requests")
@@ -314,6 +344,12 @@ export const syncVhcPartsAuthorisation = async ({ jobId, vhcItemId, approvalStat
     if (rectificationDeleteError) {
       throw new Error(`Failed to delete rectification rows: ${rectificationDeleteError.message}`);
     }
+
+    await supabase
+      .from("vhc_authorized_items")
+      .delete()
+      .eq("job_id", resolvedJobId)
+      .eq("vhc_item_id", canonicalVhcId);
 
     const { data: notesToUpdate, error: notesError } = await supabase
       .from("job_notes")

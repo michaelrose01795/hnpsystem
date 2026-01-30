@@ -152,6 +152,33 @@ export default async function handler(req, res) {
       const shouldRelease = normalizedStatus === "declined" || normalizedStatus === "pending";
 
       if (jobId) {
+        let jobNumber = null;
+        try {
+          const { data: jobRow } = await supabase
+            .from("jobs")
+            .select("job_number")
+            .eq("id", jobId)
+            .maybeSingle();
+          jobNumber = jobRow?.job_number ?? null;
+        } catch (jobNumberError) {
+          console.warn("Failed to load job number for VHC authorization sync", jobNumberError);
+        }
+
+        let latestRequest = null;
+        try {
+          const { data: requestRows } = await supabase
+            .from("job_requests")
+            .select("request_id, note_text, pre_pick_location, updated_at")
+            .eq("job_id", jobId)
+            .eq("request_source", "vhc_authorised")
+            .eq("vhc_item_id", vhcItemId)
+            .order("updated_at", { ascending: false })
+            .limit(1);
+          latestRequest = Array.isArray(requestRows) ? requestRows[0] : null;
+        } catch (requestError) {
+          console.warn("Failed to load VHC request metadata", requestError);
+        }
+
         const { data: jobParts, error: partsError } = await supabase
           .from("parts_job_items")
           .select("id, part_id, quantity_requested, status, authorised")
@@ -233,6 +260,42 @@ export default async function handler(req, res) {
           vhcItemId,
           approvalStatus: normalizedStatus,
         });
+
+        if (normalizedStatus === "authorized" || normalizedStatus === "completed") {
+          await supabase
+            .from("vhc_authorized_items")
+            .upsert(
+              {
+                job_id: jobId,
+                job_number: jobNumber || "",
+                vhc_item_id: vhcItemId,
+                section: updatedRow?.section || vhcRow?.section || null,
+                issue_title: updatedRow?.issue_title || vhcRow?.issue_title || null,
+                issue_description: updatedRow?.issue_description || vhcRow?.issue_description || null,
+                measurement: updatedRow?.measurement || vhcRow?.measurement || null,
+                approval_status: normalizedStatus,
+                display_status: updatedRow?.display_status || null,
+                labour_hours: updatedRow?.labour_hours ?? null,
+                parts_cost: updatedRow?.parts_cost ?? null,
+                total_override: updatedRow?.total_override ?? null,
+                labour_complete: updatedRow?.labour_complete ?? false,
+                parts_complete: updatedRow?.parts_complete ?? false,
+                approved_at: updatedRow?.approved_at || null,
+                approved_by: updatedRow?.approved_by || null,
+                note_text: latestRequest?.note_text ?? null,
+                pre_pick_location: latestRequest?.pre_pick_location ?? null,
+                request_id: latestRequest?.request_id ?? null,
+                updated_at: new Date().toISOString(),
+              },
+              { onConflict: "job_number,vhc_item_id" }
+            );
+        } else if (normalizedStatus === "pending" || normalizedStatus === "declined") {
+          await supabase
+            .from("vhc_authorized_items")
+            .delete()
+            .eq("job_id", jobId)
+            .eq("vhc_item_id", vhcItemId);
+        }
       }
     }
 
