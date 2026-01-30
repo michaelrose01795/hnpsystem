@@ -786,8 +786,6 @@ export default function WriteUpForm({
 
       const resolved = Array.isArray(jobPayload?.jobCard?.authorizedVhcItems)
         ? jobPayload.jobCard.authorizedVhcItems
-        : Array.isArray(jobData?.jobCard?.authorizedVhcItems)
-        ? jobData.jobCard.authorizedVhcItems
         : [];
       setAuthorizedItems(resolved);
 

@@ -2420,6 +2420,29 @@ function CustomerRequestsTab({
   // Authorised VHC items (mirror VHC "Parts Authorized" tab behaviour):
   // only include VHC items that are authorised AND have at least one VHC-linked part.
   const authorisedRows = useMemo(() => {
+    const canonicalAuthorized = Array.isArray(jobData?.authorizedVhcItems)
+      ? jobData.authorizedVhcItems
+      : [];
+    if (canonicalAuthorized.length > 0) {
+      return canonicalAuthorized.map((row) => ({
+        requestId: row.requestId ?? row.request_id ?? null,
+        description: row.description ?? row.text ?? "",
+        hours: row.hours ?? row.time ?? row.labourHours ?? "",
+        jobType: row.jobType ?? row.job_type ?? row.paymentType ?? "Customer",
+        sortOrder: row.sortOrder ?? row.sort_order ?? null,
+        status: row.status ?? null,
+        requestSource: row.requestSource ?? row.request_source ?? "vhc_authorised",
+        prePickLocation: row.prePickLocation ?? row.pre_pick_location ?? null,
+        noteText: row.noteText ?? row.note_text ?? "",
+        vhcItemId: row.vhcItemId ?? row.vhc_item_id ?? null,
+        partsJobItemId: row.partsJobItemId ?? row.parts_job_item_id ?? null,
+        labourHours: row.labourHours ?? row.labour_hours ?? null,
+        partsCost: row.partsCost ?? row.parts_cost ?? null,
+        approvedAt: row.approvedAt ?? row.approved_at ?? null,
+        approvedBy: row.approvedBy ?? row.approved_by ?? null,
+      }));
+    }
+
     const vhcChecks = Array.isArray(jobData?.vhcChecks) ? jobData.vhcChecks : [];
     const jobParts = Array.isArray(jobData?.parts_job_items) ? jobData.parts_job_items : [];
     const vhcRequestRows = unifiedRequests.filter(
@@ -2505,7 +2528,7 @@ function CustomerRequestsTab({
       const bTime = b?._lastPartUpdatedAt ? new Date(b._lastPartUpdatedAt).getTime() : 0;
       return bTime - aTime;
     });
-  }, [jobData?.vhcChecks, jobData?.parts_job_items, resolveCanonicalVhcId, unifiedRequests]);
+  }, [jobData?.authorizedVhcItems, jobData?.vhcChecks, jobData?.parts_job_items, resolveCanonicalVhcId, unifiedRequests]);
 
   const authorisedColumns = useMemo(() => {
     const columns = [[], [], []];

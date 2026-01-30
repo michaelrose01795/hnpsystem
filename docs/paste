@@ -2,13 +2,19 @@ TO DO:
 
 Continue flow with job number 54
 
+→ Additional Information → Authorised VHC Items
+Write Up tab → Rectification
+
+
+
+
 The other authorised section are still not working, this is something to do with the link of the database and syncing them all together. 
 
 
 ADD more
 a new row was authorised and it didnt update within the "Authorised VHC Items" section or "Rectification" section. when the part is authorised it gets added within the authorsied parts tab, use the same funcations as what that uses. 
 
-
+have it so when the row wihtin the summary tab has been authorised or declinded the changes are lcked within the summary tab example parts and labour columns are locked. as well as locking the add parts button wihtin the row inside the parts identifed tab as well. 
 
 have it so when in smaller screen than the full windows and full ipad size the sidebar open button and status open button are only shown at the top of the page in a 50/50 tab button style layout. add a close button on the "My Dashboard" row. 
 
