@@ -3,6 +3,11 @@ TO DO:
 Continue flow with job number 54
 
 
+
+have it so if the item has been reset from being authorised or declinded then th labour times can be edited.
+
+HIde the authoirsed and declinded section inside the summary tab if no rows are within those sections. 
+
 have it so if a row has been authoirsed already, then the item within the popup inside the healthcheck tab is locked as well and says "section been authoirsed. 
 
 

@@ -119,6 +119,23 @@ const normalizeStatusId = (value = "") =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "_");
 
+const SERVICE_CHOICE_LABELS = {
+  reset: "Service Reminder Reset",
+  not_required: "Service Reminder Not Required",
+  no_reminder: "Doesn't Have a Service Reminder",
+  indicator_on: "Service Indicator On",
+};
+
+const safeJsonParse = (value) => {
+  if (!value) return null;
+  if (typeof value === "object") return value;
+  try {
+    return JSON.parse(value);
+  } catch (_error) {
+    return null;
+  }
+};
+
 const isStatusReadyForInvoicing = (status, statusId) => {
   if (statusId) return statusId === JOB_STATUSES.IN_PROGRESS;
   return normalizeStatusId(status) === JOB_STATUSES.IN_PROGRESS;
@@ -2417,46 +2434,94 @@ function CustomerRequestsTab({
     [vhcAliasMap]
   );
 
+  const vhcChecksheetPayload = useMemo(() => {
+    const checks = Array.isArray(jobData?.vhcChecks) ? jobData.vhcChecks : [];
+    const builderRecord = checks.find((check) => {
+      const section = (check?.section || "").toString().trim();
+      return section === "VHC_CHECKSHEET" || section === "VHC Checksheet";
+    });
+    return safeJsonParse(builderRecord?.issue_description || builderRecord?.data) || null;
+  }, [jobData?.vhcChecks]);
+
+  const serviceChoiceLabel = useMemo(() => {
+    const choiceKey = vhcChecksheetPayload?.serviceIndicator?.serviceChoice || "";
+    return SERVICE_CHOICE_LABELS[choiceKey] || choiceKey || "";
+  }, [vhcChecksheetPayload]);
+
+  const normaliseServiceText = useCallback(
+    (value = "") =>
+      value
+        .toString()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim(),
+    []
+  );
+
   // Authorised VHC items (single source of truth: vhc_authorized_items -> jobData.authorizedVhcItems)
   const authorisedRows = useMemo(() => {
     const canonicalAuthorized = Array.isArray(jobData?.authorizedVhcItems)
       ? jobData.authorizedVhcItems
       : [];
-    return canonicalAuthorized.map((row) => ({
-      requestId: row.requestId ?? row.request_id ?? null,
-      description: row.description ?? row.text ?? row.section ?? "",
-      label: (() => {
-        const base =
-          row.label ||
-          row.description ||
-          row.text ||
-          row.section ||
-          "Authorised item";
-        const detail =
-          row.issueDescription ||
-          row.noteText ||
-          row.issue_description ||
-          row.issueDescription ||
-          "";
-        const cleanedDetail =
-          detail && base.toLowerCase().includes(detail.toLowerCase()) ? "" : detail;
-        return cleanedDetail ? `${base} - ${cleanedDetail}` : base;
-      })(),
-      hours: row.hours ?? row.time ?? row.labourHours ?? "",
-      jobType: row.jobType ?? row.job_type ?? row.paymentType ?? "Customer",
-      sortOrder: row.sortOrder ?? row.sort_order ?? null,
-      status: row.status ?? null,
-      requestSource: row.requestSource ?? row.request_source ?? "vhc_authorised",
-      prePickLocation: row.prePickLocation ?? row.pre_pick_location ?? null,
-      noteText: row.noteText ?? row.note_text ?? "",
-      vhcItemId: row.vhcItemId ?? row.vhc_item_id ?? null,
-      partsJobItemId: row.partsJobItemId ?? row.parts_job_item_id ?? null,
-      labourHours: row.labourHours ?? row.labour_hours ?? null,
-      partsCost: row.partsCost ?? row.parts_cost ?? null,
-      approvedAt: row.approvedAt ?? row.approved_at ?? null,
-      approvedBy: row.approvedBy ?? row.approved_by ?? null,
-    }));
-  }, [jobData?.authorizedVhcItems]);
+    return canonicalAuthorized.map((row) => {
+      const rawSection = row.section || "";
+      const rawLabel =
+        row.label ||
+        row.description ||
+        row.text ||
+        row.section ||
+        "Authorised item";
+      const detail =
+        row.issueDescription ||
+        row.noteText ||
+        row.issue_description ||
+        row.issueDescription ||
+        "";
+      const cleanedDetail =
+        detail && rawLabel.toLowerCase().includes(detail.toLowerCase()) ? "" : detail;
+      const baseLabel = cleanedDetail ? `${rawLabel} - ${cleanedDetail}` : rawLabel;
+      const labelKey = normaliseServiceText(baseLabel);
+      const sectionKey = normaliseServiceText(rawSection);
+      const isServiceIndicatorRow =
+        sectionKey.includes("service indicator") ||
+        sectionKey.includes("under bonnet") ||
+        labelKey.includes("service indicator") ||
+        labelKey.includes("under bonnet");
+      const isServiceReminderOil =
+        labelKey.includes("service reminder") &&
+        labelKey.includes("oil");
+      const isServiceReminder =
+        labelKey.includes("service reminder") || sectionKey.includes("service reminder");
+      const serviceDetail = serviceChoiceLabel || "";
+
+      return {
+        requestId: row.requestId ?? row.request_id ?? null,
+        description: row.description ?? row.text ?? row.section ?? "",
+        label:
+          isServiceIndicatorRow && (isServiceReminderOil || isServiceReminder)
+            ? "Service Reminder"
+            : baseLabel,
+        detail:
+          isServiceIndicatorRow && (isServiceReminderOil || isServiceReminder)
+            ? serviceDetail
+            : null,
+        hours: row.hours ?? row.time ?? row.labourHours ?? "",
+        jobType: row.jobType ?? row.job_type ?? row.paymentType ?? "Customer",
+        sortOrder: row.sortOrder ?? row.sort_order ?? null,
+        status: row.status ?? null,
+        requestSource: row.requestSource ?? row.request_source ?? "vhc_authorised",
+        prePickLocation: row.prePickLocation ?? row.pre_pick_location ?? null,
+        noteText: row.noteText ?? row.note_text ?? "",
+        vhcItemId: row.vhcItemId ?? row.vhc_item_id ?? null,
+        partsJobItemId: row.partsJobItemId ?? row.parts_job_item_id ?? null,
+        labourHours: row.labourHours ?? row.labour_hours ?? null,
+        partsCost: row.partsCost ?? row.parts_cost ?? null,
+        approvedAt: row.approvedAt ?? row.approved_at ?? null,
+        approvedBy: row.approvedBy ?? row.approved_by ?? null,
+      };
+    });
+  }, [jobData?.authorizedVhcItems, normaliseServiceText, serviceChoiceLabel]);
 
   const authorisedColumns = useMemo(() => {
     const columns = [[], [], []];
@@ -2837,6 +2902,11 @@ function CustomerRequestsTab({
                       <div style={{ fontWeight: "600", color: "var(--success)" }}>
                         {row.label || row.description || "Authorised item"}
                       </div>
+                      {row.detail && (
+                        <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+                          - {row.detail}
+                        </div>
+                      )}
                       {/* Labour hours and parts cost */}
                       {(row.labourHours || row.partsCost) && (
                         <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "2px" }}>

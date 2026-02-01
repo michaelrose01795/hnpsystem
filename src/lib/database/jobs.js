@@ -686,15 +686,22 @@ export const getAuthorizedAdditionalWorkByJob = async (jobId) => {
       console.error("⚠️ Error fetching authorized parts:", partsError);
     }
 
-    // Fetch authorized VHC checks directly (fallback when vhc_authorizations is not populated)
-    const { data: vhcChecksData, error: vhcChecksError } = await supabase
-      .from("vhc_checks")
-      .select("vhc_id, section, issue_title, issue_description, approval_status")
-      .eq("job_id", jobId)
-      .eq("approval_status", "authorized");
+    const hasAuthorizations = Array.isArray(vhcData) && vhcData.length > 0;
 
-    if (vhcChecksError && vhcChecksError.code !== "PGRST116") {
-      console.error("⚠️ Error fetching authorized VHC checks:", vhcChecksError);
+    // Fetch authorized VHC checks directly (fallback when vhc_authorizations is not populated)
+    let vhcChecksData = [];
+    if (hasAuthorizations) {
+      const { data, error: vhcChecksError } = await supabase
+        .from("vhc_checks")
+        .select("vhc_id, section, issue_title, issue_description, approval_status")
+        .eq("job_id", jobId)
+        .eq("approval_status", "authorized");
+
+      if (vhcChecksError && vhcChecksError.code !== "PGRST116") {
+        console.error("⚠️ Error fetching authorized VHC checks:", vhcChecksError);
+      } else {
+        vhcChecksData = data || [];
+      }
     }
 
     // Extract VHC authorized items
@@ -782,7 +789,21 @@ export const getAuthorizedVhcItemsWithDetails = async (jobId) => {
 
     let rows = Array.isArray(authorizedRows) ? authorizedRows : [];
 
-    // Always reconcile: ensure every authorized/completed vhc_check has a row in the canonical table
+    const { data: authorizationRows, error: authorizationError } = await supabase
+      .from("vhc_authorizations")
+      .select("id")
+      .eq("job_id", jobId)
+      .limit(1);
+
+    if (authorizationError && authorizationError.code !== "PGRST116") {
+      console.error("❌ Error fetching VHC authorizations:", authorizationError);
+      return rows;
+    }
+
+    const hasAuthorizations =
+      Array.isArray(authorizationRows) && authorizationRows.length > 0;
+
+    // Reconcile only when authorizations exist: avoid re-creating rows before any selection
     const { data: jobRow, error: jobError } = await supabase
       .from("jobs")
       .select("job_number")
@@ -794,57 +815,59 @@ export const getAuthorizedVhcItemsWithDetails = async (jobId) => {
       return [];
     }
 
-    const { data: checks, error: checksError } = await supabase
-      .from("vhc_checks")
-      .select("*")
-      .eq("job_id", jobId)
-      .in("approval_status", ["authorized", "completed"]);
+    if (hasAuthorizations) {
+      const { data: checks, error: checksError } = await supabase
+        .from("vhc_checks")
+        .select("*")
+        .eq("job_id", jobId)
+        .in("approval_status", ["authorized", "completed"]);
 
-    if (checksError) {
-      console.error("❌ Reconcile: failed to load authorized vhc_checks:", checksError);
-      return rows;
-    }
+      if (checksError) {
+        console.error("❌ Reconcile: failed to load authorized vhc_checks:", checksError);
+        return rows;
+      }
 
-    const existingIds = new Set(rows.map((r) => String(r.vhc_item_id ?? r.vhc_id)));
-    const missingChecks = (checks || []).filter((check) => !existingIds.has(String(check.vhc_id)));
+      const existingIds = new Set(rows.map((r) => String(r.vhc_item_id ?? r.vhc_id)));
+      const missingChecks = (checks || []).filter((check) => !existingIds.has(String(check.vhc_id)));
 
-    if (missingChecks.length > 0) {
-      const payload = missingChecks.map((check) => ({
-        job_id: jobId,
-        job_number: jobRow?.job_number || "",
-        vhc_item_id: check.vhc_id,
-        section: check.section || null,
-        issue_title: check.issue_title || null,
-        issue_description: check.issue_description || null,
-        measurement: check.measurement || null,
-        approval_status: check.approval_status,
-        display_status: check.display_status || null,
-        labour_hours: check.labour_hours ?? null,
-        parts_cost: check.parts_cost ?? null,
-        total_override: check.total_override ?? null,
-        labour_complete: check.labour_complete ?? false,
-        parts_complete: check.parts_complete ?? false,
-        approved_at: check.approved_at || null,
-        approved_by: check.approved_by || null,
-        note_text: null,
-        pre_pick_location: null,
-        request_id: null,
-        updated_at: check.updated_at || check.approved_at || new Date().toISOString(),
-      }));
+      if (missingChecks.length > 0) {
+        const payload = missingChecks.map((check) => ({
+          job_id: jobId,
+          job_number: jobRow?.job_number || "",
+          vhc_item_id: check.vhc_id,
+          section: check.section || null,
+          issue_title: check.issue_title || null,
+          issue_description: check.issue_description || null,
+          measurement: check.measurement || null,
+          approval_status: check.approval_status,
+          display_status: check.display_status || null,
+          labour_hours: check.labour_hours ?? null,
+          parts_cost: check.parts_cost ?? null,
+          total_override: check.total_override ?? null,
+          labour_complete: check.labour_complete ?? false,
+          parts_complete: check.parts_complete ?? false,
+          approved_at: check.approved_at || null,
+          approved_by: check.approved_by || null,
+          note_text: null,
+          pre_pick_location: null,
+          request_id: null,
+          updated_at: check.updated_at || check.approved_at || new Date().toISOString(),
+        }));
 
-      const { error: upsertError } = await supabase
-        .from("vhc_authorized_items")
-        .upsert(payload, { onConflict: "job_number,vhc_item_id" });
-
-      if (upsertError) {
-        console.error("❌ Reconcile: failed to upsert vhc_authorized_items:", upsertError);
-      } else {
-        const { data: refetched } = await supabase
+        const { error: upsertError } = await supabase
           .from("vhc_authorized_items")
-          .select("*")
-          .eq("job_id", jobId)
-          .order("approved_at", { ascending: false });
-        rows = Array.isArray(refetched) ? refetched : rows;
+          .upsert(payload, { onConflict: "job_number,vhc_item_id" });
+
+        if (upsertError) {
+          console.error("❌ Reconcile: failed to upsert vhc_authorized_items:", upsertError);
+        } else {
+          const { data: refetched } = await supabase
+            .from("vhc_authorized_items")
+            .select("*")
+            .eq("job_id", jobId)
+            .order("approved_at", { ascending: false });
+          rows = Array.isArray(refetched) ? refetched : rows;
+        }
       }
     }
 

@@ -1215,12 +1215,54 @@ export default function TechJobDetailPage() {
 
     // 3. SERVICE INDICATOR - Extract from serviceIndicator structure
     if (vhcData.serviceIndicator && typeof vhcData.serviceIndicator === "object") {
-      if (Array.isArray(vhcData.serviceIndicator.concerns)) {
-        vhcData.serviceIndicator.concerns.forEach(concern => {
+      const serviceIndicator = vhcData.serviceIndicator;
+      const serviceChoiceLabels = {
+        reset: "Service Reminder Reset",
+        not_required: "Service Reminder Not Required",
+        no_reminder: "Doesn't Have a Service Reminder",
+        indicator_on: "Service Indicator On",
+      };
+      const serviceChoiceKey = serviceIndicator.serviceChoice || "";
+      const hasServiceChoice = Boolean(serviceChoiceKey);
+      const normaliseServiceSource = (value = "") =>
+        value
+          .toString()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+
+      if (hasServiceChoice) {
+        const normalizedChoice = serviceChoiceKey.toString().trim();
+        items.push({
+          section: "Service Reminder",
+          status:
+            normalizedChoice === "indicator_on" || normalizedChoice === "no_reminder"
+              ? "amber"
+              : "green",
+          text: serviceChoiceLabels[normalizedChoice] || normalizedChoice,
+        });
+      }
+
+      if (Array.isArray(serviceIndicator.concerns)) {
+        serviceIndicator.concerns.forEach((concern) => {
           const status = normalizeVhcStatus(concern.status);
           if (status === "na") return;
+          const source = concern.source || "Under Bonnet";
+          const normalizedSource = normaliseServiceSource(source);
+          const isServiceReminderOil =
+            normalizedSource.includes("service reminder") &&
+            normalizedSource.includes("oil");
+          if (hasServiceChoice && isServiceReminderOil) {
+            return;
+          }
           items.push({
-            section: `Service Indicator - ${concern.source || "Under Bonnet"}`,
+            section:
+              normalizedSource === "service"
+                ? "Service Reminder"
+                : normalizedSource === "oil"
+                ? "Oil Level"
+                : `Service Indicator - ${source}`,
             status,
             text: concern.text || concern.description || concern.issue || "No description",
           });

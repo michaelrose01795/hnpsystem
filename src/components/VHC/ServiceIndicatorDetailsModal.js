@@ -99,6 +99,8 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
   const [activeConcernTarget, setActiveConcernTarget] = useState(null);
   const [newConcern, setNewConcern] = useState("");
   const [concernStatus, setConcernStatus] = useState("Red");
+  const getConcernText = (concern) =>
+    (concern?.text ?? concern?.description ?? concern?.issue ?? "").toString();
 
   useEffect(() => {
     if (!initialData) return;
@@ -216,7 +218,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
             >
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                 <span style={{ fontSize: "13px", fontWeight: 600, color: palette.textPrimary }}>
-                  {concernItem.text}
+                  {getConcernText(concernItem)}
                 </span>
                 {showSource && (
                   <span style={{ fontSize: "11px", color: palette.textMuted }}>
@@ -251,7 +253,12 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
     if (newConcern.trim() === "" || !activeConcernTarget) return;
     setConcerns((prev) => [
       ...prev,
-      { text: newConcern.trim(), status: concernStatus, source: activeConcernTarget },
+      {
+        text: newConcern.trim(),
+        description: newConcern.trim(),
+        status: concernStatus,
+        source: activeConcernTarget,
+      },
     ]);
     setNewConcern("");
     setConcernStatus("Red");
@@ -260,7 +267,19 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
   };
 
   const updateConcern = (idx, updates) => {
-    setConcerns((prev) => prev.map((concern, concernIdx) => (concernIdx === idx ? { ...concern, ...updates } : concern)));
+    setConcerns((prev) =>
+      prev.map((concern, concernIdx) => {
+        if (concernIdx !== idx) return concern;
+        const next = { ...concern, ...updates };
+        if (Object.prototype.hasOwnProperty.call(updates, "text")) {
+          next.description = updates.text;
+        }
+        if (Object.prototype.hasOwnProperty.call(updates, "description")) {
+          next.text = updates.description;
+        }
+        return next;
+      })
+    );
   };
 
   const deleteConcern = (idx) => {
@@ -633,7 +652,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                       </DropdownField>
                     </div>
                     <textarea
-                      value={concern.text}
+                      value={getConcernText(concern)}
                       onChange={(e) => updateConcern(idx, { text: e.target.value })}
                       rows={3}
                       style={{

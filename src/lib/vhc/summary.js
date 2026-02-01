@@ -535,18 +535,25 @@ const buildServiceIndicatorSection = (serviceSection) => {
       .filter((concern) => concern.source === "oil")
       .map((concern) => ({ ...concern, text: concern.text }));
 
-    const underBonnetConcerns = allConcerns.filter(
-      (concern) => concern.source && concern.source !== "service" && concern.source !== "oil"
-    );
+    const underBonnetConcerns = allConcerns.filter((concern) => {
+      if (!concern.source || concern.source === "service" || concern.source === "oil") return false;
+      if (choiceLabel) {
+        const sourceKey = concern.source.toString().toLowerCase().replace(/\s+/g, " ").trim();
+        if (sourceKey.includes("service reminder") && sourceKey.includes("oil")) {
+          return false;
+        }
+      }
+      return true;
+    });
 
     if (choiceLabel || serviceConcerns.length > 0) {
       recordStatus(choiceStatus);
       serviceConcerns.forEach((concern) => recordStatus(concern.status));
 
       items.push({
-        heading: "Service Reminder",
+        heading: choiceLabel ? `Service Reminder - ${choiceLabel}` : "Service Reminder",
         status: determineDominantStatus([choiceStatus, ...serviceConcerns.map((concern) => concern.status)].filter(Boolean)),
-        rows: choiceLabel ? [choiceLabel] : [],
+        rows: [],
         concerns: serviceConcerns,
       });
     }
@@ -562,9 +569,9 @@ const buildServiceIndicatorSection = (serviceSection) => {
       if (service.notes) rows.push(service.notes);
 
       items.push({
-        heading: "Oil Level",
+        heading: service.oilStatus ? `Oil Level - ${service.oilStatus}` : "Oil Level",
         status: determineDominantStatus([derivedOilStatus, ...oilConcerns.map((concern) => concern.status)].filter(Boolean)),
-        rows,
+        rows: service.oilStatus ? rows.filter((row) => row !== service.oilStatus) : rows,
         concerns: oilConcerns,
       });
     }
@@ -573,8 +580,12 @@ const buildServiceIndicatorSection = (serviceSection) => {
       // Render each under bonnet report as its own summary row so we don't lose entries.
       underBonnetConcerns.forEach((concern) => {
         recordStatus(concern.status);
+        const sourceLabel = concern.source ? concern.source.toString().trim() : "";
+        const heading = sourceLabel
+          ? `Service Indicator & Under Bonnet - ${sourceLabel}`
+          : "Service Indicator & Under Bonnet";
         items.push({
-          heading: "Under Bonnet Items",
+          heading,
           status: concern.status,
           rows: [concern.text],
           concerns: [],

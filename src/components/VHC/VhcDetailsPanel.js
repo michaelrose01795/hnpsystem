@@ -313,6 +313,13 @@ const LOCATION_LABELS = {
   rear: "Rear",
 };
 
+const SERVICE_CHOICE_LABELS = {
+  reset: "Service Reminder Reset",
+  not_required: "Service Reminder Not Required",
+  no_reminder: "Doesn't Have a Service Reminder",
+  indicator_on: "Service Indicator On",
+};
+
 const SEVERITY_RANK = { red: 3, amber: 2, grey: 1, green: 0 };
 const RANK_TO_SEVERITY = {
   3: "red",
@@ -628,25 +635,8 @@ const determineItemSeverity = (item = {}) => {
 };
 
 const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
-  const metrics = section?.metrics || {};
-  const severity = deriveSectionSeverity(section, rawData);
-  const severityLabel = severity
-    ? `${severity.charAt(0).toUpperCase()}${severity.slice(1)} ${
-        severity === "green" ? "status" : "issues"
-      }`
-    : "No status";
   const items = Array.isArray(section?.items) ? section.items : [];
   const hasItems = items.length > 0;
-
-  const headerBadgeBase = {
-    padding: "4px 12px",
-    borderRadius: "999px",
-    fontSize: "12px",
-    fontWeight: 600,
-    border: "1px solid var(--accent-purple-surface)",
-    background: "var(--info-surface)",
-    color: "var(--info-dark)",
-  };
 
   return (
     <div
@@ -683,18 +673,6 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
             minWidth: "200px",
           }}
         >
-          <span
-            style={{
-              ...headerBadgeBase,
-              ...(severity ? buildSeverityBadgeStyles(severity) : {}),
-              textTransform: "capitalize",
-            }}
-          >
-            {severity ? severityLabel : "No issues"}
-          </span>
-          <span style={headerBadgeBase}>
-            {(metrics.total ?? 0).toString()} item{(metrics.total ?? 0) === 1 ? "" : "s"}
-          </span>
           <button
             type="button"
             onClick={() => onOpen && onOpen(config.key)}
@@ -2711,6 +2689,11 @@ export default function VhcDetailsPanel({
     }
     // Enable selection for all items when not read-only
     const selectionEnabled = !readOnly;
+    const serviceChoiceKey = vhcData?.serviceIndicator?.serviceChoice || "";
+    const serviceChoiceLabel =
+      SERVICE_CHOICE_LABELS[serviceChoiceKey] || serviceChoiceKey || "";
+    const normaliseServiceText = (value = "") =>
+      value.toString().toLowerCase().replace(/\s+/g, " ").trim();
     const selectedIds = severitySelections[severity] || [];
     const selectedSet = new Set(selectedIds);
     const allChecked = items.length > 0 && selectedSet.size === items.length;
@@ -2791,19 +2774,35 @@ export default function VhcDetailsPanel({
                   return rowTheme.background || "var(--surface)";
                 };
 
-                const detailLabel = item.label || item.sectionName || "Recorded item";
+                let detailLabel = item.label || item.sectionName || "Recorded item";
                 const concernDetail = item.concernText || "";
-                const detailContent = concernDetail || item.notes || "";
+                let detailContent = concernDetail || item.notes || "";
                 const rawDetailRows = Array.isArray(item.rows)
                   ? item.rows.map((row) => (row ? String(row).trim() : "")).filter(Boolean)
                   : [];
                 // Wheels & Tyres already has a compact preview card (OSF Tyre + tread depths + make/size/run flat).
                 // Don't repeat the extended tyre spec rows in the Summary table.
-                const detailRows = item.categoryId === "wheels_tyres" ? [] : rawDetailRows;
+                let detailRows = item.categoryId === "wheels_tyres" ? [] : rawDetailRows;
                 const supplementaryRows = [
                   ...getBrakeSupplementaryRows(item),
                   ...getTyreSupplementaryRows(item),
                 ];
+                const isServiceIndicatorRow = item.categoryId === "service_indicator";
+                const detailLabelKey = normaliseServiceText(detailLabel);
+                const detailRowsKey = normaliseServiceText(detailRows.join(" "));
+                const detailContentKey = normaliseServiceText(detailContent);
+                const isServiceReminderRow =
+                  detailLabelKey.includes("service reminder") ||
+                  detailLabelKey.includes("service reminder/oil") ||
+                  detailRowsKey.includes("service reminder") ||
+                  detailRowsKey.includes("service reminder/oil") ||
+                  detailContentKey.includes("service reminder") ||
+                  detailContentKey.includes("service reminder/oil");
+                if (isServiceIndicatorRow && serviceChoiceLabel && isServiceReminderRow) {
+                  detailLabel = "Service Reminder";
+                  detailRows = [serviceChoiceLabel];
+                  detailContent = "";
+                }
 
                 // Avoid repeating the same phrase twice (e.g. "Service reminder / oil - Service reminder/Oil...").
                 // If the "notes/concern" already contains the label, render just the content under the category title.
@@ -4859,6 +4858,12 @@ export default function VhcDetailsPanel({
       return <EmptyStateMessage message="No authorized VHC items with parts yet." />;
     }
 
+    const serviceChoiceKey = vhcData?.serviceIndicator?.serviceChoice || "";
+    const serviceChoiceLabel =
+      SERVICE_CHOICE_LABELS[serviceChoiceKey] || serviceChoiceKey || "";
+    const normaliseServiceText = (value = "") =>
+      value.toString().toLowerCase().replace(/\s+/g, " ").trim();
+
     return (
       <div
         style={{
@@ -4894,16 +4899,28 @@ export default function VhcDetailsPanel({
                 const isWarranty = warrantyRows.has(vhcId);
 
                 // VHC item details
-                const vhcLabel = vhcItem?.label || "VHC Item";
-                const vhcNotes = vhcItem?.notes || vhcItem?.concernText || "";
+                let vhcLabel = vhcItem?.label || "VHC Item";
+                let vhcNotes = vhcItem?.notes || vhcItem?.concernText || "";
                 const vhcCategory = vhcItem?.categoryLabel || vhcItem?.category?.label || "";
                 const locationLabel = vhcItem?.location
                   ? LOCATION_LABELS[vhcItem.location] || vhcItem.location.replace(/_/g, " ")
                   : null;
-                const vhcRows = Array.isArray(vhcItem?.rows)
+                let vhcRows = Array.isArray(vhcItem?.rows)
                   ? vhcItem.rows.map((row) => (row ? String(row).trim() : "")).filter(Boolean)
                   : [];
                 const isServiceIndicatorRow = vhcItem?.category?.id === "service_indicator";
+                const labelKey = normaliseServiceText(vhcLabel);
+                const rowKey = normaliseServiceText(vhcRows.join(" "));
+                const isServiceReminderRow =
+                  labelKey.includes("service reminder") ||
+                  labelKey.includes("service reminder/oil") ||
+                  rowKey.includes("service reminder") ||
+                  rowKey.includes("service reminder/oil");
+                if (isServiceIndicatorRow && serviceChoiceLabel && isServiceReminderRow) {
+                  vhcLabel = "Service Reminder";
+                  vhcRows = [serviceChoiceLabel];
+                  vhcNotes = "";
+                }
 
                 // Authorized items should have green background
                 const rowBackground = "var(--success-surface)";
