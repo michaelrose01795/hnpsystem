@@ -74,7 +74,7 @@ const concernTargets = [
   ...UNDER_BONNET_ITEMS.map((item) => ({ key: item, label: item })),
 ];
 
-export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onClose, onComplete }) {
+export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onClose, onComplete, locked = false }) {
   const contentWrapperStyle = {
     ...vhcModalContentStyles.contentWrapper,
     gap: "20px",
@@ -328,6 +328,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
     <VHCModalShell
       isOpen={isOpen}
       title="Service Indicator & Under Bonnet"
+      locked={locked}
       onClose={handleClose}
       hideCloseButton
       width="1280px"

@@ -45,7 +45,7 @@ const statusSelectStyle = {
   width: "auto",
 };
 
-export default function UndersideDetailsModal({ isOpen, onClose, onComplete, initialData }) {
+export default function UndersideDetailsModal({ isOpen, onClose, onComplete, initialData, locked = false }) {
   const contentWrapperStyle = {
     ...vhcModalContentStyles.contentWrapper,
     gap: "24px",
@@ -147,6 +147,7 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
       isOpen={isOpen}
       onClose={handleClose}
       title="Underside"
+      locked={locked}
       hideCloseButton
       width="1280px"
       height="780px"

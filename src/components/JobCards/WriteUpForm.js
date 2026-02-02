@@ -158,6 +158,23 @@ const toPastTenseRequest = (value = "") => {
 const ensureAuthorizedTasks = (tasks = [], authorizedItems = []) => {
   const baseTasks = (Array.isArray(tasks) ? tasks : []).filter(Boolean);
   const normalizedAuthorized = Array.isArray(authorizedItems) ? authorizedItems.filter(Boolean) : [];
+  const normaliseLabel = (value = "") =>
+    value
+      .toString()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  const shouldOverrideLabel = (existingLabel = "", nextLabel = "") => {
+    if (!existingLabel) return true;
+    const existingKey = normaliseLabel(existingLabel);
+    const nextKey = normaliseLabel(nextLabel);
+    if (existingKey === nextKey) return false;
+    if (existingKey.includes("service reminder") && existingKey.includes("oil")) return true;
+    if (existingKey.includes("service reminder oil level")) return true;
+    if (existingKey.includes("service reminder/oil")) return true;
+    return false;
+  };
 
   // Keep request tasks and any non-VHC manual tasks as-is, but replace VHC tasks with the current authorised list.
   const requestTasks = baseTasks.filter((task) => task.source === "request");
@@ -193,7 +210,7 @@ const ensureAuthorizedTasks = (tasks = [], authorizedItems = []) => {
         ...candidate,
         taskId: existing.taskId ?? candidate.taskId ?? null,
         status: existing.status || candidate.status,
-        label: existing.label || candidate.label,
+        label: shouldOverrideLabel(existing.label, candidate.label) ? candidate.label : existing.label,
       });
     } else {
       nextVhcTasks.push(candidate);
@@ -798,6 +815,39 @@ export default function WriteUpForm({
         setJobData(jobPayload);
       }
 
+      const parseJson = (value) => {
+        if (!value) return null;
+        if (typeof value === "object") return value;
+        try {
+          return JSON.parse(value);
+        } catch (_error) {
+          return null;
+        }
+      };
+      const serviceChoiceLabels = {
+        reset: "Service Reminder Reset",
+        not_required: "Service Reminder Not Required",
+        no_reminder: "Doesn't Have a Service Reminder",
+        indicator_on: "Service Indicator On",
+      };
+      const checks = Array.isArray(jobPayload?.jobCard?.vhcChecks)
+        ? jobPayload.jobCard.vhcChecks
+        : [];
+      const builderRecord = checks.find((check) => {
+        const section = (check?.section || "").toString().trim();
+        return section === "VHC_CHECKSHEET" || section === "VHC Checksheet";
+      });
+      const parsedPayload = parseJson(builderRecord?.issue_description || builderRecord?.data);
+      const choiceKey = parsedPayload?.serviceIndicator?.serviceChoice || "";
+      const serviceChoiceLabel = serviceChoiceLabels[choiceKey] || choiceKey || "";
+      const normaliseServiceText = (value = "") =>
+        value
+          .toString()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+
       const resolved = Array.isArray(jobPayload?.jobCard?.authorizedVhcItems)
         ? jobPayload.jobCard.authorizedVhcItems
         : [];
@@ -805,11 +855,32 @@ export default function WriteUpForm({
 
       setWriteUpData((prev) => {
         const normalizedEntries = resolved.map((item, index) => {
-          const description = (
+          const baseLabel = (
             item?.label ||
             item?.description ||
+            item?.issueDescription ||
+            item?.issue_description ||
+            item?.section ||
             ""
           ).toString().trim();
+          const sectionLabel = (item?.section || "").toString();
+          const labelKey = normaliseServiceText(baseLabel);
+          const sectionKey = normaliseServiceText(sectionLabel);
+          const isServiceIndicatorRow =
+            sectionKey.includes("service indicator") ||
+            sectionKey.includes("under bonnet") ||
+            labelKey.includes("service indicator") ||
+            labelKey.includes("under bonnet");
+          const isServiceReminderOil =
+            (labelKey.includes("service reminder") && labelKey.includes("oil")) ||
+            labelKey.includes("service reminder oil level") ||
+            labelKey.includes("service reminder/oil level");
+          const isServiceReminder =
+            labelKey.includes("service reminder") || sectionKey.includes("service reminder");
+          const description =
+            isServiceIndicatorRow && (isServiceReminderOil || isServiceReminder) && serviceChoiceLabel
+              ? `Service Reminder - ${serviceChoiceLabel}`
+              : baseLabel;
           return {
             ...item,
             source: "vhc",

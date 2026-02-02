@@ -14,6 +14,8 @@ export default function VHCModalShell({
   footer = null,
   children,
   hideCloseButton = false,
+  locked = false,
+  lockedMessage = "Section been authorised.",
 }) {
   const { resolvedMode } = useTheme();
   const closeButtonColor = resolvedMode === "dark" ? "var(--accent-purple)" : "var(--danger)";
@@ -22,7 +24,7 @@ export default function VHCModalShell({
   return createPortal(
     <div style={vhcModalStyles.overlay}>
       <div style={vhcModalStyles.container({ width, height })}>
-        <div style={vhcModalStyles.header}>
+        <div style={{ ...vhcModalStyles.header, position: "relative", zIndex: 3 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
             <h2 style={vhcModalStyles.headerTitle}>{title}</h2>
             {subtitle ? (
@@ -51,10 +53,73 @@ export default function VHCModalShell({
           )}
         </div>
 
-        <div style={vhcModalStyles.body}>{children}</div>
+        <div
+          style={{
+            ...vhcModalStyles.body,
+            pointerEvents: locked ? "none" : "auto",
+            filter: locked ? "grayscale(0.1)" : "none",
+          }}
+        >
+          {children}
+        </div>
 
         {footer ? (
-          <div style={vhcModalStyles.footer}>{footer}</div>
+          <div
+            style={{
+              ...vhcModalStyles.footer,
+              pointerEvents: locked ? "none" : "auto",
+              filter: locked ? "grayscale(0.1)" : "none",
+            }}
+          >
+            {footer}
+          </div>
+        ) : null}
+
+        {locked ? (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(15, 23, 42, 0.4)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 2,
+              padding: "24px",
+              pointerEvents: "auto",
+            }}
+          >
+            <div
+              style={{
+                padding: "16px 20px",
+                borderRadius: "12px",
+                border: "1px solid var(--danger)",
+                background: "var(--surface)",
+                color: "var(--danger)",
+                fontWeight: 700,
+                fontSize: "14px",
+                textAlign: "center",
+                maxWidth: "420px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+              }}
+            >
+              {lockedMessage}
+              {onClose ? (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  style={{
+                    ...createVhcButtonStyle("primary"),
+                    alignSelf: "center",
+                  }}
+                >
+                  Close
+                </button>
+              ) : null}
+            </div>
+          </div>
         ) : null}
       </div>
     </div>,

@@ -46,7 +46,7 @@ const statusSelectStyle = {
   width: "auto",
 };
 
-export default function InternalElectricsDetailsModal({ isOpen, onClose, onComplete, initialData }) {
+export default function InternalElectricsDetailsModal({ isOpen, onClose, onComplete, initialData, locked = false }) {
   const contentWrapperStyle = {
     ...vhcModalContentStyles.contentWrapper,
     gap: "24px",
@@ -148,6 +148,7 @@ export default function InternalElectricsDetailsModal({ isOpen, onClose, onCompl
       isOpen={isOpen}
       onClose={handleClose}
       title="Internal"
+      locked={locked}
       hideCloseButton
       width="1280px"
       height="780px"

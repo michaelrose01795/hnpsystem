@@ -1636,11 +1636,7 @@ export default function JobCardDetailPage() {
     amber: amberIssues.length,
     grey: greyIssues.length
   };
-  const vhcTabBadge = vhcSummaryCounts.red
-    ? `⚠ ${vhcSummaryCounts.red}`
-    : vhcSummaryCounts.amber
-      ? `⚠ ${vhcSummaryCounts.amber}`
-      : undefined;
+  const vhcTabBadge = vhcSummaryCounts.red || vhcSummaryCounts.amber ? "⚠" : undefined;
   const jobDivisionLabel =
     typeof jobData.jobDivision === "string"
       ? jobData.jobDivision
@@ -2856,10 +2852,6 @@ function CustomerRequestsTab({
 
       {/* Additional Job Info */}
       <div style={{ marginTop: "32px", paddingTop: "24px", borderTop: "2px solid var(--surface)" }}>
-        <h3 style={{ fontSize: "16px", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "16px" }}>
-          Additional Information
-        </h3>
-
         {/* Authorised VHC Items */}
         {authorisedRows.length > 0 && (
           <div style={{
@@ -2900,13 +2892,10 @@ function CustomerRequestsTab({
                       }}
                     >
                       <div style={{ fontWeight: "600", color: "var(--success)" }}>
-                        {row.label || row.description || "Authorised item"}
+                        {row.detail
+                          ? `${row.label || row.description || "Authorised item"} - ${row.detail}`
+                          : row.label || row.description || "Authorised item"}
                       </div>
-                      {row.detail && (
-                        <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-                          - {row.detail}
-                        </div>
-                      )}
                       {/* Labour hours and parts cost */}
                       {(row.labourHours || row.partsCost) && (
                         <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "2px" }}>

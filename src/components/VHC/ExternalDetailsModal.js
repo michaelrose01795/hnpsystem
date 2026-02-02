@@ -58,7 +58,7 @@ const statusSelectStyle = {
   width: "auto",
 };
 
-export default function ExternalDetailsModal({ isOpen, onClose, onComplete, initialData }) {
+export default function ExternalDetailsModal({ isOpen, onClose, onComplete, initialData, locked = false }) {
   const contentWrapperStyle = {
     ...vhcModalContentStyles.contentWrapper,
     gap: "24px",
@@ -185,6 +185,7 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
       isOpen={isOpen}
       onClose={handleClose}
       title="External"
+      locked={locked}
       hideCloseButton
       width="1280px"
       height="780px"

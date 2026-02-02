@@ -1837,6 +1837,25 @@ export default function VhcDetailsPanel({
     return lists;
   }, [summaryItems, itemEntries, resolveCanonicalVhcId, authorizedViewIds, authorizedViewLoaded]);
 
+  const lockedSectionKeys = useMemo(() => {
+    const categoryToSection = {
+      wheels_tyres: "wheelsTyres",
+      brakes_hubs: "brakesHubs",
+      service_indicator: "serviceIndicator",
+      external_inspection: "externalInspection",
+      internal_electrics: "internalElectrics",
+      underside: "underside",
+    };
+    const locked = new Set();
+    (severityLists.authorized || []).forEach((item) => {
+      const sectionKey = categoryToSection[item.categoryId];
+      if (sectionKey) {
+        locked.add(sectionKey);
+      }
+    });
+    return locked;
+  }, [severityLists]);
+
   const labourHoursByVhcItem = useMemo(() => {
     const map = new Map();
     const fromVhcChecks = new Set(); // Track which items have labour from vhc_checks
@@ -5856,8 +5875,8 @@ export default function VhcDetailsPanel({
                     );
                   })}
 
-                  {/* Authorised section - only show if there are authorized items or if VHC has been started */}
-                  {(severityLists.authorized && severityLists.authorized.length > 0) || (severityLists.red && severityLists.red.length > 0) || (severityLists.amber && severityLists.amber.length > 0) ? (
+                  {/* Authorised section - only show if there are authorized items */}
+                  {severityLists.authorized && severityLists.authorized.length > 0 ? (
                     <div
                       style={{
                         border: "2px solid var(--success)",
@@ -5886,8 +5905,8 @@ export default function VhcDetailsPanel({
                     </div>
                   ) : null}
 
-                  {/* Declined section - only show if there are declined items or if VHC has been started */}
-                  {(severityLists.declined && severityLists.declined.length > 0) || (severityLists.red && severityLists.red.length > 0) || (severityLists.amber && severityLists.amber.length > 0) ? (
+                  {/* Declined section - only show if there are declined items */}
+                  {severityLists.declined && severityLists.declined.length > 0 ? (
                     <div
                       style={{
                         border: "2px solid var(--danger)",
@@ -6372,6 +6391,7 @@ export default function VhcDetailsPanel({
           initialData={vhcData.wheelsTyres}
           onClose={(draft) => handleSectionDismiss("wheelsTyres", draft)}
           onComplete={(data) => handleSectionComplete("wheelsTyres", data)}
+          locked={lockedSectionKeys.has("wheelsTyres")}
         />
       )}
       {activeSection === "brakesHubs" && (
@@ -6380,6 +6400,7 @@ export default function VhcDetailsPanel({
           initialData={vhcData.brakesHubs}
           onClose={(draft) => handleSectionDismiss("brakesHubs", draft)}
           onComplete={(data) => handleSectionComplete("brakesHubs", data)}
+          locked={lockedSectionKeys.has("brakesHubs")}
         />
       )}
       {activeSection === "serviceIndicator" && (
@@ -6388,6 +6409,7 @@ export default function VhcDetailsPanel({
           initialData={vhcData.serviceIndicator}
           onClose={(draft) => handleSectionDismiss("serviceIndicator", draft)}
           onComplete={(data) => handleSectionComplete("serviceIndicator", data)}
+          locked={lockedSectionKeys.has("serviceIndicator")}
         />
       )}
       {activeSection === "externalInspection" && (
@@ -6396,6 +6418,7 @@ export default function VhcDetailsPanel({
           initialData={vhcData.externalInspection}
           onClose={(draft) => handleSectionDismiss("externalInspection", draft)}
           onComplete={(data) => handleSectionComplete("externalInspection", data)}
+          locked={lockedSectionKeys.has("externalInspection")}
         />
       )}
       {activeSection === "internalElectrics" && (
@@ -6404,6 +6427,7 @@ export default function VhcDetailsPanel({
           initialData={vhcData.internalElectrics}
           onClose={(draft) => handleSectionDismiss("internalElectrics", draft)}
           onComplete={(data) => handleSectionComplete("internalElectrics", data)}
+          locked={lockedSectionKeys.has("internalElectrics")}
         />
       )}
       {activeSection === "underside" && (
@@ -6412,6 +6436,7 @@ export default function VhcDetailsPanel({
           initialData={vhcData.underside}
           onClose={(draft) => handleSectionDismiss("underside", draft)}
           onComplete={(data) => handleSectionComplete("underside", data)}
+          locked={lockedSectionKeys.has("underside")}
         />
       )}
 
