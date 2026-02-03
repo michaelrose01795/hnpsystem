@@ -21,7 +21,8 @@
       "Bash(test:*)",
       "Bash(git checkout:*)",
       "Bash(NEXT_BUILD_USE_TURBOPACK=false npm run build:*)",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "Bash(tail:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,6 +1,15 @@
 TO DO:
 
 Continue flow with job number 54
+Ware indicator not showing wihtin summary page isnide VHC tab, fix this so the ware indicator is showing in text inside the correct rows details. use the database if needed. 
+
+
+within the "/vhc/customer-preview/[jobnumber]" page use the app light and dark theme within this page as well as using the logo light and dark in the top left and the details further along to the right. the page is still not linked to the database/showing the same items as the the summary page, treat the summary tab within the VHC tab inside the job-cards/[jobnumber] page as the hub for the authorised and declinded sections, do a deep dive to amke sure the correct rows are showing within the "/vhc/customer-preview/[jobnumber]" have it so its linked to the master datbase table which stores all of the rows and status etc. 
+
+
+Remeber this is a preview of what the customer will see to make sure everything is correct. 
+
+update the copy link button to copy the link to the clip board which will be the actual page the customer will see however for external users, this wont require a login to see this page and will only show the detauls of the summary like the Customer view so nothing can be changed or corrected, only viewed. have it so the link is something like /job-card/[jobnumber]/[linkcode (unique number and letters)] (or along those lines, this is for if the cust or user wants to send the report to someone else to check through they dont ave to log in and everything, it has an expiry of 24 hours and after that it generates a new link code). have it so the customer preview 
 
 have it so the "Customer View" button is names "Cutomer Preview", have it so the that opens a new page, this new page doesnt have a sidebar/topbar within it. (it has a back button in the top right which takes the user back to the summary tab within the job-card/[jobnumber] page). as well this it shows all of the red reports, and then amber reports, and then at the bottom all of the green reports. have it so its layed out for the customer viewing with total prices, tick boxes for authorise or delicne (linked to the summmary authorise and delicne section) as well as showing a summary tab which shows the red amber and green with totals, a photo tab which shows all of the photos linked to the job number, and a video tab which shows all of the videos linked to the job number as well
 

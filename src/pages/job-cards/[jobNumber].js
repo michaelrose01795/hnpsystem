@@ -5709,6 +5709,7 @@ function NotesTab({ value, onChange, canEdit, saving, meta }) {
 // ✅ VHC Tab
 function VHCTab({ jobNumber, jobData, onFinancialTotalsChange, onJobDataRefresh }) {
   const [copied, setCopied] = useState(false);
+  const [generatingLink, setGeneratingLink] = useState(false);
 
   // Check if customer view should be enabled
   // All checkboxes must be complete (parts and labour for each row)
@@ -5718,21 +5719,42 @@ function VHCTab({ jobNumber, jobData, onFinancialTotalsChange, onJobDataRefresh 
 
   const customerViewUrl = useMemo(() => {
     if (typeof window === 'undefined') return '';
-    return `${window.location.origin}/vhc/customer-view/${jobNumber}`;
+    return `${window.location.origin}/vhc/customer-preview/${jobNumber}`;
   }, [jobNumber]);
 
   const handleCustomerViewClick = () => {
     window.open(customerViewUrl, '_blank');
   };
 
+  // Generate a shareable link (24-hour expiry) and copy to clipboard
   const handleCopyToClipboard = async () => {
+    setGeneratingLink(true);
     try {
-      await navigator.clipboard.writeText(customerViewUrl);
+      // Request a share link from the API
+      const response = await fetch(`/api/job-cards/${jobNumber}/share-link`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate share link');
+      }
+
+      const { linkCode } = await response.json();
+
+      // Build the shareable URL
+      const shareUrl = `${window.location.origin}/vhc/share/${jobNumber}/${linkCode}`;
+
+      // Copy to clipboard
+      await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       console.error("Failed to copy to clipboard", error);
-      alert("Failed to copy link to clipboard");
+      alert("Failed to copy link to clipboard: " + error.message);
+    } finally {
+      setGeneratingLink(false);
     }
   };
 
@@ -5753,14 +5775,14 @@ function VHCTab({ jobNumber, jobData, onFinancialTotalsChange, onJobDataRefresh 
           opacity: hasPartsWithPrices ? 1 : 0.5,
           fontSize: "13px",
         }}
-        title={!hasPartsWithPrices ? "Add parts prices and labour time to enable customer view" : "Open customer view in new tab"}
+        title={!hasPartsWithPrices ? "Add parts prices and labour time to enable customer preview" : "Open customer preview in new tab"}
       >
-        Customer View
+        Customer Preview
       </button>
       <button
         type="button"
         onClick={handleCopyToClipboard}
-        disabled={!hasPartsWithPrices}
+        disabled={!hasPartsWithPrices || generatingLink}
         style={{
           padding: "8px 12px",
           borderRadius: "8px",
@@ -5768,14 +5790,14 @@ function VHCTab({ jobNumber, jobData, onFinancialTotalsChange, onJobDataRefresh 
           backgroundColor: hasPartsWithPrices ? (copied ? "var(--success)" : "var(--info)") : "var(--surface-light)",
           color: hasPartsWithPrices ? "var(--surface)" : "var(--grey-accent)",
           fontWeight: 600,
-          cursor: hasPartsWithPrices ? "pointer" : "not-allowed",
+          cursor: hasPartsWithPrices && !generatingLink ? "pointer" : "not-allowed",
           opacity: hasPartsWithPrices ? 1 : 0.5,
           fontSize: "13px",
-          minWidth: "80px",
+          minWidth: "100px",
         }}
-        title={!hasPartsWithPrices ? "Add parts prices and labour time to enable" : copied ? "Copied!" : "Copy link to clipboard"}
+        title={!hasPartsWithPrices ? "Add parts prices and labour time to enable customer preview" : copied ? "Copied!" : "Copy shareable link (expires in 24 hours)"}
       >
-        {copied ? "✓ Copied" : "📋 Copy"}
+        {generatingLink ? "..." : copied ? "✓ Copied" : "📋 Copy Link"}
       </button>
     </>
   );

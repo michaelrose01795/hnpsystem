@@ -349,6 +349,74 @@ const SEVERITY_THEME = {
   declined: { background: "var(--danger-surface)", border: "var(--danger)", text: "var(--danger)", hover: "#ffd4d4" },
 };
 
+// Tyre wear calculation: 8mm = 0% worn (new), 0mm = 100% worn
+const TYRE_NEW_DEPTH = 8;
+const calculateTyreWearPercent = (depthMm) => {
+  const depth = Number(depthMm);
+  if (!Number.isFinite(depth) || depth < 0) return null;
+  const wornPercent = Math.round(((TYRE_NEW_DEPTH - Math.min(depth, TYRE_NEW_DEPTH)) / TYRE_NEW_DEPTH) * 100);
+  return Math.max(0, Math.min(100, wornPercent));
+};
+
+// Brake pad wear calculation: 10mm = 0% worn (new), 0mm = 100% worn
+const PAD_NEW_THICKNESS = 10;
+const calculatePadWearPercent = (thicknessMm) => {
+  const thickness = Number(thicknessMm);
+  if (!Number.isFinite(thickness) || thickness < 0) return null;
+  const wornPercent = Math.round(((PAD_NEW_THICKNESS - Math.min(thickness, PAD_NEW_THICKNESS)) / PAD_NEW_THICKNESS) * 100);
+  return Math.max(0, Math.min(100, wornPercent));
+};
+
+// Extract average tread depth from measurement string like "Tread depths: 5mm • 5mm • 5mm"
+const extractTreadDepth = (text) => {
+  if (!text) return null;
+  const treadMatch = text.match(/tread\s*depths?[:\s]*([^•\n]+(?:•[^•\n]+)*)/i);
+  if (treadMatch) {
+    const depthSection = treadMatch[1];
+    const mmMatches = depthSection.match(/(\d+(?:\.\d+)?)\s*mm/gi);
+    if (mmMatches && mmMatches.length > 0) {
+      const values = mmMatches.map((m) => parseFloat(m));
+      const validValues = values.filter((v) => Number.isFinite(v) && v >= 0);
+      if (validValues.length > 0) {
+        return validValues.reduce((sum, v) => sum + v, 0) / validValues.length;
+      }
+    }
+  }
+  const mmMatches = text.match(/(\d+(?:\.\d+)?)\s*mm/gi);
+  if (mmMatches && mmMatches.length > 0) {
+    const values = mmMatches.map((m) => parseFloat(m));
+    const validValues = values.filter((v) => Number.isFinite(v) && v >= 0 && v <= 12);
+    if (validValues.length > 0) {
+      return validValues.reduce((sum, v) => sum + v, 0) / validValues.length;
+    }
+  }
+  return null;
+};
+
+// Extract pad thickness from measurement string like "Pad thickness: 8mm" or "Pad thickness: 8"
+const extractPadThickness = (text) => {
+  if (!text) return null;
+  const padMatch = text.match(/pad\s*thickness[:\s]*(\d+(?:\.\d+)?)\s*(?:mm)?/i);
+  if (padMatch) {
+    return parseFloat(padMatch[1]);
+  }
+  const numMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:mm)?/i);
+  if (numMatch) {
+    const val = parseFloat(numMatch[1]);
+    if (val >= 0 && val <= 15) {
+      return val;
+    }
+  }
+  return null;
+};
+
+// Get wear percentage color based on percentage
+const getWearColor = (wornPercent) => {
+  if (wornPercent >= 75) return "var(--danger)";
+  if (wornPercent >= 50) return "var(--warning)";
+  return "var(--success)";
+};
+
 const PANEL_SECTION_STYLE = {
   background: "var(--surface)",
   borderRadius: "18px",
@@ -3258,6 +3326,41 @@ export default function VhcDetailsPanel({
     // Only show authorize/decline checkboxes for pending red/amber items
     const showDecision = (severity === "red" || severity === "amber") && !isAuthorized && !isDeclined;
 
+    // Calculate wear percentage for tyres and brake pads
+    const categoryId = item.category?.id || "";
+    const labelLower = detailLabel.toLowerCase();
+    const categoryLower = categoryLabel.toLowerCase();
+    let wearPercent = null;
+    let wearLabel = "";
+
+    // Combine all text fields to search for measurements
+    const allText = [measurement, detailContent, detailLabel, item.notes || ""].join(" ");
+
+    // Check if this is a tyre item
+    const isTyreItem = categoryId === "wheels_tyres" ||
+                       categoryLower.includes("tyre") ||
+                       categoryLower.includes("wheel") ||
+                       labelLower.includes("tyre");
+
+    // Check if this is a brake pad item (not disc)
+    const isPadItem = (categoryId === "brakes_hubs" || categoryLower.includes("brake")) &&
+                      (labelLower.includes("pad") || allText.toLowerCase().includes("pad thickness")) &&
+                      !labelLower.includes("disc");
+
+    if (isTyreItem) {
+      const treadDepth = extractTreadDepth(allText);
+      if (treadDepth !== null) {
+        wearPercent = calculateTyreWearPercent(treadDepth);
+        wearLabel = "Tyre Wear";
+      }
+    } else if (isPadItem) {
+      const padThickness = extractPadThickness(allText);
+      if (padThickness !== null) {
+        wearPercent = calculatePadWearPercent(padThickness);
+        wearLabel = "Pad Wear";
+      }
+    }
+
     // Determine background color for authorized/declined rows based on original severity
     const getRowBackground = () => {
       if (isAuthorized || isDeclined) {
@@ -3299,6 +3402,35 @@ export default function VhcDetailsPanel({
             {measurement ? (
               <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>{measurement}</div>
             ) : null}
+            {wearPercent !== null && (
+              <div style={{ marginTop: "8px", display: "flex", alignItems: "center", gap: "8px" }}>
+                <div style={{
+                  width: "100px",
+                  height: "8px",
+                  background: "var(--info-surface)",
+                  borderRadius: "4px",
+                  overflow: "hidden"
+                }}>
+                  <div style={{
+                    width: `${wearPercent}%`,
+                    height: "100%",
+                    background: getWearColor(wearPercent),
+                    borderRadius: "4px",
+                    transition: "width 0.3s ease"
+                  }} />
+                </div>
+                <span style={{
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  color: getWearColor(wearPercent)
+                }}>
+                  {wearPercent}% Worn
+                </span>
+                <span style={{ fontSize: "11px", color: "var(--info)" }}>
+                  ({wearLabel})
+                </span>
+              </div>
+            )}
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
