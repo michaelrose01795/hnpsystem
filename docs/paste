@@ -4,7 +4,7 @@ Continue flow with job number 54
 
 have it so the "Customer View" button is names "Cutomer Preview", have it so the that opens a new page, this new page doesnt have a sidebar/topbar within it. (it has a back button in the top right which takes the user back to the summary tab within the job-card/[jobnumber] page). as well this it shows all of the red reports, and then amber reports, and then at the bottom all of the green reports. have it so its layed out for the customer viewing with total prices, tick boxes for authorise or delicne (linked to the summmary authorise and delicne section) as well as showing a summary tab which shows the red amber and green with totals, a photo tab which shows all of the photos linked to the job number, and a video tab which shows all of the videos linked to the job number as well
 
-ADDD
+ADDD check
 CHange the "Section been authorised." overlay so more precise with optional popups. 
 
 

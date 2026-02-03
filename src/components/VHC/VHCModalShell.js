@@ -15,10 +15,12 @@ export default function VHCModalShell({
   children,
   hideCloseButton = false,
   locked = false,
-  lockedMessage = "Section been authorised.",
+  lockedMessage = "Authorised",
+  lockedOverlay = true,
 }) {
   const { resolvedMode } = useTheme();
   const closeButtonColor = resolvedMode === "dark" ? "var(--accent-purple)" : "var(--danger)";
+  const isBlockingLocked = locked && lockedOverlay;
   if (!isOpen || typeof document === "undefined") return null;
 
   return createPortal(
@@ -56,10 +58,31 @@ export default function VHCModalShell({
         <div
           style={{
             ...vhcModalStyles.body,
-            pointerEvents: locked ? "none" : "auto",
-            filter: locked ? "grayscale(0.1)" : "none",
+            pointerEvents: isBlockingLocked ? "none" : "auto",
+            filter: isBlockingLocked ? "grayscale(0.1)" : "none",
           }}
         >
+          {locked && !lockedOverlay ? (
+            <div
+              style={{
+                marginBottom: "12px",
+                padding: "8px 12px",
+                borderRadius: "999px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                background: "var(--surface-light)",
+                border: "1px solid var(--border)",
+                color: "var(--text-secondary)",
+                fontSize: "12px",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+              }}
+            >
+              {lockedMessage}
+            </div>
+          ) : null}
           {children}
         </div>
 
@@ -67,15 +90,15 @@ export default function VHCModalShell({
           <div
             style={{
               ...vhcModalStyles.footer,
-              pointerEvents: locked ? "none" : "auto",
-              filter: locked ? "grayscale(0.1)" : "none",
+              pointerEvents: isBlockingLocked ? "none" : "auto",
+              filter: isBlockingLocked ? "grayscale(0.1)" : "none",
             }}
           >
             {footer}
           </div>
         ) : null}
 
-        {locked ? (
+        {isBlockingLocked ? (
           <div
             style={{
               position: "absolute",

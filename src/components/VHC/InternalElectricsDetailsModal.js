@@ -47,6 +47,20 @@ const statusSelectStyle = {
 };
 
 export default function InternalElectricsDetailsModal({ isOpen, onClose, onComplete, initialData, locked = false }) {
+  const isConcernLocked = (concern) => {
+    if (!concern || typeof concern !== "object") return false;
+    if (concern.locked === true) return true;
+    if (concern.authorised === true || concern.authorized === true) return true;
+    if (concern.declined === true) return true;
+    const decision =
+      concern.approvalStatus ||
+      concern.decisionStatus ||
+      concern.decisionKey ||
+      concern.statusDecision ||
+      "";
+    const normalized = String(decision).toLowerCase();
+    return ["authorized", "authorised", "declined", "completed"].includes(normalized);
+  };
   const contentWrapperStyle = {
     ...vhcModalContentStyles.contentWrapper,
     gap: "24px",
@@ -109,6 +123,8 @@ export default function InternalElectricsDetailsModal({ isOpen, onClose, onCompl
   };
 
   const updateConcern = (category, idx, field, value) => {
+    const current = data?.[category]?.concerns?.[idx];
+    if (isConcernLocked(current)) return;
     setData((prev) => {
       const updated = [...prev[category].concerns];
       updated[idx] = { ...updated[idx], [field]: value };
@@ -117,6 +133,8 @@ export default function InternalElectricsDetailsModal({ isOpen, onClose, onCompl
   };
 
   const deleteConcern = (category, idx) => {
+    const current = data?.[category]?.concerns?.[idx];
+    if (isConcernLocked(current)) return;
     setData((prev) => ({
       ...prev,
       [category]: {
@@ -149,6 +167,7 @@ export default function InternalElectricsDetailsModal({ isOpen, onClose, onCompl
       onClose={handleClose}
       title="Internal"
       locked={locked}
+      lockedOverlay={false}
       hideCloseButton
       width="1280px"
       height="780px"
@@ -305,59 +324,69 @@ export default function InternalElectricsDetailsModal({ isOpen, onClose, onCompl
                   No concerns added yet. Document issues as they are discovered.
                 </div>
               ) : (
-                data[activeConcern.category].concerns.map((concern, idx) => (
-                  <div
-                    key={`${activeConcern.category}-${idx}`}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "10px",
-                      padding: "14px",
-                      borderRadius: "16px",
-                      border: `1px solid ${palette.border}`,
-                      background: palette.surface,
-                      boxShadow: "none",
-                    }}
-                  >
-                    <label style={fieldLabelStyle}>Issue</label>
-                    <input
-                      type="text"
-                      value={concern.issue}
-                      onChange={(e) => updateConcern(activeConcern.category, idx, "issue", e.target.value)}
-                      style={inputStyle}
-                      onFocus={(e) => {
-                        e.target.style.borderColor = palette.accent;
-                        e.target.style.boxShadow = "0 0 0 3px rgba(var(--primary-rgb),0.12)";
+                data[activeConcern.category].concerns.map((concern, idx) => {
+                  const rowLocked = isConcernLocked(concern);
+                  return (
+                    <div
+                      key={`${activeConcern.category}-${idx}`}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "10px",
+                        padding: "14px",
+                        borderRadius: "16px",
+                        border: `1px solid ${palette.border}`,
+                        background: palette.surface,
+                        boxShadow: "none",
                       }}
-                      onBlur={(e) => {
-                        e.target.style.borderColor = palette.border;
-                        e.target.style.boxShadow = "inset 0 1px 3px rgba(var(--shadow-rgb),0.05)";
-                      }}
-                    />
+                    >
+                      <label style={fieldLabelStyle}>Issue</label>
+                      <input
+                        type="text"
+                        value={concern.issue}
+                        onChange={(e) => updateConcern(activeConcern.category, idx, "issue", e.target.value)}
+                        readOnly={rowLocked}
+                        style={inputStyle}
+                        onFocus={(e) => {
+                          e.target.style.borderColor = palette.accent;
+                          e.target.style.boxShadow = "0 0 0 3px rgba(var(--primary-rgb),0.12)";
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = palette.border;
+                          e.target.style.boxShadow = "inset 0 1px 3px rgba(var(--shadow-rgb),0.05)";
+                        }}
+                      />
 
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
-                      <select
-                        value={concern.status}
-                        onChange={(e) => updateConcern(activeConcern.category, idx, "status", e.target.value)}
-                        style={{ ...statusSelectStyle, flex: "0 0 130px" }}
-                      >
-                        {STATUS_OPTIONS.map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+                        <select
+                          value={concern.status}
+                          onChange={(e) => updateConcern(activeConcern.category, idx, "status", e.target.value)}
+                          style={{ ...statusSelectStyle, flex: "0 0 130px" }}
+                          disabled={rowLocked}
+                        >
+                          {STATUS_OPTIONS.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
 
-                      <button
-                        type="button"
-                        onClick={() => deleteConcern(activeConcern.category, idx)}
-                        style={{ ...createVhcButtonStyle("ghost"), color: palette.danger, borderColor: palette.border }}
-                      >
-                        Remove
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteConcern(activeConcern.category, idx)}
+                          disabled={rowLocked}
+                          style={{
+                            ...createVhcButtonStyle("ghost", { disabled: rowLocked }),
+                            color: rowLocked ? palette.textMuted : palette.danger,
+                            borderColor: palette.border,
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
