@@ -242,6 +242,15 @@ export default function CustomerPreviewPage() {
         setPartsJobItems(parts_job_items || []);
         setJobFiles(job_files || []);
 
+        // Log for debugging
+        console.log("DEBUG: Fetched job data", {
+          jobNumber,
+          vhc_checks_count: (vhc_checks || []).length,
+          parts_job_items_count: (parts_job_items || []).length,
+          job_files_count: (job_files || []).length,
+          checksheet_exists: !!jobFields.checksheet,
+        });
+
         // Build alias map from display_id to vhc_item_id
         const aliasMap = {};
         (aliasRows || []).forEach((alias) => {
@@ -268,7 +277,87 @@ export default function CustomerPreviewPage() {
     };
 
     fetchJobData();
+
+    // Clean up any existing subscriptions
+    return () => {
+      if (subscription) {
+        supabase.removeChannel(subscription);
+      }
+    };
   }, [jobNumber]);
+
+  // Set up real-time subscription for vhc_checks updates
+  useEffect(() => {
+    if (!job?.id) return;
+
+    console.log(`[CUSTOMER-PREVIEW] Setting up subscription for job ${job.id}`);
+
+    const channel = supabase
+      .channel(`vhc_checks_job_${job.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "vhc_checks",
+          filter: `job_id=eq.${job.id}`,
+        },
+        (payload) => {
+          console.log("[CUSTOMER-PREVIEW] VHC UPDATE received:", payload);
+          // Immediately update the vhcChecksData with the new values
+          setVhcChecksData((prevData) => {
+            const updated = prevData.map((check) => {
+              if (check.vhc_id === payload.new.vhc_id) {
+                console.log(`[CUSTOMER-PREVIEW] Updating vhc_id ${check.vhc_id}:`, {
+                  old_status: check.display_status,
+                  new_status: payload.new.display_status,
+                });
+                return { ...check, ...payload.new };
+              }
+              return check;
+            });
+            return updated;
+          });
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "vhc_checks",
+          filter: `job_id=eq.${job.id}`,
+        },
+        (payload) => {
+          console.log("[CUSTOMER-PREVIEW] VHC INSERT received:", payload);
+          setVhcChecksData((prevData) => [...prevData, payload.new]);
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "vhc_checks",
+          filter: `job_id=eq.${job.id}`,
+        },
+        (payload) => {
+          console.log("[CUSTOMER-PREVIEW] VHC DELETE received:", payload);
+          setVhcChecksData((prevData) =>
+            prevData.filter((check) => check.vhc_id !== payload.old.vhc_id)
+          );
+        }
+      )
+      .subscribe((status) => {
+        console.log(`[CUSTOMER-PREVIEW] Subscription status: ${status}`);
+      });
+
+    // Cleanup subscription on unmount or when job changes
+    return () => {
+      console.log(`[CUSTOMER-PREVIEW] Cleaning up subscription for job ${job.id}`);
+      supabase.removeChannel(channel);
+    };
+  }, [job?.id]);
 
   // Parse VHC data from checksheet
   const vhcData = useMemo(() => {
@@ -293,10 +382,11 @@ export default function CustomerPreviewPage() {
     if (!value) return null;
     const lower = String(value).toLowerCase().trim();
     if (lower === "red" || lower.includes("red")) return "red";
-    if (lower === "amber" || lower === "yellow" || lower.includes("amber")) return "amber";
-    if (lower === "green" || lower === "good" || lower.includes("green")) return "green";
-    if (lower === "grey" || lower === "gray") return "grey";
-    return null;
+    if (lower === "amber" || lower === "yellow" || lower === "orange" || lower.includes("amber")) return "amber";
+    if (lower === "green" || lower === "good" || lower === "pass" || lower.includes("green")) return "green";
+    if (lower === "grey" || lower === "gray" || lower === "neutral" || lower.includes("grey")) return "grey";
+    // Default to grey if not recognized
+    return "grey";
   };
 
   // Helper to build stable display ID
@@ -429,14 +519,18 @@ export default function CustomerPreviewPage() {
     return labourCost + partsCost;
   }, [vhcChecksMap, labourHoursByVhcItem, partsCostByVhcItem]);
 
-  // Build summary items from sections (red/amber items)
+  // Build summary items from sections and database records
   const summaryItems = useMemo(() => {
     const items = [];
+    const processedIds = new Set();
+
+    // First, process items from checksheet sections
     sections.forEach((section) => {
       const sectionName = section.name || section.title || "Vehicle Health Check";
       (section.items || []).forEach((item, index) => {
-        const severity = normaliseColour(item.colour || item.status || section.colour);
-        // Include red, amber, and green items
+        // Items from sections have a 'status' field, not 'colour'
+        const severity = normaliseColour(item.status || item.colour || section.colour || section.status);
+        // Include items with any severity (grey is default)
         if (!severity) return;
 
         // Build ID - check for vhc_id first, then legacy formats, then stable display ID
@@ -473,10 +567,73 @@ export default function CustomerPreviewPage() {
           wheelKey: item.wheelKey || null,
           approvalStatus,
         });
+
+        processedIds.add(String(id));
+        if (canonicalId !== String(id)) {
+          processedIds.add(canonicalId);
+        }
       });
     });
+
+    // ALWAYS process vhc_checks records from database, not just as fallback
+    // This ensures we get all items regardless of checksheet content
+    vhcChecksData.forEach((check) => {
+      if (!check?.vhc_id || processedIds.has(String(check.vhc_id))) {
+        return; // Skip if already processed or no vhc_id
+      }
+
+      // Skip internal VHC_CHECKSHEET metadata record
+      if (check.section === "VHC_CHECKSHEET") {
+        return;
+      }
+
+      // Try to determine severity from multiple sources
+      let severity = normaliseColour(check.display_status || check.severity);
+      
+      // If no severity found, try to infer from section name or issue title
+      if (!severity) {
+        const combinedText = `${check.section || ""} ${check.issue_title || ""}`.toLowerCase();
+        if (combinedText.includes("red")) severity = "red";
+        else if (combinedText.includes("amber") || combinedText.includes("orange")) severity = "amber";
+        else if (combinedText.includes("green") || combinedText.includes("good")) severity = "green";
+        else severity = "grey"; // Default to grey if no severity can be determined
+      }
+
+      const sectionName = check.section || "Other";
+      const category = resolveCategoryForItem(sectionName, check.issue_title);
+
+      items.push({
+        id: String(check.vhc_id),
+        label: check.issue_title || check.section || "Recorded item",
+        notes: check.issue_description || "",
+        measurement: check.measurement || "",
+        concernText: "",
+        rows: [],
+        sectionName,
+        category,
+        categoryLabel: category.label,
+        rawSeverity: severity,
+        severityKey: severity,
+        concerns: [],
+        wheelKey: null,
+        approvalStatus: normaliseDecisionStatus(check.approval_status) || "pending",
+        fromDatabase: true, // Mark as coming from database
+      });
+
+      processedIds.add(String(check.vhc_id));
+    });
+
+    // Log for debugging - remove later
+    if (items.length === 0) {
+      console.log("DEBUG: No items found in summaryItems", {
+        sectionsCount: sections.length,
+        vhcChecksDataCount: vhcChecksData.length,
+        vhcData: vhcData,
+      });
+    }
+
     return items;
-  }, [sections, vhcChecksMap, vhcIdAliases]);
+  }, [sections, vhcChecksMap, vhcIdAliases, vhcChecksData]);
 
   // Build severity lists with proper categorization (matching VhcDetailsPanel logic)
   const severityLists = useMemo(() => {
@@ -608,7 +765,7 @@ export default function CustomerPreviewPage() {
     }
   }, [job?.id]);
 
-  // Render customer row - matching VhcDetailsPanel design
+  // Render customer row - matching VhcDetailsPanel design with parts and labour breakdown
   const renderCustomerRow = (item, severity) => {
     const isUpdating = updatingStatus.has(item.id);
     const isAuthorized = item.approvalStatus === "authorized" || item.approvalStatus === "completed";
@@ -622,6 +779,11 @@ export default function CustomerPreviewPage() {
     const measurement = item.measurement || "";
     const categoryLabel = item.categoryLabel || item.sectionName || "Recorded Section";
     const total = item.total || 0;
+    
+    // Get parts and labour information
+    const partsCost = item.partsCost || 0;
+    const labourHours = item.labourHours || 0;
+    const labourCost = Number.isFinite(labourHours) ? labourHours * LABOUR_RATE : 0;
 
     // Calculate wear percentage for tyres and brake pads
     const categoryId = item.category?.id || "";
@@ -673,125 +835,132 @@ export default function CustomerPreviewPage() {
     };
 
     return (
-      <div
-        key={`${severity}-${item.id}`}
+      <tr
+        key={item.id}
         style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "10px",
-          padding: "14px 16px",
           borderBottom: "1px solid var(--info-surface)",
           background: getRowBackground(),
+          transition: "background 0.2s ease",
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>
-          <div style={{ minWidth: "240px", flex: 1 }}>
-            <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
-              {categoryLabel}
-            </div>
-            <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--accent-purple)", marginTop: "4px" }}>
-              {detailLabel}
-            </div>
-            {detailContent && (
-              <div style={{ fontSize: "13px", color: "var(--info-dark)", marginTop: "4px" }}>{detailContent}</div>
-            )}
-            {measurement && (
-              <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>{measurement}</div>
-            )}
-            {/* Wear percentage indicator for tyres and brake pads */}
-            {wearPercent !== null && (
-              <div style={{ marginTop: "8px", display: "flex", alignItems: "center", gap: "8px" }}>
+        {/* Item Details Cell */}
+        <td style={{ padding: "12px 8px", color: "var(--accent-purple)", wordWrap: "break-word", overflow: "hidden" }}>
+          <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+            {categoryLabel}
+          </div>
+          <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--accent-purple)", marginTop: "2px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
+            <span>{detailLabel}</span>
+          </div>
+          {detailContent && (
+            <div style={{ marginTop: "6px", fontWeight: 500, color: "var(--info-dark)" }}>- {detailContent}</div>
+          )}
+          {measurement ? (
+            <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>{measurement}</div>
+          ) : null}
+          {/* Wear percentage indicator for tyres and brake pads */}
+          {wearPercent !== null && (
+            <div style={{ marginTop: "8px", display: "flex", alignItems: "center", gap: "8px" }}>
+              <div style={{
+                width: "80px",
+                height: "8px",
+                background: "var(--info-surface)",
+                borderRadius: "4px",
+                overflow: "hidden"
+              }}>
                 <div style={{
-                  width: "100px",
-                  height: "8px",
-                  background: "var(--info-surface)",
+                  width: `${wearPercent}%`,
+                  height: "100%",
+                  background: getWearColor(wearPercent),
                   borderRadius: "4px",
-                  overflow: "hidden"
-                }}>
-                  <div style={{
-                    width: `${wearPercent}%`,
-                    height: "100%",
-                    background: getWearColor(wearPercent),
-                    borderRadius: "4px",
-                    transition: "width 0.3s ease"
-                  }} />
-                </div>
-                <span style={{
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  color: getWearColor(wearPercent)
-                }}>
-                  {wearPercent}% Worn
-                </span>
-                <span style={{ fontSize: "11px", color: "var(--info)" }}>
-                  ({wearLabel})
-                </span>
+                  transition: "width 0.3s ease"
+                }} />
               </div>
-            )}
+              <span style={{
+                fontSize: "11px",
+                fontWeight: 600,
+                color: getWearColor(wearPercent),
+                minWidth: "45px"
+              }}>
+                {wearPercent}% Worn
+              </span>
+            </div>
+          )}
+        </td>
+
+        {/* Parts Cost Cell */}
+        <td style={{ padding: "12px 8px", textAlign: "left" }}>
+          <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--accent-purple)" }}>
+            {formatCurrency(partsCost)}
           </div>
+        </td>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
-            <div style={{ fontSize: "14px", fontWeight: 600 }}>{formatCurrency(total)}</div>
-
-            {showDecision && (
-              <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                <label style={{ display: "flex", gap: "6px", alignItems: "center", fontSize: "13px", cursor: isUpdating ? "not-allowed" : "pointer" }}>
-                  <input
-                    type="checkbox"
-                    checked={isAuthorized}
-                    disabled={isUpdating}
-                    onChange={(e) => updateEntryStatus(item.id, e.target.checked ? "authorized" : null)}
-                    style={{ width: "16px", height: "16px", cursor: isUpdating ? "not-allowed" : "pointer" }}
-                  />
-                  Authorise
-                </label>
-                <label style={{ display: "flex", gap: "6px", alignItems: "center", fontSize: "13px", cursor: isUpdating ? "not-allowed" : "pointer" }}>
-                  <input
-                    type="checkbox"
-                    checked={isDeclined}
-                    disabled={isUpdating}
-                    onChange={(e) => updateEntryStatus(item.id, e.target.checked ? "declined" : null)}
-                    style={{ width: "16px", height: "16px", cursor: isUpdating ? "not-allowed" : "pointer" }}
-                  />
-                  Decline
-                </label>
-              </div>
-            )}
-
-            {/* Final Check checkbox for authorized or declined items */}
-            {(isAuthorized || isDeclined) && (
-              <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                <label style={{
-                  display: "flex",
-                  gap: "6px",
-                  alignItems: "center",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  color: isAuthorized ? "var(--success)" : "var(--danger)",
-                  cursor: isUpdating ? "not-allowed" : "pointer",
-                }}>
-                  <input
-                    type="checkbox"
-                    checked={true}
-                    disabled={isUpdating}
-                    onChange={(e) => {
-                      if (!e.target.checked) {
-                        updateEntryStatus(item.id, null);
-                      }
-                    }}
-                    style={{ width: "16px", height: "16px", cursor: isUpdating ? "not-allowed" : "pointer" }}
-                  />
-                  Final Check - {isAuthorized ? "Authorised" : "Declined"}
-                </label>
-              </div>
-            )}
+        {/* Labour Cost Cell */}
+        <td style={{ padding: "12px 8px", textAlign: "left" }}>
+          <div style={{ fontSize: "13px", color: "var(--info-dark)" }}>
+            {labourHours > 0 ? `${labourHours}h` : "—"}
           </div>
-        </div>
-      </div>
+          {labourHours > 0 && (
+            <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--accent-purple)", marginTop: "2px" }}>
+              {formatCurrency(labourCost)}
+            </div>
+          )}
+        </td>
+
+        {/* Total Cell */}
+        <td style={{ padding: "12px 8px", textAlign: "left" }}>
+          <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--accent-purple)" }}>
+            {formatCurrency(total)}
+          </div>
+        </td>
+
+        {/* Status Cell */}
+        <td style={{ padding: "12px 8px", textAlign: "center" }}>
+          {showDecision ? (
+            <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", justifyContent: "center" }}>
+              <label style={{ display: "flex", gap: "4px", alignItems: "center", fontSize: "12px", cursor: isUpdating ? "not-allowed" : "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={isAuthorized}
+                  disabled={isUpdating}
+                  onChange={(e) => updateEntryStatus(item.id, e.target.checked ? "authorized" : null)}
+                  style={{ width: "14px", height: "14px", cursor: isUpdating ? "not-allowed" : "pointer" }}
+                />
+                <span style={{ fontSize: "11px" }}>Authorise</span>
+              </label>
+              <label style={{ display: "flex", gap: "4px", alignItems: "center", fontSize: "12px", cursor: isUpdating ? "not-allowed" : "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={isDeclined}
+                  disabled={isUpdating}
+                  onChange={(e) => updateEntryStatus(item.id, e.target.checked ? "declined" : null)}
+                  style={{ width: "14px", height: "14px", cursor: isUpdating ? "not-allowed" : "pointer" }}
+                />
+                <span style={{ fontSize: "11px" }}>Decline</span>
+              </label>
+            </div>
+          ) : isAuthorized || isDeclined ? (
+            <div style={{
+              padding: "4px 8px",
+              borderRadius: "8px",
+              background: isAuthorized ? "var(--success-surface)" : "var(--danger-surface)",
+              color: isAuthorized ? "var(--success)" : "var(--danger)",
+              fontSize: "11px",
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              textAlign: "center"
+            }}>
+              {isAuthorized ? "✓ Authorised" : "✗ Declined"}
+            </div>
+          ) : (
+            <div style={{ fontSize: "12px", color: "var(--info)" }}>—</div>
+          )}
+        </td>
+      </tr>
     );
   };
 
-  // Render customer section - matching VhcDetailsPanel design
+  // Render customer section - matching VhcDetailsPanel design with table layout
   const renderCustomerSection = (title, items, severity) => {
     const theme = SEVERITY_THEME[severity] || { border: "var(--info-surface)", background: "var(--surface)" };
 
@@ -852,7 +1021,30 @@ export default function CustomerPreviewPage() {
             No items recorded.
           </div>
         ) : (
-          items.map((item) => renderCustomerRow(item, severity))
+          <div style={{ overflow: "visible" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", tableLayout: "fixed" }}>
+              <thead>
+                <tr
+                  style={{
+                    background: "var(--info-surface)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
+                    color: "var(--info)",
+                    fontSize: "11px",
+                  }}
+                >
+                  <th style={{ textAlign: "left", padding: "12px 8px", width: "40%" }}>Item Details</th>
+                  <th style={{ textAlign: "left", padding: "12px 8px", width: "15%" }}>Parts</th>
+                  <th style={{ textAlign: "left", padding: "12px 8px", width: "18%" }}>Labour</th>
+                  <th style={{ textAlign: "left", padding: "12px 8px", width: "15%" }}>Total</th>
+                  <th style={{ textAlign: "left", padding: "12px 8px", width: "12%" }}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item) => renderCustomerRow(item, severity))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     );

@@ -1567,6 +1567,10 @@ export default function VhcDetailsPanel({
   const summaryItems = useMemo(() => {
     const items = [];
     sections.forEach((section) => {
+      // Skip internal VHC_CHECKSHEET metadata section
+      if (section.key === "VHC_CHECKSHEET" || section.title === "VHC_CHECKSHEET") {
+        return;
+      }
       const sectionName = section.name || section.title || "Vehicle Health Check";
       (section.items || []).forEach((item, index) => {
         const severity = normaliseColour(item.colour || item.status || section.colour);
@@ -1639,6 +1643,10 @@ export default function VhcDetailsPanel({
   const greenItems = useMemo(() => {
     const items = [];
     sections.forEach((section) => {
+      // Skip internal VHC_CHECKSHEET metadata section
+      if (section.key === "VHC_CHECKSHEET" || section.title === "VHC_CHECKSHEET") {
+        return;
+      }
       const sectionName = section.name || section.title || "Vehicle Health Check";
       (section.items || []).forEach((item, index) => {
         const severity = normaliseColour(item.colour || item.status || section.colour);
@@ -2946,6 +2954,68 @@ export default function VhcDetailsPanel({
                       {locationLabel ? (
                         <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>Location: {locationLabel}</div>
                       ) : null}
+                      {/* Wear indicator for tyres and brake pads */}
+                      {(() => {
+                        let wearPercent = null;
+                        let wearLabel = "";
+                        const categoryId = item.categoryId || "";
+                        const labelLower = (item.label || "").toLowerCase();
+                        const categoryLower = (item.categoryLabel || "").toLowerCase();
+                        const allText = [item.measurement || "", detailContent, item.label || "", item.notes || ""].join(" ");
+
+                        // Check if this is a tyre item
+                        const isTyreItem = categoryId === "wheels_tyres" ||
+                                          categoryLower.includes("tyre") ||
+                                          categoryLower.includes("wheel") ||
+                                          labelLower.includes("tyre");
+
+                        // Check if this is a brake pad item (not disc)
+                        const isPadItem = (categoryId === "brakes_hubs" || categoryLower.includes("brake")) &&
+                                         (labelLower.includes("pad") || allText.toLowerCase().includes("pad thickness")) &&
+                                         !labelLower.includes("disc");
+
+                        if (isTyreItem) {
+                          const treadDepth = extractTreadDepth(allText);
+                          if (treadDepth !== null) {
+                            wearPercent = calculateTyreWearPercent(treadDepth);
+                            wearLabel = "Tyre Wear";
+                          }
+                        } else if (isPadItem) {
+                          const padThickness = extractPadThickness(allText);
+                          if (padThickness !== null) {
+                            wearPercent = calculatePadWearPercent(padThickness);
+                            wearLabel = "Pad Wear";
+                          }
+                        }
+
+                        return wearPercent !== null ? (
+                          <div style={{ marginTop: "8px", display: "flex", alignItems: "center", gap: "8px" }}>
+                            <div style={{
+                              width: "80px",
+                              height: "8px",
+                              background: "var(--info-surface)",
+                              borderRadius: "4px",
+                              overflow: "hidden"
+                            }}>
+                              <div style={{
+                                width: `${wearPercent}%`,
+                                height: "100%",
+                                background: getWearColor(wearPercent),
+                                borderRadius: "4px",
+                                transition: "width 0.3s ease"
+                              }} />
+                            </div>
+                            <span style={{
+                              fontSize: "11px",
+                              fontWeight: 600,
+                              color: getWearColor(wearPercent),
+                              minWidth: "45px"
+                            }}>
+                              {wearPercent}% Worn
+                            </span>
+                          </div>
+                        ) : null;
+                      })()}
                       {supplementaryRows.length > 0 ? (
                         <div
                           style={{
