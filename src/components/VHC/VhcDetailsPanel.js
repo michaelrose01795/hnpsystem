@@ -6419,6 +6419,7 @@ export default function VhcDetailsPanel({
           onClose={(draft) => handleSectionDismiss("externalInspection", draft)}
           onComplete={(data) => handleSectionComplete("externalInspection", data)}
           locked={lockedSectionKeys.has("externalInspection")}
+          summaryItems={summaryItems}
         />
       )}
       {activeSection === "internalElectrics" && (
@@ -6428,6 +6429,7 @@ export default function VhcDetailsPanel({
           onClose={(draft) => handleSectionDismiss("internalElectrics", draft)}
           onComplete={(data) => handleSectionComplete("internalElectrics", data)}
           locked={lockedSectionKeys.has("internalElectrics")}
+          summaryItems={summaryItems}
         />
       )}
       {activeSection === "underside" && (
@@ -6437,6 +6439,7 @@ export default function VhcDetailsPanel({
           onClose={(draft) => handleSectionDismiss("underside", draft)}
           onComplete={(data) => handleSectionComplete("underside", data)}
           locked={lockedSectionKeys.has("underside")}
+          summaryItems={summaryItems}
         />
       )}
 

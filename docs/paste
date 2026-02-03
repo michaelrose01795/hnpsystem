@@ -4,8 +4,15 @@ Continue flow with job number 54
 
 have it so the "Customer View" button is names "Cutomer Preview", have it so the that opens a new page, this new page doesnt have a sidebar/topbar within it. (it has a back button in the top right which takes the user back to the summary tab within the job-card/[jobnumber] page). as well this it shows all of the red reports, and then amber reports, and then at the bottom all of the green reports. have it so its layed out for the customer viewing with total prices, tick boxes for authorise or delicne (linked to the summmary authorise and delicne section) as well as showing a summary tab which shows the red amber and green with totals, a photo tab which shows all of the photos linked to the job number, and a video tab which shows all of the videos linked to the job number as well
 
-ADDD check
-CHange the "Section been authorised." overlay so more precise with optional popups. 
+
+
+
+Add a tab section inside the create page, this tab creates a new job card and the new tab will show the same contents within the first page tab, the only thing which carries over is the customer name and reg. 
+
+have it so inside the appointment page the row are in the same row but new rows inside the same row. Within the page where the current requests are show inside the job card pages have it so more tabs are shown there with the main jobnumber and then the linked on with the tab which just changes to the new job card. 
+uses a same prime job number example 00055 and then the sub job number would be for tab one 00055 and then the sub job number for the other tabs created will be 00056, 00057 etc. so the prime job number is used or dispalying the jobs togther wtihin the appointment page inside the todays work, and the same with assigning to techs, assepting in, same VHC,. and the sub job number will be used front end forshowing the job number in the pages, clocking onto indivdual jobs numbers.
+Figure it out FO ONE STEP DONT FULL PASTE
+
 
 
 have it so when hocer over the "STATUS" circule within the sumary tab, the hover section is the width of the text and follows the light and dark theme. 
