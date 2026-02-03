@@ -61,80 +61,101 @@ export default async function handler(req, res) {
         return res.status(410).json({ success: false, error: "Link has expired" });
       }
 
-      // Fetch the job data for the public preview
-      const { data: jobData, error: jobError } = await dbClient
+      // Fetch the job row first (simpler queries are more reliable)
+      const { data: jobRow, error: jobRowError } = await dbClient
         .from("jobs")
         .select(`
-          id,
-          job_number,
-          checksheet,
-          customer:customer_id(id, name, company_name),
-          vehicle:vehicle_id(id, registration, make, model, colour),
-          vhc_checks(
-            vhc_id,
-            job_id,
-            section,
-            issue_description,
-            issue_title,
-            measurement,
-            created_at,
-            updated_at,
-            approval_status,
-            display_status,
-            labour_hours,
-            parts_cost,
-            total_override,
-            labour_complete,
-            parts_complete
-          ),
-          parts_job_items(
-            id,
-            part_id,
-            quantity_requested,
-            quantity_allocated,
-            quantity_fitted,
-            status,
-            origin,
-            vhc_item_id,
-            unit_cost,
-            unit_price,
-            request_notes,
-            created_at,
-            updated_at,
-            authorised,
-            stock_status,
-            labour_hours,
-            part:part_id(id, part_number, name, unit_price)
-          ),
-          job_files(
-            file_id,
-            file_name,
-            file_url,
-            file_type,
-            folder,
-            uploaded_at
-          )
+          *,
+          customer:customer_id(*),
+          vehicle:vehicle_id(*)
         `)
         .eq("job_number", jobNumber)
         .maybeSingle();
 
-      if (jobError) {
-        console.error("Error fetching job data:", jobError);
-        return res.status(500).json({ success: false, error: "Failed to fetch job data" });
+      if (jobRowError) {
+        console.error("Error fetching job row:", jobRowError);
+        const details = process.env.NODE_ENV !== 'production' ? (jobRowError && jobRowError.message ? jobRowError.message : JSON.stringify(jobRowError, Object.getOwnPropertyNames(jobRowError))) : undefined;
+        return res.status(500).json({ success: false, error: "Failed to fetch job data", details });
       }
 
-      if (!jobData) {
+      if (!jobRow) {
         return res.status(404).json({ success: false, error: "Job not found" });
       }
+
+      // Fetch related collections separately to avoid complex nested-select failures.
+      // Use Promise.all so requests are parallel, then inspect errors and return partial results with warnings.
+      const [vhcChecksRes, partsRes, filesRes, aliasesRes, authItemsRes] = await Promise.all([
+        dbClient
+          .from("vhc_checks")
+          .select(
+            `vhc_id, job_id, section, issue_description, issue_title, measurement, created_at, updated_at, approval_status, display_status, approved_by, approved_at, labour_hours, parts_cost, total_override, labour_complete, parts_complete`
+          )
+          .eq("job_id", jobRow.id),
+        dbClient
+          .from("parts_job_items")
+          .select(
+            `id, part_id, quantity_requested, quantity_allocated, quantity_fitted, status, origin, vhc_item_id, unit_cost, unit_price, request_notes, created_at, updated_at, authorised, stock_status, labour_hours, part:part_id(id, part_number, name, unit_price)`
+          )
+          .eq("job_id", jobRow.id),
+        dbClient
+          .from("job_files")
+          .select(`file_id, file_name, file_url, file_type, folder, uploaded_at`)
+          .eq("job_id", jobRow.id),
+        dbClient
+          .from("vhc_item_aliases")
+          .select(`display_id, vhc_item_id`)
+          .eq("job_id", jobRow.id),
+        dbClient
+          .from("vhc_authorized_items")
+          .select(`vhc_item_id, approval_status`)
+          .eq("job_id", jobRow.id),
+      ]);
+
+      const warnings = [];
+      if (vhcChecksRes.error) {
+        console.error("Error fetching vhc_checks:", vhcChecksRes.error);
+        warnings.push("vhc_checks");
+      }
+      if (partsRes.error) {
+        console.error("Error fetching parts_job_items:", partsRes.error);
+        warnings.push("parts_job_items");
+      }
+      if (filesRes.error) {
+        console.error("Error fetching job_files:", filesRes.error);
+        warnings.push("job_files");
+      }
+      if (aliasesRes.error) {
+        console.error("Error fetching vhc_item_aliases:", aliasesRes.error);
+        warnings.push("vhc_item_aliases");
+      }
+      if (authItemsRes.error) {
+        console.error("Error fetching vhc_authorized_items:", authItemsRes.error);
+        warnings.push("vhc_authorized_items");
+      }
+
+      const jobData = {
+        ...jobRow,
+        vhc_checks: (vhcChecksRes.data) || [],
+        parts_job_items: (partsRes.data) || [],
+        job_files: (filesRes.data) || [],
+        vhc_item_aliases: (aliasesRes.data) || [],
+        vhc_authorized_items: (authItemsRes.data) || [],
+      };
 
       return res.status(200).json({
         success: true,
         valid: true,
         jobData,
+        warnings: warnings.length ? warnings : undefined,
+        debug: process.env.NODE_ENV !== 'production' ? { vhcChecksError: vhcChecksRes.error, partsError: partsRes.error, filesError: filesRes.error, aliasesError: aliasesRes.error, authError: authItemsRes.error } : undefined,
         expiresAt: new Date(new Date(shareLink.created_at).getTime() + 24 * 60 * 60 * 1000).toISOString(),
       });
     } catch (error) {
       console.error("Error validating share link:", error);
+      // Return detailed error info in development to aid debugging
+      if (process.env.NODE_ENV !== 'production') {
+        return res.status(500).json({ success: false, error: "Internal server error", details: String(error.message || error), stack: error.stack });
+      }
       return res.status(500).json({ success: false, error: "Internal server error" });
     }
   }

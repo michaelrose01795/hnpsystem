@@ -22,6 +22,8 @@
 
 The `display_status` column must exist in your database for this to work!
 
+Additionally, we now add a `severity` column which stores the original severity (red/amber/green) derived from the checksheet so authorisation states do not overwrite it.
+
 **Check if column exists:**
 ```sql
 SELECT column_name

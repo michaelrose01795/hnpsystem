@@ -455,7 +455,7 @@ export const getAllJobs = async () => {
       ),
       technician:assigned_to(user_id, first_name, last_name, email, role),
       appointments(appointment_id, scheduled_time, status, notes, created_at, updated_at),
-      vhc_checks(vhc_id, section, issue_title, issue_description, data, measurement, created_at, updated_at, approval_status, display_status, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by),
+      vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at, approval_status, display_status, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by),
       parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, pre_pick_location, created_at, updated_at),
       parts_job_items!parts_job_items_job_id_fkey(
         id,
@@ -1155,7 +1155,7 @@ export const getJobByNumber = async (jobNumber) => {
           created_at,
           updated_at
         ),
-        vhc_checks(vhc_id, section, issue_title, issue_description, data, measurement, created_at, updated_at, approval_status, display_status, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by),
+        vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at, approval_status, display_status, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by),
         parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, pre_pick_location, created_at, updated_at),
         parts_job_items!parts_job_items_job_id_fkey(
           id,

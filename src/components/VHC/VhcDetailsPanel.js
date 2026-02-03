@@ -918,6 +918,8 @@ export default function VhcDetailsPanel({
   const [authorizedViewRows, setAuthorizedViewRows] = useState([]);
   const [authorizedViewLoaded, setAuthorizedViewLoaded] = useState(false);
   const [isAddPartsModalOpen, setIsAddPartsModalOpen] = useState(false);
+
+
   const [addPartsTarget, setAddPartsTarget] = useState(null);
   const [addPartsSearch, setAddPartsSearch] = useState("");
   const [addPartsResults, setAddPartsResults] = useState([]);
@@ -1872,7 +1874,9 @@ export default function VhcDetailsPanel({
           decisionKey = "pending";
         }
       }
-      const severityKey = item.severityKey || normaliseColour(item.rawSeverity);
+      // Prefer DB severity where available
+      // prefer explicit severity column over display_status (approval)
+      const severityKey = normaliseColour(item.vhcCheck?.severity || item.vhcCheck?.display_status) || item.severityKey || normaliseColour(item.rawSeverity);
       const sectionKey =
         decisionKey === "authorized" || decisionKey === "completed"
           ? "authorized"
@@ -1909,6 +1913,11 @@ export default function VhcDetailsPanel({
         });
       });
     });
+
+    // Sort authorized and declined lists so red items are shown first then amber
+    const severityRank = (s) => (s === "red" ? 0 : s === "amber" ? 1 : s === "green" ? 2 : 3);
+    lists.authorized.sort((a, b) => severityRank(a.severityKey || a.rawSeverity) - severityRank(b.severityKey || b.rawSeverity));
+    lists.declined.sort((a, b) => severityRank(a.severityKey || a.rawSeverity) - severityRank(b.severityKey || b.rawSeverity));
 
     return lists;
   }, [summaryItems, itemEntries, resolveCanonicalVhcId, authorizedViewIds, authorizedViewLoaded]);
@@ -2492,12 +2501,21 @@ export default function VhcDetailsPanel({
       declined: 0,
       overall: 0,
     };
-    const accumulate = (items, severity) => {
-      items.forEach((item) => {
+
+    // Iterate across all known lists and compute totals based on raw severity so red/amber totals include authorised/declined items
+    const allLists = [severityLists.red || [], severityLists.amber || [], severityLists.authorized || [], severityLists.declined || []];
+
+    allLists.forEach((list) => {
+      list.forEach((item) => {
         const rowTotal = resolveCustomerRowTotal(item.id);
         if (!rowTotal) return;
-        totals[severity] += rowTotal;
         totals.overall += rowTotal;
+
+        // prefer explicit severity column over display_status (approval)
+        const rawSeverity = normaliseColour(item.vhcCheck?.severity || item.vhcCheck?.display_status) || item.severityKey || normaliseColour(item.rawSeverity);
+        if (rawSeverity === "red") totals.red += rowTotal;
+        else if (rawSeverity === "amber") totals.amber += rowTotal;
+
         const entry = getEntryForItem(item.id);
         const decisionKey = normaliseDecisionStatus(entry.status);
         if (decisionKey === "authorized") {
@@ -2506,11 +2524,8 @@ export default function VhcDetailsPanel({
           totals.declined += rowTotal;
         }
       });
-    };
-    accumulate(severityLists.red || [], "red");
-    accumulate(severityLists.amber || [], "amber");
-    accumulate(severityLists.authorized || [], "authorized");
-    accumulate(severityLists.declined || [], "declined");
+    });
+
     return totals;
   }, [severityLists, itemEntries, labourHoursByVhcItem, partsCostByVhcItem, resolveCanonicalVhcId]);
 
@@ -2850,19 +2865,20 @@ export default function VhcDetailsPanel({
                   : null;
                 const isChecked = selectedSet.has(item.id);
                 const isWarranty = warrantyRows.has(String(item.id));
-                const rowSeverity = item.severityKey || item.rawSeverity || severity;
+                // prefer explicit severity column over display_status (approval)
+                const rowSeverity = normaliseColour(item.vhcCheck?.severity || item.vhcCheck?.display_status) || item.severityKey || item.rawSeverity || severity;
                 // For authorized/declined items, use original severity for background color
                 const backgroundSeverity = (severity === "authorized" || severity === "declined")
-                  ? (item.severityKey || item.rawSeverity || rowSeverity)
+                  ? rowSeverity
                   : rowSeverity;
                 const rowTheme = SEVERITY_THEME[backgroundSeverity] || {};
 
                 // Explicitly set background color for authorized/declined items based on original severity
                 const getExplicitBackground = () => {
                   if (severity === "authorized" || severity === "declined") {
-                    if (item.rawSeverity === "red") {
+                    if (rowSeverity === "red") {
                       return "var(--danger-surface)";
-                    } else if (item.rawSeverity === "amber") {
+                    } else if (rowSeverity === "amber") {
                       return "var(--warning-surface)";
                     }
                   }
@@ -3434,9 +3450,20 @@ export default function VhcDetailsPanel({
     // Determine background color for authorized/declined rows based on original severity
     const getRowBackground = () => {
       if (isAuthorized || isDeclined) {
-        // Use rawSeverity to determine background (red or amber)
-        // rawSeverity stores the original severity before status change
-        const originalSeverity = item.rawSeverity;
+        // Prefer DB severity on attached vhc_check, then item fields
+        // prefer explicit severity column over display_status (approval)
+        let originalSeverity = normaliseColour(item.vhcCheck?.severity || item.vhcCheck?.display_status) || item.rawSeverity || item.severityKey || normaliseColour(item.display_status || item.severity);
+
+        if (!originalSeverity && typeof resolveCanonicalVhcId === 'function' && vhcChecksMap) {
+          try {
+            const canonical = resolveCanonicalVhcId(String(item.id));
+            const check = vhcChecksMap.get(String(canonical)) || vhcChecksMap.get(String(item.id));
+            originalSeverity = normaliseColour(check?.display_status || check?.severity);
+          } catch (err) {
+            // ignore
+          }
+        }
+
         if (originalSeverity === "red") {
           return "var(--danger-surface)";
         } else if (originalSeverity === "amber") {
@@ -3579,6 +3606,17 @@ export default function VhcDetailsPanel({
       return { authorized, declined };
     }, [items]);
 
+    // Ensure authorized/declined sections show red items first
+    let displayItems = items;
+    if (severity === "authorized" || severity === "declined") {
+      const severityRank = (s) => (s === "red" ? 0 : s === "amber" ? 1 : s === "green" ? 2 : 3);
+      displayItems = [...items].sort((a, b) => severityRank(a.severityKey || a.rawSeverity) - severityRank(b.severityKey || b.rawSeverity));
+
+      if (process.env.NODE_ENV !== 'production') {
+
+      }
+    }
+
     return (
       <div
         style={{
@@ -3617,12 +3655,12 @@ export default function VhcDetailsPanel({
             )}
           </div>
         </div>
-        {items.length === 0 ? (
+        {displayItems.length === 0 ? (
           <div style={{ padding: "16px", fontSize: "13px", color: "var(--info)" }}>
             No items recorded.
           </div>
         ) : (
-          items.map((item) => renderCustomerRow(item, severity))
+          displayItems.map((item) => renderCustomerRow(item, severity))
         )}
       </div>
     );

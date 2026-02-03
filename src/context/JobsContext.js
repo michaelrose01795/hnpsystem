@@ -3,6 +3,7 @@
 "use client";
 
 import React, { createContext, useState, useContext, useEffect } from "react";
+import { useUser } from "@/context/UserContext";
 import {
   getAllJobs,
   addJobToDatabase,
@@ -53,9 +54,18 @@ export function JobsProvider({ children }) {
     }
   };
 
+  const { user } = useUser() || {};
+
   useEffect(() => {
-    fetchJobs();
-  }, []);
+    // Only fetch jobs when a logged-in user exists (prevents unauth'd requests on public pages)
+    if (user) {
+      fetchJobs();
+    } else {
+      setJobs([]);
+      setLoading(false);
+      console.debug("JobsProvider: skipped fetch (no user)");
+    }
+  }, [user]);
 
   // Add a new job
   const addJob = async (job) => {

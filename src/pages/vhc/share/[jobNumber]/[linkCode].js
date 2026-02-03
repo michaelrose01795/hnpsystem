@@ -2,10 +2,12 @@
 // Public shareable VHC preview page - no login required, read-only view
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
-import { summariseTechnicianVhc } from "@/lib/vhc/summary";
+import Image from "next/image";
+import { useTheme } from "@/styles/themeProvider";
+import { summariseTechnicianVhc, parseVhcBuilderPayload } from "@/lib/vhc/summary";
 import { normaliseDecisionStatus, resolveSeverityKey } from "@/lib/vhc/summaryStatus";
 
 const formatCurrency = (value) => {
@@ -67,6 +69,57 @@ export default function PublicSharePreviewPage() {
   const [jobFiles, setJobFiles] = useState([]);
   const [partsJobItems, setPartsJobItems] = useState([]);
   const [expiresAt, setExpiresAt] = useState(null);
+  const [vhcIdAliases, setVhcIdAliases] = useState({});
+  const [authorizedViewRows, setAuthorizedViewRows] = useState([]);
+
+  // For theme-aware logo
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => { setIsMounted(true); }, []);
+  const { resolvedMode } = useTheme();
+  const logoSrc = (isMounted ? resolvedMode : "light") === "dark"
+    ? "/images/logo/DarkLogo.png"
+    : "/images/logo/LightLogo.png"; 
+
+  // Read-only pill style that switches background for light/dark themes
+  const readOnlyPillStyle = useMemo(() => {
+    const isDark = (isMounted ? resolvedMode : "light") === "dark";
+    return {
+      padding: "6px 12px",
+      background: isDark ? "var(--surface)" : "var(--info-surface)",
+      border: "1px solid var(--info-surface)",
+      borderRadius: "8px",
+      fontSize: "12px",
+      color: "var(--info)",
+    };
+  }, [resolvedMode, isMounted]);
+
+  // Expiry box style: purple theme in dark mode, danger (red) in light mode
+  const expireBoxStyle = useMemo(() => {
+    const isDark = (isMounted ? resolvedMode : "light") === "dark";
+    if (isDark) {
+      return {
+        padding: "6px 12px",
+        background: "rgba(var(--accent-purple-rgb), 0.08)",
+        border: "1px solid rgba(var(--accent-purple-rgb), 0.25)",
+        borderRadius: "8px",
+        fontSize: "12px",
+        color: "var(--accent-purple)",
+        textAlign: "right",
+        fontWeight: 600,
+      };
+    }
+
+    return {
+      padding: "6px 12px",
+      background: "rgba(var(--danger-rgb), 0.08)",
+      border: "1px solid rgba(var(--danger-rgb), 0.25)",
+      borderRadius: "8px",
+      fontSize: "12px",
+      color: "var(--danger)",
+      textAlign: "right",
+      fontWeight: 600,
+    };
+  }, [resolvedMode, isMounted]);
 
   // Validate link and fetch job data
   useEffect(() => {
@@ -78,27 +131,58 @@ export default function PublicSharePreviewPage() {
 
       try {
         const response = await fetch(`/api/job-cards/${jobNumber}/share-link?linkCode=${linkCode}`);
-        const data = await response.json();
+        let data;
+        try {
+          data = await response.json();
+        } catch (parseErr) {
+          console.error("Failed to parse JSON from share API", parseErr);
+          setError("Failed to load job data (invalid response)");
+          setLoading(false);
+          return;
+        }
 
         if (!response.ok) {
+          console.error("Share API error", { status: response.status, body: data });
           if (response.status === 410) {
             setError("This link has expired. Please request a new link from the service team.");
           } else if (response.status === 404) {
             setError("This link is invalid or the job was not found.");
           } else {
-            setError(data.error || "Failed to load job data");
+            const serverMsg = data && data.error ? data.error : "Failed to load job data";
+            const warningMsg = data && data.warnings ? ` (warnings: ${data.warnings.join(", ")})` : "";
+            // Append debug details in development
+            const debugDetails = (data && data.details) ? `\nDetails: ${data.details}` : (data && data.debug && process.env.NODE_ENV !== 'production' ? `\nDebug: ${JSON.stringify(data.debug)}` : "");
+            setError(serverMsg + warningMsg + debugDetails);
           }
           return;
         }
 
+        if (data && data.warnings && data.warnings.length > 0) {
+          console.warn("Share API returned warnings:", data.warnings, data.debug || {});
+        }
+
         const { jobData, expiresAt: linkExpiresAt } = data;
-        const { vhc_checks = [], parts_job_items = [], job_files = [], ...jobFields } = jobData;
+        const { vhc_checks = [], parts_job_items = [], job_files = [], vhc_item_aliases = [], vhc_authorized_items = [], ...jobFields } = jobData || {};
+
+        console.info("Share preview loaded", { jobNumber, linkCode, checks: vhc_checks.length, parts: parts_job_items.length, files: job_files.length, aliases: vhc_item_aliases.length, authorized: vhc_authorized_items.length, warnings: data.warnings });
 
         setJob(jobFields);
         setVhcChecksData(vhc_checks || []);
         setPartsJobItems(parts_job_items || []);
         setJobFiles(job_files || []);
         setExpiresAt(linkExpiresAt);
+
+        // Build alias map for display IDs -> canonical VHC IDs (same as customer preview)
+        const aliasMap = {};
+        (vhc_item_aliases || []).forEach((alias) => {
+          if (alias?.display_id && alias?.vhc_item_id) {
+            aliasMap[String(alias.display_id)] = String(alias.vhc_item_id);
+          }
+        });
+        setVhcIdAliases(aliasMap);
+
+        // Load authorized view rows from the same table used by customer preview
+        setAuthorizedViewRows(vhc_authorized_items || []);
       } catch (err) {
         console.error("Error fetching job data:", err);
         setError("Failed to load job data. Please try again later.");
@@ -110,23 +194,69 @@ export default function PublicSharePreviewPage() {
     validateAndFetch();
   }, [jobNumber, linkCode]);
 
-  // Parse VHC data from checksheet
+  // Parse VHC data from checksheet — prefer the checksheet stored in the `vhc_checks` table (section='VHC_CHECKSHEET'), fall back to job.checksheet
   const vhcData = useMemo(() => {
+    const fromDb = parseVhcBuilderPayload(vhcChecksData || []);
+    if (fromDb) return fromDb;
     if (!job?.checksheet) return null;
     try {
       return typeof job.checksheet === "string" ? JSON.parse(job.checksheet) : job.checksheet;
-    } catch {
+    } catch (err) {
+      console.error("Failed to parse checksheet JSON from job.checksheet:", err, { jobChecksheet: job?.checksheet });
       return null;
     }
-  }, [job?.checksheet]);
+  }, [vhcChecksData, job?.checksheet]);
 
-  // Summarize VHC items from checksheet
-  const summaryItems = useMemo(() => {
-    if (!vhcData) return [];
-    return summariseTechnicianVhc(vhcData);
-  }, [vhcData]);
+  // Helper to normalise colour/status (copied from customer-preview)
+  const normaliseColour = (value) => {
+    if (!value) return null;
+    const lower = String(value).toLowerCase().trim();
+    if (lower.includes("red")) return "red";
+    if (lower.includes("amber") || lower.includes("yellow") || lower.includes("orange")) return "amber";
+    if (lower.includes("green") || lower.includes("good") || lower.includes("pass")) return "green";
+    if (lower.includes("grey") || lower.includes("gray") || lower.includes("neutral")) return "grey";
+    return "grey";
+  };
 
-  // Build lookup map for vhc_checks by vhc_id
+  // Helper to build stable display ID
+  const buildStableDisplayId = (sectionName, item, index) => {
+    const heading = item.heading || item.label || item.name || "";
+    const prefix = sectionName.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase();
+    const suffix = heading.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase();
+    return `${prefix}-${suffix}-${index}`;
+  };
+
+  // Helper to resolve category for item (simple heuristics)
+  const resolveCategoryForItem = (sectionName, heading) => {
+    const lower = (sectionName || "").toLowerCase();
+    if (lower.includes("wheel") || lower.includes("tyre")) {
+      return { id: "wheels_tyres", label: "Wheels & Tyres" };
+    }
+    if (lower.includes("brake") || lower.includes("hub")) {
+      return { id: "brakes_hubs", label: "Brakes & Hubs" };
+    }
+    if (lower.includes("service") || lower.includes("bonnet") || lower.includes("oil")) {
+      return { id: "service_indicator", label: "Service Indicator & Under Bonnet" };
+    }
+    if (lower.includes("external")) {
+      return { id: "external_inspection", label: "External" };
+    }
+    if (lower.includes("internal") || lower.includes("electrics")) {
+      return { id: "internal_electrics", label: "Internal" };
+    }
+    if (lower.includes("underside")) {
+      return { id: "underside", label: "Underside" };
+    }
+    return { id: "other", label: sectionName };
+  };
+
+  // Resolve canonical VHC ID from display ID using alias map
+  const resolveCanonicalVhcId = useCallback((displayId) => {
+    const key = String(displayId || "");
+    return vhcIdAliases[key] || key;
+  }, [vhcIdAliases]);
+
+  // Build lookup map for vhc_checks by vhc_id (and include aliases)
   const vhcChecksMap = useMemo(() => {
     const map = new Map();
     vhcChecksData.forEach((check) => {
@@ -134,13 +264,193 @@ export default function PublicSharePreviewPage() {
         map.set(String(check.vhc_id), check);
       }
     });
+    // Also add entries for aliased display IDs so lookups work both ways
+    Object.entries(vhcIdAliases).forEach(([displayId, canonicalId]) => {
+      const check = map.get(String(canonicalId));
+      if (check && !map.has(displayId)) {
+        map.set(displayId, check);
+      }
+    });
     return map;
-  }, [vhcChecksData]);
+  }, [vhcChecksData, vhcIdAliases]);
+
+  // Helper to compute an item's effective severity by checking several sources
+  const getEffectiveSeverity = useCallback((item) => {
+    if (!item) return null;
+
+    // 1) Check directly attached vhc_check (most authoritative)
+    const directCheck = item.vhcCheck || vhcChecksMap.get(String(item.id)) || vhcChecksMap.get(resolveCanonicalVhcId(String(item.id)));
+    // Prefer explicit severity column over approval/display status so original red/amber/green is authoritative
+    let s = normaliseColour(directCheck?.severity || directCheck?.display_status) || item.rawSeverity || item.severityKey || resolveSeverityKey(item.rawSeverity, directCheck?.severity || directCheck?.display_status);
+    if (s && s !== "grey") return s;
+
+    // 2) Inspect concerns (some checks put severity on concerns)
+    if (Array.isArray(item.concerns)) {
+      for (const c of item.concerns) {
+        const cs = normaliseColour(c?.status || c?.colour || c?.display_status);
+        if (cs && cs !== "grey") return cs;
+      }
+    }
+
+    // 3) Inspect any rows on the item
+    if (Array.isArray(item.rows)) {
+      for (const r of item.rows) {
+        const rs = normaliseColour(r?.status || r?.colour || r?.display_status);
+        if (rs && rs !== "grey") return rs;
+      }
+    }
+
+    // 4) Try to find a matching vhc_check by section/title (some DB rows use display IDs)
+    if (vhcChecksData && vhcChecksData.length > 0) {
+      const lowerLabel = (item.label || "").toString().toLowerCase().trim();
+      const lowerSection = (item.sectionName || "").toString().toLowerCase().trim();
+      const match = vhcChecksData.find((c) => {
+        if (!c) return false;
+        const sec = (c.section || "").toLowerCase();
+        const title = (c.issue_title || c.section || "").toLowerCase();
+        if (lowerSection && sec.includes(lowerSection)) return true;
+        if (lowerLabel && title.includes(lowerLabel)) return true;
+        return false;
+      });
+      if (match) {
+        const ms = normaliseColour(match.display_status || match.severity);
+        if (ms && ms !== "grey") return ms;
+      }
+    }
+
+    // 5) No stronger severity found
+    return null;
+  }, [vhcChecksData, vhcChecksMap, resolveCanonicalVhcId]);
+
+  // Build summary items from sections and database records (matches customer-preview)
+  const summaryItems = useMemo(() => {
+    const items = [];
+    const processedIds = new Set();
+
+    // First, process items from checksheet sections
+    const sections = (vhcData && (vhcData.sections || vhcData.sections || [])) || [];
+    sections.forEach((section) => {
+      const sectionName = section.name || section.title || "Vehicle Health Check";
+      (section.items || []).forEach((item, index) => {
+        const severity = normaliseColour(item.status || item.colour || section.colour || section.status);
+        if (!severity) return;
+
+        const legacyId = `${sectionName}-${index}`;
+        const id = item.vhc_id
+          ? String(item.vhc_id)
+          : vhcIdAliases[legacyId]
+          ? legacyId
+          : buildStableDisplayId(sectionName, item, index);
+
+        const heading = item.heading || item.label || item.issue_title || item.name || item.title || sectionName;
+        const category = resolveCategoryForItem(sectionName, heading);
+        const concerns = Array.isArray(item.concerns) ? item.concerns : [];
+        const primaryConcern = concerns.find((c) => normaliseColour(c?.status) === severity) || concerns[0] || null;
+
+        const canonicalId = vhcIdAliases[String(id)] || String(id);
+        const vhcCheck = vhcChecksMap.get(canonicalId) || vhcChecksMap.get(id);
+        const approvalStatus = normaliseDecisionStatus(vhcCheck?.approval_status) || "pending";
+
+        items.push({
+          id: String(id),
+          label: heading || "Recorded item",
+          notes: item.notes || item.issue_description || "",
+          measurement: item.measurement || "",
+          concernText: primaryConcern?.text || "",
+          rows: Array.isArray(item.rows) ? item.rows : [],
+          sectionName,
+          category,
+          categoryLabel: category.label,
+          rawSeverity: severity,
+          severityKey: severity,
+          concerns,
+          wheelKey: item.wheelKey || null,
+          approvalStatus,
+        });
+
+        processedIds.add(String(id));
+        if (canonicalId !== String(id)) {
+          processedIds.add(canonicalId);
+        }
+      });
+    });
+
+    // ALWAYS process vhc_checks records from database, not just as fallback
+    vhcChecksData.forEach((check) => {
+
+
+      if (!check?.vhc_id) {
+        console.info("Skipping vhc_check: no vhc_id", check);
+        return;
+      }
+      if (processedIds.has(String(check.vhc_id))) {
+        console.info("Skipping vhc_check: already processed", { vhc_id: check.vhc_id });
+        return;
+      }
+
+      if (check.section === "VHC_CHECKSHEET") {
+        console.info("Skipping vhc_check: internal VHC_CHECKSHEET metadata", { vhc_id: check.vhc_id });
+        return; // Skip internal metadata
+      }
+
+      // Prefer explicit severity column over approval/display status so original red/amber/green wins
+      let severity = normaliseColour(check.severity || check.display_status);
+      if (!severity) {
+        const combinedText = `${check.section || ""} ${check.issue_title || ""}`.toLowerCase();
+        if (combinedText.includes("red")) severity = "red";
+        else if (combinedText.includes("amber") || combinedText.includes("orange")) severity = "amber";
+        else if (combinedText.includes("green") || combinedText.includes("good")) severity = "green";
+        else severity = "grey";
+      }
+      // Ensure fallback still checks severity first
+      severity = severity || normaliseColour(check?.severity || check?.display_status);
+      const sectionName = check.section || "Other";
+      const category = resolveCategoryForItem(sectionName, check.issue_title);
+
+      items.push({
+        id: String(check.vhc_id),
+        label: check.issue_title || check.section || "Recorded item",
+        notes: check.issue_description || "",
+        measurement: check.measurement || "",
+        concernText: "",
+        rows: [],
+        sectionName,
+        category,
+        categoryLabel: category.label,
+        rawSeverity: severity,
+        severityKey: severity,
+        concerns: [],
+        wheelKey: null,
+        approvalStatus: normaliseDecisionStatus(check.approval_status) || "pending",
+        fromDatabase: true,
+      });
+
+      processedIds.add(String(check.vhc_id));
+    });
+
+
+
+    return items;
+  }, [vhcData, vhcChecksData, vhcChecksMap, vhcIdAliases]);
+
+
+
+  // Build set of authorized view IDs from vhc_authorized_items table (same as customer preview)
+  const authorizedViewIds = useMemo(() => {
+    const ids = new Set();
+    (authorizedViewRows || []).forEach((row) => {
+      if (row?.vhc_item_id) {
+        ids.add(String(row.vhc_item_id));
+      }
+    });
+    return ids;
+  }, [authorizedViewRows]);
 
   // Calculate labour hours by VHC item
   const labourHoursByVhcItem = useMemo(() => {
     const map = new Map();
 
+    // Get labour hours from vhc_checks
     vhcChecksData.forEach((check) => {
       if (!check?.vhc_id) return;
       const hours = Number(check.labour_hours);
@@ -149,6 +459,7 @@ export default function PublicSharePreviewPage() {
       }
     });
 
+    // Also check parts_job_items for labour hours
     partsJobItems.forEach((part) => {
       if (!part?.vhc_item_id) return;
       const hours = Number(part.labour_hours);
@@ -161,7 +472,6 @@ export default function PublicSharePreviewPage() {
 
     return map;
   }, [vhcChecksData, partsJobItems]);
-
   // Calculate parts cost by VHC item
   const partsCostByVhcItem = useMemo(() => {
     const map = new Map();
@@ -196,22 +506,34 @@ export default function PublicSharePreviewPage() {
     return labourCost + partsCost;
   };
 
-  // Build severity lists with proper categorization
+  // Build severity lists with proper categorization (matching customer-preview logic)
   const severityLists = useMemo(() => {
     const lists = { red: [], amber: [], green: [], grey: [], authorized: [], declined: [] };
 
     summaryItems.forEach((item) => {
       const itemId = String(item.id);
-      const vhcCheck = vhcChecksMap.get(itemId);
+      const canonicalId = resolveCanonicalVhcId(itemId);
+      const vhcCheck = vhcChecksMap.get(canonicalId) || vhcChecksMap.get(itemId);
 
-      const approvalStatus = normaliseDecisionStatus(vhcCheck?.approval_status);
-      const rawSeverity = item.severityKey || item.rawSeverity ||
-                          resolveSeverityKey(item.rawSeverity, vhcCheck?.display_status);
+      // Get approval status from vhc_checks table
+      let decisionKey = normaliseDecisionStatus(vhcCheck?.approval_status) || item.approvalStatus || "pending";
+
+      // Cross-check with authorizedViewIds for consistency with VhcDetailsPanel
+      // If item shows as authorized but isn't in authorizedViewIds, treat as pending
+      if (decisionKey === "authorized" || decisionKey === "completed") {
+        if (authorizedViewIds.size > 0 && !authorizedViewIds.has(canonicalId) && !authorizedViewIds.has(itemId)) {
+          decisionKey = "pending";
+        }
+      }
+
+      // Prefer database severity (vhc_checks.display_status or severity), fall back to item values
+      // prefer explicit severity column over display_status (approval) so authorisation doesn't mask original severity
+      const rawSeverity = normaliseColour(vhcCheck?.severity || vhcCheck?.display_status) || item.severityKey || item.rawSeverity || resolveSeverityKey(item.rawSeverity, vhcCheck?.severity || vhcCheck?.display_status);
 
       const enrichedItem = {
         ...item,
         vhcCheck,
-        approvalStatus,
+        approvalStatus: decisionKey,
         rawSeverity,
         labourHours: labourHoursByVhcItem.get(itemId) || (vhcCheck?.labour_hours ? Number(vhcCheck.labour_hours) : 0),
         partsCost: partsCostByVhcItem.get(itemId) || (vhcCheck?.parts_cost ? Number(vhcCheck.parts_cost) : 0),
@@ -219,9 +541,10 @@ export default function PublicSharePreviewPage() {
         total: resolveItemTotal(itemId),
       };
 
-      if (approvalStatus === "authorized" || approvalStatus === "completed") {
+      // Categorize by approval status first, then by severity
+      if (decisionKey === "authorized" || decisionKey === "completed") {
         lists.authorized.push(enrichedItem);
-      } else if (approvalStatus === "declined") {
+      } else if (decisionKey === "declined") {
         lists.declined.push(enrichedItem);
       } else if (rawSeverity === "red") {
         lists.red.push(enrichedItem);
@@ -235,21 +558,30 @@ export default function PublicSharePreviewPage() {
     });
 
     return lists;
-  }, [summaryItems, vhcChecksMap, labourHoursByVhcItem, partsCostByVhcItem]);
+  }, [summaryItems, vhcChecksMap, authorizedViewIds, labourHoursByVhcItem, partsCostByVhcItem, resolveItemTotal, resolveCanonicalVhcId]);
 
   // Calculate financial totals
   const customerTotals = useMemo(() => {
-    const calculateListTotal = (list) =>
-      list.reduce((sum, item) => sum + (item.total || 0), 0);
+    // Compute red/amber totals by checking rawSeverity across ALL summaryItems so authorised/declined items are included
+    let red = 0;
+    let amber = 0;
+    summaryItems.forEach((item) => {
+      const total = resolveItemTotal(item.id) || 0;
+      const effective = getEffectiveSeverity(item) || normaliseColour((vhcChecksMap.get(String(item.id))?.display_status || vhcChecksMap.get(String(item.id))?.severity)) || item.rawSeverity || item.severityKey || resolveSeverityKey(item.rawSeverity, vhcChecksMap.get(String(item.id))?.display_status);
+      if (effective === "red") red += total;
+      else if (effective === "amber") amber += total;
+    });
+
+    const calculateListTotal = (list) => list.reduce((sum, item) => sum + (item.total || 0), 0);
 
     return {
-      red: calculateListTotal(severityLists.red),
-      amber: calculateListTotal(severityLists.amber),
+      red,
+      amber,
       green: calculateListTotal(severityLists.green),
       authorized: calculateListTotal(severityLists.authorized),
       declined: calculateListTotal(severityLists.declined),
     };
-  }, [severityLists]);
+  }, [summaryItems, severityLists, vhcChecksMap, resolveItemTotal]);
 
   // Filter photos and videos
   const photoFiles = useMemo(() => {
@@ -268,9 +600,11 @@ export default function PublicSharePreviewPage() {
     });
   }, [jobFiles]);
 
+
+
   // Render read-only customer row
-  const renderCustomerRow = (item, severity) => {
-    const isAuthorized = item.approvalStatus === "authorized" || item.approvalStatus === "completed";
+  const renderCustomerRow = (item, severity) => {    // Defensive: ensure item exists
+    if (!item) return null;    const isAuthorized = item.approvalStatus === "authorized" || item.approvalStatus === "completed";
     const isDeclined = item.approvalStatus === "declined";
 
     const detailLabel = item.label || item.sectionName || "Recorded item";
@@ -279,9 +613,25 @@ export default function PublicSharePreviewPage() {
     const categoryLabel = item.categoryLabel || item.sectionName || "Recorded Section";
     const total = item.total || 0;
 
+    // Compute original severity (DB-first), expose for dev UI
+    const computeOriginalSeverity = () => {
+      let s = normaliseColour(item.vhcCheck?.display_status || item.vhcCheck?.severity) || item.rawSeverity || item.severityKey || normaliseColour(item.display_status || item.severity);
+      if (!s && typeof resolveCanonicalVhcId === 'function' && vhcChecksMap) {
+        try {
+          const canonical = resolveCanonicalVhcId(String(item.id));
+          const check = vhcChecksMap.get(String(canonical)) || vhcChecksMap.get(String(item.id));
+          s = normaliseColour(check?.display_status || check?.severity);
+        } catch (err) {
+          // ignore
+        }
+      }
+      return s;
+    };
+
+    const originalSeverity = computeOriginalSeverity();
+
     const getRowBackground = () => {
       if (isAuthorized || isDeclined) {
-        const originalSeverity = item.rawSeverity;
         if (originalSeverity === "red") {
           return "var(--danger-surface)";
         } else if (originalSeverity === "amber") {
@@ -289,12 +639,13 @@ export default function PublicSharePreviewPage() {
         }
       }
       return "transparent";
-    };
+    }; 
 
     return (
       <div
         key={`${severity}-${item.id}`}
         style={{
+          position: 'relative',
           display: "flex",
           flexDirection: "column",
           gap: "10px",
@@ -303,6 +654,8 @@ export default function PublicSharePreviewPage() {
           background: getRowBackground(),
         }}
       >
+
+
         <div style={{ display: "flex", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>
           <div style={{ minWidth: "240px", flex: 1 }}>
             <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
@@ -359,12 +712,39 @@ export default function PublicSharePreviewPage() {
       }
     });
 
+    // Ensure Authorized/Declined sections show red items first, then amber
+    let displayItems = items;
+    if (severity === "authorized" || severity === "declined") {
+      const severityRank = (s) => (s === "red" ? 0 : s === "amber" ? 1 : s === "green" ? 2 : 3);
+
+      const getEffectiveSeverity = (it) => {
+        let s = it.severityKey || it.rawSeverity || null;
+        if (!s) {
+          s = normaliseColour(it.vhcCheck?.display_status || it.vhcCheck?.severity || it.display_status || it.severity);
+        }
+        if (!s) {
+          try {
+            const canonical = resolveCanonicalVhcId(String(it.id));
+            const check = vhcChecksMap.get(String(canonical)) || vhcChecksMap.get(String(it.id));
+            s = normaliseColour(check?.display_status || check?.severity);
+          } catch (err) {
+            // swallow
+          }
+        }
+        return s;
+      };
+
+      displayItems = [...items].sort((a, b) => severityRank(getEffectiveSeverity(a)) - severityRank(getEffectiveSeverity(b)));
+
+
+    }
+
     return (
       <div
         style={{
           border: `1px solid ${theme.border || "var(--info-surface)"}`,
           borderRadius: "16px",
-          background: theme.background || "var(--surface)",
+          background: (severity === "authorized" || severity === "declined") ? "var(--surface)" : (theme.background || "var(--surface)"),
           overflow: "hidden",
           marginBottom: "18px",
         }}
@@ -398,12 +778,12 @@ export default function PublicSharePreviewPage() {
             )}
           </div>
         </div>
-        {items.length === 0 ? (
+        {displayItems.length === 0 ? (
           <div style={{ padding: "16px", fontSize: "13px", color: "var(--info)" }}>
             No items recorded.
           </div>
         ) : (
-          items.map((item) => renderCustomerRow(item, severity))
+          displayItems.map((item) => renderCustomerRow(item, severity))
         )}
       </div>
     );
@@ -453,7 +833,7 @@ export default function PublicSharePreviewPage() {
   const renderSummaryTab = () => (
     <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
       {renderFinancialTotalsGrid()}
-
+ 
       {severityLists.red && severityLists.red.length > 0 &&
         renderCustomerSection("Red Items", severityLists.red, "red")}
 
@@ -467,6 +847,10 @@ export default function PublicSharePreviewPage() {
         renderCustomerSection("Declined", severityLists.declined, "declined")}
 
       {renderCustomerSection("Green Items", severityLists.green || [], "green")}
+
+
+
+
     </div>
   );
 
@@ -603,6 +987,7 @@ export default function PublicSharePreviewPage() {
 
   // Loading state
   if (loading) {
+    console.info("Share page loading", { jobNumber, linkCode });
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--surface-light)" }}>
         <div style={{ textAlign: "center" }}>
@@ -614,6 +999,7 @@ export default function PublicSharePreviewPage() {
 
   // Error state
   if (error) {
+    console.warn("Share page error state", { jobNumber, linkCode, error });
     return (
       <>
         <Head>
@@ -641,6 +1027,7 @@ export default function PublicSharePreviewPage() {
             <div style={{ fontSize: "14px", color: "var(--info)", marginBottom: "24px" }}>
               {error}
             </div>
+
           </div>
         </div>
       </>
@@ -648,6 +1035,7 @@ export default function PublicSharePreviewPage() {
   }
 
   const vehicleInfo = job?.vehicle;
+  const customerInfo = job?.customer;
 
   return (
     <>
@@ -670,40 +1058,66 @@ export default function PublicSharePreviewPage() {
           }}
         >
           <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "12px" }}>
-              <div>
-                <h1 style={{ fontSize: "20px", fontWeight: 700, color: "var(--accent-purple)", margin: 0 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "24px" }}>
+            {/* Logo on the left to match customer-preview */}
+            <div style={{ flexShrink: 0 }}>
+              <Image
+                src={logoSrc}
+                alt="HP Logo"
+                width={120}
+                height={50}
+                style={{ objectFit: "contain" }}
+                priority
+              />
+            </div>
+
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
+                <h1 style={{ fontSize: "18px", fontWeight: 700, color: "var(--accent-purple)", margin: 0 }}>
                   Vehicle Health Check
                 </h1>
-                <div style={{ fontSize: "14px", color: "var(--info)", marginTop: "4px" }}>
-                  Job #{jobNumber}
-                  {vehicleInfo && ` • ${vehicleInfo.registration || ""} ${vehicleInfo.make || ""} ${vehicleInfo.model || ""}`.trim()}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", fontSize: "13px", color: "var(--info-dark)" }}>
+                  <span style={{ fontWeight: 600 }}>Job #{jobNumber}</span>
+                  {vehicleInfo?.registration && (
+                    <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      <span style={{ color: "var(--info)" }}>Reg:</span>
+                      <span style={{ fontWeight: 600 }}>{vehicleInfo.registration}</span>
+                    </span>
+                  )}
+                  {(vehicleInfo?.make || vehicleInfo?.model) && (
+                    <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      <span style={{ color: "var(--info)" }}>Vehicle:</span>
+                      <span>{[vehicleInfo.make, vehicleInfo.model].filter(Boolean).join(" ")}</span>
+                    </span>
+                  )}
+                  {customerInfo?.name && (
+                    <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      <span style={{ color: "var(--info)" }}>Customer:</span>
+                      <span>{customerInfo.name}</span>
+                    </span>
+                  )}
                 </div>
               </div>
-              {expiresAt && (
-                <div style={{
-                  padding: "6px 12px",
-                  background: "var(--info-surface)",
-                  borderRadius: "8px",
-                  fontSize: "12px",
-                  color: "var(--info)"
-                }}>
-                  Link expires: {new Date(expiresAt).toLocaleString()}
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px", alignItems: "flex-end" }}>
+                {expiresAt && (
+                  <div style={expireBoxStyle}>
+                    <div style={{ fontSize: "12px", textAlign: "right", color: expireBoxStyle.color }}>
+                      <span style={{ fontWeight: 600, color: expireBoxStyle.color }}>Link expires:</span>
+                      <span style={{ marginLeft: "6px", fontWeight: 600 }}>{new Date(expiresAt).toLocaleString()}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Read-only pill - theme aware */}
+                <div style={{ ...readOnlyPillStyle, borderColor: ( (isMounted ? resolvedMode : "light") === "dark" ) ? "rgba(var(--accent-purple-rgb), 0.25)" : "rgba(var(--danger-rgb), 0.25)", color: ( (isMounted ? resolvedMode : "light") === "dark" ) ? "var(--accent-purple)" : "var(--danger)" }}>
+                  Read-only
                 </div>
-              )}
+              </div>
             </div>
           </div>
         </header>
 
-        {/* Read-only notice banner */}
-        <div style={{ background: "var(--info-surface)", padding: "10px 24px", borderBottom: "1px solid var(--info-surface)" }}>
-          <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", alignItems: "center", gap: "8px" }}>
-            <span style={{ fontSize: "14px" }}>ℹ️</span>
-            <span style={{ fontSize: "13px", color: "var(--info-dark)" }}>
-              This is a read-only preview of the vehicle health check report.
-            </span>
-          </div>
-        </div>
+
 
         {/* Tab Navigation */}
         <div style={{ background: "var(--surface)", borderBottom: "1px solid var(--info-surface)" }}>

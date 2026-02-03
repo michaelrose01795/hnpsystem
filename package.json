@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "backfill:vhc-severity": "node scripts/backfill-vhc-severity.js",
+    "migrate:add-severity": "node scripts/run-migration-add-severity.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.81.1",

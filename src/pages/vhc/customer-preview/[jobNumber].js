@@ -6,7 +6,7 @@ import { useRouter } from "next/router";
 import Head from "next/head";
 import Image from "next/image";
 import { supabase } from "@/lib/supabaseClient";
-import { summariseTechnicianVhc } from "@/lib/vhc/summary";
+import { summariseTechnicianVhc, parseVhcBuilderPayload } from "@/lib/vhc/summary";
 import { normaliseDecisionStatus, resolveSeverityKey } from "@/lib/vhc/summaryStatus";
 import { useTheme } from "@/styles/themeProvider";
 
@@ -243,13 +243,7 @@ export default function CustomerPreviewPage() {
         setJobFiles(job_files || []);
 
         // Log for debugging
-        console.log("DEBUG: Fetched job data", {
-          jobNumber,
-          vhc_checks_count: (vhc_checks || []).length,
-          parts_job_items_count: (parts_job_items || []).length,
-          job_files_count: (job_files || []).length,
-          checksheet_exists: !!jobFields.checksheet,
-        });
+
 
         // Build alias map from display_id to vhc_item_id
         const aliasMap = {};
@@ -278,12 +272,7 @@ export default function CustomerPreviewPage() {
 
     fetchJobData();
 
-    // Clean up any existing subscriptions
-    return () => {
-      if (subscription) {
-        supabase.removeChannel(subscription);
-      }
-    };
+    return () => {};
   }, [jobNumber]);
 
   // Set up real-time subscription for vhc_checks updates
@@ -359,15 +348,17 @@ export default function CustomerPreviewPage() {
     };
   }, [job?.id]);
 
-  // Parse VHC data from checksheet
+  // Parse VHC data from checksheet — prefer checksheet stored in `vhc_checks` table
   const vhcData = useMemo(() => {
+    const fromDb = parseVhcBuilderPayload(vhcChecksData || []);
+    if (fromDb) return fromDb;
     if (!job?.checksheet) return null;
     try {
       return typeof job.checksheet === "string" ? JSON.parse(job.checksheet) : job.checksheet;
     } catch {
       return null;
     }
-  }, [job?.checksheet]);
+  }, [vhcChecksData, job?.checksheet]);
 
   // Get builder summary with sections from VHC data
   const builderSummary = useMemo(() => {
@@ -444,6 +435,48 @@ export default function CustomerPreviewPage() {
     });
     return map;
   }, [vhcChecksData, vhcIdAliases]);
+
+  // Helper to compute an item's effective severity by checking several sources
+  const getEffectiveSeverity = useCallback((item) => {
+    if (!item) return null;
+
+    const directCheck = item.vhcCheck || vhcChecksMap.get(String(item.id)) || vhcChecksMap.get(resolveCanonicalVhcId(String(item.id)));
+    let s = normaliseColour(directCheck?.display_status || directCheck?.severity) || item.rawSeverity || item.severityKey || resolveSeverityKey(item.rawSeverity, directCheck?.display_status);
+    if (s && s !== "grey") return s;
+
+    if (Array.isArray(item.concerns)) {
+      for (const c of item.concerns) {
+        const cs = normaliseColour(c?.status || c?.colour || c?.display_status);
+        if (cs && cs !== "grey") return cs;
+      }
+    }
+
+    if (Array.isArray(item.rows)) {
+      for (const r of item.rows) {
+        const rs = normaliseColour(r?.status || r?.colour || r?.display_status);
+        if (rs && rs !== "grey") return rs;
+      }
+    }
+
+    if (vhcChecksData && vhcChecksData.length > 0) {
+      const lowerLabel = (item.label || "").toString().toLowerCase().trim();
+      const lowerSection = (item.sectionName || "").toString().toLowerCase().trim();
+      const match = vhcChecksData.find((c) => {
+        if (!c) return false;
+        const sec = (c.section || "").toLowerCase();
+        const title = (c.issue_title || c.section || "").toLowerCase();
+        if (lowerSection && sec.includes(lowerSection)) return true;
+        if (lowerLabel && title.includes(lowerLabel)) return true;
+        return false;
+      });
+      if (match) {
+        const ms = normaliseColour(match.display_status || match.severity);
+        if (ms && ms !== "grey") return ms;
+      }
+    }
+
+    return null;
+  }, [vhcChecksData, vhcChecksMap, resolveCanonicalVhcId]);
 
   // Build set of authorized view IDs from vhc_authorized_items table
   const authorizedViewIds = useMemo(() => {
@@ -587,8 +620,8 @@ export default function CustomerPreviewPage() {
         return;
       }
 
-      // Try to determine severity from multiple sources
-      let severity = normaliseColour(check.display_status || check.severity);
+      // Prefer explicit severity column over approval/display status so original red/amber/green is authoritative
+      let severity = normaliseColour(check.severity || check.display_status);
       
       // If no severity found, try to infer from section name or issue title
       if (!severity) {
@@ -623,14 +656,7 @@ export default function CustomerPreviewPage() {
       processedIds.add(String(check.vhc_id));
     });
 
-    // Log for debugging - remove later
-    if (items.length === 0) {
-      console.log("DEBUG: No items found in summaryItems", {
-        sectionsCount: sections.length,
-        vhcChecksDataCount: vhcChecksData.length,
-        vhcData: vhcData,
-      });
-    }
+
 
     return items;
   }, [sections, vhcChecksMap, vhcIdAliases, vhcChecksData]);
@@ -655,7 +681,9 @@ export default function CustomerPreviewPage() {
         }
       }
 
-      const rawSeverity = item.severityKey || item.rawSeverity;
+      // Prefer database severity from vhc_checks, fall back to item values
+      // prefer explicit severity column over display_status (approval) so authorisation doesn't mask original severity
+      const rawSeverity = normaliseColour(vhcCheck?.severity || vhcCheck?.display_status) || item.severityKey || item.rawSeverity;
 
       const enrichedItem = {
         ...item,
@@ -684,22 +712,56 @@ export default function CustomerPreviewPage() {
       }
     });
 
+    // Sort authorized and declined lists so red items appear before amber items
+    const severityRank = (s) => (s === "red" ? 0 : s === "amber" ? 1 : s === "green" ? 2 : 3);
+
+    const getEffectiveSeverity = (it) => {
+      let s = it.severityKey || it.rawSeverity || null;
+      if (!s) {
+        // prefer explicit severity column first, then display/legacy fields
+        s = normaliseColour(it.vhcCheck?.severity || it.vhcCheck?.display_status || it.severity || it.display_status);
+      }
+      if (!s) {
+        try {
+          const canonical = resolveCanonicalVhcId(String(it.id));
+          const check = vhcChecksMap.get(String(canonical)) || vhcChecksMap.get(String(it.id));
+          s = normaliseColour(check?.severity || check?.display_status);
+        } catch (err) {
+          // ignore
+        }
+      }
+      return s;
+    };
+
+    lists.authorized.sort((a, b) => severityRank(getEffectiveSeverity(a)) - severityRank(getEffectiveSeverity(b)));
+    lists.declined.sort((a, b) => severityRank(getEffectiveSeverity(a)) - severityRank(getEffectiveSeverity(b)));
+
     return lists;
   }, [summaryItems, vhcChecksMap, authorizedViewIds, labourHoursByVhcItem, partsCostByVhcItem, resolveItemTotal, resolveCanonicalVhcId]);
 
   // Calculate financial totals
   const customerTotals = useMemo(() => {
-    const calculateListTotal = (list) =>
-      list.reduce((sum, item) => sum + (item.total || 0), 0);
+    // Compute red/amber totals by checking rawSeverity across ALL summaryItems so authorised/declined items are included
+    let red = 0;
+    let amber = 0;
+    summaryItems.forEach((item) => {
+      const total = resolveItemTotal(item.id) || 0;
+      const mapRow = vhcChecksMap.get(String(item.id)) || {};
+      const effective = getEffectiveSeverity(item) || normaliseColour((mapRow?.severity || mapRow?.display_status)) || item.rawSeverity || item.severityKey || resolveSeverityKey(item.rawSeverity, mapRow?.severity || mapRow?.display_status);
+      if (effective === "red") red += total;
+      else if (effective === "amber") amber += total;
+    });
+
+    const calculateListTotal = (list) => list.reduce((sum, item) => sum + (item.total || 0), 0);
 
     return {
-      red: calculateListTotal(severityLists.red),
-      amber: calculateListTotal(severityLists.amber),
+      red,
+      amber,
       green: calculateListTotal(severityLists.green),
       authorized: calculateListTotal(severityLists.authorized),
       declined: calculateListTotal(severityLists.declined),
     };
-  }, [severityLists]);
+  }, [summaryItems, severityLists, vhcChecksMap, resolveItemTotal]);
 
   // Filter photos and videos
   const photoFiles = useMemo(() => {
@@ -717,6 +779,8 @@ export default function CustomerPreviewPage() {
       return type.startsWith("video") || /\.(mp4|mov|avi|mkv|webm)$/i.test(name);
     });
   }, [jobFiles]);
+
+
 
   // Handle back button
   const handleBack = useCallback(() => {
@@ -821,10 +885,17 @@ export default function CustomerPreviewPage() {
       }
     }
 
+    // Compute original severity (DB-first) and expose for dev
+    const computeOriginalSeverity = () => {
+      return getEffectiveSeverity(item) || null;
+    };
+
+    const originalSeverity = computeOriginalSeverity();
+
     // Determine background color for authorized/declined rows based on original severity
     const getRowBackground = () => {
       if (isAuthorized || isDeclined) {
-        const originalSeverity = item.rawSeverity;
+
         if (originalSeverity === "red") {
           return "var(--danger-surface)";
         } else if (originalSeverity === "amber") {
@@ -844,9 +915,9 @@ export default function CustomerPreviewPage() {
         }}
       >
         {/* Item Details Cell */}
-        <td style={{ padding: "12px 8px", color: "var(--accent-purple)", wordWrap: "break-word", overflow: "hidden" }}>
-          <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
-            {categoryLabel}
+        <td style={{ padding: "12px 8px", color: "var(--accent-purple)", wordWrap: "break-word", overflow: "hidden", position: 'relative' }}>
+
+          <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>            {categoryLabel}
           </div>
           <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--accent-purple)", marginTop: "2px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
             <span>{detailLabel}</span>
@@ -982,7 +1053,7 @@ export default function CustomerPreviewPage() {
         style={{
           border: `1px solid ${theme.border || "var(--info-surface)"}`,
           borderRadius: "16px",
-          background: theme.background || "var(--surface)",
+          background: (severity === "authorized" || severity === "declined") ? "var(--surface)" : (theme.background || "var(--surface)"),
           overflow: "hidden",
           marginBottom: "18px",
         }}
@@ -1111,7 +1182,6 @@ export default function CustomerPreviewPage() {
       {severityLists.declined && severityLists.declined.length > 0 &&
         renderCustomerSection("Declined", severityLists.declined, "declined")}
 
-      {/* Green Items section stays at the bottom */}
       {renderCustomerSection("Green Items", severityLists.green || [], "green")}
     </div>
   );

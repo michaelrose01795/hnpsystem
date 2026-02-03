@@ -4,9 +4,12 @@ Continue flow with job number 54
 
 
 
-update the copy link button to copy the link to the clip board which will be the actual page the customer will see however for external users, this wont require a login to see this page and will only show the detauls of the summary like the Customer view so nothing can be changed or corrected, only viewed. have it so the link is something like /job-card/[jobnumber]/[linkcode (unique number and letters)] (or along those lines, this is for if the cust or user wants to send the report to someone else to check through they dont ave to log in and everything, it has an expiry of 24 hours and after that it generates a new link code). have it so the customer preview 
+make sure within the "http://localhost:3000/vhc/share/00054/MggYH5evJDv9" and "http://localhost:3000/vhc/customer-preview/00054" page the red and amber items are still totaled even when authroised or declinded within this section "Red Work
+£0.00
+Amber Work
+£0.00"
 
-have it so the "Customer View" button is names "Cutomer Preview", have it so the that opens a new page, this new page doesnt have a sidebar/topbar within it. (it has a back button in the top right which takes the user back to the summary tab within the job-card/[jobnumber] page). as well this it shows all of the red reports, and then amber reports, and then at the bottom all of the green reports. have it so its layed out for the customer viewing with total prices, tick boxes for authorise or delicne (linked to the summmary authorise and delicne section) as well as showing a summary tab which shows the red amber and green with totals, a photo tab which shows all of the photos linked to the job number, and a video tab which shows all of the videos linked to the job number as well
+remove the "Authorised" and "Declinded" bubble from each row within the "http://localhost:3000/vhc/share/00054/MggYH5evJDv9" page.
 
 
 
