@@ -254,15 +254,24 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     return [...customerReqs, ...vhcReqs];
   }, [jobData.jobRequests, jobData.job_requests, jobData.requests, jobData.authorizedVhcItems]);
 
-  // Group parts by allocated request
+  // Group parts by allocated request (including VHC items)
   useEffect(() => {
     const allocations = {};
     jobParts.forEach((part) => {
+      // Check for regular job request allocation
       if (part.allocatedToRequestId) {
         if (!allocations[part.allocatedToRequestId]) {
           allocations[part.allocatedToRequestId] = [];
         }
         allocations[part.allocatedToRequestId].push(part);
+      }
+      // Check for VHC item allocation (use "vhc-{id}" format to match request.id)
+      if (part.vhcItemId) {
+        const vhcKey = `vhc-${part.vhcItemId}`;
+        if (!allocations[vhcKey]) {
+          allocations[vhcKey] = [];
+        }
+        allocations[vhcKey].push(part);
       }
     });
     setPartAllocations(allocations);

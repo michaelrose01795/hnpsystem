@@ -2041,8 +2041,14 @@ export default function TechJobDetailPage() {
     resolveTechStatusLabel(jobCard);
   const jobStatusColor = STATUS_COLORS[techStatusDisplay] || "var(--info)";
   const jobStatusBadgeStyle = getStatusBadgeStyle(techStatusDisplay, jobStatusColor);
-  const partsCount =
-    partsRequests.length > 0 ? partsRequests.length : jobCard.partsRequests?.length || 0;
+  // Count authorised VHC items for the quick stats
+  const vhcSource = Array.isArray(jobData?.vhcChecks) && jobData.vhcChecks.length > 0
+    ? jobData.vhcChecks
+    : vhcChecks;
+  const vhcAuthorisedCount = vhcSource.filter((check) => {
+    const status = String(check?.approval_status || check?.approvalStatus || "").toLowerCase();
+    return status === "authorized";
+  }).length;
   const clockedHours = formatClockingDuration(clockedMinutesTotal);
   const isWarrantyJob = (jobCard?.jobSource || "").toLowerCase() === "warranty";
 
@@ -2056,10 +2062,9 @@ export default function TechJobDetailPage() {
     },
     {
       label: "Parts authorised",
-      value: partsCount,
+      value: vhcAuthorisedCount,
       accent: "var(--danger)",
       pill: false,
-      onClick: () => setActiveTab("parts"),
     },
     {
       label: "Clocked Hours",
@@ -2219,7 +2224,7 @@ export default function TechJobDetailPage() {
               Job #{jobCard.jobNumber}
             </h1>
             <p style={{ color: "var(--grey-accent)", fontSize: "14px", margin: 0 }}>
-              {customer.firstName} {customer.lastName} • {vehicle.reg} • {vehicle.makeModel}
+              {customer?.firstName} {customer?.lastName} • {vehicle?.reg} • {vehicle?.makeModel}
             </p>
           </div>
           <div style={{
@@ -2522,9 +2527,6 @@ export default function TechJobDetailPage() {
                   </div>
                 )}
                 <div style={{ marginTop: "24px" }}>
-                  <h4 style={{ fontSize: "16px", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "12px" }}>
-                    Additional Information
-                  </h4>
                   <div style={{
                     padding: "16px",
                     backgroundColor: "var(--info-surface)",
@@ -2553,10 +2555,10 @@ export default function TechJobDetailPage() {
                       }
                       return (
                       <div>
-                        <div style={{ fontSize: "12px", fontWeight: "600", color: "var(--info-dark)", marginBottom: "6px" }}>
+                        <div style={{ fontSize: "12px", fontWeight: "600", color: "var(--info-dark)", marginBottom: "10px" }}>
                           Authorised items
                         </div>
-                        <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+                        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                           {authorisedItems.map((check) => {
                             const resolvedVhcId = check.vhc_id ?? check.id;
                             return (
@@ -2569,24 +2571,15 @@ export default function TechJobDetailPage() {
                                   flexDirection: "column",
                                   gap: "4px",
                                   alignItems: "flex-start",
+                                  backgroundColor: "var(--success-surface)",
+                                  border: "1px solid var(--success)",
+                                  borderRadius: "8px",
+                                  padding: "10px 14px",
                                 }}
                               >
-                                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                                  <span style={{
-                                    padding: "4px 8px",
-                                    borderRadius: "8px",
-                                    fontWeight: "700",
-                                    color: "var(--surface)",
-                                    backgroundColor: "var(--success)",
-                                    fontSize: "11px",
-                                    letterSpacing: "0.04em"
-                                  }}>
-                                    AUTHORISED
-                                  </span>
-                                  <span style={{ fontWeight: "600", color: "var(--success)" }}>
-                                    {check.issue_title || check.issueTitle || check.section}
-                                  </span>
-                                </div>
+                                <span style={{ fontWeight: "600", color: "var(--success)" }}>
+                                  {check.issue_title || check.issueTitle || check.section}
+                                </span>
                                 {notes
                                   .filter((note) =>
                                     Array.isArray(note.linkedVhcIds)
@@ -2641,28 +2634,28 @@ export default function TechJobDetailPage() {
                     <div>
                       <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Registration:</span>
                       <p style={{ fontSize: "16px", fontWeight: "600", color: "var(--primary)", margin: "4px 0 0 0" }}>
-                        {vehicle.reg}
+                        {vehicle?.reg}
                       </p>
                     </div>
                     <div>
                       <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Make & Model:</span>
                       <p style={{ fontSize: "16px", fontWeight: "600", margin: "4px 0 0 0" }}>
-                        {vehicle.makeModel}
+                        {vehicle?.makeModel}
                       </p>
                     </div>
-                    {vehicle.mileage && (
+                    {vehicle?.mileage && (
                       <div>
                         <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Mileage:</span>
                         <p style={{ fontSize: "16px", fontWeight: "600", margin: "4px 0 0 0" }}>
-                          {vehicle.mileage.toLocaleString()} miles
+                          {vehicle?.mileage.toLocaleString()} miles
                         </p>
                       </div>
                     )}
-                    {vehicle.colour && (
+                    {vehicle?.colour && (
                       <div>
                         <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Colour:</span>
                         <p style={{ fontSize: "16px", fontWeight: "600", margin: "4px 0 0 0" }}>
-                          {vehicle.colour}
+                          {vehicle?.colour}
                         </p>
                       </div>
                     )}
@@ -2683,20 +2676,20 @@ export default function TechJobDetailPage() {
                     <div>
                       <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Name:</span>
                       <p style={{ fontSize: "16px", fontWeight: "600", margin: "4px 0 0 0" }}>
-                        {customer.firstName} {customer.lastName}
+                        {customer?.firstName} {customer?.lastName}
                       </p>
                     </div>
                     <div>
                       <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Mobile:</span>
                       <p style={{ fontSize: "16px", fontWeight: "600", margin: "4px 0 0 0" }}>
-                        {customer.mobile}
+                        {customer?.mobile}
                       </p>
                     </div>
-                    {customer.email && (
+                    {customer?.email && (
                       <div>
                         <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Email:</span>
                         <p style={{ fontSize: "16px", fontWeight: "600", color: "var(--info)", margin: "4px 0 0 0" }}>
-                          {customer.email}
+                          {customer?.email}
                         </p>
                       </div>
                     )}

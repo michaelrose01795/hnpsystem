@@ -116,20 +116,70 @@ export default function CreateJobCardPage() {
   const [customerNotification, setCustomerNotification] = useState(null); // { type: 'success' | 'error', message: '' }
   const [vehicleNotification, setVehicleNotification] = useState(null); // { type: 'success' | 'error', message: '' }
 
-  // state for job requests (multiple requests can be added)
-  const [requests, setRequests] = useState([{ text: "", time: "", paymentType: "Customer" }]);
+  // ✅ Multi-tab job state - each tab represents a separate job card
+  const createDefaultJobTab = (tabId = 1) => ({
+    id: tabId,
+    waitingStatus: "Neither",
+    jobSource: "Retail",
+    jobDivision: "Retail",
+    jobCategories: ["Other"],
+    requests: [{ text: "", time: "", paymentType: "Customer" }],
+    uploadedFiles: [],
+  });
+
+  const [jobTabs, setJobTabs] = useState([createDefaultJobTab(1)]);
+  const [activeTabIndex, setActiveTabIndex] = useState(0);
+
+  // Get current tab data
+  const currentTab = jobTabs[activeTabIndex] || jobTabs[0];
+
+  // Helper to update current tab
+  const updateCurrentTab = (updates) => {
+    setJobTabs((prev) => {
+      const newTabs = [...prev];
+      newTabs[activeTabIndex] = { ...newTabs[activeTabIndex], ...updates };
+      return newTabs;
+    });
+  };
+
+  // Convenience getters/setters for current tab (maintains compatibility)
+  const requests = currentTab.requests;
+  const setRequests = (newRequests) => updateCurrentTab({ requests: typeof newRequests === "function" ? newRequests(currentTab.requests) : newRequests });
+  const waitingStatus = currentTab.waitingStatus;
+  const setWaitingStatus = (val) => updateCurrentTab({ waitingStatus: val });
+  const jobSource = currentTab.jobSource;
+  const setJobSource = (val) => updateCurrentTab({ jobSource: val });
+  const jobDivision = currentTab.jobDivision;
+  const setJobDivision = (val) => updateCurrentTab({ jobDivision: val });
+  const jobCategories = currentTab.jobCategories;
+  const setJobCategories = (val) => updateCurrentTab({ jobCategories: val });
+  const uploadedFiles = currentTab.uploadedFiles;
+  const setUploadedFiles = (val) => updateCurrentTab({ uploadedFiles: typeof val === "function" ? val(currentTab.uploadedFiles) : val });
+
+  // Shared state (same across all tabs)
   const [cosmeticDamagePresent, setCosmeticDamagePresent] = useState(false); // track whether cosmetic damage observed
   const [cosmeticNotes, setCosmeticNotes] = useState(""); // notes about cosmetic damage
   const [vhcRequired, setVhcRequired] = useState(false); // whether VHC is required
   const WAITING_STATUS_STORAGE_KEY = "jobCardCreateWaitingStatus"; // key used to persist waiting status background choice
-  const [waitingStatus, setWaitingStatus] = useState("Neither"); // customer waiting status
-  const [jobSource, setJobSource] = useState("Retail"); // job source (Retail or Warranty)
-  const [jobDivision, setJobDivision] = useState("Retail"); // business unit (Retail or Sales)
-  const [jobCategories, setJobCategories] = useState(["Other"]); // auto-detected job categories
   const [showNewCustomer, setShowNewCustomer] = useState(false); // toggle new customer popup
   const [showExistingCustomer, setShowExistingCustomer] = useState(false); // toggle existing customer popup
   const [showDocumentsPopup, setShowDocumentsPopup] = useState(false); // toggle documents popup
-  const [uploadedFiles, setUploadedFiles] = useState([]); // store metadata of uploaded files to link to job later: [{ fileName, publicUrl, contentType, storagePath }]
+
+  // ✅ Tab management functions
+  const addNewJobTab = () => {
+    const newTabId = jobTabs.length + 1;
+    setJobTabs((prev) => [...prev, createDefaultJobTab(newTabId)]);
+    setActiveTabIndex(jobTabs.length); // Switch to new tab
+  };
+
+  const removeJobTab = (indexToRemove) => {
+    if (jobTabs.length <= 1) return; // Keep at least one tab
+    setJobTabs((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+    // Adjust active tab if needed
+    if (activeTabIndex >= indexToRemove && activeTabIndex > 0) {
+      setActiveTabIndex(activeTabIndex - 1);
+    }
+  };
   const [checkSheetFile, setCheckSheetFile] = useState(null); // uploaded check-sheet file before save
   const [checkSheetPreviewUrl, setCheckSheetPreviewUrl] = useState(""); // preview URL for image check-sheets
   const [checkSheetCheckboxes, setCheckSheetCheckboxes] = useState([]); // list of checkbox metadata for current sheet
@@ -948,16 +998,16 @@ export default function CreateJobCardPage() {
         return;
       }
 
-      const sanitizedRequests = requests
-        .map((req) => ({
-          ...req,
-          text: (req.text || "").trim(),
-        }))
-        .filter((req) => req.text.length > 0);
-
-      if (sanitizedRequests.length === 0) {
-        alert("Please add at least one job request before saving.");
-        return;
+      // Validate all tabs have at least one request
+      for (let i = 0; i < jobTabs.length; i++) {
+        const tabRequests = jobTabs[i].requests
+          .map((req) => ({ ...req, text: (req.text || "").trim() }))
+          .filter((req) => req.text.length > 0);
+        if (tabRequests.length === 0) {
+          alert(`Please add at least one job request in Job ${i + 1} before saving.`);
+          setActiveTabIndex(i);
+          return;
+        }
       }
 
       // All validations passed - proceed with database operations
@@ -1001,41 +1051,65 @@ export default function CreateJobCardPage() {
 
       console.log("✓ Vehicle saved/updated with ID:", vehicleId);
 
-      // Step 2: Prepare and save job
-      const jobDescription = sanitizedRequests.map((req) => req.text).join("\n");
+      // Step 2: Create jobs - handle multiple tabs if asPrimeJob is enabled
+      const createdJobs = [];
+      let primeJobId = null;
 
-      const jobPayload = {
-        regNumber: regUpper,
-        jobNumber: null,
-        description: jobDescription || `Job card for ${regUpper}`,
-        type: jobSource === "Warranty" ? "Warranty" : "Service",
-        assignedTo: null,
-        customerId: customer.id,
-        vehicleId,
-        waitingStatus,
-        jobSource,
-        jobDivision,
-        jobCategories,
-        requests: sanitizedRequests,
-        cosmeticNotes: cosmeticNotes || null,
-        vhcRequired: vhcRequired,
-        maintenanceInfo: {
-          cosmeticDamagePresent,
-        },
-        // Prime/Sub-job parameters
-        primeJobId: isSubJobMode && primeJobData ? primeJobData.id : null,
-        asPrimeJob: !isSubJobMode && asPrimeJob,
-      };
+      for (let tabIndex = 0; tabIndex < jobTabs.length; tabIndex++) {
+        const tab = jobTabs[tabIndex];
+        const isFirstTab = tabIndex === 0;
 
-      console.log("Saving job via shared helper:", jobPayload);
+        // Sanitize requests for this tab
+        const sanitizedRequests = tab.requests
+          .map((req) => ({ ...req, text: (req.text || "").trim() }))
+          .filter((req) => req.text.length > 0);
 
-      const jobResult = await addJobToDatabase(jobPayload);
+        const jobDescription = sanitizedRequests.map((req) => req.text).join("\n");
 
-      if (!jobResult.success || !jobResult.data) {
-        throw new Error(jobResult.error?.message || "Failed to create job card");
+        const jobPayload = {
+          regNumber: regUpper,
+          jobNumber: null,
+          description: jobDescription || `Job card for ${regUpper}`,
+          type: tab.jobSource === "Warranty" ? "Warranty" : "Service",
+          assignedTo: null,
+          customerId: customer.id,
+          vehicleId,
+          waitingStatus: tab.waitingStatus,
+          jobSource: tab.jobSource,
+          jobDivision: tab.jobDivision,
+          jobCategories: tab.jobCategories,
+          requests: sanitizedRequests,
+          cosmeticNotes: isFirstTab ? (cosmeticNotes || null) : null,
+          vhcRequired: isFirstTab ? vhcRequired : false,
+          maintenanceInfo: isFirstTab ? { cosmeticDamagePresent } : {},
+          // Prime/Sub-job parameters
+          primeJobId: isSubJobMode && primeJobData
+            ? primeJobData.id
+            : (!isFirstTab && primeJobId ? primeJobId : null),
+          asPrimeJob: !isSubJobMode && asPrimeJob && isFirstTab,
+        };
+
+        console.log(`Saving job ${tabIndex + 1} via shared helper:`, jobPayload);
+
+        const jobResult = await addJobToDatabase(jobPayload);
+
+        if (!jobResult.success || !jobResult.data) {
+          throw new Error(jobResult.error?.message || `Failed to create job card ${tabIndex + 1}`);
+        }
+
+        const insertedJob = jobResult.data;
+        createdJobs.push(insertedJob);
+
+        // Store the prime job ID for linking subsequent jobs
+        if (isFirstTab && asPrimeJob && !isSubJobMode) {
+          primeJobId = insertedJob.id || insertedJob.jobId || insertedJob.job_id;
+        }
+
+        console.log(`✓ Job ${tabIndex + 1} created successfully:`, insertedJob.jobNumber);
       }
 
-      const insertedJob = jobResult.data;
+      // Use the first job for the rest of the save process
+      const insertedJob = createdJobs[0];
       const persistedJobId = insertedJob.id || insertedJob.jobId || insertedJob.job_id;
 
       if (!persistedJobId) {
@@ -1044,13 +1118,27 @@ export default function CreateJobCardPage() {
 
       console.log("✓ Job created successfully with ID:", persistedJobId);
 
-      // Step 3: Save related data (cosmetic damage, customer status, job requests, documents)
-      await Promise.all([
-        saveCosmeticDamageDetails(persistedJobId, cosmeticDamagePresent, cosmeticNotes),
-        saveCustomerStatus(persistedJobId, waitingStatus),
-        saveJobRequestsToDatabase(persistedJobId, sanitizedRequests),
-        linkUploadedFilesToJob(persistedJobId),
-      ]);
+      // Step 3: Save related data for all created jobs
+      for (let i = 0; i < createdJobs.length; i++) {
+        const job = createdJobs[i];
+        const tab = jobTabs[i];
+        const jobId = job.id || job.jobId || job.job_id;
+        const isFirstJob = i === 0;
+
+        const tabRequests = tab.requests
+          .map((req) => ({ ...req, text: (req.text || "").trim() }))
+          .filter((req) => req.text.length > 0);
+
+        await Promise.all([
+          isFirstJob ? saveCosmeticDamageDetails(jobId, cosmeticDamagePresent, cosmeticNotes) : Promise.resolve(),
+          saveCustomerStatus(jobId, tab.waitingStatus),
+          saveJobRequestsToDatabase(jobId, tabRequests),
+          // Link uploaded files to respective job
+          tab.uploadedFiles.length > 0 ? linkUploadedFilesToJobById(jobId, tab.uploadedFiles) : Promise.resolve(),
+        ]);
+
+        console.log(`✓ Related data saved for job ${i + 1}`);
+      }
 
       console.log("✓ All related data saved successfully");
 
@@ -1063,8 +1151,12 @@ export default function CreateJobCardPage() {
       const finalJobNumber = insertedJob.jobNumber || insertedJob.id;
       setJobNumberDisplay(finalJobNumber || null);
 
+      const jobsCreatedMessage = createdJobs.length > 1
+        ? `${createdJobs.length} linked jobs created: ${createdJobs.map((j) => j.jobNumber).join(", ")}`
+        : `Job created: ${finalJobNumber}`;
+
       alert(
-        `Job created successfully! ${jobSource} — ${finalJobNumber}\n\nVehicle ${regUpper} has been saved and linked to ${customer.firstName} ${customer.lastName}`
+        `${jobsCreatedMessage}\n\nVehicle ${regUpper} has been saved and linked to ${customer.firstName} ${customer.lastName}`
       );
 
       router.push(`/appointments?jobNumber=${encodeURIComponent(finalJobNumber || "")}`);
@@ -1074,6 +1166,25 @@ export default function CreateJobCardPage() {
       alert(`Error saving job: ${err.message}. Please check the details and try again.`);
       // Do not proceed with any further operations
       // The job and related data were not saved to the database
+    }
+  };
+
+  // Helper to link files to a specific job by ID
+  const linkUploadedFilesToJobById = async (jobId, files) => {
+    if (!files || files.length === 0) return;
+    for (const file of files) {
+      try {
+        await addJobFile({
+          jobId,
+          fileName: file.fileName,
+          fileUrl: file.publicUrl,
+          fileType: file.contentType,
+          folder: "documents",
+          storagePath: file.storagePath,
+        });
+      } catch (err) {
+        console.error("Error linking file to job:", err);
+      }
     }
   };
 
@@ -1096,7 +1207,7 @@ export default function CreateJobCardPage() {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: "16px",
+            marginBottom: "12px",
             flexShrink: 0,
           }}
         >
@@ -1107,63 +1218,149 @@ export default function CreateJobCardPage() {
                 fontSize: "14px",
                 color: isSubJobMode ? "var(--primary)" : "var(--grey-accent)",
                 fontWeight: "500",
-                marginBottom: "4px",
               }}
             >
               {isSubJobMode
                 ? `Sub-job for ${primeJobData?.jobNumber || "Prime Job"}`
                 : jobNumberDisplay
                 ? `${jobDivision} — ${jobNumberDisplay}`
-                : `${jobDivision} Job Card`}
+                : "New Job Card"}
             </h2>
-            <div
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            {/* Job Source Bubble */}
+            <span
               style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px",
-                fontSize: "12px",
+                padding: "8px 16px",
+                borderRadius: "999px",
+                backgroundColor: jobSource === "Warranty" ? "var(--warning-surface)" : "var(--success-surface)",
                 color: jobSource === "Warranty" ? "var(--danger)" : "var(--success-dark)",
+                fontSize: "13px",
                 fontWeight: 600,
               }}
             >
-              <span>Job source:</span>
-              <span
-                style={{
-                  padding: "2px 10px",
-                  borderRadius: "999px",
-                  backgroundColor: jobSource === "Warranty" ? "var(--warning-surface)" : "var(--success-surface)",
-                }}
-              >
-                {jobSource}
-              </span>
-            </div>
+              {jobSource}
+            </span>
+            <button
+              onClick={handleSaveJob}
+              style={{
+                padding: "12px 28px",
+                backgroundColor: "var(--primary)",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                fontWeight: "600",
+                fontSize: "15px",
+                cursor: "pointer",
+                boxShadow: "none",
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = "var(--primary-dark)";
+                e.target.style.boxShadow = "0 6px 12px rgba(var(--primary-rgb), 0.3)";
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = "var(--primary)";
+                e.target.style.boxShadow = "0 4px 8px rgba(var(--primary-rgb), 0.2)";
+              }}
+            >
+              {asPrimeJob && jobTabs.length > 1 ? `Save ${jobTabs.length} Jobs` : "Save Job Card"}
+            </button>
           </div>
-          <button
-            onClick={handleSaveJob}
+        </div>
+
+        {/* ✅ Job Tabs Bar - Only shown when "Multiple linked jobs" is enabled */}
+        {asPrimeJob && !isSubJobMode && (
+          <div
             style={{
-              padding: "12px 28px",
-              backgroundColor: "var(--primary)",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              fontWeight: "600",
-              fontSize: "15px",
-              cursor: "pointer",
-              boxShadow: "none",
-              transition: "all 0.2s",
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = "var(--primary-dark)";
-              e.target.style.boxShadow = "0 6px 12px rgba(var(--primary-rgb), 0.3)";
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = "var(--primary)";
-              e.target.style.boxShadow = "0 4px 8px rgba(var(--primary-rgb), 0.2)";
+              display: "flex",
+              alignItems: "center",
+              gap: "4px",
+              marginBottom: "12px",
+              padding: "8px 12px",
+              backgroundColor: "var(--surface)",
+              borderRadius: "12px",
+              border: "1px solid var(--surface-light)",
             }}
           >
-            Save Job Card
-          </button>
-        </div>
+            {jobTabs.map((tab, index) => (
+              <div
+                key={tab.id}
+                onClick={() => setActiveTabIndex(index)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "8px 16px",
+                  borderRadius: "8px",
+                  backgroundColor: activeTabIndex === index ? "var(--primary)" : "var(--surface-light)",
+                  color: activeTabIndex === index ? "white" : "var(--text-primary)",
+                  cursor: "pointer",
+                  fontWeight: activeTabIndex === index ? "600" : "500",
+                  fontSize: "13px",
+                  transition: "all 0.2s",
+                }}
+              >
+                <span>Job {index + 1}</span>
+                {jobTabs.length > 1 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeJobTab(index);
+                    }}
+                    style={{
+                      width: "18px",
+                      height: "18px",
+                      borderRadius: "50%",
+                      border: "none",
+                      backgroundColor: activeTabIndex === index ? "rgba(255,255,255,0.3)" : "var(--grey-accent)",
+                      color: activeTabIndex === index ? "white" : "var(--surface)",
+                      cursor: "pointer",
+                      fontSize: "12px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: 0,
+                    }}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            ))}
+            {/* Add New Job Tab Button */}
+            <button
+              onClick={addNewJobTab}
+              style={{
+                width: "36px",
+                height: "36px",
+                borderRadius: "8px",
+                border: "2px dashed var(--primary)",
+                backgroundColor: "transparent",
+                color: "var(--primary)",
+                cursor: "pointer",
+                fontSize: "18px",
+                fontWeight: "600",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = "var(--primary-surface)";
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = "transparent";
+              }}
+              title="Add another linked job"
+            >
+              +
+            </button>
+            <span style={{ marginLeft: "8px", fontSize: "12px", color: "var(--grey-accent)" }}>
+              Each tab creates a separate linked job card
+            </span>
+          </div>
+        )}
 
         {/* ✅ Sub-job Mode Banner */}
         {isSubJobMode && primeJobData && (
@@ -1398,7 +1595,9 @@ export default function CreateJobCardPage() {
                         Multiple linked jobs
                       </span>
                       <p style={{ margin: "4px 0 0", fontSize: "11px", color: "var(--grey-accent)" }}>
-                        Enable this to add additional sub-jobs after creation
+                        {asPrimeJob
+                          ? "Use tabs above to add separate job cards for this visit"
+                          : "Enable to create multiple linked job cards for one customer visit"}
                       </p>
                     </div>
                   </label>

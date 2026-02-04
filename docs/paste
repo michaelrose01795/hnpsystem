@@ -1,7 +1,11 @@
 TO DO:
 
-Continue flow with job number 54
+Continue flow with job number 54, tech complete final with workshop manager. 
 
+Fix it so when i click allocated with an authoirse request it works the same with a normal request. 
+
+
+Within write up and VHC tab inside the tab section, when the VHC is fully complete (Everything is authorised or delcined) change the background colour to green, and when everything is ticked within the write up section change the write up tab button background to green as well. so the part moves to on job to within the row of the request its been allocated to, link this though the database as well. 
 
 CHECK
 Sub-job number, make sure database table update and is all linked. 

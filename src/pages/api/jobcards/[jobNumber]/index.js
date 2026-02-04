@@ -27,7 +27,7 @@ export default async function handler(req, res) {
         .json({ message: `Job card ${jobNumber} not found` });
     }
 
-    const jobCard = data.jobCard;
+    const { jobCard, customer, vehicle } = data;
     const notes = jobCard.id ? await getNotesByJob(jobCard.id) : [];
     const sharedNote = notes[0] || null;
     let vehicleJobHistory = [];
@@ -38,6 +38,8 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       job: jobCard,
+      customer,
+      vehicle,
       sharedNote,
       vehicleJobHistory
     });

@@ -19,13 +19,35 @@ export default async function handler(req, res) {
       });
     }
 
+    // Check if this is a VHC item allocation (format: "vhc-123")
+    const isVhcAllocation = typeof requestId === "string" && requestId.startsWith("vhc-");
+
+    let updateData;
+    if (isVhcAllocation) {
+      // Extract the numeric VHC item ID from "vhc-123" format
+      const vhcItemId = parseInt(requestId.replace("vhc-", ""), 10);
+      if (isNaN(vhcItemId)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid VHC item ID format",
+        });
+      }
+      updateData = {
+        vhc_item_id: vhcItemId,
+        updated_at: new Date().toISOString(),
+      };
+    } else {
+      // Regular job request allocation
+      updateData = {
+        allocated_to_request_id: requestId,
+        updated_at: new Date().toISOString(),
+      };
+    }
+
     // Update the parts_job_items table to link the part to the request
     const { data, error } = await supabase
       .from("parts_job_items")
-      .update({
-        allocated_to_request_id: requestId,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq("id", partAllocationId)
       .eq("job_id", jobId)
       .select();

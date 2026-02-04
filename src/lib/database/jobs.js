@@ -916,7 +916,11 @@ export const getJobByNumber = async (jobNumber) => {
         };
       }
       return {
-        data: { jobCard: payload.job },
+        data: {
+          jobCard: payload.job,
+          customer: payload.customer || null,
+          vehicle: payload.vehicle || null,
+        },
         error: null,
       };
     } catch (error) {
