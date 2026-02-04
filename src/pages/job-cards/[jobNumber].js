@@ -1963,6 +1963,9 @@ export default function JobCardDetailPage() {
             minHeight: "44px",
             display: "flex",
             alignItems: "center",
+            position: "sticky",
+            top: 0,
+            zIndex: 50,
           }}
         >
           <div
@@ -1988,7 +1991,10 @@ export default function JobCardDetailPage() {
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={(e) => {
+                  setActiveTab(tab.id);
+                  e.currentTarget.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+                }}
                 style={{
                   flex: "0 0 auto",
                   borderRadius: "999px",
