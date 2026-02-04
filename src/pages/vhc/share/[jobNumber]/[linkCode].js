@@ -164,8 +164,6 @@ export default function PublicSharePreviewPage() {
         const { jobData, expiresAt: linkExpiresAt } = data;
         const { vhc_checks = [], parts_job_items = [], job_files = [], vhc_item_aliases = [], vhc_authorized_items = [], ...jobFields } = jobData || {};
 
-        console.info("Share preview loaded", { jobNumber, linkCode, checks: vhc_checks.length, parts: parts_job_items.length, files: job_files.length, aliases: vhc_item_aliases.length, authorized: vhc_authorized_items.length, warnings: data.warnings });
-
         setJob(jobFields);
         setVhcChecksData(vhc_checks || []);
         setPartsJobItems(parts_job_items || []);
@@ -379,19 +377,9 @@ export default function PublicSharePreviewPage() {
     vhcChecksData.forEach((check) => {
 
 
-      if (!check?.vhc_id) {
-        console.info("Skipping vhc_check: no vhc_id", check);
-        return;
-      }
-      if (processedIds.has(String(check.vhc_id))) {
-        console.info("Skipping vhc_check: already processed", { vhc_id: check.vhc_id });
-        return;
-      }
-
-      if (check.section === "VHC_CHECKSHEET") {
-        console.info("Skipping vhc_check: internal VHC_CHECKSHEET metadata", { vhc_id: check.vhc_id });
-        return; // Skip internal metadata
-      }
+      if (!check?.vhc_id) return;
+      if (processedIds.has(String(check.vhc_id))) return;
+      if (check.section === "VHC_CHECKSHEET") return;
 
       // Prefer explicit severity column over approval/display status so original red/amber/green wins
       let severity = normaliseColour(check.severity || check.display_status);
@@ -674,22 +662,6 @@ export default function PublicSharePreviewPage() {
 
           <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
             <div style={{ fontSize: "14px", fontWeight: 600 }}>{formatCurrency(total)}</div>
-
-            {/* Status badge for authorized/declined items (read-only) */}
-            {(isAuthorized || isDeclined) && (
-              <span
-                style={{
-                  padding: "4px 12px",
-                  borderRadius: "16px",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  background: isAuthorized ? "var(--success-surface)" : "var(--danger-surface)",
-                  color: isAuthorized ? "var(--success)" : "var(--danger)",
-                }}
-              >
-                {isAuthorized ? "Authorised" : "Declined"}
-              </span>
-            )}
           </div>
         </div>
       </div>
@@ -987,7 +959,6 @@ export default function PublicSharePreviewPage() {
 
   // Loading state
   if (loading) {
-    console.info("Share page loading", { jobNumber, linkCode });
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--surface-light)" }}>
         <div style={{ textAlign: "center" }}>
@@ -999,7 +970,6 @@ export default function PublicSharePreviewPage() {
 
   // Error state
   if (error) {
-    console.warn("Share page error state", { jobNumber, linkCode, error });
     return (
       <>
         <Head>
