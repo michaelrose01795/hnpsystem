@@ -671,7 +671,7 @@ export default function Layout({ children, jobNumber }) {
   const navToggleButtonLeft = isSidebarOpen
     ? `${navDrawerTargetWidth + navButtonPaddingOffset}px`
     : "0px";
-  const showNavToggleButton = !hideSidebar;
+  const showNavToggleButton = !hideSidebar && !isTablet; // Hide on tablet/mobile since we use tab-style buttons
 
   return (
     <div style={layoutStyles}>
@@ -722,33 +722,69 @@ export default function Layout({ children, jobNumber }) {
       >
         {showMobileSidebar && (
           <>
-            {canViewStatusSidebar && (
-              <div
+            {/* 50/50 Tab-style navigation for smaller screens */}
+            <div
+              style={{
+                display: "flex",
+                width: "100%",
+                gap: "8px",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setIsSidebarOpen(true)}
                 style={{
+                  flex: 1,
+                  padding: "12px 14px",
+                  borderRadius: "12px",
+                  border: isSidebarOpen ? `2px solid ${colors.accent}` : "1px solid var(--surface-light)",
+                  background: isSidebarOpen ? "var(--primary)" : "var(--surface)",
+                  fontWeight: 600,
+                  color: isSidebarOpen ? "var(--surface)" : colors.accent,
+                  boxShadow: "none",
+                  cursor: "pointer",
                   display: "flex",
-                  width: "100%",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.2s ease",
                 }}
               >
+                Menu
+              </button>
+              {canViewStatusSidebar && (
                 <button
                   type="button"
                   onClick={() => setIsStatusSidebarOpen(true)}
                   style={{
                     flex: 1,
-                    padding: "10px 14px",
+                    padding: "12px 14px",
                     borderRadius: "12px",
-                    border: `1px solid ${colors.accent}`,
-                    background: "var(--surface)",
+                    border: isStatusSidebarOpen ? `2px solid ${colors.accent}` : "1px solid var(--surface-light)",
+                    background: isStatusSidebarOpen ? "var(--primary)" : "var(--surface)",
                     fontWeight: 600,
-                    color: colors.accent,
+                    color: isStatusSidebarOpen ? "var(--surface)" : colors.accent,
                     boxShadow: "none",
                     cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
+                    transition: "all 0.2s ease",
                   }}
                 >
                   Status
                 </button>
+              )}
+            </div>
+
+            {/* Full-width search bar below tab buttons for tablet/mobile - hidden when sidebar/status is open */}
+            {!isSidebarOpen && !isStatusSidebarOpen && (
+              <div
+                style={{
+                  width: "100%",
+                }}
+              >
+                <GlobalSearch accentColor={colors.accent} navigationItems={navigationItems} />
+                <AlertBadge />
               </div>
             )}
 
@@ -778,12 +814,11 @@ export default function Layout({ children, jobNumber }) {
                   style={{
                     position: "relative",
                     zIndex: 1,
-                    width: `${mobileDrawerWidth}px`,
+                    width: "100%",
                     maxWidth: "100%",
                     height: "100%",
                     background: colors.mainBg,
-                    borderTopRightRadius: "28px",
-                    borderBottomRightRadius: "28px",
+                    borderRadius: 0,
                     boxShadow: "none",
                     padding: "24px 20px",
                     display: "flex",
@@ -832,82 +867,85 @@ export default function Layout({ children, jobNumber }) {
                 overflowY: "visible",
               }}
             >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                  minWidth: isMobile ? "100%" : "auto",
-                  flex: "0 0 auto",
-                }}
-              >
+              {/* Hide Welcome back and mode section on tablet/mobile */}
+              {!isTablet && (
                 <div
                   style={{
                     display: "flex",
-                    alignItems: "baseline",
-                    flexWrap: "wrap",
-                    gap: "8px",
+                    alignItems: "center",
+                    gap: "12px",
+                    minWidth: "auto",
+                    flex: "0 0 auto",
                   }}
                 >
-                  <h1
+                  <div
                     style={{
-                      fontSize: isMobile ? "1rem" : "1.15rem",
-                      fontWeight: 700,
-                      margin: 0,
-                      color: colors.accent,
-                      lineHeight: 1.1,
+                      display: "flex",
+                      alignItems: "baseline",
+                      flexWrap: "wrap",
+                      gap: "8px",
                     }}
                   >
-                    Welcome back, {user?.username || "Guest"}
-                  </h1>
-                  {availableModes.length > 0 && (
-                    <div
+                    <h1
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "4px",
-                        fontSize: "0.65rem",
-                        fontWeight: 600,
+                        fontSize: "1.15rem",
+                        fontWeight: 700,
+                        margin: 0,
+                        color: colors.accent,
+                        lineHeight: 1.1,
                       }}
                     >
-                      <span style={{ color: colors.mutedText, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                        Mode:
-                      </span>
-                      {availableModes.length > 1 ? (
-                        <DropdownField
-                          value={selectedMode || activeModeLabel || ""}
-                          onChange={(event) => handleModeSelect(event.target.value)}
-                          style={{
-                            borderRadius: "999px",
-                            border: "none",
-                            padding: "2px 8px",
-                            background: "var(--surface-light)",
-                            color: colors.accent,
-                            fontWeight: 600,
-                            fontSize: "0.65rem",
-                            cursor: "pointer",
-                          }}
-                        >
-                          {availableModes.map((mode) => (
-                            <option key={mode} value={mode}>
-                              {mode}
-                            </option>
-                          ))}
-                        </DropdownField>
-                      ) : (
-                        <span
-                          style={{
-                            color: colors.accent,
-                            fontWeight: 600,
-                          }}
-                        >
-                          {activeModeLabel}
+                      Welcome back, {user?.username || "Guest"}
+                    </h1>
+                    {availableModes.length > 0 && (
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px",
+                          fontSize: "0.65rem",
+                          fontWeight: 600,
+                        }}
+                      >
+                        <span style={{ color: colors.mutedText, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                          Mode:
                         </span>
-                      )}
-                    </div>
-                  )}
+                        {availableModes.length > 1 ? (
+                          <DropdownField
+                            value={selectedMode || activeModeLabel || ""}
+                            onChange={(event) => handleModeSelect(event.target.value)}
+                            style={{
+                              borderRadius: "999px",
+                              border: "none",
+                              padding: "2px 8px",
+                              background: "var(--surface-light)",
+                              color: colors.accent,
+                              fontWeight: 600,
+                              fontSize: "0.65rem",
+                              cursor: "pointer",
+                            }}
+                          >
+                            {availableModes.map((mode) => (
+                              <option key={mode} value={mode}>
+                                {mode}
+                              </option>
+                            ))}
+                          </DropdownField>
+                        ) : (
+                          <span
+                            style={{
+                              color: colors.accent,
+                              fontWeight: 600,
+                            }}
+                          >
+                            {activeModeLabel}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {isTech && (
                 <div
@@ -1082,56 +1120,59 @@ export default function Layout({ children, jobNumber }) {
                 </div>
               )}
 
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                  flex: "1 1 0",
-                  minWidth: isTablet ? "0" : "320px",
-                  justifyContent: isTablet ? "flex-start" : "flex-end",
-                }}
-              >
+              {/* Hide search section on tablet/mobile - shown below tab buttons instead */}
+              {!isTablet && (
                 <div
                   style={{
-                    flex: "1 1 auto",
-                    minWidth: "240px",
-                    width: "100%",
-                    maxWidth: isMobile ? "100%" : `${navDrawerTargetWidth}px`,
-                    position: "relative",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    flex: "1 1 0",
+                    minWidth: "320px",
+                    justifyContent: "flex-end",
                   }}
                 >
-                  <GlobalSearch accentColor={colors.accent} navigationItems={navigationItems} />
-                  <AlertBadge />
-                </div>
-
-                <div
-                  style={{
-                    flexShrink: 0,
-                  }}
-                >
-                  <NextActionPrompt />
-                </div>
-
-                {userRoles.includes("admin manager") && (
-                  <Link
-                    href="/admin/users"
+                  <div
                     style={{
-                      padding: "8px 14px",
-                      borderRadius: "14px",
-                      background: "var(--primary)",
-                      color: "var(--surface)",
-                      fontWeight: 600,
-                      textDecoration: "none",
-                      boxShadow: "none",
-                      whiteSpace: "nowrap",
+                      flex: "1 1 auto",
+                      minWidth: "240px",
+                      width: "100%",
+                      maxWidth: `${navDrawerTargetWidth}px`,
+                      position: "relative",
+                    }}
+                  >
+                    <GlobalSearch accentColor={colors.accent} navigationItems={navigationItems} />
+                    <AlertBadge />
+                  </div>
+
+                  <div
+                    style={{
                       flexShrink: 0,
                     }}
                   >
-                    Create User
-                  </Link>
-                )}
-              </div>
+                    <NextActionPrompt />
+                  </div>
+
+                  {userRoles.includes("admin manager") && (
+                    <Link
+                      href="/admin/users"
+                      style={{
+                        padding: "8px 14px",
+                        borderRadius: "14px",
+                        background: "var(--primary)",
+                        color: "var(--surface)",
+                        fontWeight: 600,
+                        textDecoration: "none",
+                        boxShadow: "none",
+                        whiteSpace: "nowrap",
+                        flexShrink: 0,
+                      }}
+                    >
+                      Create User
+                    </Link>
+                  )}
+                </div>
+              )}
             </div>
           </section>
         )}

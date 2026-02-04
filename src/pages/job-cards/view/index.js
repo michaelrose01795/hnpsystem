@@ -943,6 +943,21 @@ export default function ViewJobCards() {
                     >
                       {popupJob.jobSource || "Retail"}
                     </span>
+                    {/* ✅ Prime/Sub-job badge */}
+                    {popupJob.primeJobNumber && (
+                      <span
+                        style={{
+                          backgroundColor: "var(--primary-surface)",
+                          color: "var(--primary)",
+                          padding: "8px 16px",
+                          borderRadius: "8px",
+                          fontSize: "12px",
+                          fontWeight: "600",
+                        }}
+                      >
+                        {popupJob.isPrimeJob ? "🔗 Prime Job" : `Sub-job of #${popupJob.primeJobNumber}`}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1297,6 +1312,22 @@ const JobListCard = ({ job, onNavigate, onQuickView }) => {
       >
         <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
           <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--info-dark)" }}>{job.jobNumber}</span>
+          {/* ✅ Prime/Sub-job badge */}
+          {job.primeJobNumber && (
+            <span
+              style={{
+                fontSize: "10px",
+                padding: "2px 8px",
+                borderRadius: "4px",
+                backgroundColor: "var(--primary-surface)",
+                color: "var(--primary)",
+                fontWeight: "600",
+              }}
+              title={job.isPrimeJob ? "Prime Job" : `Sub-job of ${job.primeJobNumber}`}
+            >
+              {job.isPrimeJob ? "🔗 Prime" : `↳ ${job.primeJobNumber}`}
+            </span>
+          )}
           <span style={{ fontSize: "18px", fontWeight: 700, color: "var(--primary)" }}>{job.reg || "—"}</span>
           <span style={{ fontSize: "13px", color: "var(--info)" }}>{job.makeModel || "Vehicle pending"}</span>
         </div>

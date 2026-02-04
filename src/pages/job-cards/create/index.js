@@ -15,7 +15,7 @@ import {
   updateCustomer,
 } from "@/lib/database/customers";
 import { createOrUpdateVehicle, getVehicleByReg } from "@/lib/database/vehicles";
-import { addJobToDatabase, addJobFile } from "@/lib/database/jobs";
+import { addJobToDatabase, addJobFile, getJobByNumber } from "@/lib/database/jobs";
 import { supabase } from "@/lib/supabaseClient"; // import supabase client for job request inserts
 import NewCustomerPopup from "@/components/popups/NewCustomerPopup"; // import new customer popup
 import ExistingCustomerPopup from "@/components/popups/ExistingCustomerPopup"; // import existing customer popup
@@ -138,6 +138,11 @@ export default function CreateJobCardPage() {
   const [jobNumberDisplay, setJobNumberDisplay] = useState(null); // store assigned job number for header display
   const lastVehicleLookupRef = useRef(""); // track last registration looked up to avoid duplicate fetches
 
+  // ✅ Prime/Sub-job state
+  const [isSubJobMode, setIsSubJobMode] = useState(false); // true when creating a sub-job under a prime job
+  const [primeJobData, setPrimeJobData] = useState(null); // prime job data when in sub-job mode
+  const [asPrimeJob, setAsPrimeJob] = useState(false); // checkbox to create this job as a prime job
+
   useEffect(() => { // sync editable form with whichever customer is selected
     if (customer) { // when a customer exists use their values
       setCustomerForm(normalizeCustomerRecord(customer)); // copy normalized customer data into the form controls
@@ -197,6 +202,60 @@ export default function CreateJobCardPage() {
     if (typeof window === "undefined") return; // guard for SSR
     localStorage.setItem(WAITING_STATUS_STORAGE_KEY, waitingStatus); // store the selection for next visit
   }, [waitingStatus]); // run whenever waiting status changes
+
+  // ✅ Detect sub-job mode from query param ?primeJob=XXXXX
+  useEffect(() => {
+    const primeJobNumber = router.query?.primeJob;
+    if (!primeJobNumber) {
+      setIsSubJobMode(false);
+      setPrimeJobData(null);
+      return;
+    }
+
+    const fetchPrimeJob = async () => {
+      console.log("📋 Sub-job mode: fetching prime job", primeJobNumber);
+      const result = await getJobByNumber(primeJobNumber);
+      if (result.success && result.data) {
+        setPrimeJobData(result.data);
+        setIsSubJobMode(true);
+
+        // Pre-fill customer and vehicle from prime job
+        if (result.data.customerId) {
+          const normalizedCustomer = {
+            id: result.data.customerId,
+            firstName: result.data.customer?.split(" ")[0] || "",
+            lastName: result.data.customer?.split(" ").slice(1).join(" ") || "",
+            email: result.data.customerEmail || "",
+            mobile: result.data.customerPhone || "",
+            telephone: "",
+            address: result.data.customerAddress || "",
+            postcode: result.data.customerPostcode || "",
+          };
+          setCustomer(normalizedCustomer);
+          setCustomerForm(normalizedCustomer);
+        }
+
+        if (result.data.reg) {
+          setVehicle({
+            reg: result.data.reg || "",
+            colour: result.data.colour || "",
+            makeModel: result.data.makeModel || "",
+            chassis: result.data.vin || result.data.chassis || "",
+            engine: result.data.engine || "",
+            mileage: result.data.mileage || "",
+          });
+        }
+
+        console.log("✅ Prime job loaded for sub-job creation:", result.data.jobNumber);
+      } else {
+        console.error("❌ Failed to fetch prime job:", primeJobNumber);
+        setIsSubJobMode(false);
+        setPrimeJobData(null);
+      }
+    };
+
+    fetchPrimeJob();
+  }, [router.query?.primeJob]);
 
   // function to determine background color based on waiting status and job source
   const getBackgroundColor = (status, source) => {
@@ -963,6 +1022,9 @@ export default function CreateJobCardPage() {
         maintenanceInfo: {
           cosmeticDamagePresent,
         },
+        // Prime/Sub-job parameters
+        primeJobId: isSubJobMode && primeJobData ? primeJobData.id : null,
+        asPrimeJob: !isSubJobMode && asPrimeJob,
       };
 
       console.log("Saving job via shared helper:", jobPayload);
@@ -1043,12 +1105,16 @@ export default function CreateJobCardPage() {
               style={{
                 margin: 0,
                 fontSize: "14px",
-                color: "var(--grey-accent)",
+                color: isSubJobMode ? "var(--primary)" : "var(--grey-accent)",
                 fontWeight: "500",
                 marginBottom: "4px",
               }}
             >
-              {jobNumberDisplay ? `${jobDivision} — ${jobNumberDisplay}` : `${jobDivision} Job Card`}
+              {isSubJobMode
+                ? `Sub-job for ${primeJobData?.jobNumber || "Prime Job"}`
+                : jobNumberDisplay
+                ? `${jobDivision} — ${jobNumberDisplay}`
+                : `${jobDivision} Job Card`}
             </h2>
             <div
               style={{
@@ -1098,6 +1164,46 @@ export default function CreateJobCardPage() {
             Save Job Card
           </button>
         </div>
+
+        {/* ✅ Sub-job Mode Banner */}
+        {isSubJobMode && primeJobData && (
+          <div
+            style={{
+              padding: "12px 16px",
+              backgroundColor: "var(--primary-surface)",
+              borderRadius: "8px",
+              marginBottom: "8px",
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              border: "1px solid var(--primary-light)",
+            }}
+          >
+            <span style={{ fontSize: "18px" }}>🔗</span>
+            <div style={{ flex: 1 }}>
+              <span style={{ fontWeight: 600, color: "var(--primary)" }}>
+                Creating sub-job linked to Job {primeJobData.jobNumber}
+              </span>
+              <span style={{ marginLeft: "12px", color: "var(--grey-accent)", fontSize: "13px" }}>
+                Customer and vehicle details are inherited from the prime job
+              </span>
+            </div>
+            <button
+              onClick={() => router.push(`/job-cards/${primeJobData.jobNumber}`)}
+              style={{
+                padding: "6px 12px",
+                fontSize: "12px",
+                backgroundColor: "var(--primary)",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+              }}
+            >
+              View Prime Job
+            </button>
+          </div>
+        )}
 
         {/* ✅ Content Area */}
         <div
@@ -1265,6 +1371,40 @@ export default function CreateJobCardPage() {
                 </div>
               </div>
 
+              {/* ✅ Create as Prime Job checkbox - only show when NOT in sub-job mode */}
+              {!isSubJobMode && (
+                <div style={{ marginBottom: "16px" }}>
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      cursor: "pointer",
+                      padding: "12px 16px",
+                      borderRadius: "8px",
+                      border: asPrimeJob ? "2px solid var(--primary)" : "2px solid var(--border)",
+                      backgroundColor: asPrimeJob ? "var(--primary-surface)" : "var(--surface)",
+                      transition: "all 0.2s",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={asPrimeJob}
+                      onChange={(e) => setAsPrimeJob(e.target.checked)}
+                      style={{ width: "18px", height: "18px", cursor: "pointer" }}
+                    />
+                    <div>
+                      <span style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-primary)" }}>
+                        Multiple linked jobs
+                      </span>
+                      <p style={{ margin: "4px 0 0", fontSize: "11px", color: "var(--grey-accent)" }}>
+                        Enable this to add additional sub-jobs after creation
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              )}
+
               <div>
                 <label
                   style={{
@@ -1325,6 +1465,21 @@ export default function CreateJobCardPage() {
                 }}
               >
                 Vehicle Details
+                {isSubJobMode && (
+                  <span
+                    style={{
+                      marginLeft: "8px",
+                      fontSize: "11px",
+                      fontWeight: "500",
+                      padding: "2px 8px",
+                      borderRadius: "4px",
+                      backgroundColor: "var(--primary-surface)",
+                      color: "var(--primary)",
+                    }}
+                  >
+                    Inherited
+                  </span>
+                )}
               </h3>
 
               {vehicleNotification && (
@@ -1537,6 +1692,21 @@ export default function CreateJobCardPage() {
                 }}
               >
                 Customer Details
+                {isSubJobMode && (
+                  <span
+                    style={{
+                      marginLeft: "8px",
+                      fontSize: "11px",
+                      fontWeight: "500",
+                      padding: "2px 8px",
+                      borderRadius: "4px",
+                      backgroundColor: "var(--primary-surface)",
+                      color: "var(--primary)",
+                    }}
+                  >
+                    Inherited
+                  </span>
+                )}
               </h3>
 
               {customerNotification && (

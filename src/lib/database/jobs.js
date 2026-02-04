@@ -2279,7 +2279,33 @@ const formatJobData = (data) => {
     warrantyVhcMasterJobNumber: data.vhc_master_job?.job_number || null,
     messagingThread: data.messagingThread || null,
     bookingRequest,
-    
+
+    // ✅ Prime/Sub-job linking
+    primeJobNumber: data.prime_job_number || null,
+    primeJobId: data.prime_job_id || null,
+    isPrimeJob: data.is_prime_job === true,
+    subJobSequence: data.sub_job_sequence || null,
+    primeJob: data.prime_job
+      ? {
+          id: data.prime_job.id,
+          jobNumber: data.prime_job.job_number,
+          status: data.prime_job.status,
+          customerId: data.prime_job.customer_id,
+          vehicleId: data.prime_job.vehicle_id,
+          reg: data.prime_job.vehicle_reg || "",
+          makeModel: data.prime_job.vehicle_make_model || "",
+        }
+      : null,
+    subJobs: (data.sub_jobs || []).map((sub) => ({
+      id: sub.id,
+      jobNumber: sub.job_number,
+      description: sub.description || "",
+      type: sub.type || "",
+      status: sub.status || "",
+      assignedTo: sub.assigned_to || null,
+      subJobSequence: sub.sub_job_sequence || null,
+    })),
+
     // ✅ Timestamps
     createdAt: data.created_at,
     updatedAt: data.updated_at,
@@ -2291,11 +2317,11 @@ const formatJobData = (data) => {
    Creates a new job and links it to vehicle and customer
    ✅ NOW SAVES ALL FIELDS
 ============================================ */
-export const addJobToDatabase = async ({ 
-  regNumber, 
-  jobNumber, 
-  description, 
-  type, 
+export const addJobToDatabase = async ({
+  regNumber,
+  jobNumber,
+  description,
+  type,
   assignedTo,
   customerId,
   vehicleId,
@@ -2307,6 +2333,9 @@ export const addJobToDatabase = async ({
   cosmeticNotes,
   vhcRequired,
   maintenanceInfo,
+  // Prime/Sub-job parameters
+  primeJobId = null,
+  asPrimeJob = false,
 }) => {
   try {
     const normalizedJobNumber = normaliseJobNumberInput(jobNumber);
@@ -2358,13 +2387,63 @@ export const addJobToDatabase = async ({
       console.log("✅ Vehicle found:", vehicle);
     }
 
+    // ✅ Handle prime/sub-job linking
+    let primeJobData = null;
+    let subJobSequence = null;
+    let primeJobNumber = null;
+
+    if (primeJobId) {
+      // Creating a sub-job - fetch prime job data and inherit customer/vehicle
+      const { data: primeJob, error: primeJobError } = await supabase
+        .from("jobs")
+        .select("id, job_number, customer_id, vehicle_id, vehicle_reg, vehicle_make_model, prime_job_number")
+        .eq("id", primeJobId)
+        .single();
+
+      if (primeJobError || !primeJob) {
+        console.error("❌ Prime job not found:", primeJobError);
+        return {
+          success: false,
+          error: { message: `Prime job with ID ${primeJobId} not found` }
+        };
+      }
+
+      primeJobData = primeJob;
+      primeJobNumber = primeJob.prime_job_number || primeJob.job_number;
+
+      // Inherit customer/vehicle from prime job
+      if (!finalVehicleId) finalVehicleId = primeJob.vehicle_id;
+      if (!customerId) customerId = primeJob.customer_id;
+      if (!regNumber) regNumber = primeJob.vehicle_reg;
+
+      // Get the next sub-job sequence number
+      const { data: existingSubJobs, error: seqError } = await supabase
+        .from("jobs")
+        .select("sub_job_sequence")
+        .eq("prime_job_number", primeJobNumber)
+        .not("sub_job_sequence", "is", null)
+        .order("sub_job_sequence", { ascending: false })
+        .limit(1);
+
+      if (!seqError && existingSubJobs?.length > 0) {
+        subJobSequence = (existingSubJobs[0].sub_job_sequence || 0) + 1;
+      } else {
+        subJobSequence = 1;
+      }
+
+      console.log("✅ Creating sub-job under prime:", primeJobNumber, "sequence:", subJobSequence);
+    } else if (asPrimeJob) {
+      // Creating as a prime job - will set prime_job_number after insert
+      console.log("✅ Creating as prime job");
+    }
+
     // ✅ Create the job with ALL fields
     const jobInsert = {
       job_number: normalizedJobNumber,
       vehicle_id: finalVehicleId,
       customer_id: customerId || vehicleData?.customer_id || null,
-      vehicle_reg: regNumber?.toUpperCase() || "",
-      vehicle_make_model: vehicleData?.make_model || "",
+      vehicle_reg: regNumber?.toUpperCase() || primeJobData?.vehicle_reg || "",
+      vehicle_make_model: vehicleData?.make_model || primeJobData?.vehicle_make_model || "",
       assigned_to: assignedTo || null,
       type: type || "Service",
       description: description || "",
@@ -2376,6 +2455,11 @@ export const addJobToDatabase = async ({
       requests: requests || [],
       cosmetic_notes: cosmeticNotes || null,
       vhc_required: normalizeBooleanField(vhcRequired),
+      // Prime/Sub-job fields
+      prime_job_id: primeJobId || null,
+      prime_job_number: primeJobNumber || null,
+      is_prime_job: asPrimeJob && !primeJobId,
+      sub_job_sequence: subJobSequence,
       maintenance_info: maintenanceInfo || {},
       created_at: new Date().toISOString(),
     };
@@ -2403,6 +2487,10 @@ export const addJobToDatabase = async ({
         vhc_required,
         maintenance_info,
         created_at,
+        prime_job_number,
+        prime_job_id,
+        is_prime_job,
+        sub_job_sequence,
         vehicle:vehicle_id(
           vehicle_id,
           registration,
@@ -2426,7 +2514,23 @@ export const addJobToDatabase = async ({
       throw jobError;
     }
 
-    const jobWithNumber = await ensureJobNumberAssigned(job, normalizedJobNumber);
+    let jobWithNumber = await ensureJobNumberAssigned(job, normalizedJobNumber);
+
+    // If this is a prime job, set prime_job_number to the job's own job_number
+    if (asPrimeJob && !primeJobId && jobWithNumber.job_number) {
+      const { error: updatePrimeError } = await supabase
+        .from("jobs")
+        .update({ prime_job_number: jobWithNumber.job_number })
+        .eq("id", jobWithNumber.id);
+
+      if (!updatePrimeError) {
+        jobWithNumber = {
+          ...jobWithNumber,
+          prime_job_number: jobWithNumber.job_number,
+        };
+      }
+      console.log("✅ Set prime_job_number for prime job:", jobWithNumber.job_number);
+    }
 
     console.log("✅ Job successfully added:", jobWithNumber);
 
@@ -3647,6 +3751,231 @@ export const updateJobVhcCheck = async (jobNumber, checkData) => {
     return { success: true };
   } catch (error) {
     console.error("❌ updateJobVhcCheck error:", error);
+    return { success: false, error: { message: error.message } };
+  }
+};
+
+/* ============================================
+   GET JOBS BY PRIME GROUP
+   Fetches all jobs linked to a prime job number
+============================================ */
+export const getJobsByPrimeGroup = async (primeJobNumber) => {
+  try {
+    if (!primeJobNumber) {
+      return { success: false, error: { message: "Prime job number is required" } };
+    }
+
+    const { data, error } = await supabase
+      .from("jobs")
+      .select(`
+        id,
+        job_number,
+        description,
+        type,
+        status,
+        assigned_to,
+        vehicle_reg,
+        vehicle_make_model,
+        customer_id,
+        vehicle_id,
+        prime_job_number,
+        prime_job_id,
+        is_prime_job,
+        sub_job_sequence,
+        created_at,
+        vhc_required,
+        technician_user:assigned_to(user_id, first_name, last_name, email),
+        vehicle:vehicle_id(
+          vehicle_id,
+          registration,
+          make_model,
+          customer:customer_id(id, firstname, lastname, email, mobile)
+        )
+      `)
+      .eq("prime_job_number", primeJobNumber)
+      .order("sub_job_sequence", { ascending: true, nullsFirst: true });
+
+    if (error) {
+      console.error("❌ Error fetching prime job group:", error);
+      throw error;
+    }
+
+    // Separate prime job from sub-jobs
+    const primeJob = data.find((job) => job.is_prime_job || job.job_number === primeJobNumber);
+    const subJobs = data.filter((job) => !job.is_prime_job && job.job_number !== primeJobNumber);
+
+    return {
+      success: true,
+      data: {
+        primeJobNumber,
+        primeJob: primeJob ? formatJobData(primeJob) : null,
+        subJobs: subJobs.map((job) => formatJobData(job)),
+        allJobs: data.map((job) => formatJobData(job)),
+        totalCount: data.length,
+      },
+    };
+  } catch (error) {
+    console.error("❌ getJobsByPrimeGroup error:", error);
+    return { success: false, error: { message: error.message } };
+  }
+};
+
+/* ============================================
+   CONVERT TO PRIME JOB
+   Converts a standalone job to a prime job
+============================================ */
+export const convertToPrimeJob = async (jobId) => {
+  try {
+    if (!jobId) {
+      return { success: false, error: { message: "Job ID is required" } };
+    }
+
+    // Fetch the job to get its job_number
+    const { data: job, error: fetchError } = await supabase
+      .from("jobs")
+      .select("id, job_number, is_prime_job, prime_job_id")
+      .eq("id", jobId)
+      .single();
+
+    if (fetchError || !job) {
+      console.error("❌ Job not found:", fetchError);
+      return { success: false, error: { message: "Job not found" } };
+    }
+
+    // Check if already a prime job or sub-job
+    if (job.is_prime_job) {
+      return { success: false, error: { message: "Job is already a prime job" } };
+    }
+
+    if (job.prime_job_id) {
+      return { success: false, error: { message: "Cannot convert a sub-job to prime job" } };
+    }
+
+    // Update to prime job
+    const { data: updated, error: updateError } = await supabase
+      .from("jobs")
+      .update({
+        is_prime_job: true,
+        prime_job_number: job.job_number,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", jobId)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error("❌ Error converting to prime job:", updateError);
+      throw updateError;
+    }
+
+    console.log("✅ Converted job to prime:", job.job_number);
+    return { success: true, data: formatJobData(updated) };
+  } catch (error) {
+    console.error("❌ convertToPrimeJob error:", error);
+    return { success: false, error: { message: error.message } };
+  }
+};
+
+/* ============================================
+   GET GROUPED JOBS FOR DATE
+   Returns jobs for a date, grouped by prime_job_number
+============================================ */
+export const getGroupedJobsForDate = async (date) => {
+  try {
+    if (!date) {
+      return { success: false, error: { message: "Date is required" } };
+    }
+
+    const startOfDay = dayjs(date).startOf("day").toISOString();
+    const endOfDay = dayjs(date).endOf("day").toISOString();
+
+    const { data, error } = await supabase
+      .from("jobs")
+      .select(`
+        id,
+        job_number,
+        description,
+        type,
+        status,
+        assigned_to,
+        vehicle_reg,
+        vehicle_make_model,
+        customer_id,
+        vehicle_id,
+        prime_job_number,
+        prime_job_id,
+        is_prime_job,
+        sub_job_sequence,
+        created_at,
+        vhc_required,
+        checked_in_at,
+        technician_user:assigned_to(user_id, first_name, last_name, email),
+        vehicle:vehicle_id(
+          vehicle_id,
+          registration,
+          make_model,
+          customer:customer_id(id, firstname, lastname, email, mobile)
+        ),
+        appointments!inner(
+          appointment_id,
+          scheduled_time,
+          status,
+          notes
+        )
+      `)
+      .gte("appointments.scheduled_time", startOfDay)
+      .lte("appointments.scheduled_time", endOfDay)
+      .order("appointments.scheduled_time", { ascending: true });
+
+    if (error) {
+      console.error("❌ Error fetching grouped jobs:", error);
+      throw error;
+    }
+
+    // Group jobs by prime_job_number
+    const standaloneJobs = [];
+    const jobGroups = new Map();
+
+    for (const job of data) {
+      const formattedJob = formatJobData(job);
+
+      if (job.prime_job_number) {
+        // Part of a prime job group
+        if (!jobGroups.has(job.prime_job_number)) {
+          jobGroups.set(job.prime_job_number, {
+            primeJobNumber: job.prime_job_number,
+            primeJob: null,
+            subJobs: [],
+          });
+        }
+
+        const group = jobGroups.get(job.prime_job_number);
+        if (job.is_prime_job || job.job_number === job.prime_job_number) {
+          group.primeJob = formattedJob;
+        } else {
+          group.subJobs.push(formattedJob);
+        }
+      } else {
+        // Standalone job
+        standaloneJobs.push(formattedJob);
+      }
+    }
+
+    // Sort sub-jobs by sequence
+    for (const group of jobGroups.values()) {
+      group.subJobs.sort((a, b) => (a.subJobSequence || 0) - (b.subJobSequence || 0));
+    }
+
+    return {
+      success: true,
+      data: {
+        standaloneJobs,
+        jobGroups: Array.from(jobGroups.values()),
+        totalCount: data.length,
+      },
+    };
+  } catch (error) {
+    console.error("❌ getGroupedJobsForDate error:", error);
     return { success: false, error: { message: error.message } };
   }
 };

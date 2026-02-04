@@ -1232,11 +1232,21 @@ export default function Appointments() {
     );
   });
 
-  // ✅ Sort jobs by appointment time
+  // ✅ Sort jobs by appointment time, grouping linked jobs together
   const sortedJobs = filteredJobs.sort((a, b) => {
-    const timeA = a.appointment?.time || "00:00";
-    const timeB = b.appointment?.time || "00:00";
-    return timeA.localeCompare(timeB);
+    // First, group by prime job number (linked jobs stay together)
+    const primeA = a.primeJobNumber || a.jobNumber || "";
+    const primeB = b.primeJobNumber || b.jobNumber || "";
+    if (primeA !== primeB) {
+      // Sort by the earliest appointment time in each group
+      const timeA = a.appointment?.time || "00:00";
+      const timeB = b.appointment?.time || "00:00";
+      return timeA.localeCompare(timeB);
+    }
+    // Within same prime group, prime job comes first, then sub-jobs by sequence
+    if (a.isPrimeJob && !b.isPrimeJob) return -1;
+    if (!a.isPrimeJob && b.isPrimeJob) return 1;
+    return (a.subJobSequence || 0) - (b.subJobSequence || 0);
   });
 
   // ---------------- Render ----------------
@@ -1887,7 +1897,24 @@ export default function Appointments() {
                           {job.appointment?.time || "-"}
                         </td>
                         <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)", color: "var(--primary)", fontWeight: "600" }}>
-                          {job.jobNumber || job.id || "-"}
+                          <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            {job.jobNumber || job.id || "-"}
+                            {job.primeJobNumber && (
+                              <span
+                                style={{
+                                  fontSize: "10px",
+                                  padding: "2px 6px",
+                                  borderRadius: "4px",
+                                  backgroundColor: "var(--primary-surface)",
+                                  color: "var(--primary)",
+                                  fontWeight: "500",
+                                }}
+                                title={job.isPrimeJob ? "Prime Job" : `Sub-job of ${job.primeJobNumber}`}
+                              >
+                                {job.isPrimeJob ? "🔗" : `↳${job.primeJobNumber}`}
+                              </span>
+                            )}
+                          </span>
                         </td>
                         <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)", fontWeight: "500" }}>
                           {job.reg || "-"}

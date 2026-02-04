@@ -9,7 +9,7 @@ import InvoiceBuilderPopup from "@/components/popups/InvoiceBuilderPopup";
 import { useUser } from "@/context/UserContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
 import { supabase } from "@/lib/supabaseClient";
-import { getJobByNumber, updateJob, updateJobStatus, addJobFile, deleteJobFile, upsertJobRequestsForJob } from "@/lib/database/jobs";
+import { getJobByNumber, updateJob, updateJobStatus, addJobFile, deleteJobFile, upsertJobRequestsForJob, getJobsByPrimeGroup, convertToPrimeJob } from "@/lib/database/jobs";
 import { fetchTrackingSnapshot } from "@/lib/database/tracking";
 import { logJobSubStatus } from "@/lib/services/jobStatusService";
 import { autoSetCheckedInStatus } from "@/lib/services/jobStatusService";
@@ -357,6 +357,10 @@ export default function JobCardDetailPage() {
   const [trackerQuickModalOpen, setTrackerQuickModalOpen] = useState(false);
   const trackerUpdateRef = useRef(null);
 
+  // ✅ Related Jobs (Prime/Sub-job) State
+  const [relatedJobs, setRelatedJobs] = useState([]);
+  const [relatedJobsLoading, setRelatedJobsLoading] = useState(false);
+
   const isArchiveMode = router.query.archive === "1";
 
   useEffect(() => {
@@ -583,6 +587,40 @@ export default function JobCardDetailPage() {
       isActive = false;
     };
   }, [jobData?.id]);
+
+  // ✅ Fetch related jobs when job data loads
+  useEffect(() => {
+    const primeJobNumber = jobData?.primeJobNumber;
+    if (!primeJobNumber) {
+      setRelatedJobs([]);
+      return;
+    }
+
+    let isActive = true;
+    const fetchRelatedJobs = async () => {
+      setRelatedJobsLoading(true);
+      try {
+        const result = await getJobsByPrimeGroup(primeJobNumber);
+        if (!isActive) return;
+        if (result.success && result.data?.allJobs) {
+          // Filter out the current job from the list
+          const others = result.data.allJobs.filter(
+            (job) => job.jobNumber !== jobData.jobNumber
+          );
+          setRelatedJobs(others);
+        }
+      } catch (err) {
+        console.error("Failed to fetch related jobs:", err);
+      } finally {
+        if (isActive) setRelatedJobsLoading(false);
+      }
+    };
+
+    fetchRelatedJobs();
+    return () => {
+      isActive = false;
+    };
+  }, [jobData?.primeJobNumber, jobData?.jobNumber]);
 
   const loadTrackerEntry = useCallback(async () => {
     const targetJobNumber = jobData?.jobNumber || jobNumber;
@@ -1759,14 +1797,70 @@ export default function JobCardDetailPage() {
                   {jobDivisionLabel}
                 </span>
               )}
+              {/* ✅ Prime/Sub-job badge */}
+              {jobData.isPrimeJob && (
+                <span
+                  style={{
+                    padding: "6px 14px",
+                    backgroundColor: "var(--primary-surface)",
+                    color: "var(--primary)",
+                    borderRadius: "20px",
+                    fontWeight: "600",
+                    fontSize: "13px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px",
+                  }}
+                >
+                  🔗 Prime Job
+                </span>
+              )}
+              {jobData.primeJobId && !jobData.isPrimeJob && (
+                <span
+                  style={{
+                    padding: "6px 14px",
+                    backgroundColor: "var(--primary-surface)",
+                    color: "var(--primary)",
+                    borderRadius: "20px",
+                    fontWeight: "600",
+                    fontSize: "13px",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => router.push(`/job-cards/${jobData.primeJobNumber}`)}
+                  title={`Go to prime job ${jobData.primeJobNumber}`}
+                >
+                  Sub-job of #{jobData.primeJobNumber}
+                </span>
+              )}
             </div>
             <p style={{ margin: 0, color: "var(--grey-accent)", fontSize: "14px" }}>
-              Created: {new Date(jobData.createdAt).toLocaleString()} | 
+              Created: {new Date(jobData.createdAt).toLocaleString()} |
               Last Updated: {new Date(jobData.updatedAt).toLocaleString()}
             </p>
           </div>
-          
+
           <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+            {/* ✅ Add Sub-Job button for prime jobs */}
+            {jobData.isPrimeJob && (
+              <button
+                onClick={() => router.push(`/job-cards/create?primeJob=${jobData.jobNumber}`)}
+                style={{
+                  padding: "10px 20px",
+                  backgroundColor: "var(--primary)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontWeight: "600",
+                  fontSize: "13px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}
+              >
+                + Add Sub-Job
+              </button>
+            )}
             {isBookedStatus && (
               <button
                 onClick={handleCheckIn}
@@ -1847,6 +1941,101 @@ export default function JobCardDetailPage() {
             </button>
           </div>
         </section>
+
+        {/* ✅ Related Jobs Panel */}
+        {(relatedJobs.length > 0 || jobData.isPrimeJob) && (
+          <section
+            style={{
+              padding: "12px 20px",
+              backgroundColor: "var(--primary-surface)",
+              borderRadius: "12px",
+              border: "1px solid var(--primary-light)",
+              marginBottom: "0",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <span style={{ fontSize: "14px", fontWeight: "600", color: "var(--primary)" }}>
+                  🔗 {jobData.isPrimeJob ? "Linked Jobs" : "Related Jobs"} ({relatedJobs.length + 1} total)
+                </span>
+                {relatedJobsLoading && (
+                  <span style={{ fontSize: "12px", color: "var(--grey-accent)" }}>Loading...</span>
+                )}
+              </div>
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                {/* Current job indicator */}
+                <span
+                  style={{
+                    padding: "4px 12px",
+                    backgroundColor: "var(--primary)",
+                    color: "white",
+                    borderRadius: "16px",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                  }}
+                >
+                  #{jobData.jobNumber} (current)
+                </span>
+                {/* Related jobs links */}
+                {relatedJobs.map((rJob) => (
+                  <button
+                    key={rJob.id}
+                    onClick={() => router.push(`/job-cards/${rJob.jobNumber}`)}
+                    style={{
+                      padding: "4px 12px",
+                      backgroundColor: "var(--surface)",
+                      color: "var(--text-primary)",
+                      borderRadius: "16px",
+                      fontSize: "12px",
+                      fontWeight: "500",
+                      border: "1px solid var(--border)",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                    }}
+                  >
+                    #{rJob.jobNumber}
+                    <span
+                      style={{
+                        fontSize: "10px",
+                        padding: "2px 6px",
+                        borderRadius: "4px",
+                        backgroundColor:
+                          rJob.status === "Open" ? "var(--success-surface)" :
+                          rJob.status === "Complete" ? "var(--info-surface)" :
+                          "var(--warning-surface)",
+                        color:
+                          rJob.status === "Open" ? "var(--success-dark)" :
+                          rJob.status === "Complete" ? "var(--info)" :
+                          "var(--danger)",
+                      }}
+                    >
+                      {rJob.status}
+                    </span>
+                  </button>
+                ))}
+                {jobData.isPrimeJob && (
+                  <button
+                    onClick={() => router.push(`/job-cards/create?primeJob=${jobData.jobNumber}`)}
+                    style={{
+                      padding: "4px 12px",
+                      backgroundColor: "var(--primary)",
+                      color: "white",
+                      borderRadius: "16px",
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      border: "none",
+                      cursor: "pointer",
+                    }}
+                  >
+                    + Add
+                  </button>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* ✅ Vehicle & Customer Info Bar */}
         <section style={{

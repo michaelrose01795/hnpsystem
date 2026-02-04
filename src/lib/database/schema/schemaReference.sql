@@ -704,13 +704,21 @@ CREATE TABLE public.jobs (
   account_number text,
   job_division text DEFAULT 'Retail'::text,
   tech_completion_status text,
+  prime_job_number text,
+  prime_job_id integer,
+  is_prime_job boolean DEFAULT false,
+  sub_job_sequence integer,
   CONSTRAINT jobs_pkey PRIMARY KEY (id),
   CONSTRAINT jobs_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES public.users(user_id),
   CONSTRAINT jobs_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.vehicles(vehicle_id),
   CONSTRAINT jobs_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
   CONSTRAINT jobs_warranty_linked_job_id_fkey FOREIGN KEY (warranty_linked_job_id) REFERENCES public.jobs(id),
-  CONSTRAINT jobs_warranty_vhc_master_job_id_fkey FOREIGN KEY (warranty_vhc_master_job_id) REFERENCES public.jobs(id)
+  CONSTRAINT jobs_warranty_vhc_master_job_id_fkey FOREIGN KEY (warranty_vhc_master_job_id) REFERENCES public.jobs(id),
+  CONSTRAINT jobs_prime_job_id_fkey FOREIGN KEY (prime_job_id) REFERENCES public.jobs(id) ON DELETE SET NULL
 );
+-- Indexes for prime job grouping
+CREATE INDEX idx_jobs_prime_job_id ON public.jobs(prime_job_id) WHERE prime_job_id IS NOT NULL;
+CREATE INDEX idx_jobs_prime_job_number ON public.jobs(prime_job_number) WHERE prime_job_number IS NOT NULL;
 CREATE TABLE public.key_tracking_events (
   key_event_id bigint NOT NULL DEFAULT nextval('key_tracking_events_key_event_id_seq'::regclass),
   vehicle_id integer,

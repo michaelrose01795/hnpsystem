@@ -3283,8 +3283,8 @@ export default function VhcDetailsPanel({
                               border: "1px solid var(--surface-light)",
                               borderRadius: "12px",
                               padding: "10px 14px",
-                              boxShadow: "0 16px 30px rgba(15, 23, 42, 0.15)",
-                              minWidth: "220px",
+                              boxShadow: "0 8px 16px rgba(var(--text-primary-rgb), 0.12)",
+                              whiteSpace: "nowrap",
                               zIndex: 5,
                             }}
                           >

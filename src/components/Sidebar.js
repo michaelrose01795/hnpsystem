@@ -175,7 +175,6 @@ export default function Sidebar({
         style={{
           background: "var(--surface)", // match sidebar surface so the header blends with the current theme (light or dark)
           padding: "16px 18px",
-          paddingRight: onToggle ? "72px" : "18px", // leave room for the close button so it doesn't overlap the expanded logo
           color: "var(--text-primary)",
           position: "relative",
           display: "flex",
@@ -206,31 +205,6 @@ export default function Sidebar({
             style={headerLogoStyle}
           />
         </div>
-        {onToggle && (
-          <button
-            type="button"
-            onClick={onToggle}
-            aria-label="Close sidebar"
-            style={{
-              position: "absolute",
-              top: "14px",
-              right: "14px",
-              padding: "0 12px",
-              height: "32px",
-              borderRadius: "8px",
-              border: "1px solid rgba(var(--primary-rgb), 0.35)",
-              backgroundColor: "rgba(var(--primary-rgb), 0.12)", // ensure the button remains visible on both light/dark backgrounds
-              color: "var(--primary)",
-              fontWeight: 700,
-              fontSize: "0.8rem",
-              cursor: "pointer",
-              boxShadow: "none",
-              transition: "all 0.2s ease",
-            }}
-          >
-            Close
-          </button>
-        )}
       </div>
 
       {/* Navigation Content */}
@@ -239,15 +213,44 @@ export default function Sidebar({
           <>
             <div
               style={{
-                color: "var(--primary-dark)",
-                fontWeight: 700,
-                fontSize: "0.85rem",
-                letterSpacing: "0.05em",
-                textTransform: "uppercase",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
                 marginBottom: "10px",
               }}
             >
-              My Dashboard
+              <div
+                style={{
+                  color: "var(--primary-dark)",
+                  fontWeight: 700,
+                  fontSize: "0.85rem",
+                  letterSpacing: "0.05em",
+                  textTransform: "uppercase",
+                }}
+              >
+                My Dashboard
+              </div>
+              {onToggle && (
+                <button
+                  type="button"
+                  onClick={onToggle}
+                  aria-label="Close sidebar"
+                  style={{
+                    padding: "4px 10px",
+                    borderRadius: "8px",
+                    border: "1px solid rgba(var(--primary-rgb), 0.35)",
+                    backgroundColor: "rgba(var(--primary-rgb), 0.12)",
+                    color: "var(--primary)",
+                    fontWeight: 600,
+                    fontSize: "0.75rem",
+                    cursor: "pointer",
+                    boxShadow: "none",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  Close
+                </button>
+              )}
             </div>
             {dashboardShortcuts.map((shortcut) => {
               const isActive =

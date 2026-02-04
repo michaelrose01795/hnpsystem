@@ -3,23 +3,17 @@ TO DO:
 Continue flow with job number 54
 
 
+CHECK
+Sub-job number, make sure database table update and is all linked. 
+
+add the changes to the database into the addtables.sql for me to put into the table editor. 
 
 
 
-Add a tab section inside the create page, this tab creates a new job card and the new tab will show the same contents within the first page tab, the only thing which carries over is the customer name and reg. 
-
-have it so inside the appointment page the row are in the same row but new rows inside the same row. Within the page where the current requests are show inside the job card pages have it so more tabs are shown there with the main jobnumber and then the linked on with the tab which just changes to the new job card. 
-
-uses a same prime job number example 00055 and then the sub job number would be for tab one 00055 and then the sub job number for the other tabs created will be 00056, 00057 etc. so the prime job number is used or dispalying the jobs togther wtihin the appointment page inside the todays work, and the same with assigning to techs, assepting in, same VHC,. and the sub job number will be used front end forshowing the job number in the pages, clocking onto indivdual jobs numbers.
-Figure it out FO ONE STEP DONT FULL PASTE
-
-
-
-have it so when hocer over the "STATUS" circule within the sumary tab, the hover section is the width of the text and follows the light and dark theme. 
-
-
+CHECKKKK
 have it so when in smaller screen than the full windows and full ipad size the sidebar open button and status open button are only shown at the top of the page in a 50/50 tab button style layout. add a close button on the "My Dashboard" row. 
 
+CHECKKK
 have it so the top bar doesnt show anythe mode or Welcome back section when in this modesand have it so the search bar isnt insdie the top bar its underneath the navigator and status button taking up the whole width. 
 
 
