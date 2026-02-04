@@ -58,7 +58,13 @@ const normaliseApprovalStatus = (value) => {
 export const syncVhcPartsAuthorisation = async ({ jobId, vhcItemId, approvalStatus }) => {
   if (!jobId || vhcItemId === null || vhcItemId === undefined) return;
 
-  const canonicalVhcId = await resolveCanonicalVhcId({ jobId, rawVhcId: vhcItemId });
+  let canonicalVhcId;
+  try {
+    canonicalVhcId = await resolveCanonicalVhcId({ jobId, rawVhcId: vhcItemId });
+  } catch (resolveError) {
+    console.warn(`[VHC Sync] Failed to resolve VHC ID ${vhcItemId}:`, resolveError.message);
+    return;
+  }
   if (!canonicalVhcId) return;
 
   const { data: partRows, error: partsError } = await supabase
@@ -107,7 +113,8 @@ export const syncVhcPartsAuthorisation = async ({ jobId, vhcItemId, approvalStat
     .select("job_id, vhc_id, issue_title, issue_description, section");
 
   if (vhcUpdateError) {
-    throw new Error(`Failed to sync vhc_checks approval status: ${vhcUpdateError.message}`);
+    // Log but don't throw - the vhc_checks record might not exist yet
+    console.warn(`[VHC Sync] Failed to update vhc_checks for ID ${canonicalVhcId}:`, vhcUpdateError.message);
   }
 
   let vhcRow = Array.isArray(vhcUpdateRows) ? vhcUpdateRows[0] : null;

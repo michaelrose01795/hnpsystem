@@ -1611,7 +1611,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
               No customer requests or authorised work found for this job.
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", maxHeight: "300px", overflowY: "auto" }}>
                 {allRequests.map((request) => {
                   const baseAllocated = partAllocations[request.id] || [];
                   const vhcAllocated =

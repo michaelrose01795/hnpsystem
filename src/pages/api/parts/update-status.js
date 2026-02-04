@@ -128,10 +128,16 @@ export default async function handler(req, res) {
 
     // Keep VHC approval + vhc_authorised job_requests + rectification in sync when a VHC-linked part is updated.
     if (data?.vhc_item_id) {
-      await syncVhcPartsAuthorisation({
-        jobId: data.job_id,
-        vhcItemId: data.vhc_item_id,
-      });
+      try {
+        await syncVhcPartsAuthorisation({
+          jobId: data.job_id,
+          vhcItemId: data.vhc_item_id,
+        });
+      } catch (syncError) {
+        // Log the sync error but don't fail the entire request
+        // The part status was already updated successfully
+        console.error("VHC sync error (non-blocking):", syncError);
+      }
     }
 
     return res.status(200).json({ success: true, data });
