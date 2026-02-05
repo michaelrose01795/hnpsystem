@@ -1,13 +1,25 @@
 // file location: src/pages/index.js
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useRouter } from "next/router";
+import { useUser } from "@/context/UserContext";
 
 export default function HomeRedirect() {
   const router = useRouter(); // get the Next.js router
+  const { user, loading } = useUser();
+
+  const redirectTarget = useMemo(() => {
+    if (!user) return "/login";
+    const roles = []
+      .concat(user.roles || [])
+      .concat(user.role ? [user.role] : [])
+      .map((role) => String(role).toLowerCase());
+    return roles.some((role) => role.includes("customer")) ? "/customer" : "/newsfeed";
+  }, [user]);
 
   useEffect(() => {
-    router.replace("/login"); // immediately redirect to /login when page loads
-  }, [router]);
+    if (loading) return;
+    router.replace(redirectTarget);
+  }, [router, redirectTarget, loading]);
 
   // Optional loading screen while redirecting
   return (
@@ -27,8 +39,16 @@ export default function HomeRedirect() {
         </div>
         <div className="redirect-spinner" aria-hidden="true"></div>
         <div className="redirect-copy">
-          <p className="redirect-kicker">Signing you in</p>
-          <h2 className="redirect-title">Redirecting to login...</h2>
+          <p className="redirect-kicker">
+            {loading ? "Checking session" : "Signing you in"}
+          </p>
+          <h2 className="redirect-title">
+            {loading
+              ? "Loading your account..."
+              : redirectTarget === "/login"
+              ? "Redirecting to login..."
+              : "Redirecting to newsfeed..."}
+          </h2>
           <p className="redirect-sub">Just a moment while we get things ready.</p>
         </div>
         <div className="redirect-dots" aria-hidden="true">
