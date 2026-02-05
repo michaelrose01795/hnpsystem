@@ -2112,10 +2112,10 @@ export default function JobCardDetailPage() {
         }}>
           <div style={{
             padding: "16px 20px",
-            backgroundColor: "var(--layer-section-level-3)",
+            backgroundColor: "var(--surface)",
             borderRadius: "12px",
             boxShadow: "none",
-            border: "1px solid var(--surface-light)"
+            border: "1px solid var(--surface-muted)"
           }}>
             <div style={{ fontSize: "12px", color: "var(--grey-accent)", marginBottom: "4px" }}>VEHICLE</div>
             <div style={{ fontSize: "20px", fontWeight: "700", color: "var(--primary)", marginBottom: "4px" }}>
@@ -2128,10 +2128,10 @@ export default function JobCardDetailPage() {
 
           <div style={{
             padding: "16px 20px",
-            backgroundColor: "var(--layer-section-level-3)",
+            backgroundColor: "var(--surface)",
             borderRadius: "12px",
             boxShadow: "none",
-            border: "1px solid var(--surface-light)"
+            border: "1px solid var(--surface-muted)"
           }}>
             <div style={{ fontSize: "12px", color: "var(--grey-accent)", marginBottom: "4px" }}>CUSTOMER</div>
             <div style={{ fontSize: "18px", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "4px" }}>
@@ -2144,10 +2144,10 @@ export default function JobCardDetailPage() {
 
           <div style={{
             padding: "16px 20px",
-            backgroundColor: "var(--layer-section-level-3)",
+            backgroundColor: "var(--surface)",
             borderRadius: "12px",
             boxShadow: "none",
-            border: "1px solid var(--surface-light)"
+            border: "1px solid var(--surface-muted)"
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
               <div style={{ flex: 1 }}>
@@ -2176,10 +2176,10 @@ export default function JobCardDetailPage() {
             onClick={() => setTrackerQuickModalOpen(true)}
             style={{
               padding: "16px 20px",
-              backgroundColor: "var(--layer-section-level-3)",
+              backgroundColor: "var(--surface)",
               borderRadius: "12px",
               boxShadow: "none",
-              border: "1px solid var(--surface-light)",
+              border: "1px solid var(--surface-muted)",
               display: "flex",
               flexDirection: "column",
               gap: "12px",
@@ -4176,15 +4176,15 @@ function SchedulingTab({
   };
   const cardStyle = {
     padding: "18px",
-    backgroundColor: "var(--layer-section-level-1)",
+    backgroundColor: "var(--surface)",
     borderRadius: "16px",
-    border: "1px solid rgba(var(--grey-accent-rgb), 0.35)"
+    border: "1px solid var(--surface-light)"
   };
   const subPanelStyle = {
     padding: "12px",
-    backgroundColor: "var(--layer-section-level-2)",
+    backgroundColor: "var(--surface)",
     borderRadius: "12px",
-    border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
+    border: "1px solid var(--surface-light)",
   };
   const cardTitleStyle = {
     margin: 0,
@@ -4227,12 +4227,11 @@ function SchedulingTab({
         ) : null}
       </div>
 
-      <div style={{ display: "grid", gap: "16px" }}>
-        <div style={cardStyle}>
+      <div style={cardStyle}>
+        <div style={{ marginBottom: "20px" }}>
           <div style={{ marginBottom: "16px" }}>
             <h3 style={cardTitleStyle}>Customer Booking</h3>
           </div>
-
           <div>
             <label style={fieldLabelStyle}>Vehicle</label>
             {customerVehiclesLoading ? (
@@ -4297,492 +4296,179 @@ function SchedulingTab({
             )}
           </div>
 
-        <div
-          style={{
-            marginTop: "16px",
-            padding: "14px",
-            backgroundColor: "var(--layer-section-level-2)",
-            borderRadius: "12px",
-            border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
-            borderLeft: `4px solid ${confirmCustomerDetails ? "var(--success)" : "var(--warning)"}`
-          }}
-        >
-          <label
-            style={{
-              display: "flex",
-              gap: "10px",
-              alignItems: "center",
-              fontSize: "13px",
-              color: "var(--text-primary)"
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={confirmCustomerDetails}
-              onChange={(event) =>
-                setConfirmCustomerDetails(event.target.checked)
-              }
-              disabled={!canEdit}
-              style={{ width: "16px", height: "16px" }}
-            />
-            I confirm {jobData.customer || "the customer"}'s contact details for
-            this booking.
-          </label>
-        </div>
-
-        <div style={{ marginTop: "16px" }}>
           <div
             style={{
-              fontSize: "13px",
-              fontWeight: "600",
-              color: "var(--text-primary)",
-              marginBottom: "8px"
+              marginTop: "16px",
+              padding: "14px",
+              backgroundColor: "var(--surface-light)",
+              borderRadius: "12px",
+              border: "1px solid var(--surface-light)",
+              borderLeft: `4px solid ${confirmCustomerDetails ? "var(--success)" : "var(--warning)"}`
             }}
           >
-            Customer Status
-          </div>
-          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-            {waitingOptions.map((option) => {
-              const isActive =
-                bookingWaitingStatus === option ||
-                (!bookingWaitingStatus && option === "Neither");
-              return (
-                <button
-                  key={option}
-                  onClick={() => handleBookingWaitingSelect(option)}
-                  disabled={!canEdit}
-                  style={{
-                    flex: "1 1 180px",
-                    minWidth: "140px",
-                    padding: "12px 16px",
-                    borderRadius: "10px",
-                    border: isActive
-                      ? "2px solid var(--primary)"
-                      : "1px solid var(--border)",
-                    backgroundColor: isActive
-                      ? "var(--primary)"
-                      : "var(--surface-light)",
-                    color: isActive ? "var(--text-inverse)" : "var(--text-primary)",
-                    fontWeight: "600",
-                    cursor: canEdit ? "pointer" : "default",
-                    transition: "all 0.2s"
-                  }}
-                >
-                  {option}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div style={{ marginTop: "16px" }}>
-          <label style={fieldLabelStyle}>Job Requests</label>
-          <div
-            style={{
-              ...subPanelStyle,
-              maxHeight: "96px",
-              overflowY: "auto",
-              color: "var(--text-secondary)",
-              fontSize: "13px",
-              lineHeight: "20px",
-            }}
-          >
-            {bookingRequestLines.length > 0 ? (
-              <ul style={{ margin: 0, paddingLeft: "18px" }}>
-                {bookingRequestLines.map((line, index) => (
-                  <li key={`${index}-${line}`}>{line}</li>
-                ))}
-              </ul>
-            ) : (
-              <div>No job requests found.</div>
-            )}
-          </div>
-        </div>
-
-        <div
-          style={{
-            marginTop: "16px",
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-            flexWrap: "wrap"
-          }}
-        >
-          <button
-            onClick={handleBookingSubmit}
-            disabled={bookingButtonDisabled || vehicleOptions.length === 0}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: bookingButtonDisabled
-                ? "var(--grey-accent)"
-                : "var(--primary)",
-              color: "var(--text-inverse)",
-              border: "none",
-              borderRadius: "8px",
-              cursor: bookingButtonDisabled ? "not-allowed" : "pointer",
-              fontWeight: "600",
-              fontSize: "14px"
-            }}
-          >
-            {bookingFlowSaving ? "Saving..." : "Save Booking Details"}
-          </button>
-          {bookingMessage && (
-            <span style={{ fontSize: "13px", color: "var(--success)" }}>
-              {bookingMessage}
-            </span>
-          )}
-          {!confirmCustomerDetails && canEdit && (
-            <span style={{ fontSize: "12px", color: "var(--danger)" }}>
-              Please confirm customer details before saving.
-            </span>
-          )}
-        </div>
-        </div>
-
-        <div style={cardStyle}>
-          <div style={{ marginBottom: "16px" }}>
-            <h3 style={cardTitleStyle}>Booking Approval & Confirmation</h3>
-            <p style={cardSubtitleStyle}>
-              Review the booking request, capture workshop commitments, and send the
-              confirmation email.
-            </p>
-          </div>
-
-        {bookingRequest ? (
-          <>
-            <div
+            <label
               style={{
                 display: "flex",
-                flexWrap: "wrap",
-                gap: "12px",
+                gap: "10px",
                 alignItems: "center",
-                marginBottom: "16px"
+                fontSize: "13px",
+                color: "var(--text-primary)"
               }}
             >
-              <span
-                style={{
-                  padding: "6px 14px",
-                  borderRadius: "20px",
-                  fontWeight: "600",
-                  fontSize: "13px",
-                  backgroundColor: statusColor.background,
-                  color: statusColor.color
-                }}
-              >
-                {bookingStatus === "approved" ? "Approved" : "Awaiting Approval"}
-              </span>
-              <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
-                Customer Status: {bookingRequest.waitingStatus || "Neither"}
-              </span>
-            </div>
+              <input
+                type="checkbox"
+                checked={confirmCustomerDetails}
+                onChange={(event) =>
+                  setConfirmCustomerDetails(event.target.checked)
+                }
+                disabled={!canEdit}
+                style={{ width: "16px", height: "16px" }}
+              />
+              I confirm {jobData.customer || "the customer"}'s contact details for
+              this booking.
+            </label>
+          </div>
 
-            {descriptionLines.length > 0 && (
-              <div
-                style={{
-                  marginBottom: "16px",
-                  ...subPanelStyle
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: "600",
-                    color: "var(--text-primary)",
-                    marginBottom: "8px"
-                  }}
-                >
-                  Customer Request
-                </div>
-                <ul
-                  style={{
-                    margin: 0,
-                    paddingLeft: "18px",
-                    color: "var(--text-secondary)",
-                    fontSize: "13px"
-                  }}
-                >
-                  {descriptionLines.map((line, index) => (
-                    <li key={`${line}-${index}`}>{line}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
+          <div style={{ marginTop: "16px" }}>
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
-                gap: "12px",
-                marginBottom: "16px"
-              }}
-            >
-              <div
-                style={{
-                  ...subPanelStyle
-                }}
-              >
-                <p style={{ margin: "0 0 4px 0", color: "var(--text-secondary)", fontSize: "12px" }}>
-                  Submitted
-                </p>
-                <p style={{ margin: 0, fontSize: "14px", color: "var(--text-primary)" }}>
-                  {submittedAt}
-                </p>
-                <p style={{ margin: 0, fontSize: "12px", color: "var(--text-secondary)" }}>
-                  {bookingRequest.submittedByName || "Customer Portal"}
-                </p>
-              </div>
-              <div
-                style={{
-                  ...subPanelStyle
-                }}
-              >
-                <p style={{ margin: "0 0 4px 0", color: "var(--text-secondary)", fontSize: "12px" }}>
-                  Approved
-                </p>
-                <p style={{ margin: 0, fontSize: "14px", color: "var(--text-primary)" }}>
-                  {approvedAt || "Not yet approved"}
-                </p>
-                {bookingRequest.approvedByName && (
-                  <p style={{ margin: 0, fontSize: "12px", color: "var(--text-secondary)" }}>
-                    {bookingRequest.approvedByName}
-                  </p>
-                )}
-              </div>
-              <div
-                style={{
-                  padding: "12px",
-                  borderRadius: "10px",
-                  border: "1px solid var(--border)",
-                  backgroundColor: "var(--surface-light)"
-                }}
-              >
-                <p style={{ margin: "0 0 4px 0", color: "var(--text-secondary)", fontSize: "12px" }}>
-                  Estimated Completion
-                </p>
-                <p style={{ margin: 0, fontSize: "14px", color: "var(--text-primary)" }}>
-                  {etaDisplay || "Not scheduled"}
-                </p>
-                {bookingRequest.priceEstimate && (
-                  <p style={{ margin: 0, fontSize: "12px", color: "var(--text-secondary)" }}>
-                    Estimate: £{Number(bookingRequest.priceEstimate).toFixed(2)}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {bookingRequest.loanCarDetails && (
-              <div
-                style={{
-                  marginBottom: "16px",
-                  padding: "12px",
-                  borderRadius: "10px",
-                  border: "1px solid var(--border)",
-                  backgroundColor: "var(--warning-surface)",
-                  color: "var(--danger-dark)",
-                  fontSize: "13px"
-                }}
-              >
-                <strong style={{ display: "block", marginBottom: "4px" }}>
-                  Loan Car Details
-                </strong>
-                {bookingRequest.loanCarDetails}
-              </div>
-            )}
-
-            {bookingRequest.confirmationNotes && (
-              <div
-                style={{
-                  marginBottom: "16px",
-                  padding: "12px",
-                  borderRadius: "10px",
-                  border: "1px solid var(--border)",
-                  backgroundColor: "var(--success-surface)",
-                  color: "var(--success-dark)",
-                  fontSize: "13px"
-                }}
-              >
-                <strong style={{ display: "block", marginBottom: "4px" }}>
-                  Last Confirmation
-                </strong>
-                {bookingRequest.confirmationNotes}
-              </div>
-            )}
-
-            {canEdit && (
-              <div
-                style={{
-                  marginTop: "12px",
-                  paddingTop: "16px",
-                  borderTop: "1px solid var(--border)"
-                }}
-              >
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns:
-                      "repeat(auto-fit,minmax(220px,1fr))",
-                    gap: "16px",
-                    marginBottom: "16px"
-                  }}
-                >
-                  <div>
-                    <label style={fieldLabelStyle}>Price Estimate (£)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={approvalForm.priceEstimate}
-                      onChange={(event) =>
-                        handleApprovalFieldChange(
-                          "priceEstimate",
-                          event.target.value
-                        )
-                      }
-                      style={inputStyle}
-                    />
-                  </div>
-                  <div>
-                    <CalendarField
-                      label="ETA Date"
-                      value={approvalForm.etaDate}
-                      onChange={(event) =>
-                        handleApprovalFieldChange("etaDate", event.target.value)
-                      }
-                      className="compact-picker"
-                    />
-                  </div>
-                  <div>
-                    <TimePickerField
-                      label="ETA Time"
-                      value={approvalForm.etaTime}
-                      onChange={(event) =>
-                        handleApprovalFieldChange("etaTime", event.target.value)
-                      }
-                      className="compact-picker"
-                      style={{
-                        ...inputStyle
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: "12px" }}>
-                  <label style={fieldLabelStyle}>Loan Car Details</label>
-                  <textarea
-                    value={approvalForm.loanCarDetails}
-                    onChange={(event) =>
-                      handleApprovalFieldChange(
-                        "loanCarDetails",
-                        event.target.value
-                      )
-                    }
-                    rows={2}
-                    style={{
-                      ...inputStyle,
-                      padding: "12px",
-                      resize: "vertical"
-                    }}
-                    placeholder="Confirmed courtesy car, fuel policy, insurance details..."
-                  />
-                </div>
-
-                <div style={{ marginBottom: "12px" }}>
-                  <label style={fieldLabelStyle}>Confirmation Message</label>
-                  <textarea
-                    value={approvalForm.confirmationMessage}
-                    onChange={(event) =>
-                      handleApprovalFieldChange(
-                        "confirmationMessage",
-                        event.target.value
-                      )
-                    }
-                    rows={3}
-                    style={{
-                      ...inputStyle,
-                      padding: "12px",
-                      resize: "vertical"
-                    }}
-                    placeholder="Optional note to include in the confirmation email."
-                  />
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "12px",
-                    alignItems: "center",
-                    flexWrap: "wrap"
-                  }}
-                >
-                  <button
-                    onClick={handleApprovalSubmit}
-                    disabled={approvalButtonDisabled}
-                    style={{
-                      padding: "10px 20px",
-                      backgroundColor: approvalButtonDisabled
-                        ? "var(--grey-accent)"
-                        : "var(--primary)",
-                      color: "var(--text-inverse)",
-                      border: "none",
-                      borderRadius: "8px",
-                      cursor: approvalButtonDisabled
-                        ? "not-allowed"
-                        : "pointer",
-                      fontWeight: "600",
-                      fontSize: "14px"
-                    }}
-                  >
-                    {bookingApprovalSaving ? "Sending..." : "Send Confirmation"}
-                  </button>
-                  {approvalMessage && (
-                    <span style={{ fontSize: "13px", color: "var(--success)" }}>
-                      {approvalMessage}
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-          </>
-        ) : (
-          <p style={{ color: "var(--text-secondary)", fontSize: "13px", margin: 0 }}>
-            Save the booking details above to generate a request that can be
-            approved.
-          </p>
-        )}
-      </div>
-        <div style={cardStyle}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "16px",
-              flexWrap: "wrap",
-              gap: "12px"
-            }}
-          >
-            <div>
-              <h3 style={cardTitleStyle}>Appointment Information</h3>
-              <p style={cardSubtitleStyle}>
-                Adjust booking times directly from the job card
-              </p>
-            </div>
-            <button
-              onClick={() => router.push(`/appointments?job=${jobData.jobNumber}`)}
-              style={{
-                padding: "8px 14px",
-                borderRadius: "8px",
-                border: "1px solid var(--border)",
-                backgroundColor: "var(--surface-light)",
-                color: "var(--text-primary)",
                 fontSize: "13px",
                 fontWeight: "600",
-                cursor: "pointer"
+                color: "var(--text-primary)",
+                marginBottom: "8px"
               }}
             >
-              Open Appointment Calendar
-            </button>
+              Customer Status
+            </div>
+            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+              {waitingOptions.map((option) => {
+                const isActive =
+                  bookingWaitingStatus === option ||
+                  (!bookingWaitingStatus && option === "Neither");
+                return (
+                  <button
+                    key={option}
+                    onClick={() => handleBookingWaitingSelect(option)}
+                    disabled={!canEdit}
+                    style={{
+                      flex: "1 1 180px",
+                      minWidth: "140px",
+                      padding: "12px 16px",
+                      borderRadius: "10px",
+                      border: isActive
+                        ? "2px solid var(--primary)"
+                        : "1px solid var(--border)",
+                      backgroundColor: isActive
+                        ? "var(--primary)"
+                        : "var(--surface-light)",
+                      color: isActive ? "var(--text-inverse)" : "var(--text-primary)",
+                      fontWeight: "600",
+                      cursor: canEdit ? "pointer" : "default",
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    {option}
+                  </button>
+                );
+              })}
+            </div>
           </div>
+
+          <div style={{ marginTop: "16px" }}>
+            <label style={fieldLabelStyle}>Job Requests</label>
+            <div
+              style={{
+                ...subPanelStyle,
+                maxHeight: "96px",
+                overflowY: "auto",
+                color: "var(--text-secondary)",
+                fontSize: "13px",
+                lineHeight: "20px",
+              }}
+            >
+              {bookingRequestLines.length > 0 ? (
+                <ul style={{ margin: 0, paddingLeft: "18px" }}>
+                  {bookingRequestLines.map((line, index) => (
+                    <li key={`${index}-${line}`}>{line}</li>
+                  ))}
+                </ul>
+              ) : (
+                <div>No job requests found.</div>
+              )}
+            </div>
+          </div>
+
+          <div
+            style={{
+              marginTop: "16px",
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              flexWrap: "wrap"
+            }}
+          >
+            <button
+              onClick={handleBookingSubmit}
+              disabled={bookingButtonDisabled || vehicleOptions.length === 0}
+              style={{
+                padding: "10px 20px",
+                backgroundColor: bookingButtonDisabled
+                  ? "var(--grey-accent)"
+                  : "var(--primary)",
+                color: "var(--text-inverse)",
+                border: "none",
+                borderRadius: "8px",
+                cursor: bookingButtonDisabled ? "not-allowed" : "pointer",
+                fontWeight: "600",
+                fontSize: "14px"
+              }}
+            >
+              {bookingFlowSaving ? "Saving..." : "Save Booking Details"}
+            </button>
+            {bookingMessage && (
+              <span style={{ fontSize: "13px", color: "var(--success)" }}>
+                {bookingMessage}
+              </span>
+            )}
+            {!confirmCustomerDetails && canEdit && (
+              <span style={{ fontSize: "12px", color: "var(--danger)" }}>
+                Please confirm customer details before saving.
+              </span>
+            )}
+          </div>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "16px",
+            flexWrap: "wrap",
+            gap: "12px"
+          }}
+        >
+          <div>
+            <h3 style={cardTitleStyle}>Appointment Information</h3>
+            <p style={cardSubtitleStyle}>
+              Adjust booking times directly from the job card
+            </p>
+          </div>
+          <button
+            onClick={() => router.push(`/appointments?job=${jobData.jobNumber}`)}
+            style={{
+              padding: "8px 14px",
+              borderRadius: "8px",
+              border: "1px solid var(--border)",
+              backgroundColor: "var(--surface-light)",
+              color: "var(--text-primary)",
+              fontSize: "13px",
+              fontWeight: "600",
+              cursor: "pointer"
+            }}
+          >
+            Open Appointment Calendar
+          </button>
+        </div>
 
         <div
           style={{
@@ -4898,8 +4584,8 @@ function SchedulingTab({
           style={{
             marginTop: "20px",
             padding: "12px",
-            backgroundColor: "var(--layer-section-level-2)",
-            border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
+            backgroundColor: "var(--surface-light)",
+            border: "1px solid var(--surface-light)",
             borderRadius: "12px",
             fontSize: "13px",
             color: "var(--text-secondary)"
@@ -4907,7 +4593,6 @@ function SchedulingTab({
         >
           Appointment created: <strong>{appointmentCreatedAt}</strong>
         </div>
-      </div>
       </div>
     </div>
   );
@@ -7257,8 +6942,8 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
         style={{
           padding: "18px",
           borderRadius: "12px",
-          border: "1px solid var(--accent-purple-surface)",
-          backgroundColor: "var(--info-surface)",
+          border: "1px solid var(--surface-muted)",
+          backgroundColor: "var(--surface)",
           marginBottom: "16px"
         }}
       >
@@ -7299,8 +6984,8 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
         style={{
           padding: "18px",
           borderRadius: "12px",
-          border: "1px solid var(--info-surface)",
-          backgroundColor: "var(--info-surface)"
+          border: "1px solid var(--surface-muted)",
+          backgroundColor: "var(--surface)"
         }}
       >
         <h3 style={{ margin: "0 0 6px 0", fontSize: "16px", color: "var(--accent-purple)" }}>

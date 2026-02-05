@@ -46,11 +46,11 @@ const mainColumnStyle = {
 };
 
 const cardStyle = {
-  backgroundColor: "var(--layer-section-level-1)",
+  backgroundColor: "var(--surface)",
   borderRadius: "16px",
   padding: "20px",
   boxShadow: "none",
-  border: "1px solid var(--surface-light)",
+  border: "1px solid var(--surface-muted)",
 };
 
 const sectionTitleStyle = {
@@ -1361,106 +1361,116 @@ function ConsumablesTrackerPage() {
             <div style={{ ...cardStyle }}>
               <div
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                }}
-              >
-                <div>
-                  <h1 style={{ margin: 0, fontSize: "1.6rem", color: "var(--primary-dark)" }}>
-                    Workshop Consumables Tracker
-                  </h1>
-                  <p style={{ marginTop: "6px", color: "var(--grey-accent)" }}>
-                    Monitor consumable spend, reorder schedules, and supplier summaries.
-                  </p>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px" }}>
-                  <button
-                    type="button"
-                    onClick={() => setShowStockCheck(true)}
-                    style={stockCheckButtonStyle}
-                  >
-                    Stock Check
-                  </button>
-                  <div style={{ textAlign: "right" }}>
-                    <p style={{ margin: 0, fontSize: "0.8rem", color: quietLabelColor }}>
-                      Budget for {monthLabel}
-                    </p>
-                    <strong style={{ fontSize: "1.4rem", color: "var(--primary-dark)" }}>
-                      {financialLoading
-                        ? "Loading…"
-                        : formatCurrency(totals.monthlyBudget)}
-                    </strong>
-                  </div>
-                </div>
-              </div>
-
-              <div
-                style={{
-                  marginTop: "20px",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  flexWrap: "wrap",
-                  alignItems: "center",
-                  gap: "12px",
+                  background: "var(--layer-section-level-1)",
+                  borderRadius: "14px",
+                  border: "1px solid var(--surface-light)",
+                  padding: "18px",
+                  marginBottom: "18px",
                 }}
               >
                 <div
                   style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "8px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    gap: "16px",
+                    flexWrap: "wrap",
                   }}
                 >
-                  <button
-                    type="button"
-                    onClick={() => handleMonthChange(-1)}
-                    style={{
-                      padding: "6px 10px",
-                      borderRadius: "10px",
-                      border: "1px solid var(--primary)",
-                      background: "var(--surface)",
-                      color: "var(--primary-dark)",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                    }}
-                  >
-                    ← Previous
-                  </button>
-                  <span
-                    style={{
-                      fontWeight: 600,
-                      color: "var(--primary-dark)",
-                    }}
-                  >
-                    {monthLabel}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleMonthChange(1)}
-                    disabled={!canAdvanceToNextMonth}
-                    style={{
-                      padding: "6px 10px",
-                      borderRadius: "10px",
-                      border: "1px solid var(--primary)",
-                      background: canAdvanceToNextMonth
-                        ? "var(--surface)"
-                        : "rgba(var(--primary-rgb),0.2)",
-                      color: canAdvanceToNextMonth ? "var(--primary-dark)" : "var(--primary-dark)",
-                      fontWeight: 600,
-                      cursor: canAdvanceToNextMonth ? "pointer" : "not-allowed",
-                    }}
-                  >
-                    Next →
-                  </button>
+                  <div>
+                    <h1 style={{ margin: 0, fontSize: "1.6rem", color: "var(--primary-dark)" }}>
+                      Workshop Consumables Tracker
+                    </h1>
+                    <p style={{ marginTop: "6px", color: "var(--grey-accent)" }}>
+                      Monitor consumable spend, reorder schedules, and supplier summaries.
+                    </p>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px" }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowStockCheck(true)}
+                      style={stockCheckButtonStyle}
+                    >
+                      Stock Check
+                    </button>
+                    <div style={{ textAlign: "right" }}>
+                      <p style={{ margin: 0, fontSize: "0.8rem", color: quietLabelColor }}>
+                        Budget for {monthLabel}
+                      </p>
+                      <strong style={{ fontSize: "1.4rem", color: "var(--primary-dark)" }}>
+                        {financialLoading
+                          ? "Loading…"
+                          : formatCurrency(totals.monthlyBudget)}
+                      </strong>
+                    </div>
+                  </div>
                 </div>
-                {financialError && (
-                  <p style={{ margin: 0, color: "var(--primary-dark)" }}>{financialError}</p>
-                )}
-              </div>
-            </div>
 
-            <div style={{ ...cardStyle, marginTop: "20px" }}>
+                <div
+                  style={{
+                    marginTop: "20px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                    gap: "12px",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleMonthChange(-1)}
+                      style={{
+                        padding: "6px 10px",
+                        borderRadius: "10px",
+                        border: "1px solid var(--primary)",
+                        background: "var(--surface)",
+                        color: "var(--primary-dark)",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                      }}
+                    >
+                      ← Previous
+                    </button>
+                    <span
+                      style={{
+                        fontWeight: 600,
+                        color: "var(--primary-dark)",
+                      }}
+                    >
+                      {monthLabel}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleMonthChange(1)}
+                      disabled={!canAdvanceToNextMonth}
+                      style={{
+                        padding: "6px 10px",
+                        borderRadius: "10px",
+                        border: "1px solid var(--primary)",
+                        background: canAdvanceToNextMonth
+                          ? "var(--surface)"
+                          : "rgba(var(--primary-rgb),0.2)",
+                        color: canAdvanceToNextMonth ? "var(--primary-dark)" : "var(--primary-dark)",
+                        fontWeight: 600,
+                        cursor: canAdvanceToNextMonth ? "pointer" : "not-allowed",
+                      }}
+                    >
+                      Next →
+                    </button>
+                  </div>
+                  {financialError && (
+                    <p style={{ margin: 0, color: "var(--primary-dark)" }}>{financialError}</p>
+                  )}
+                </div>
+              </div>
+
               <div
                 style={{
                   display: "flex",
@@ -1509,7 +1519,7 @@ function ConsumablesTrackerPage() {
                       background: canAdvanceToNextMonth ? "var(--surface)" : "rgba(var(--primary-rgb),0.2)",
                       color: canAdvanceToNextMonth ? "var(--primary-dark)" : "var(--primary-dark)",
                       fontWeight: 600,
-                      cursor: canAdvanceToNextMonth ? "pointer" : "not-allowed",
+                  cursor: canAdvanceToNextMonth ? "pointer" : "not-allowed",
                     }}
                   >
                     Next →

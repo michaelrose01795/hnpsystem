@@ -1,13 +1,17 @@
 TO DO:
 
-Continue flow with job number 54, tech complete final with workshop manager. 
+Continue flow with job number 55
+
+
+within the appointment page, have it so when the calendar row is selected it uses the light and dark background colour theme (red and purple) and have it when selected it doesnt have a boarder around the selected item. the [todaysday] row (alwaays the top) is a really light colour backgorund followign light and drk mode theme. 
+
 
 
 with the "Upload Documents" popup, does the document actually get uploaded to the database? if not what happens and is it a perminent thing, have it so the "Upload Documents" popup shows all of the uploaded items always when something has been uplaoded. 
 
 Can we add an auto detect text box locations, tick box location, signature box location, correct orientation, so the app can turn the uploaded document into a live seach which can be ticked, signed, reg field etc auto filled out. or is this not possible. 
 
-work on implementing "AI" within whole app
+work on implementing "AI" within whole app search chat "AI job detection system"
 
 
 within the "Invoice" tab have it so the request 1,2,3 etc shows the full descrtiption of the request. cahnge the authorised rows from Request 1 2 3 etc to "Authorised request 1 2 3etc", and the Oringal request/customer resquest 1 2 3 to show "Customer Request 1 2 3 4 etc". Always have it so the "Customer request are first and then the Authroised Requests are at the bottom. 

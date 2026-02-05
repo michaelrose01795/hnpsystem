@@ -417,6 +417,12 @@ const sectionBoxStyle = {
   minHeight: "360px",
 };
 
+const darkSectionBoxStyle = {
+  ...sectionBoxStyle,
+  backgroundColor: "var(--surface)",
+  border: "1px solid var(--surface-muted)",
+};
+
 const sectionScrollerStyle = {
   display: "flex",
   flexDirection: "column",
@@ -560,7 +566,7 @@ const cardRowStyle = (completed) => ({
   borderRadius: "12px",
   border: `1px solid ${completed ? "var(--info)" : "var(--accent-purple-surface)"}`,
   padding: "12px",
-  backgroundColor: completed ? "var(--success-surface)" : "var(--layer-section-level-3)",
+  backgroundColor: completed ? "var(--success-surface)" : "var(--layer-section-level-2)",
   display: "flex",
   flexDirection: "column",
   gap: "8px",
@@ -2141,7 +2147,7 @@ const renderLastSaved = () => (
                 minHeight: 0,
               }}
             >
-              <div style={sectionBoxStyle}>
+              <div style={darkSectionBoxStyle}>
                 <div style={{ ...sectionHeaderStyle }}>
                   <div>
                     <div style={{ display: "flex", gap: "8px", alignItems: "baseline", flexWrap: "wrap" }}>
@@ -2258,7 +2264,7 @@ const renderLastSaved = () => (
                   </div>
                 </div>
               )}
-              <div style={sectionBoxStyle}>
+              <div style={darkSectionBoxStyle}>
                 <div style={sectionHeaderStyle}>
                   <div>
                     <div style={{ display: "flex", gap: "8px", alignItems: "baseline", flexWrap: "wrap" }}>
