@@ -2005,7 +2005,7 @@ const renderLastSaved = () => (
       height: "100%",
       display: "flex",
       flexDirection: "column",
-      padding: "8px 16px",
+      padding: 0,
       overflow: "hidden"
     }}>
 
@@ -2066,85 +2066,22 @@ const renderLastSaved = () => (
         boxShadow: "none",
         border: "none",
         background: "transparent",
-        padding: "24px",
+        padding: 0,
         overflow: "hidden",
         display: "flex",
         flexDirection: "column",
         minHeight: 0,
-        gap: "16px"
+        gap: "8px"
       }}>
-        <div
-          style={{
-            borderRadius: "999px",
-            border: "1px solid var(--surface-light)",
-            background: "var(--layer-section-level-3)",
-            padding: "6px",
-            display: "flex",
-            gap: "6px",
-            width: "100%",
-            overflowX: "auto",
-            flexShrink: 0,
-            scrollbarWidth: "thin",
-            scrollbarColor: "var(--scrollbar-thumb) transparent",
-            scrollBehavior: "smooth",
-            WebkitOverflowScrolling: "touch",
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => setActiveTab("writeup")}
-            style={{
-              flex: 1,
-              borderRadius: "999px",
-              border: "1px solid transparent",
-              padding: "14px 22px",
-              fontSize: "1rem",
-              fontWeight: 600,
-              cursor: "pointer",
-              background: activeTab === "writeup" ? "var(--primary)" : "transparent",
-              color: activeTab === "writeup" ? "var(--text-inverse)" : "var(--text-primary)",
-              transition: "all 0.15s ease",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              whiteSpace: "nowrap",
-              justifyContent: "center",
-            }}
-          >
-            Write-Up
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("extras")}
-            style={{
-              flex: 1,
-              borderRadius: "999px",
-              border: "1px solid transparent",
-              padding: "14px 22px",
-              fontSize: "1rem",
-              fontWeight: 600,
-              cursor: "pointer",
-              background: activeTab === "extras" ? "var(--primary)" : "transparent",
-              color: activeTab === "extras" ? "var(--text-inverse)" : "var(--text-primary)",
-              transition: "all 0.15s ease",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              whiteSpace: "nowrap",
-              justifyContent: "center",
-            }}
-          >
-            Warranty Extras
-          </button>
-        </div>
         <div style={{ flex: 1, minHeight: 0 }}>
           {activeTab === "writeup" ? (
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+                gridTemplateColumns: "1fr 1fr",
                 gap: "16px",
                 minHeight: 0,
+                width: "100%",
               }}
             >
               <div style={darkSectionBoxStyle}>
@@ -2159,7 +2096,27 @@ const renderLastSaved = () => (
                     {renderLastSaved()}
                     {renderSectionEditorMeta("fault")}
                   </div>
-                  <span style={statusBadgeStyle}>Requests</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <span style={statusBadgeStyle}>Requests</span>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("extras")}
+                      style={{
+                        borderRadius: "999px",
+                        border: "1px solid var(--surface-light)",
+                        padding: "8px 14px",
+                        fontSize: "12px",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        background: "var(--surface)",
+                        color: "var(--text-primary)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.04em",
+                      }}
+                    >
+                      Warranty Extras
+                    </button>
+                  </div>
                 </div>
                 <div
                   style={{
@@ -2186,7 +2143,8 @@ const renderLastSaved = () => (
                         <textarea
                           value={stripRequestPrefix(task?.label || "")}
                           onChange={handleRequestLabelChange(slotKey)}
-                          style={modernTextareaStyle}
+                          rows={2}
+                          style={{ ...modernTextareaStyle, minHeight: "60px", flex: 1 }}
                         />
                       </div>
                     );
@@ -2312,7 +2270,8 @@ const renderLastSaved = () => (
                           <textarea
                             value={stripAuthorizedPrefix(task.label)}
                             onChange={handleTaskLabelChange(taskKey)}
-                            style={modernTextareaStyle}
+                            rows={2}
+                            style={{ ...modernTextareaStyle, minHeight: "60px", flex: 1 }}
                           />
                         </div>
                       );
@@ -2329,6 +2288,26 @@ const renderLastSaved = () => (
               gap: "16px",
               minHeight: 0
             }}>
+              <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "flex-end" }}>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("writeup")}
+                  style={{
+                    borderRadius: "999px",
+                    border: "1px solid var(--surface-light)",
+                    padding: "8px 14px",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    background: "var(--surface)",
+                    color: "var(--text-primary)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
+                  }}
+                >
+                  Write-Up
+                </button>
+              </div>
               {metadataFields.map((fieldConfig) => (
                 <div
                   key={fieldConfig.field}

@@ -3668,37 +3668,35 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
     <div style={panelStyle}>
       <div style={panelHeaderStyle}>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          <h2 style={{ margin: 0, fontSize: "20px", fontWeight: "700", color: "var(--text-primary)" }}>
-            Contact Details
-          </h2>
           {editing ? <div style={badgeStyle}>Editing</div> : null}
         </div>
-
-        {canEdit && (
-          <div style={actionsStyle}>
-            {editing ? (
-              <>
-                <button onClick={handleSave} disabled={isSaveDisabled} style={primaryButtonStyle(isSaveDisabled)}>
-                  {customerSaving ? "Saving..." : "Save"}
-                </button>
-                <button onClick={cancelEditing} disabled={customerSaving} style={secondaryButtonStyle(customerSaving)}>
-                  Cancel
-                </button>
-              </>
-            ) : (
-              <button onClick={startEditing} style={primaryButtonStyle(false)}>
-                Edit Customer Details
-              </button>
-            )}
-          </div>
-        )}
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
         <div>
-          <label style={labelStyle}>
-            CUSTOMER NAME
-          </label>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+            <label style={labelStyle}>
+              CUSTOMER NAME
+            </label>
+            {canEdit && (
+              <div style={actionsStyle}>
+                {editing ? (
+                  <>
+                    <button onClick={handleSave} disabled={isSaveDisabled} style={primaryButtonStyle(isSaveDisabled)}>
+                      {customerSaving ? "Saving..." : "Save"}
+                    </button>
+                    <button onClick={cancelEditing} disabled={customerSaving} style={secondaryButtonStyle(customerSaving)}>
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <button onClick={startEditing} style={primaryButtonStyle(false)}>
+                    Edit Customer Details
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
           {editing ? (
             <div style={{ display: "flex", gap: "8px" }}>
               <input
@@ -4217,9 +4215,6 @@ function SchedulingTab({
   return (
     <div style={panelStyle}>
       <div style={panelHeaderStyle}>
-        <h2 style={{ margin: 0, fontSize: "20px", fontWeight: "700", color: "var(--text-primary)" }}>
-          Scheduling
-        </h2>
         {bookingRequest ? (
           <span style={{ ...headerBadgeStyle, backgroundColor: statusColor.background, color: statusColor.color }}>
             {bookingStatus === "approved" ? "Approved" : "Awaiting Approval"}
@@ -4614,10 +4609,6 @@ function ServiceHistoryTab({ vehicleJobHistory }) {
 
   return (
     <div>
-      <h2 style={{ margin: "0 0 20px 0", fontSize: "20px", fontWeight: "600", color: "var(--text-primary)" }}>
-        Service History (Same Vehicle)
-      </h2>
-
       {history.length > 0 ? (
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {history.map((job) => (
@@ -5623,10 +5614,6 @@ function NotesTab({ value, onChange, canEdit, saving, meta }) {
 
   return (
     <div>
-      <h2 style={{ margin: "0 0 20px 0", fontSize: "20px", fontWeight: "600", color: "var(--text-primary)" }}>
-        Job Notes
-      </h2>
-
       <div style={{
         padding: "20px",
         backgroundColor: "var(--surface)",
@@ -5907,14 +5894,6 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
 
   return (
     <div>
-      <h2 style={{ margin: "0 0 12px 0", fontSize: "20px", fontWeight: "600", color: "var(--text-primary)" }}>
-        Messages
-      </h2>
-      <p style={{ margin: "0 0 20px 0", color: "var(--info)", fontSize: "14px" }}>
-        Conversations between service advisors, workshop managers, after-sales managers, and the customer
-        (customers join once their email is linked). Replying is available from the Messaging hub.
-      </p>
-
       {!thread ? (
         <div style={{
           padding: "28px",
@@ -6421,36 +6400,6 @@ function ClockingTab({ jobData, canEdit }) {
         gap: "18px",
       }}
     >
-      <header
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          justifyContent: "space-between",
-          gap: "12px",
-          alignItems: "center",
-        }}
-      >
-        <div>
-          <h2 style={{ margin: "0 0 6px 0", fontSize: "20px", fontWeight: 600, color: "var(--text-primary)" }}>
-            Manual clocking entry
-          </h2>
-          <p style={{ margin: 0, fontSize: "0.95rem", color: "var(--info)" }}>
-            Record corrections directly on Job #{normalizedJobNumber || "—"}. Job number and labour notes are
-            stored automatically with the selected technician.
-          </p>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px", alignItems: "flex-end" }}>
-          <span style={infoPillStyle}>
-            {techniciansLoading ? "Loading technicians…" : `${technicianOptions.length} techs`}
-          </span>
-          {normalizedJobNumber ? (
-            <span style={{ ...infoPillStyle, backgroundColor: "var(--success-surface)", color: "var(--success-dark)" }}>
-              Job #{normalizedJobNumber}
-            </span>
-          ) : null}
-        </div>
-      </header>
-
       {techniciansError && (
         <div
           style={{
@@ -6606,41 +6555,67 @@ function ClockingTab({ jobData, canEdit }) {
           </div>
         </div>
 
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
-          <button
-            type="submit"
-            disabled={!canEdit || submitting}
-            style={{
-              borderRadius: "12px",
-              border: "none",
-              backgroundColor: "var(--primary)",
-              color: "white",
-              padding: "12px 20px",
-              fontSize: "0.95rem",
-              fontWeight: 600,
-              cursor: !canEdit || submitting ? "not-allowed" : "pointer",
-              opacity: !canEdit || submitting ? 0.6 : 1,
-            }}
-          >
-            {submitting ? "Saving…" : "Save clocking entry"}
-          </button>
-          <button
-            type="button"
-            onClick={handleReset}
-            disabled={submitting}
-            style={{
-              borderRadius: "12px",
-              border: "1px solid var(--info)",
-              backgroundColor: "transparent",
-              color: "var(--info)",
-              padding: "12px 20px",
-              fontSize: "0.95rem",
-              fontWeight: 600,
-              cursor: submitting ? "not-allowed" : "pointer",
-            }}
-          >
-            Reset form
-          </button>
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "12px",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
+            <button
+              type="submit"
+              disabled={!canEdit || submitting}
+              style={{
+                borderRadius: "12px",
+                border: "none",
+                backgroundColor: "var(--primary)",
+                color: "white",
+                padding: "12px 20px",
+                fontSize: "0.95rem",
+                fontWeight: 600,
+                cursor: !canEdit || submitting ? "not-allowed" : "pointer",
+                opacity: !canEdit || submitting ? 0.6 : 1,
+              }}
+            >
+              {submitting ? "Saving…" : "Save clocking entry"}
+            </button>
+            <button
+              type="button"
+              onClick={handleReset}
+              disabled={submitting}
+              style={{
+                borderRadius: "12px",
+                border: "1px solid var(--info)",
+                backgroundColor: "transparent",
+                color: "var(--info)",
+                padding: "12px 20px",
+                fontSize: "0.95rem",
+                fontWeight: 600,
+                cursor: submitting ? "not-allowed" : "pointer",
+              }}
+            >
+              Reset form
+            </button>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", justifyContent: "flex-end" }}>
+            <span style={infoPillStyle}>
+              {techniciansLoading ? "Loading technicians…" : `${technicianOptions.length} techs`}
+            </span>
+            {normalizedJobNumber ? (
+              <span
+                style={{
+                  ...infoPillStyle,
+                  backgroundColor: "var(--success-surface)",
+                  color: "var(--success-dark)",
+                }}
+              >
+                Job #{normalizedJobNumber}
+              </span>
+            ) : null}
+          </div>
         </div>
       </form>
 
@@ -6922,22 +6897,6 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
 
   return (
     <div>
-      <h2
-        style={{
-          margin: "0 0 12px 0",
-          fontSize: "20px",
-          fontWeight: "600",
-          color: "var(--text-primary)"
-        }}
-      >
-        Warranty Linking
-      </h2>
-      <p style={{ color: "var(--info)", fontSize: "14px", margin: "0 0 18px 0" }}>
-        Link this job card with a warranty counterpart to mirror progress and
-        share the same Vehicle Health Check. Clocking and labour capture remain
-        independent for each job.
-      </p>
-
       <div
         style={{
           padding: "18px",
@@ -7049,22 +7008,7 @@ function DocumentsTab({
           marginBottom: "12px"
         }}
       >
-        <div>
-          <h2
-            style={{
-              margin: "0 0 4px 0",
-              fontSize: "20px",
-              fontWeight: "600",
-              color: "var(--text-primary)"
-            }}
-          >
-            Documents & Attachments
-          </h2>
-          <p style={{ color: "var(--info)", fontSize: "13px", margin: 0 }}>
-            Showing only files that were stored in the job_files table. Uploads from the create
-            page automatically land here once the job number exists.
-          </p>
-        </div>
+        <div />
         {typeof onManageDocuments === "function" && (
           <button
             type="button"

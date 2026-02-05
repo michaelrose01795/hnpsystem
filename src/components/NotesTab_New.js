@@ -277,19 +277,8 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId, onN
     borderRadius: "16px",
     padding: "18px",
   };
-  const panelHeaderStyle = {
-    margin: "0 0 16px 0",
-    fontSize: "20px",
-    fontWeight: "700",
-    color: "var(--text-primary)",
-  };
-
   return (
     <div style={panelStyle}>
-      <h2 style={panelHeaderStyle}>
-        Job Notes
-      </h2>
-
       {error && (
         <div
           style={{
