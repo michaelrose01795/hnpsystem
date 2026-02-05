@@ -3,7 +3,7 @@
 // file location: src/pages/job-cards/create/index.js
 "use client"; // enables client-side rendering for Next.js
 
-import React, { useCallback, useEffect, useRef, useState } from "react"; // import React hooks including useEffect/useCallback/useRef for syncing customer forms
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"; // import React hooks including useEffect/useCallback/useRef for syncing customer forms
 import { useRouter } from "next/router"; // for navigation
 import Layout from "@/components/Layout"; // import layout wrapper
 import { useJobs } from "@/context/JobsContext"; // import jobs context
@@ -12,6 +12,7 @@ import {
   addCustomerToDatabase,
   checkCustomerExists,
   getCustomerById,
+  getCustomerVehicles,
   updateCustomer,
 } from "@/lib/database/customers";
 import { createOrUpdateVehicle, getVehicleByReg } from "@/lib/database/vehicles";
@@ -58,8 +59,9 @@ const detectJobTypes = (requests = []) => {
       }
     });
   });
-  if (detected.size === 0) detected.add("Other"); // if no types detected, default to "Other"
-  return Array.from(detected); // convert set back to array
+  if (detected.size === 0) return ["Other"]; // if no types detected, default to "Other"
+  // Ensure consistent ordering based on rule priority
+  return JOB_TYPE_RULES.map((rule) => rule.label).filter((label) => detected.has(label));
 };
 
 const initialCustomerFormState = {
@@ -71,7 +73,7 @@ const initialCustomerFormState = {
   telephone: "", // stores customer telephone number
   address: "", // stores customer street address
   postcode: "", // stores customer postcode
-  contactPreference: "email", // stores customer preferred contact option
+  contactPreference: ["email"], // stores customer preferred contact option(s)
 };
 
 const normalizeCustomerRecord = (record = {}) => ({
@@ -83,10 +85,23 @@ const normalizeCustomerRecord = (record = {}) => ({
   telephone: record?.telephone || initialCustomerFormState.telephone, // normalize telephone field
   address: record?.address || initialCustomerFormState.address, // normalize address field
   postcode: record?.postcode || initialCustomerFormState.postcode, // normalize postcode field
-  contactPreference:
-    record?.contact_preference ||
-    record?.contactPreference ||
-    initialCustomerFormState.contactPreference, // normalize contact preference field
+  contactPreference: (() => {
+    const raw =
+      record?.contact_preference ??
+      record?.contactPreference ??
+      initialCustomerFormState.contactPreference;
+    if (Array.isArray(raw)) return raw;
+    if (typeof raw === "string") {
+      const cleaned = raw
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .map((item) => item.toLowerCase());
+      if (cleaned.length) return cleaned;
+      return [raw.toLowerCase()];
+    }
+    return initialCustomerFormState.contactPreference;
+  })(), // normalize contact preference field
 });
 
 export default function CreateJobCardPage() {
@@ -102,7 +117,7 @@ export default function CreateJobCardPage() {
     makeModel: "", // vehicle make and model combined
     chassis: "", // chassis/VIN number
     engine: "", // engine number
-    mileage: "", // current mileage
+    mileage: 0, // current mileage
   });
 
   const [customer, setCustomer] = useState(null); // selected customer object
@@ -164,6 +179,7 @@ export default function CreateJobCardPage() {
   const [showNewCustomer, setShowNewCustomer] = useState(false); // toggle new customer popup
   const [showExistingCustomer, setShowExistingCustomer] = useState(false); // toggle existing customer popup
   const [showDocumentsPopup, setShowDocumentsPopup] = useState(false); // toggle documents popup
+  const [newCustomerPrefill, setNewCustomerPrefill] = useState({ firstName: "", lastName: "" });
 
   // ✅ Tab management functions
   const addNewJobTab = () => {
@@ -187,6 +203,8 @@ export default function CreateJobCardPage() {
   const [isUploadingSignature, setIsUploadingSignature] = useState(false); // track signature upload state
   const [jobNumberDisplay, setJobNumberDisplay] = useState(null); // store assigned job number for header display
   const lastVehicleLookupRef = useRef(""); // track last registration looked up to avoid duplicate fetches
+  const vehicleSectionRef = useRef(null); // ref for measuring vehicle section height
+  const [topRowHeight, setTopRowHeight] = useState(null); // sync top row card heights
 
   // ✅ Prime/Sub-job state
   const [isSubJobMode, setIsSubJobMode] = useState(false); // true when creating a sub-job under a prime job
@@ -233,6 +251,33 @@ export default function CreateJobCardPage() {
       cancelled = true;
     };
   }, [dbUserId]);
+
+  useLayoutEffect(() => {
+    const node = vehicleSectionRef.current;
+    if (!node) return;
+
+    const updateHeight = () => {
+      const nextHeight = node.offsetHeight;
+      setTopRowHeight(nextHeight > 0 ? nextHeight : null);
+    };
+
+    updateHeight();
+
+    if (typeof ResizeObserver !== "undefined") {
+      const observer = new ResizeObserver(updateHeight);
+      observer.observe(node);
+      window.addEventListener("resize", updateHeight);
+      return () => {
+        observer.disconnect();
+        window.removeEventListener("resize", updateHeight);
+      };
+    }
+
+    window.addEventListener("resize", updateHeight);
+    return () => {
+      window.removeEventListener("resize", updateHeight);
+    };
+  }, []);
 
   useEffect(() => () => { // cleanup preview object URLs when component unmounts or url changes
     if (checkSheetPreviewUrl) {
@@ -292,7 +337,7 @@ export default function CreateJobCardPage() {
             makeModel: result.data.makeModel || "",
             chassis: result.data.vin || result.data.chassis || "",
             engine: result.data.engine || "",
-            mileage: result.data.mileage || "",
+            mileage: result.data.mileage ?? 0,
           });
         }
 
@@ -358,6 +403,11 @@ export default function CreateJobCardPage() {
   // add a new empty request to the list
   const handleAddRequest = () =>
     setRequests([...requests, { text: "", time: "", paymentType: "Customer" }]); // append new empty request
+
+  const sectionCardStyle = {
+    background: "var(--layer-section-level-2)",
+    border: "1px solid var(--surface-light)",
+  };
 
   // remove a request from the list by index
   const handleRemoveRequest = (index) => {
@@ -452,6 +502,52 @@ export default function CreateJobCardPage() {
     setCustomerForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const saveContactPreference = async (nextPreferences, previousPreferences) => {
+    if (!customer?.id) {
+      return;
+    }
+
+    try {
+      setIsSavingCustomer(true);
+      const updatePayload = {
+        contact_preference: nextPreferences.length ? nextPreferences.join(", ") : "email",
+      };
+
+      const result = await updateCustomer(customer.id, updatePayload);
+      if (!result?.success || !result?.data) {
+        throw new Error(result?.error?.message || "Failed to update contact preference.");
+      }
+
+      const normalized = normalizeCustomerRecord(result.data);
+      setCustomer(normalized);
+      setCustomerForm(normalized);
+    } catch (err) {
+      console.error("❌ Error updating contact preference:", err);
+      showNotification("customer", "error", `✗ ${err.message || "Failed to update contact preference"}`);
+      setCustomerForm((prev) => ({ ...prev, contactPreference: previousPreferences }));
+    } finally {
+      setIsSavingCustomer(false);
+    }
+  };
+
+  const toggleContactPreference = (value) => {
+    setCustomerForm((prev) => {
+      const current = Array.isArray(prev.contactPreference)
+        ? prev.contactPreference
+        : [];
+      const previous = current;
+      const next = current.includes(value)
+        ? current.filter((item) => item !== value)
+        : [...current, value];
+
+      if (customer?.id) {
+        saveContactPreference(next, previous);
+      }
+
+      return { ...prev, contactPreference: next };
+    });
+  };
+
   // enable editing mode and refresh the editable copy
   const handleStartCustomerEdit = () => {
     if (!customer) {
@@ -483,6 +579,10 @@ export default function CreateJobCardPage() {
       setIsSavingCustomer(true);
 
       const toNullable = (value) => {
+        if (Array.isArray(value)) {
+          const joined = value.map((item) => String(item).trim()).filter(Boolean).join(", ");
+          return joined.length ? joined : null;
+        }
         const trimmed = (value || "").trim();
         return trimmed.length ? trimmed : null;
       };
@@ -837,7 +937,6 @@ export default function CreateJobCardPage() {
         if (!resolvedCustomer?.id) {
           throw new Error("Customer record missing ID after lookup");
         }
-        showNotification("customer", "success", "✓ Customer found in database and loaded!");
       } else {
         if (!customerData.email && !customerData.mobile) {
           showNotification("customer", "error", "Customer must have at least an email or mobile number.");
@@ -865,7 +964,6 @@ export default function CreateJobCardPage() {
           const hydratedCustomer = await getCustomerById(existingCustomer.id);
           const recordToUse = hydratedCustomer || existingCustomer;
           resolvedCustomer = normalizeCustomerRecord(recordToUse);
-          showNotification("customer", "success", "✓ Customer found in database and loaded!");
         } else {
           console.log("Customer not found, creating new customer...");
           const insertedCustomer = await addCustomerToDatabase(normalizedPayload);
@@ -879,6 +977,23 @@ export default function CreateJobCardPage() {
       }
 
       setCustomer(resolvedCustomer);
+      try {
+        const vehicles = await getCustomerVehicles(resolvedCustomer.id);
+        const latestVehicle = vehicles?.[0];
+        if (latestVehicle) {
+          setVehicle({
+            reg: (latestVehicle.registration || latestVehicle.reg_number || "").toUpperCase(),
+            colour: latestVehicle.colour || "",
+            makeModel: latestVehicle.make_model || "",
+            chassis: latestVehicle.vin || latestVehicle.chassis || "",
+            engine: latestVehicle.engine_number || latestVehicle.engine || "",
+            mileage: latestVehicle.mileage ?? 0,
+          });
+          setError("");
+        }
+      } catch (vehicleErr) {
+        console.warn("Vehicle lookup failed for customer:", vehicleErr);
+      }
       setShowNewCustomer(false);
       setShowExistingCustomer(false);
     } catch (err) {
@@ -968,11 +1083,9 @@ export default function CreateJobCardPage() {
 
       setVehicle(vehicleData); // update vehicle state with DVLA data
 
-      showNotification("vehicle", "success", "✓ Vehicle details fetched from DVLA!"); // notify success
     } catch (err) {
       console.error("Error fetching vehicle data from DVLA:", err); // log error
       setError(`Error: ${err.message}`); // store error message
-      showNotification("vehicle", "error", `✗ ${err.message}`); // notify failure
     } finally {
       setIsLoadingVehicle(false); // always stop loading state
     }
@@ -1031,7 +1144,7 @@ export default function CreateJobCardPage() {
         vin: vehicle.chassis || null,
         engine: vehicle.engine || null,
         engine_number: vehicle.engine || null,
-        mileage: vehicle.mileage ? parseInt(vehicle.mileage, 10) || null : null,
+        mileage: Number.isFinite(Number(vehicle.mileage)) ? parseInt(vehicle.mileage, 10) : 0,
         customer_id: customer.id,
       };
 
@@ -1065,6 +1178,7 @@ export default function CreateJobCardPage() {
           .filter((req) => req.text.length > 0);
 
         const jobDescription = sanitizedRequests.map((req) => req.text).join("\n");
+        const detectedJobTypes = detectJobTypes(sanitizedRequests);
 
         const jobPayload = {
           regNumber: regUpper,
@@ -1077,7 +1191,7 @@ export default function CreateJobCardPage() {
           waitingStatus: tab.waitingStatus,
           jobSource: tab.jobSource,
           jobDivision: tab.jobDivision,
-          jobCategories: tab.jobCategories,
+          jobCategories: detectedJobTypes,
           requests: sanitizedRequests,
           cosmeticNotes: isFirstTab ? (cosmeticNotes || null) : null,
           vhcRequired: isFirstTab ? vhcRequired : false,
@@ -1195,10 +1309,10 @@ export default function CreateJobCardPage() {
           height: "100%",
           display: "flex",
           flexDirection: "column",
-          padding: "16px",
+          padding: 0,
           overflow: "hidden",
           transition: "background 0.3s ease",
-          background: "var(--background)",
+          background: "transparent",
         }}
       >
         {/* ✅ Header Section - Modern Design */}
@@ -1216,7 +1330,7 @@ export default function CreateJobCardPage() {
               style={{
                 margin: 0,
                 fontSize: "14px",
-                color: isSubJobMode ? "var(--primary)" : "var(--grey-accent)",
+                color: isSubJobMode ? "var(--primary)" : "var(--text-secondary)",
                 fontWeight: "500",
               }}
             >
@@ -1269,8 +1383,8 @@ export default function CreateJobCardPage() {
           </div>
         </div>
 
-        {/* ✅ Job Tabs Bar - Only shown when "Multiple linked jobs" is enabled */}
-        {asPrimeJob && !isSubJobMode && (
+        {/* ✅ Job Tabs Bar - Always shown unless in sub-job mode */}
+        {!isSubJobMode && (
           <div
             style={{
               display: "flex",
@@ -1313,7 +1427,7 @@ export default function CreateJobCardPage() {
                       height: "18px",
                       borderRadius: "50%",
                       border: "none",
-                      backgroundColor: activeTabIndex === index ? "rgba(255,255,255,0.3)" : "var(--grey-accent)",
+                      backgroundColor: activeTabIndex === index ? "rgba(255,255,255,0.3)" : "var(--text-secondary)",
                       color: activeTabIndex === index ? "white" : "var(--surface)",
                       cursor: "pointer",
                       fontSize: "12px",
@@ -1356,8 +1470,8 @@ export default function CreateJobCardPage() {
             >
               +
             </button>
-            <span style={{ marginLeft: "8px", fontSize: "12px", color: "var(--grey-accent)" }}>
-              Each tab creates a separate linked job card
+            <span style={{ marginLeft: "8px", fontSize: "12px", color: "var(--text-secondary)" }}>
+              Link new job card
             </span>
           </div>
         )}
@@ -1381,7 +1495,7 @@ export default function CreateJobCardPage() {
               <span style={{ fontWeight: 600, color: "var(--primary)" }}>
                 Creating sub-job linked to Job {primeJobData.jobNumber}
               </span>
-              <span style={{ marginLeft: "12px", color: "var(--grey-accent)", fontSize: "13px" }}>
+              <span style={{ marginLeft: "12px", color: "var(--text-secondary)", fontSize: "13px" }}>
                 Customer and vehicle details are inherited from the prime job
               </span>
             </div>
@@ -1412,21 +1526,22 @@ export default function CreateJobCardPage() {
           }}
         >
           {/* ✅ NEW LAYOUT: Top Row - Job Information, Vehicle Details, Customer Details (all 33% width) */}
-          <div style={{ display: "flex", gap: "16px" }}>
+          <div style={{ display: "flex", gap: "16px", width: "100%" }}>
             {/* Job Information Section - 33% width */}
             <div
               style={{
-                flex: "0 0 33%",
-                background: "var(--surface)",
+                flex: 1,
+                minWidth: 0,
                 padding: "20px",
                 borderRadius: "16px",
                 boxShadow: "none",
-                border: "1px solid var(--surface-light)",
+                ...sectionCardStyle,
                 display: "flex",
                 flexDirection: "column",
                 gap: "16px",
-                maxHeight: "65vh",
+                height: topRowHeight ? `${topRowHeight}px` : "auto",
                 minHeight: "420px",
+                boxSizing: "border-box",
                 overflowY: "auto",
               }}
             >
@@ -1442,32 +1557,45 @@ export default function CreateJobCardPage() {
                 Job Information
               </h3>
 
-              <div style={{ marginBottom: "16px" }}>
+              <div style={{ marginBottom: "10px" }}>
                 <label
                   style={{
                     fontSize: "13px",
                     fontWeight: "600",
-                    color: "var(--grey-accent)",
+                    color: "var(--text-secondary)",
                     display: "block",
                     marginBottom: "8px",
                   }}
                 >
                   Customer Status
                 </label>
-                <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "8px",
+                    flexWrap: "wrap",
+                    padding: "6px",
+                    borderRadius: "999px",
+                    backgroundColor: "var(--surface-light)",
+                    border: "1px solid var(--surface-light)",
+                    width: "fit-content",
+                  }}
+                >
                   {["Waiting", "Loan Car", "Collection", "Neither"].map((status) => (
                     <label
                       key={status}
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: "6px",
+                        gap: "8px",
                         cursor: "pointer",
-                        padding: "8px 12px",
-                        borderRadius: "8px",
-                        border: waitingStatus === status ? "2px solid var(--primary)" : "2px solid var(--border)",
-                        backgroundColor: waitingStatus === status ? "var(--surface-light)" : "var(--surface)",
+                        padding: "8px 14px",
+                        borderRadius: "999px",
+                        border: waitingStatus === status ? "1px solid var(--primary)" : "1px solid transparent",
+                        backgroundColor: waitingStatus === status ? "var(--surface)" : "transparent",
+                        color: waitingStatus === status ? "var(--text-primary)" : "var(--text-secondary)",
                         transition: "all 0.2s",
+                        fontWeight: waitingStatus === status ? 600 : 500,
                       }}
                     >
                       <input
@@ -1476,40 +1604,52 @@ export default function CreateJobCardPage() {
                         value={status}
                         checked={waitingStatus === status}
                         onChange={() => setWaitingStatus(status)}
-                        style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                        style={{ display: "none" }}
                       />
-                      <span style={{ fontSize: "13px", fontWeight: "500" }}>{status}</span>
+                      <span style={{ fontSize: "13px" }}>{status}</span>
                     </label>
                   ))}
                 </div>
               </div>
 
-              <div style={{ marginBottom: "16px" }}>
+              <div style={{ marginBottom: "10px" }}>
                 <label
                   style={{
                     fontSize: "13px",
                     fontWeight: "600",
-                    color: "var(--grey-accent)",
+                    color: "var(--text-secondary)",
                     display: "block",
                     marginBottom: "8px",
                   }}
                 >
                   Job Source
                 </label>
-                <div style={{ display: "flex", gap: "12px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "8px",
+                    padding: "6px",
+                    borderRadius: "999px",
+                    backgroundColor: "var(--surface-light)",
+                    border: "1px solid var(--surface-light)",
+                    width: "fit-content",
+                  }}
+                >
                   {["Retail", "Warranty"].map((src) => (
                     <label
                       key={src}
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: "6px",
+                        gap: "8px",
                         cursor: "pointer",
-                        padding: "8px 12px",
-                        borderRadius: "8px",
-                        border: jobSource === src ? "2px solid var(--primary)" : "2px solid var(--border)",
-                        backgroundColor: jobSource === src ? "var(--surface-light)" : "var(--surface)",
+                        padding: "8px 16px",
+                        borderRadius: "999px",
+                        border: jobSource === src ? "1px solid var(--primary)" : "1px solid transparent",
+                        backgroundColor: jobSource === src ? "var(--surface)" : "transparent",
+                        color: jobSource === src ? "var(--text-primary)" : "var(--text-secondary)",
                         transition: "all 0.2s",
+                        fontWeight: jobSource === src ? 600 : 500,
                       }}
                     >
                       <input
@@ -1518,40 +1658,52 @@ export default function CreateJobCardPage() {
                         value={src}
                         checked={jobSource === src}
                         onChange={() => setJobSource(src)}
-                        style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                        style={{ display: "none" }}
                       />
-                      <span style={{ fontSize: "13px", fontWeight: "500" }}>{src}</span>
+                      <span style={{ fontSize: "13px" }}>{src}</span>
                     </label>
                   ))}
                 </div>
               </div>
 
-              <div style={{ marginBottom: "16px" }}>
+              <div style={{ marginBottom: "10px" }}>
                 <label
                   style={{
                     fontSize: "13px",
                     fontWeight: "600",
-                    color: "var(--grey-accent)",
+                    color: "var(--text-secondary)",
                     display: "block",
                     marginBottom: "8px",
                   }}
                 >
                   Job Division
                 </label>
-                <div style={{ display: "flex", gap: "12px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "8px",
+                    padding: "6px",
+                    borderRadius: "999px",
+                    backgroundColor: "var(--surface-light)",
+                    border: "1px solid var(--surface-light)",
+                    width: "fit-content",
+                  }}
+                >
                   {["Retail", "Sales"].map((division) => (
                     <label
                       key={division}
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: "6px",
+                        gap: "8px",
                         cursor: "pointer",
-                        padding: "8px 12px",
-                        borderRadius: "8px",
-                        border: jobDivision === division ? "2px solid var(--primary)" : "2px solid var(--border)",
-                        backgroundColor: jobDivision === division ? "var(--surface-light)" : "var(--surface)",
+                        padding: "8px 16px",
+                        borderRadius: "999px",
+                        border: jobDivision === division ? "1px solid var(--primary)" : "1px solid transparent",
+                        backgroundColor: jobDivision === division ? "var(--surface)" : "transparent",
+                        color: jobDivision === division ? "var(--text-primary)" : "var(--text-secondary)",
                         transition: "all 0.2s",
+                        fontWeight: jobDivision === division ? 600 : 500,
                       }}
                     >
                       <input
@@ -1560,56 +1712,20 @@ export default function CreateJobCardPage() {
                         value={division}
                         checked={jobDivision === division}
                         onChange={() => setJobDivision(division)}
-                        style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                        style={{ display: "none" }}
                       />
-                      <span style={{ fontSize: "13px", fontWeight: "500" }}>{division}</span>
+                      <span style={{ fontSize: "13px" }}>{division}</span>
                     </label>
                   ))}
                 </div>
               </div>
-
-              {/* ✅ Create as Prime Job checkbox - only show when NOT in sub-job mode */}
-              {!isSubJobMode && (
-                <div style={{ marginBottom: "16px" }}>
-                  <label
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      cursor: "pointer",
-                      padding: "12px 16px",
-                      borderRadius: "8px",
-                      border: asPrimeJob ? "2px solid var(--primary)" : "2px solid var(--border)",
-                      backgroundColor: asPrimeJob ? "var(--primary-surface)" : "var(--surface)",
-                      transition: "all 0.2s",
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={asPrimeJob}
-                      onChange={(e) => setAsPrimeJob(e.target.checked)}
-                      style={{ width: "18px", height: "18px", cursor: "pointer" }}
-                    />
-                    <div>
-                      <span style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-primary)" }}>
-                        Multiple linked jobs
-                      </span>
-                      <p style={{ margin: "4px 0 0", fontSize: "11px", color: "var(--grey-accent)" }}>
-                        {asPrimeJob
-                          ? "Use tabs above to add separate job cards for this visit"
-                          : "Enable to create multiple linked job cards for one customer visit"}
-                      </p>
-                    </div>
-                  </label>
-                </div>
-              )}
 
               <div>
                 <label
                   style={{
                     fontSize: "13px",
                     fontWeight: "600",
-                    color: "var(--grey-accent)",
+                    color: "var(--text-secondary)",
                     display: "block",
                     marginBottom: "8px",
                   }}
@@ -1621,12 +1737,15 @@ export default function CreateJobCardPage() {
                     <span
                       key={index}
                       style={{
-                        backgroundColor: "var(--primary)",
-                        color: "white",
-                        padding: "6px 14px",
-                        borderRadius: "20px",
+                        backgroundColor: "var(--surface-light)",
+                        color: "var(--text-primary)",
+                        padding: "6px 12px",
+                        borderRadius: "999px",
                         fontWeight: "600",
                         fontSize: "12px",
+                        border: "1px solid var(--surface-light)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.3px",
                       }}
                     >
                       {type}
@@ -1640,19 +1759,21 @@ export default function CreateJobCardPage() {
             {/* Vehicle Details Section - 33% width */}
             <div
               style={{
-                flex: "0 0 33%",
-                background: "var(--surface)",
+                flex: 1,
+                minWidth: 0,
                 padding: "20px",
                 borderRadius: "16px",
                 boxShadow: "none",
-                border: "1px solid var(--surface-light)",
+                ...sectionCardStyle,
                 display: "flex",
                 flexDirection: "column",
                 gap: "16px",
-                maxHeight: "65vh",
+                height: topRowHeight ? `${topRowHeight}px` : "auto",
                 minHeight: "420px",
+                boxSizing: "border-box",
                 overflowY: "auto",
               }}
+              ref={vehicleSectionRef}
             >
               <h3
                 style={{
@@ -1719,7 +1840,7 @@ export default function CreateJobCardPage() {
                   style={{
                     fontSize: "13px",
                     fontWeight: "500",
-                    color: "var(--grey-accent)",
+                    color: "var(--text-secondary)",
                     display: "block",
                     marginBottom: "6px",
                   }}
@@ -1805,7 +1926,7 @@ export default function CreateJobCardPage() {
                         style={{
                           fontSize: "13px",
                           fontWeight: "500",
-                          color: "var(--grey-accent)",
+                          color: "var(--text-secondary)",
                           display: "block",
                           marginBottom: "4px",
                         }}
@@ -1815,7 +1936,7 @@ export default function CreateJobCardPage() {
                       <div
                         style={{
                           padding: "10px 12px",
-                          backgroundColor: "var(--surface)",
+                          backgroundColor: "var(--surface-light)",
                           borderRadius: "8px",
                           fontSize: "14px",
                           color: vehicle[key] ? "var(--text-primary)" : "var(--grey-accent-light)",
@@ -1832,7 +1953,7 @@ export default function CreateJobCardPage() {
                     style={{
                       fontSize: "13px",
                       fontWeight: "500",
-                      color: "var(--grey-accent)",
+                      color: "var(--text-secondary)",
                       display: "block",
                       marginBottom: "6px",
                     }}
@@ -1867,17 +1988,18 @@ export default function CreateJobCardPage() {
             {/* Customer Details Section - 33% width */}
             <div
               style={{
-                flex: "0 0 33%",
-                background: "var(--surface)",
+                flex: 1,
+                minWidth: 0,
                 padding: "20px",
                 borderRadius: "16px",
                 boxShadow: "none",
-                border: "1px solid var(--surface-light)",
+                ...sectionCardStyle,
                 display: "flex",
                 flexDirection: "column",
                 gap: "16px",
-                maxHeight: "65vh",
+                height: topRowHeight ? `${topRowHeight}px` : "auto",
                 minHeight: "420px",
+                boxSizing: "border-box",
                 overflowY: "auto",
               }}
             >
@@ -1944,21 +2066,21 @@ export default function CreateJobCardPage() {
               {customer ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                   {[
-                    { label: "First Name", field: "firstName", type: "text", placeholder: "Enter first name" }, // first name input
-                    { label: "Last Name", field: "lastName", type: "text", placeholder: "Enter last name" }, // last name input
-                    { label: "Email", field: "email", type: "email", placeholder: "Enter email address" }, // email input
-                    { label: "Mobile", field: "mobile", type: "tel", placeholder: "Enter mobile number" }, // mobile input
-                    { label: "Telephone", field: "telephone", type: "tel", placeholder: "Enter telephone number" }, // telephone input
-                    { label: "Address", field: "address", type: "textarea", placeholder: "Enter customer address" }, // address textarea
-                    { label: "Postcode", field: "postcode", type: "text", placeholder: "Enter postcode" }, // postcode input
-                    { label: "Contact Preference", field: "contactPreference", type: "text", placeholder: "Enter contact preference" }, // contact preference input
+                    { label: "First Name", field: "firstName", type: "text", placeholder: "" }, // first name input
+                    { label: "Last Name", field: "lastName", type: "text", placeholder: "" }, // last name input
+                    { label: "Email", field: "email", type: "email", placeholder: "" }, // email input
+                    { label: "Mobile", field: "mobile", type: "tel", placeholder: "" }, // mobile input
+                    { label: "Telephone", field: "telephone", type: "tel", placeholder: "" }, // telephone input
+                    { label: "Address", field: "address", type: "textarea", placeholder: "" }, // address textarea
+                    { label: "Postcode", field: "postcode", type: "text", placeholder: "" }, // postcode input
+                    { label: "Contact Preference", field: "contactPreference", type: "multi-select" }, // contact preference input
                   ].map((input) => (
                     <div key={input.field}>
                       <label
                         style={{
                           fontSize: "13px",
                           fontWeight: "500",
-                          color: "var(--grey-accent)",
+                          color: "var(--text-secondary)",
                           display: "block",
                           marginBottom: "6px",
                         }}
@@ -1969,9 +2091,14 @@ export default function CreateJobCardPage() {
                         <textarea
                           value={customerForm[input.field] || ""}
                           onChange={(e) => handleCustomerFieldChange(input.field, e.target.value)}
+                          onInput={(e) => {
+                            if (input.field !== "address") return;
+                            e.target.style.height = "auto";
+                            e.target.style.height = `${e.target.scrollHeight}px`;
+                          }}
                           disabled={!isCustomerEditing || isSavingCustomer}
                           placeholder={input.placeholder}
-                          rows={3}
+                          rows={input.field === "address" ? 1 : 3}
                           style={{
                             width: "100%",
                             padding: "10px 12px",
@@ -1980,8 +2107,10 @@ export default function CreateJobCardPage() {
                             fontSize: "14px",
                             outline: "none",
                             transition: "border-color 0.2s",
-                            backgroundColor: isCustomerEditing && !isSavingCustomer ? "white" : "var(--surface)",
-                            resize: "vertical",
+                            backgroundColor: isCustomerEditing && !isSavingCustomer ? "var(--surface-light)" : "var(--surface)",
+                            resize: input.field === "address" ? "none" : "vertical",
+                            minHeight: input.field === "address" ? "40px" : "unset",
+                            overflow: "hidden",
                           }}
                           onFocus={(e) => {
                             e.target.style.borderColor = "var(--primary)";
@@ -1990,6 +2119,46 @@ export default function CreateJobCardPage() {
                             e.target.style.borderColor = "var(--surface-light)";
                           }}
                         />
+                      ) : input.type === "multi-select" ? (
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "8px",
+                            flexWrap: "wrap",
+                            padding: "6px",
+                            borderRadius: "999px",
+                            backgroundColor: "var(--surface-light)",
+                            border: "1px solid var(--surface-light)",
+                            width: "fit-content",
+                          }}
+                        >
+                          {["phone", "email", "sms"].map((pref) => {
+                            const active = Array.isArray(customerForm.contactPreference) &&
+                              customerForm.contactPreference.includes(pref);
+                            return (
+                              <button
+                                key={pref}
+                                type="button"
+                                onClick={() => toggleContactPreference(pref)}
+                                style={{
+                                  padding: "8px 14px",
+                                  borderRadius: "999px",
+                                  border: active ? "1px solid var(--primary)" : "1px solid transparent",
+                                  backgroundColor: active ? "var(--surface)" : "transparent",
+                                  color: active ? "var(--text-primary)" : "var(--text-secondary)",
+                                  fontSize: "13px",
+                                  fontWeight: active ? "600" : "500",
+                                  cursor: "pointer",
+                                  transition: "all 0.2s",
+                                  textTransform: "none",
+                                  letterSpacing: "0",
+                                }}
+                              >
+                                {pref === "sms" ? "SMS" : pref.charAt(0).toUpperCase() + pref.slice(1)}
+                              </button>
+                            );
+                          })}
+                        </div>
                       ) : (
                         <input
                           type={input.type}
@@ -2005,7 +2174,8 @@ export default function CreateJobCardPage() {
                             fontSize: "14px",
                             outline: "none",
                             transition: "border-color 0.2s",
-                            backgroundColor: isCustomerEditing && !isSavingCustomer ? "white" : "var(--surface)",
+                            backgroundColor: isCustomerEditing && !isSavingCustomer ? "var(--surface-light)" : "var(--surface)",
+                            color: input.field === "mobile" ? "white" : "inherit",
                           }}
                           onFocus={(e) => {
                             e.target.style.borderColor = "var(--primary)";
@@ -2018,7 +2188,7 @@ export default function CreateJobCardPage() {
                     </div>
                   ))}
 
-                  <div style={{ display: "flex", gap: "12px" }}>
+                  <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
                     {isCustomerEditing ? (
                       <>
                         <button
@@ -2028,8 +2198,8 @@ export default function CreateJobCardPage() {
                             flex: 1,
                             padding: "12px",
                             fontSize: "14px",
-                            backgroundColor: "var(--info)",
-                            color: "white",
+                            backgroundColor: "var(--primary)",
+                            color: "var(--text-inverse)",
                             border: "none",
                             borderRadius: "8px",
                             cursor: isSavingCustomer ? "not-allowed" : "pointer",
@@ -2039,11 +2209,11 @@ export default function CreateJobCardPage() {
                           }}
                           onMouseEnter={(e) => {
                             if (!isSavingCustomer) {
-                              e.target.style.backgroundColor = "var(--info-dark)";
+                              e.target.style.backgroundColor = "var(--primary-dark)";
                             }
                           }}
                           onMouseLeave={(e) => {
-                            e.target.style.backgroundColor = "var(--info)";
+                            e.target.style.backgroundColor = "var(--primary)";
                           }}
                         >
                           {isSavingCustomer ? "Saving..." : "Save Changes"}
@@ -2055,9 +2225,9 @@ export default function CreateJobCardPage() {
                             flex: 1,
                             padding: "12px",
                             fontSize: "14px",
-                            backgroundColor: "var(--info)",
-                            color: "white",
-                            border: "none",
+                            backgroundColor: "var(--surface-light)",
+                            color: "var(--text-primary)",
+                            border: "1px solid var(--surface-light)",
                             borderRadius: "8px",
                             cursor: isSavingCustomer ? "not-allowed" : "pointer",
                             fontWeight: "600",
@@ -2066,11 +2236,11 @@ export default function CreateJobCardPage() {
                           }}
                           onMouseEnter={(e) => {
                             if (!isSavingCustomer) {
-                              e.target.style.backgroundColor = "var(--info-dark)";
+                              e.target.style.backgroundColor = "var(--surface-muted)";
                             }
                           }}
                           onMouseLeave={(e) => {
-                            e.target.style.backgroundColor = "var(--info)";
+                            e.target.style.backgroundColor = "var(--surface-light)";
                           }}
                         >
                           Cancel
@@ -2081,21 +2251,23 @@ export default function CreateJobCardPage() {
                         onClick={handleStartCustomerEdit}
                         style={{
                           width: "100%",
+                          maxWidth: "320px",
                           padding: "12px",
                           fontSize: "14px",
-                          backgroundColor: "var(--accent-purple)",
-                          color: "white",
+                          backgroundColor: "var(--primary)",
+                          color: "var(--text-inverse)",
                           border: "none",
                           borderRadius: "8px",
                           cursor: "pointer",
                           fontWeight: "600",
                           transition: "all 0.2s",
+                          alignSelf: "center",
                         }}
                         onMouseEnter={(e) => {
-                          e.target.style.backgroundColor = "var(--primary)";
+                          e.target.style.backgroundColor = "var(--primary-dark)";
                         }}
                         onMouseLeave={(e) => {
-                          e.target.style.backgroundColor = "var(--accent-purple)";
+                          e.target.style.backgroundColor = "var(--primary)";
                         }}
                       >
                         Edit Customer
@@ -2108,38 +2280,42 @@ export default function CreateJobCardPage() {
                     disabled={isSavingCustomer}
                     style={{
                       width: "100%",
+                      maxWidth: "320px",
                       padding: "12px",
                       fontSize: "14px",
-                      backgroundColor: "var(--danger)",
-                      color: "white",
-                      border: "none",
+                      backgroundColor: "var(--surface-light)",
+                      color: "var(--text-primary)",
+                      border: "1px solid var(--surface-light)",
                       borderRadius: "8px",
                       cursor: isSavingCustomer ? "not-allowed" : "pointer",
                       fontWeight: "600",
                       transition: "all 0.2s",
                       opacity: isSavingCustomer ? 0.7 : 1,
+                      alignSelf: "center",
                     }}
                     onMouseEnter={(e) => {
                       if (!isSavingCustomer) {
-                        e.target.style.backgroundColor = "var(--danger)";
+                        e.target.style.backgroundColor = "var(--surface-muted)";
                       }
                     }}
                     onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = "var(--danger)";
+                      e.target.style.backgroundColor = "var(--surface-light)";
                     }}
                   >
                     Clear Customer
                   </button>
                 </div>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px", alignItems: "center" }}>
                   <button
                     onClick={() => setShowNewCustomer(true)}
                     style={{
-                      padding: "16px",
+                      width: "100%",
+                      maxWidth: "320px",
+                      padding: "14px",
                       fontSize: "14px",
                       backgroundColor: "var(--primary)",
-                      color: "white",
+                      color: "var(--text-inverse)",
                       border: "none",
                       borderRadius: "8px",
                       cursor: "pointer",
@@ -2153,26 +2329,28 @@ export default function CreateJobCardPage() {
                       e.target.style.backgroundColor = "var(--primary)";
                     }}
                   >
-                    + New Customer
+                    New Customer
                   </button>
                   <button
                     onClick={() => setShowExistingCustomer(true)}
                     style={{
-                      padding: "16px",
+                      width: "100%",
+                      maxWidth: "320px",
+                      padding: "14px",
                       fontSize: "14px",
-                      backgroundColor: "var(--danger)",
-                      color: "white",
-                      border: "none",
+                      backgroundColor: "var(--surface-light)",
+                      color: "var(--text-primary)",
+                      border: "1px solid var(--surface-light)",
                       borderRadius: "8px",
                       cursor: "pointer",
                       fontWeight: "600",
                       transition: "all 0.2s",
                     }}
                     onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = "var(--danger)";
+                      e.target.style.backgroundColor = "var(--surface-muted)";
                     }}
                     onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = "var(--danger)";
+                      e.target.style.backgroundColor = "var(--surface-light)";
                     }}
                   >
                     Search Existing Customer
@@ -2185,11 +2363,10 @@ export default function CreateJobCardPage() {
           {/* ✅ Job Requests Section - Full Width */}
           <div
             style={{
-              background: "var(--surface)",
               padding: "20px",
               borderRadius: "16px",
               boxShadow: "none",
-              border: "1px solid var(--surface-light)",
+              ...sectionCardStyle,
             }}
           >
             <h3
@@ -2203,66 +2380,44 @@ export default function CreateJobCardPage() {
             >
               Job Requests
             </h3>
-            {requests.map((req, i) => (
-              <div
-                key={i}
-                style={{
-                  border: "1px solid var(--surface-light)",
-                  borderRadius: "12px",
-                  marginBottom: "12px",
-                  padding: "16px",
-                  backgroundColor: "var(--surface)",
-                }}
-              >
+            <div style={{ maxHeight: "360px", overflowY: "auto", paddingRight: "4px", marginBottom: "12px" }}>
+              {requests.map((req, i) => (
                 <div
+                  key={i}
                   style={{
-                    fontSize: "13px",
-                    fontWeight: "600",
-                    color: "var(--grey-accent)",
+                    border: "1px solid var(--surface-light)",
+                    borderRadius: "12px",
                     marginBottom: "12px",
+                    padding: "16px",
+                    backgroundColor: "var(--surface-light)",
                   }}
                 >
-                  Request {i + 1}
-                </div>
-                <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
-                  <input
-                    type="text"
-                    value={req.text}
-                    onChange={(e) => handleRequestChange(i, e.target.value)}
-                    placeholder="Enter job request (MOT, Service, Diagnostic)"
+                  <div
                     style={{
-                      flex: 2,
-                      minWidth: "250px",
-                      padding: "10px 12px",
-                      border: "1px solid var(--surface-light)",
-                      borderRadius: "8px",
-                      fontSize: "14px",
-                      outline: "none",
-                      transition: "border-color 0.2s",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      color: "var(--text-secondary)",
+                      marginBottom: "12px",
                     }}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = "var(--primary)";
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = "var(--surface-light)";
-                    }}
-                  />
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  >
+                    Request {i + 1}
+                  </div>
+                  <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
                     <input
-                      type="number"
-                      min="0"
-                      step="0.1"
-                      value={req.time || ""}
-                      onChange={(e) => handleTimeChange(i, e.target.value)}
-                      placeholder="Hours"
+                      type="text"
+                      value={req.text}
+                      onChange={(e) => handleRequestChange(i, e.target.value)}
+                      placeholder="Enter job request (MOT, Service, Diagnostic)"
                       style={{
-                        width: "90px",
+                        flex: 2,
+                        minWidth: "250px",
                         padding: "10px 12px",
                         border: "1px solid var(--surface-light)",
                         borderRadius: "8px",
                         fontSize: "14px",
                         outline: "none",
                         transition: "border-color 0.2s",
+                        backgroundColor: "var(--surface)",
                       }}
                       onFocus={(e) => {
                         e.target.style.borderColor = "var(--primary)";
@@ -2271,48 +2426,74 @@ export default function CreateJobCardPage() {
                         e.target.style.borderColor = "var(--surface-light)";
                       }}
                     />
-                    <span
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        value={req.time || ""}
+                        onChange={(e) => handleTimeChange(i, e.target.value)}
+                        placeholder="Hours"
+                        style={{
+                          width: "90px",
+                          padding: "10px 12px",
+                          border: "1px solid var(--surface-light)",
+                          borderRadius: "8px",
+                          fontSize: "14px",
+                          outline: "none",
+                          transition: "border-color 0.2s",
+                          backgroundColor: "var(--surface)",
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.borderColor = "var(--primary)";
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = "var(--surface-light)";
+                        }}
+                      />
+                      <span
+                        style={{
+                          fontSize: "13px",
+                          color: "var(--text-secondary)",
+                          fontWeight: "500",
+                          minWidth: "30px",
+                        }}
+                      >
+                        h
+                      </span>
+                    </div>
+                    <DropdownField
+                      value={req.paymentType || "Customer"}
+                      onChange={(e) => handlePaymentTypeChange(i, e.target.value)}
+                      options={PAYMENT_TYPE_OPTIONS}
+                      className="job-request-payment-dropdown"
+                    />
+                    <button
+                      onClick={() => handleRemoveRequest(i)}
                       style={{
+                        backgroundColor: "var(--danger)",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "8px",
+                        padding: "10px 16px",
+                        cursor: "pointer",
+                        fontWeight: "600",
                         fontSize: "13px",
-                        color: "var(--grey-accent)",
-                        fontWeight: "500",
-                        minWidth: "30px",
+                        transition: "all 0.2s",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.backgroundColor = "var(--danger)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.backgroundColor = "var(--danger)";
                       }}
                     >
-                      {req.time !== "" ? `${req.time}h` : ""}
-                    </span>
+                      Remove
+                    </button>
                   </div>
-                  <DropdownField
-                    value={req.paymentType || "Customer"}
-                    onChange={(e) => handlePaymentTypeChange(i, e.target.value)}
-                    options={PAYMENT_TYPE_OPTIONS}
-                    className="job-request-payment-dropdown"
-                  />
-                  <button
-                    onClick={() => handleRemoveRequest(i)}
-                    style={{
-                      backgroundColor: "var(--danger)",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "8px",
-                      padding: "10px 16px",
-                      cursor: "pointer",
-                      fontWeight: "600",
-                      fontSize: "13px",
-                      transition: "all 0.2s",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = "var(--danger)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = "var(--danger)";
-                    }}
-                  >
-                    Remove
-                  </button>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
             <button
               onClick={handleAddRequest}
               style={{
@@ -2342,41 +2523,47 @@ export default function CreateJobCardPage() {
             <div
               style={{
                 flex: 1,
-                background: "var(--surface)",
                 padding: "16px",
                 borderRadius: "16px",
                 boxShadow: "none",
-                border: "1px solid var(--surface-light)",
+                ...sectionCardStyle,
               }}
             >
-              <h4
-                style={{
-                  fontSize: "14px",
-                  fontWeight: "600",
-                  color: "var(--text-primary)",
-                  marginTop: 0,
-                  marginBottom: "12px",
-                }}
-              >
-                Cosmetic Damage
-              </h4>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px", gap: "12px" }}>
-                <span style={{ fontSize: "13px", fontWeight: "500", color: "var(--grey-accent)" }}>Damage Present?</span>
-                <div style={{ display: "flex", gap: "8px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", marginBottom: "8px" }}>
+                <h4
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    color: "var(--text-primary)",
+                    margin: 0,
+                  }}
+                >
+                  Cosmetic Damage
+                </h4>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "8px",
+                    padding: "6px",
+                    borderRadius: "999px",
+                    backgroundColor: "var(--surface-light)",
+                    border: "1px solid var(--surface-light)",
+                    width: "fit-content",
+                  }}
+                >
                   {[true, false].map((choice) => (
                     <button
                       key={choice ? "yes" : "no"}
                       onClick={() => setCosmeticDamagePresent(choice)}
                       type="button"
                       style={{
-                        padding: "8px 14px",
+                        padding: "6px 14px",
                         borderRadius: "999px",
-                        border: "2px solid",
-                        borderColor: cosmeticDamagePresent === choice ? "var(--primary)" : "var(--border)",
-                        backgroundColor: cosmeticDamagePresent === choice ? "var(--surface-light)" : "var(--surface)",
-                        color: "var(--text-primary)",
-                        fontSize: "13px",
-                        fontWeight: "600",
+                        border: cosmeticDamagePresent === choice ? "1px solid var(--primary)" : "1px solid transparent",
+                        backgroundColor: cosmeticDamagePresent === choice ? "var(--surface)" : "transparent",
+                        color: cosmeticDamagePresent === choice ? "var(--text-primary)" : "var(--text-secondary)",
+                        fontSize: "12px",
+                        fontWeight: cosmeticDamagePresent === choice ? "600" : "500",
                         cursor: "pointer",
                         transition: "all 0.2s",
                       }}
@@ -2386,177 +2573,164 @@ export default function CreateJobCardPage() {
                   ))}
                 </div>
               </div>
-              <textarea
-                value={cosmeticNotes}
-                onChange={(e) => setCosmeticNotes(e.target.value)}
-                placeholder="Describe any scratches, dents, or cosmetic damage..."
-                disabled={!cosmeticDamagePresent}
-                className={cosmeticDamagePresent ? "cosmetic-notes-active" : ""}
-                style={{
-                  width: "100%",
-                  height: "80px",
-                  padding: "10px 12px",
-                  border: "1px solid var(--surface-light)",
-                  borderRadius: "8px",
-                  resize: "none",
-                  fontFamily: "inherit",
-                  fontSize: "13px",
-                  outline: "none",
-                  transition: "border-color 0.2s",
-                  backgroundColor: cosmeticDamagePresent ? "var(--background)" : "var(--info-surface)",
-                  color: cosmeticDamagePresent ? "var(--text-primary)" : "var(--info)",
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = "var(--primary)";
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = "var(--surface-light)";
-                }}
-              />
+              {cosmeticDamagePresent && (
+                <textarea
+                  value={cosmeticNotes}
+                  onChange={(e) => setCosmeticNotes(e.target.value)}
+                  placeholder="Describe any scratches, dents, or cosmetic damage..."
+                  className="cosmetic-notes-active"
+                  style={{
+                    width: "100%",
+                    height: "80px",
+                    padding: "10px 12px",
+                    border: "1px solid var(--surface-light)",
+                    borderRadius: "8px",
+                    resize: "none",
+                    fontFamily: "inherit",
+                    fontSize: "13px",
+                    outline: "none",
+                    transition: "border-color 0.2s",
+                    backgroundColor: "var(--background)",
+                    color: "var(--text-primary)",
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = "var(--primary)";
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = "var(--surface-light)";
+                  }}
+                />
+              )}
             </div>
             <div
               style={{
                 flex: 1,
-                background: "var(--surface)",
                 padding: "16px",
                 borderRadius: "16px",
                 boxShadow: "none",
-                border: "1px solid var(--surface-light)",
+                ...sectionCardStyle,
                 display: "flex",
                 flexDirection: "column",
                 gap: "12px",
               }}
             >
-              <h4
-                style={{
-                  fontSize: "14px",
-                  fontWeight: "600",
-                  color: "var(--text-primary)",
-                  marginTop: 0,
-                  marginBottom: "4px",
-                }}
-              >
-                VHC Required?
-              </h4>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: "13px",
-                  color: "var(--info)",
-                  lineHeight: 1.4,
-                }}
-              >
-                Toggle this on to schedule a Vehicle Health Check so the job routes to the VHC dashboard for technicians.
-              </p>
-              <div style={{ display: "flex", gap: "8px" }}>
-                {[true, false].map((choice) => (
-                  <button
-                    key={`vhc-${choice ? "yes" : "no"}`}
-                    type="button"
-                    onClick={() => setVhcRequired(choice)}
-                    style={{
-                      flex: 1,
-                      padding: "10px",
-                      borderRadius: "8px",
-                      border: "2px solid",
-                      borderColor: vhcRequired === choice ? "var(--primary)" : "var(--border)",
-                      backgroundColor: vhcRequired === choice ? "var(--surface-light)" : "var(--surface)",
-                      color: "var(--text-primary)",
-                      fontWeight: "600",
-                      fontSize: "13px",
-                      cursor: "pointer",
-                      transition: "all 0.2s",
-                    }}
-                  >
-                    {choice ? "Yes" : "No"}
-                  </button>
-                ))}
-              </div>
-              <div
-                style={{
-                  fontSize: "12px",
-                  color: "var(--info)",
-                  lineHeight: 1.4,
-                }}
-              >
-                {vhcRequired
-                  ? "✓ This job will appear in the VHC dashboard for technicians and customers."
-                  : "✕ This job stays hidden from VHC workflows until enabled."}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+                <h4
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    color: "var(--text-primary)",
+                    margin: 0,
+                  }}
+                >
+                  VHC Required?
+                </h4>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "8px",
+                    padding: "6px",
+                    borderRadius: "999px",
+                    backgroundColor: "var(--surface-light)",
+                    border: "1px solid var(--surface-light)",
+                    width: "fit-content",
+                  }}
+                >
+                  {[true, false].map((choice) => (
+                    <button
+                      key={`vhc-${choice ? "yes" : "no"}`}
+                      type="button"
+                      onClick={() => setVhcRequired(choice)}
+                      style={{
+                        padding: "6px 14px",
+                        borderRadius: "999px",
+                        border: vhcRequired === choice ? "1px solid var(--primary)" : "1px solid transparent",
+                        backgroundColor: vhcRequired === choice ? "var(--surface)" : "transparent",
+                        color: vhcRequired === choice ? "var(--text-primary)" : "var(--text-secondary)",
+                        fontWeight: vhcRequired === choice ? "600" : "500",
+                        fontSize: "12px",
+                        cursor: "pointer",
+                        transition: "all 0.2s",
+                      }}
+                    >
+                      {choice ? "Yes" : "No"}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
             <div
               style={{
                 flex: 1,
-                background: "var(--surface)",
                 padding: "16px",
                 borderRadius: "16px",
                 boxShadow: "none",
-                border: "1px solid var(--surface-light)",
+                ...sectionCardStyle,
                 display: "flex",
                 flexDirection: "column",
                 gap: "12px",
                 justifyContent: "space-between",
               }}
             >
-              <div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
                 <h4
                   style={{
                     fontSize: "14px",
                     fontWeight: "600",
                     color: "var(--text-primary)",
-                    marginTop: 0,
-                    marginBottom: "6px",
+                    margin: 0,
                   }}
                 >
                   Documents
                 </h4>
-                <p
+                <button
+                  type="button"
+                  onClick={() => setShowDocumentsPopup(true)}
                   style={{
-                    margin: 0,
-                    fontSize: "13px",
-                    color: "var(--info)",
-                    lineHeight: 1.4,
+                    padding: "10px 18px",
+                    borderRadius: "10px",
+                    border: "none",
+                    backgroundColor: "var(--primary)",
+                    color: "white",
+                    fontWeight: "600",
+                    fontSize: "14px",
+                    cursor: "pointer",
+                    transition: "background-color 0.2s, transform 0.2s",
+                    boxShadow: "none",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "var(--primary-dark)";
+                    e.currentTarget.style.transform = "translateY(-1px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "var(--primary)";
+                    e.currentTarget.style.transform = "translateY(0)";
                   }}
                 >
-                  Keep service letters, signed paperwork, and photos attached to this job card.
-                </p>
+                  Manage Documents
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowDocumentsPopup(true)}
-                style={{
-                  alignSelf: "flex-start",
-                  padding: "10px 18px",
-                  borderRadius: "10px",
-                  border: "none",
-                  backgroundColor: "var(--primary)",
-                  color: "white",
-                  fontWeight: "600",
-                  fontSize: "14px",
-                  cursor: "pointer",
-                  transition: "background-color 0.2s, transform 0.2s",
-                  boxShadow: "none",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "var(--primary-dark)";
-                  e.currentTarget.style.transform = "translateY(-1px)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "var(--primary)";
-                  e.currentTarget.style.transform = "translateY(0)";
-                }}
-              >
-                Manage Documents
-              </button>
             </div>
           </div>
         </div>
 
         {showNewCustomer && (
-          <NewCustomerPopup onClose={() => setShowNewCustomer(false)} onSelect={(c) => handleCustomerSelect(c)} />
+          <NewCustomerPopup
+            onClose={() => setShowNewCustomer(false)}
+            onSelect={(c) => handleCustomerSelect(c)}
+            initialName={newCustomerPrefill}
+          />
         )}
         {showExistingCustomer && (
-          <ExistingCustomerPopup onClose={() => setShowExistingCustomer(false)} onSelect={(c) => handleCustomerSelect(c)} />
+          <ExistingCustomerPopup
+            onClose={() => setShowExistingCustomer(false)}
+            onSelect={(c) => handleCustomerSelect(c)}
+            onCreateNew={(prefill) => {
+              setNewCustomerPrefill(prefill);
+              setShowExistingCustomer(false);
+              setShowNewCustomer(true);
+            }}
+          />
         )}
 
         <DocumentsUploadPopup
@@ -2569,6 +2743,17 @@ export default function CreateJobCardPage() {
 
       </div>
       <style jsx global>{`
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+
+        input[type="number"] {
+          -moz-appearance: textfield;
+          appearance: textfield;
+        }
+
         .job-request-payment-dropdown {
           width: 160px;
         }

@@ -277,32 +277,36 @@ export default function DocumentsUploadPopup({
           onClick={(event) => event.stopPropagation()}
           style={{
             ...popupCardStyles,
-            width: uploadProgress.length > 0 ? "920px" : "520px",
+            width: uploadProgress.length > 0 ? "920px" : "650px",
             maxWidth: "95%",
             maxHeight: "90vh",
             overflowY: "auto",
-            padding: "28px",
+            padding: "32px",
             display: "flex",
             flexDirection: "column",
             gap: "16px",
-            transition: "width 0.3s ease"
+            transition: "width 0.3s ease",
+            borderRadius: "32px",
+            border: "1px solid var(--surface-light)"
           }}
         >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "600", color: "var(--accent-purple)" }}>
+            <h3 style={{ margin: 0, fontSize: "20px", fontWeight: "700", color: "var(--primary)" }}>
               Upload Documents
             </h3>
-            <p style={{ margin: "4px 0 0", fontSize: "13px", color: "var(--info)" }}>
+            <p style={{ margin: "6px 0 0", fontSize: "13px", color: "var(--text-secondary)" }}>
               {uploadProgress.length > 0 ? "Upload in progress..." : "Attach PDFs or images and upload immediately."}
             </p>
           </div>
           <button
             onClick={handleClose}
             style={{
-              border: "none",
-              background: "transparent",
-              fontSize: "0.95rem",
+              padding: "10px 14px",
+              borderRadius: "10px",
+              border: "1px solid var(--surface-light)",
+              background: "var(--surface-light)",
+              fontSize: "12px",
               fontWeight: 700,
               cursor: "pointer",
               color: closeButtonColor,
@@ -319,13 +323,13 @@ export default function DocumentsUploadPopup({
             <label
               htmlFor="documents-input"
               style={{
-                border: "2px dashed var(--accent-purple)",
+                border: "2px dashed var(--primary)",
                 borderRadius: "16px",
                 padding: "28px",
                 textAlign: "center",
                 cursor: "pointer",
-                backgroundColor: "var(--accent-purple-surface)",
-                color: "var(--accent-purple)",
+                backgroundColor: "var(--surface-light)",
+                color: "var(--text-primary)",
                 fontWeight: "600",
                 fontSize: "14px"
               }}
@@ -346,7 +350,7 @@ export default function DocumentsUploadPopup({
                 style={{
                   maxHeight: "220px",
                   overflowY: "auto",
-                  border: "1px solid var(--info-surface)",
+                  border: "1px solid var(--surface-light)",
                   borderRadius: "12px",
                   padding: "12px"
                 }}
@@ -359,14 +363,14 @@ export default function DocumentsUploadPopup({
                       alignItems: "center",
                       justifyContent: "space-between",
                       padding: "8px",
-                      borderBottom: "1px solid var(--info-surface)"
+                      borderBottom: "1px solid var(--surface-light)"
                     }}
                   >
                     <div>
-                      <div style={{ fontSize: "14px", fontWeight: "600", color: "var(--accent-purple)" }}>
+                      <div style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-primary)" }}>
                         {file.name}
                       </div>
-                      <div style={{ fontSize: "12px", color: "var(--info-dark)" }}>{formatBytes(file.size)}</div>
+                      <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{formatBytes(file.size)}</div>
                     </div>
                     <button
                       onClick={() => removePendingDocument(idx)}
@@ -392,9 +396,9 @@ export default function DocumentsUploadPopup({
                   flex: 1,
                   padding: "12px",
                   borderRadius: "10px",
-                  border: "1px solid var(--info-surface)",
-                  backgroundColor: "var(--surface)",
-                  color: "var(--info-dark)",
+                  border: "1px solid var(--surface-light)",
+                  backgroundColor: "var(--surface-light)",
+                  color: "var(--text-primary)",
                   fontWeight: "600",
                   cursor: "pointer"
                 }}
@@ -410,7 +414,7 @@ export default function DocumentsUploadPopup({
                   borderRadius: "10px",
                   border: "none",
                   background: "var(--primary)",
-                  color: "white",
+                  color: "var(--text-inverse)",
                   fontWeight: "600",
                   cursor: isUploading ? "not-allowed" : "pointer",
                   boxShadow: "none",
@@ -432,13 +436,13 @@ export default function DocumentsUploadPopup({
                 backgroundColor: "var(--surface)",
                 padding: "16px",
                 borderRadius: "12px",
-                border: "1px solid var(--info-surface)",
+                border: "1px solid var(--surface-light)",
                 maxHeight: "70vh",
                 overflowY: "auto"
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                <h4 style={{ margin: 0, fontSize: "15px", fontWeight: "600", color: "var(--accent-purple)" }}>
+                <h4 style={{ margin: 0, fontSize: "15px", fontWeight: "600", color: "var(--primary)" }}>
                   Upload Progress
                 </h4>
                 {hasFailedUploads && (

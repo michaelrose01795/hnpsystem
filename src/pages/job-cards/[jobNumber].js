@@ -551,7 +551,7 @@ export default function JobCardDetailPage() {
         jobFetchInFlightRef.current = true;
         setError(null);
 
-        const { data, error } = await getJobByNumber(jobNumber);
+        const { data, error } = await getJobByNumber(jobNumber, { archive: isArchiveMode });
 
         if (error || !data?.jobCard) {
           setError(error?.message || "Job card not found");
@@ -564,11 +564,19 @@ export default function JobCardDetailPage() {
         setJobData(hydratedJobCard);
         setJobDocuments(mappedFiles);
 
-        const latestSharedNote = jobCard.id
-          ? await fetchSharedNote(jobCard.id)
-          : null;
-        setSharedNote(latestSharedNote?.noteText || "");
-        setSharedNoteMeta(latestSharedNote);
+        if (isArchiveMode) {
+          const archivedNotes = Array.isArray(jobCard.notes) ? jobCard.notes : [];
+          setJobNotes(archivedNotes);
+          const archivedShared = archivedNotes[0] || null;
+          setSharedNote(archivedShared?.noteText || "");
+          setSharedNoteMeta(archivedShared);
+        } else {
+          const latestSharedNote = jobCard.id
+            ? await fetchSharedNote(jobCard.id)
+            : null;
+          setSharedNote(latestSharedNote?.noteText || "");
+          setSharedNoteMeta(latestSharedNote);
+        }
 
         const customerJobs = jobCard.customerId
           ? await getCustomerJobs(jobCard.customerId)
@@ -587,7 +595,7 @@ export default function JobCardDetailPage() {
         }
       }
     },
-    [jobNumber, fetchSharedNote]
+    [jobNumber, fetchSharedNote, isArchiveMode]
   );
 
   useEffect(() => {
@@ -595,7 +603,7 @@ export default function JobCardDetailPage() {
   }, [fetchJobData]);
 
   useEffect(() => {
-    if (!jobData?.id) {
+    if (!jobData?.id || isArchiveMode) {
       setStatusSnapshot(null);
       return;
     }
@@ -617,10 +625,10 @@ export default function JobCardDetailPage() {
     return () => {
       isActive = false;
     };
-  }, [jobData?.id]);
+  }, [jobData?.id, isArchiveMode]);
 
   useEffect(() => {
-    if (!jobData?.id) return;
+    if (!jobData?.id || isArchiveMode) return;
     if (!jobData.vhcRequired) return;
     if (!vhcDecisionComplete) return;
     if (jobData.vhcCompletedAt) return;
@@ -1003,7 +1011,7 @@ export default function JobCardDetailPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [jobData?.id, refreshSharedNote, scheduleRealtimeRefresh]);
+  }, [jobData?.id, refreshSharedNote, scheduleRealtimeRefresh, isArchiveMode]);
 
   const handleCustomerDetailsSave = useCallback(
     async (updatedDetails) => {

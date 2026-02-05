@@ -1,14 +1,5 @@
 import { supabaseService } from "@/lib/supabaseClient";
 
-const COMPLETED_STATUSES = [
-  "Complete",
-  "Completed",
-  "Invoiced",
-  "Delivered",
-  "Delivered to Customer",
-  "Archived",
-];
-
 export default async function handler(req, res) {
   if (!supabaseService) {
     return res.status(500).json({ success: false, error: "Service role key not configured" });
@@ -25,21 +16,21 @@ export default async function handler(req, res) {
     const numericLimit = Math.min(50, Math.max(1, Number(limit) || 25));
 
     let queryBuilder = supabaseService
-      .from("jobs")
+      .from("job_archive")
       .select(
         `
-          id,
+          archive_id,
+          job_id,
           job_number,
-          customer,
+          customer_name,
           vehicle_reg,
           vehicle_make_model,
           status,
-          created_at,
-          updated_at
+          completed_at,
+          created_at
         `
       )
-      .in("status", COMPLETED_STATUSES)
-      .order("updated_at", { ascending: false })
+      .order("completed_at", { ascending: false })
       .limit(numericLimit);
 
     if (trimmedQuery) {
@@ -48,7 +39,8 @@ export default async function handler(req, res) {
         [
           `job_number.ilike.%${escaped}%`,
           `vehicle_reg.ilike.%${escaped}%`,
-          `customer.ilike.%${escaped}%`,
+          `customer_name.ilike.%${escaped}%`,
+          `vehicle_make_model.ilike.%${escaped}%`,
         ].join(",")
       );
     }
@@ -60,14 +52,14 @@ export default async function handler(req, res) {
     }
 
     const formatted = (data || []).map((job) => ({
-      id: job.id,
+      id: job.archive_id || job.job_id,
       jobNumber: job.job_number,
-      customer: job.customer,
+      customer: job.customer_name,
       vehicleReg: job.vehicle_reg,
       vehicleMakeModel: job.vehicle_make_model,
-      status: job.status,
+      status: job.status || "Archived",
       createdAt: job.created_at,
-      updatedAt: job.updated_at,
+      updatedAt: job.completed_at || job.created_at,
     }));
 
     return res.status(200).json({ success: true, data: formatted });

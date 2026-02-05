@@ -169,6 +169,23 @@ const hasInvoiceForJob = async (jobId) => {
   return Boolean(data?.id);
 };
 
+const hasPaidInvoiceForJob = async (jobId) => {
+  const { data, error } = await supabase
+    .from("invoices")
+    .select("paid, payment_status")
+    .eq("job_id", jobId);
+
+  if (error) {
+    throw error;
+  }
+
+  return (data || []).some((row) => {
+    if (row?.paid === true) return true;
+    const status = String(row?.payment_status || "").trim().toLowerCase();
+    return status === "paid";
+  });
+};
+
 const mapRectificationRow = (row) => ({
   recordId: row.id,
   description: row.description || "",
@@ -904,12 +921,20 @@ export const getAuthorizedVhcItemsWithDetails = async (jobId) => {
    FETCH JOB BY JOB NUMBER
    Retrieves complete job data by job number
 ============================================ */
-export const getJobByNumber = async (jobNumber) => {
+export const getJobByNumber = async (jobNumber, options = {}) => {
   if (typeof window !== "undefined") {
     try {
-      const response = await fetch(`/api/jobcards/${encodeURIComponent(jobNumber)}`, {
-        cache: "no-store",
-      });
+      const params = new URLSearchParams();
+      if (options?.archive) {
+        params.set("archive", "1");
+      }
+      const query = params.toString();
+      const response = await fetch(
+        `/api/jobcards/${encodeURIComponent(jobNumber)}${query ? `?${query}` : ""}`,
+        {
+          cache: "no-store",
+        }
+      );
       const payload = await response.json();
       if (!response.ok || !payload?.job) {
         return {
@@ -2583,6 +2608,7 @@ export const updateJob = async (jobId, updates) => {
     );
     let statusSnapshot = null;
     let targetMainStatusId = null;
+    let shouldAutoArchive = false;
 
     if (hasStatusUpdate) {
       targetMainStatusId = resolveMainStatusId(updates.status);
@@ -2644,6 +2670,14 @@ export const updateJob = async (jobId, updates) => {
             error: { message: "Invoice required before completion" },
           };
         }
+        const hasPaidInvoice = await hasPaidInvoiceForJob(jobId);
+        if (!hasPaidInvoice) {
+          return {
+            success: false,
+            error: { message: "Invoice must be paid before completion" },
+          };
+        }
+        shouldAutoArchive = true;
       } catch (invoiceError) {
         console.error("❌ Failed to check invoice before completion:", invoiceError);
         return {
@@ -2701,6 +2735,20 @@ export const updateJob = async (jobId, updates) => {
             "❌ Failed to dispatch job status notification:",
             notifyError
           );
+        }
+      }
+    }
+
+    if (hasStatusUpdate && shouldAutoArchive && data?.job_number) {
+      if (typeof window !== "undefined") {
+        try {
+          await fetch("/api/jobcards/archive/create", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ jobNumber: data.job_number }),
+          });
+        } catch (archiveError) {
+          console.error("❌ Failed to auto-archive job:", archiveError);
         }
       }
     }

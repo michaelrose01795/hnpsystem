@@ -538,6 +538,11 @@ export default function Layout({ children, jobNumber }) {
       description: "View your personal employment info",
       section: "General",
     });
+    addNavItem("Archive Job", "/job-cards/archive", {
+      keywords: ["archive", "job archive", "archived jobs"],
+      description: "Archive completed job cards",
+      section: "General",
+    });
   }
 
   if (isTech) {

@@ -29,6 +29,11 @@ export const sidebarSections = [
           "admin",
         ],
       },
+      {
+        label: "Archive Job",
+        href: "/job-cards/archive",
+        roles: [],
+      },
     ],
   },
   {

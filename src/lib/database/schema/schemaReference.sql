@@ -454,6 +454,19 @@ CREATE TABLE public.invoices (
   CONSTRAINT invoices_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
   CONSTRAINT invoices_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.accounts(account_id)
 );
+CREATE TABLE public.job_archive (
+  archive_id uuid NOT NULL DEFAULT gen_random_uuid(),
+  job_id integer NOT NULL UNIQUE,
+  job_number text NOT NULL UNIQUE,
+  customer_id uuid,
+  vehicle_id integer,
+  vehicle_reg text,
+  completed_at timestamp with time zone NOT NULL DEFAULT now(),
+  snapshot jsonb NOT NULL DEFAULT '{}'::jsonb,
+  notes text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT job_archive_pkey PRIMARY KEY (archive_id)
+);
 CREATE TABLE public.job_booking_requests (
   request_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
   job_id integer NOT NULL UNIQUE,
@@ -714,11 +727,8 @@ CREATE TABLE public.jobs (
   CONSTRAINT jobs_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
   CONSTRAINT jobs_warranty_linked_job_id_fkey FOREIGN KEY (warranty_linked_job_id) REFERENCES public.jobs(id),
   CONSTRAINT jobs_warranty_vhc_master_job_id_fkey FOREIGN KEY (warranty_vhc_master_job_id) REFERENCES public.jobs(id),
-  CONSTRAINT jobs_prime_job_id_fkey FOREIGN KEY (prime_job_id) REFERENCES public.jobs(id) ON DELETE SET NULL
+  CONSTRAINT jobs_prime_job_id_fkey FOREIGN KEY (prime_job_id) REFERENCES public.jobs(id)
 );
--- Indexes for prime job grouping
-CREATE INDEX idx_jobs_prime_job_id ON public.jobs(prime_job_id) WHERE prime_job_id IS NOT NULL;
-CREATE INDEX idx_jobs_prime_job_number ON public.jobs(prime_job_number) WHERE prime_job_number IS NOT NULL;
 CREATE TABLE public.key_tracking_events (
   key_event_id bigint NOT NULL DEFAULT nextval('key_tracking_events_key_event_id_seq'::regclass),
   vehicle_id integer,

@@ -1,13 +1,13 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/components/popups/NewCustomerPopup.js
-import React, { useState } from "react"; // import React hooks
+import React, { useEffect, useState } from "react"; // import React hooks
 import { addCustomerToDatabase } from "@/lib/database/customers"; // import database function
 import ModalPortal from "./ModalPortal";
 
-export default function NewCustomerPopup({ onClose, onSelect }) {
+export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
   // State for all form fields
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [firstName, setFirstName] = useState(initialName?.firstName || "");
+  const [lastName, setLastName] = useState(initialName?.lastName || "");
   const [number, setNumber] = useState("");
   const [street, setStreet] = useState("");
   const [town, setTown] = useState("");
@@ -23,6 +23,13 @@ export default function NewCustomerPopup({ onClose, onSelect }) {
     error: "",
     suggestions: [],
   });
+
+  useEffect(() => {
+    if (initialName?.firstName || initialName?.lastName) {
+      setFirstName(initialName?.firstName || "");
+      setLastName(initialName?.lastName || "");
+    }
+  }, [initialName]);
 
   // ✅ Function to handle "Add Customer"
   const handleAdd = async () => {
@@ -167,56 +174,7 @@ export default function NewCustomerPopup({ onClose, onSelect }) {
           }}
           onClick={(e) => e.stopPropagation()}
         >
-        {/* Header */}
-        <div
-          style={{
-            padding: "24px 32px",
-            borderBottom: "1px solid var(--surface-light)",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <h3
-            style={{
-              margin: 0,
-              fontSize: "28px",
-              fontWeight: "bold",
-              color: "var(--primary)",
-            }}
-          >
-            Add New Customer
-          </h3>
-          <button
-            onClick={onClose}
-            type="button"
-            aria-label="Close customer modal"
-            style={{
-              width: "40px",
-              height: "40px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              borderRadius: "12px",
-              border: "none",
-              backgroundColor: "transparent",
-              color: "#888",
-              fontSize: "24px",
-              cursor: "pointer",
-              transition: "all 0.2s",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "var(--surface-light)";
-              e.currentTarget.style.color = "#666";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "transparent";
-              e.currentTarget.style.color = "#888";
-            }}
-          >
-            ✕
-          </button>
-        </div>
+        {/* Header removed by request */}
 
         {/* Content */}
         <div style={{ padding: "32px" }}>

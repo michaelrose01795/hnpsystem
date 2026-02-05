@@ -7,6 +7,7 @@ const STATUS_BADGES = {
   Complete: { bg: "var(--success-surface)", color: "var(--info-dark)" },
   Invoiced: { bg: "var(--info-surface)", color: "var(--accent-purple)" },
   Delivered: { bg: "var(--warning-surface)", color: "var(--danger-dark)" },
+  Archived: { bg: "var(--info-surface)", color: "var(--info-dark)" },
 };
 
 const defaultStatusBadge = { bg: "var(--info-surface)", color: "var(--info-dark)" };
@@ -44,19 +45,6 @@ export default function ArchivedJobsPage() {
   return (
     <Layout>
       <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "16px" }}>
-        <header>
-          <p style={{ color: "var(--primary)", letterSpacing: "0.3em", textTransform: "uppercase", fontSize: "0.75rem" }}>
-            Archive
-          </p>
-          <h1 style={{ margin: "4px 0 8px", fontSize: "2rem", fontWeight: 700, color: "var(--accent-purple)" }}>
-            Archived Job Cards
-          </h1>
-          <p style={{ color: "var(--info-dark)", maxWidth: "720px" }}>
-            Completed jobs are permanently archived for audit purposes. Use the search tools below to look up vehicles by
-            registration, job number, or customer name. Selecting a record opens the full job card in read-only mode with
-            VHC, notes, and documents intact.
-          </p>
-        </header>
 
         <form
           onSubmit={(event) => {

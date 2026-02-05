@@ -5,7 +5,7 @@ import { searchCustomers } from "@/lib/database/customers"; // ✅ use shared fu
 import ModalPortal from "./ModalPortal";
 
 // ExistingCustomerPopup component
-export default function ExistingCustomerPopup({ onClose, onSelect }) {
+export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }) {
   const [search, setSearch] = useState(""); // text input for name search
   const [customerList, setCustomerList] = useState([]); // customers from DB
   const [selectedCustomer, setSelectedCustomer] = useState(null); // chosen customer
@@ -38,6 +38,30 @@ export default function ExistingCustomerPopup({ onClose, onSelect }) {
     }
   };
 
+  const parseName = (raw) => {
+    const trimmed = (raw || "").trim().replace(/\s+/g, " ");
+    if (!trimmed) return { firstName: "", lastName: "" };
+    const parts = trimmed.split(" ");
+    const firstName = parts[0] || "";
+    const lastName = parts.slice(1).join(" ").trim();
+    return { firstName, lastName };
+  };
+
+  const hasSearch = search.trim().length > 0;
+  const noResults = hasSearch && customerList.length === 0;
+  const primaryButtonLabel = noResults ? "New Customer" : "Add Customer";
+  const canUsePrimary = noResults || !!selectedCustomer;
+  const handlePrimaryClick = () => {
+    if (noResults) {
+      if (typeof onCreateNew === "function") {
+        onCreateNew(parseName(search));
+      }
+      if (typeof onClose === "function") onClose();
+      return;
+    }
+    handleAdd();
+  };
+
   /* ============================================
      RENDER POPUP
   ============================================ */
@@ -47,41 +71,44 @@ export default function ExistingCustomerPopup({ onClose, onSelect }) {
         <div
           className="popup-card"
           style={{
-            padding: "24px",
-            borderRadius: "10px",
-            width: "420px",
+            borderRadius: "32px",
+            width: "100%",
+            maxWidth: "650px",
             maxHeight: "90vh",
             overflowY: "auto",
+            border: "1px solid var(--surface-light)",
           }}
         >
-          <h3 style={{ marginTop: 0 }}>Select Existing Customer</h3>
+          {/* Header removed to match Add New Customer */}
 
         {/* Search input */}
-        <input
-          type="search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by name, email, or mobile"
-          style={{
-            width: "100%",
-            marginBottom: "12px",
-            padding: "8px 12px",
-            borderRadius: "8px",
-            border: "1px solid var(--search-surface-muted)",
-            backgroundColor: "var(--search-surface)",
-            color: "var(--search-text)",
-          }}
-        />
+        <div style={{ padding: "32px" }}>
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by name, email, or mobile"
+            style={{
+              width: "100%",
+              marginBottom: "16px",
+              padding: "10px 12px",
+              borderRadius: "10px",
+              border: "1px solid var(--surface-light)",
+              backgroundColor: "var(--surface)",
+              color: "var(--text-primary)",
+            }}
+          />
 
         {/* List results */}
         {customerList.length > 0 && (
           <div
             style={{
-              maxHeight: "200px",
+              maxHeight: "220px",
               overflowY: "auto",
-              marginBottom: "12px",
+              marginBottom: "16px",
               border: "1px solid var(--surface-light)",
-              borderRadius: "6px",
+              borderRadius: "10px",
+              backgroundColor: "var(--surface)",
             }}
           >
             {customerList.map((c) => (
@@ -89,12 +116,14 @@ export default function ExistingCustomerPopup({ onClose, onSelect }) {
                 key={c.id}
                 onClick={() => setSelectedCustomer(c)}
                 style={{
-                  padding: "8px",
+                  padding: "10px 12px",
                   cursor: "pointer",
                   backgroundColor:
-                    selectedCustomer?.id === c.id ? "var(--surface)" : "var(--row-background)",
-                  color: "var(--text-color)",
+                    selectedCustomer?.id === c.id ? "var(--surface-light)" : "var(--surface)",
+                  color: "var(--text-primary)",
                   borderBottom: "1px solid var(--surface-light)",
+                  fontSize: "14px",
+                  fontWeight: selectedCustomer?.id === c.id ? 600 : 500,
                 }}
               >
                 {c.firstname} {c.lastname}
@@ -106,11 +135,14 @@ export default function ExistingCustomerPopup({ onClose, onSelect }) {
         {/* Show selected customer details */}
         {selectedCustomer && (
           <div style={{
-            marginBottom: "12px",
-            backgroundColor: "var(--row-background)",
-            color: "var(--text-color)",
-            padding: "12px",
-            borderRadius: "6px"
+            marginBottom: "16px",
+            backgroundColor: "var(--surface-light)",
+            color: "var(--text-primary)",
+            padding: "16px",
+            borderRadius: "10px",
+            border: "1px solid var(--surface-light)",
+            fontSize: "14px",
+            lineHeight: 1.5,
           }}>
             <p>
               <strong>Name:</strong> {selectedCustomer.firstname}{" "}
@@ -132,24 +164,40 @@ export default function ExistingCustomerPopup({ onClose, onSelect }) {
         )}
 
         {/* Buttons */}
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <button onClick={onClose} style={{ padding: "8px 16px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
+          <button
+            onClick={onClose}
+            style={{
+              flex: 1,
+              padding: "12px",
+              backgroundColor: "var(--surface-light)",
+              color: "var(--text-primary)",
+              border: "1px solid var(--surface-light)",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontWeight: "600",
+            }}
+          >
             Close
           </button>
           <button
-            onClick={handleAdd}
-            disabled={!selectedCustomer}
+            onClick={handlePrimaryClick}
+            disabled={!canUsePrimary}
             style={{
-              padding: "8px 16px",
+              flex: 1,
+              padding: "12px",
               backgroundColor: "var(--primary)",
-              color: "white",
+              color: "var(--text-inverse)",
               border: "none",
-              borderRadius: "4px",
-              cursor: selectedCustomer ? "pointer" : "not-allowed",
+              borderRadius: "8px",
+              cursor: canUsePrimary ? "pointer" : "not-allowed",
+              fontWeight: "600",
+              opacity: canUsePrimary ? 1 : 0.6,
             }}
           >
-            Add Customer
+            {primaryButtonLabel}
           </button>
+        </div>
         </div>
         </div>
       </div>
