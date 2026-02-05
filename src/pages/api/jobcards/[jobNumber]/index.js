@@ -36,6 +36,9 @@ export default async function handler(req, res) {
       vehicleJobHistory = mapCustomerJobsToHistory(customerJobs, jobCard.reg);
     }
 
+    // Prevent caching to ensure fresh data after mutations (parts allocation, etc.)
+    res.setHeader("Cache-Control", "no-store, max-age=0, must-revalidate");
+
     return res.status(200).json({
       job: jobCard,
       customer,

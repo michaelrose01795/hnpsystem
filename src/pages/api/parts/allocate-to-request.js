@@ -2,6 +2,7 @@
 // API endpoint to allocate a part to a specific job request
 
 import { supabase } from "@/lib/supabaseClient";
+import { syncVhcPartsAuthorisation } from "@/lib/database/vhcPartsSync";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {

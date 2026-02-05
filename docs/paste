@@ -26,6 +26,9 @@ have it so the top bar doesnt show anythe mode or Welcome back section when in t
 
 
 
+Have it so the rediriecting to login page actaully take them to the newsfeed page (If previously logged in),instead of taking the user to the login page and then to the news feed page. only do this if the user is already logged in.
+
+
 Go though each page and set which section has what level of colour level 1-4,  
 Change to base layer " /* Level 3 (Bottom layer - pale red): page background + outer shell */
   --layer-section-level-3: #ffeaea;" adjust in all places where users 

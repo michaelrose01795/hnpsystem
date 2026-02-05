@@ -124,6 +124,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       status: item.status || "pending",
       allocatedToRequestId: item.allocatedToRequestId || null,
       vhcItemId: item.vhc_item_id || item.vhcItemId || null,
+      authorised: item.authorised === true,
       createdAt: item.createdAt,
       source: "allocation",
       origin: item.origin || "",
@@ -154,6 +155,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           status: item.status || "pending",
           allocatedToRequestId: item.allocated_to_request_id || item.allocatedToRequestId || null,
           vhcItemId: item.vhc_item_id || item.vhcItemId || null,
+          authorised: item.authorised === true,
           createdAt: item.created_at || item.createdAt,
           source: "job_item",
           origin: item.origin || "",
@@ -165,16 +167,27 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         };
       });
 
-    // Merge allocations and job items
-    const allParts = [...allocations, ...jobItems];
+    // Merge allocations and job items - put jobItems FIRST to prefer fresh server data
+    const allParts = [...jobItems, ...allocations];
 
-    // Deduplicate by id - prefer server data over local
+    // Deduplicate by id - keep first occurrence (which is now from jobItems = fresh server data)
     const uniqueParts = allParts.reduce((acc, part) => {
       if (!acc.some(p => p.id === part.id)) {
         acc.push(part);
       }
       return acc;
     }, []);
+
+    // Debug VHC parts
+    const vhcParts = uniqueParts.filter(p => p.vhcItemId);
+    if (vhcParts.length > 0) {
+      console.log("[PartsTab jobParts] Parts with vhcItemId:", vhcParts.map(p => ({
+        id: p.id,
+        vhcItemId: p.vhcItemId,
+        partNumber: p.partNumber,
+        source: p.source,
+      })));
+    }
 
     return uniqueParts;
   }, [jobData.partsAllocations, jobData.parts_job_items]);
@@ -260,6 +273,8 @@ const PartsTabNew = forwardRef(function PartsTabNew(
   // Group parts by allocated request (including VHC items)
   useEffect(() => {
     const allocations = {};
+    const vhcPartsFound = [];
+
     jobParts.forEach((part) => {
       // Check for regular job request allocation
       if (part.allocatedToRequestId) {
@@ -275,10 +290,13 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           allocations[vhcKey] = [];
         }
         allocations[vhcKey].push(part);
+        vhcPartsFound.push({ id: part.id, vhcItemId: part.vhcItemId, vhcKey, partNumber: part.partNumber });
       }
     });
+
     console.log("[PartsTab] Part allocations grouped:", allocations);
-    console.log("[PartsTab] Sample parts with vhcItemId:", jobParts.filter(p => p.vhcItemId).slice(0, 3));
+    console.log("[PartsTab] VHC parts found and grouped:", vhcPartsFound);
+    console.log("[PartsTab] VHC allocation keys:", Object.keys(allocations).filter(k => k.startsWith('vhc-')));
     setPartAllocations(allocations);
   }, [jobParts]);
 
@@ -733,7 +751,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
   const removedParts = jobParts.filter(
     (part) => normalizePartStatus(part.status) === "removed"
   );
-  const unallocatedParts = bookedParts.filter((part) => !part.allocatedToRequestId);
+  const unallocatedParts = bookedParts.filter((part) => !part.allocatedToRequestId && !part.vhcItemId);
   const leftPanelParts = [...bookedParts, ...removedParts];
 
   useEffect(() => {
@@ -1478,7 +1496,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                         removedPartIds.includes(part.id) ||
                         normalizePartStatus(part.status) === "removed";
 
-                      const isAllocated = Boolean(part.allocatedToRequestId);
+                      const isAllocated = Boolean(part.allocatedToRequestId || part.vhcItemId);
 
                       return (
                         <tr
@@ -1538,24 +1556,44 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             }}>
                               {part.description || part.name}
                             </div>
-                            {isAllocated && (
-                              <div style={{ marginTop: "6px" }}>
-                                <span
-                                  style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    padding: "2px 8px",
-                                    borderRadius: "999px",
-                                    background: "var(--success-surface)",
-                                    color: "var(--success)",
-                                    fontSize: "10px",
-                                    fontWeight: 700,
-                                    textTransform: "uppercase",
-                                    letterSpacing: "0.06em",
-                                  }}
-                                >
-                                  Allocated
-                                </span>
+                            {(isAllocated || part.authorised) && (
+                              <div style={{ marginTop: "6px", display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                                {isAllocated && (
+                                  <span
+                                    style={{
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      padding: "2px 8px",
+                                      borderRadius: "999px",
+                                      background: "var(--success-surface)",
+                                      color: "var(--success)",
+                                      fontSize: "10px",
+                                      fontWeight: 700,
+                                      textTransform: "uppercase",
+                                      letterSpacing: "0.06em",
+                                    }}
+                                  >
+                                    Allocated
+                                  </span>
+                                )}
+                                {part.authorised && (
+                                  <span
+                                    style={{
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      padding: "2px 8px",
+                                      borderRadius: "999px",
+                                      background: "var(--info-surface)",
+                                      color: "var(--info-dark)",
+                                      fontSize: "10px",
+                                      fontWeight: 700,
+                                      textTransform: "uppercase",
+                                      letterSpacing: "0.06em",
+                                    }}
+                                  >
+                                    Authorised
+                                  </span>
+                                )}
                               </div>
                             )}
                           </td>
@@ -1633,12 +1671,15 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   );
 
                   if (request.type === "vhc") {
-                    console.log(`[PartsTab] VHC Request ${request.id}:`, {
-                      request,
-                      baseAllocated,
-                      vhcAllocated,
-                      allocatedParts,
-                      vhcItemIdUsed: String(request.vhcItemId),
+                    console.log(`[PartsTab RENDER] VHC Request ${request.id}:`, {
+                      requestId: request.id,
+                      vhcItemId: request.vhcItemId,
+                      lookupKey: request.id,
+                      partAllocationsHasKey: request.id in partAllocations,
+                      baseAllocated: baseAllocated.length,
+                      vhcAllocated: vhcAllocated.length,
+                      finalAllocatedParts: allocatedParts.length,
+                      partAllocationKeys: Object.keys(partAllocations).filter(k => k.startsWith('vhc-')),
                     });
                   }
                 return (

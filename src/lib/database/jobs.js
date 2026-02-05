@@ -907,7 +907,9 @@ export const getAuthorizedVhcItemsWithDetails = async (jobId) => {
 export const getJobByNumber = async (jobNumber) => {
   if (typeof window !== "undefined") {
     try {
-      const response = await fetch(`/api/jobcards/${encodeURIComponent(jobNumber)}`);
+      const response = await fetch(`/api/jobcards/${encodeURIComponent(jobNumber)}`, {
+        cache: "no-store",
+      });
       const payload = await response.json();
       if (!response.ok || !payload?.job) {
         return {
@@ -2100,11 +2102,21 @@ const formatJobData = (data) => {
     // Handle both 'part' (old) and 'parts_catalog' (new) field names for backward compatibility
     const partData = item.parts_catalog || item.part;
 
+    // Debug VHC allocations
+    if (item.vhc_item_id) {
+      console.log("[formatJobData] Part with VHC allocation:", {
+        id: item.id,
+        vhc_item_id: item.vhc_item_id,
+        allocated_to_request_id: item.allocated_to_request_id,
+      });
+    }
+
     return {
       id: item.id,
       partId: item.part_id,
       authorised: item.authorised === true,
       allocatedToRequestId: item.allocated_to_request_id ?? item.allocatedToRequestId ?? null,
+      vhcItemId: item.vhc_item_id ?? null,
       quantityRequested: item.quantity_requested ?? 0,
       quantityAllocated: item.quantity_allocated ?? 0,
       quantityFitted: item.quantity_fitted ?? 0,
