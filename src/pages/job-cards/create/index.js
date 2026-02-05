@@ -23,16 +23,7 @@ import ExistingCustomerPopup from "@/components/popups/ExistingCustomerPopup"; /
 import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
 import { DropdownField } from "@/components/dropdownAPI";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
-
-const JOB_TYPE_RULES = [
-  { label: "MOT", keywords: ["mot"] },
-  { label: "Service", keywords: ["service", "oil", "inspection", "interval"] },
-  { label: "Diagnostic", keywords: ["diag", "diagnos", "investigation", "warning", "fault", "code", "scan"] },
-  { label: "Tyres", keywords: ["tyre", "tire", "puncture", "wheel alignment", "wheel balance"] },
-  { label: "Brakes", keywords: ["brake", "pad", "disc", "caliper", "calliper", "abs"] },
-  { label: "Steering", keywords: ["steering", "rack", "column", "tracking", "alignment"] },
-  { label: "Suspension", keywords: ["suspension", "shock", "spring", "damper", "strut"] },
-];
+import { detectJobTypesForRequests } from "@/lib/ai/jobTypeDetection";
 
 const PAYMENT_TYPE_OPTIONS = [
   { value: "Customer", label: "Customer" },
@@ -45,24 +36,7 @@ const PAYMENT_TYPE_OPTIONS = [
   { value: "Staff", label: "Staff" },
 ];
 
-// function to automatically detect job types based on request descriptions
-const detectJobTypes = (requests = []) => {
-  const detected = new Set(); // use a set to avoid duplicates
-  requests.forEach((request) => {
-    const description =
-      typeof request === "string" ? request : request?.text || request?.description || "";
-    if (!description) return;
-    const lower = description.toLowerCase(); // convert to lowercase for easier matching
-    JOB_TYPE_RULES.forEach(({ label, keywords }) => {
-      if (keywords.some((keyword) => lower.includes(keyword))) {
-        detected.add(label);
-      }
-    });
-  });
-  if (detected.size === 0) return ["Other"]; // if no types detected, default to "Other"
-  // Ensure consistent ordering based on rule priority
-  return JOB_TYPE_RULES.map((rule) => rule.label).filter((label) => detected.has(label));
-};
+ 
 
 const initialCustomerFormState = {
   id: null, // stores currently selected customer's UUID
@@ -137,13 +111,15 @@ export default function CreateJobCardPage() {
     waitingStatus: "Neither",
     jobSource: "Retail",
     jobDivision: "Retail",
-    jobCategories: ["Other"],
+    jobCategories: [],
+    jobDetections: [],
     requests: [{ text: "", time: "", paymentType: "Customer" }],
     uploadedFiles: [],
   });
 
   const [jobTabs, setJobTabs] = useState([createDefaultJobTab(1)]);
   const [activeTabIndex, setActiveTabIndex] = useState(0);
+  const [lastDetectionSignature, setLastDetectionSignature] = useState("");
 
   // Get current tab data
   const currentTab = jobTabs[activeTabIndex] || jobTabs[0];
@@ -168,6 +144,8 @@ export default function CreateJobCardPage() {
   const setJobDivision = (val) => updateCurrentTab({ jobDivision: val });
   const jobCategories = currentTab.jobCategories;
   const setJobCategories = (val) => updateCurrentTab({ jobCategories: val });
+  const jobDetections = currentTab.jobDetections || [];
+  const setJobDetections = (val) => updateCurrentTab({ jobDetections: val });
   const uploadedFiles = currentTab.uploadedFiles;
   const setUploadedFiles = (val) => updateCurrentTab({ uploadedFiles: typeof val === "function" ? val(currentTab.uploadedFiles) : val });
 
@@ -251,6 +229,17 @@ export default function CreateJobCardPage() {
       cancelled = true;
     };
   }, [dbUserId]);
+
+  useEffect(() => {
+    const signature = (requests || [])
+      .map((req) => (req?.text || "").trim())
+      .join("||");
+    if (signature === lastDetectionSignature) return;
+    const detections = detectJobTypesForRequests(requests);
+    setJobDetections(detections);
+    setJobCategories(Array.from(new Set(detections.map((d) => d.jobType))));
+    setLastDetectionSignature(signature);
+  }, [requests, lastDetectionSignature, setJobDetections, setJobCategories]);
 
   useLayoutEffect(() => {
     const node = vehicleSectionRef.current;
@@ -379,8 +368,10 @@ export default function CreateJobCardPage() {
   const handleRequestChange = (index, value) => {
     const updated = [...requests]; // copy current requests
     updated[index].text = value; // update text at index
+    const detections = detectJobTypesForRequests(updated);
     setRequests(updated); // store updated list
-    setJobCategories(detectJobTypes(updated.map((r) => r.text))); // re-detect job types
+    setJobDetections(detections);
+    setJobCategories(Array.from(new Set(detections.map((d) => d.jobType))));
   };
 
   // handle changes to estimated time for a request
@@ -401,8 +392,13 @@ export default function CreateJobCardPage() {
   };
 
   // add a new empty request to the list
-  const handleAddRequest = () =>
-    setRequests([...requests, { text: "", time: "", paymentType: "Customer" }]); // append new empty request
+  const handleAddRequest = () => {
+    const nextRequests = [...requests, { text: "", time: "", paymentType: "Customer" }];
+    const detections = detectJobTypesForRequests(nextRequests);
+    setRequests(nextRequests);
+    setJobDetections(detections);
+    setJobCategories(Array.from(new Set(detections.map((d) => d.jobType))));
+  }; // append new empty request
 
   const sectionCardStyle = {
     background: "var(--layer-section-level-2)",
@@ -412,8 +408,10 @@ export default function CreateJobCardPage() {
   // remove a request from the list by index
   const handleRemoveRequest = (index) => {
     const updated = requests.filter((_, i) => i !== index); // remove request at index
+    const detections = detectJobTypesForRequests(updated);
     setRequests(updated); // store updated list
-    setJobCategories(detectJobTypes(updated.map((r) => r.text))); // re-detect job types after removal
+    setJobDetections(detections);
+    setJobCategories(Array.from(new Set(detections.map((d) => d.jobType))));
   };
 
   // ✅ Show notification and auto-hide after 5 seconds
@@ -617,7 +615,7 @@ export default function CreateJobCardPage() {
 
   const saveJobRequestsToDatabase = async (jobId, jobRequestEntries) => { // persist each job request as its own Supabase row
     if (!jobId || !Array.isArray(jobRequestEntries) || jobRequestEntries.length === 0) { // guard against invalid inputs
-      return; // nothing to do when payload missing
+      return []; // nothing to do when payload missing
     } // comment for guard end
 
     const timestamp = new Date().toISOString(); // reuse timestamp for created/updated columns
@@ -645,14 +643,51 @@ export default function CreateJobCardPage() {
       .filter(Boolean); // remove null rows from skipped descriptions
 
     if (payload.length === 0) { // guard when all rows skipped
-      return; // nothing to insert
+      return []; // nothing to insert
     } // finish guard
 
-    const { error } = await supabase.from("job_requests").insert(payload); // insert payload into Supabase table
+    const { data, error } = await supabase
+      .from("job_requests")
+      .insert(payload)
+      .select("request_id, description, sort_order"); // insert payload into Supabase table
     if (error) { // check for insert failure
       throw new Error(error.message || "Failed to save job requests"); // bubble error so caller can abort
     } // finish error handling
+    return data || [];
   }; // end helper
+
+  const saveJobRequestDetections = async (jobId, jobNumber, insertedRequests, jobRequestEntries) => {
+    if (!jobId || !Array.isArray(insertedRequests) || insertedRequests.length === 0) {
+      return;
+    }
+
+    const detections = detectJobTypesForRequests(jobRequestEntries);
+    if (!detections.length) return;
+
+    const requestIdByOrder = new Map(
+      insertedRequests.map((row) => [row.sort_order, row.request_id])
+    );
+
+    const timestamp = new Date().toISOString();
+    const payload = detections.map((detection) => ({
+      job_id: jobId,
+      job_number: jobNumber || null,
+      request_id: requestIdByOrder.get(detection.requestIndex + 1) || null,
+      request_index: detection.requestIndex + 1,
+      source_text: detection.sourceText,
+      job_type: detection.jobType,
+      item_category: detection.itemCategory,
+      confidence: Number.isFinite(detection.confidence) ? detection.confidence : null,
+      explanation: detection.explanation || null,
+      created_at: timestamp,
+      updated_at: timestamp,
+    }));
+
+    const { error } = await supabase.from("job_request_detections").insert(payload);
+    if (error) {
+      throw new Error(error.message || "Failed to save job request detections");
+    }
+  };
 
   const saveCosmeticDamageDetails = async (jobId, hasDamage, notes) => { // persist cosmetic damage flag + notes per job
     if (!jobId) { // ensure job id provided
@@ -1178,7 +1213,9 @@ export default function CreateJobCardPage() {
           .filter((req) => req.text.length > 0);
 
         const jobDescription = sanitizedRequests.map((req) => req.text).join("\n");
-        const detectedJobTypes = detectJobTypes(sanitizedRequests);
+        const detectedJobTypes = Array.from(
+          new Set(detectJobTypesForRequests(sanitizedRequests).map((d) => d.jobType))
+        );
 
         const jobPayload = {
           regNumber: regUpper,
@@ -1243,13 +1280,22 @@ export default function CreateJobCardPage() {
           .map((req) => ({ ...req, text: (req.text || "").trim() }))
           .filter((req) => req.text.length > 0);
 
-        await Promise.all([
-          isFirstJob ? saveCosmeticDamageDetails(jobId, cosmeticDamagePresent, cosmeticNotes) : Promise.resolve(),
-          saveCustomerStatus(jobId, tab.waitingStatus),
-          saveJobRequestsToDatabase(jobId, tabRequests),
-          // Link uploaded files to respective job
-          tab.uploadedFiles.length > 0 ? linkUploadedFilesToJobById(jobId, tab.uploadedFiles) : Promise.resolve(),
-        ]);
+        if (isFirstJob) {
+          await saveCosmeticDamageDetails(jobId, cosmeticDamagePresent, cosmeticNotes);
+        }
+        await saveCustomerStatus(jobId, tab.waitingStatus);
+
+        const insertedRequests = await saveJobRequestsToDatabase(jobId, tabRequests);
+        await saveJobRequestDetections(
+          jobId,
+          job.jobNumber || job.job_number || null,
+          insertedRequests,
+          tabRequests
+        );
+
+        if (tab.uploadedFiles.length > 0) {
+          await linkUploadedFilesToJobById(jobId, tab.uploadedFiles);
+        }
 
         console.log(`✓ Related data saved for job ${i + 1}`);
       }
@@ -1730,27 +1776,40 @@ export default function CreateJobCardPage() {
                     marginBottom: "8px",
                   }}
                 >
-                  Detected Job Types
+                  AI Detected Job Types
                 </label>
-                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                  {jobCategories.map((type, index) => (
-                    <span
-                      key={index}
-                      style={{
-                        backgroundColor: "var(--surface-light)",
-                        color: "var(--text-primary)",
-                        padding: "6px 12px",
-                        borderRadius: "999px",
-                        fontWeight: "600",
-                        fontSize: "12px",
-                        border: "1px solid var(--surface-light)",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.3px",
-                      }}
-                    >
-                      {type}
-                    </span>
-                  ))}
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {jobDetections.filter((d) => d.sourceText).length === 0 ? (
+                    <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>No detections yet</div>
+                  ) : (
+                    jobDetections
+                      .filter((d) => d.sourceText)
+                      .map((detection, index) => (
+                        <div
+                          key={`${detection.requestIndex}-${index}`}
+                          style={{
+                            border: "1px solid var(--surface-light)",
+                            borderRadius: "12px",
+                            padding: "10px 12px",
+                            backgroundColor: "var(--surface-light)",
+                            display: "grid",
+                            gridTemplateColumns: "120px 1fr 80px",
+                            gap: "8px",
+                            alignItems: "center",
+                            fontSize: "12px",
+                          }}
+                        >
+                          <div style={{ fontWeight: "700", color: "var(--text-primary)" }}>{detection.jobType}</div>
+                          <div style={{ color: "var(--text-secondary)" }}>
+                            <strong style={{ color: "var(--text-primary)" }}>{detection.itemCategory}</strong>
+                            <span style={{ marginLeft: "6px" }}>{detection.sourceText}</span>
+                          </div>
+                          <div style={{ textAlign: "right", color: "var(--text-secondary)" }}>
+                            {Math.round(detection.confidence * 100)}%
+                          </div>
+                        </div>
+                      ))
+                  )}
                 </div>
               </div>
 

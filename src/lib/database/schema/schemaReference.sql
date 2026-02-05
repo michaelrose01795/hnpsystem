@@ -465,6 +465,9 @@ CREATE TABLE public.job_archive (
   snapshot jsonb NOT NULL DEFAULT '{}'::jsonb,
   notes text,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
+  customer_name text,
+  vehicle_make_model text,
+  status text,
   CONSTRAINT job_archive_pkey PRIMARY KEY (archive_id)
 );
 CREATE TABLE public.job_booking_requests (
@@ -588,6 +591,23 @@ CREATE TABLE public.job_notes (
   CONSTRAINT job_notes_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT job_notes_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id),
   CONSTRAINT job_notes_last_updated_by_fkey FOREIGN KEY (last_updated_by) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.job_request_detections (
+  detection_id uuid NOT NULL DEFAULT gen_random_uuid(),
+  job_id integer NOT NULL,
+  job_number text,
+  request_id bigint,
+  request_index integer NOT NULL DEFAULT 1,
+  source_text text NOT NULL,
+  job_type text NOT NULL,
+  item_category text NOT NULL,
+  confidence numeric,
+  explanation text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT job_request_detections_pkey PRIMARY KEY (detection_id),
+  CONSTRAINT job_request_detections_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
+  CONSTRAINT job_request_detections_request_id_fkey FOREIGN KEY (request_id) REFERENCES public.job_requests(request_id)
 );
 CREATE TABLE public.job_requests (
   request_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
