@@ -420,6 +420,37 @@ export default function JobCardDetailPage() {
   ].some((role) => userRoles.includes(role));
   const canViewVhcTab = Boolean(jobData?.vhcRequired || isWorkshopManager);
 
+  const vhcDecisionSummary = useMemo(() => {
+    const checks = Array.isArray(jobData?.vhcChecks) ? jobData.vhcChecks : [];
+    const decisionChecks = checks.filter((check) => {
+      const section = (check?.section || "").toString().trim();
+      return section !== "VHC_CHECKSHEET" && section !== "VHC Checksheet";
+    });
+    if (decisionChecks.length === 0) {
+      return { total: 0, decided: 0, allDecided: false };
+    }
+    const decided = decisionChecks.filter((check) => {
+      const decision = normaliseDecisionStatus(
+        check?.approval_status ??
+          check?.approvalStatus ??
+          check?.display_status ??
+          check?.status
+      );
+      return (
+        decision === "authorized" ||
+        decision === "declined" ||
+        decision === "completed"
+      );
+    }).length;
+    return {
+      total: decisionChecks.length,
+      decided,
+      allDecided: decided === decisionChecks.length,
+    };
+  }, [jobData?.vhcChecks]);
+  const vhcDecisionComplete = vhcDecisionSummary.allDecided;
+  const vhcTabComplete = vhcDecisionComplete || Boolean(jobData?.vhcCompletedAt);
+
   // Invoice tab is visible for anyone who can open this page to make review easier
   const canViewInvoice = true;
 
@@ -587,6 +618,33 @@ export default function JobCardDetailPage() {
       isActive = false;
     };
   }, [jobData?.id]);
+
+  useEffect(() => {
+    if (!jobData?.id) return;
+    if (!jobData.vhcRequired) return;
+    if (!vhcDecisionComplete) return;
+    if (jobData.vhcCompletedAt) return;
+    if (!canEdit) return;
+
+    let isActive = true;
+    const markVhcComplete = async () => {
+      const result = await updateJob(jobData.id, {
+        vhc_completed_at: new Date().toISOString(),
+      });
+      if (!isActive) return;
+      if (result?.success && result?.data) {
+        setJobData((prev) =>
+          prev
+            ? { ...prev, vhcCompletedAt: result.data.vhcCompletedAt }
+            : prev
+        );
+      }
+    };
+    markVhcComplete();
+    return () => {
+      isActive = false;
+    };
+  }, [jobData?.id, jobData?.vhcRequired, jobData?.vhcCompletedAt, vhcDecisionComplete, canEdit]);
 
   // ✅ Fetch related jobs when job data loads
   useEffect(() => {
@@ -2177,51 +2235,77 @@ export default function JobCardDetailPage() {
             className="jobcard-tabs-scroll-container"
             ref={tabsScrollRef}
           >
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={(e) => {
-                  setActiveTab(tab.id);
-                  e.currentTarget.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-                }}
-                style={{
-                  flex: "0 0 auto",
-                  borderRadius: "999px",
-                  border: "1px solid transparent",
-                  padding: "10px 20px",
-                  fontSize: "0.9rem",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  background: activeTab === tab.id ? "var(--primary)" : "transparent",
-                  color: activeTab === tab.id ? "var(--text-inverse)" : "var(--text-primary)",
-                  transition: "all 0.15s ease",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "6px",
-                  whiteSpace: "nowrap",
-                  height: "auto",
-                  minHeight: "38px",
-                }}
-              >
-                {tab.icon && <span>{tab.icon}</span>}
-                <span>{tab.label}</span>
-                {tab.badge && (
-                  <span
-                    style={{
-                      padding: "3px 8px",
-                      backgroundColor: activeTab === tab.id ? "rgba(255, 255, 255, 0.3)" : "var(--primary)",
-                      color: "white",
-                      borderRadius: "8px",
-                      fontSize: "11px",
-                      fontWeight: "600",
-                    }}
-                  >
-                    {tab.badge}
-                  </span>
-                )}
-              </button>
-            ))}
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.id;
+              const isWriteUpTab = tab.id === "write-up";
+              const isVhcTab = tab.id === "vhc";
+              const isCompleteHighlight =
+                (isWriteUpTab && writeUpComplete) ||
+                (isVhcTab && vhcTabComplete);
+              const tabBackground = isCompleteHighlight
+                ? isActive
+                  ? "var(--success)"
+                  : "var(--success-surface)"
+                : isActive
+                ? "var(--primary)"
+                : "transparent";
+              const tabColor = isCompleteHighlight
+                ? isActive
+                  ? "var(--text-inverse)"
+                  : "var(--success-dark)"
+                : isActive
+                ? "var(--text-inverse)"
+                : "var(--text-primary)";
+              const tabBorder = isCompleteHighlight
+                ? "1px solid var(--success)"
+                : "1px solid transparent";
+
+              return (
+                <button
+                  key={tab.id}
+                  onClick={(e) => {
+                    setActiveTab(tab.id);
+                    e.currentTarget.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+                  }}
+                  style={{
+                    flex: "0 0 auto",
+                    borderRadius: "999px",
+                    border: tabBorder,
+                    padding: "10px 20px",
+                    fontSize: "0.9rem",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    background: tabBackground,
+                    color: tabColor,
+                    transition: "all 0.15s ease",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "6px",
+                    whiteSpace: "nowrap",
+                    height: "auto",
+                    minHeight: "38px",
+                  }}
+                >
+                  {tab.icon && <span>{tab.icon}</span>}
+                  <span>{tab.label}</span>
+                  {tab.badge && (
+                    <span
+                      style={{
+                        padding: "3px 8px",
+                        backgroundColor: isActive ? "rgba(255, 255, 255, 0.3)" : "var(--primary)",
+                        color: "white",
+                        borderRadius: "8px",
+                        fontSize: "11px",
+                        fontWeight: "600",
+                      }}
+                    >
+                      {tab.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </section>
         <style jsx global>{`

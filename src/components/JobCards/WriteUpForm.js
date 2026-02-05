@@ -182,6 +182,11 @@ const ensureAuthorizedTasks = (tasks = [], authorizedItems = []) => {
 
   const existingVhcTasks = baseTasks.filter((task) => task.source === "vhc");
   const existingByKey = new Map(existingVhcTasks.map((task) => [composeTaskKey(task), task]));
+  const existingByLabel = new Map(
+    existingVhcTasks
+      .filter((task) => task?.label)
+      .map((task) => [normaliseLabel(task.label), task])
+  );
 
   const nextVhcTasks = [];
   normalizedAuthorized.forEach((item, index) => {
@@ -213,7 +218,18 @@ const ensureAuthorizedTasks = (tasks = [], authorizedItems = []) => {
         label: shouldOverrideLabel(existing.label, candidate.label) ? candidate.label : existing.label,
       });
     } else {
-      nextVhcTasks.push(candidate);
+      const labelKey = normaliseLabel(candidate.label);
+      const labelMatch = labelKey ? existingByLabel.get(labelKey) : null;
+      if (labelMatch) {
+        nextVhcTasks.push({
+          ...candidate,
+          taskId: labelMatch.taskId ?? candidate.taskId ?? null,
+          status: labelMatch.status || candidate.status,
+          label: shouldOverrideLabel(labelMatch.label, candidate.label) ? candidate.label : labelMatch.label,
+        });
+      } else {
+        nextVhcTasks.push(candidate);
+      }
     }
   });
 
@@ -225,12 +241,30 @@ const createCheckboxArray = () => Array(10).fill(false);
 const PARTS_ON_ORDER_STATUSES = new Set(["on-order", "on_order", "awaiting-stock", "awaiting_stock"]);
 
 const createAuthorizedSourceKey = (item, index, jobId) => {
-  const authSegment = item.authorizationId || jobId || "auth";
+  const authSegment =
+    item.authorizationId ||
+    item.authorization_id ||
+    item.authorization?.id ||
+    jobId ||
+    "auth";
   const vhcSegment =
-    item.vhcItemId !== null && item.vhcItemId !== undefined
-      ? String(item.vhcItemId)
-      : `idx-${index + 1}`;
-  return `vhc-${authSegment}-${vhcSegment}`;
+    item.vhcItemId ??
+    item.vhc_item_id ??
+    null;
+  if (vhcSegment !== null && vhcSegment !== undefined) {
+    return `vhc-${authSegment}-${String(vhcSegment)}`;
+  }
+  const requestSegment = item.requestId ?? item.request_id ?? null;
+  if (requestSegment !== null && requestSegment !== undefined) {
+    return `vhc-${authSegment}-req-${String(requestSegment)}`;
+  }
+  const labelSeed = (item.label || item.description || item.issueDescription || item.issue_description || "")
+    .toString()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  const safeSeed = labelSeed || `idx-${index + 1}`;
+  return `vhc-${authSegment}-${safeSeed}`;
 };
 
 const stripAuthorizedPrefix = (value = "") => {

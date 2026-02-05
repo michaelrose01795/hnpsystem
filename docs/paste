@@ -2,8 +2,13 @@ TO DO:
 
 Continue flow with job number 54, tech complete final with workshop manager. 
 
-FIXXX
-Fix it so the the “ VHC Authorised” works the same as the “ Customer Request” when allocating a job within the ALLOCATE PARTS section
+
+
+
+within the "Invoice" tab have it so the request 1,2,3 etc shows the full descrtiption of the request. cahnge the authorised rows from Request 1 2 3 etc to "Authorised request 1 2 3etc", and the Oringal request/customer resquest 1 2 3 to show "Customer Request 1 2 3 4 etc". Always have it so the "Customer request are first and then the Authroised Requests are at the bottom. 
+
+Have it so that all of the totals are within the same row as the Request title. have it shows these in order left to right, Total of parts allocated to row, Total tax @20%, Total including tax for each request. 
+
 
 
 Fix it so when i click allocated with an authoirse request it works the same with a normal request. 
@@ -25,8 +30,6 @@ CHECKKK
 have it so the top bar doesnt show anythe mode or Welcome back section when in this modesand have it so the search bar isnt insdie the top bar its underneath the navigator and status button taking up the whole width. 
 
 
-
-Have it so the rediriecting to login page actaully take them to the newsfeed page (If previously logged in),instead of taking the user to the login page and then to the news feed page. only do this if the user is already logged in.
 
 
 Go though each page and set which section has what level of colour level 1-4,  
