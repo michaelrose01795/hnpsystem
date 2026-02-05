@@ -258,7 +258,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       .map((item) => ({
         id: `vhc-${item.vhcItemId}`,
         type: "vhc",
-        description: item.description || "VHC Item",
+        description: item.label || item.description || "VHC Item",
         section: item.section || "",
         severity: "authorized",
         vhcItemId: item.vhcItemId,
@@ -325,6 +325,16 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     });
     return partNumbers;
   }, [jobParts]);
+
+  // Check if all on-order parts have arrived
+  const allPartsArrived = useMemo(() => {
+    if (partsOnOrderFromDB.length === 0) return false;
+    return partsOnOrderFromDB.every((part) => {
+      const isManuallyArrived = arrivedPartIds.includes(part.id);
+      const isAutoArrived = part.partNumber && arrivedPartNumbers.has(part.partNumber.toLowerCase().trim());
+      return isManuallyArrived || isAutoArrived;
+    });
+  }, [partsOnOrderFromDB, arrivedPartIds, arrivedPartNumbers]);
 
   // Parts on order - derived from jobData (loads immediately with job card)
   const partsOnOrderFromJobData = useMemo(
@@ -826,7 +836,9 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       }
 
       if (selectedPartIds.length === 0) {
-        alert("Select at least one part to assign.");
+        // If no parts selected and button clicked again, cancel assign mode
+        setAssignMode(false);
+        setAssignTargetRequestId(null);
         return;
       }
 
@@ -1126,64 +1138,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         }
       `}</style>
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-        <div
-          style={{
-            borderRadius: "999px",
-            border: "1px solid var(--surface-light)",
-            background: "var(--layer-section-level-1)",
-            padding: "6px",
-            display: "flex",
-            gap: "6px",
-            width: "fit-content",
-            maxWidth: "100%",
-            overflowX: "auto",
-            marginBottom: "14px",
-          }}
-        >
-          <button
-            type="button"
-            onClick={toggleBookPartPanel}
-            style={{
-              padding: "10px 20px",
-              borderRadius: "999px",
-              border: "1px solid transparent",
-              background: showBookPartPanel ? "var(--danger)" : "var(--danger-surface)",
-              color: showBookPartPanel ? "var(--text-inverse)" : "var(--danger)",
-              fontSize: "0.9rem",
-              fontWeight: 600,
-              cursor: "pointer",
-              transition: "all 0.15s ease",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {showBookPartPanel ? "Hide Book Part" : "Book Part"}
-          </button>
-          <button
-            type="button"
-            onClick={toggleAllocatePanel}
-            title="Show allocate-to-request panel"
-            style={{
-              padding: "10px 20px",
-              borderRadius: "999px",
-              border: "1px solid transparent",
-              background: showAllocatePanel ? "var(--accent-purple)" : "var(--accent-purple-surface)",
-              color: showAllocatePanel ? "var(--text-inverse)" : "var(--accent-purple)",
-              fontSize: "0.9rem",
-              fontWeight: 600,
-              cursor: "pointer",
-              transition: "all 0.15s ease",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {showAllocatePanel ? "Hide Allocate" : "Allocate To Request"}
-          </button>
-        </div>
         {/* Search Section */}
         {showBookPartPanel && (
           <div
@@ -1418,11 +1372,11 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         )}
       </div>
 
-      {/* 50/50 Layout: Parts List (Left) and Requests (Right) */}
+      {/* Layout: Parts List (Left) and Requests (Right) - Right side wider for better content fit */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
+          gridTemplateColumns: "2fr 3fr",
           gap: "16px",
         }}
       >
@@ -1434,6 +1388,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             borderRadius: "12px",
             padding: "16px",
             minHeight: "400px",
+            overflow: "hidden",
           }}
         >
           <div
@@ -1461,7 +1416,46 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 {unallocatedParts.length} unallocated · {bookedParts.length} total
               </p>
             </div>
-            {/* Allocate toggle lives in the top toolbar */}
+            {/* Tabs on same row */}
+            <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+              <button
+                type="button"
+                onClick={toggleBookPartPanel}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: "6px",
+                  border: "1px solid transparent",
+                  background: showBookPartPanel ? "var(--danger)" : "var(--danger-surface)",
+                  color: showBookPartPanel ? "var(--text-inverse)" : "var(--danger)",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {showBookPartPanel ? "Hide" : "Book Part"}
+              </button>
+              <button
+                type="button"
+                onClick={toggleAllocatePanel}
+                title="Show allocate-to-request panel"
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: "6px",
+                  border: "1px solid transparent",
+                  background: showAllocatePanel ? "var(--accent-purple)" : "var(--accent-purple-surface)",
+                  color: showAllocatePanel ? "var(--text-inverse)" : "var(--accent-purple)",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {showAllocatePanel ? "Hide" : (allPartsArrived ? "On Order" : "Allocate")}
+              </button>
+            </div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {leftPanelParts.length === 0 ? (
@@ -1478,15 +1472,15 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 No unallocated parts. Add parts using the search above.
               </div>
             ) : (
-              <div style={{ overflowX: "auto", overflowY: "auto", maxHeight: "300px" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+              <div style={{ overflowX: "auto", overflowY: "auto", maxHeight: "600px" }}>
+                <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 8px", fontSize: "12px" }}>
                   <thead>
                     <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
                       {assignMode && (
-                        <th style={{ textAlign: "center", padding: "8px", width: "40px", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>Select</th>
+                        <th style={{ textAlign: "center", padding: "8px", width: "40px", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1, border: "none" }}>Select</th>
                       )}
-                      <th style={{ textAlign: "left", padding: "8px", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>Part</th>
-                      <th style={{ textAlign: "right", padding: "8px", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>Qty</th>
+                      <th style={{ textAlign: "left", padding: "8px", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1, border: "none" }}>Part</th>
+                      <th style={{ textAlign: "right", padding: "8px", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1, border: "none" }}>Qty</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1502,18 +1496,19 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                         <tr
                           key={part.id}
                           onClick={() => {
-                            // Open popup for this part
-                            setPartPopup({ open: true, part });
+                            // Disable popup when in assign/select mode
+                            if (!assignMode) {
+                              setPartPopup({ open: true, part });
+                            }
                           }}
                           style={{
                             background: isRemoved
-                              ? "var(--danger-surface)"
+                              ? "var(--danger)"
                               : isSelected
                               ? "var(--info-surface)"
-                              : "transparent",
-                            cursor: "pointer",
-                            borderTop: "1px solid var(--surface-light)",
-                            opacity: isRemoved ? 0.7 : 1,
+                              : "var(--accent-purple-surface)",
+                            cursor: assignMode ? "default" : "pointer",
+                            opacity: isRemoved ? 0.8 : 1,
                           }}
                           title={
                             part.source === "goods-in"
@@ -1522,7 +1517,15 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                           }
                         >
                       {assignMode && (
-                        <td style={{ padding: "8px", textAlign: "center", verticalAlign: "top" }}>
+                        <td style={{
+                          padding: "12px",
+                          textAlign: "center",
+                          verticalAlign: "top",
+                          border: "1px solid var(--surface-light)",
+                          borderRight: "none",
+                          borderTopLeftRadius: "10px",
+                          borderBottomLeftRadius: "10px",
+                        }}>
                           <input
                             type="checkbox"
                             checked={isSelected}
@@ -1541,13 +1544,64 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                         </td>
                       )}
                           {/* Part Column */}
-                          <td style={{ padding: "8px", verticalAlign: "top" }}>
+                          <td style={{
+                            padding: "12px",
+                            verticalAlign: "top",
+                            border: "1px solid var(--surface-light)",
+                            borderRight: assignMode ? "none" : "none",
+                            borderLeft: assignMode ? "none" : "1px solid var(--surface-light)",
+                            borderTopLeftRadius: assignMode ? "0" : "10px",
+                            borderBottomLeftRadius: assignMode ? "0" : "10px",
+                          }}>
                             <div style={{
-                              fontWeight: 600,
-                              color: "var(--accent-purple)",
-                              textDecoration: isRemoved ? "line-through" : "none",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "6px",
+                              flexWrap: "wrap",
                             }}>
-                              {part.partNumber}
+                              <span style={{
+                                fontWeight: 600,
+                                color: "var(--accent-purple)",
+                                textDecoration: isRemoved ? "line-through" : "none",
+                              }}>
+                                {part.partNumber}
+                              </span>
+                              {isAllocated && (
+                                <span
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    padding: "2px 8px",
+                                    borderRadius: "999px",
+                                    background: "var(--success-surface)",
+                                    color: "var(--success)",
+                                    fontSize: "10px",
+                                    fontWeight: 700,
+                                    textTransform: "uppercase",
+                                    letterSpacing: "0.06em",
+                                  }}
+                                >
+                                  Allocated
+                                </span>
+                              )}
+                              {part.authorised && (
+                                <span
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    padding: "2px 8px",
+                                    borderRadius: "999px",
+                                    background: "var(--info-surface)",
+                                    color: "var(--info-dark)",
+                                    fontSize: "10px",
+                                    fontWeight: 700,
+                                    textTransform: "uppercase",
+                                    letterSpacing: "0.06em",
+                                  }}
+                                >
+                                  Authorised
+                                </span>
+                              )}
                             </div>
                             <div style={{
                               fontSize: "0.85rem",
@@ -1556,54 +1610,18 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             }}>
                               {part.description || part.name}
                             </div>
-                            {(isAllocated || part.authorised) && (
-                              <div style={{ marginTop: "6px", display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                                {isAllocated && (
-                                  <span
-                                    style={{
-                                      display: "inline-flex",
-                                      alignItems: "center",
-                                      padding: "2px 8px",
-                                      borderRadius: "999px",
-                                      background: "var(--success-surface)",
-                                      color: "var(--success)",
-                                      fontSize: "10px",
-                                      fontWeight: 700,
-                                      textTransform: "uppercase",
-                                      letterSpacing: "0.06em",
-                                    }}
-                                  >
-                                    Allocated
-                                  </span>
-                                )}
-                                {part.authorised && (
-                                  <span
-                                    style={{
-                                      display: "inline-flex",
-                                      alignItems: "center",
-                                      padding: "2px 8px",
-                                      borderRadius: "999px",
-                                      background: "var(--info-surface)",
-                                      color: "var(--info-dark)",
-                                      fontSize: "10px",
-                                      fontWeight: 700,
-                                      textTransform: "uppercase",
-                                      letterSpacing: "0.06em",
-                                    }}
-                                  >
-                                    Authorised
-                                  </span>
-                                )}
-                              </div>
-                            )}
                           </td>
 
                           {/* Qty Column */}
                           <td style={{
-                            padding: "8px",
+                            padding: "12px",
                             textAlign: "right",
                             verticalAlign: "top",
                             textDecoration: isRemoved ? "line-through" : "none",
+                            border: "1px solid var(--surface-light)",
+                            borderLeft: "none",
+                            borderTopRightRadius: "10px",
+                            borderBottomRightRadius: "10px",
                           }}>
                             {part.quantity}
                           </td>
@@ -1618,7 +1636,8 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         </div>
 
         {/* Right Side - On Order (VHC) / Allocate Parts */}
-        {showAllocatePanel ? (
+        {/* Swap sections when all parts arrived: show Allocate by default, On Order on click */}
+        {(showAllocatePanel && !allPartsArrived) || (!showAllocatePanel && allPartsArrived) ? (
           <div
             className="on-order-section"
             style={{
@@ -1627,6 +1646,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
               borderRadius: "12px",
               padding: "16px",
               minHeight: "400px",
+              overflow: "hidden",
             }}
           >
           <div style={{ marginBottom: "12px" }}>
@@ -1639,27 +1659,26 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 textTransform: "uppercase",
               }}
             >
-              Allocate parts
+              Allocate Parts
             </div>
-            <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--info)" }}>
-              Select parts on the left, then choose a request to allocate them.
-            </p>
           </div>
-          {allRequests.length === 0 ? (
-            <div
-              style={{
-                padding: "20px",
-                textAlign: "center",
-                color: "var(--info)",
-                fontSize: "13px",
-                border: "1px dashed var(--surface-light)",
-                borderRadius: "8px",
-              }}
-            >
-              No customer requests or authorised work found for this job.
-            </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px", maxHeight: "300px", overflowY: "auto" }}>
+          {/* Fixed-size content container to match ON ORDER section */}
+          <div style={{ minHeight: "200px", display: "flex", flexDirection: "column" }}>
+            {allRequests.length === 0 ? (
+              <div
+                style={{
+                  padding: "20px",
+                  textAlign: "center",
+                  color: "var(--info)",
+                  fontSize: "13px",
+                  border: "1px dashed var(--surface-light)",
+                  borderRadius: "8px",
+                }}
+              >
+                No customer requests or authorised work found for this job.
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px", maxHeight: "600px", overflowY: "auto", flex: 1 }}>
                 {allRequests.map((request) => {
                   const baseAllocated = partAllocations[request.id] || [];
                   const vhcAllocated =
@@ -1689,7 +1708,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                       padding: "12px",
                       borderRadius: "10px",
                       border: "1px solid var(--surface-light)",
-                      background: "var(--surface)",
+                      background: "var(--surface-muted)",
                     }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
@@ -1708,8 +1727,20 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                         style={{
                           padding: "6px 10px",
                           borderRadius: "6px",
-                          border: "1px solid var(--accent-purple)",
-                          background: !canEdit ? "var(--surface-light)" : "var(--accent-purple)",
+                          border: !canEdit
+                            ? "1px solid var(--surface-light)"
+                            : assignMode && assignTargetRequestId === request.id
+                            ? selectedPartIds.length > 0
+                              ? "1px solid var(--success)"
+                              : "1px solid var(--warning)"
+                            : "1px solid var(--accent-purple)",
+                          background: !canEdit
+                            ? "var(--surface-light)"
+                            : assignMode && assignTargetRequestId === request.id
+                            ? selectedPartIds.length > 0
+                              ? "var(--success)"
+                              : "var(--warning)"
+                            : "var(--accent-purple)",
                           color: !canEdit ? "var(--text-secondary)" : "white",
                           fontSize: "11px",
                           fontWeight: 600,
@@ -1745,7 +1776,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             </thead>
                             <tbody>
                               {allocatedParts.map((part) => (
-                                <tr key={part.id} style={{ borderTop: "1px solid var(--surface-light)" }}>
+                                <tr key={part.id} style={{ background: "var(--accent-purple-surface)", borderTop: "1px solid var(--surface-light)" }}>
                                   <td style={{ padding: "6px", fontWeight: 600, color: "var(--accent-purple)" }}>
                                     {part.partNumber}
                                   </td>
@@ -1782,7 +1813,8 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 );
               })}
             </div>
-          )}
+            )}
+          </div>
           </div>
         ) : (
           <div
@@ -1793,6 +1825,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
               borderRadius: "12px",
               padding: "16px",
               minHeight: "400px",
+              overflow: "hidden",
             }}
           >
             <div style={{ marginBottom: "12px" }}>
@@ -1815,7 +1848,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             </div>
             {/* Fixed-size table container */}
             <div style={{ minHeight: "200px", display: "flex", flexDirection: "column" }}>
-              <div style={{ overflowX: "auto", overflowY: "auto", maxHeight: "320px", flex: 1 }}>
+              <div style={{ overflowX: "auto", overflowY: "auto", maxHeight: "600px", flex: 1 }}>
                 <table className="on-order-table" style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
                     <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
@@ -1841,11 +1874,14 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                         const isManuallyArrived = arrivedPartIds.includes(part.id);
                         const isAutoArrived = part.partNumber && arrivedPartNumbers.has(part.partNumber.toLowerCase().trim());
                         const isArrived = isManuallyArrived || isAutoArrived;
+                        const isRemoved = normalizePartStatus(part.status) === "removed";
                         return (
                           <tr
                             key={part.id}
                             style={{
                               borderTop: "1px solid var(--surface-light)",
+                              background: isRemoved ? "var(--danger)" : "transparent",
+                              opacity: isRemoved ? 0.8 : 1,
                             }}
                           >
                             <td style={{ color: "var(--info-dark)" }}>
