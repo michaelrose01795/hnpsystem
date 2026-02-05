@@ -251,7 +251,10 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         vhcItemId: item.vhcItemId,
       }));
 
-    return [...customerReqs, ...vhcReqs];
+    const allReqs = [...customerReqs, ...vhcReqs];
+    console.log("[PartsTab] All requests:", allReqs);
+    console.log("[PartsTab] VHC requests:", vhcReqs);
+    return allReqs;
   }, [jobData.jobRequests, jobData.job_requests, jobData.requests, jobData.authorizedVhcItems]);
 
   // Group parts by allocated request (including VHC items)
@@ -274,6 +277,8 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         allocations[vhcKey].push(part);
       }
     });
+    console.log("[PartsTab] Part allocations grouped:", allocations);
+    console.log("[PartsTab] Sample parts with vhcItemId:", jobParts.filter(p => p.vhcItemId).slice(0, 3));
     setPartAllocations(allocations);
   }, [jobParts]);
 
@@ -832,17 +837,21 @@ const PartsTabNew = forwardRef(function PartsTabNew(
               throw new Error("Unable to allocate selected part.");
             }
 
+            const requestPayload = {
+              partAllocationId,
+              requestId,
+              jobId,
+            };
+            console.log("[PartsTab] Allocating part:", requestPayload);
+
             const response = await fetch("/api/parts/allocate-to-request", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                partAllocationId,
-                requestId,
-                jobId,
-              }),
+              body: JSON.stringify(requestPayload),
             });
 
             const data = await response.json();
+            console.log("[PartsTab] Allocation response:", data);
             if (!response.ok || !data.success) {
               throw new Error(data.message || "Failed to allocate part to request");
             }
@@ -882,7 +891,8 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         const response = await fetch(`/api/parts/job-items/${partId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ allocated_to_request_id: null }),
+          // Clear both allocated_to_request_id and vhc_item_id to handle both customer and VHC allocations
+          body: JSON.stringify({ allocated_to_request_id: null, vhc_item_id: null }),
         });
         const data = await response.json();
         if (!response.ok || !data?.ok) {
@@ -1615,12 +1625,22 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 {allRequests.map((request) => {
                   const baseAllocated = partAllocations[request.id] || [];
                   const vhcAllocated =
-                    request.type === "vhc"
-                      ? vhcPartsByItemId.get(String(request.id)) || []
+                    request.type === "vhc" && request.vhcItemId
+                      ? vhcPartsByItemId.get(String(request.vhcItemId)) || []
                       : [];
                   const allocatedParts = [...baseAllocated, ...vhcAllocated].filter(
                     (part, index, arr) => arr.findIndex((entry) => entry.id === part.id) === index
                   );
+
+                  if (request.type === "vhc") {
+                    console.log(`[PartsTab] VHC Request ${request.id}:`, {
+                      request,
+                      baseAllocated,
+                      vhcAllocated,
+                      allocatedParts,
+                      vhcItemIdUsed: String(request.vhcItemId),
+                    });
+                  }
                 return (
                   <div
                     key={request.id}

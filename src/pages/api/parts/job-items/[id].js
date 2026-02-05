@@ -62,12 +62,13 @@ export default async function handler(req, res) {
       updates.updated_at = new Date().toISOString()
 
       const needsStockReturn = updates.status === "removed"
+      const isUnassigningVhc = Object.prototype.hasOwnProperty.call(updates, "vhc_item_id") && updates.vhc_item_id === null
 
       let existing = null
-      if (needsStockReturn) {
+      if (needsStockReturn || isUnassigningVhc) {
         const { data: existingRow, error: existingError } = await supabase
           .from("parts_job_items")
-          .select("id, part_id, quantity_requested, quantity_allocated, status, authorised")
+          .select("id, job_id, vhc_item_id, part_id, quantity_requested, quantity_allocated, status, authorised")
           .eq("id", id)
           .single()
 
@@ -121,6 +122,18 @@ export default async function handler(req, res) {
               updated_at: new Date().toISOString(),
             })
             .eq("id", existing.part_id)
+        }
+      }
+
+      // Sync VHC status when unassigning a VHC-allocated part
+      if (isUnassigningVhc && existing?.vhc_item_id) {
+        try {
+          await syncVhcPartsAuthorisation({
+            jobId: existing.job_id,
+            vhcItemId: existing.vhc_item_id,
+          });
+        } catch (syncError) {
+          console.error("VHC sync error (non-blocking):", syncError);
         }
       }
 
