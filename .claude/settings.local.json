@@ -31,7 +31,8 @@
       "Bash(while read file)",
       "Bash(do if grep -q \"insert\\\\|update\\\\|upsert\" \"$file\")",
       "Bash(then echo \"=== $file ===\" grep -C 8 \"job_requests\" \"$file\")",
-      "Bash(fi:*)"
+      "Bash(fi:*)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []

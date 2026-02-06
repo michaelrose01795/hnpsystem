@@ -1,18 +1,24 @@
-"use client"; // file location: src/components/Invoices/InvoiceSection.js // indicate component path and mark client-side module
+"use client";
 
-import React from "react"; // import React for rendering JSX
-import InvoiceDetailSection from "@/features/invoices/components/InvoiceDetailSection"; // import shared invoice detail wrapper
+import React from "react";
+import InvoiceDetailSection from "@/features/invoices/components/InvoiceDetailSection";
 
-export default function InvoiceSection({ jobData }) { // export component used inside job card invoice tab
-  const jobNumber = jobData?.jobNumber || jobData?.job_number || ""; // derive job number from job data payload
+export default function InvoiceSection({ jobData }) {
+  const jobNumber = jobData?.jobNumber || jobData?.job_number || "";
 
-  if (!jobNumber) { // handle missing job number edge case
+  if (!jobNumber) {
     return (
-      <p style={{ color: "var(--danger-dark)" }}> {/* // render warning message */}
+      <p style={{ color: "var(--danger-dark)" }}>
         Job number missing — unable to load invoice overview.
       </p>
-    ); // end warning
+    );
   }
 
-  return <InvoiceDetailSection jobNumber={jobNumber} />; // delegate rendering to shared invoice section
-} // end InvoiceSection component
+  return (
+    <InvoiceDetailSection
+      jobNumber={jobNumber}
+      customerEmail={jobData?.customerEmail}
+      jobId={jobData?.id}
+    />
+  );
+}

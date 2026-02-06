@@ -1,80 +1,80 @@
-// file location: src/features/invoices/components/InvoiceDetail.js // identify component path
-import React from "react"; // import React for JSX rendering
-import styles from "@/features/invoices/styles/invoice.module.css"; // import scoped styles for invoice layout
+// file location: src/features/invoices/components/InvoiceDetail.js
+import React from "react";
+import styles from "@/features/invoices/styles/invoice.module.css";
 
-const formatCurrency = (value) => { // helper to format numbers as GBP currency
-  const number = Number(value || 0); // coerce value to number
-  return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(number); // format as GBP string
-}; // end formatCurrency
+const formatCurrency = (value) => {
+  const number = Number(value || 0);
+  return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(number);
+};
 
-const formatDate = (value) => { // helper to format ISO dates into UK format
-  if (!value) return ""; // handle missing value
-  const date = new Date(value); // create Date object
-  if (Number.isNaN(date.getTime())) return value; // return raw value on invalid date
-  return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }); // format to UK style
-}; // end formatDate
+const formatDate = (value) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+};
 
-const AddressBlock = ({ title, address }) => { // reusable component to show invoice/delivery address
-  return ( // render block
-    <div className={styles.headerBox}> {/* // wrap with header box styling */}
-      <h3>{title}</h3> {/* // show block title */}
-      <ul className={styles.headerList}> {/* // list of address lines */}
-        <li><strong>{address?.name || "N/A"}</strong></li> {/* // contact name */}
-        {(address?.lines || []).map((line) => ( // iterate address lines
-          <li key={line}>{line}</li> // render each line as list item
-        ))} {/* // end lines */}
-        {address?.postcode && <li>{address.postcode}</li>} {/* // show postcode if present */}
-      </ul> {/* // end list */}
-    </div> // end container
-  ); // end return
-}; // end AddressBlock
+const AddressBlock = ({ title, address }) => {
+  return (
+    <div className={styles.headerBox}>
+      <h3>{title}</h3>
+      <ul className={styles.headerList}>
+        <li><strong>{address?.name || "N/A"}</strong></li>
+        {(address?.lines || []).map((line) => (
+          <li key={line}>{line}</li>
+        ))}
+        {address?.postcode && <li>{address.postcode}</li>}
+      </ul>
+    </div>
+  );
+};
 
-const JobMetaBlock = ({ invoice }) => { // component showing job/invoice metadata box
-  return ( // render block
-    <div className={styles.headerBox}> {/* // wrap in header box */}
-      <h3>Job & Invoice</h3> {/* // heading */}
-      <ul className={styles.headerList}> {/* // metadata list */}
-        <li>Invoice No: <strong>{invoice.invoice_number || "—"}</strong></li> {/* // invoice number */}
-        <li>Date: <strong>{formatDate(invoice.invoice_date)}</strong></li> {/* // invoice date */}
-        <li>A/C No: <strong>{invoice.account_number || "—"}</strong></li> {/* // account reference */}
-        <li>Job No: <strong>{invoice.job_number || "—"}</strong></li> {/* // job number */}
-        <li>Order No: <strong>{invoice.order_number || "—"}</strong></li> {/* // order reference */}
-        <li>Page: <strong>{invoice.page_count || 1}</strong></li> {/* // page count */}
-      </ul> {/* // end list */}
-    </div> // end box
-  ); // end return
-}; // end JobMetaBlock
+const JobMetaBlock = ({ invoice }) => {
+  return (
+    <div className={styles.headerBox}>
+      <h3>Job & Invoice</h3>
+      <ul className={styles.headerList}>
+        <li>Invoice No: <strong>{invoice.invoice_number || "—"}</strong></li>
+        <li>Date: <strong>{formatDate(invoice.invoice_date)}</strong></li>
+        <li>A/C No: <strong>{invoice.account_number || "—"}</strong></li>
+        <li>Job No: <strong>{invoice.job_number || "—"}</strong></li>
+        <li>Order No: <strong>{invoice.order_number || "—"}</strong></li>
+        <li>Page: <strong>{invoice.page_count || 1}</strong></li>
+      </ul>
+    </div>
+  );
+};
 
-const VehicleRow = ({ vehicle }) => { // render vehicle details row
-  const entries = [ // define label/value entries
-    { label: "Reg", value: vehicle?.reg || "—" }, // registration
-    { label: "Vehicle", value: vehicle?.vehicle || "—" }, // vehicle description
-    { label: "Chassis No", value: vehicle?.chassis || "—" }, // chassis number
-    { label: "Engine No", value: vehicle?.engine || vehicle?.engine_no || "—" }, // engine number
-    { label: "Reg Date", value: vehicle?.reg_date ? formatDate(vehicle.reg_date) : "—" }, // registration date
-    { label: "Del Date", value: vehicle?.delivery_date ? formatDate(vehicle.delivery_date) : "—" }, // delivery date optional
-    { label: "Mileage", value: vehicle?.mileage ? `${vehicle.mileage} mi` : "—" } // mileage
-  ]; // end entries
-  return ( // render grid
-    <div className={styles.vehicleRow}> {/* // container grid */}
-      {entries.map((entry) => ( // iterate entries
-        <div key={entry.label} className={styles.vehicleItem}> {/* // column */}
-          <span>{entry.label}</span> {/* // label text */}
-          <strong>{entry.value}</strong> {/* // value */}
-        </div> // end column
-      ))} {/* // end map */}
-    </div> // end grid
-  ); // end return
-}; // end VehicleRow
+const VehicleRow = ({ vehicle }) => {
+  const entries = [
+    { label: "Reg", value: vehicle?.reg || "—" },
+    { label: "Vehicle", value: vehicle?.vehicle || "—" },
+    { label: "Chassis No", value: vehicle?.chassis || "—" },
+    { label: "Engine No", value: vehicle?.engine || vehicle?.engine_no || "—" },
+    { label: "Reg Date", value: vehicle?.reg_date ? formatDate(vehicle.reg_date) : "—" },
+    { label: "Del Date", value: vehicle?.delivery_date ? formatDate(vehicle.delivery_date) : "—" },
+    { label: "Mileage", value: vehicle?.mileage ? `${vehicle.mileage} mi` : "—" }
+  ];
+  return (
+    <div className={styles.vehicleRow}>
+      {entries.map((entry) => (
+        <div key={entry.label} className={styles.vehicleItem}>
+          <span>{entry.label}</span>
+          <strong>{entry.value}</strong>
+        </div>
+      ))}
+    </div>
+  );
+};
 
-const RequestBlock = ({ request }) => { // render each request body block
-  const partsNet = (request.totals?.request_total_net || 0) - (request.labour?.net || 0); // parts-only net total
-  return ( // render section
-    <section className={styles.requestBlock}> {/* // wrapper */}
-      <div className={styles.requestHeader}> {/* // header row */}
+const RequestBlock = ({ request }) => {
+  const partsNet = (request.totals?.request_total_net || 0) - (request.labour?.net || 0);
+  return (
+    <section className={styles.requestBlock}>
+      <div className={styles.requestHeader}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <h3 style={{ margin: 0 }}>{`${request.request_label || `Request ${request.request_number}`}: ${request.title}`}</h3> {/* // request title */}
-          {request.summary && <p style={{ margin: "4px 0 0", color: "var(--text-secondary)" }}>{request.summary}</p>} {/* // optional summary */}
+          <h3 style={{ margin: 0 }}>{`${request.request_label || `Request ${request.request_number}`}: ${request.title}`}</h3>
+          {request.summary && <p style={{ margin: "4px 0 0", color: "var(--text-secondary)" }}>{request.summary}</p>}
         </div>
         <div style={{ display: "flex", gap: "20px", textAlign: "right", flexShrink: 0 }}>
           <div>
@@ -95,10 +95,10 @@ const RequestBlock = ({ request }) => { // render each request body block
             <strong style={{ fontSize: "1.05rem" }}>{formatCurrency(request.totals?.request_total_gross || 0)}</strong>
           </div>
         </div>
-      </div> {/* // end header row */}
+      </div>
 
-      <div className={styles.partsTableWrapper}> {/* // enable scroll */}
-        <table className={styles.partsTable}> {/* // parts table */}
+      <div className={styles.partsTableWrapper}>
+        <table className={styles.partsTable}>
           <thead>
             <tr>
               <th>Part No</th>
@@ -132,12 +132,12 @@ const RequestBlock = ({ request }) => { // render each request body block
             )}
           </tbody>
         </table>
-      </div> {/* // end table wrapper */}
+      </div>
     </section>
   );
-}; // end RequestBlock
+};
 
-const TotalsFooter = ({ totals }) => { // render service/VAT/invoice totals
+const TotalsFooter = ({ totals }) => {
   const cards = [
     { label: "Service Total", value: formatCurrency(totals.service_total || 0) },
     { label: "VAT Total", value: formatCurrency(totals.vat_total || 0) },
@@ -153,9 +153,9 @@ const TotalsFooter = ({ totals }) => { // render service/VAT/invoice totals
       ))}
     </div>
   );
-}; // end TotalsFooter
+};
 
-const PaymentBlock = ({ payment }) => { // render bank/payment details
+const PaymentBlock = ({ payment }) => {
   const entries = [
     { label: "Bank Name", value: payment.bank_name || "—" },
     { label: "Sort Code", value: payment.sort_code || "—" },
@@ -180,13 +180,13 @@ const PaymentBlock = ({ payment }) => { // render bank/payment details
       </p>
     </div>
   );
-}; // end PaymentBlock
+};
 
-export default function InvoiceDetail({ data, onPrint }) { // parent component rendering full layout
+export default function InvoiceDetail({ data, onPrint, onEmail, emailStatus, customerEmail }) {
   if (!data) {
-    return null; // guard against missing data
+    return null;
   }
-  const { company, invoice, requests = [], payment } = data; // destructure payload
+  const { company, invoice, requests = [], payment } = data;
   return (
     <article className={styles.invoiceShell}>
       <header className={styles.companyHeader}>
@@ -206,9 +206,47 @@ export default function InvoiceDetail({ data, onPrint }) { // parent component r
             </p>
           )}
         </div>
-        <button type="button" className={styles.printButton} onClick={onPrint}>
-          Print Invoice
-        </button>
+        <div className="invoice-action-buttons" style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "flex-end" }}>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button type="button" className={styles.printButton} onClick={onPrint}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: "6px", verticalAlign: "middle" }}>
+                <polyline points="6 9 6 2 18 2 18 9" />
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                <rect x="6" y="14" width="12" height="8" />
+              </svg>
+              Print Invoice
+            </button>
+            <button
+              type="button"
+              className={styles.printButton}
+              onClick={onEmail}
+              disabled={emailStatus === "Sending..."}
+              style={{
+                background: customerEmail ? "var(--primary-dark)" : "var(--grey-accent-light)",
+                borderColor: customerEmail ? "var(--primary-dark)" : "var(--grey-accent-light)",
+                cursor: customerEmail ? "pointer" : "not-allowed",
+                opacity: emailStatus === "Sending..." ? 0.7 : 1,
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: "6px", verticalAlign: "middle" }}>
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <path d="M22 7l-10 7L2 7" />
+              </svg>
+              {emailStatus === "Sending..." ? "Sending..." : "Email Invoice"}
+            </button>
+          </div>
+          {emailStatus && emailStatus !== "Sending..." && (
+            <div style={{
+              fontSize: "12px",
+              padding: "4px 10px",
+              borderRadius: "6px",
+              backgroundColor: emailStatus.includes("success") ? "var(--success-surface)" : "var(--danger-surface)",
+              color: emailStatus.includes("success") ? "var(--success-dark)" : "var(--danger-dark)",
+            }}>
+              {emailStatus}
+            </div>
+          )}
+        </div>
       </header>
 
       <section className={styles.headerGrid}>
@@ -232,4 +270,4 @@ export default function InvoiceDetail({ data, onPrint }) { // parent component r
       <PaymentBlock payment={payment} />
     </article>
   );
-} // end InvoiceDetail
+}

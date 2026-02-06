@@ -2458,7 +2458,7 @@ export default function JobCardDetailPage() {
             />
           </div>
 
-          <div style={{ display: activeTab === "invoice" ? "block" : "none" }}>
+          <div data-invoice-print-area style={{ display: activeTab === "invoice" ? "block" : "none" }}>
             {!invoicePrerequisitesMet && (
               <div
                 style={{
@@ -2707,6 +2707,19 @@ function CustomerRequestsTab({
       .filter((row) => (row.requestSource || "customer_request") === "customer_request")
       .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
   }, [unifiedRequests]);
+
+  const partsByRequestId = useMemo(() => {
+    const allocations = Array.isArray(jobData?.partsAllocations) ? jobData.partsAllocations : [];
+    const map = {};
+    allocations.forEach((item) => {
+      const reqId = item.allocatedToRequestId ?? item.allocated_to_request_id ?? null;
+      if (!reqId) return;
+      const key = String(reqId);
+      if (!map[key]) map[key] = [];
+      map[key].push(item);
+    });
+    return map;
+  }, [jobData?.partsAllocations]);
 
   const vhcAliasMap = useMemo(() => {
     const rows = Array.isArray(jobData?.vhcItemAliases)
@@ -3076,76 +3089,123 @@ function CustomerRequestsTab({
       ) : (
         <div>
       {customerRequestRows && customerRequestRows.length > 0 ? (
-            customerRequestRows.map((req, index) => (
+            customerRequestRows.map((req, index) => {
+              const linkedParts = req.requestId ? (partsByRequestId[String(req.requestId)] || []) : [];
+              return (
               <div key={index} style={{
                 padding: "14px",
                 backgroundColor: "var(--surface)",
                 borderLeft: "4px solid var(--primary)",
                 borderRadius: "6px",
                 marginBottom: "12px",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center"
               }}>
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
-                  <span style={requestSubtitleStyle}>Request {index + 1}</span>
-                  <span style={{ fontSize: "14px", color: "var(--text-secondary)" }}>
-                    {req.description || req.text || req}
-                  </span>
-                  {(() => {
-                    const prePickLabel = req.prePickLocation
-                      ? formatPrePickLabel(req.prePickLocation)
-                      : "";
-                    const noteText = (req.noteText || "").trim();
-                    if (prePickLabel) {
-                      return (
-                        <span style={smallPrintStyle}>
-                          Pre-picked: {prePickLabel}
-                        </span>
-                      );
-                    }
-                    if (noteText) {
-                      return (
-                        <span style={smallPrintStyle}>
-                          Note: {noteText}
-                        </span>
-                      );
-                    }
-                    return null;
-                  })()}
-                </div>
-                <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                  <span style={{
-                    padding: "4px 10px",
-                    backgroundColor: "var(--info-surface)",
-                    color: "var(--info)",
-                    borderRadius: "12px",
-                    fontSize: "12px",
-                    fontWeight: "600"
-                  }}>
-                    {Number(req.hours) || 0}h
-                  </span>
-                  {req.jobType && (
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <span style={requestSubtitleStyle}>Request {index + 1}</span>
+                    <span style={{ fontSize: "14px", color: "var(--text-secondary)" }}>
+                      {req.description || req.text || req}
+                    </span>
+                    {(() => {
+                      const prePickLabel = req.prePickLocation
+                        ? formatPrePickLabel(req.prePickLocation)
+                        : "";
+                      const noteText = (req.noteText || "").trim();
+                      if (prePickLabel) {
+                        return (
+                          <span style={smallPrintStyle}>
+                            Pre-picked: {prePickLabel}
+                          </span>
+                        );
+                      }
+                      if (noteText) {
+                        return (
+                          <span style={smallPrintStyle}>
+                            Note: {noteText}
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
+                  <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
                     <span style={{
                       padding: "4px 10px",
-                      backgroundColor: 
-                        req.jobType === "Warranty" ? "var(--warning-surface)" : 
-                        req.jobType === "Customer" ? "var(--success)" : 
-                        "var(--danger-surface)",
-                      color: 
-                        req.jobType === "Warranty" ? "var(--warning-dark)" : 
-                        req.jobType === "Customer" ? "var(--success-dark)" : 
-                        "var(--danger-dark)",
+                      backgroundColor: "var(--info-surface)",
+                      color: "var(--info)",
                       borderRadius: "12px",
                       fontSize: "12px",
                       fontWeight: "600"
                     }}>
-                      {req.jobType}
+                      {Number(req.hours) || 0}h
                     </span>
-                  )}
+                    {req.jobType && (
+                      <span style={{
+                        padding: "4px 10px",
+                        backgroundColor:
+                          req.jobType === "Warranty" ? "var(--warning-surface)" :
+                          req.jobType === "Customer" ? "var(--success)" :
+                          "var(--danger-surface)",
+                        color:
+                          req.jobType === "Warranty" ? "var(--warning-dark)" :
+                          req.jobType === "Customer" ? "var(--success-dark)" :
+                          "var(--danger-dark)",
+                        borderRadius: "12px",
+                        fontSize: "12px",
+                        fontWeight: "600"
+                      }}>
+                        {req.jobType}
+                      </span>
+                    )}
+                  </div>
                 </div>
+                {linkedParts.length > 0 && (
+                  <div style={{ marginTop: "10px", borderTop: "1px solid var(--surface-light)", paddingTop: "10px" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                      <thead>
+                        <tr style={{ color: "var(--grey-accent)", textAlign: "left", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                          <th style={{ padding: "4px 8px 6px 0" }}>Part No</th>
+                          <th style={{ padding: "4px 8px 6px" }}>Description</th>
+                          <th style={{ padding: "4px 8px 6px", textAlign: "right" }}>Qty</th>
+                          <th style={{ padding: "4px 8px 6px", textAlign: "right" }}>Price</th>
+                          <th style={{ padding: "4px 8px 6px", textAlign: "right" }}>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {linkedParts.map((item, pIdx) => (
+                          <tr key={item.id || pIdx} style={{ color: "var(--text-secondary)" }}>
+                            <td style={{ padding: "4px 8px 4px 0", fontWeight: "500", color: "var(--text-primary)" }}>{item.part?.partNumber || "\u2014"}</td>
+                            <td style={{ padding: "4px 8px" }}>{item.part?.name || item.part?.description || "\u2014"}</td>
+                            <td style={{ padding: "4px 8px", textAlign: "right" }}>{item.quantityAllocated ?? item.quantityRequested ?? 0}</td>
+                            <td style={{ padding: "4px 8px", textAlign: "right" }}>{item.unitPrice != null ? `\u00A3${Number(item.unitPrice).toFixed(2)}` : "\u2014"}</td>
+                            <td style={{ padding: "4px 8px", textAlign: "right" }}>
+                              <span style={{
+                                padding: "2px 8px",
+                                borderRadius: "8px",
+                                fontSize: "11px",
+                                fontWeight: "600",
+                                backgroundColor:
+                                  item.status === "fitted" ? "var(--success-surface)" :
+                                  item.status === "allocated" || item.status === "pre_picked" || item.status === "picked" ? "var(--info-surface)" :
+                                  item.status === "on_order" ? "var(--warning-surface)" :
+                                  "var(--surface-light)",
+                                color:
+                                  item.status === "fitted" ? "var(--success-dark)" :
+                                  item.status === "allocated" || item.status === "pre_picked" || item.status === "picked" ? "var(--info-dark)" :
+                                  item.status === "on_order" ? "var(--warning-dark)" :
+                                  "var(--grey-accent-dark)",
+                              }}>
+                                {(item.status || "pending").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
-            ))
+              );
+            })
           ) : (
             <p style={{ color: "var(--grey-accent-light)", fontStyle: "italic" }}>No requests logged.</p>
           )}
@@ -3218,6 +3278,53 @@ function CustomerRequestsTab({
                           Note: {row.noteText}
                         </div>
                       )}
+                      {/* Linked parts */}
+                      {(() => {
+                        const linkedParts = row.requestId ? (partsByRequestId[String(row.requestId)] || []) : [];
+                        if (linkedParts.length === 0) return null;
+                        return (
+                          <div style={{ marginTop: "8px", borderTop: "1px solid var(--success)", paddingTop: "8px", width: "100%" }}>
+                            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
+                              <thead>
+                                <tr style={{ borderBottom: "1px solid var(--success)" }}>
+                                  <th style={{ textAlign: "left", padding: "4px 8px 4px 0", color: "var(--success-dark)", fontWeight: "600" }}>Part No</th>
+                                  <th style={{ textAlign: "left", padding: "4px 8px", color: "var(--success-dark)", fontWeight: "600" }}>Description</th>
+                                  <th style={{ textAlign: "center", padding: "4px 8px", color: "var(--success-dark)", fontWeight: "600" }}>Qty</th>
+                                  <th style={{ textAlign: "right", padding: "4px 8px", color: "var(--success-dark)", fontWeight: "600" }}>Price</th>
+                                  <th style={{ textAlign: "center", padding: "4px 0 4px 8px", color: "var(--success-dark)", fontWeight: "600" }}>Status</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {linkedParts.map((item, pIdx) => {
+                                  const status = item.status || item.allocationStatus || "allocated";
+                                  return (
+                                    <tr key={item.id || pIdx} style={{ borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
+                                      <td style={{ padding: "4px 8px 4px 0", fontFamily: "monospace" }}>{item.part?.partNumber || "—"}</td>
+                                      <td style={{ padding: "4px 8px" }}>{item.part?.name || item.part?.description || "—"}</td>
+                                      <td style={{ padding: "4px 8px", textAlign: "center" }}>{item.quantityAllocated ?? item.quantityRequested ?? 0}</td>
+                                      <td style={{ padding: "4px 8px", textAlign: "right" }}>{item.unitPrice != null ? `£${Number(item.unitPrice).toFixed(2)}` : "—"}</td>
+                                      <td style={{ padding: "4px 0 4px 8px", textAlign: "center" }}>
+                                        <span style={{
+                                          display: "inline-block",
+                                          padding: "2px 6px",
+                                          borderRadius: "4px",
+                                          fontSize: "10px",
+                                          fontWeight: "600",
+                                          textTransform: "capitalize",
+                                          backgroundColor: status === "fitted" ? "var(--success-surface)" : status === "ordered" ? "var(--warning-surface)" : "var(--info-surface)",
+                                          color: status === "fitted" ? "var(--success-dark)" : status === "ordered" ? "var(--warning-dark)" : "var(--info-dark)",
+                                        }}>
+                                          {status}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        );
+                      })()}
                     </li>
                   ))}
                 </ul>

@@ -1,71 +1,109 @@
-// file location: src/features/invoices/components/InvoiceDetailSection.js // identify file path for reusable section
-import React, { useEffect, useState, useCallback } from "react"; // import React hooks for data fetching lifecycle
-import InvoiceDetail from "@/features/invoices/components/InvoiceDetail"; // import layout component
-import styles from "@/features/invoices/styles/invoice.module.css"; // import shared styles for loading/error states
+// file location: src/features/invoices/components/InvoiceDetailSection.js
+import React, { useEffect, useState, useCallback } from "react";
+import InvoiceDetail from "@/features/invoices/components/InvoiceDetail";
+import styles from "@/features/invoices/styles/invoice.module.css";
 
-const InvoiceSkeleton = () => { // lightweight skeleton component for loading state
-  return ( // render skeleton markup
-    <div className={`${styles.invoiceShell} ${styles.skeleton}`}> {/* // add skeleton modifier */}
-      {Array.from({ length: 6 }).map((_, index) => ( // repeat placeholder rows
-        <div key={index} className={styles.skeletonRow} /> // render animated shimmer row
-      ))} {/* // end skeleton rows */}
-    </div> // end skeleton container
-  ); // end return
-}; // end InvoiceSkeleton
+const InvoiceSkeleton = () => {
+  return (
+    <div className={`${styles.invoiceShell} ${styles.skeleton}`}>
+      {Array.from({ length: 6 }).map((_, index) => (
+        <div key={index} className={styles.skeletonRow} />
+      ))}
+    </div>
+  );
+};
 
-export default function InvoiceDetailSection({ jobNumber, orderNumber }) { // export reusable fetch/render component
-  const [loading, setLoading] = useState(true); // track loading state
-  const [error, setError] = useState(""); // hold error messages
-  const [data, setData] = useState(null); // store invoice payload
-  const [notice, setNotice] = useState(""); // friendly info messages (e.g. fallback)
+export default function InvoiceDetailSection({ jobNumber, orderNumber, customerEmail, jobId }) {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [data, setData] = useState(null);
+  const [notice, setNotice] = useState("");
+  const [emailStatus, setEmailStatus] = useState("");
 
-  const identifier = jobNumber || orderNumber || ""; // compute identifier for memoization
+  const identifier = jobNumber || orderNumber || "";
 
-  const fetchInvoice = useCallback(async () => { // memoized fetch function
-    if (!identifier) { // guard when missing identifier
-      setError("Provide a job number or order number to view invoice."); // set helpful message
-      setData(null); // reset data
-      setLoading(false); // stop spinner
-      setNotice(""); // no info banner needed
-      return; // exit early
+  const fetchInvoice = useCallback(async () => {
+    if (!identifier) {
+      setError("Provide a job number or order number to view invoice.");
+      setData(null);
+      setLoading(false);
+      setNotice("");
+      return;
     }
-    setLoading(true); // start loading state
-    setError(""); // clear previous errors
-    setNotice(""); // clear info banner
-    try { // run fetch
+    setLoading(true);
+    setError("");
+    setNotice("");
+    try {
       const endpoint = jobNumber
         ? `/api/invoices/by-job/${encodeURIComponent(jobNumber)}`
-        : `/api/invoices/by-order/${encodeURIComponent(orderNumber)}`; // choose API route
-      const response = await fetch(endpoint, { credentials: "include" }); // call API with cookies for auth
-      const payload = await response.json(); // parse JSON
-      if (response.status === 401) { // handle auth errors with friendly guidance
-        throw new Error("Authentication required to view invoices. Please sign in again."); // throw descriptive error
+        : `/api/invoices/by-order/${encodeURIComponent(orderNumber)}`;
+      const response = await fetch(endpoint, { credentials: "include" });
+      const payload = await response.json();
+      if (response.status === 401) {
+        throw new Error("Authentication required to view invoices. Please sign in again.");
       }
-      if (!response.ok || !payload?.success) { // handle API failure
-        throw new Error(payload?.message || "Unable to load invoice"); // throw descriptive error
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.message || "Unable to load invoice");
       }
-      setData(payload.data); // store invoice payload
-      setNotice(payload.data?.meta?.notice || ""); // display meta notice when available
-    } catch (err) { // catch errors
-      console.error("Invoice fetch failed", err); // log for debugging
-      setError(err.message || "Unable to load invoice"); // show user friendly message
-      setData(null); // clear data
-      setNotice(""); // clear notice on failure
+      setData(payload.data);
+      setNotice(payload.data?.meta?.notice || "");
+    } catch (err) {
+      console.error("Invoice fetch failed", err);
+      setError(err.message || "Unable to load invoice");
+      setData(null);
+      setNotice("");
     } finally {
-      setLoading(false); // stop spinner
+      setLoading(false);
     }
-  }, [identifier, jobNumber, orderNumber]); // dependencies for fetch callback
+  }, [identifier, jobNumber, orderNumber]);
 
   useEffect(() => {
-    fetchInvoice(); // fetch data on mount/identifier change
-    return () => {}; // placeholder cleanup
-  }, [fetchInvoice]); // rerun when fetch callback updates
+    fetchInvoice();
+    return () => {};
+  }, [fetchInvoice]);
 
-  const handlePrint = useCallback(() => { // print handler
-    if (typeof window !== "undefined") { // ensure client side
-      window.print(); // trigger browser print dialog
+  const handlePrint = useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.print();
     }
-  }, []); // stable callback
+  }, []);
+
+  const handleEmail = useCallback(async () => {
+    if (!customerEmail) {
+      setEmailStatus("No customer email on file.");
+      setTimeout(() => setEmailStatus(""), 4000);
+      return;
+    }
+    if (!data) {
+      setEmailStatus("No invoice data to send.");
+      setTimeout(() => setEmailStatus(""), 4000);
+      return;
+    }
+
+    setEmailStatus("Sending...");
+    try {
+      const response = await fetch("/api/invoices/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          jobNumber: jobNumber || data?.invoice?.job_number,
+          jobId,
+          customerEmail,
+          invoiceData: data,
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.error || "Failed to send email");
+      }
+      setEmailStatus("Invoice emailed successfully!");
+    } catch (err) {
+      console.error("Email invoice failed:", err);
+      setEmailStatus(err.message || "Failed to send email");
+    }
+    setTimeout(() => setEmailStatus(""), 5000);
+  }, [customerEmail, data, jobNumber, jobId]);
 
   if (!identifier) {
     return (
@@ -102,7 +140,13 @@ export default function InvoiceDetailSection({ jobNumber, orderNumber }) { // ex
           {notice}
         </div>
       )}
-      <InvoiceDetail data={data} onPrint={handlePrint} />
+      <InvoiceDetail
+        data={data}
+        onPrint={handlePrint}
+        onEmail={handleEmail}
+        emailStatus={emailStatus}
+        customerEmail={customerEmail}
+      />
     </>
   );
-} // end InvoiceDetailSection
+}
