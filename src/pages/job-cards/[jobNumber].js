@@ -2191,7 +2191,7 @@ export default function JobCardDetailPage() {
                 Key location
               </div>
               <div style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
-                {normalizeKeyLocationLabel(trackerEntry?.keyLocation) || "Jobs In Hooks – Service Desk"}
+                {normalizeKeyLocationLabel(trackerEntry?.keyLocation) || KEY_LOCATIONS[0].label}
               </div>
             </div>
             <div>
@@ -2199,7 +2199,7 @@ export default function JobCardDetailPage() {
                 Car location
               </div>
               <div style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
-                {trackerEntry?.vehicleLocation || "Front Row – Bay B"}
+                {trackerEntry?.vehicleLocation || CAR_LOCATIONS[0].label}
               </div>
             </div>
           </div>
@@ -3300,19 +3300,6 @@ function LocationUpdateModal({ entry, onClose, onSave }) {
         <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "12px" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
             <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
-              Vehicle Location
-            </label>
-            <DropdownField
-              options={vehicleLocationOptions}
-              value={form.vehicleLocation}
-              onValueChange={(value) => handleChange("vehicleLocation", value)}
-              placeholder="Select location"
-              size="md"
-            />
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
               Key Location
             </label>
             <DropdownField
@@ -3320,6 +3307,19 @@ function LocationUpdateModal({ entry, onClose, onSave }) {
               value={form.keyLocation}
               onValueChange={(value) => handleChange("keyLocation", value)}
               placeholder="Select key location"
+              size="md"
+            />
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+              Vehicle Location
+            </label>
+            <DropdownField
+              options={vehicleLocationOptions}
+              value={form.vehicleLocation}
+              onValueChange={(value) => handleChange("vehicleLocation", value)}
+              placeholder="Select location"
               size="md"
             />
           </div>
