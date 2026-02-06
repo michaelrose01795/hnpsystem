@@ -3,11 +3,6 @@ TO DO:
 Continue flow with job number 55
 
 
-Schedualling tab prompt 
-
-
-
-
 CHECK
 with the "Upload Documents" popup, does the document actually get uploaded to the database? if not what happens and is it a perminent thing, have it so the "Upload Documents" popup shows all of the uploaded items always when something has been uplaoded. 
 
@@ -19,9 +14,6 @@ Can we add an auto detect text box locations, tick box location, signature box l
 DO THISSSS
 work on implementing "AI" within whole app search chat "AI job detection system"
 
-
-
-have it so when opening the job-cards/[jobnumber] page it aloways opens within the "Customer Requests" tab. 
 
 
 

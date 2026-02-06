@@ -20,6 +20,7 @@ import {
   updateJobNote
 } from "@/lib/database/notes";
 import { getCustomerJobs, getCustomerVehicles } from "@/lib/database/customers";
+import { createCustomerDisplaySlug } from "@/lib/customers/slug";
 import {
   normalizeRequests,
   mapCustomerJobsToHistory
@@ -463,22 +464,13 @@ export default function JobCardDetailPage() {
     : typeof jobData?.status === "string" &&
       jobData.status.trim().toLowerCase() === "booked";
 
-  // Check for tab query parameter to switch to invoice tab
+  // Sync active tab from query parameter, default to customer-requests
   useEffect(() => {
-    if (router.query.tab === "invoice") {
-      setActiveTab("invoice");
-    }
-  }, [router.query.tab]);
-
-  useEffect(() => {
-    if (router.query.tab === "clocking") {
-      setActiveTab("clocking");
-    }
-  }, [router.query.tab]);
-
-  useEffect(() => {
-    if (router.query.tab === "vhc") {
-      setActiveTab("vhc");
+    const tabParam = router.query.tab;
+    if (tabParam === "invoice" || tabParam === "clocking" || tabParam === "vhc") {
+      setActiveTab(tabParam);
+    } else {
+      setActiveTab("customer-requests");
     }
   }, [router.query.tab]);
 
@@ -4235,382 +4227,374 @@ function SchedulingTab({
     color: "var(--text-secondary)"
   };
 
+  const sectionCardStyle = {
+    ...cardStyle,
+    marginBottom: "16px",
+  };
+  const sectionTitleRow = {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    marginBottom: "16px",
+  };
+
   return (
-    <div style={panelStyle}>
-      <div style={panelHeaderStyle}>
-        {bookingRequest ? (
-          <span style={{ ...headerBadgeStyle, backgroundColor: statusColor.background, color: statusColor.color }}>
-            {bookingStatus === "approved" ? "Approved" : "Awaiting Approval"}
-          </span>
-        ) : null}
+    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+
+      {/* ── Section 1: Customer & Vehicle ── */}
+      <div style={sectionCardStyle}>
+        <div style={sectionTitleRow}>
+          <div style={{ flex: 1 }}>
+            <h3 style={cardTitleStyle}>Customer &amp; Vehicle</h3>
+          </div>
+          {bookingRequest ? (
+            <span style={{ ...headerBadgeStyle, backgroundColor: statusColor.background, color: statusColor.color }}>
+              {bookingStatus === "approved" ? "Approved" : "Awaiting Approval"}
+            </span>
+          ) : null}
+          <button
+            onClick={() => {
+              const slug = createCustomerDisplaySlug(jobData.customerFirstName || "", jobData.customerLastName || "");
+              const target = slug || jobData.customerId;
+              if (target) router.push(`/customers/${target}`);
+            }}
+            disabled={!jobData.customerFirstName && !jobData.customerLastName && !jobData.customerId}
+            style={{
+              padding: "7px 12px",
+              borderRadius: "8px",
+              border: "none",
+              backgroundColor: "var(--layer-section-level-1)",
+              color: "var(--primary-dark)",
+              fontSize: "12px",
+              fontWeight: "600",
+              cursor: jobData.customerFirstName || jobData.customerLastName || jobData.customerId ? "pointer" : "not-allowed",
+              whiteSpace: "nowrap",
+              opacity: !jobData.customerFirstName && !jobData.customerLastName && !jobData.customerId ? 0.5 : 1,
+            }}
+          >
+            View Profile
+          </button>
+        </div>
+
+        {/* Vehicle selector */}
+        <div>
+          {customerVehiclesLoading ? (
+            <div style={{ fontSize: "13px", color: "var(--text-secondary)", padding: "8px 0" }}>
+              Loading stored vehicles...
+            </div>
+          ) : vehicleOptions.length > 0 ? (
+            <DropdownField
+              label="Vehicle"
+              placeholder="Select stored vehicle"
+              value={selectedVehicleIdValue}
+              onChange={(event) => handleVehicleChange(event.target.value)}
+              disabled={!canEdit}
+              className="compact-picker"
+              options={vehicleOptions.map((vehicle) => ({
+                value: String(vehicle.vehicle_id),
+                label: `${vehicle.registration || vehicle.reg_number || "Vehicle"} \u00B7 ${
+                  vehicle.make_model ||
+                  [vehicle.make, vehicle.model].filter(Boolean).join(" ")
+                }`,
+              }))}
+            />
+          ) : (
+            <div style={{ fontSize: "13px", color: "var(--danger)", padding: "8px 0" }}>
+              No stored vehicles found for this customer.
+            </div>
+          )}
+        </div>
+
+        {/* Confirm customer contact details */}
+        <div
+          style={{
+            marginTop: "16px",
+            padding: "14px",
+            backgroundColor: "var(--surface-light)",
+            borderRadius: "12px",
+            border: "1px solid var(--surface-light)",
+            borderLeft: `4px solid ${confirmCustomerDetails ? "var(--success)" : "var(--warning)"}`,
+          }}
+        >
+          <label
+            style={{
+              display: "flex",
+              gap: "10px",
+              alignItems: "flex-start",
+              fontSize: "13px",
+              color: "var(--text-primary)",
+              cursor: canEdit ? "pointer" : "default",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={confirmCustomerDetails}
+              onChange={(event) => setConfirmCustomerDetails(event.target.checked)}
+              disabled={!canEdit}
+              style={{ width: "16px", height: "16px", marginTop: "2px", flexShrink: 0 }}
+            />
+            <span>
+              I confirm {jobData.customer || "the customer"}&apos;s contact details for this booking.
+              <br />
+              <span style={{ fontSize: "11px", color: "var(--grey-accent)", fontWeight: "400" }}>
+                Required for booking updates and collection notifications.
+              </span>
+            </span>
+          </label>
+          {!confirmCustomerDetails && canEdit && (
+            <div style={{ marginTop: "8px", marginLeft: "26px", fontSize: "12px", color: "var(--danger)", fontWeight: "500" }}>
+              Please confirm customer details before saving.
+            </div>
+          )}
+        </div>
       </div>
 
-      <div style={cardStyle}>
-        <div style={{ marginBottom: "20px" }}>
-          <div style={{ marginBottom: "16px" }}>
-            <h3 style={cardTitleStyle}>Customer Booking</h3>
+      {/* ── Row: Customer Reported Issues (left) + Appointment Information (right) ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", alignItems: "stretch" }}>
+
+        {/* ── Section 2: Customer Reported Issues ── */}
+        <div style={{ ...sectionCardStyle, marginBottom: 0, display: "flex", flexDirection: "column" }}>
+          <div style={sectionTitleRow}>
+            <h3 style={cardTitleStyle}>Customer Reported Issues</h3>
           </div>
-          <div>
-            <label style={fieldLabelStyle}>Vehicle</label>
-            {customerVehiclesLoading ? (
-              <div
-                style={{
-                  fontSize: "13px",
-                  color: "var(--text-secondary)",
-                  padding: "8px 0"
-                }}
-              >
-                Loading stored vehicles...
-              </div>
-            ) : vehicleOptions.length > 0 ? (
-              <>
-                <select
-                  value={selectedVehicleIdValue}
-                  onChange={(event) => handleVehicleChange(event.target.value)}
-                  disabled={!canEdit}
-                  style={{
-                    ...inputStyle,
-                    marginBottom: "10px"
-                  }}
-                >
-                  <option value="" disabled>
-                    Select stored vehicle
-                  </option>
-                  {vehicleOptions.map((vehicle) => (
-                    <option key={vehicle.vehicle_id} value={vehicle.vehicle_id}>
-                      {`${vehicle.registration || vehicle.reg_number || "Vehicle"} · ${
-                        vehicle.make_model ||
-                        [vehicle.make, vehicle.model].filter(Boolean).join(" ")
-                      }`}
-                    </option>
-                  ))}
-                </select>
-                {selectedVehicle && (
-                  <div
+          <div
+            style={{
+              ...subPanelStyle,
+              flex: 1,
+              minHeight: "120px",
+              overflowY: "auto",
+              color: "var(--text-secondary)",
+              fontSize: "13px",
+              lineHeight: "22px",
+            }}
+          >
+            {bookingRequestLines.length > 0 ? (
+              <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
+                {bookingRequestLines.map((line, index) => (
+                  <li
+                    key={`${index}-${line}`}
                     style={{
-                      ...subPanelStyle,
-                      fontSize: "13px",
-                      color: "var(--text-secondary)"
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: "10px",
+                      padding: "8px 6px",
+                      borderBottom: index < bookingRequestLines.length - 1 ? "1px solid var(--surface-light)" : "none",
                     }}
                   >
-                    <div style={{ fontWeight: "600", color: "var(--text-primary)" }}>
-                      {selectedVehicle.registration || selectedVehicle.reg_number}
-                    </div>
-                    <div>
-                      {selectedVehicle.make_model ||
-                        [selectedVehicle.make, selectedVehicle.model]
-                          .filter(Boolean)
-                          .join(" ")}
-                    </div>
-                  </div>
-                )}
-              </>
+                    <span style={{
+                      width: "6px",
+                      height: "6px",
+                      borderRadius: "50%",
+                      background: "var(--warning)",
+                      flexShrink: 0,
+                      marginTop: "8px",
+                    }} />
+                    <span style={{ color: "var(--text-primary)", fontWeight: "500" }}>{line}</span>
+                  </li>
+                ))}
+              </ul>
             ) : (
-              <div
-                style={{ fontSize: "13px", color: "var(--danger)", padding: "8px 0" }}
-              >
-                No stored vehicles found for this customer.
-              </div>
-            )}
-          </div>
-
-          <div
-            style={{
-              marginTop: "16px",
-              padding: "14px",
-              backgroundColor: "var(--surface-light)",
-              borderRadius: "12px",
-              border: "1px solid var(--surface-light)",
-              borderLeft: `4px solid ${confirmCustomerDetails ? "var(--success)" : "var(--warning)"}`
-            }}
-          >
-            <label
-              style={{
-                display: "flex",
-                gap: "10px",
-                alignItems: "center",
-                fontSize: "13px",
-                color: "var(--text-primary)"
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={confirmCustomerDetails}
-                onChange={(event) =>
-                  setConfirmCustomerDetails(event.target.checked)
-                }
-                disabled={!canEdit}
-                style={{ width: "16px", height: "16px" }}
-              />
-              I confirm {jobData.customer || "the customer"}'s contact details for
-              this booking.
-            </label>
-          </div>
-
-          <div style={{ marginTop: "16px" }}>
-            <div
-              style={{
-                fontSize: "13px",
-                fontWeight: "600",
-                color: "var(--text-primary)",
-                marginBottom: "8px"
-              }}
-            >
-              Customer Status
-            </div>
-            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-              {waitingOptions.map((option) => {
-                const isActive =
-                  bookingWaitingStatus === option ||
-                  (!bookingWaitingStatus && option === "Neither");
-                return (
-                  <button
-                    key={option}
-                    onClick={() => handleBookingWaitingSelect(option)}
-                    disabled={!canEdit}
-                    style={{
-                      flex: "1 1 180px",
-                      minWidth: "140px",
-                      padding: "12px 16px",
-                      borderRadius: "10px",
-                      border: isActive
-                        ? "2px solid var(--primary)"
-                        : "1px solid var(--border)",
-                      backgroundColor: isActive
-                        ? "var(--primary)"
-                        : "var(--surface-light)",
-                      color: isActive ? "var(--text-inverse)" : "var(--text-primary)",
-                      fontWeight: "600",
-                      cursor: canEdit ? "pointer" : "default",
-                      transition: "all 0.2s"
-                    }}
-                  >
-                    {option}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div style={{ marginTop: "16px" }}>
-            <label style={fieldLabelStyle}>Job Requests</label>
-            <div
-              style={{
-                ...subPanelStyle,
-                maxHeight: "96px",
-                overflowY: "auto",
-                color: "var(--text-secondary)",
-                fontSize: "13px",
-                lineHeight: "20px",
-              }}
-            >
-              {bookingRequestLines.length > 0 ? (
-                <ul style={{ margin: 0, paddingLeft: "18px" }}>
-                  {bookingRequestLines.map((line, index) => (
-                    <li key={`${index}-${line}`}>{line}</li>
-                  ))}
-                </ul>
-              ) : (
-                <div>No job requests found.</div>
-              )}
-            </div>
-          </div>
-
-          <div
-            style={{
-              marginTop: "16px",
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              flexWrap: "wrap"
-            }}
-          >
-            <button
-              onClick={handleBookingSubmit}
-              disabled={bookingButtonDisabled || vehicleOptions.length === 0}
-              style={{
-                padding: "10px 20px",
-                backgroundColor: bookingButtonDisabled
-                  ? "var(--grey-accent)"
-                  : "var(--primary)",
-                color: "var(--text-inverse)",
-                border: "none",
-                borderRadius: "8px",
-                cursor: bookingButtonDisabled ? "not-allowed" : "pointer",
-                fontWeight: "600",
-                fontSize: "14px"
-              }}
-            >
-              {bookingFlowSaving ? "Saving..." : "Save Booking Details"}
-            </button>
-            {bookingMessage && (
-              <span style={{ fontSize: "13px", color: "var(--success)" }}>
-                {bookingMessage}
-              </span>
-            )}
-            {!confirmCustomerDetails && canEdit && (
-              <span style={{ fontSize: "12px", color: "var(--danger)" }}>
-                Please confirm customer details before saving.
-              </span>
+              <div style={{ padding: "8px 6px", color: "var(--grey-accent)" }}>No reported issues found.</div>
             )}
           </div>
         </div>
-        <div
-          style={{
+
+        {/* ── Section 3: Appointment Information ── */}
+        <div style={{ ...sectionCardStyle, marginBottom: 0 }}>
+          <div style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
             marginBottom: "16px",
-            flexWrap: "wrap",
-            gap: "12px"
-          }}
-        >
-          <div>
+          }}>
             <h3 style={cardTitleStyle}>Appointment Information</h3>
-            <p style={cardSubtitleStyle}>
-              Adjust booking times directly from the job card
-            </p>
+            <button
+              onClick={() => router.push(`/appointments?job=${jobData.jobNumber}`)}
+              style={{
+                padding: "7px 12px",
+                borderRadius: "8px",
+                border: "none",
+                backgroundColor: "var(--layer-section-level-1)",
+                color: "var(--primary-dark)",
+                fontSize: "12px",
+                fontWeight: "600",
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Open Appointment Calendar
+            </button>
           </div>
-          <button
-            onClick={() => router.push(`/appointments?job=${jobData.jobNumber}`)}
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
+            <div>
+              <CalendarField
+                label="Date"
+                value={appointmentForm.date}
+                onChange={(event) => handleAppointmentFieldChange("date", event.target.value)}
+                disabled={!canEdit || appointmentSaving}
+                className="compact-picker"
+              />
+            </div>
+            <div>
+              <TimePickerField
+                label="Time"
+                value={appointmentForm.time}
+                onChange={(event) => handleAppointmentFieldChange("time", event.target.value)}
+                disabled={!canEdit || appointmentSaving}
+                className="compact-picker"
+                style={{ ...inputStyle }}
+              />
+            </div>
+            <div>
+              <DropdownField
+                label="Status"
+                value={String(appointmentForm.status || "booked")}
+                defaultValue="booked"
+                placeholder="Select status"
+                onChange={(event) => handleAppointmentFieldChange("status", event.target.value)}
+                disabled={!canEdit || appointmentSaving}
+                className="compact-picker"
+                options={[
+                  { value: "booked", label: "Booked" },
+                  { value: "confirmed", label: "Confirmed" },
+                  { value: "checked_in", label: "Checked In" },
+                  { value: "completed", label: "Completed" },
+                  { value: "cancelled", label: "Cancelled" },
+                ]}
+              />
+            </div>
+          </div>
+
+          <div
             style={{
-              padding: "8px 14px",
-              borderRadius: "8px",
-              border: "1px solid var(--border)",
+              marginTop: "14px",
+              padding: "10px 12px",
               backgroundColor: "var(--surface-light)",
-              color: "var(--text-primary)",
-              fontSize: "13px",
-              fontWeight: "600",
-              cursor: "pointer"
+              border: "1px solid var(--surface-light)",
+              borderRadius: "10px",
+              fontSize: "12px",
+              color: "var(--grey-accent)",
             }}
           >
-            Open Appointment Calendar
-          </button>
+            Appointment created: <strong style={{ color: "var(--text-secondary)" }}>{appointmentCreatedAt}</strong>
+          </div>
         </div>
+      </div>
 
+      {/* ── Section 4: Customer Logistics ── */}
+      <div style={sectionCardStyle}>
+        <div style={sectionTitleRow}>
+          <h3 style={cardTitleStyle}>Customer Logistics</h3>
+        </div>
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))",
-            gap: "16px"
+            gridTemplateColumns: "repeat(4, 1fr)",
+            gap: "0",
+            border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
+            borderRadius: "10px",
+            overflow: "hidden",
           }}
         >
-          <div>
-            <CalendarField
-              label="Date"
-              value={appointmentForm.date}
-              onChange={(event) =>
-                handleAppointmentFieldChange("date", event.target.value)
-              }
-              disabled={!canEdit || appointmentSaving}
-              className="compact-picker"
-            />
-          </div>
-          <div>
-            <TimePickerField
-              label="Time"
-              value={appointmentForm.time}
-              onChange={(event) =>
-                handleAppointmentFieldChange("time", event.target.value)
-              }
-              disabled={!canEdit || appointmentSaving}
-              className="compact-picker"
-              style={{
-                ...inputStyle
-              }}
-            />
-          </div>
-          <div>
-            <label style={fieldLabelStyle}>Status</label>
-            <select
-              value={appointmentForm.status}
-              onChange={(event) =>
-                handleAppointmentFieldChange("status", event.target.value)
-              }
-              disabled={!canEdit || appointmentSaving}
-              style={inputStyle}
-            >
-              <option value="booked">Booked</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="checked_in">Checked In</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-          </div>
+          {waitingOptions.map((option, idx) => {
+            const isActive =
+              bookingWaitingStatus === option ||
+              (!bookingWaitingStatus && option === "Neither");
+            return (
+              <button
+                key={option}
+                onClick={() => handleBookingWaitingSelect(option)}
+                disabled={!canEdit}
+                style={{
+                  padding: "14px 8px",
+                  border: "none",
+                  borderRight: idx < waitingOptions.length - 1 ? "1px solid rgba(var(--grey-accent-rgb), 0.35)" : "none",
+                  backgroundColor: isActive ? "var(--primary)" : "var(--surface)",
+                  color: isActive ? "var(--text-inverse)" : "var(--text-primary)",
+                  fontWeight: "600",
+                  fontSize: "13px",
+                  cursor: canEdit ? "pointer" : "default",
+                  transition: "background-color 0.15s, color 0.15s",
+                }}
+              >
+                {option}
+              </button>
+            );
+          })}
         </div>
+        {/* Placeholder for future conditional fields (loan car details, collection time, etc.) */}
+        <div style={{ minHeight: "0px" }} />
+      </div>
 
-        <div style={{ marginTop: "16px" }}>
-          <label style={fieldLabelStyle}>Notes</label>
-          <textarea
-            value={appointmentForm.notes}
-            onChange={(event) =>
-              handleAppointmentFieldChange("notes", event.target.value)
-            }
-            rows={3}
-            disabled={!canEdit || appointmentSaving}
+      {/* ── Section 5: Actions ── */}
+      <div style={{ ...sectionCardStyle, display: "flex", flexWrap: "wrap", alignItems: "center", gap: "12px", marginBottom: 0 }}>
+        {/* Primary: Save Booking */}
+        <button
+          onClick={handleBookingSubmit}
+          disabled={bookingButtonDisabled || vehicleOptions.length === 0}
+          title={
+            !confirmCustomerDetails
+              ? "Confirm customer details first"
+              : !selectedVehicleId
+                ? "Select a vehicle first"
+                : bookingRequestLines.length === 0
+                  ? "No job requests to submit"
+                  : undefined
+          }
+          style={{
+            padding: "10px 24px",
+            backgroundColor: bookingButtonDisabled ? "var(--grey-accent)" : "var(--primary)",
+            color: "var(--text-inverse)",
+            border: "none",
+            borderRadius: "8px",
+            cursor: bookingButtonDisabled ? "not-allowed" : "pointer",
+            fontWeight: "600",
+            fontSize: "14px",
+            opacity: bookingButtonDisabled ? 0.65 : 1,
+            transition: "opacity 0.15s, background-color 0.15s",
+          }}
+        >
+          {bookingFlowSaving ? "Saving..." : "Save Booking Details"}
+        </button>
+
+        {/* Secondary: Update / Schedule Appointment */}
+        {canEdit && (
+          <button
+            onClick={handleAppointmentSubmit}
+            disabled={!appointmentDirty || appointmentSaving}
             style={{
-              ...inputStyle,
-              padding: "12px",
-              resize: "vertical"
+              padding: "10px 20px",
+              backgroundColor: appointmentDirty ? "var(--layer-section-level-1)" : "var(--surface-light)",
+              color: appointmentDirty ? "var(--primary-dark)" : "var(--grey-accent)",
+              border: "none",
+              borderRadius: "8px",
+              fontWeight: "600",
+              fontSize: "14px",
+              cursor: appointmentDirty && !appointmentSaving ? "pointer" : "not-allowed",
+              opacity: !appointmentDirty ? 0.6 : 1,
+              transition: "opacity 0.15s, background-color 0.15s, color 0.15s",
             }}
-          />
-        </div>
+          >
+            {appointmentSaving
+              ? "Saving..."
+              : jobData.appointment
+                ? "Update Appointment"
+                : "Schedule Appointment"}
+          </button>
+        )}
 
-        <div
-          style={{
-            marginTop: "16px",
-            display: "flex",
-            alignItems: "center",
-            gap: "12px"
-          }}
-        >
-          {canEdit && (
-            <button
-              onClick={handleAppointmentSubmit}
-              disabled={!appointmentDirty || appointmentSaving}
-              style={{
-                padding: "10px 20px",
-                backgroundColor: appointmentDirty
-                  ? "var(--primary)"
-                  : "var(--grey-accent)",
-                color: "var(--text-inverse)",
-                border: "none",
-                borderRadius: "8px",
-                fontWeight: "600",
-                fontSize: "14px",
-                cursor:
-                  appointmentDirty && !appointmentSaving
-                    ? "pointer"
-                    : "not-allowed"
-              }}
-            >
-              {appointmentSaving
-                ? "Saving..."
-                : jobData.appointment
-                  ? "Update Appointment"
-                  : "Schedule Appointment"}
-            </button>
-          )}
-          {appointmentMessage && (
-            <span style={{ fontSize: "13px", color: "var(--success)" }}>
-              {appointmentMessage}
-            </span>
-          )}
-        </div>
-
-        <div
-          style={{
-            marginTop: "20px",
-            padding: "12px",
-            backgroundColor: "var(--surface-light)",
-            border: "1px solid var(--surface-light)",
-            borderRadius: "12px",
-            fontSize: "13px",
-            color: "var(--text-secondary)"
-          }}
-        >
-          Appointment created: <strong>{appointmentCreatedAt}</strong>
-        </div>
+        {/* Feedback messages */}
+        {bookingMessage && (
+          <span style={{ fontSize: "13px", color: "var(--success)", fontWeight: "500" }}>
+            {bookingMessage}
+          </span>
+        )}
+        {appointmentMessage && (
+          <span style={{ fontSize: "13px", color: "var(--success)", fontWeight: "500" }}>
+            {appointmentMessage}
+          </span>
+        )}
       </div>
     </div>
   );

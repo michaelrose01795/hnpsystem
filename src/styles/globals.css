@@ -1610,6 +1610,28 @@ body:has(.login-page-wrapper) {
   font-size: 14px !important;
 }
 
+.dropdown-api.compact-picker .dropdown-api__control {
+  min-height: unset !important;
+  padding: 10px 12px !important;
+  border-radius: 10px !important;
+  background: var(--surface-light) !important;
+  font-size: 14px !important;
+  border: 1.5px solid var(--border) !important;
+}
+.dropdown-api.compact-picker .dropdown-api__label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.dropdown-api.compact-picker.is-open .dropdown-api__control,
+.dropdown-api.compact-picker .dropdown-api__control:focus-visible {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15) !important;
+}
+.dropdown-api.compact-picker .dropdown-api__control:hover:not(:disabled) {
+  border-color: var(--primary) !important;
+}
+
 .timepicker-api__control:hover:not(:disabled) {
   border-color: var(--primary);
   background: rgba(var(--surface-rgb), 0.95);

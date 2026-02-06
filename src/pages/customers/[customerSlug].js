@@ -13,6 +13,7 @@ import {
 } from "@/lib/database/customers";
 import { createCustomerDisplaySlug, normalizeCustomerSlug } from "@/lib/customers/slug";
 import { isValidUuid } from "@/lib/utils/ids";
+import { createOrUpdateVehicle } from "@/lib/database/vehicles";
 
 const TAB_DEFINITIONS = [
   { id: "vehicles", label: "Vehicles" },
@@ -188,104 +189,344 @@ const deriveRequestSummary = (requests) => {
   return parts.join(" • ");
 };
 
-const VehiclesTab = ({ vehicles }) => {
-  if (!vehicles.length) {
-    return (
-      <div
-        style={{
-          border: "1px dashed var(--surface-light)",
-          borderRadius: "18px",
-          padding: "24px",
-          textAlign: "center",
-          color: "var(--grey-accent)",
-        }}
-      >
-        No vehicles linked to this customer yet.
-      </div>
-    );
-  }
+const VehiclesTab = ({ vehicles, customerId, onVehicleAdded }) => {
+  const [showForm, setShowForm] = useState(false);
+  const [newReg, setNewReg] = useState("");
+  const [looking, setLooking] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formMessage, setFormMessage] = useState("");
+  const [dvlaData, setDvlaData] = useState(null);
+
+  const resetForm = () => {
+    setShowForm(false);
+    setNewReg("");
+    setDvlaData(null);
+    setFormMessage("");
+    setLooking(false);
+    setSaving(false);
+  };
+
+  const handleLookup = async () => {
+    const trimmed = newReg.trim().toUpperCase();
+    if (!trimmed) return;
+    setLooking(true);
+    setFormMessage("");
+    setDvlaData(null);
+    try {
+      const res = await fetch("/api/vehicles/dvla", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ registration: trimmed }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setFormMessage(err.message || err.error || "Vehicle not found. You can still save with registration only.");
+        setDvlaData(null);
+      } else {
+        const data = await res.json();
+        setDvlaData(data);
+        setFormMessage("");
+      }
+    } catch {
+      setFormMessage("DVLA lookup failed. You can still save with registration only.");
+    }
+    setLooking(false);
+  };
+
+  const handleSave = async () => {
+    const trimmed = newReg.trim().toUpperCase();
+    if (!trimmed) return;
+    setSaving(true);
+    setFormMessage("");
+    const payload = {
+      registration: trimmed,
+      reg_number: trimmed,
+      customer_id: customerId,
+    };
+    if (dvlaData) {
+      payload.make = dvlaData.make || undefined;
+      payload.model = dvlaData.model || undefined;
+      payload.make_model = dvlaData.make && dvlaData.model ? `${dvlaData.make} ${dvlaData.model}` : undefined;
+      payload.year = dvlaData.yearOfManufacture || undefined;
+      payload.colour = dvlaData.colour || undefined;
+      payload.fuel_type = dvlaData.fuelType || undefined;
+      payload.mot_due = dvlaData.motExpiryDate || undefined;
+      payload.engine_capacity = dvlaData.engineCapacity || undefined;
+      payload.co2_emissions = dvlaData.co2Emissions || undefined;
+      payload.tax_status = dvlaData.taxStatus || undefined;
+      payload.tax_due_date = dvlaData.taxDueDate || undefined;
+      payload.marked_for_export = dvlaData.markedForExport || false;
+      payload.wheelplan = dvlaData.wheelplan || undefined;
+      payload.month_of_first_registration = dvlaData.monthOfFirstRegistration || undefined;
+    }
+    const result = await createOrUpdateVehicle(payload);
+    if (result.success) {
+      resetForm();
+      if (onVehicleAdded) onVehicleAdded();
+    } else {
+      setFormMessage(result.error?.message || "Failed to add vehicle.");
+    }
+    setSaving(false);
+  };
+
+  const previewLabelStyle = {
+    fontSize: "0.65rem",
+    textTransform: "uppercase",
+    letterSpacing: "0.15em",
+    color: "var(--grey-accent)",
+  };
+  const previewValueStyle = {
+    fontWeight: 600,
+    color: "var(--text-primary)",
+    fontSize: "13px",
+  };
 
   return (
-    <div
-      style={{
-        display: "grid",
-        gap: "16px",
-        gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-      }}
-    >
-      {vehicles.map((vehicle) => {
-        const registration = vehicle.registration || vehicle.reg_number || "Unregistered";
-        const makeModel =
-          vehicle.make_model ||
-          [vehicle.make, vehicle.model].filter(Boolean).join(" ") ||
-          "Vehicle";
-
-        return (
-          <div
-            key={vehicle.vehicle_id}
+    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+      {/* Add Vehicle controls */}
+      {!showForm ? (
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <button
+            onClick={() => setShowForm(true)}
             style={{
-              borderRadius: "20px",
-              border: "1px solid var(--surface-light)",
-              background: "var(--surface-light)",
-              padding: "20px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "12px",
+              padding: "8px 16px",
+              borderRadius: "8px",
+              border: "none",
+              backgroundColor: "var(--primary)",
+              color: "var(--text-inverse)",
+              fontSize: "13px",
+              fontWeight: "600",
+              cursor: "pointer",
             }}
           >
-            <div>
-              <p
-                style={{
-                  fontSize: "0.75rem",
-                  letterSpacing: "0.25em",
-                  textTransform: "uppercase",
-                  color: "var(--grey-accent)",
-                  marginBottom: "4px",
-                }}
-              >
-                Registration
-              </p>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: "1.3rem",
-                  fontWeight: 700,
-                  color: "var(--info-dark)",
-                }}
-              >
-                {registration}
-              </p>
-            </div>
-
-            <div>
-              <p style={{ margin: 0, fontWeight: 600, color: "var(--text-primary)" }}>
-                {makeModel}
-              </p>
-              <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-                {vehicle.year ? `Year ${vehicle.year}` : "Year unknown"}
-              </p>
-            </div>
-
-            <div
+            Add Vehicle
+          </button>
+        </div>
+      ) : (
+        <div
+          style={{
+            borderRadius: "16px",
+            border: "1px solid var(--surface-light)",
+            background: "var(--surface-light)",
+            padding: "20px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "14px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+            <input
+              type="text"
+              value={newReg}
+              onChange={(e) => { setNewReg(e.target.value); setFormMessage(""); setDvlaData(null); }}
+              placeholder="Enter registration"
+              autoFocus
+              disabled={looking || saving}
+              onKeyDown={(e) => { if (e.key === "Enter") handleLookup(); }}
               style={{
-                display: "grid",
-                gap: "12px",
-                gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+                padding: "8px 12px",
+                borderRadius: "8px",
+                border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
+                fontSize: "13px",
+                backgroundColor: "var(--surface)",
+                color: "var(--text-secondary)",
+                textTransform: "uppercase",
+                width: "180px",
+              }}
+            />
+            <button
+              onClick={handleLookup}
+              disabled={looking || saving || !newReg.trim()}
+              style={{
+                padding: "8px 16px",
+                borderRadius: "8px",
+                border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
+                backgroundColor: "var(--surface)",
+                color: looking || !newReg.trim() ? "var(--grey-accent)" : "var(--text-primary)",
+                fontSize: "13px",
+                fontWeight: "600",
+                cursor: looking || saving || !newReg.trim() ? "not-allowed" : "pointer",
               }}
             >
-              <VehicleField label="Colour" value={vehicle.colour} />
-              <VehicleField label="VIN" value={vehicle.vin || vehicle.chassis} />
-              <VehicleField
-                label="Mileage"
-                value={vehicle.mileage ? `${vehicle.mileage} miles` : null}
-              />
-              <VehicleField label="Fuel" value={vehicle.fuel_type} />
-              <VehicleField label="Transmission" value={vehicle.transmission} />
-              <VehicleField label="MOT due" value={formatDate(vehicle.mot_due)} />
-            </div>
+              {looking ? "Looking up..." : "Lookup"}
+            </button>
+            <button
+              onClick={resetForm}
+              disabled={saving}
+              style={{
+                padding: "8px 12px",
+                borderRadius: "8px",
+                border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
+                backgroundColor: "var(--surface)",
+                color: "var(--grey-accent-dark)",
+                fontSize: "13px",
+                fontWeight: "500",
+                cursor: "pointer",
+              }}
+            >
+              Cancel
+            </button>
           </div>
-        );
-      })}
+
+          {formMessage && !dvlaData && (
+            <span style={{ fontSize: "12px", color: "var(--warning-dark)" }}>{formMessage}</span>
+          )}
+
+          {/* DVLA preview */}
+          {dvlaData && (
+            <div
+              style={{
+                borderRadius: "12px",
+                border: "1px solid var(--surface-light)",
+                background: "var(--surface)",
+                padding: "16px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <span style={{ fontWeight: 700, fontSize: "1.1rem", color: "var(--info-dark)", letterSpacing: "0.5px" }}>
+                  {newReg.trim().toUpperCase()}
+                </span>
+                <span style={{ color: "var(--grey-accent)" }}>|</span>
+                <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>
+                  {[dvlaData.make, dvlaData.model].filter(Boolean).join(" ") || "Unknown"}
+                </span>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "10px" }}>
+                <div><span style={previewLabelStyle}>Year</span><div style={previewValueStyle}>{dvlaData.yearOfManufacture || "—"}</div></div>
+                <div><span style={previewLabelStyle}>Colour</span><div style={previewValueStyle}>{dvlaData.colour || "—"}</div></div>
+                <div><span style={previewLabelStyle}>Fuel</span><div style={previewValueStyle}>{dvlaData.fuelType || "—"}</div></div>
+                <div><span style={previewLabelStyle}>MOT Due</span><div style={previewValueStyle}>{dvlaData.motExpiryDate ? formatDate(dvlaData.motExpiryDate) : "—"}</div></div>
+                <div><span style={previewLabelStyle}>Tax Status</span><div style={previewValueStyle}>{dvlaData.taxStatus || "—"}</div></div>
+                <div><span style={previewLabelStyle}>Engine</span><div style={previewValueStyle}>{dvlaData.engineCapacity ? `${dvlaData.engineCapacity} cc` : "—"}</div></div>
+              </div>
+            </div>
+          )}
+
+          {/* Save / Save without DVLA */}
+          {(dvlaData || newReg.trim()) && (
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <button
+                onClick={handleSave}
+                disabled={saving || !newReg.trim()}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "8px",
+                  border: "none",
+                  backgroundColor: saving || !newReg.trim() ? "var(--grey-accent)" : "var(--primary)",
+                  color: "var(--text-inverse)",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  cursor: saving || !newReg.trim() ? "not-allowed" : "pointer",
+                }}
+              >
+                {saving ? "Saving..." : dvlaData ? "Save Vehicle" : "Save Without Lookup"}
+              </button>
+              {formMessage && dvlaData && (
+                <span style={{ fontSize: "12px", color: "var(--danger)" }}>{formMessage}</span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {!vehicles.length ? (
+        <div
+          style={{
+            border: "1px dashed var(--surface-light)",
+            borderRadius: "18px",
+            padding: "24px",
+            textAlign: "center",
+            color: "var(--grey-accent)",
+          }}
+        >
+          No vehicles linked to this customer yet.
+        </div>
+      ) : (
+        <div
+          style={{
+            display: "grid",
+            gap: "16px",
+            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+          }}
+        >
+          {vehicles.map((vehicle) => {
+            const registration = vehicle.registration || vehicle.reg_number || "Unregistered";
+            const makeModel =
+              vehicle.make_model ||
+              [vehicle.make, vehicle.model].filter(Boolean).join(" ") ||
+              "Vehicle";
+
+            return (
+              <div
+                key={vehicle.vehicle_id}
+                style={{
+                  borderRadius: "20px",
+                  border: "1px solid var(--surface-light)",
+                  background: "var(--surface-light)",
+                  padding: "20px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
+                }}
+              >
+                <div>
+                  <p
+                    style={{
+                      fontSize: "0.75rem",
+                      letterSpacing: "0.25em",
+                      textTransform: "uppercase",
+                      color: "var(--grey-accent)",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    Registration
+                  </p>
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: "1.3rem",
+                      fontWeight: 700,
+                      color: "var(--info-dark)",
+                    }}
+                  >
+                    {registration}
+                  </p>
+                </div>
+
+                <div>
+                  <p style={{ margin: 0, fontWeight: 600, color: "var(--text-primary)" }}>
+                    {makeModel}
+                  </p>
+                  <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.9rem" }}>
+                    {vehicle.year ? `Year ${vehicle.year}` : "Year unknown"}
+                  </p>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gap: "12px",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+                  }}
+                >
+                  <VehicleField label="Colour" value={vehicle.colour} />
+                  <VehicleField label="VIN" value={vehicle.vin || vehicle.chassis} />
+                  <VehicleField
+                    label="Mileage"
+                    value={vehicle.mileage ? `${vehicle.mileage} miles` : null}
+                  />
+                  <VehicleField label="Fuel" value={vehicle.fuel_type} />
+                  <VehicleField label="Transmission" value={vehicle.transmission} />
+                  <VehicleField label="MOT due" value={formatDate(vehicle.mot_due)} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
@@ -566,7 +807,17 @@ export default function CustomerDetailWorkspace() {
 
   const renderTabContent = () => {
     if (activeTab === "vehicles") {
-      return <VehiclesTab vehicles={vehicles} />;
+      return (
+        <VehiclesTab
+          vehicles={vehicles}
+          customerId={customer?.id}
+          onVehicleAdded={async () => {
+            if (!customer?.id) return;
+            const refreshed = await getCustomerVehicles(customer.id);
+            setVehicles(refreshed || []);
+          }}
+        />
+      );
     }
     if (activeTab === "history") {
       return <HistoryTab jobs={jobs} />;
