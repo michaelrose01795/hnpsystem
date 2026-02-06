@@ -646,13 +646,16 @@ export default function CreateJobCardPage() {
       return []; // nothing to insert
     } // finish guard
 
+    console.log("📝 saveJobRequestsToDatabase payload:", payload.map((row) => ({ description: row.description?.slice(0, 30), hours: row.hours, job_type: row.job_type })));
+
     const { data, error } = await supabase
       .from("job_requests")
       .insert(payload)
-      .select("request_id, description, sort_order"); // insert payload into Supabase table
+      .select("request_id, description, sort_order, hours"); // insert payload into Supabase table
     if (error) { // check for insert failure
       throw new Error(error.message || "Failed to save job requests"); // bubble error so caller can abort
     } // finish error handling
+    console.log("✅ saveJobRequestsToDatabase result:", (data || []).map((row) => ({ request_id: row.request_id, hours: row.hours })));
     return data || [];
   }; // end helper
 
@@ -1279,6 +1282,8 @@ export default function CreateJobCardPage() {
         const tabRequests = tab.requests
           .map((req) => ({ ...req, text: (req.text || "").trim() }))
           .filter((req) => req.text.length > 0);
+
+        console.log("🕐 tabRequests before save (time values):", tabRequests.map((r) => ({ text: (r.text || "").slice(0, 30), time: r.time, typeofTime: typeof r.time })));
 
         if (isFirstJob) {
           await saveCosmeticDamageDetails(jobId, cosmeticDamagePresent, cosmeticNotes);

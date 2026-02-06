@@ -3,21 +3,37 @@ TO DO:
 Continue flow with job number 55
 
 
-
-within the appointment page, have it so when the calendar row is selected it uses the light and dark background colour theme (red and purple) and have it when selected it doesnt have a boarder around the selected item. the [todaysday] row (alwaays the top) is a really light colour backgorund followign light and drk mode theme. 
-
+Schedualling tab prompt 
 
 
+
+
+CHECK
 with the "Upload Documents" popup, does the document actually get uploaded to the database? if not what happens and is it a perminent thing, have it so the "Upload Documents" popup shows all of the uploaded items always when something has been uplaoded. 
 
+
+FIND OUT
 Can we add an auto detect text box locations, tick box location, signature box location, correct orientation, so the app can turn the uploaded document into a live seach which can be ticked, signed, reg field etc auto filled out. or is this not possible. 
 
+
+DO THISSSS
 work on implementing "AI" within whole app search chat "AI job detection system"
 
 
-within the "Invoice" tab have it so the request 1,2,3 etc shows the full descrtiption of the request. cahnge the authorised rows from Request 1 2 3 etc to "Authorised request 1 2 3etc", and the Oringal request/customer resquest 1 2 3 to show "Customer Request 1 2 3 4 etc". Always have it so the "Customer request are first and then the Authroised Requests are at the bottom. 
 
-Have it so that all of the totals are within the same row as the Request title. have it shows these in order left to right, Total of parts allocated to row, Total tax @20%, Total including tax for each request. 
+have it so when opening the job-cards/[jobnumber] page it aloways opens within the "Customer Requests" tab. 
+
+
+
+FINSIH BEFORE MOVING ON
+Have is so when a part is assigned to the request customer or vhc its shown within that row inside the invocie tab so each request has a linked part if needed. have it only hsow the part table wihtin the row if a part has been linked to that 
+
+have it so the priont button only gets the section of the invoice tab within the print, make it so the print format is vertial and everything fits within the vertical page, have it all within a nice layout. as well add an emial button, when clicked this button will find the customer email, and authomaticlly attach the print copy into the emial and send automaticlly. 
+
+
+
+make sure the "ALLOCATE PARTS" part section always shows the customer request (at the top) and VHC request (blow the cusomter request) at all times if its been reported, new remove the requests from that sectin even if a part has been allocated to that request.
+
 
 
 
@@ -31,6 +47,9 @@ Sub-job number, make sure database table update and is all linked.
 
 add the changes to the database into the addtables.sql for me to put into the table editor. 
 
+
+
+fix the "Job Type" column within the appointment page within the "Jobs for" section so it shows the correct job detection, have it so it shows all of them within the column, if more than two rows then create a scroll within the column for that row if goes more. 
 
 
 CHECKKKK

@@ -21,7 +21,8 @@ export default function DocumentsUploadPopup({
   jobId,
   userId,
   onAfterUpload,
-  onTempFilesQueued
+  onTempFilesQueued,
+  existingDocuments = []
 }) {
   const [pendingDocuments, setPendingDocuments] = useState([]);
   const [uploadProgress, setUploadProgress] = useState([]);
@@ -424,6 +425,60 @@ export default function DocumentsUploadPopup({
                 {isUploading ? "Uploading..." : "Upload"}
               </button>
             </div>
+
+            {existingDocuments.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <h4 style={{ margin: 0, fontSize: "14px", fontWeight: "600", color: "var(--text-primary)" }}>
+                  Uploaded ({existingDocuments.length})
+                </h4>
+                <div
+                  style={{
+                    maxHeight: "200px",
+                    overflowY: "auto",
+                    border: "1px solid var(--surface-light)",
+                    borderRadius: "12px",
+                    padding: "8px"
+                  }}
+                >
+                  {existingDocuments.map((doc, idx) => (
+                    <div
+                      key={doc.id || idx}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "8px",
+                        borderBottom: idx < existingDocuments.length - 1 ? "1px solid var(--surface-light)" : "none"
+                      }}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {doc.name || "Document"}
+                        </div>
+                        <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
+                          {doc.type || ""}
+                        </div>
+                      </div>
+                      <a
+                        href={doc.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          fontSize: "12px",
+                          fontWeight: "600",
+                          color: "var(--primary)",
+                          textDecoration: "none",
+                          marginLeft: "12px",
+                          flexShrink: 0
+                        }}
+                      >
+                        View
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {uploadProgress.length > 0 && (

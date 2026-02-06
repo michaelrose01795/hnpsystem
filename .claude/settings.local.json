@@ -22,7 +22,16 @@
       "Bash(git checkout:*)",
       "Bash(NEXT_BUILD_USE_TURBOPACK=false npm run build:*)",
       "Bash(npx eslint:*)",
-      "Bash(tail:*)"
+      "Bash(tail:*)",
+      "Bash(for file in /workspaces/hnpsystem/src/pages/job-cards/[jobNumber].js /workspaces/hnpsystem/src/pages/job-cards/create/index.js /workspaces/hnpsystem/src/components/JobCards/JobCardModal.js)",
+      "Bash(do echo \"=== FILE: $file ===\" grep -n \"insert\\\\|update\\\\|upsert\" \"$file\")",
+      "Bash(done)",
+      "Bash(for file in /workspaces/hnpsystem/src/lib/invoices/detailService.js /workspaces/hnpsystem/src/pages/api/vhc/update-item-status.js /workspaces/hnpsystem/src/pages/api/jobcards/archive/create.js /workspaces/hnpsystem/src/lib/jobcards/utils.js)",
+      "Bash(do echo \"=== Checking $file for job_requests modifications ===\" grep -B 10 -A 10 \"job_requests\" \"$file\")",
+      "Bash(while read file)",
+      "Bash(do if grep -q \"insert\\\\|update\\\\|upsert\" \"$file\")",
+      "Bash(then echo \"=== $file ===\" grep -C 8 \"job_requests\" \"$file\")",
+      "Bash(fi:*)"
     ],
     "deny": [],
     "ask": []

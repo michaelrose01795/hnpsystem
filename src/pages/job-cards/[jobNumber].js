@@ -559,6 +559,7 @@ export default function JobCardDetailPage() {
         }
 
         const jobCard = data.jobCard;
+        console.log("🔍 jobCard.jobRequests hours:", (jobCard.jobRequests || []).map((r) => ({ desc: (r.description || "").slice(0, 30), hours: r.hours })));
         const mappedFiles = (jobCard.files || []).map(mapJobFileRecord);
         const hydratedJobCard = { ...jobCard, files: mappedFiles };
         setJobData(hydratedJobCard);
@@ -2510,6 +2511,7 @@ export default function JobCardDetailPage() {
           jobId={jobData?.id ? String(jobData.id) : null}
           userId={user?.user_id || actingUserId || null}
           onAfterUpload={() => fetchJobData({ silent: true, force: true })}
+          existingDocuments={jobDocuments}
         />
         {trackerQuickModalOpen && (
           <LocationUpdateModal
@@ -2628,7 +2630,30 @@ function CustomerRequestsTab({
   notes = [],
   partsJobItems = []
 }) {
-  const [requests, setRequests] = useState(() => normalizeRequests(jobData.requests));
+  const buildEditRequests = useCallback(() => {
+    const source = Array.isArray(jobData?.jobRequests)
+      ? jobData.jobRequests
+      : Array.isArray(jobData?.job_requests)
+      ? jobData.job_requests
+      : [];
+    if (source.length > 0) {
+      return source.map((row) => ({
+        requestId: row.requestId ?? row.request_id ?? null,
+        text: row.description ?? row.text ?? "",
+        time: row.hours ?? row.time ?? "",
+        paymentType: row.jobType ?? row.job_type ?? row.paymentType ?? "Customer",
+        noteText: row.noteText ?? row.note_text ?? "",
+      }));
+    }
+    return normalizeRequests(jobData.requests).map((req) => ({
+      requestId: null,
+      text: req?.text || req?.description || req || "",
+      time: req?.time ?? req?.hours ?? "",
+      paymentType: req?.paymentType || req?.jobType || "Customer",
+      noteText: "",
+    }));
+  }, [jobData]);
+  const [requests, setRequests] = useState(buildEditRequests);
   const [editing, setEditing] = useState(false);
   const smallPrintStyle = { fontSize: "11px", color: "var(--info)" };
   const requestSubtitleStyle = {
@@ -2920,7 +2945,7 @@ function CustomerRequestsTab({
             </button>
             <button
               onClick={() => {
-                setRequests(normalizeRequests(jobData.requests));
+                setRequests(buildEditRequests());
                 setEditing(false);
               }}
               style={{
@@ -3098,18 +3123,16 @@ function CustomerRequestsTab({
                   })()}
                 </div>
                 <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                  {req.hours && (
-                    <span style={{
-                      padding: "4px 10px",
-                      backgroundColor: "var(--info-surface)",
-                      color: "var(--info)",
-                      borderRadius: "12px",
-                      fontSize: "12px",
-                      fontWeight: "600"
-                    }}>
-                      {req.hours}h
-                    </span>
-                  )}
+                  <span style={{
+                    padding: "4px 10px",
+                    backgroundColor: "var(--info-surface)",
+                    color: "var(--info)",
+                    borderRadius: "12px",
+                    fontSize: "12px",
+                    fontWeight: "600"
+                  }}>
+                    {Number(req.hours) || 0}h
+                  </span>
                   {req.jobType && (
                     <span style={{
                       padding: "4px 10px",

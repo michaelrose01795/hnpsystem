@@ -68,19 +68,32 @@ const VehicleRow = ({ vehicle }) => { // render vehicle details row
 }; // end VehicleRow
 
 const RequestBlock = ({ request }) => { // render each request body block
+  const partsNet = (request.totals?.request_total_net || 0) - (request.labour?.net || 0); // parts-only net total
   return ( // render section
     <section className={styles.requestBlock}> {/* // wrapper */}
       <div className={styles.requestHeader}> {/* // header row */}
-        <div>
-          <h3 style={{ margin: 0 }}>{`Request ${request.request_number}: ${request.title}`}</h3> {/* // request title */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h3 style={{ margin: 0 }}>{`${request.request_label || `Request ${request.request_number}`}: ${request.title}`}</h3> {/* // request title */}
           {request.summary && <p style={{ margin: "4px 0 0", color: "var(--text-secondary)" }}>{request.summary}</p>} {/* // optional summary */}
         </div>
-        <div>
-          <p style={{ margin: 0, fontSize: "0.85rem", textTransform: "uppercase", color: "var(--text-secondary)" }}>Labour</p> {/* // labour label */}
-          <strong>{formatCurrency(request.labour?.net || 0)}</strong> {/* // labour net */}
-          <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-secondary)" }}>
-            VAT {request.labour?.rate || 0}%: {formatCurrency(request.labour?.vat || 0)}
-          </p> {/* // labour VAT */}
+        <div style={{ display: "flex", gap: "20px", textAlign: "right", flexShrink: 0 }}>
+          <div>
+            <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-secondary)" }}>Parts Total</p>
+            <strong>{formatCurrency(partsNet)}</strong>
+          </div>
+          <div>
+            <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-secondary)" }}>Labour Total</p>
+            <strong>{formatCurrency(request.labour?.net || 0)}</strong>
+            <p style={{ margin: 0, fontSize: "0.7rem", color: "var(--text-secondary)" }}>{request.labour?.hours || 0}h</p>
+          </div>
+          <div>
+            <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-secondary)" }}>Tax @20%</p>
+            <strong>{formatCurrency(request.totals?.request_total_vat || 0)}</strong>
+          </div>
+          <div>
+            <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-secondary)" }}>Total inc. Tax</p>
+            <strong style={{ fontSize: "1.05rem" }}>{formatCurrency(request.totals?.request_total_gross || 0)}</strong>
+          </div>
         </div>
       </div> {/* // end header row */}
 
@@ -120,15 +133,6 @@ const RequestBlock = ({ request }) => { // render each request body block
           </tbody>
         </table>
       </div> {/* // end table wrapper */}
-
-      <div style={{ display: "flex", justifyContent: "flex-end" }}> {/* // align total to right */}
-        <div style={{ textAlign: "right" }}> {/* // total column */}
-          <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--text-secondary)" }}>Request Total</p> {/* // label */}
-          <strong style={{ fontSize: "1.1rem" }}>
-            {formatCurrency(request.totals?.request_total_gross || 0)}
-          </strong> {/* // gross total */}
-        </div>
-      </div>
     </section>
   );
 }; // end RequestBlock

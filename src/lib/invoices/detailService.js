@@ -218,7 +218,15 @@ function enrichRequestsFromJob(jobRequests, partAllocations, vatRate, labourRate
     hours: 0, // no labour info
     job_type: "Customer" // default type
   }]; // end fallback
-  return fallbackRequests.map((request, index) => { // transform each request to invoice-friendly shape
+  const sorted = [...fallbackRequests].sort((a, b) => { // sort customer requests first, authorised last
+    const aIsAuthorised = (a.job_type || "").toLowerCase() === "authorised";
+    const bIsAuthorised = (b.job_type || "").toLowerCase() === "authorised";
+    if (aIsAuthorised === bIsAuthorised) return 0;
+    return aIsAuthorised ? 1 : -1;
+  }); // end sort
+  let customerCount = 0; // counter for customer request labels
+  let authorisedCount = 0; // counter for authorised request labels
+  return sorted.map((request, index) => { // transform each request to invoice-friendly shape
     const labourHours = Number(request.hours) || 0; // parse hours
     const labourNet = labourHours * labourRate; // compute net labour
     const labourVat = labourNet * (vatRate / 100); // compute VAT value
@@ -245,11 +253,16 @@ function enrichRequestsFromJob(jobRequests, partAllocations, vatRate, labourRate
     }); // finish mapping
     const partsNet = parts.reduce((sum, part) => sum + part.net_price, 0); // sum net parts
     const partsVat = parts.reduce((sum, part) => sum + part.vat, 0); // sum VAT parts
+    const isAuthorised = (request.job_type || "").toLowerCase() === "authorised"; // check request type
+    if (isAuthorised) { authorisedCount++; } else { customerCount++; } // increment appropriate counter
+    const requestLabel = isAuthorised ? `Authorised Request ${authorisedCount}` : `Request ${customerCount}`; // build label
     return { // return normalized request block
       request_number: index + 1, // sequential request number
-      title: request.description || `Request ${index + 1}`, // display title
+      request_label: requestLabel, // typed request label (e.g. "Customer Request 1")
+      title: request.description || requestLabel, // display title with full description
       summary: request.job_type || "Customer", // summary label
       labour: { // labour summary object
+        hours: labourHours, // labour hours
         net: labourNet, // net amount
         vat: labourVat, // VAT amount
         rate: vatRate // VAT rate percent
@@ -273,8 +286,17 @@ function enrichRequestsFromJob(jobRequests, partAllocations, vatRate, labourRate
 } // end enrichRequestsFromJob
 
 function normalizeInvoiceRequests(structuredRequests) { // convert invoice_requests rows into API shape
-  return structuredRequests.map((request, index) => { // iterate stored rows
+  const sorted = [...structuredRequests].sort((a, b) => { // sort customer requests first, authorised last
+    const aIsAuthorised = (a.job_type || a.notes || "").toLowerCase().includes("authorised");
+    const bIsAuthorised = (b.job_type || b.notes || "").toLowerCase().includes("authorised");
+    if (aIsAuthorised === bIsAuthorised) return 0;
+    return aIsAuthorised ? 1 : -1;
+  }); // end sort
+  let customerCount = 0; // counter for customer request labels
+  let authorisedCount = 0; // counter for authorised request labels
+  return sorted.map((request, index) => { // iterate stored rows
     const labour = { // build labour block from stored values
+      hours: Number(request.labour_hours) || 0, // stored labour hours
       net: Number(request.labour_net) || 0, // stored net
       vat: Number(request.labour_vat) || 0, // stored VAT
       rate: Number(request.labour_vat_rate) || DEFAULT_VAT_RATE // stored VAT rate
@@ -290,9 +312,13 @@ function normalizeInvoiceRequests(structuredRequests) { // convert invoice_reque
     })); // end parts map
     const partsNet = parts.reduce((sum, part) => sum + part.price * part.qty, 0); // compute net
     const partsVat = parts.reduce((sum, part) => sum + part.vat, 0); // compute VAT
+    const isAuthorised = (request.job_type || request.notes || "").toLowerCase().includes("authorised"); // check type
+    if (isAuthorised) { authorisedCount++; } else { customerCount++; } // increment counter
+    const requestLabel = isAuthorised ? `Authorised Request ${authorisedCount}` : `Request ${customerCount}`; // build label
     return { // return normalized request object
       request_number: request.request_number || index + 1, // preserve stored request number
-      title: request.title || `Request ${index + 1}`, // title fallback
+      request_label: requestLabel, // typed request label
+      title: request.title || requestLabel, // title fallback with full description
       summary: request.notes || "", // summary derived from notes
       labour, // labour block
       parts, // parts array

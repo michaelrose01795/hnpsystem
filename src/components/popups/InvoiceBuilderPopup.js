@@ -41,16 +41,38 @@ export default function InvoiceBuilderPopup({
   }, [invoiceResponse]);
 
   useEffect(() => {
-    const normalized = normalizeRequests(jobData?.requests).map((entry, index) => ({
+    const raw = normalizeRequests(jobData?.requests).map((entry, index) => ({
       id: entry.id || index,
-      description:
+      rawDescription:
         entry.text ||
         entry.description ||
         entry.label ||
-        `Request ${index + 1}`,
+        "",
       quantity: Number(entry.quantity || entry.qty || 1),
       paymentType: entry.paymentType || entry.payment_type || "Customer"
     }));
+    const sorted = [...raw].sort((a, b) => { // customer requests first, authorised last
+      const aIsAuth = (a.paymentType || "").toLowerCase() === "authorised";
+      const bIsAuth = (b.paymentType || "").toLowerCase() === "authorised";
+      if (aIsAuth === bIsAuth) return 0;
+      return aIsAuth ? 1 : -1;
+    });
+    let customerCount = 0;
+    let authorisedCount = 0;
+    const normalized = sorted.map((entry) => {
+      const isAuth = (entry.paymentType || "").toLowerCase() === "authorised";
+      if (isAuth) { authorisedCount++; } else { customerCount++; }
+      const requestLabel = isAuth
+        ? `Authorised Request ${authorisedCount}`
+        : `Request ${customerCount}`;
+      return {
+        id: entry.id,
+        description: entry.rawDescription || requestLabel,
+        requestLabel,
+        quantity: entry.quantity,
+        paymentType: entry.paymentType
+      };
+    });
     setRequestLines(normalized);
     setLabourTotal(Number(jobData?.writeUp?.labour_time || 0));
   }, [jobData]);
@@ -129,7 +151,7 @@ export default function InvoiceBuilderPopup({
         .map(
           (req) =>
             `<tr>
-              <td>${req.description}</td>
+              <td><strong>${req.requestLabel || "Request"}</strong>: ${req.description}</td>
               <td>${req.quantity}</td>
               <td>${formatCurrency(req.unitPrice ?? 0)}</td>
               <td>${formatCurrency((req.quantity || 1) * (req.unitPrice ?? 0))}</td>
@@ -327,10 +349,11 @@ export default function InvoiceBuilderPopup({
                   display: "block",
                   fontSize: "12px",
                   color: "var(--info)",
-                  marginBottom: "6px"
+                  marginBottom: "6px",
+                  fontWeight: 600
                 }}
               >
-                Editable Description
+                {line.requestLabel || "Request"}
               </label>
               <input
                 value={line.description}

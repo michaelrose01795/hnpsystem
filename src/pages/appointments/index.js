@@ -1407,19 +1407,19 @@ export default function Appointments() {
                   : severityStyle.backgroundColor || (isWeekendSaturday ? "var(--calendar-saturday-row-bg)" : "var(--surface)");
                 let rowBackground = defaultRowBackground;
 
-                // Selected date (dark red/purple fill)
+                // Selected date (theme primary fill — red light / purple dark)
                 if (isSelected && !isToday) {
-                  rowBackground = "rgba(var(--danger-rgb), 0.3)"; // Dark red/purple for selected
+                  rowBackground = "rgba(var(--primary-rgb), 0.25)";
                 }
 
-                // Today's date (light red/purple fill) - overrides selected if both
+                // Today's date (really light theme tint — always top row)
                 if (isToday && !isSelected) {
-                  rowBackground = "rgba(var(--danger-rgb), 0.1)"; // Light red/purple for today
+                  rowBackground = "rgba(var(--primary-rgb), 0.07)";
                 }
 
-                // Both today AND selected (dark red/purple fill)
+                // Both today AND selected (theme primary fill)
                 if (isToday && isSelected) {
-                  rowBackground = "rgba(var(--danger-rgb), 0.3)"; // Dark red/purple for selected today
+                  rowBackground = "rgba(var(--primary-rgb), 0.25)";
                 }
                 const severityBorderLeft =
                   !isCalmDay && severityStyle?.borderColor
@@ -1432,8 +1432,7 @@ export default function Appointments() {
                   ? "var(--text-secondary)"
                   : severityStyle?.textColor || "var(--text-primary)";
                 const todayShadow = isToday ? "0 0 0 2px var(--primary)" : null;
-                const selectedShadow = isSelected ? "0 0 0 2px var(--calendar-selection-border)" : null;
-                const baseShadows = [todayShadow, selectedShadow].filter(Boolean).join(", ");
+                const baseShadows = [todayShadow].filter(Boolean).join(", ");
                 const baseBoxShadow = baseShadows || "none";
                 const hoverShadow = "0 0 0 2px var(--accent-purple)";
                 const hoverComposite = baseShadows ? `${baseShadows}, ${hoverShadow}` : hoverShadow;
