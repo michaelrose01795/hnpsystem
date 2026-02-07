@@ -1248,6 +1248,29 @@ CREATE TABLE public.staff_vehicles (
   CONSTRAINT staff_vehicles_pkey PRIMARY KEY (vehicle_id),
   CONSTRAINT staff_vehicles_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
 );
+CREATE TABLE public.tech_efficiency_entries (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  user_id integer NOT NULL,
+  date date NOT NULL,
+  job_number text NOT NULL,
+  hours_spent numeric NOT NULL CHECK (hours_spent > 0::numeric),
+  notes text,
+  day_type text NOT NULL DEFAULT 'weekday'::text CHECK (day_type = ANY (ARRAY['weekday'::text, 'saturday'::text])),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT tech_efficiency_entries_pkey PRIMARY KEY (id),
+  CONSTRAINT tech_efficiency_entries_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.tech_efficiency_targets (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  user_id integer NOT NULL UNIQUE,
+  monthly_target_hours numeric NOT NULL DEFAULT 160,
+  weight numeric NOT NULL DEFAULT 0.75,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT tech_efficiency_targets_pkey PRIMARY KEY (id),
+  CONSTRAINT tech_efficiency_targets_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
+);
 CREATE TABLE public.time_records (
   id bigint NOT NULL DEFAULT nextval('time_records_id_seq'::regclass),
   user_id integer NOT NULL,

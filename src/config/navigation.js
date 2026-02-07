@@ -176,6 +176,11 @@ export const sidebarSections = [
         href: "/tech/consumables-request",
         roles: ["techs"],
       },
+      {
+        label: "Efficiency",
+        href: "/tech/efficiency",
+        roles: ["techs"],
+      },
     ],
   },
   {
@@ -185,6 +190,11 @@ export const sidebarSections = [
       {
         label: "My Jobs",
         href: "/job-cards/myjobs",
+        roles: ["mot tester"],
+      },
+      {
+        label: "Efficiency",
+        href: "/tech/efficiency",
         roles: ["mot tester"],
       },
     ],

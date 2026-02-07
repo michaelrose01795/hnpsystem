@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { clockInToJob, clockOutFromJob } from "@/lib/database/jobClocking";
 import { generateTechnicianSlug } from "@/utils/technicianSlug";
 import ModalPortal from "@/components/popups/ModalPortal";
+import EfficiencyTab from "@/components/Clocking/EfficiencyTab";
 
 const TECH_ROLES = ["Techs", "Technician", "Technician Lead", "Lead Technician"];
 const MOT_ROLES = ["MOT Tester", "Tester"];
@@ -1118,11 +1119,44 @@ function ClockingOverviewTab({ onSummaryChange }) {
 }
 
 export default function ClockingPage() {
+  const [pageTab, setPageTab] = useState("overview");
+
+  const pageTabStyle = (isActive) => ({
+    padding: "12px 24px",
+    borderRadius: "12px",
+    border: "none",
+    background: isActive ? "var(--primary)" : "transparent",
+    color: isActive ? "var(--surface)" : "var(--primary-dark)",
+    fontWeight: 700,
+    fontSize: "0.95rem",
+    cursor: "pointer",
+    transition: "all 0.15s ease",
+  });
+
   return (
     <Layout>
       <div className="bg-slate-50 py-10">
         <div className="mx-auto w-full max-w-none space-y-6 px-4 sm:px-6 lg:px-10">
-          <ClockingOverviewTab />
+          {/* Page-level tabs: Overview | Efficiency */}
+          <div style={{
+            display: "flex",
+            gap: "4px",
+            padding: "4px",
+            borderRadius: "14px",
+            background: "var(--surface)",
+            border: "1px solid var(--surface-light)",
+            width: "fit-content",
+          }}>
+            <button type="button" style={pageTabStyle(pageTab === "overview")} onClick={() => setPageTab("overview")}>
+              Overview
+            </button>
+            <button type="button" style={pageTabStyle(pageTab === "efficiency")} onClick={() => setPageTab("efficiency")}>
+              Efficiency
+            </button>
+          </div>
+
+          {pageTab === "overview" && <ClockingOverviewTab />}
+          {pageTab === "efficiency" && <EfficiencyTab editable={false} />}
         </div>
       </div>
     </Layout>
