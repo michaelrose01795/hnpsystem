@@ -4,7 +4,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
-import EfficiencyTab from "@/components/Clocking/EfficiencyTab";
+import dynamic from "next/dynamic";
+const EfficiencyTab = dynamic(() => import("@/components/Clocking/EfficiencyTab"), { ssr: false });
 
 export default function TechEfficiencyPage() {
   const { user, dbUserId } = useUser();
