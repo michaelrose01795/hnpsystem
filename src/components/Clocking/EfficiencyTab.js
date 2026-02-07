@@ -481,109 +481,115 @@ export default function EfficiencyTab({
     return "var(--danger)";
   };
 
-  // Get the display name for the active tab (used in print)
-  const activeTechName = activeSummary
-    ? activeSummary.tech.first_name
-    : "Overall";
+  // Download PDF handler - generates a portrait B&W PDF with 31 rows
+  const handleDownload = async () => {
+    try {
+      const jsPDFModule = await import("jspdf");
+      const jsPDF = jsPDFModule.jsPDF || jsPDFModule.default;
+      const autoTableModule = await import("jspdf-autotable");
 
-  // Print handler - creates a portrait B&W print template with 31 rows
-  const handlePrint = () => {
-    const title = activeTab === "overall"
-      ? `Overall Efficiency - ${MONTHS[selectedMonth - 1]} ${selectedYear}`
-      : `${activeTechName} - ${MONTHS[selectedMonth - 1]} ${selectedYear}`;
-
-    // Build existing entries map by day number for pre-filling
-    const existingByDay = new Map();
-    if (activeSummary) {
-      activeSummary.entries.forEach((entry) => {
-        const day = new Date(entry.date).getDate();
-        if (!existingByDay.has(day)) existingByDay.set(day, []);
-        existingByDay.get(day).push(entry);
-      });
-    }
-
-    const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
-    let tableRows = "";
-    for (let day = 1; day <= 31; day++) {
-      const entriesForDay = existingByDay.get(day) || [];
-      if (entriesForDay.length > 0) {
-        entriesForDay.forEach((entry, idx) => {
-          tableRows += `<tr>
-            ${idx === 0 ? `<td rowspan="${entriesForDay.length}">${String(day).padStart(2, "0")}/${String(selectedMonth).padStart(2, "0")}/${selectedYear}</td>` : ""}
-            <td>${entry.job_number || ""}</td>
-            <td>${entry.hours_spent || ""}</td>
-            <td>${entry.notes || ""}</td>
-            <td>${entry.day_type || ""}</td>
-          </tr>`;
-        });
-      } else {
-        const dateStr = day <= daysInMonth
-          ? `${String(day).padStart(2, "0")}/${String(selectedMonth).padStart(2, "0")}/${selectedYear}`
-          : "";
-        tableRows += `<tr>
-          <td>${dateStr}</td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
-        </tr>`;
+      // Register the plugin on jsPDF so doc.autoTable works
+      if (autoTableModule.applyPlugin) {
+        autoTableModule.applyPlugin(jsPDF);
       }
+
+      const techName = activeSummary ? activeSummary.tech.first_name : "Overall";
+      const title = activeTab === "overall"
+        ? `Overall Efficiency - ${MONTHS[selectedMonth - 1]} ${selectedYear}`
+        : `${techName} - ${MONTHS[selectedMonth - 1]} ${selectedYear}`;
+      const fileName = activeTab === "overall"
+        ? `efficiency-overall-${selectedYear}-${String(selectedMonth).padStart(2, "0")}.pdf`
+        : `efficiency-${techName.toLowerCase()}-${selectedYear}-${String(selectedMonth).padStart(2, "0")}.pdf`;
+
+      // Build existing entries map by day number
+      const existingByDay = new Map();
+      if (activeSummary) {
+        activeSummary.entries.forEach((entry) => {
+          const day = new Date(entry.date).getDate();
+          if (!existingByDay.has(day)) existingByDay.set(day, []);
+          existingByDay.get(day).push(entry);
+        });
+      }
+
+      const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+      const rows = [];
+      for (let day = 1; day <= 31; day++) {
+        const entriesForDay = existingByDay.get(day) || [];
+        if (entriesForDay.length > 0) {
+          entriesForDay.forEach((entry) => {
+            rows.push([
+              `${String(day).padStart(2, "0")}/${String(selectedMonth).padStart(2, "0")}/${selectedYear}`,
+              entry.job_number || "",
+              entry.hours_spent ? String(entry.hours_spent) : "",
+              entry.notes || "",
+              entry.day_type || "",
+            ]);
+          });
+        } else {
+          rows.push([
+            day <= daysInMonth
+              ? `${String(day).padStart(2, "0")}/${String(selectedMonth).padStart(2, "0")}/${selectedYear}`
+              : "",
+            "", "", "", "",
+          ]);
+        }
+      }
+
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+      // Title
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text(title, 10, 14);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(80);
+      doc.text("Efficiency Timesheet", 10, 20);
+      doc.setTextColor(0);
+
+      // Table - use doc.autoTable after plugin is applied
+      doc.autoTable({
+        startY: 25,
+        head: [["Date", "Job Number", "Hours Spent", "Notes", "Day Type"]],
+        body: rows,
+        theme: "grid",
+        styles: {
+          fontSize: 8,
+          cellPadding: 2,
+          lineColor: [0, 0, 0],
+          lineWidth: 0.2,
+          textColor: [0, 0, 0],
+        },
+        headStyles: {
+          fillColor: [230, 230, 230],
+          textColor: [0, 0, 0],
+          fontStyle: "bold",
+          fontSize: 7,
+        },
+        columnStyles: {
+          0: { cellWidth: 28 },
+          1: { cellWidth: 32 },
+          2: { cellWidth: 22 },
+          3: { cellWidth: "auto" },
+          4: { cellWidth: 26 },
+        },
+        margin: { left: 10, right: 10 },
+      });
+
+      // Summary row below the table
+      const finalY = (doc.lastAutoTable?.finalY ?? 280) + 6;
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.text("Actual Hours:", 10, finalY);
+      doc.text("Target Hours:", 60, finalY);
+      doc.text("Difference:", 110, finalY);
+      doc.text("Efficiency:", 155, finalY);
+
+      doc.save(fileName);
+    } catch (err) {
+      console.error("PDF download failed:", err);
+      alert("Failed to generate PDF. Please try again.");
     }
-
-    const printHtml = `<!DOCTYPE html>
-<html>
-<head>
-  <title> </title>
-  <style>
-    @page { size: portrait; margin: 10mm; }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Arial, Helvetica, sans-serif; color: #000; background: #fff; padding: 8px; }
-    h1 { font-size: 16px; margin-bottom: 4px; }
-    h2 { font-size: 13px; font-weight: 400; margin-bottom: 10px; color: #333; }
-    table { width: 100%; border-collapse: collapse; font-size: 11px; }
-    th, td { border: 1px solid #000; padding: 5px 6px; text-align: left; vertical-align: top; }
-    th { background: #e8e8e8; font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em; }
-    td { min-height: 22px; }
-    tr { page-break-inside: avoid; }
-    .summary { margin-top: 12px; font-size: 12px; }
-    .summary td { font-weight: 600; }
-  </style>
-</head>
-<body>
-  <h1>${title}</h1>
-  <h2>Efficiency Timesheet</h2>
-  <table>
-    <thead>
-      <tr>
-        <th style="width:14%">Date</th>
-        <th style="width:18%">Job Number</th>
-        <th style="width:12%">Hours Spent</th>
-        <th style="width:40%">Notes</th>
-        <th style="width:16%">Day Type</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${tableRows}
-    </tbody>
-  </table>
-  <table class="summary">
-    <tr>
-      <td>Actual Hours:</td>
-      <td>Target Hours:</td>
-      <td>Difference:</td>
-      <td>Efficiency:</td>
-    </tr>
-  </table>
-</body>
-</html>`;
-
-    const printWindow = window.open("", "_blank");
-    printWindow.document.write(printHtml);
-    printWindow.document.close();
-    // Hide browser header/footer (URL, page number, date) by blanking the title
-    printWindow.document.title = " ";
-    printWindow.focus();
-    printWindow.print();
   };
 
   return (
@@ -629,7 +635,7 @@ export default function EfficiencyTab({
           {activeTab !== "overall" && (
             <button
               type="button"
-              onClick={handlePrint}
+              onClick={handleDownload}
               style={{
                 padding: "10px 16px",
                 borderRadius: "12px",
@@ -644,7 +650,7 @@ export default function EfficiencyTab({
                 gap: "6px",
               }}
             >
-              <span style={{ fontSize: "1rem" }}>&#128438;</span> Print
+              &#8595; Download
             </button>
           )}
           {isTabEditable && activeTab !== "overall" && (
