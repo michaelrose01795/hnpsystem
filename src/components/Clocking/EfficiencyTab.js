@@ -533,9 +533,9 @@ export default function EfficiencyTab({
     const printHtml = `<!DOCTYPE html>
 <html>
 <head>
-  <title>${title}</title>
+  <title> </title>
   <style>
-    @page { size: portrait; margin: 12mm; }
+    @page { size: portrait; margin: 10mm; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: Arial, Helvetica, sans-serif; color: #000; background: #fff; padding: 8px; }
     h1 { font-size: 16px; margin-bottom: 4px; }
@@ -580,6 +580,8 @@ export default function EfficiencyTab({
     const printWindow = window.open("", "_blank");
     printWindow.document.write(printHtml);
     printWindow.document.close();
+    // Hide browser header/footer (URL, page number, date) by blanking the title
+    printWindow.document.title = " ";
     printWindow.focus();
     printWindow.print();
   };
