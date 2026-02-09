@@ -7,6 +7,8 @@ make sure the efficienty tab is linked to the clocking database table, so eachti
 
 have it so the users total hours is edited if abserence is clocked within the 
 
+
+
 CHECK
 with the "Upload Documents" popup, does the document actually get uploaded to the database? if not what happens and is it a perminent thing, have it so the "Upload Documents" popup shows all of the uploaded items always when something has been uplaoded. 
 
@@ -94,7 +96,28 @@ Add any database tables / columns to file location: src/lib/database/schema/addt
 
 
 npm i next@latest
+npm i -g vercel@latest
 
 
 
-ADD vscode-pdf extention to MUM PC AND IPAD
+ADD vscode-pdf extention to IPAD 
+
+
+
+FATAL: An unexpected Turbopack error occurred. A panic log has been written to C:\Users\micha\AppData\Local\Temp\next-panic-dee04112f977a8f800c92be0d5b4e7e8.log.
+
+To help make Turbopack better, report this error by clicking here.
+-----
+
+Error: Turbopack build failed with 1 errors:
+./
+Error: Next.js inferred your workspace root, but it may not be correct.
+    We couldn't find the Next.js package (next/package.json) from the project directory: F:\hnpsystem
+     To fix this, set turbopack.root in your Next.js config, or ensure the Next.js package is resolvable from this directory.
+    Note: For security and performance reasons, files outside of the project directory will not be compiled.  
+    See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+
+    at ignore-listed frames
+Error: An unexpected error occurred!
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)
