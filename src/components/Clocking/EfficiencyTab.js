@@ -10,6 +10,7 @@ import {
   addEfficiencyEntry,
   updateEfficiencyEntry,
   deleteEfficiencyEntry,
+  upsertTechTarget,
   calculateTechTotals,
   calculateOverallTotals,
   TECH_NAMES,
@@ -97,6 +98,17 @@ export default function EfficiencyTab({
   const [deletingId, setDeletingId] = useState(null);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
 
+  // Overall tab detail popup state
+  const [detailPopupTechId, setDetailPopupTechId] = useState(null);
+  const [detailPopupTargetTech, setDetailPopupTargetTech] = useState(null);
+
+  // Detail popup edit mode (editing target hours / weight)
+  const [detailEditMode, setDetailEditMode] = useState(false);
+  const [detailEditTargetHours, setDetailEditTargetHours] = useState("");
+  const [detailEditWeight, setDetailEditWeight] = useState("");
+  const [detailEditSubmitting, setDetailEditSubmitting] = useState(false);
+  const [detailEditError, setDetailEditError] = useState("");
+
   // Load technicians
   useEffect(() => {
     let cancelled = false;
@@ -167,7 +179,7 @@ export default function EfficiencyTab({
   const techSummaries = useMemo(() => {
     return technicians.map((tech) => {
       const techEntries = entriesByUser.get(tech.user_id) || [];
-      const target = targets.get(tech.user_id) || { monthlyTargetHours: 160, weight: 0.75 };
+      const target = targets.get(tech.user_id) || { monthlyTargetHours: 160, weight: 1.0 };
       const totals = calculateTechTotals(techEntries, target);
       return {
         tech,
@@ -196,6 +208,84 @@ export default function EfficiencyTab({
     editable &&
     activeTechId != null &&
     (editableUserId == null || editableUserId === activeTechId);
+
+  // Detail popup data
+  const detailPopupSummary = detailPopupTechId
+    ? techSummaries.find((s) => s.tech.user_id === detailPopupTechId)
+    : null;
+  const isDetailPopupEditable =
+    editable &&
+    detailPopupTechId != null &&
+    (editableUserId == null || editableUserId === detailPopupTechId);
+
+  const openDetailPopup = (techUserId) => {
+    setDetailPopupTechId(techUserId);
+    setDeletingId(null);
+    setDetailEditMode(false);
+    setDetailEditError("");
+  };
+
+  const closeDetailPopup = () => {
+    setDetailPopupTechId(null);
+    setDeletingId(null);
+    setDetailEditMode(false);
+    setDetailEditError("");
+  };
+
+  const startDetailEdit = () => {
+    if (!detailPopupSummary) return;
+    setDetailEditTargetHours(String(detailPopupSummary.target.monthlyTargetHours));
+    setDetailEditWeight(String(detailPopupSummary.weight));
+    setDetailEditError("");
+    setDetailEditMode(true);
+  };
+
+  const cancelDetailEdit = () => {
+    setDetailEditMode(false);
+    setDetailEditError("");
+  };
+
+  const saveDetailEdit = async () => {
+    const hrs = Number(detailEditTargetHours);
+    const wt = Number(detailEditWeight);
+    if (!detailEditTargetHours || Number.isNaN(hrs) || hrs <= 0) {
+      setDetailEditError("Target hours must be greater than 0.");
+      return;
+    }
+    if (!detailEditWeight || Number.isNaN(wt) || wt < 0 || wt > 1) {
+      setDetailEditError("Weight must be between 0 and 1.");
+      return;
+    }
+    setDetailEditSubmitting(true);
+    setDetailEditError("");
+    try {
+      await upsertTechTarget(detailPopupTechId, {
+        monthlyTargetHours: hrs,
+        weight: wt,
+      });
+      setDetailEditMode(false);
+      await fetchData();
+    } catch (err) {
+      setDetailEditError(err?.message || "Failed to save.");
+    } finally {
+      setDetailEditSubmitting(false);
+    }
+  };
+
+  // Open add modal targeted at a specific tech (from detail popup)
+  const openAddModalForTech = (techUserId) => {
+    setEditingEntry(null);
+    setFormDate(new Date().toISOString().split("T")[0]);
+    setFormJobNumber("");
+    setFormHours("");
+    setFormNotes("");
+    setFormDayType("weekday");
+    setFormError("");
+    resetRequestState();
+    // Temporarily store target tech ID for the add operation
+    setDetailPopupTargetTech(techUserId);
+    setModalOpen(true);
+  };
 
   // Month navigation
   const handlePrevMonth = () => {
@@ -254,6 +344,7 @@ export default function EfficiencyTab({
     setEditingEntry(null);
     setFormError("");
     setFormSubmitting(false);
+    setDetailPopupTargetTech(null);
     resetRequestState();
   };
 
@@ -355,8 +446,9 @@ export default function EfficiencyTab({
           dayType: formDayType,
         });
       } else {
+        const targetUserId = activeTechId || detailPopupTargetTech;
         await addEfficiencyEntry({
-          userId: activeTechId,
+          userId: targetUserId,
           date: formDate,
           jobNumber: jobNumberToSave,
           hoursSpent: hours,
@@ -765,7 +857,13 @@ export default function EfficiencyTab({
                     </tr>
                   ) : (
                     techSummaries.map(({ tech, totals, weight }) => (
-                      <tr key={tech.user_id}>
+                      <tr
+                        key={tech.user_id}
+                        onClick={() => openDetailPopup(tech.user_id)}
+                        style={{ cursor: "pointer", transition: "background 0.15s ease" }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-light)"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = ""; }}
+                      >
                         <td style={{ ...tdStyle, fontWeight: 600 }}>{tech.first_name}</td>
                         <td style={tdStyle}>{(weight * 100).toFixed(0)}%</td>
                         <td style={tdStyle}>{totals.actualHours}h</td>
@@ -968,6 +1066,381 @@ export default function EfficiencyTab({
         </>
       )}
 
+      {/* Detail Popup - shows entries for a tech from the overall tab */}
+      {detailPopupTechId && detailPopupSummary && (
+        <ModalPortal>
+          <div
+            className="efficiency-modal-overlay"
+            style={{
+              position: "fixed",
+              inset: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "24px",
+              zIndex: 1100,
+              backdropFilter: "blur(4px)",
+            }}
+            onClick={(e) => { if (e.target === e.currentTarget) closeDetailPopup(); }}
+            role="dialog"
+            aria-modal="true"
+          >
+            <div
+              style={{
+                width: "min(820px, 100%)",
+                maxHeight: "90vh",
+                overflowY: "auto",
+                borderRadius: "22px",
+                background: "var(--surface)",
+                border: "1px solid var(--surface-light)",
+                boxShadow: "0 25px 60px rgba(15, 15, 15, 0.25)",
+                padding: "28px 32px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "20px",
+              }}
+            >
+              {/* Header */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+                    Efficiency Detail
+                  </p>
+                  <h3 style={{ margin: "4px 0 0", fontSize: "1.3rem", color: "var(--primary-dark)" }}>
+                    {detailPopupSummary.tech.first_name} - {MONTHS[selectedMonth - 1]} {selectedYear}
+                  </h3>
+                </div>
+                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                  {isDetailPopupEditable && (
+                    <button
+                      type="button"
+                      onClick={() => openAddModalForTech(detailPopupTechId)}
+                      style={{
+                        padding: "8px 16px",
+                        borderRadius: "10px",
+                        border: "none",
+                        background: "var(--primary)",
+                        color: "var(--surface)",
+                        fontWeight: 600,
+                        fontSize: "0.82rem",
+                        cursor: "pointer",
+                      }}
+                    >
+                      + Add Entry
+                    </button>
+                  )}
+                  {isDetailPopupEditable && (
+                    <button
+                      type="button"
+                      onClick={detailEditMode ? cancelDetailEdit : startDetailEdit}
+                      aria-label={detailEditMode ? "Cancel edit" : "Edit details"}
+                      style={{
+                        width: "36px",
+                        height: "36px",
+                        borderRadius: "10px",
+                        border: detailEditMode ? "1px solid var(--primary)" : "1px solid var(--surface-light)",
+                        background: detailEditMode ? "var(--primary)" : "var(--surface)",
+                        color: detailEditMode ? "var(--surface)" : "var(--primary)",
+                        fontSize: "0.95rem",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                      title={detailEditMode ? "Cancel edit" : "Edit target & weight"}
+                    >
+                      &#9998;
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={closeDetailPopup}
+                    aria-label="Close"
+                    style={{
+                      width: "36px",
+                      height: "36px",
+                      borderRadius: "10px",
+                      border: "1px solid var(--surface-light)",
+                      background: "var(--surface)",
+                      color: "var(--info)",
+                      fontSize: "1.1rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    &times;
+                  </button>
+                </div>
+              </div>
+
+              {/* Edit target & weight inline form */}
+              {detailEditMode && (
+                <div style={{
+                  borderRadius: "14px",
+                  padding: "16px 20px",
+                  background: "var(--danger-surface)",
+                  border: "1px solid var(--surface-light)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
+                }}>
+                  <span style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)", fontWeight: 600 }}>
+                    Edit Target &amp; Weight
+                  </span>
+                  {detailEditError && (
+                    <div style={{
+                      borderRadius: "10px",
+                      padding: "8px 12px",
+                      border: "1px solid var(--danger)",
+                      background: "var(--danger-surface)",
+                      color: "var(--danger-dark)",
+                      fontSize: "0.82rem",
+                    }}>
+                      {detailEditError}
+                    </div>
+                  )}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: "12px", alignItems: "end" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <label style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--grey-accent)" }}>
+                        Monthly Target Hours
+                      </label>
+                      <input
+                        type="number"
+                        step="1"
+                        min="1"
+                        value={detailEditTargetHours}
+                        onChange={(e) => setDetailEditTargetHours(e.target.value)}
+                        style={{
+                          borderRadius: "10px",
+                          border: "1px solid var(--surface-light)",
+                          background: "var(--surface)",
+                          padding: "10px 12px",
+                          fontSize: "0.9rem",
+                          color: "var(--text-primary)",
+                          outline: "none",
+                        }}
+                      />
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <label style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--grey-accent)" }}>
+                        Weight (0 - 1)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.05"
+                        min="0"
+                        max="1"
+                        value={detailEditWeight}
+                        onChange={(e) => setDetailEditWeight(e.target.value)}
+                        style={{
+                          borderRadius: "10px",
+                          border: "1px solid var(--surface-light)",
+                          background: "var(--surface)",
+                          padding: "10px 12px",
+                          fontSize: "0.9rem",
+                          color: "var(--text-primary)",
+                          outline: "none",
+                        }}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={saveDetailEdit}
+                      disabled={detailEditSubmitting}
+                      style={{
+                        padding: "10px 20px",
+                        borderRadius: "10px",
+                        border: "none",
+                        background: "var(--primary)",
+                        color: "var(--surface)",
+                        fontWeight: 600,
+                        fontSize: "0.82rem",
+                        cursor: detailEditSubmitting ? "not-allowed" : "pointer",
+                        opacity: detailEditSubmitting ? 0.7 : 1,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {detailEditSubmitting ? "Saving..." : "Save"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Summary stats row */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "12px" }}>
+                <div style={statCardStyle}>
+                  <span style={{ fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+                    Actual Hours
+                  </span>
+                  <strong style={{ fontSize: "1.3rem", color: "var(--primary-dark)" }}>
+                    {detailPopupSummary.totals.actualHours}h
+                  </strong>
+                </div>
+                <div style={statCardStyle}>
+                  <span style={{ fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+                    Target Hours
+                  </span>
+                  <strong style={{ fontSize: "1.3rem", color: "var(--primary-dark)" }}>
+                    {detailPopupSummary.totals.targetHours}h
+                  </strong>
+                </div>
+                <div style={statCardStyle}>
+                  <span style={{ fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+                    Difference
+                  </span>
+                  <strong style={{ fontSize: "1.3rem", color: detailPopupSummary.totals.difference >= 0 ? "var(--success)" : "var(--danger)" }}>
+                    {detailPopupSummary.totals.difference >= 0 ? "+" : ""}{detailPopupSummary.totals.difference}h
+                  </strong>
+                </div>
+                <div style={statCardStyle}>
+                  <span style={{ fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+                    Efficiency
+                  </span>
+                  <strong style={{ fontSize: "1.3rem", color: effColor(detailPopupSummary.totals.efficiencyPct) }}>
+                    {detailPopupSummary.totals.efficiencyPct}%
+                  </strong>
+                </div>
+              </div>
+
+              {/* Entries table */}
+              <div style={tableWrapperStyle}>
+                <div style={{ maxHeight: "400px", overflowY: "auto" }}>
+                  <table style={tableStyle}>
+                    <thead>
+                      <tr>
+                        <th style={thStyle}>Date</th>
+                        <th style={thStyle}>Job Number</th>
+                        <th style={thStyle}>Hours Spent</th>
+                        <th style={thStyle}>Notes</th>
+                        <th style={thStyle}>Day Type</th>
+                        {isDetailPopupEditable && <th style={thStyle}>Actions</th>}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {detailPopupSummary.entries.length === 0 ? (
+                        <tr>
+                          <td colSpan={isDetailPopupEditable ? 6 : 5} style={{ ...tdStyle, textAlign: "center", color: "var(--grey-accent)", padding: "32px 16px" }}>
+                            No entries for {MONTHS[selectedMonth - 1]} {selectedYear}.
+                          </td>
+                        </tr>
+                      ) : (
+                        detailPopupSummary.entries.map((entry) => (
+                          <tr key={entry.id}>
+                            <td style={tdStyle}>
+                              {new Date(entry.date + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                            </td>
+                            <td style={{ ...tdStyle, fontWeight: 600 }}>{entry.job_number}</td>
+                            <td style={tdStyle}>{entry.hours_spent}h</td>
+                            <td style={{ ...tdStyle, maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {entry.notes || "\u2014"}
+                            </td>
+                            <td style={tdStyle}>
+                              <span style={{
+                                padding: "4px 10px",
+                                borderRadius: "8px",
+                                fontSize: "0.75rem",
+                                fontWeight: 600,
+                                textTransform: "capitalize",
+                                background: entry.day_type === "saturday" ? "var(--info-surface)" : "var(--success-surface)",
+                                color: entry.day_type === "saturday" ? "var(--info)" : "var(--success-dark)",
+                                border: `1px solid ${entry.day_type === "saturday" ? "var(--info)" : "var(--success)"}22`,
+                              }}>
+                                {entry.day_type}
+                              </span>
+                            </td>
+                            {isDetailPopupEditable && (
+                              <td style={tdStyle}>
+                                <div style={{ display: "flex", gap: "8px" }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => openEditModal(entry)}
+                                    style={{
+                                      padding: "6px 12px",
+                                      borderRadius: "8px",
+                                      border: "1px solid var(--surface-light)",
+                                      background: "var(--surface)",
+                                      color: "var(--primary)",
+                                      fontSize: "0.78rem",
+                                      fontWeight: 600,
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    Edit
+                                  </button>
+                                  {deletingId === entry.id ? (
+                                    <div style={{ display: "flex", gap: "4px" }}>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDelete(entry.id)}
+                                        disabled={deleteSubmitting}
+                                        style={{
+                                          padding: "6px 10px",
+                                          borderRadius: "8px",
+                                          border: "none",
+                                          background: "var(--danger)",
+                                          color: "var(--surface)",
+                                          fontSize: "0.75rem",
+                                          fontWeight: 600,
+                                          cursor: deleteSubmitting ? "not-allowed" : "pointer",
+                                          opacity: deleteSubmitting ? 0.7 : 1,
+                                        }}
+                                      >
+                                        {deleteSubmitting ? "..." : "Yes"}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setDeletingId(null)}
+                                        style={{
+                                          padding: "6px 10px",
+                                          borderRadius: "8px",
+                                          border: "1px solid var(--surface-light)",
+                                          background: "var(--surface)",
+                                          color: "var(--info)",
+                                          fontSize: "0.75rem",
+                                          fontWeight: 600,
+                                          cursor: "pointer",
+                                        }}
+                                      >
+                                        No
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => setDeletingId(entry.id)}
+                                      style={{
+                                        padding: "6px 12px",
+                                        borderRadius: "8px",
+                                        border: "1px solid var(--danger)33",
+                                        background: "var(--danger-surface)",
+                                        color: "var(--danger)",
+                                        fontSize: "0.78rem",
+                                        fontWeight: 600,
+                                        cursor: "pointer",
+                                      }}
+                                    >
+                                      Delete
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            )}
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ModalPortal>
+      )}
+
       {/* Add/Edit Modal */}
       {modalOpen && (
         <ModalPortal>
@@ -980,7 +1453,7 @@ export default function EfficiencyTab({
               alignItems: "center",
               justifyContent: "center",
               padding: "24px",
-              zIndex: 50,
+              zIndex: 1100,
               backdropFilter: "blur(4px)",
             }}
             onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}

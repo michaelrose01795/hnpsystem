@@ -6,7 +6,7 @@ const db = getDatabaseClient();
 const TECH_NAMES = ["Glen", "Jake", "Scott", "Paul", "Cheryl", "Michael"];
 
 const DEFAULT_TARGET_HOURS = 160;
-const DEFAULT_WEIGHT = 0.75;
+const DEFAULT_WEIGHT = 1.0;
 const MICHAEL_WEIGHT = 1.0;
 
 /**
@@ -192,6 +192,91 @@ export async function getAllTechTargets(userIds) {
   });
 
   return map;
+}
+
+/**
+ * Upsert a technician's target hours and weight.
+ */
+export async function upsertTechTarget(userId, { monthlyTargetHours, weight }) {
+  const { data: existing } = await db
+    .from("tech_efficiency_targets")
+    .select("id")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (existing) {
+    const { error } = await db
+      .from("tech_efficiency_targets")
+      .update({
+        monthly_target_hours: monthlyTargetHours,
+        weight,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("user_id", userId);
+    if (error) throw error;
+  } else {
+    const { error } = await db
+      .from("tech_efficiency_targets")
+      .insert([{
+        user_id: userId,
+        monthly_target_hours: monthlyTargetHours,
+        weight,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }]);
+    if (error) throw error;
+  }
+}
+
+/**
+ * Auto-create an efficiency entry when a technician clocks out of a job.
+ * Only creates if the user is in the efficiency roster (TECH_NAMES).
+ * Silently skips non-efficiency users. Returns the entry or null.
+ */
+export async function autoCreateEfficiencyEntry({ userId, jobNumber, hoursSpent, clockIn }) {
+  if (!userId || !hoursSpent || hoursSpent <= 0) return null;
+
+  // Check if this user is in the efficiency roster
+  const { data: user, error: userError } = await db
+    .from("users")
+    .select("user_id, first_name")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (userError || !user) return null;
+
+  const isEfficiencyTech = TECH_NAMES.some(
+    (name) => name.toLowerCase() === (user.first_name || "").toLowerCase()
+  );
+  if (!isEfficiencyTech) return null;
+
+  // Derive date and day type from clock_in timestamp
+  const clockInDate = clockIn ? new Date(clockIn) : new Date();
+  const dateStr = clockInDate.toISOString().split("T")[0];
+  const dayOfWeek = clockInDate.getDay(); // 0=Sunday, 6=Saturday
+  const dayType = dayOfWeek === 6 ? "saturday" : "weekday";
+
+  const now = new Date().toISOString();
+  const { data, error } = await db
+    .from("tech_efficiency_entries")
+    .insert([{
+      user_id: userId,
+      date: dateStr,
+      job_number: jobNumber || "",
+      hours_spent: hoursSpent,
+      notes: "Auto-logged from job clocking",
+      day_type: dayType,
+      created_at: now,
+      updated_at: now,
+    }])
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Failed to auto-create efficiency entry:", error.message);
+    return null;
+  }
+  return data;
 }
 
 /**
