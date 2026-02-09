@@ -2,7 +2,8 @@
 // file location: src/components/HR/tabs/EmployeesTab.js
 // Manages employee directory, profiles, and employment details
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useHrEmployeesData } from "@/hooks/useHrData";
 import { SectionCard, StatusTag } from "@/components/HR/MetricCard";
 import EmployeeProfilePanel from "@/components/HR/EmployeeProfilePanel";
@@ -255,6 +256,7 @@ export default function EmployeesTab() {
     const firstName = nameParts.shift() || "";
     const lastName = nameParts.join(" ");
     return {
+      userId: employee.userId || null,
       firstName,
       lastName,
       email: employee.email || "",
@@ -567,6 +569,8 @@ export default function EmployeesTab() {
       saveLabel={isSavingEmployee ? "Saving…" : "Save"}
       errorMessage={saveError}
       footerContent={sampleFooter}
+      availableRoles={availableRoles}
+      availableJobTitles={availableJobTitles}
     />
   );
 
@@ -582,6 +586,8 @@ export default function EmployeesTab() {
         isSaving={isSavingEdit}
         saveLabel={isSavingEdit ? "Saving…" : "Save changes"}
         errorMessage={editError}
+        availableRoles={availableRoles}
+        availableJobTitles={availableJobTitles}
       />
     ) : null;
 
@@ -664,6 +670,8 @@ function EmployeeForm({
   saveLabel,
   errorMessage,
   footerContent = null,
+  availableRoles,
+  availableJobTitles,
 }) {
   if (!values) return null;
 
@@ -1068,32 +1076,272 @@ function EmployeeDetailsFields({
             placeholder="kc-jreyes"
           />
         </FormField>
-        <FormField label="Emergency Contact">
-          <input
-            type="text"
-            value={values.emergencyContact}
-            onChange={update("emergencyContact")}
-            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-            placeholder="Alex Reyes (+44 7000 000111)"
-          />
-        </FormField>
       </div>
 
+      <AddressSearchField
+        value={values.address}
+        onChange={(val) => onFieldChange("address", val)}
+      />
+
+      <EmergencyContactSection
+        value={values.emergencyContact}
+        onChange={(val) => onFieldChange("emergencyContact", val)}
+        userId={values.userId}
+      />
+    </>
+  );
+}
+
+function AddressSearchField({ value, onChange }) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const wrapperRef = useRef(null);
+  const debounceRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setShowResults(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const searchPostcode = useCallback(async (term) => {
+    const trimmed = term.trim();
+    if (trimmed.length < 2) { setResults([]); return; }
+    setIsSearching(true);
+    try {
+      const res = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(trimmed)}/autocomplete`);
+      const data = await res.json();
+      if (data.status === 200 && data.result) {
+        const detailed = await Promise.all(
+          data.result.slice(0, 6).map(async (pc) => {
+            const r = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(pc)}`);
+            const d = await r.json();
+            if (d.status === 200 && d.result) {
+              const p = d.result;
+              const parts = [p.admin_ward, p.admin_district, p.region, pc].filter(Boolean);
+              return parts.join(", ");
+            }
+            return pc;
+          })
+        );
+        setResults(detailed);
+        setShowResults(true);
+      } else {
+        setResults([]);
+      }
+    } catch {
+      setResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
+
+  const handleQueryChange = (e) => {
+    const val = e.target.value;
+    setQuery(val);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => searchPostcode(val), 350);
+  };
+
+  const handleSelect = (address) => {
+    onChange(address);
+    setQuery("");
+    setResults([]);
+    setShowResults(false);
+  };
+
+  const inputStyle = {
+    padding: "10px",
+    borderRadius: "8px",
+    border: "1px solid var(--surface-light)",
+    fontSize: "0.9rem",
+  };
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+        gap: "16px",
+      }}
+    >
       <FormField label="Address">
-        <textarea
-          value={values.address}
-          onChange={update("address")}
-          rows={3}
-          style={{
-            padding: "12px",
-            borderRadius: "10px",
-            border: "1px solid var(--surface-light)",
-            resize: "vertical",
-          }}
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          style={inputStyle}
           placeholder="123 Main Street, Birmingham, B1 1AA"
         />
       </FormField>
-    </>
+      <div ref={wrapperRef} style={{ position: "relative" }}>
+        <FormField label="Search by Postcode">
+          <div style={{ position: "relative" }}>
+            <input
+              type="text"
+              value={query}
+              onChange={handleQueryChange}
+              onFocus={() => results.length > 0 && setShowResults(true)}
+              style={{ ...inputStyle, width: "100%", boxSizing: "border-box", paddingRight: "32px" }}
+              placeholder="Start typing a postcode…"
+            />
+            {isSearching && (
+              <span style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", fontSize: "0.8rem", color: "var(--info)" }}>
+                …
+              </span>
+            )}
+          </div>
+        </FormField>
+        {showResults && results.length > 0 && (
+          <div
+            style={{
+              position: "absolute",
+              top: "100%",
+              left: 0,
+              right: 0,
+              zIndex: 20,
+              background: "var(--background, #fff)",
+              border: "1px solid var(--surface-light)",
+              borderRadius: "8px",
+              marginTop: "4px",
+              maxHeight: "200px",
+              overflowY: "auto",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+            }}
+          >
+            {results.map((addr, i) => (
+              <div
+                key={i}
+                onClick={() => handleSelect(addr)}
+                style={{
+                  padding: "8px 12px",
+                  cursor: "pointer",
+                  fontSize: "0.85rem",
+                  borderBottom: i < results.length - 1 ? "1px solid var(--surface-light)" : "none",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-light)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+              >
+                {addr}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EmergencyContactSection({ value, onChange, userId }) {
+  const parsed = useMemo(() => {
+    if (!value || typeof value !== "string") return { name: "", phone: "", relationship: "" };
+    const phoneMatch = value.match(/\(([^)]+)\)/);
+    const relMatch = value.match(/-\s*(.+)$/);
+    let name = value;
+    if (phoneMatch) name = name.replace(phoneMatch[0], "");
+    if (relMatch) name = name.replace(/-\s*.+$/, "");
+    return {
+      name: name.trim(),
+      phone: phoneMatch ? phoneMatch[1].trim() : "",
+      relationship: relMatch ? relMatch[1].trim() : "",
+    };
+  }, [value]);
+
+  const buildString = (name, phone, relationship) => {
+    let s = name || "";
+    if (phone) s += ` (${phone})`;
+    if (relationship) s += ` - ${relationship}`;
+    return s.trim();
+  };
+
+  const handleFieldChange = (field) => (e) => {
+    const updated = { ...parsed, [field]: e.target.value };
+    onChange(buildString(updated.name, updated.phone, updated.relationship));
+  };
+
+  const inputStyle = {
+    padding: "10px",
+    borderRadius: "8px",
+    border: "1px solid var(--surface-light)",
+    fontSize: "0.9rem",
+  };
+
+  return (
+    <div
+      style={{
+        border: "1px solid var(--surface-light)",
+        borderRadius: "12px",
+        padding: "16px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "12px",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontWeight: 600, fontSize: "0.9rem", color: "var(--text-primary)" }}>
+          Emergency Contact
+        </span>
+        {userId && (
+          <Link
+            href={`/profile?userId=${userId}`}
+            style={{
+              fontSize: "0.8rem",
+              color: "var(--accent-purple)",
+              textDecoration: "none",
+              fontWeight: 600,
+            }}
+          >
+            View on Profile
+          </Link>
+        )}
+      </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+          gap: "12px",
+        }}
+      >
+        <FormField label="Contact Name">
+          <input
+            type="text"
+            value={parsed.name}
+            onChange={handleFieldChange("name")}
+            style={inputStyle}
+            placeholder="Alex Reyes"
+          />
+        </FormField>
+        <FormField label="Contact Phone">
+          <input
+            type="tel"
+            value={parsed.phone}
+            onChange={handleFieldChange("phone")}
+            style={inputStyle}
+            placeholder="+44 7000 000111"
+          />
+        </FormField>
+        <FormField label="Relationship">
+          <input
+            type="text"
+            value={parsed.relationship}
+            onChange={handleFieldChange("relationship")}
+            style={inputStyle}
+            placeholder="Spouse, Parent, Sibling…"
+          />
+        </FormField>
+      </div>
+      {!parsed.name && !parsed.phone && (
+        <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>
+          The employee can also update this from their own profile page.
+        </span>
+      )}
+    </div>
   );
 }
 

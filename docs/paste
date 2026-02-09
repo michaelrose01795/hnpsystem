@@ -26,7 +26,7 @@ CHECKKK
 UPDATE PROFILE SO FULL LINKS AND WORKS WITH HR SYSTEMS
 
 
-
+Fix the “ Request leave” popup so it only shows within the middle of the whole page, not just in the section, override anything stopping this from happening 
 
 
 Fix this "No active overtime period found. Please create one before logging sessions." so all techs can enter the overtime they hae done and for it add ott he "Attendance History" section. 

@@ -89,6 +89,44 @@ export default async function handler(req, res) {
       return res.status(500).json({ success: false, message: "Failed to save overtime log." });
     }
 
+    // Also insert into overtime_sessions for HR tracking
+    // Auto-create an overtime period for the current month if none exists
+    let period = null;
+    const { data: existingPeriod } = await supabase
+      .from("overtime_periods")
+      .select("*")
+      .order("period_end", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existingPeriod) {
+      period = existingPeriod;
+    } else {
+      const now = new Date();
+      const pStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+      const pEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
+      const { data: created } = await supabase
+        .from("overtime_periods")
+        .insert({ period_start: pStart, period_end: pEnd, status: "open" })
+        .select("*")
+        .single();
+      period = created;
+    }
+
+    if (period) {
+      await supabase
+        .from("overtime_sessions")
+        .insert({
+          period_id: period.period_id,
+          user_id: userId,
+          date,
+          start_time: start,
+          end_time: end,
+          total_hours: hoursWorked,
+          notes: "Overtime",
+        });
+    }
+
     return res.status(200).json({
       success: true,
       data: {

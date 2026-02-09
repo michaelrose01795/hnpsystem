@@ -324,9 +324,10 @@ function OvertimeLogForm({ onSessionSaved = () => {} }) {
         throw new Error(payload?.message || "Failed to save overtime session.");
       }
 
+      const result = await response.json();
       setForm({ date: "", start: "", end: "" });
       setSuccess("Overtime session logged.");
-      onSessionSaved();
+      onSessionSaved(result?.data || null);
     } catch (err) {
       setError(err.message || "Failed to save overtime session.");
     } finally {
@@ -563,8 +564,28 @@ export function ProfilePage({
     }; // data feeding metric tiles and tables
   }, [attendanceLogs, leaveBalances, overtimeSummaries, profile, shouldUseHrData, userProfileData]);
 
-  const handleOvertimeSessionSaved = useCallback(() => {
+  const handleOvertimeSessionSaved = useCallback((savedEntry) => {
     if (!shouldUseHrData) {
+      // Optimistically add the new entry to the local state so it appears immediately
+      if (savedEntry) {
+        setUserProfileData((prev) => {
+          if (!prev) return prev;
+          const newLog = {
+            id: savedEntry.id,
+            employeeId: savedEntry.userId,
+            date: savedEntry.date,
+            clockIn: savedEntry.clockIn,
+            clockOut: savedEntry.clockOut,
+            totalHours: Number(savedEntry.totalHours || 0),
+            status: "Overtime",
+          };
+          return {
+            ...prev,
+            attendanceLogs: [newLog, ...(prev.attendanceLogs || [])],
+          };
+        });
+      }
+      // Also do a full reload for consistency
       setProfileReloadKey((prev) => prev + 1);
     }
   }, [shouldUseHrData]);
@@ -572,6 +593,12 @@ export function ProfilePage({
   // Leave request modal state
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
   const [leaveSubmitting, setLeaveSubmitting] = useState(false);
+
+  // Emergency contact edit state
+  const [ecEditing, setEcEditing] = useState(false);
+  const [ecValue, setEcValue] = useState("");
+  const [ecSaving, setEcSaving] = useState(false);
+  const [ecError, setEcError] = useState(null);
 
   const handleLeaveSubmit = useCallback(async (formData) => {
     setLeaveSubmitting(true);
@@ -596,6 +623,42 @@ export function ProfilePage({
       setLeaveSubmitting(false);
     }
   }, []);
+
+  const handleStartEcEdit = useCallback(() => {
+    setEcValue(profile?.emergencyContact || "");
+    setEcError(null);
+    setEcEditing(true);
+  }, [profile?.emergencyContact]);
+
+  const handleSaveEc = useCallback(async () => {
+    setEcSaving(true);
+    setEcError(null);
+    try {
+      const response = await fetch("/api/profile/emergency-contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ emergencyContact: ecValue.trim() }),
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.message || "Failed to update emergency contact.");
+      }
+      // Update local state immediately
+      setUserProfileData((prev) => {
+        if (!prev?.profile) return prev;
+        return {
+          ...prev,
+          profile: { ...prev.profile, emergencyContact: ecValue.trim() || "Not provided" },
+        };
+      });
+      setEcEditing(false);
+    } catch (err) {
+      setEcError(err.message || "Failed to update.");
+    } finally {
+      setEcSaving(false);
+    }
+  }, [ecValue]);
 
   const profileStaffVehicles = useMemo(() => {
     if (!profile?.userId) return [];
@@ -768,27 +831,18 @@ export function ProfilePage({
 
           <div
             style={{
-              background: "var(--surface-light)",
+              background: "var(--surface)",
               borderRadius: "16px",
               padding: "20px",
-              border: "1px solid var(--border, rgba(0,0,0,0.08))",
               display: "flex",
               flexDirection: "column",
               gap: "18px",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: "1.05rem", color: "var(--accent-purple)" }}>
-                  Attendance History
-                </div>
-                <div style={{ fontSize: "0.85rem", color: "var(--info)", marginTop: "4px" }}>
-                  Clock-ins, clock-outs and overtime logs
-                </div>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: "1.05rem", color: "var(--accent-purple)" }}>
+                Attendance History
               </div>
-              <button type="button" style={buttonStyleSecondary}>
-                Download CSV
-              </button>
             </div>
 
             <div style={{ marginBottom: "4px" }}>
@@ -802,7 +856,7 @@ export function ProfilePage({
             <div style={{ maxHeight: "490px", overflowY: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ color: "var(--info)", fontSize: "0.8rem", position: "sticky", top: 0, background: "var(--surface-light)", zIndex: 1 }}>
+                  <tr style={{ color: "var(--info)", fontSize: "0.8rem", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>
                     <th style={{ textAlign: "left", paddingBottom: "10px" }}>Date</th>
                     <th style={{ textAlign: "center", paddingBottom: "10px" }}>Start</th>
                     <th style={{ textAlign: "center", paddingBottom: "10px" }}>End</th>
@@ -865,7 +919,6 @@ export function ProfilePage({
           >
             <SectionCard
               title="Leave Summary"
-              subtitle="Entitlement vs. taken leave"
               action={
                 <button
                   type="button"
@@ -906,19 +959,101 @@ export function ProfilePage({
 
             <SectionCard
               title="Emergency Contact"
-              subtitle="Pulled from HR employee profile"
               action={
-                isAdminOrManager ? (
-                  <Link href="/hr/manager?tab=employees" style={linkStyleButton}>
-                    Manage in HR Manager
-                  </Link>
-                ) : null
+                <div style={{ display: "flex", gap: "8px" }}>
+                  {!ecEditing && (
+                    <button
+                      type="button"
+                      onClick={handleStartEcEdit}
+                      style={{
+                        padding: "6px 14px",
+                        borderRadius: "10px",
+                        border: "1px solid var(--accent-purple)",
+                        background: "transparent",
+                        color: "var(--accent-purple)",
+                        fontWeight: 600,
+                        fontSize: "0.82rem",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Edit
+                    </button>
+                  )}
+                  {isAdminOrManager && (
+                    <Link href="/hr/manager?tab=employees" style={linkStyleButton}>
+                      Manage in HR Manager
+                    </Link>
+                  )}
+                </div>
               }
             >
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px", color: "var(--info-dark)" }}>
-                <span style={{ fontWeight: 600 }}>{profile?.emergencyContact || "Not provided"}</span>
-                <span>{profile?.address || "No address on file"}</span>
-              </div>
+              {ecEditing ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>
+                      Emergency Contact
+                    </label>
+                    <input
+                      type="text"
+                      value={ecValue}
+                      onChange={(e) => { setEcValue(e.target.value); setEcError(null); }}
+                      placeholder="Name, phone, relationship"
+                      style={{
+                        padding: "10px 12px",
+                        borderRadius: "10px",
+                        border: "1px solid var(--border, #ccc)",
+                        background: "var(--background)",
+                        color: "var(--text-primary)",
+                        fontSize: "0.9rem",
+                      }}
+                    />
+                  </div>
+                  {ecError && (
+                    <div style={{ color: "var(--danger)", fontSize: "0.82rem" }}>{ecError}</div>
+                  )}
+                  <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+                    <button
+                      type="button"
+                      onClick={() => setEcEditing(false)}
+                      style={{
+                        padding: "8px 16px",
+                        borderRadius: "10px",
+                        border: "1px solid var(--border, #ccc)",
+                        background: "transparent",
+                        color: "var(--text-secondary)",
+                        fontWeight: 600,
+                        fontSize: "0.82rem",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveEc}
+                      disabled={ecSaving}
+                      style={{
+                        padding: "8px 16px",
+                        borderRadius: "10px",
+                        border: "none",
+                        background: "var(--accent-purple)",
+                        color: "white",
+                        fontWeight: 600,
+                        fontSize: "0.82rem",
+                        cursor: ecSaving ? "not-allowed" : "pointer",
+                        opacity: ecSaving ? 0.7 : 1,
+                      }}
+                    >
+                      {ecSaving ? "Saving..." : "Save"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px", color: "var(--info-dark)" }}>
+                  <span style={{ fontWeight: 600 }}>{profile?.emergencyContact || "Not provided"}</span>
+                  <span>{profile?.address || "No address on file"}</span>
+                </div>
+              )}
             </SectionCard>
           </section>
 
@@ -944,26 +1079,6 @@ export function ProfilePage({
 export default function ProfilePageWrapper(props) {
   return <ProfilePage {...props} />; // default export wrapper for Next.js routing
 }
-const buttonStyleSecondary = {
-  padding: "8px 14px",
-  borderRadius: "10px",
-  border: "1px solid var(--warning)",
-  background: "var(--surface)",
-  color: "var(--danger)",
-  fontWeight: 600,
-  cursor: "pointer",
-};
-
-const buttonStyleGhost = {
-  padding: "8px 14px",
-  borderRadius: "10px",
-  border: "1px solid transparent",
-  background: "transparent",
-  color: "var(--danger)",
-  fontWeight: 600,
-  cursor: "pointer",
-};
-
 const buttonStyleLeaveRequest = {
   padding: "8px 14px",
   borderRadius: "10px",

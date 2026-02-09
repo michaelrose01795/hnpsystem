@@ -250,7 +250,7 @@ export async function getAbsenceRecords({ limit = 50 } = {}) {
   });
 }
 
-// Retrieve the current active overtime period
+// Retrieve the current active overtime period, auto-creating one for the current month if none exists
 export async function getCurrentOvertimePeriod() {
   const { data, error } = await supabase
     .from("overtime_periods")
@@ -264,7 +264,25 @@ export async function getCurrentOvertimePeriod() {
     throw error;
   }
 
-  return data || null;
+  if (data) return data;
+
+  // Auto-create a period for the current month
+  const now = new Date();
+  const periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+  const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
+
+  const { data: created, error: createError } = await supabase
+    .from("overtime_periods")
+    .insert({ period_start: periodStart, period_end: periodEnd, status: "open" })
+    .select("*")
+    .single();
+
+  if (createError) {
+    console.error("❌ Failed to auto-create overtime period:", createError);
+    return null;
+  }
+
+  return created;
 }
 
 // Get overtime summaries for all employees in the current period
