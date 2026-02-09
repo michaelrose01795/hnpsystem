@@ -19,8 +19,14 @@ DO THISSSS
 work on implementing "AI" within whole app search chat "AI job detection system"
 
 
+
+
+
+CHECKKK
 UPDATE PROFILE SO FULL LINKS AND WORKS WITH HR SYSTEMS
-jhave it so the /profile page laods quicker with a better ui for loading. have it so the all sections are linked to the database correctly and oull the correct infomration from the database table. the "Total Hours (logged)" section is the time from loggin in and out within that day. "Overtime Hours" section is all of hte logs which have been creartes added together as a total. "Leave Remaining" section is linked ot the "Leave Summary" fix the "Request leave" button so that the popup opens with all the informatin required for each request. the "Attendance History" shows 10 rows and then a scroll, also the clock in and out is the time not the data of the clocking, if the clocking runs to the next day then put in total hours "next day' or something like that. 
+
+
+
 
 
 Fix this "No active overtime period found. Please create one before logging sessions." so all techs can enter the overtime they hae done and for it add ott he "Attendance History" section. 

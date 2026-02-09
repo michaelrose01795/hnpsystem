@@ -8,7 +8,8 @@ import Layout from "@/components/Layout"; // shared layout wrapper
 import { useUser } from "@/context/UserContext"; // Keycloak user context
 import { useHrOperationsData } from "@/hooks/useHrData"; // Supabase-backed HR aggregation hook (admin only)
 import { SectionCard, StatusTag, MetricCard } from "@/components/HR/MetricCard"; // HR UI components
-import OvertimeEntriesEditor from "@/components/HR/OvertimeEntriesEditor"; // overtime editor widget
+import { CalendarField } from "@/components/calendarAPI";
+import { TimePickerField } from "@/components/timePickerAPI";
 import StaffVehiclesCard from "@/components/HR/StaffVehiclesCard";
 import { useTheme } from "@/styles/themeProvider";
 import { isHrCoreRole, isManagerScopedRole } from "@/lib/auth/roles"; // Role checking utilities
@@ -20,8 +21,353 @@ function formatDate(value) {
   return parsed.toLocaleDateString(); // formatted string
 }
 
+function formatTime(value) {
+  if (!value) return "—";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
 function formatCurrency(value) {
   return `£${Number(value ?? 0).toFixed(2)}`; // currency helper used across metrics
+}
+
+// Check if clock-out is on a different day than clock-in
+function isNextDayClocking(clockIn, clockOut) {
+  if (!clockIn || !clockOut) return false;
+  const inDate = new Date(clockIn);
+  const outDate = new Date(clockOut);
+  if (Number.isNaN(inDate.getTime()) || Number.isNaN(outDate.getTime())) return false;
+  return (
+    inDate.getFullYear() !== outDate.getFullYear() ||
+    inDate.getMonth() !== outDate.getMonth() ||
+    inDate.getDate() !== outDate.getDate()
+  );
+}
+
+// Skeleton loading placeholder component
+function SkeletonBlock({ width = "100%", height = "20px", borderRadius = "8px" }) {
+  return (
+    <div
+      style={{
+        width,
+        height,
+        borderRadius,
+        background: "linear-gradient(90deg, var(--surface-light, #e0e0e0) 25%, var(--surface, #f0f0f0) 50%, var(--surface-light, #e0e0e0) 75%)",
+        backgroundSize: "200% 100%",
+        animation: "shimmer 1.5s ease-in-out infinite",
+      }}
+    />
+  );
+}
+
+function SkeletonMetricCard() {
+  return (
+    <div
+      style={{
+        background: "var(--surface)",
+        borderRadius: "16px",
+        padding: "20px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "14px",
+        minWidth: "200px",
+        flex: 1,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <SkeletonBlock width="32px" height="32px" borderRadius="8px" />
+        <SkeletonBlock width="120px" height="16px" />
+      </div>
+      <SkeletonBlock width="80px" height="32px" borderRadius="6px" />
+      <SkeletonBlock width="140px" height="14px" />
+    </div>
+  );
+}
+
+function SkeletonTableRow({ cols = 5 }) {
+  return (
+    <tr>
+      {Array.from({ length: cols }).map((_, i) => (
+        <td key={i} style={{ padding: "12px 0" }}>
+          <SkeletonBlock width={i === 0 ? "100px" : "70px"} height="16px" />
+        </td>
+      ))}
+    </tr>
+  );
+}
+
+// Leave Request Modal
+function LeaveRequestModal({ isOpen, onClose, onSubmit, isSubmitting }) {
+  const [form, setForm] = useState({
+    type: "Holiday",
+    startDate: "",
+    endDate: "",
+    notes: "",
+  });
+  const [error, setError] = useState(null);
+
+  if (!isOpen) return null;
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+    setError(null);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!form.startDate || !form.endDate) {
+      setError("Start date and end date are required.");
+      return;
+    }
+    if (new Date(form.endDate) < new Date(form.startDate)) {
+      setError("End date must be on or after start date.");
+      return;
+    }
+    onSubmit(form);
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 9999,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(0,0,0,0.5)",
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        style={{
+          background: "var(--surface)",
+          borderRadius: "16px",
+          padding: "28px",
+          width: "100%",
+          maxWidth: "460px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "18px",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <h2 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 700, color: "var(--text-primary)" }}>
+            Request Leave
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              background: "none",
+              border: "none",
+              fontSize: "1.4rem",
+              cursor: "pointer",
+              color: "var(--text-secondary)",
+              padding: "4px 8px",
+            }}
+          >
+            &times;
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+          <label style={modalLabelStyle}>
+            Leave Type
+            <select
+              name="type"
+              value={form.type}
+              onChange={handleChange}
+              style={modalInputStyle}
+            >
+              <option value="Holiday">Holiday</option>
+              <option value="Sickness">Sickness</option>
+              <option value="Unpaid Leave">Unpaid Leave</option>
+            </select>
+          </label>
+
+          <label style={modalLabelStyle}>
+            Start Date
+            <input
+              type="date"
+              name="startDate"
+              value={form.startDate}
+              onChange={handleChange}
+              required
+              style={modalInputStyle}
+            />
+          </label>
+
+          <label style={modalLabelStyle}>
+            End Date
+            <input
+              type="date"
+              name="endDate"
+              value={form.endDate}
+              onChange={handleChange}
+              required
+              style={modalInputStyle}
+            />
+          </label>
+
+          <label style={modalLabelStyle}>
+            Notes (optional)
+            <textarea
+              name="notes"
+              value={form.notes}
+              onChange={handleChange}
+              rows={3}
+              placeholder="Reason for leave request..."
+              style={{ ...modalInputStyle, resize: "vertical" }}
+            />
+          </label>
+
+          {error && (
+            <div style={{ color: "var(--danger)", fontSize: "0.85rem" }}>{error}</div>
+          )}
+
+          <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "4px" }}>
+            <button type="button" onClick={onClose} style={modalCancelBtnStyle}>
+              Cancel
+            </button>
+            <button type="submit" disabled={isSubmitting} style={{ ...modalSubmitBtnStyle, opacity: isSubmitting ? 0.7 : 1 }}>
+              {isSubmitting ? "Submitting..." : "Submit Request"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+const modalLabelStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "6px",
+  fontSize: "0.85rem",
+  fontWeight: 600,
+  color: "var(--text-secondary)",
+};
+
+const modalInputStyle = {
+  padding: "10px 12px",
+  borderRadius: "10px",
+  border: "1px solid var(--border, #ccc)",
+  background: "var(--background)",
+  color: "var(--text-primary)",
+  fontSize: "0.9rem",
+  fontWeight: 500,
+};
+
+const modalCancelBtnStyle = {
+  padding: "10px 18px",
+  borderRadius: "10px",
+  border: "1px solid var(--border, #ccc)",
+  background: "transparent",
+  color: "var(--text-secondary)",
+  fontWeight: 600,
+  cursor: "pointer",
+};
+
+const modalSubmitBtnStyle = {
+  padding: "10px 18px",
+  borderRadius: "10px",
+  border: "none",
+  background: "var(--accent-purple)",
+  color: "white",
+  fontWeight: 600,
+  cursor: "pointer",
+};
+
+// Simple overtime log form — just date, start, end, and add button
+function OvertimeLogForm({ onSessionSaved = () => {} }) {
+  const [form, setForm] = useState({ date: "", start: "", end: "" });
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+    setError(null);
+    setSuccess(null);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.date || !form.start || !form.end) return;
+
+    const startDate = new Date(`${form.date}T${form.start}`);
+    const endDate = new Date(`${form.date}T${form.end}`);
+    if (endDate <= startDate) {
+      setError("End time must be after start time.");
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const response = await fetch("/api/profile/overtime-sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(form),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.message || "Failed to save overtime session.");
+      }
+
+      setForm({ date: "", start: "", end: "" });
+      setSuccess("Overtime session logged.");
+      onSessionSaved();
+    } catch (err) {
+      setError(err.message || "Failed to save overtime session.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+        gap: "12px",
+        alignItems: "end",
+      }}
+    >
+      <CalendarField label="Date" name="date" id="ot-date" value={form.date} onChange={handleChange} />
+      <TimePickerField label="Start time" name="start" value={form.start} onChange={handleChange} />
+      <TimePickerField label="End time" name="end" value={form.end} onChange={handleChange} />
+      <button
+        type="submit"
+        disabled={isSaving}
+        style={{
+          padding: "10px 12px",
+          borderRadius: "10px",
+          border: "none",
+          background: "var(--accent-purple)",
+          color: "white",
+          fontWeight: 600,
+          cursor: "pointer",
+          height: "42px",
+          opacity: isSaving ? 0.7 : 1,
+        }}
+      >
+        {isSaving ? "Saving…" : "Add session"}
+      </button>
+      {error && <div style={{ gridColumn: "1 / -1", color: "var(--danger)", fontSize: "0.85rem" }}>{error}</div>}
+      {success && <div style={{ gridColumn: "1 / -1", color: "var(--success)", fontSize: "0.85rem" }}>{success}</div>}
+    </form>
+  );
 }
 
 export function ProfilePage({
@@ -133,7 +479,6 @@ export function ProfilePage({
   const overtimeSummaries = shouldUseHrData ? (data?.overtimeSummaries ?? []) : (userProfileData?.overtimeSummary ? [userProfileData.overtimeSummary] : []); // overtime totals
   const leaveBalances = data?.leaveBalances ?? []; // leave usage (admin only)
   const staffVehicles = shouldUseHrData ? (data?.staffVehicles ?? []) : (userProfileData?.staffVehicles ?? []);
-  const overtimeSessions = shouldUseHrData ? [] : (userProfileData?.overtimeSessions ?? []);
   const activeUserName = previewUserParam || user?.username || session?.user?.name || null; // active username resolution
 
   const hrProfile = useMemo(() => {
@@ -181,17 +526,34 @@ export function ProfilePage({
       leaveSource = userProfileData?.leaveBalance ?? null;
     }
 
-    const totalHours = attendanceSource.reduce(
+    // Total Hours = today's clock in/out hours only
+    const today = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD format
+    const todayRecords = attendanceSource.filter((entry) => {
+      if (!entry.date) return false;
+      const entryDate = new Date(entry.date).toLocaleDateString("en-CA");
+      return entryDate === today;
+    });
+    const todayHours = todayRecords.reduce(
       (sum, entry) => sum + Number(entry.totalHours ?? 0),
       0
-    ); // accumulate total hours worked
+    );
+
+    // Overtime Hours = sum of all records tagged as Overtime in attendance
+    const overtimeRecords = attendanceSource.filter((entry) => entry.status === "Overtime");
+    const overtimeTotal = overtimeRecords.reduce(
+      (sum, entry) => sum + Number(entry.totalHours ?? 0),
+      0
+    );
+
+    const overtimeRate = overtimeSource?.overtimeRate ?? 0;
+    const overtimeBonus = overtimeSource?.bonus ?? 0;
 
     return {
-      totalHours,
-      overtimeHours: overtimeSource?.overtimeHours ?? 0,
+      totalHours: todayHours,
+      overtimeHours: Number(overtimeTotal.toFixed(2)),
       overtimeBalance:
-        overtimeSource?.overtimeHours && overtimeSource?.overtimeRate
-          ? overtimeSource.overtimeHours * overtimeSource.overtimeRate + (overtimeSource.bonus ?? 0)
+        overtimeTotal && overtimeRate
+          ? overtimeTotal * overtimeRate + overtimeBonus
           : 0,
       leaveRemaining: leaveSource?.remaining ?? null,
       leaveEntitlement: leaveSource?.entitlement ?? null,
@@ -206,6 +568,34 @@ export function ProfilePage({
       setProfileReloadKey((prev) => prev + 1);
     }
   }, [shouldUseHrData]);
+
+  // Leave request modal state
+  const [leaveModalOpen, setLeaveModalOpen] = useState(false);
+  const [leaveSubmitting, setLeaveSubmitting] = useState(false);
+
+  const handleLeaveSubmit = useCallback(async (formData) => {
+    setLeaveSubmitting(true);
+    try {
+      const response = await fetch("/api/profile/leave-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(formData),
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.message || "Failed to submit leave request.");
+      }
+      setLeaveModalOpen(false);
+      // Reload profile to get updated leave balance
+      setProfileReloadKey((prev) => prev + 1);
+    } catch (err) {
+      console.error("❌ Leave request error:", err);
+      alert(err.message || "Failed to submit leave request.");
+    } finally {
+      setLeaveSubmitting(false);
+    }
+  }, []);
 
   const profileStaffVehicles = useMemo(() => {
     if (!profile?.userId) return [];
@@ -288,11 +678,29 @@ export function ProfilePage({
       </header>
 
       {isLoading && (
-        <SectionCard title="Loading profile" subtitle="Fetching your profile data.">
-          <span style={{ color: "var(--info)" }}>
-            Retrieving the latest profile data from Supabase…
-          </span>
-        </SectionCard>
+        <>
+          <style>{`@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
+          <section
+            style={{
+              display: "grid",
+              gap: "18px",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            }}
+          >
+            <SkeletonMetricCard />
+            <SkeletonMetricCard />
+            <SkeletonMetricCard />
+            <SkeletonMetricCard />
+          </section>
+          <SectionCard title="Attendance History" subtitle="Loading...">
+            <SkeletonBlock width="100%" height="48px" borderRadius="10px" />
+            <div style={{ marginTop: "12px" }}>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <SkeletonTableRow key={i} cols={5} />
+              ))}
+            </div>
+          </SectionCard>
+        </>
       )}
 
       {error && (
@@ -358,71 +766,95 @@ export function ProfilePage({
             />
           </section>
 
-          <section
+          <div
             style={{
-              display: "grid",
-              gap: "20px",
-              gridTemplateColumns: "minmax(0, 1.4fr) minmax(0, 1fr)",
+              background: "var(--surface-light)",
+              borderRadius: "16px",
+              padding: "20px",
+              border: "1px solid var(--border, rgba(0,0,0,0.08))",
+              display: "flex",
+              flexDirection: "column",
+              gap: "18px",
             }}
           >
-            <SectionCard
-              title="Attendance History"
-              subtitle="Recent clock-ins and clock-outs"
-              action={
-                <button type="button" style={buttonStyleSecondary}>
-                  Download CSV
-                </button>
-              }
-            >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: "1.05rem", color: "var(--accent-purple)" }}>
+                  Attendance History
+                </div>
+                <div style={{ fontSize: "0.85rem", color: "var(--info)", marginTop: "4px" }}>
+                  Clock-ins, clock-outs and overtime logs
+                </div>
+              </div>
+              <button type="button" style={buttonStyleSecondary}>
+                Download CSV
+              </button>
+            </div>
+
+            <div style={{ marginBottom: "4px" }}>
+              <div style={{ fontWeight: 600, fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "10px" }}>
+                Log Overtime
+              </div>
+              <OvertimeLogForm onSessionSaved={handleOvertimeSessionSaved} />
+            </div>
+
+            {/* 10 rows visible then scroll */}
+            <div style={{ maxHeight: "490px", overflowY: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
+                  <tr style={{ color: "var(--info)", fontSize: "0.8rem", position: "sticky", top: 0, background: "var(--surface-light)", zIndex: 1 }}>
                     <th style={{ textAlign: "left", paddingBottom: "10px" }}>Date</th>
-                    <th>Clock In</th>
-                    <th>Clock Out</th>
-                    <th>Total Hours</th>
-                    <th>Status</th>
+                    <th style={{ textAlign: "center", paddingBottom: "10px" }}>Start</th>
+                    <th style={{ textAlign: "center", paddingBottom: "10px" }}>End</th>
+                    <th style={{ textAlign: "center", paddingBottom: "10px" }}>Total Hours</th>
+                    <th style={{ textAlign: "center", paddingBottom: "10px" }}>Type</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {aggregatedStats?.attendanceRecords.map((entry) => (
-                    <tr key={entry.id} style={{ borderTop: "1px solid var(--accent-purple-surface)" }}>
-                      <td style={{ padding: "12px 0", fontWeight: 600 }}>{formatDate(entry.date)}</td>
-                      <td>{formatDate(entry.clockIn)}</td>
-                      <td>{formatDate(entry.clockOut)}</td>
-                      <td>{Number(entry.totalHours ?? 0).toFixed(2)} hrs</td>
-                      <td>
-                        <StatusTag
-                          label={entry.status}
-                          tone={
-                            entry.status === "Overtime"
-                              ? "warning"
-                              : entry.status === "Clocked In"
-                              ? "info"
-                              : "success"
+                  {(aggregatedStats?.attendanceRecords ?? []).map((entry) => {
+                    const nextDay = isNextDayClocking(entry.clockIn, entry.clockOut);
+                    return (
+                      <tr key={entry.id} style={{ borderTop: "1px solid var(--border, rgba(0,0,0,0.06))" }}>
+                        <td style={{ padding: "12px 0", fontWeight: 600 }}>{formatDate(entry.date)}</td>
+                        <td style={{ textAlign: "center" }}>{formatTime(entry.clockIn)}</td>
+                        <td style={{ textAlign: "center" }}>
+                          {entry.clockOut ? formatTime(entry.clockOut) : "—"}
+                          {nextDay && (
+                            <span style={{ fontSize: "0.7rem", color: "var(--warning)", marginLeft: "4px" }}>+1d</span>
+                          )}
+                        </td>
+                        <td style={{ textAlign: "center" }}>
+                          {nextDay
+                            ? <span style={{ color: "var(--warning)", fontWeight: 600 }}>Next Day</span>
+                            : `${Number(entry.totalHours ?? 0).toFixed(2)} hrs`
                           }
-                        />
+                        </td>
+                        <td style={{ textAlign: "center" }}>
+                          <StatusTag
+                            label={entry.status}
+                            tone={
+                              entry.status === "Overtime"
+                                ? "warning"
+                                : entry.status === "Clocked In"
+                                ? "info"
+                                : "success"
+                            }
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {(aggregatedStats?.attendanceRecords ?? []).length === 0 && (
+                    <tr>
+                      <td colSpan={5} style={{ padding: "16px 0", color: "var(--text-secondary)", textAlign: "center" }}>
+                        No records found.
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
-            </SectionCard>
-
-            <SectionCard
-              title="Overtime Summary"
-              subtitle="Editable record for adjustments"
-            >
-              <OvertimeEntriesEditor
-                entries={overtimeSessions}
-                employeeName={profile.name}
-                hourlyRate={profile.hourlyRate}
-                overtimeSummary={aggregatedStats?.overtimeSummary}
-                canEdit={!shouldUseHrData}
-                onSessionSaved={handleOvertimeSessionSaved}
-              />
-            </SectionCard>
-          </section>
+            </div>
+          </div>
 
           <section
             style={{
@@ -435,7 +867,11 @@ export function ProfilePage({
               title="Leave Summary"
               subtitle="Entitlement vs. taken leave"
               action={
-                <button type="button" style={buttonStyleGhost}>
+                <button
+                  type="button"
+                  onClick={() => setLeaveModalOpen(true)}
+                  style={buttonStyleLeaveRequest}
+                >
                   Request leave
                 </button>
               }
@@ -444,8 +880,8 @@ export function ProfilePage({
                 <thead>
                   <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
                     <th style={{ textAlign: "left", paddingBottom: "10px" }}>Entitlement</th>
-                    <th>Taken</th>
-                    <th>Remaining</th>
+                    <th style={{ textAlign: "center", paddingBottom: "10px" }}>Taken</th>
+                    <th style={{ textAlign: "center", paddingBottom: "10px" }}>Remaining</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -453,12 +889,20 @@ export function ProfilePage({
                     <td style={{ padding: "12px 0", fontWeight: 600 }}>
                       {aggregatedStats?.leaveEntitlement ?? "—"} days
                     </td>
-                    <td>{aggregatedStats?.leaveTaken ?? "—"} days</td>
-                    <td>{aggregatedStats?.leaveRemaining ?? "—"} days</td>
+                    <td style={{ textAlign: "center" }}>{aggregatedStats?.leaveTaken ?? "—"} days</td>
+                    <td style={{ textAlign: "center", fontWeight: 600, color: "var(--success)" }}>
+                      {aggregatedStats?.leaveRemaining ?? "—"} days
+                    </td>
                   </tr>
                 </tbody>
               </table>
             </SectionCard>
+            <LeaveRequestModal
+              isOpen={leaveModalOpen}
+              onClose={() => setLeaveModalOpen(false)}
+              onSubmit={handleLeaveSubmit}
+              isSubmitting={leaveSubmitting}
+            />
 
             <SectionCard
               title="Emergency Contact"
@@ -518,6 +962,17 @@ const buttonStyleGhost = {
   color: "var(--danger)",
   fontWeight: 600,
   cursor: "pointer",
+};
+
+const buttonStyleLeaveRequest = {
+  padding: "8px 14px",
+  borderRadius: "10px",
+  border: "1px solid var(--accent-purple)",
+  background: "var(--accent-purple)",
+  color: "white",
+  fontWeight: 600,
+  cursor: "pointer",
+  fontSize: "0.85rem",
 };
 
 const linkStyleButton = {

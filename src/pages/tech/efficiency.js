@@ -30,30 +30,6 @@ export default function TechEfficiencyPage() {
             flexDirection: "column",
             gap: "24px",
           }}>
-            {/* Header */}
-            <div style={{
-              borderRadius: "28px",
-              border: "1px solid var(--surface-light)",
-              background: "var(--layer-section-level-2)",
-              padding: "24px 32px",
-            }}>
-              <p style={{
-                margin: 0,
-                fontSize: "0.75rem",
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                color: "var(--grey-accent)",
-              }}>
-                Workshop Efficiency
-              </p>
-              <h1 style={{ margin: "8px 0 0", fontSize: "2rem", color: "var(--text-primary)" }}>
-                My Efficiency
-              </h1>
-              <p style={{ margin: "6px 0 0", fontSize: "0.95rem", color: "var(--grey-accent)" }}>
-                Track your monthly hours against targets. The Overall tab is read-only. Your own tab is editable.
-              </p>
-            </div>
-
             {/* Efficiency component */}
             {!ready ? (
               <div style={{

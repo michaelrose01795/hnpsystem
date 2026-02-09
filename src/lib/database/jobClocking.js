@@ -1,6 +1,5 @@
 import { getDatabaseClient } from "@/lib/database/client";
 import { logJobSubStatus } from "@/lib/services/jobStatusService";
-import { autoCreateEfficiencyEntry } from "@/lib/database/efficiency";
 
 const db = getDatabaseClient();
 const TABLE_NAME = "job_clocking";
@@ -434,18 +433,6 @@ export const clockOutFromJob = async (...rawArgs) => {
 
     const jobsById = await fetchJobsByIds([data.job_id]);
     const mapped = mapClockingRow(data, jobsById.get(data.job_id));
-
-    // Auto-create efficiency entry for this clock-out
-    try {
-      await autoCreateEfficiencyEntry({
-        userId: data.user_id,
-        jobNumber: data.job_number || "",
-        hoursSpent: mapped.hoursWorked,
-        clockIn: data.clock_in,
-      });
-    } catch (effErr) {
-      console.error("Auto-efficiency entry failed (non-blocking):", effErr.message);
-    }
 
     if (typeof window !== "undefined" && mapped.jobNumber) {
       window.dispatchEvent(

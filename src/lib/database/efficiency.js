@@ -229,54 +229,55 @@ export async function upsertTechTarget(userId, { monthlyTargetHours, weight }) {
 }
 
 /**
- * Auto-create an efficiency entry when a technician clocks out of a job.
- * Only creates if the user is in the efficiency roster (TECH_NAMES).
- * Silently skips non-efficiency users. Returns the entry or null.
+ * Fetch completed job_clocking entries for the given technicians and month.
+ * Transforms them into the same shape as tech_efficiency_entries so they
+ * can be merged seamlessly in the UI.
  */
-export async function autoCreateEfficiencyEntry({ userId, jobNumber, hoursSpent, clockIn }) {
-  if (!userId || !hoursSpent || hoursSpent <= 0) return null;
+export async function getJobClockingAsEfficiency(userIds, year, month) {
+  const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
+  const endMonth = month === 12 ? 1 : month + 1;
+  const endYear = month === 12 ? year + 1 : year;
+  const endDate = `${endYear}-${String(endMonth).padStart(2, "0")}-01`;
 
-  // Check if this user is in the efficiency roster
-  const { data: user, error: userError } = await db
-    .from("users")
-    .select("user_id, first_name")
-    .eq("user_id", userId)
-    .maybeSingle();
+  const startISO = `${startDate}T00:00:00.000Z`;
+  const endISO = `${endDate}T00:00:00.000Z`;
 
-  if (userError || !user) return null;
-
-  const isEfficiencyTech = TECH_NAMES.some(
-    (name) => name.toLowerCase() === (user.first_name || "").toLowerCase()
-  );
-  if (!isEfficiencyTech) return null;
-
-  // Derive date and day type from clock_in timestamp
-  const clockInDate = clockIn ? new Date(clockIn) : new Date();
-  const dateStr = clockInDate.toISOString().split("T")[0];
-  const dayOfWeek = clockInDate.getDay(); // 0=Sunday, 6=Saturday
-  const dayType = dayOfWeek === 6 ? "saturday" : "weekday";
-
-  const now = new Date().toISOString();
   const { data, error } = await db
-    .from("tech_efficiency_entries")
-    .insert([{
-      user_id: userId,
-      date: dateStr,
-      job_number: jobNumber || "",
-      hours_spent: hoursSpent,
-      notes: "Auto-logged from job clocking",
-      day_type: dayType,
-      created_at: now,
-      updated_at: now,
-    }])
-    .select()
-    .single();
+    .from("job_clocking")
+    .select("id, user_id, job_number, clock_in, clock_out, work_type, created_at")
+    .in("user_id", userIds)
+    .not("clock_out", "is", null)
+    .gte("clock_in", startISO)
+    .lt("clock_in", endISO)
+    .order("clock_in", { ascending: true });
 
   if (error) {
-    console.error("Failed to auto-create efficiency entry:", error.message);
-    return null;
+    console.error("Failed to fetch job_clocking for efficiency:", error.message);
+    return [];
   }
-  return data;
+
+  return (data || []).map((row) => {
+    const clockIn = new Date(row.clock_in);
+    const clockOut = new Date(row.clock_out);
+    const diffMs = clockOut - clockIn;
+    const hours = diffMs > 0 ? Number((diffMs / (1000 * 60 * 60)).toFixed(2)) : 0;
+    const dayOfWeek = clockIn.getDay();
+    const dayType = dayOfWeek === 6 ? "saturday" : "weekday";
+    const dateStr = clockIn.toISOString().split("T")[0];
+
+    return {
+      id: `jc_${row.id}`,
+      user_id: row.user_id,
+      date: dateStr,
+      job_number: row.job_number || "",
+      hours_spent: hours,
+      notes: "Auto-logged from job clocking",
+      day_type: dayType,
+      created_at: row.created_at,
+      updated_at: row.clock_out,
+      _source: "job_clocking",
+    };
+  });
 }
 
 /**

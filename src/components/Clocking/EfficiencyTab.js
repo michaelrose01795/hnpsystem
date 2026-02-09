@@ -6,6 +6,7 @@ import {
   getEfficiencyTechnicians,
   getEfficiencyEntries,
   getAllEfficiencyEntries,
+  getJobClockingAsEfficiency,
   getAllTechTargets,
   addEfficiencyEntry,
   updateEfficiencyEntry,
@@ -141,11 +142,16 @@ export default function EfficiencyTab({
     setLoading(true);
     setError("");
     try {
-      const [allEntries, allTargets] = await Promise.all([
+      const [manualEntries, clockingEntries, allTargets] = await Promise.all([
         getAllEfficiencyEntries(allUserIds, selectedYear, selectedMonth),
+        getJobClockingAsEfficiency(allUserIds, selectedYear, selectedMonth),
         getAllTechTargets(allUserIds),
       ]);
-      setEntries(allEntries);
+      // Merge manual entries + job_clocking entries, clocking entries first then manual
+      const merged = [...clockingEntries, ...manualEntries];
+      // Sort by date ascending
+      merged.sort((a, b) => (a.date > b.date ? 1 : a.date < b.date ? -1 : 0));
+      setEntries(merged);
       setTargets(allTargets);
     } catch (err) {
       setError(err?.message || "Failed to load efficiency data.");
@@ -156,6 +162,32 @@ export default function EfficiencyTab({
 
   useEffect(() => {
     fetchData();
+  }, [fetchData]);
+
+  // Real-time subscription: refresh when efficiency data or job clocking changes
+  useEffect(() => {
+    const channel = supabase.channel("efficiency-entries-live");
+    channel
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tech_efficiency_entries" },
+        () => { fetchData(); }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tech_efficiency_targets" },
+        () => { fetchData(); }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "job_clocking" },
+        () => { fetchData(); }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [fetchData]);
 
   // Set default active tab when filterUserId is set
@@ -954,7 +986,9 @@ export default function EfficiencyTab({
                         </td>
                       </tr>
                     ) : (
-                      activeSummary.entries.map((entry) => (
+                      activeSummary.entries.map((entry) => {
+                        const isFromClocking = entry._source === "job_clocking";
+                        return (
                         <tr key={entry.id}>
                           <td style={tdStyle}>
                             {new Date(entry.date + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
@@ -980,6 +1014,9 @@ export default function EfficiencyTab({
                           </td>
                           {isTabEditable && (
                             <td style={tdStyle}>
+                              {isFromClocking ? (
+                                <span style={{ fontSize: "0.72rem", color: "var(--grey-accent)", fontStyle: "italic" }}>Auto</span>
+                              ) : (
                               <div style={{ display: "flex", gap: "8px" }}>
                                 <button
                                   type="button"
@@ -1053,10 +1090,12 @@ export default function EfficiencyTab({
                                   </button>
                                 )}
                               </div>
+                            )}
                             </td>
                           )}
                         </tr>
-                      ))
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
@@ -1328,7 +1367,9 @@ export default function EfficiencyTab({
                           </td>
                         </tr>
                       ) : (
-                        detailPopupSummary.entries.map((entry) => (
+                        detailPopupSummary.entries.map((entry) => {
+                          const isFromClocking = entry._source === "job_clocking";
+                          return (
                           <tr key={entry.id}>
                             <td style={tdStyle}>
                               {new Date(entry.date + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
@@ -1354,6 +1395,9 @@ export default function EfficiencyTab({
                             </td>
                             {isDetailPopupEditable && (
                               <td style={tdStyle}>
+                                {isFromClocking ? (
+                                  <span style={{ fontSize: "0.72rem", color: "var(--grey-accent)", fontStyle: "italic" }}>Auto</span>
+                                ) : (
                                 <div style={{ display: "flex", gap: "8px" }}>
                                   <button
                                     type="button"
@@ -1427,10 +1471,12 @@ export default function EfficiencyTab({
                                     </button>
                                   )}
                                 </div>
+                                )}
                               </td>
                             )}
                           </tr>
-                        ))
+                          );
+                        })
                       )}
                     </tbody>
                   </table>

@@ -55,7 +55,8 @@ async function getUserAttendanceLogs(userId, limit = 50) {
   return (data || []).map((record) => {
     const hours = Number(record.hours_worked || 0);
     let status = "Clocked In";
-    if (record.clock_out && hours >= 9) status = "Overtime";
+    if (record.notes === "Overtime") status = "Overtime";
+    else if (record.clock_out && hours >= 9) status = "Overtime";
     else if (record.clock_out) status = "On Time";
 
     return {
@@ -72,7 +73,9 @@ async function getUserAttendanceLogs(userId, limit = 50) {
 
 // Get user's overtime summary + individual sessions for the active period
 async function getUserOvertimeSnapshot(userId) {
-  const { data: period, error: periodError } = await supabase
+  // Find the most recent overtime period, or auto-create one for the current month
+  let period = null;
+  const { data: existingPeriod, error: periodError } = await supabase
     .from("overtime_periods")
     .select("*")
     .order("period_end", { ascending: false })
@@ -84,8 +87,25 @@ async function getUserOvertimeSnapshot(userId) {
     throw periodError;
   }
 
-  if (!period) {
-    return { summary: null, sessions: [] };
+  if (existingPeriod) {
+    period = existingPeriod;
+  } else {
+    // Auto-create a period for the current month
+    const now = new Date();
+    const periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+    const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
+
+    const { data: created, error: createError } = await supabase
+      .from("overtime_periods")
+      .insert({ period_start: periodStart, period_end: periodEnd, status: "open" })
+      .select("*")
+      .single();
+
+    if (createError) {
+      console.error("❌ Failed to auto-create overtime period:", createError);
+      return { summary: null, sessions: [] };
+    }
+    period = created;
   }
 
   const { data, error } = await supabase
