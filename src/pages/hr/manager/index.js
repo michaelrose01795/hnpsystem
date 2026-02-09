@@ -144,76 +144,64 @@ NEXT_PUBLIC_HR_MANAGER_SAFE_MODE=false`}
           minHeight: "calc(100vh - 40px)",
         }}
       >
-        {/* Header Section */}
-        <div
-          style={{
-            background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)",
-            padding: "32px 32px 16px",
-            color: "white",
-            borderRadius: "16px 16px 0 0",
-          }}
-        >
-          <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
-            <h1 style={{ fontSize: "2rem", fontWeight: 700, margin: "0 0 8px" }}>
-              HR Manager Dashboard
-            </h1>
-            <p style={{ margin: 0, opacity: 0.9, fontSize: "1rem" }}>
-              Comprehensive human resources management and operations center
-            </p>
-          </div>
-
-          {/* Tab Navigation */}
-          <div
-            style={{
-              display: "flex",
-              gap: "8px",
-              marginTop: "24px",
-              overflowX: "auto",
-              paddingBottom: "0",
-              scrollbarWidth: "thin",
-            }}
-          >
-            {HR_TABS.map((tab) => {
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0",
-                    padding: "12px 20px",
-                    background: isActive ? "var(--surface)" : "rgba(var(--text-inverse-rgb), 0.1)",
-                    color: isActive ? "var(--primary)" : "var(--text-inverse)",
-                    border: "none",
-                    borderRadius: isActive ? "12px 12px 0 0" : "8px 8px 0 0",
-                    fontWeight: isActive ? 700 : 600,
-                    fontSize: "0.95rem",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                    whiteSpace: "nowrap",
-                    boxShadow: isActive ? "0 -4px 12px rgba(0, 0, 0, 0.1)" : "none",
-                  }}
-                >
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
         {/* Tab Content Area */}
         <div
           style={{
             background: "var(--background)",
             padding: "24px 32px 32px",
-            borderRadius: "0 0 16px 16px",
+            borderRadius: "16px",
             flexGrow: 1,
           }}
         >
-          <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
+          <div style={{ width: "100%", maxWidth: "none" }}>
+            {/* Tab Navigation */}
+            <div
+              style={{
+                borderRadius: "999px",
+                border: "1px solid var(--surface-light)",
+                background: "var(--surface)",
+                padding: "6px",
+                display: "flex",
+                gap: "6px",
+                width: "100%",
+                overflowX: "auto",
+                flexShrink: 0,
+                scrollbarWidth: "thin",
+                scrollbarColor: "var(--scrollbar-thumb) transparent",
+                scrollBehavior: "smooth",
+                WebkitOverflowScrolling: "touch",
+              }}
+            >
+              {HR_TABS.map((tab) => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveTab(tab.id)}
+                    style={{
+                      flex: "0 0 auto",
+                      borderRadius: "999px",
+                      border: "1px solid transparent",
+                      padding: "10px 20px",
+                      fontSize: "0.9rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      background: isActive ? "var(--primary)" : "transparent",
+                      color: isActive ? "var(--text-inverse)" : "var(--text-primary)",
+                      transition: "all 0.15s ease",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+
             {/* Render active tab component */}
             <ActiveTabComponent />
           </div>

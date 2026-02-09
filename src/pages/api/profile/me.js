@@ -25,7 +25,7 @@ async function getUserAttendanceLogs(userId, limit = 50) {
   const effectiveEnd = dayjs().format("YYYY-MM-DD");
   const effectiveStart = dayjs(effectiveEnd).subtract(30, "day").format("YYYY-MM-DD");
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("time_records")
     .select(
       `
@@ -40,22 +40,40 @@ async function getUserAttendanceLogs(userId, limit = 50) {
         break_minutes,
         notes
       `
-    )
-    .eq("user_id", userId)
+    );
+
+  query = query.eq("user_id", userId);
+
+  const { data, error } = await query
     .gte("date", effectiveStart)
     .lte("date", effectiveEnd)
-    .order("clock_in", { ascending: false })
+    .order("date", { ascending: false, nullsFirst: false })
     .limit(limit);
 
   if (error) {
-    console.error("❌ getUserAttendanceLogs error", error);
+    console.error("getUserAttendanceLogs error", error);
     throw error;
   }
 
   return (data || []).map((record) => {
     const hours = Number(record.hours_worked || 0);
+
+    // Determine if this is a weekend (Saturday=6, Sunday=0)
+    const recordDate = new Date(record.date);
+    const dayOfWeek = recordDate.getDay();
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+    // Determine type: Overtime (explicitly marked), Weekend, or Weekday
+    let type = "Weekday";
+    if (record.notes === "Overtime" || record.notes === "Overtime - Auto-approved") {
+      type = "Overtime";
+    } else if (isWeekend) {
+      type = "Weekend";
+    }
+
+    // Legacy status for backward compatibility
     let status = "Clocked In";
-    if (record.notes === "Overtime") status = "Overtime";
+    if (type === "Overtime") status = "Overtime";
     else if (record.clock_out && hours >= 9) status = "Overtime";
     else if (record.clock_out) status = "On Time";
 
@@ -66,7 +84,8 @@ async function getUserAttendanceLogs(userId, limit = 50) {
       clockIn: record.clock_in,
       clockOut: record.clock_out,
       totalHours: hours,
-      status,
+      status, // Legacy field
+      type,   // New field: "Weekday", "Weekend", or "Overtime"
     };
   });
 }
@@ -438,9 +457,9 @@ export default async function handler(req, res) {
     // Fetch all user-specific data in parallel
     const [profile, attendanceLogs, overtimeSnapshot, leaveBalance, staffVehicles] = await Promise.all([
       getUserProfile(userId),
-      getUserAttendanceLogs(userId),
+      getUserAttendanceLogs(userId, 50),
       getUserOvertimeSnapshot(userId),
-      getUserLeaveBalance(userId, null), // Will fetch employment type from profile
+      getUserLeaveBalance(userId, null),
       getUserStaffVehicles(userId),
     ]);
 

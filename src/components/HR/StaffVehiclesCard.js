@@ -195,10 +195,7 @@ export default function StaffVehiclesCard({ userId, vehicles = [] }) {
   };
 
   return (
-    <SectionCard
-      title="Staff Vehicles"
-      subtitle="Register your personal vehicles. Workshop repairs automatically deduct from payroll when enabled."
-    >
+    <SectionCard title="Staff Vehicles">
       {error && (
         <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
           {error}

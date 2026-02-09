@@ -611,14 +611,7 @@ export default function EmployeesTab() {
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       {/* Header Actions */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div>
-          <h2 style={{ fontSize: "1.4rem", fontWeight: 700, margin: "0 0 4px", color: "var(--text-primary)" }}>
-            Employee Management
-          </h2>
-          <p style={{ color: "var(--info)", margin: 0 }}>
-            Maintain staff records, employment details, documents, and system access.
-          </p>
-        </div>
+        <div />
         <div style={{ display: "flex", gap: "12px" }}>
           <button
             type="button"

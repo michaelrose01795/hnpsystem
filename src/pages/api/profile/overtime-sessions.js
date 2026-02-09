@@ -85,11 +85,11 @@ export default async function handler(req, res) {
       .single();
 
     if (insertError) {
-      console.error("Failed to insert overtime record:", insertError);
+      console.error("Failed to insert overtime record into time_records:", insertError);
       return res.status(500).json({ success: false, message: "Failed to save overtime log." });
     }
 
-    // Also insert into overtime_sessions for HR tracking
+    // Also insert into overtime_sessions for HR payroll tracking
     // Auto-create an overtime period for the current month if none exists
     let period = null;
     const { data: existingPeriod } = await supabase
@@ -114,7 +114,9 @@ export default async function handler(req, res) {
     }
 
     if (period) {
-      await supabase
+      // Auto-approve overtime sessions (no HR approval needed)
+      // Set approved_by to the user's own ID for automatic payroll inclusion
+      const { error: overtimeError } = await supabase
         .from("overtime_sessions")
         .insert({
           period_id: period.period_id,
@@ -123,8 +125,13 @@ export default async function handler(req, res) {
           start_time: start,
           end_time: end,
           total_hours: hoursWorked,
-          notes: "Overtime",
+          approved_by: userId, // Auto-approved for payroll
+          notes: "Overtime - Auto-approved",
         });
+
+      if (overtimeError) {
+        console.warn("Failed to insert into overtime_sessions (non-critical):", overtimeError);
+      }
     }
 
     return res.status(200).json({
@@ -133,6 +140,8 @@ export default async function handler(req, res) {
         id: inserted.id,
         userId: inserted.user_id,
         date: inserted.date,
+        start,
+        end,
         clockIn: inserted.clock_in,
         clockOut: inserted.clock_out,
         totalHours: Number(inserted.hours_worked || 0),

@@ -166,7 +166,7 @@ export async function getAttendanceLogs({ startDate, endDate, limit = DEFAULT_AT
         hours_worked,
         break_minutes,
         notes,
-        user:user_id (
+        user:users!time_records_user_id_fkey (
           user_id,
           first_name,
           last_name,
@@ -176,7 +176,7 @@ export async function getAttendanceLogs({ startDate, endDate, limit = DEFAULT_AT
     )
     .gte("date", effectiveStart)
     .lte("date", effectiveEnd)
-    .order("clock_in", { ascending: false })
+    .order("date", { ascending: false, nullsFirst: false })
     .limit(limit);
 
   const { data, error } = await query;
@@ -190,8 +190,23 @@ export async function getAttendanceLogs({ startDate, endDate, limit = DEFAULT_AT
     const employee = formatEmployee(record.user);
     const hours = Number(record.hours_worked || 0);
 
+    // Determine if this is a weekend (Saturday=6, Sunday=0)
+    const recordDate = new Date(record.date);
+    const dayOfWeek = recordDate.getDay();
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+    // Determine type: Overtime (explicitly marked), Weekend, or Weekday
+    let type = "Weekday";
+    if (record.notes === "Overtime" || record.notes === "Overtime - Auto-approved") {
+      type = "Overtime";
+    } else if (isWeekend) {
+      type = "Weekend";
+    }
+
+    // Legacy status for backward compatibility
     let status = "Clocked In";
-    if (record.clock_out && hours >= 9) status = "Overtime";
+    if (type === "Overtime") status = "Overtime";
+    else if (record.clock_out && hours >= 9) status = "Overtime";
     else if (record.clock_out) status = "On Time";
 
     return {
@@ -202,7 +217,8 @@ export async function getAttendanceLogs({ startDate, endDate, limit = DEFAULT_AT
       clockIn: record.clock_in,
       clockOut: record.clock_out,
       totalHours: hours,
-      status,
+      status, // Legacy field
+      type,   // New field: "Weekday", "Weekend", or "Overtime"
     };
   });
 }
@@ -220,7 +236,7 @@ export async function getAbsenceRecords({ limit = 50 } = {}) {
         end_date,
         approval_status,
         notes,
-        user:user_id(
+        user:users!hr_absences_user_id_fkey(
           user_id,
           first_name,
           last_name,
@@ -299,7 +315,7 @@ export async function getOvertimeSummaries() {
         user_id,
         date,
         total_hours,
-        user:user_id(
+        user:users!overtime_sessions_user_id_fkey(
           user_id,
           first_name,
           last_name,
@@ -485,7 +501,7 @@ export async function getUpcomingAbsences(daysAhead = 14) {
         start_date,
         end_date,
         approval_status,
-        user:user_id(
+        user:users!hr_absences_user_id_fkey(
           first_name,
           last_name
         ),
@@ -527,7 +543,7 @@ export async function getActiveWarnings(limit = 5) {
         status,
         incident_date,
         notes,
-        user:user_id(
+        user:users!hr_disciplinary_cases_user_id_fkey(
           first_name,
           last_name
         ),
@@ -567,11 +583,11 @@ export async function getTrainingRenewals(limit = 5) {
         assignment_id,
         due_date,
         status,
-        user:user_id(
+        user:users!hr_training_assignments_user_id_fkey(
           first_name,
           last_name
         ),
-        course:course_id(title)
+        course:hr_training_courses!hr_training_assignments_course_id_fkey(title)
       `
     )
     .not("due_date", "is", null)
@@ -802,7 +818,7 @@ export async function getEmployeeDirectory() {
           keycloak_user_id,
           home_address,
           created_at,
-          user:user_id(
+          user:users!hr_employee_profiles_user_id_fkey(
             user_id,
             first_name,
             last_name,
@@ -1008,7 +1024,7 @@ export async function getLeaveRequests({ limit = 50 } = {}) {
         approval_status,
         approved_by,
         created_at,
-        user:user_id(
+        user:users!hr_absences_user_id_fkey(
           first_name,
           last_name,
           email
@@ -1054,7 +1070,7 @@ export async function getLeaveBalances() {
           user_id,
           department,
           employment_type,
-          user:user_id(
+          user:users!hr_employee_profiles_user_id_fkey(
             first_name,
             last_name,
             email
@@ -1190,8 +1206,8 @@ export async function getPerformanceReviews(limit = 8) {
         status,
         score,
         notes,
-        user:user_id(first_name, last_name),
-        reviewer:reviewer_id(first_name, last_name)
+        user:users!hr_performance_reviews_user_id_fkey(first_name, last_name),
+        reviewer:users!hr_performance_reviews_reviewer_id_fkey(first_name, last_name)
       `
     )
     .order("scheduled_at", { ascending: false })
