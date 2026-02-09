@@ -1109,31 +1109,22 @@ export default function EfficiencyTab({
       {detailPopupTechId && detailPopupSummary && (
         <ModalPortal>
           <div
-            className="efficiency-modal-overlay"
-            style={{
-              position: "fixed",
-              inset: 0,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "24px",
-              zIndex: 1100,
-              backdropFilter: "blur(4px)",
-            }}
+            className="popup-backdrop"
+            style={{ zIndex: 1100 }}
             onClick={(e) => { if (e.target === e.currentTarget) closeDetailPopup(); }}
             role="dialog"
             aria-modal="true"
           >
             <div
+              className="popup-card"
               style={{
-                width: "min(820px, 100%)",
+                borderRadius: "32px",
+                width: "100%",
+                maxWidth: "820px",
                 maxHeight: "90vh",
                 overflowY: "auto",
-                borderRadius: "22px",
-                background: "var(--surface)",
                 border: "1px solid var(--surface-light)",
-                boxShadow: "0 25px 60px rgba(15, 15, 15, 0.25)",
-                padding: "28px 32px",
+                padding: "32px",
                 display: "flex",
                 flexDirection: "column",
                 gap: "20px",

@@ -1574,18 +1574,17 @@ export default function NextJobsPage() {
 
         {/* ✅ JOB DETAILS POPUP WITH EDIT BUTTON */}
         {selectedJob && (
-          <div
-            style={{
-              ...popupOverlayStyles,
-              zIndex: 1200,
-            }}
-            onClick={handleCloseJobDetails} // Close when clicking overlay
-          >
+          <div className="popup-backdrop" onClick={handleCloseJobDetails}>
             <div
+              className="popup-card"
               style={{
-                ...popupCardStyles,
-                padding: "24px",
-                width: "min(500px, 90%)",
+                borderRadius: "32px",
+                width: "100%",
+                maxWidth: "500px",
+                maxHeight: "90vh",
+                overflowY: "auto",
+                border: "1px solid var(--surface-light)",
+                padding: "32px",
                 position: "relative",
               }}
               onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside

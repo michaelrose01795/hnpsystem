@@ -9,6 +9,7 @@ import { SectionCard, StatusTag } from "@/components/HR/MetricCard";
 import EmployeeProfilePanel from "@/components/HR/EmployeeProfilePanel";
 import { roleCategories } from "@/config/users";
 import { CalendarField } from "@/components/calendarAPI"; // Date input component
+import { DropdownField } from "@/components/dropdownAPI";
 
 const defaultFilters = { department: "all", status: "all", employmentType: "all" };
 
@@ -23,6 +24,17 @@ const buildUniqueList = (items = []) => {
     }
   });
   return Array.from(map.values()).sort((a, b) => a.localeCompare(b));
+};
+
+const getInitials = (name = "") => {
+  const parts = String(name || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (!parts.length) return "??";
+  const first = parts[0]?.[0] || "";
+  const last = parts.length > 1 ? parts[parts.length - 1]?.[0] : "";
+  return `${first}${last}`.toUpperCase() || "??";
 };
 
 const SAMPLE_PAYLOAD_FIELD_MAP = {
@@ -49,62 +61,46 @@ const SAMPLE_PAYLOAD_FIELD_MAP = {
 };
 
 function DirectoryFilters({ filters, setFilters, departments, employmentTypes }) {
+  const departmentOptions = departments.map((dept) => ({
+    value: dept,
+    label: dept === "all" ? "All Departments" : dept,
+  }));
+  const statusOptions = [
+    { value: "all", label: "All Status" },
+    { value: "Active", label: "Active" },
+    { value: "Inactive", label: "Inactive" },
+  ];
+  const employmentOptions = employmentTypes.map((type) => ({
+    value: type,
+    label: type === "all" ? "All Types" : type,
+  }));
+
   return (
-    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-      <select
-        value={filters.department}
-        onChange={(e) => setFilters({ ...filters, department: e.target.value })}
-        style={{
-          padding: "6px 12px",
-          borderRadius: "8px",
-          border: "1px solid var(--surface-light)",
-          background: "var(--surface)",
-          color: "var(--text-primary)",
-          fontSize: "0.9rem",
-        }}
-      >
-        {departments.map((dept) => (
-          <option key={dept} value={dept}>
-            {dept === "all" ? "All Departments" : dept}
-          </option>
-        ))}
-      </select>
-
-      <select
-        value={filters.status}
-        onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-        style={{
-          padding: "6px 12px",
-          borderRadius: "8px",
-          border: "1px solid var(--surface-light)",
-          background: "var(--surface)",
-          color: "var(--text-primary)",
-          fontSize: "0.9rem",
-        }}
-      >
-        <option value="all">All Status</option>
-        <option value="Active">Active</option>
-        <option value="Inactive">Inactive</option>
-      </select>
-
-      <select
-        value={filters.employmentType}
-        onChange={(e) => setFilters({ ...filters, employmentType: e.target.value })}
-        style={{
-          padding: "6px 12px",
-          borderRadius: "8px",
-          border: "1px solid var(--surface-light)",
-          background: "var(--surface)",
-          color: "var(--text-primary)",
-          fontSize: "0.9rem",
-        }}
-      >
-        {employmentTypes.map((type) => (
-          <option key={type} value={type}>
-            {type === "all" ? "All Types" : type}
-          </option>
-        ))}
-      </select>
+    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+      <div style={{ minWidth: "160px" }}>
+        <DropdownField
+          value={filters.department}
+          onChange={(e) => setFilters({ ...filters, department: e.target.value })}
+          options={departmentOptions}
+          size="sm"
+        />
+      </div>
+      <div style={{ minWidth: "140px" }}>
+        <DropdownField
+          value={filters.status}
+          onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+          options={statusOptions}
+          size="sm"
+        />
+      </div>
+      <div style={{ minWidth: "140px" }}>
+        <DropdownField
+          value={filters.employmentType}
+          onChange={(e) => setFilters({ ...filters, employmentType: e.target.value })}
+          options={employmentOptions}
+          size="sm"
+        />
+      </div>
     </div>
   );
 }
@@ -149,6 +145,8 @@ export default function EmployeesTab() {
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [editError, setEditError] = useState(null);
   const [editingEmployeeName, setEditingEmployeeName] = useState("");
+  const directorySectionRef = useRef(null);
+  const detailPanelRef = useRef(null);
 
   const employees = useMemo(() => {
     if (!localEmployees.length) {
@@ -208,6 +206,19 @@ export default function EmployeesTab() {
     () => employees.find((emp) => emp.id === selectedEmployeeId) ?? null,
     [employees, selectedEmployeeId]
   );
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      const target = event.target;
+      const inDirectory = directorySectionRef.current?.contains(target);
+      const inDetail = detailPanelRef.current?.contains(target);
+      if (!inDirectory && !inDetail) {
+        setSelectedEmployeeId(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const uniqueDepartments = useMemo(() => {
     return ["all", ...new Set(employees.map((emp) => emp.department))];
@@ -456,87 +467,184 @@ export default function EmployeesTab() {
   );
 
   const directorySection = (
-    <section style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: "20px" }}>
+    <section
+      ref={directorySectionRef}
+      style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: "20px" }}
+    >
       <SectionCard
-        title="Employee Directory"
-        subtitle={`${filteredEmployees.length} of ${employees.length} employees`}
+        title=""
+        subtitle={null}
         action={
-          <DirectoryFilters
-            filters={filters}
-            setFilters={setFilters}
-            departments={uniqueDepartments}
-            employmentTypes={uniqueEmploymentTypes}
-          />
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end" }}>
+            <div style={{ position: "relative", minWidth: "260px", flex: "1 1 320px" }}>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by employee name..."
+                style={{
+                  width: "100%",
+                  padding: "10px 120px 10px 14px",
+                  borderRadius: "10px",
+                  border: "1px solid var(--surface-light)",
+                  background: "var(--surface-light)",
+                  color: "var(--text-primary)",
+                  fontSize: "0.9rem",
+                  outline: "none",
+                }}
+              />
+              <span
+                style={{
+                  position: "absolute",
+                  right: "12px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  fontSize: "0.7rem",
+                  color: "var(--text-secondary)",
+                  pointerEvents: "none",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {filteredEmployees.length} of {employees.length} employees
+              </span>
+            </div>
+            <DirectoryFilters
+              filters={filters}
+              setFilters={setFilters}
+              departments={uniqueDepartments}
+              employmentTypes={uniqueEmploymentTypes}
+            />
+          </div>
         }
       >
-        {/* Search Bar */}
-        <div style={{ marginBottom: "16px" }}>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by employee name..."
-            style={{
-              width: "100%",
-              padding: "10px 14px",
-              borderRadius: "8px",
-              border: "1px solid var(--surface-light)",
-              background: "var(--surface-light)",
-              color: "var(--text-primary)",
-              fontSize: "0.95rem",
-              outline: "none",
-            }}
-          />
-        </div>
+        <div style={{ maxHeight: "540px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "10px" }}>
+          {filteredEmployees.length === 0 && (
+            <div
+              style={{
+                padding: "16px",
+                borderRadius: "14px",
+                border: "1px dashed var(--surface-light)",
+                textAlign: "center",
+                color: "var(--text-secondary)",
+                background: "var(--surface)",
+              }}
+            >
+              No employees match the current filters.
+            </div>
+          )}
+          {filteredEmployees.map((employee) => {
+            const isSelected = employee.id === selectedEmployeeId;
+            return (
+              <button
+                type="button"
+                key={employee.id}
+                onClick={() => setSelectedEmployeeId(employee.id)}
+                style={{
+                  cursor: "pointer",
+                  textAlign: "left",
+                  padding: "14px",
+                  borderRadius: "14px",
+                  border: isSelected ? "1px solid var(--accent-purple)" : "1px solid var(--surface-light)",
+                  background: isSelected ? "rgba(var(--accent-purple-rgb), 0.12)" : "var(--surface)",
+                  display: "grid",
+                  gridTemplateColumns: "46px 1fr auto",
+                  gap: "12px",
+                  alignItems: "center",
+                  boxShadow: isSelected ? "0 10px 24px rgba(0,0,0,0.18)" : "none",
+                  transition: "all 0.15s ease",
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSelected) {
+                    e.currentTarget.style.background = "rgba(var(--accent-purple-rgb), 0.06)";
+                    e.currentTarget.style.borderColor = "rgba(var(--accent-purple-rgb), 0.4)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSelected) {
+                    e.currentTarget.style.background = "var(--surface)";
+                    e.currentTarget.style.borderColor = "var(--surface-light)";
+                  }
+                }}
+              >
+                <div
+                  style={{
+                    width: "46px",
+                    height: "46px",
+                    borderRadius: "50%",
+                    background: "rgba(var(--accent-purple-rgb), 0.2)",
+                    color: "var(--accent-purple)",
+                    fontWeight: 700,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    border: "1px solid rgba(var(--accent-purple-rgb), 0.4)",
+                    fontSize: "0.85rem",
+                    letterSpacing: "0.08em",
+                  }}
+                >
+                  {getInitials(employee.name)}
+                </div>
 
-        <div style={{ maxHeight: "600px", overflowY: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead style={{ position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>
-              <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
-                <th style={{ padding: "12px 0", textAlign: "left" }}>Employee</th>
-                <th>Department</th>
-                <th>Type</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredEmployees.map((employee) => {
-                const isSelected = employee.id === selectedEmployeeId;
-                return (
-                  <tr
-                    key={employee.id}
-                    onClick={() => setSelectedEmployeeId(employee.id)}
-                    style={{
-                      cursor: "pointer",
-                      backgroundColor: isSelected ? "rgba(var(--accent-purple-rgb), 0.08)" : "transparent",
-                      borderTop: "1px solid var(--accent-purple-surface)",
-                    }}
-                  >
-                    <td style={{ padding: "14px 0" }}>
-                      <div style={{ display: "flex", flexDirection: "column" }}>
-                        <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{employee.name}</span>
-                        <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>{employee.jobTitle}</span>
-                      </div>
-                    </td>
-                    <td style={{ fontWeight: 500 }}>{employee.department}</td>
-                    <td style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>{employee.employmentType}</td>
-                    <td>
-                      <StatusTag
-                        label={employee.status}
-                        tone={employee.status === "Active" ? "success" : "danger"}
-                      />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px", minWidth: 0 }}>
+                  <span style={{ fontWeight: 700, color: "var(--text-primary)", fontSize: "1rem" }}>
+                    {employee.name}
+                  </span>
+                  <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                    {employee.department || "Department"} • {employee.jobTitle || employee.role || "Role"}
+                  </span>
+                  <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                    {employee.status && (
+                      <span
+                        style={{
+                          padding: "4px 8px",
+                          borderRadius: "999px",
+                          border: "1px solid rgba(var(--accent-purple-rgb), 0.4)",
+                          background: "rgba(var(--accent-purple-rgb), 0.12)",
+                          color: "var(--accent-purple)",
+                          fontSize: "0.65rem",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {employee.status}
+                      </span>
+                    )}
+                    {employee.employmentType && (
+                      <span
+                        style={{
+                          padding: "4px 8px",
+                          borderRadius: "999px",
+                          border: "1px solid rgba(var(--grey-accent-rgb), 0.4)",
+                          background: "rgba(var(--grey-accent-rgb), 0.15)",
+                          color: "var(--text-primary)",
+                          fontSize: "0.65rem",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {employee.employmentType}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <StatusTag
+                    label={employee.status}
+                    tone={employee.status === "Active" ? "success" : "danger"}
+                  />
+                  <span style={{ color: "var(--text-secondary)", fontSize: "1.1rem" }}>{">"}</span>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </SectionCard>
 
-      {selectedEmployee && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          <EmployeeProfilePanel employee={selectedEmployee} />
+      <div
+        ref={detailPanelRef}
+        style={{ display: "flex", flexDirection: "column", gap: "12px", maxHeight: "680px", overflowY: "auto" }}
+      >
+        <EmployeeProfilePanel employee={selectedEmployee} />
+        {selectedEmployee && (
           <button
             type="button"
             onClick={handleStartEditEmployee}
@@ -552,8 +660,8 @@ export default function EmployeesTab() {
           >
             Edit employee details
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </section>
   );
 
@@ -593,8 +701,40 @@ export default function EmployeesTab() {
 
   if (isLoading) {
     return (
-      <SectionCard title="Loading directory…" subtitle="Fetching employee listing.">
-        <span style={{ color: "var(--info)" }}>Please wait while we load the employee directory from Supabase.</span>
+      <SectionCard title="Employee Directory" subtitle="Loading employees...">
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div
+              key={index}
+              style={{
+                borderRadius: "14px",
+                border: "1px solid var(--surface-light)",
+                background: "var(--surface)",
+                padding: "14px",
+                display: "grid",
+                gridTemplateColumns: "46px 1fr 24px",
+                gap: "12px",
+                alignItems: "center",
+              }}
+            >
+              <div
+                style={{
+                  width: "46px",
+                  height: "46px",
+                  borderRadius: "50%",
+                  background: "var(--surface-light)",
+                  border: "1px solid var(--surface-light)",
+                }}
+              />
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <div style={{ height: "12px", width: "60%", background: "var(--surface-light)", borderRadius: "8px" }} />
+                <div style={{ height: "10px", width: "40%", background: "var(--surface-light)", borderRadius: "8px" }} />
+                <div style={{ height: "10px", width: "50%", background: "var(--surface-light)", borderRadius: "8px" }} />
+              </div>
+              <div style={{ height: "12px", width: "12px", background: "var(--surface-light)", borderRadius: "4px" }} />
+            </div>
+          ))}
+        </div>
       </SectionCard>
     );
   }

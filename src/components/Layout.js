@@ -58,7 +58,12 @@ const MODE_ROLE_MAP = {
 const NAV_DRAWER_WIDTH = 260;
 const STATUS_DRAWER_WIDTH = 560;
 
-export default function Layout({ children, jobNumber }) {
+export default function Layout({
+  children,
+  jobNumber,
+  disableContentCard = false,
+  contentBackground = null,
+}) {
   const { user, loading: userLoading, status, setStatus, currentJob, dbUserId } = useUser(); // get user context data
   const { usersByRole } = useRoster();
   const router = useRouter();
@@ -1194,11 +1199,13 @@ export default function Layout({ children, jobNumber }) {
             key={contentKey}
             style={{
               minHeight: "100%",
-              background: "var(--surface)",
-              borderRadius: hideSidebar ? "0px" : "28px",
-              border: hideSidebar ? "none" : "1px solid var(--surface-light)",
+              background: disableContentCard
+                ? "transparent"
+                : contentBackground || "var(--surface)",
+              borderRadius: disableContentCard ? "0px" : hideSidebar ? "0px" : "28px",
+              border: disableContentCard ? "none" : hideSidebar ? "none" : "1px solid var(--surface-light)",
               boxShadow: "none",
-              padding: hideSidebar ? "0" : isMobile ? "18px 14px" : "32px",
+              padding: disableContentCard ? "0" : hideSidebar ? "0" : isMobile ? "18px 14px" : "32px",
               overflow: "visible",
             }}
           >

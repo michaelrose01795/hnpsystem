@@ -2470,36 +2470,22 @@ function MessagesPage() {
 
       {newChatModalOpen && (
         <ModalPortal>
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              backgroundColor: "rgba(0, 0, 0, 0.45)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "20px",
-              zIndex: 1000,
-            }}
-          >
+          <div className="popup-backdrop">
             <div
+              className="popup-card"
               style={{
-                width: "min(640px, 100%)",
+                borderRadius: "32px",
+                width: "100%",
+                maxWidth: "640px",
                 maxHeight: "90vh",
                 overflowY: "auto",
-                backgroundColor: "var(--surface)",
-                borderRadius: "20px",
-                border: `1px solid ${palette.border}`,
-                boxShadow: shadows.lg,
-                padding: "24px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "16px",
+                border: "1px solid var(--surface-light)",
               }}
             >
-            <div>
-              <h3 style={{ margin: 0, color: systemTitleColor }}>Start New Chat</h3>
-            </div>
+              <div style={{ padding: "32px", display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div>
+                  <h3 style={{ margin: 0, color: systemTitleColor }}>Start New Chat</h3>
+                </div>
 
             <div style={{ display: "flex", gap: "10px" }}>
               <ComposeToggleButton

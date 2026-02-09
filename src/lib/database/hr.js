@@ -502,11 +502,9 @@ export async function getUpcomingAbsences(daysAhead = 14) {
         end_date,
         approval_status,
         user:users!hr_absences_user_id_fkey(
+          user_id,
           first_name,
           last_name
-        ),
-        profile:hr_employee_profiles!hr_employee_profiles_user_id_fkey(
-          department
         )
       `
     )
@@ -520,10 +518,27 @@ export async function getUpcomingAbsences(daysAhead = 14) {
     throw error;
   }
 
+  const userIds = Array.from(new Set((data || []).map((absence) => absence.user_id).filter(Boolean)));
+  let departmentMap = {};
+  if (userIds.length > 0) {
+    const { data: profiles, error: profileError } = await supabase
+      .from("hr_employee_profiles")
+      .select("user_id, department")
+      .in("user_id", userIds);
+    if (profileError) {
+      console.error("❌ getUpcomingAbsences profile lookup error", profileError);
+    } else {
+      departmentMap = (profiles || []).reduce((acc, row) => {
+        acc[row.user_id] = row.department;
+        return acc;
+      }, {});
+    }
+  }
+
   return (data || []).map((absence) => ({
     id: absence.absence_id,
     employee: formatEmployee(absence.user).name,
-    department: absence.profile?.department || "Unknown",
+    department: departmentMap[absence.user_id] || "Unknown",
     type: absence.type,
     startDate: absence.start_date,
     endDate: absence.end_date,
@@ -544,11 +559,9 @@ export async function getActiveWarnings(limit = 5) {
         incident_date,
         notes,
         user:users!hr_disciplinary_cases_user_id_fkey(
+          user_id,
           first_name,
           last_name
-        ),
-        profile:hr_employee_profiles!hr_employee_profiles_user_id_fkey(
-          department
         )
       `
     )
@@ -561,10 +574,27 @@ export async function getActiveWarnings(limit = 5) {
     throw error;
   }
 
+  const userIds = Array.from(new Set((data || []).map((warning) => warning.user_id).filter(Boolean)));
+  let departmentMap = {};
+  if (userIds.length > 0) {
+    const { data: profiles, error: profileError } = await supabase
+      .from("hr_employee_profiles")
+      .select("user_id, department")
+      .in("user_id", userIds);
+    if (profileError) {
+      console.error("❌ getActiveWarnings profile lookup error", profileError);
+    } else {
+      departmentMap = (profiles || []).reduce((acc, row) => {
+        acc[row.user_id] = row.department;
+        return acc;
+      }, {});
+    }
+  }
+
   return (data || []).map((warning) => ({
     id: warning.case_id,
     employee: formatEmployee(warning.user).name,
-    department: warning.profile?.department || "Unknown",
+    department: departmentMap[warning.user_id] || "Unknown",
     level: warning.severity || warning.incident_type || "Warning",
     issuedOn: warning.incident_date,
     notes: warning.notes,

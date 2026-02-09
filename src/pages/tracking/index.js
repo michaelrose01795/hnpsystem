@@ -1079,12 +1079,7 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
   };
 
   return (
-    <div
-      style={{
-        ...popupOverlayStyles,
-        zIndex: 220,
-      }}
-    >
+    <div className="popup-backdrop">
       <div
         style={{
           ...popupCardStyles,
@@ -1351,43 +1346,25 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
   };
 
   return (
-    <div
-      style={{
-        ...popupOverlayStyles,
-        zIndex: 220,
-      }}
-    >
+    <div className="popup-backdrop">
       <form
         onSubmit={handleSubmit}
+        className="popup-card"
         style={{
-          ...popupCardStyles,
-          width: "min(640px, 100%)",
-          padding: "28px",
+          borderRadius: "32px",
+          width: "100%",
+          maxWidth: "640px",
+          maxHeight: "90vh",
+          overflowY: "auto",
+          border: "1px solid var(--surface-light)",
+          padding: "32px",
           display: "flex",
           flexDirection: "column",
           gap: "18px",
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div>
-            <h2 style={{ margin: 0 }}>{entry ? "Edit existing" : "Log new"}</h2>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              width: "38px",
-              height: "38px",
-              borderRadius: "50%",
-              border: "none",
-              backgroundColor: "var(--surface)",
-              color: "var(--text-primary)",
-              cursor: "pointer",
-              fontWeight: 700,
-            }}
-          >
-            ✕
-          </button>
+        <div>
+          <h2 style={{ margin: 0 }}>{entry ? "Edit existing" : "Log new"}</h2>
         </div>
 
         <div
@@ -2652,3 +2629,4 @@ export default function TrackingDashboard() {
     </Layout>
   );
 }
+

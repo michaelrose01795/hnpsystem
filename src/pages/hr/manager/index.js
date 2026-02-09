@@ -147,22 +147,27 @@ NEXT_PUBLIC_HR_MANAGER_SAFE_MODE=false`}
         {/* Tab Content Area */}
         <div
           style={{
-            background: "var(--background)",
-            padding: "24px 32px 32px",
-            borderRadius: "16px",
+            background: "transparent",
+            padding: "0",
+            borderRadius: "0",
             flexGrow: 1,
           }}
         >
-          <div style={{ width: "100%", maxWidth: "none" }}>
+          <div
+            style={{
+              width: "100%",
+              maxWidth: "none",
+              background: "var(--surface)",
+              borderRadius: "16px",
+              padding: "20px 24px 28px",
+              position: "relative",
+            }}
+          >
             {/* Tab Navigation */}
             <div
               style={{
-                borderRadius: "999px",
-                border: "1px solid var(--surface-light)",
-                background: "var(--surface)",
-                padding: "6px",
                 display: "flex",
-                gap: "6px",
+                gap: "8px",
                 width: "100%",
                 overflowX: "auto",
                 flexShrink: 0,
@@ -170,6 +175,8 @@ NEXT_PUBLIC_HR_MANAGER_SAFE_MODE=false`}
                 scrollbarColor: "var(--scrollbar-thumb) transparent",
                 scrollBehavior: "smooth",
                 WebkitOverflowScrolling: "touch",
+                padding: "0 4px 4px",
+                marginBottom: "16px",
               }}
             >
               {HR_TABS.map((tab) => {
@@ -182,18 +189,19 @@ NEXT_PUBLIC_HR_MANAGER_SAFE_MODE=false`}
                     style={{
                       flex: "0 0 auto",
                       borderRadius: "999px",
-                      border: "1px solid transparent",
+                      border: isActive ? "1px solid rgba(var(--primary-rgb), 0.45)" : "1px solid var(--surface-light)",
                       padding: "10px 20px",
                       fontSize: "0.9rem",
                       fontWeight: 600,
                       cursor: "pointer",
-                      background: isActive ? "var(--primary)" : "transparent",
+                      background: isActive ? "var(--primary)" : "var(--surface)",
                       color: isActive ? "var(--text-inverse)" : "var(--text-primary)",
                       transition: "all 0.15s ease",
                       display: "flex",
                       alignItems: "center",
                       gap: "6px",
                       whiteSpace: "nowrap",
+                      boxShadow: isActive ? "0 10px 20px rgba(0,0,0,0.18)" : "none",
                     }}
                   >
                     {tab.label}

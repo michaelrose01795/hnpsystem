@@ -401,19 +401,11 @@ export default function NewsFeed() {
               }}
               onClick={(e) => e.stopPropagation()}
             >
-            {/* Header */}
-            <div
-              style={{
-                padding: "24px 32px",
-                borderBottom: "1px solid var(--surface-light)",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
+            {/* Content */}
+            <div style={{ padding: "32px" }}>
               <h3
                 style={{
-                  margin: 0,
+                  margin: "0 0 24px 0",
                   fontSize: "28px",
                   fontWeight: "bold",
                   color: "var(--primary)",
@@ -421,42 +413,6 @@ export default function NewsFeed() {
               >
                 Share an Update
               </h3>
-              <button
-                onClick={() => {
-                  setModalOpen(false);
-                  resetModal();
-                }}
-                type="button"
-                aria-label="Close update modal"
-                style={{
-                  width: "40px",
-                  height: "40px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderRadius: "12px",
-                  border: "none",
-                  backgroundColor: "transparent",
-                  color: "#888",
-                  fontSize: "24px",
-                  cursor: "pointer",
-                  transition: "all 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "var(--surface-light)";
-                  e.currentTarget.style.color = "#666";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "transparent";
-                  e.currentTarget.style.color = "#888";
-                }}
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Content */}
-            <div style={{ padding: "32px" }}>
               {/* Title Field */}
               <div style={{ marginBottom: "24px" }}>
                 <label
@@ -647,3 +603,4 @@ export default function NewsFeed() {
     </Layout>
   );
 }
+

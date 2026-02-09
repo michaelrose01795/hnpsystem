@@ -628,42 +628,27 @@ export default function WorkshopManagerDashboard() {
 
       {isConsumablesModalOpen && (
         <ModalPortal>
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              background: "rgba(0,0,0,0.4)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "20px",
-              zIndex: 1400,
-            }}
-            role="dialog"
-            aria-modal="true"
-          >
+          <div className="popup-backdrop" role="dialog" aria-modal="true">
             <div
+              className="popup-card"
               style={{
-                width: "min(960px, 100%)",
-                background: "var(--surface)",
-                borderRadius: "20px",
-                padding: "32px",
-                border: "1px solid var(--surface-light)",
+                borderRadius: "32px",
+                width: "100%",
+                maxWidth: "960px",
                 maxHeight: "90vh",
-                overflow: "hidden",
-                display: "flex",
-                flexDirection: "column",
-                gap: "16px",
+                overflowY: "auto",
+                border: "1px solid var(--surface-light)",
               }}
             >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-                gap: "16px",
-              }}
-            >
+              <div style={{ padding: "32px", display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    gap: "16px",
+                  }}
+                >
               <div>
                 <h2 style={{ margin: 0, color: "var(--primary-dark)" }}>
                   Workshop Consumable Orders
@@ -808,11 +793,13 @@ export default function WorkshopManagerDashboard() {
                   )}
                 </tbody>
               </table>
-            </div>
+              </div>
             </div>
           </div>
+        </div>
         </ModalPortal>
       )}
     </div>
   );
 }
+

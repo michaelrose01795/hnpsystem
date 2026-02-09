@@ -22,15 +22,32 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { vehicleId, jobId, description, cost, deductFromPayroll = true } = req.body || {};
+    const { vehicleId, jobNumber, description, cost, deductFromPayroll = true } = req.body || {};
 
     if (!vehicleId) {
       return res.status(400).json({ success: false, error: "vehicleId is required" });
     }
 
+    let resolvedJobId = null;
+    if (jobNumber && String(jobNumber).trim()) {
+      const { data: jobRow, error: jobError } = await supabaseService
+        .from("jobs")
+        .select("id")
+        .eq("job_number", String(jobNumber).trim())
+        .single();
+
+      if (jobError || !jobRow?.id) {
+        return res.status(400).json({
+          success: false,
+          error: "Job number not found. Please enter a valid job number.",
+        });
+      }
+      resolvedJobId = jobRow.id;
+    }
+
     const payload = {
       vehicle_id: vehicleId,
-      job_id: jobId || null,
+      job_id: resolvedJobId,
       description: description?.trim() || null,
       cost: Number(cost ?? 0),
       deduct_from_payroll: Boolean(deductFromPayroll),

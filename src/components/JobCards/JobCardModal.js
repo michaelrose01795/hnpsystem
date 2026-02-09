@@ -15,7 +15,6 @@ import { getAllJobs } from "@/lib/database/jobs"; // DB: fetch list of jobs
 import { ensureDevDbUserAndGetId } from "@/lib/users/devUsers";
 import { DropdownField } from "@/components/dropdownAPI";
 import { supabase } from "@/lib/supabaseClient";
-import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 
 const buildRequestOptions = (jobNumberValue, requestRows) => {
   const trimmed = jobNumberValue.trim();
@@ -340,22 +339,17 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
   if (!isOpen) return null; // Do not render when closed
 
   return (
-    <div
-      style={{
-        ...popupOverlayStyles,
-        padding: "20px",
-      }}
-      onClick={onClose} // Click backdrop to close
-    >
+    <div className="popup-backdrop" onClick={onClose}>
       <div
+        className="popup-card"
         style={{
-          ...popupCardStyles,
-          width: "100%", // Responsive
-          maxWidth: "600px", // Max width
-          maxHeight: "90vh", // Constrain height
-          overflowY: "auto", // Scroll content
-          padding: "24px", // Inner spacing
-          borderRadius: "20px",
+          borderRadius: "32px",
+          width: "100%",
+          maxWidth: "600px",
+          maxHeight: "90vh",
+          overflowY: "auto",
+          border: "1px solid var(--surface-light)",
+          padding: "32px",
         }}
         onClick={(e) => e.stopPropagation()} // Prevent overlay close when clicking inside
       >

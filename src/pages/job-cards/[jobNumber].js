@@ -3382,41 +3382,25 @@ function LocationUpdateModal({ entry, onClose, onSave }) {
   };
 
   return (
-    <div
-      style={{
-        ...popupOverlayStyles,
-        zIndex: 220,
-      }}
-    >
+    <div className="popup-backdrop">
       <form
         onSubmit={handleSubmit}
+        className="popup-card"
         style={{
-          ...popupCardStyles,
-          width: "min(520px, 100%)",
-          padding: "24px",
+          borderRadius: "32px",
+          width: "100%",
+          maxWidth: "520px",
+          maxHeight: "90vh",
+          overflowY: "auto",
+          border: "1px solid var(--surface-light)",
+          padding: "32px",
           display: "flex",
           flexDirection: "column",
           gap: "16px",
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
           <h2 style={{ margin: 0 }}>Edit existing</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              width: "36px",
-              height: "36px",
-              borderRadius: "50%",
-              border: "none",
-              backgroundColor: "var(--surface)",
-              color: "var(--text-primary)",
-              cursor: "pointer",
-              fontWeight: 700,
-            }}
-          >
-            ✕
-          </button>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "12px" }}>
@@ -3522,12 +3506,7 @@ function LocationEntryModal({ context, entry, mode = "edit", onClose, onSave }) 
   };
 
   return (
-    <div
-      style={{
-        ...popupOverlayStyles,
-        zIndex: 220,
-      }}
-    >
+    <div className="popup-backdrop">
       <form
         onSubmit={handleSubmit}
         style={{
@@ -7253,3 +7232,4 @@ function DocumentsTab({
     </div>
   );
 }
+

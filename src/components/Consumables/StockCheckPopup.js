@@ -1,12 +1,14 @@
 // file location: src/components/Consumables/StockCheckPopup.js
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 
 const modalStyle = {
-  ...popupCardStyles,
-  maxWidth: "960px",
+  borderRadius: "32px",
   width: "100%",
-  padding: "24px",
+  maxWidth: "960px",
+  maxHeight: "90vh",
+  overflowY: "auto",
+  border: "1px solid var(--surface-light)",
+  padding: "32px",
   display: "flex",
   flexDirection: "column",
   gap: "16px",
@@ -491,8 +493,8 @@ function StockCheckPopup({
   };
 
   return (
-    <div style={{ ...popupOverlayStyles, zIndex: 1400 }}>
-      <div style={modalStyle} role="dialog" aria-modal="true">
+    <div className="popup-backdrop" style={{ zIndex: 1400 }}>
+      <div className="popup-card" style={modalStyle} role="dialog" aria-modal="true">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px" }}>
           <div>
             <h2 style={{ margin: 0, color: "var(--primary-dark)" }}>Stock Check</h2>
