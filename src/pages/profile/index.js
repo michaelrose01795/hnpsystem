@@ -199,13 +199,17 @@ function LeaveRequestModal({ isOpen, onClose, onSubmit, isSubmitting }) {
     setError(null);
   };
 
-  // Auto-calculate end date from start date + total days
+  // Auto-calculate end date from start date + total working days (excludes weekends)
   const computedEndDate = (() => {
     if (!form.startDate || !form.totalDays || form.totalDays < 1) return "";
     const start = new Date(form.startDate + "T00:00:00");
     if (isNaN(start.getTime())) return "";
-    let daysToAdd = Math.max(1, Math.floor(Number(form.totalDays))) - 1;
     const result = new Date(start);
+    // If start date falls on a weekend, advance to Monday
+    while (result.getDay() === 0 || result.getDay() === 6) {
+      result.setDate(result.getDate() + 1);
+    }
+    let daysToAdd = Math.max(1, Math.floor(Number(form.totalDays))) - 1;
     while (daysToAdd > 0) {
       result.setDate(result.getDate() + 1);
       const day = result.getDay();
@@ -309,7 +313,7 @@ function LeaveRequestModal({ isOpen, onClose, onSubmit, isSubmitting }) {
 
           <div style={{ display: "flex", gap: "12px" }}>
             <label style={{ ...modalLabelStyle, flex: 1 }}>
-              Total Days Off
+              Total Working Days Off
               <input
                 type="number"
                 name="totalDays"
@@ -318,6 +322,9 @@ function LeaveRequestModal({ isOpen, onClose, onSubmit, isSubmitting }) {
                 onChange={handleChange}
                 style={modalInputStyle}
               />
+              <span style={{ fontSize: "0.72rem", color: "var(--text-secondary)", fontWeight: 400, marginTop: "2px" }}>
+                Weekends (Sat &amp; Sun) excluded
+              </span>
             </label>
             <div style={{ flex: 1 }}>
               <DropdownField
@@ -342,15 +349,23 @@ function LeaveRequestModal({ isOpen, onClose, onSubmit, isSubmitting }) {
               fontSize: "0.85rem",
               color: "var(--text-secondary)",
               fontWeight: 500,
+              display: "flex",
+              flexDirection: "column",
+              gap: "4px",
             }}>
-              End Date: <span style={{ fontWeight: 700, color: "var(--text-primary)" }}>
-                {new Date(computedEndDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
-              </span>
-              {form.halfDay !== "None" && (
-                <span style={{ marginLeft: "8px", fontSize: "0.8rem", color: "var(--accent-purple)" }}>
-                  ({form.halfDay === "AM" ? "Morning half day" : "Afternoon half day"})
+              <div>
+                End Date: <span style={{ fontWeight: 700, color: "var(--text-primary)" }}>
+                  {new Date(computedEndDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
                 </span>
-              )}
+                {form.halfDay !== "None" && (
+                  <span style={{ marginLeft: "8px", fontSize: "0.8rem", color: "var(--accent-purple)" }}>
+                    ({form.halfDay === "AM" ? "Morning half day" : "Afternoon half day"})
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize: "0.78rem" }}>
+                {Math.floor(Number(form.totalDays))}{form.halfDay !== "None" ? ".5" : ""} working day{(Number(form.totalDays) !== 1 || form.halfDay !== "None") ? "s" : ""} (weekends excluded)
+              </div>
             </div>
           )}
 
@@ -702,6 +717,32 @@ export function ProfilePage({
     const overtimeRate = overtimeSource?.overtimeRate ?? 0;
     const overtimeBonus = overtimeSource?.bonus ?? 0;
 
+    // Monthly breakdowns: weekday work hours, overtime hours, weekend hours
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    let monthlyWeekdayHours = 0;
+    let monthlyOvertimeHours = 0;
+    let monthlyWeekendHours = 0;
+
+    attendanceSource.forEach((entry) => {
+      if (!entry.date) return;
+      const entryDate = new Date(entry.date);
+      if (entryDate.getMonth() !== currentMonth || entryDate.getFullYear() !== currentYear) return;
+      const hours = Number(entry.totalHours ?? 0);
+      const entryType = entry.type || entry.status || "";
+      if (entryType === "Overtime") {
+        monthlyOvertimeHours += hours;
+      } else if (entryType === "Weekend") {
+        monthlyWeekendHours += hours;
+      } else {
+        monthlyWeekdayHours += hours;
+      }
+    });
+
+    const monthlyTotalHours = monthlyWeekdayHours + monthlyOvertimeHours + monthlyWeekendHours;
+
     return {
       totalHours: todayHours,
       overtimeHours: Number(overtimeTotal.toFixed(2)),
@@ -711,6 +752,10 @@ export function ProfilePage({
       leaveTaken: leaveSource?.taken ?? null,
       attendanceRecords: attendanceSource,
       overtimeSummary: overtimeSource,
+      monthlyWeekdayHours: Number(monthlyWeekdayHours.toFixed(2)),
+      monthlyOvertimeHours: Number(monthlyOvertimeHours.toFixed(2)),
+      monthlyWeekendHours: Number(monthlyWeekendHours.toFixed(2)),
+      monthlyTotalHours: Number(monthlyTotalHours.toFixed(2)),
     };
   }, [attendanceLogs, leaveBalances, overtimeSummaries, profile, shouldUseHrData, userProfileData]);
 
@@ -957,35 +1002,109 @@ export function ProfilePage({
 
         {!isLoading && !error && profile ? (
           <>
-            <section
-              style={{
-                display: "grid",
-                gap: "12px",
-                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-              }}
-            >
-              <KpiCard
-                label="Total Hours (logged)"
-                primary={`${aggregatedStats?.totalHours?.toFixed(1) ?? "0.0"}`}
-                accentColor="var(--accent-purple)"
-              />
+            {/* KPI Row: Total Hours | Hourly Rate (admin) | Leave Remaining — side by side */}
+            <section style={{
+              display: "grid",
+              gap: "12px",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            }}>
+              {/* Total Hours (logged) card with 3 sub-columns + grand total */}
+              <div style={{
+                background: "var(--surface)",
+                borderRadius: "16px",
+                border: "1px solid rgba(var(--accent-purple-rgb), 0.28)",
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+                minHeight: "112px",
+              }}>
+                <div style={{
+                  padding: "10px 14px 6px",
+                  fontSize: "0.76rem",
+                  fontWeight: 600,
+                  color: "var(--text-secondary)",
+                }}>
+                  Total Hours &mdash; {new Date().toLocaleDateString("en-GB", { month: "short", year: "numeric" })}
+                </div>
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr 1fr",
+                  flex: 1,
+                }}>
+                  <div style={{ padding: "6px 8px", textAlign: "center", borderRight: "1px solid rgba(var(--accent-purple-rgb), 0.12)" }}>
+                    <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Work</div>
+                    <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--accent-purple)" }}>
+                      {aggregatedStats?.monthlyWeekdayHours?.toFixed(1) ?? "0.0"}
+                    </div>
+                  </div>
+                  <div style={{ padding: "6px 8px", textAlign: "center", borderRight: "1px solid rgba(var(--accent-purple-rgb), 0.12)" }}>
+                    <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Overtime</div>
+                    <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--danger, #e53935)" }}>
+                      {aggregatedStats?.monthlyOvertimeHours?.toFixed(1) ?? "0.0"}
+                    </div>
+                  </div>
+                  <div style={{ padding: "6px 8px", textAlign: "center" }}>
+                    <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Weekend</div>
+                    <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--info, #1e88e5)" }}>
+                      {aggregatedStats?.monthlyWeekendHours?.toFixed(1) ?? "0.0"}
+                    </div>
+                  </div>
+                </div>
+                <div style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "8px 10px",
+                  borderTop: "1px solid rgba(var(--accent-purple-rgb), 0.15)",
+                  background: "rgba(var(--accent-purple-rgb), 0.06)",
+                }}>
+                  <span style={{ fontSize: "0.72rem", fontWeight: 600, color: "var(--text-secondary)" }}>Total</span>
+                  <span style={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--text-primary)" }}>
+                    {aggregatedStats?.monthlyTotalHours?.toFixed(1) ?? "0.0"} hrs
+                  </span>
+                </div>
+              </div>
+
+              {/* Pay Rates card — 50/50 split matching Total Hours style */}
               {isAdminOrManager && (
-                <KpiCard
-                  label="Hourly Rate"
-                  primary={formatCurrency(profile.hourlyRate ?? 0)}
-                  accentColor="var(--success)"
-                />
+                <div style={{
+                  background: "var(--surface)",
+                  borderRadius: "16px",
+                  border: "1px solid rgba(var(--accent-purple-rgb), 0.28)",
+                  overflow: "hidden",
+                  display: "flex",
+                  flexDirection: "column",
+                  minHeight: "112px",
+                }}>
+                  <div style={{
+                    padding: "10px 14px 6px",
+                    fontSize: "0.76rem",
+                    fontWeight: 600,
+                    color: "var(--text-secondary)",
+                  }}>
+                    Pay Rates
+                  </div>
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    flex: 1,
+                  }}>
+                    <div style={{ padding: "6px 8px", textAlign: "center", borderRight: "1px solid rgba(var(--accent-purple-rgb), 0.12)" }}>
+                      <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Hourly Rate</div>
+                      <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--success, #43a047)" }}>
+                        {formatCurrency(profile.hourlyRate ?? 0)}
+                      </div>
+                    </div>
+                    <div style={{ padding: "6px 8px", textAlign: "center" }}>
+                      <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Overtime Rate</div>
+                      <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--danger, #e53935)" }}>
+                        {formatCurrency(profile.overtimeRate ?? 0)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               )}
-              <KpiCard
-                label="Overtime Hours"
-                primary={`${aggregatedStats?.overtimeHours ?? 0}`}
-                secondary={
-                  aggregatedStats?.overtimeHours
-                    ? `Balance ${formatCurrency(aggregatedStats.overtimeBalance)}`
-                    : "Balance £0.00"
-                }
-                accentColor="var(--danger)"
-              />
               <KpiCard
                 label="Leave Remaining"
                 primary={
@@ -1200,8 +1319,8 @@ export function ProfilePage({
                       }}
                     >
                       <th style={{ textAlign: "left", padding: "10px 0" }}>Date</th>
-                      <th style={{ textAlign: "center", padding: "10px 0" }}>Start</th>
-                      <th style={{ textAlign: "center", padding: "10px 0" }}>End</th>
+                      <th style={{ textAlign: "center", padding: "10px 0" }}>Login</th>
+                      <th style={{ textAlign: "center", padding: "10px 0" }}>Logout</th>
                       <th style={{ textAlign: "center", padding: "10px 0" }}>Total Hours</th>
                       <th style={{ textAlign: "center", padding: "10px 0" }}>Type</th>
                     </tr>
@@ -1214,7 +1333,9 @@ export function ProfilePage({
                           <td style={{ padding: "12px 0", fontWeight: 600 }}>{formatDate(entry.date)}</td>
                           <td style={{ textAlign: "center", padding: "12px 0" }}>{formatTime(entry.clockIn)}</td>
                           <td style={{ textAlign: "center", padding: "12px 0" }}>
-                            {entry.clockOut ? formatTime(entry.clockOut) : "-"}
+                            {entry.clockOut ? formatTime(entry.clockOut) : (
+                              <span style={{ fontSize: "0.72rem", fontWeight: 600, color: "var(--success)", background: "rgba(var(--success-rgb, 67,160,71), 0.12)", padding: "2px 8px", borderRadius: "999px" }}>Active</span>
+                            )}
                             {nextDay && (
                               <span style={{ fontSize: "0.7rem", color: "var(--warning)", marginLeft: "4px" }}>+1d</span>
                             )}

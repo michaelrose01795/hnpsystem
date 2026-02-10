@@ -85,6 +85,7 @@ export default function LoginPage() {
   const devLogin = userContext?.devLogin;
   const user = userContext?.user;
   const setUser = userContext?.setUser;
+  const dbUserId = userContext?.dbUserId;
   const { usersByRole, usersByRoleDetailed, isLoading: rosterLoading, refreshRoster } = useRoster();
 
   const router = useRouter();
@@ -184,19 +185,44 @@ export default function LoginPage() {
     }
   };
 
-  // Redirect once user is logged in
+  // Redirect once user is logged in + auto clock-in
   useEffect(() => {
     if (user) {
+      // Auto clock-in on login (fire-and-forget, don't block redirect)
       const roles = []
         .concat(user.roles || [])
         .concat(user.role ? [user.role] : [])
         .map((role) => String(role).toLowerCase());
-      const target = roles.some((role) => role.includes("customer"))
-        ? "/customer"
-        : "/newsfeed";
+      const isCustomer = roles.some((role) => role.includes("customer"));
+
+      if (!isCustomer) {
+        const clockIn = async () => {
+          try {
+            const userId = dbUserId || user.id;
+            const url = userId ? `/api/profile/clock?userId=${userId}` : "/api/profile/clock";
+            const statusRes = await fetch(url, { credentials: "include" });
+            if (statusRes.ok) {
+              const statusData = await statusRes.json();
+              if (!statusData?.data?.isClockedIn) {
+                await fetch(url, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  credentials: "include",
+                  body: JSON.stringify({ action: "clock-in" }),
+                });
+              }
+            }
+          } catch (err) {
+            console.error("Auto clock-in failed:", err);
+          }
+        };
+        clockIn();
+      }
+
+      const target = isCustomer ? "/customer" : "/newsfeed";
       router.push(target);
     }
-  }, [user, router]);
+  }, [user, router, dbUserId]);
 
   useEffect(() => {
     // ⚠️ Mock data found — replacing with Supabase query

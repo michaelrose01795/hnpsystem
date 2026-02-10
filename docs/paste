@@ -2,16 +2,7 @@ TO DO:
 
 Continue flow with job number 55
 
-fix this "AI Detected Job Types OTHER OTHER Brake pads", have it os the "OTHER OTHERBrake pad" section fits with any size screen. 
 
-
-
-have it os the "Leave Type" dropdown shows the sickness (and the others required here) within the "Request Leave" popup so its visible front end, as when opened the dropdown lsit isnt visible. lets add a start data, then a total amount of days off which auto adds the end date, and another drop down for half days to be used as well.
-
-
-
-CHECK
-with the "Upload Documents" popup, does the document actually get uploaded to the database? if not what happens and is it a perminent thing, have it so the "Upload Documents" popup shows all of the uploaded items always when something has been uplaoded. 
 
 
 FIND OUT yes work on this 

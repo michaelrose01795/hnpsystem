@@ -241,6 +241,8 @@ async function getUserProfile(userId) {
         photo_url,
         emergency_contact,
         home_address,
+        hourly_rate,
+        overtime_rate,
         user:user_id(
           user_id,
           first_name,
@@ -292,7 +294,8 @@ async function getUserProfile(userId) {
     role: user.role || "Employee",
     employmentType: data.employment_type || "Full-time",
     startDate: data.start_date,
-    hourlyRate: 0, // Hidden for privacy unless admin
+    hourlyRate: Number(data.hourly_rate ?? 0),
+    overtimeRate: Number(data.overtime_rate ?? 0),
     keycloakId: user.email ? `kc-${user.email.split("@")[0]}` : `kc-${userId}`,
     email: user.email,
     phone: user.phone || "N/A",

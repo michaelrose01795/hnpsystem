@@ -36,7 +36,8 @@
       "Bash(npx next lint:*)",
       "Bash(npx:*)",
       "Bash(xxd:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(node -e:*)"
     ],
     "deny": [],
     "ask": []

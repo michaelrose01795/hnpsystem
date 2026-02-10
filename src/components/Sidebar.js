@@ -5,7 +5,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { useUser } from "@/context/UserContext";
 import { useMessagesBadge } from "@/hooks/useMessagesBadge";
 import { sidebarSections } from "@/config/navigation";
@@ -103,11 +103,72 @@ export default function Sidebar({
   const accountSections = filterAccessibleSections(groupedSections.account);
 
   const handleLogout = async () => {
+    // Clock out before logging out
+    try {
+      const url = dbUserId ? `/api/profile/clock?userId=${dbUserId}` : "/api/profile/clock";
+      const statusRes = await fetch(url, { credentials: "include" });
+      if (statusRes.ok) {
+        const statusData = await statusRes.json();
+        if (statusData?.data?.isClockedIn) {
+          await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ action: "clock-out" }),
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Auto clock-out on logout failed:", err);
+    }
     await logout?.();
     if (typeof window !== "undefined") {
       window.location.assign("/login");
     }
   };
+
+  // Clock in/out state for sidebar button
+  const [isClockedIn, setIsClockedIn] = useState(false);
+  const [clockLoading, setClockLoading] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchClockStatus = async () => {
+      try {
+        const url = dbUserId ? `/api/profile/clock?userId=${dbUserId}` : "/api/profile/clock";
+        const response = await fetch(url, { credentials: "include" });
+        if (!response.ok) return;
+        const payload = await response.json();
+        if (payload?.success) {
+          setIsClockedIn(payload.data.isClockedIn);
+        }
+      } catch (err) {
+        console.error("Failed to fetch clock status:", err);
+      }
+    };
+    fetchClockStatus();
+  }, [user, dbUserId]);
+
+  const handleClockToggle = useCallback(async () => {
+    setClockLoading(true);
+    try {
+      const action = isClockedIn ? "clock-out" : "clock-in";
+      const url = dbUserId ? `/api/profile/clock?userId=${dbUserId}` : "/api/profile/clock";
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ action }),
+      });
+      if (response.ok) {
+        setIsClockedIn(!isClockedIn);
+      }
+    } catch (err) {
+      console.error("Clock toggle error:", err);
+    } finally {
+      setClockLoading(false);
+    }
+  }, [isClockedIn, dbUserId]);
 
   const renderLinkLabel = (label, href) => {
     const isMessagesItem = href === "/messages";
@@ -401,25 +462,47 @@ export default function Sidebar({
             {accountSections.flatMap((section) => section.items).map((item) => {
               if (item.action === "logout") {
                 return (
-                  <button
-                    key={item.label}
-                    type="button"
-                    onClick={handleLogout}
-                    style={{
-                      padding: "10px 14px",
-                      borderRadius: "10px",
-                      background: "var(--primary)",
-                      color: "var(--surface)",
-                      fontWeight: 700,
-                      border: "none",
-                      cursor: "pointer",
-                      boxShadow: "none",
-                      width: "100%",
-                      textDecoration: "none",
-                    }}
-                  >
-                    {item.label}
-                  </button>
+                  <div key="clock-logout-row" style={{ display: "flex", gap: "8px", width: "100%" }}>
+                    <button
+                      type="button"
+                      onClick={handleClockToggle}
+                      disabled={clockLoading}
+                      style={{
+                        flex: 1,
+                        padding: "10px 8px",
+                        borderRadius: "10px",
+                        background: isClockedIn
+                          ? "var(--danger, #e53935)"
+                          : "var(--success, #43a047)",
+                        color: "#fff",
+                        fontWeight: 700,
+                        fontSize: "0.82rem",
+                        border: "none",
+                        cursor: clockLoading ? "not-allowed" : "pointer",
+                        opacity: clockLoading ? 0.6 : 1,
+                        transition: "background 0.2s, opacity 0.2s",
+                      }}
+                    >
+                      {clockLoading ? "..." : isClockedIn ? "Clock Out" : "Clock In"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      style={{
+                        flex: 1,
+                        padding: "10px 8px",
+                        borderRadius: "10px",
+                        background: "var(--primary)",
+                        color: "var(--surface)",
+                        fontWeight: 700,
+                        fontSize: "0.82rem",
+                        border: "none",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Logout
+                    </button>
+                  </div>
                 );
               }
 

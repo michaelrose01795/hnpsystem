@@ -1768,19 +1768,19 @@ export default function CreateJobCardPage() {
                             borderRadius: "12px",
                             padding: "10px 12px",
                             backgroundColor: "var(--surface-light)",
-                            display: "grid",
-                            gridTemplateColumns: "120px 1fr 80px",
-                            gap: "8px",
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: "4px 8px",
                             alignItems: "center",
                             fontSize: "12px",
                           }}
                         >
-                          <div style={{ fontWeight: "700", color: "var(--text-primary)" }}>{detection.jobType}</div>
-                          <div style={{ color: "var(--text-secondary)" }}>
+                          <div style={{ fontWeight: "700", color: "var(--text-primary)", whiteSpace: "nowrap" }}>{detection.jobType}</div>
+                          <div style={{ color: "var(--text-secondary)", flex: "1 1 auto", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
                             <strong style={{ color: "var(--text-primary)" }}>{detection.itemCategory}</strong>
                             <span style={{ marginLeft: "6px" }}>{detection.sourceText}</span>
                           </div>
-                          <div style={{ textAlign: "right", color: "var(--text-secondary)" }}>
+                          <div style={{ color: "var(--text-secondary)", whiteSpace: "nowrap", marginLeft: "auto" }}>
                             {Math.round(detection.confidence * 100)}%
                           </div>
                         </div>

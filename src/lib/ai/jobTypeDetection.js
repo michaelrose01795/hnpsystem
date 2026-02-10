@@ -232,6 +232,58 @@ const REQUIRED_RULES = [
       "wheel alignment",
       "alloy damaged"
     ]
+  },
+  {
+    jobType: "BRAKES",
+    itemCategory: "BRAKES",
+    phrases: [
+      "brake pads",
+      "brake pad",
+      "brake discs",
+      "brake disc",
+      "brake rotors",
+      "brake rotor",
+      "brakes worn",
+      "brakes squealing",
+      "brakes grinding",
+      "brakes squeaking",
+      "brakes binding",
+      "brake noise",
+      "brake light on",
+      "brake warning light",
+      "brake warning",
+      "brake fluid",
+      "brake fluid low",
+      "brake fluid leak",
+      "brake caliper",
+      "brake calliper",
+      "caliper sticking",
+      "calliper sticking",
+      "caliper seized",
+      "calliper seized",
+      "brake hose",
+      "brake line",
+      "brake pipe",
+      "handbrake",
+      "hand brake",
+      "parking brake",
+      "handbrake not holding",
+      "parking brake not holding",
+      "hub bearing",
+      "wheel bearing",
+      "wheel bearing noise",
+      "hub assembly",
+      "hub noisy",
+      "hub rumble",
+      "abs light",
+      "abs warning",
+      "abs sensor",
+      "abs fault",
+      "brake drum",
+      "drum brakes",
+      "brake shoes",
+      "brake shoe"
+    ]
   }
 ];
 
@@ -364,6 +416,36 @@ const TYRE_PARTS = [
   "puncture"
 ];
 
+const BRAKE_PARTS = [
+  "brake",
+  "brakes",
+  "brake pad",
+  "brake pads",
+  "brake disc",
+  "brake discs",
+  "brake rotor",
+  "brake rotors",
+  "brake caliper",
+  "brake calliper",
+  "caliper",
+  "calliper",
+  "brake hose",
+  "brake line",
+  "brake pipe",
+  "brake fluid",
+  "brake drum",
+  "brake shoe",
+  "brake shoes",
+  "handbrake",
+  "parking brake",
+  "hub",
+  "hub bearing",
+  "wheel bearing",
+  "hub assembly",
+  "abs",
+  "abs sensor"
+];
+
 const NUMBER_PLATE_PARTS = ["number plate", "registration plate", "plate"];
 
 const GENERATED_RULES = [
@@ -416,6 +498,11 @@ const GENERATED_RULES = [
     jobType: "NUMBER_PLATE",
     itemCategory: "EXTERIOR",
     phrases: uniq(buildPhrases(NUMBER_PLATE_PARTS, ISSUE_WORDS, ["", "front", "rear"], [""]))
+  },
+  {
+    jobType: "BRAKES",
+    itemCategory: "BRAKES",
+    phrases: uniq(buildPhrases(BRAKE_PARTS, ISSUE_WORDS, PREFIXES))
   },
   {
     jobType: "SERVICE",
