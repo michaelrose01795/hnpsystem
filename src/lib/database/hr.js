@@ -809,13 +809,18 @@ const formatEmergencyContact = (value) => {
   }
 
   if (typeof value === "object") {
-    const contactName = value.name || "Contact";
-    const phone = value.phone ? ` (${value.phone})` : "";
-    const relationship = value.relationship ? ` - ${value.relationship}` : "";
-    return {
-      contact: `${contactName}${phone}${relationship}`.trim(),
-      address: value.address || "Not provided",
-    };
+    // Standard format: { raw: "Name, Phone, Relationship" }
+    if (value.raw) {
+      return { contact: value.raw, address: value.address || "Not provided" };
+    }
+    // Legacy structured format: { name, phone, relationship }
+    if (value.name) {
+      const parts = [value.name, value.phone, value.relationship].filter(Boolean);
+      return {
+        contact: parts.join(", "),
+        address: value.address || "Not provided",
+      };
+    }
   }
 
   return { contact: "Not provided", address: "Not provided" };

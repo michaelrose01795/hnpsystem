@@ -198,9 +198,19 @@ async function upsertEmployeeProfile({ userId, payload }) {
     employment_status: payload.status || null,
     start_date: toIsoDate(payload.startDate),
     manager_id: payload.managerId || null,
-    emergency_contact: payload.emergencyContact
-      ? { raw: payload.emergencyContact }
-      : null,
+    emergency_contact: (() => {
+      // Store as { raw: "Name, Phone, Relationship" } for consistency
+      const ec = payload.emergencyContact;
+      if (!ec) return null;
+      if (typeof ec === "string") return { raw: ec };
+      if (typeof ec === "object" && ec.raw) return ec;
+      // Handle structured { name, phone, relationship } from profile page
+      if (typeof ec === "object" && ec.name) {
+        const parts = [ec.name, ec.phone, ec.relationship].filter(Boolean);
+        return parts.length > 0 ? { raw: parts.join(", ") } : null;
+      }
+      return { raw: String(ec) };
+    })(),
     documents: null,
     contracted_hours: toNumberOrNull(payload.contractedHours),
     hourly_rate: toNumberOrNull(payload.hourlyRate),

@@ -54,13 +54,11 @@ export default async function handler(req, res) {
 
     const updatePayload = {};
 
-    // Store emergency contact as structured JSON in emergency_contact column
+    // Store emergency contact as { raw: "Name, Phone, Relationship" }
+    // Matches the format used by /api/hr/employees (HR manager page)
     if (name !== undefined || phone !== undefined || relationship !== undefined) {
-      const ecObject = {};
-      if (name) ecObject.name = name;
-      if (phone) ecObject.phone = phone;
-      if (relationship) ecObject.relationship = relationship;
-      updatePayload.emergency_contact = Object.keys(ecObject).length > 0 ? ecObject : null;
+      const ecParts = [name, phone, relationship].filter(Boolean);
+      updatePayload.emergency_contact = ecParts.length > 0 ? { raw: ecParts.join(", ") } : null;
     }
 
     // Store address in the dedicated home_address column

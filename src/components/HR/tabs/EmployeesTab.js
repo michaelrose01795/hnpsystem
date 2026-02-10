@@ -988,6 +988,22 @@ function SearchableListDropdown({
   );
 }
 
+function SectionHeading({ title }) {
+  return (
+    <div style={{
+      fontSize: "0.82rem",
+      fontWeight: 700,
+      color: "var(--accent-purple)",
+      textTransform: "uppercase",
+      letterSpacing: "0.04em",
+      paddingBottom: "6px",
+      borderBottom: "2px solid rgba(var(--accent-purple-rgb), 0.15)",
+    }}>
+      {title}
+    </div>
+  );
+}
+
 function EmployeeDetailsFields({
   values,
   onFieldChange,
@@ -995,74 +1011,37 @@ function EmployeeDetailsFields({
   availableJobTitles,
 }) {
   const update = (field) => (event) => onFieldChange(field, event.target.value);
+  const inputStyle = { padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" };
+  const gridStyle = {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: "16px",
+  };
 
   return (
     <>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: "16px",
-        }}
-      >
+      {/* ── Personal Details ── */}
+      <SectionHeading title="Personal Details" />
+      <div style={gridStyle}>
         <FormField label="First Name">
-          <input
-            type="text"
-            value={values.firstName}
-            onChange={update("firstName")}
-            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-            placeholder="Jordan"
-          />
+          <input type="text" value={values.firstName} onChange={update("firstName")} style={inputStyle} placeholder="Jordan" />
         </FormField>
         <FormField label="Last Name">
-          <input
-            type="text"
-            value={values.lastName}
-            onChange={update("lastName")}
-            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-            placeholder="Reyes"
-          />
+          <input type="text" value={values.lastName} onChange={update("lastName")} style={inputStyle} placeholder="Reyes" />
         </FormField>
         <FormField label="Email">
-          <input
-            type="email"
-            value={values.email}
-            onChange={update("email")}
-            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-            placeholder="jordan.reyes@example.com"
-          />
+          <input type="email" value={values.email} onChange={update("email")} style={inputStyle} placeholder="jordan.reyes@example.com" />
         </FormField>
         <FormField label="Phone">
-          <input
-            type="tel"
-            value={values.phone}
-            onChange={update("phone")}
-            style={{
-              padding: "10px",
-              borderRadius: "8px",
-              border: "1px solid var(--surface-light)",
-              background: "var(--surface-light)",
-            }}
-            placeholder="+44 7000 000000"
-          />
+          <input type="tel" value={values.phone} onChange={update("phone")} style={inputStyle} placeholder="+44 7000 000000" />
         </FormField>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: "16px",
-        }}
-      >
+      {/* ── Employment Details ── */}
+      <SectionHeading title="Employment Details" />
+      <div style={gridStyle}>
         <FormField label="Department">
-          <input
-            type="text"
-            value={values.department}
-            onChange={update("department")}
-            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-            placeholder="Operations"
-          />
+          <input type="text" value={values.department} onChange={update("department")} style={inputStyle} placeholder="Operations" />
         </FormField>
         <FormField label="Job Title">
           <SearchableListDropdown
@@ -1084,11 +1063,7 @@ function EmployeeDetailsFields({
           />
         </FormField>
         <FormField label="Employment Type">
-          <select
-            value={values.employmentType}
-            onChange={update("employmentType")}
-            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-          >
+          <select value={values.employmentType} onChange={update("employmentType")} style={inputStyle}>
             <option value="Full-time">Full-time</option>
             <option value="Part-time">Part-time</option>
             <option value="Contract">Contract</option>
@@ -1096,126 +1071,60 @@ function EmployeeDetailsFields({
           </select>
         </FormField>
         <FormField label="Employment Status">
-          <select
-            value={values.status}
-            onChange={update("status")}
-            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-          >
+          <select value={values.status} onChange={update("status")} style={inputStyle}>
             <option value="Active">Active</option>
             <option value="Inactive">Inactive</option>
             <option value="On Leave">On Leave</option>
           </select>
         </FormField>
         <FormField label="Start Date">
-          <CalendarField
-            name="startDate"
-            id="startDate"
-            value={values.startDate}
-            onChange={update("startDate")}
-          />
+          <CalendarField name="startDate" id="startDate" value={values.startDate} onChange={update("startDate")} />
         </FormField>
         <FormField label="Probation Ends">
-          <CalendarField
-            name="probationEnd"
-            id="probationEnd"
-            value={values.probationEnd}
-            onChange={update("probationEnd")}
-          />
+          <CalendarField name="probationEnd" id="probationEnd" value={values.probationEnd} onChange={update("probationEnd")} />
         </FormField>
-        <FormField label="Contracted Hours per Week">
-          <input
-            type="number"
-            min="0"
-            value={values.contractedHours}
-            onChange={update("contractedHours")}
-            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-          />
+        <FormField label="Contracted Hours / Week">
+          <input type="number" min="0" value={values.contractedHours} onChange={update("contractedHours")} style={inputStyle} />
         </FormField>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: "16px",
-        }}
-      >
+      {/* ── Pay & Compensation ── */}
+      <SectionHeading title="Pay &amp; Compensation" />
+      <div style={gridStyle}>
         <FormField label="Hourly Rate (£)">
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            value={values.hourlyRate}
-            onChange={update("hourlyRate")}
-            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-            placeholder="15.50"
-          />
+          <input type="number" min="0" step="0.01" value={values.hourlyRate} onChange={update("hourlyRate")} style={inputStyle} placeholder="15.50" />
         </FormField>
         <FormField label="Overtime Rate (£)">
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            value={values.overtimeRate}
-            onChange={update("overtimeRate")}
-            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-            placeholder="23.25"
-          />
+          <input type="number" min="0" step="0.01" value={values.overtimeRate} onChange={update("overtimeRate")} style={inputStyle} placeholder="23.25" />
         </FormField>
         <FormField label="Annual Salary (£)">
-          <input
-            type="number"
-            min="0"
-            step="100"
-            value={values.annualSalary}
-            onChange={update("annualSalary")}
-            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-            placeholder="32000"
-          />
+          <input type="number" min="0" step="100" value={values.annualSalary} onChange={update("annualSalary")} style={inputStyle} placeholder="32000" />
         </FormField>
         <FormField label="Payroll Reference">
-          <input
-            type="text"
-            value={values.payrollNumber}
-            onChange={update("payrollNumber")}
-            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-            placeholder="PAY-001"
-          />
+          <input type="text" value={values.payrollNumber} onChange={update("payrollNumber")} style={inputStyle} placeholder="PAY-001" />
         </FormField>
         <FormField label="National Insurance No.">
-          <input
-            type="text"
-            value={values.nationalInsurance}
-            onChange={update("nationalInsurance")}
-            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-            placeholder="QQ123456C"
-          />
+          <input type="text" value={values.nationalInsurance} onChange={update("nationalInsurance")} style={inputStyle} placeholder="QQ123456C" />
         </FormField>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: "16px",
-        }}
-      >
+      {/* ── System / Auth ── */}
+      <SectionHeading title="System" />
+      <div style={gridStyle}>
         <FormField label="Keycloak User ID">
-          <input
-            type="text"
-            value={values.keycloakId}
-            onChange={update("keycloakId")}
-            style={{ padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" }}
-            placeholder="kc-jreyes"
-          />
+          <input type="text" value={values.keycloakId} onChange={update("keycloakId")} style={inputStyle} placeholder="kc-jreyes" />
         </FormField>
       </div>
 
+      {/* ── Address ── */}
+      <SectionHeading title="Home Address" />
       <AddressSearchField
         value={values.address}
         onChange={(val) => onFieldChange("address", val)}
       />
 
+      {/* ── Emergency Contact ── */}
+      <SectionHeading title="Emergency Contact" />
       <EmergencyContactSection
         value={values.emergencyContact}
         onChange={(val) => onFieldChange("emergencyContact", val)}
@@ -1374,23 +1283,17 @@ function AddressSearchField({ value, onChange }) {
 function EmergencyContactSection({ value, onChange, userId }) {
   const parsed = useMemo(() => {
     if (!value || typeof value !== "string") return { name: "", phone: "", relationship: "" };
-    const phoneMatch = value.match(/\(([^)]+)\)/);
-    const relMatch = value.match(/-\s*(.+)$/);
-    let name = value;
-    if (phoneMatch) name = name.replace(phoneMatch[0], "");
-    if (relMatch) name = name.replace(/-\s*.+$/, "");
+    // Format: "Name, Phone, Relationship" (comma-separated)
+    const parts = value.split(",").map((p) => p.trim());
     return {
-      name: name.trim(),
-      phone: phoneMatch ? phoneMatch[1].trim() : "",
-      relationship: relMatch ? relMatch[1].trim() : "",
+      name: parts[0] || "",
+      phone: parts[1] || "",
+      relationship: parts[2] || "",
     };
   }, [value]);
 
   const buildString = (name, phone, relationship) => {
-    let s = name || "";
-    if (phone) s += ` (${phone})`;
-    if (relationship) s += ` - ${relationship}`;
-    return s.trim();
+    return [name, phone, relationship].filter(Boolean).join(", ");
   };
 
   const handleFieldChange = (field) => (e) => {

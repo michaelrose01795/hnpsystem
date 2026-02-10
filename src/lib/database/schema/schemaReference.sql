@@ -192,18 +192,7 @@ CREATE TABLE public.customer_payment_methods (
   CONSTRAINT customer_payment_methods_pkey PRIMARY KEY (method_id),
   CONSTRAINT customer_payment_methods_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id)
 );
-CREATE TABLE public.customer_vehicle_links (
-  link_id uuid NOT NULL DEFAULT gen_random_uuid(),
-  customer_id uuid NOT NULL,
-  vehicle_id integer NOT NULL,
-  relationship text NOT NULL DEFAULT 'owner'::text,
-  is_primary boolean NOT NULL DEFAULT false,
-  notes text,
-  created_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT customer_vehicle_links_pkey PRIMARY KEY (link_id),
-  CONSTRAINT customer_vehicle_links_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
-  CONSTRAINT customer_vehicle_links_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.vehicles(vehicle_id)
-);
+-- REMOVED: customer_vehicle_links (unused — dropped in addtable.sql)
 CREATE TABLE public.customers (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   firstname text,
