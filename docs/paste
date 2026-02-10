@@ -2,7 +2,7 @@ TO DO:
 
 Continue flow with job number 55
 
-
+fix this "AI Detected Job Types OTHER OTHER Brake pads", have it os the "OTHER OTHERBrake pad" section fits with any size screen. 
 
 
 
@@ -14,7 +14,7 @@ CHECK
 with the "Upload Documents" popup, does the document actually get uploaded to the database? if not what happens and is it a perminent thing, have it so the "Upload Documents" popup shows all of the uploaded items always when something has been uplaoded. 
 
 
-FIND OUT
+FIND OUT yes work on this 
 Can we add an auto detect text box locations, tick box location, signature box location, correct orientation, so the app can turn the uploaded document into a live seach which can be ticked, signed, reg field etc auto filled out. or is this not possible. 
 
 
@@ -39,9 +39,8 @@ have it so the print button only gets the section of the invoice tab within the 
 make sure the "ALLOCATE PARTS" part section always shows the customer request (at the top) and VHC request (blow the cusomter request) at all times if its been reported, new remove the requests from that sectin even if a part has been allocated to that request.
 
 
-
-
 Fix it so when i click allocated with an authoirse request it works the same with a normal request. 
+
 
 
 Within write up and VHC tab inside the tab section, when the VHC is fully complete (Everything is authorised or delcined) change the background colour to green, and when everything is ticked within the write up section change the write up tab button background to green as well. so the part moves to on job to within the row of the request its been allocated to, link this though the database as well. 
@@ -53,7 +52,6 @@ add the changes to the database into the addtables.sql for me to put into the ta
 
 
 
-fix the "Job Type" column within the appointment page within the "Jobs for" section so it shows the correct job detection, have it so it shows all of them within the column, if more than two rows then create a scroll within the column for that row if goes more. 
 
 
 CHECKKKK

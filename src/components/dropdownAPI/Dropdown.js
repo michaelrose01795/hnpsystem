@@ -277,7 +277,7 @@ export default function Dropdown({
         top,
         left,
         width,
-        zIndex: 2000,
+        zIndex: 99999,
       });
     };
 

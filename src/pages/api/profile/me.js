@@ -240,6 +240,7 @@ async function getUserProfile(userId) {
         start_date,
         photo_url,
         emergency_contact,
+        home_address,
         user:user_id(
           user_id,
           first_name,
@@ -266,23 +267,19 @@ async function getUserProfile(userId) {
     user.email ||
     "Unknown user";
 
-  // Format emergency contact
+  // Format emergency contact — handles both structured JSON and legacy { raw: "..." } format
   const formatEmergencyContact = (value) => {
     if (!value) return "Not provided";
     if (typeof value === "string") return value;
     if (typeof value === "object") {
-      const contactName = value.name || "Contact";
-      const phone = value.phone ? ` (${value.phone})` : "";
-      const relationship = value.relationship ? ` - ${value.relationship}` : "";
-      return `${contactName}${phone}${relationship}`.trim();
+      // New structured format: { name, phone, relationship }
+      if (value.name) {
+        const parts = [value.name, value.phone, value.relationship].filter(Boolean);
+        return parts.join(", ");
+      }
+      // Legacy format: { raw: "Name, Phone, Relationship" }
+      if (value.raw) return value.raw;
     }
-    return "Not provided";
-  };
-
-  const formatAddress = (value) => {
-    if (!value) return "Not provided";
-    if (typeof value === "string") return value;
-    if (typeof value === "object" && value.address) return value.address;
     return "Not provided";
   };
 
@@ -300,7 +297,7 @@ async function getUserProfile(userId) {
     email: user.email,
     phone: user.phone || "N/A",
     emergencyContact: formatEmergencyContact(data.emergency_contact),
-    address: formatAddress(data.emergency_contact),
+    address: data.home_address || "Not provided",
   };
 }
 

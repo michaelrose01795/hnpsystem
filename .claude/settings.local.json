@@ -34,7 +34,9 @@
       "Bash(fi:*)",
       "Bash(npm install:*)",
       "Bash(npx next lint:*)",
-      "Bash(npx:*)"
+      "Bash(npx:*)",
+      "Bash(xxd:*)",
+      "Bash(python3:*)"
     ],
     "deny": [],
     "ask": []

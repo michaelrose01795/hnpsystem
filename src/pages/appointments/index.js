@@ -1165,6 +1165,28 @@ export default function Appointments() {
     return job.type || "Service";
   };
 
+  const getJobTypeBadgeStyle = (label) => {
+    const base = {
+      display: "inline-block",
+      padding: "3px 8px",
+      borderRadius: "10px",
+      fontSize: "11px",
+      fontWeight: "600",
+      textTransform: "capitalize",
+      whiteSpace: "nowrap",
+    };
+    switch (label) {
+      case "service":
+        return { ...base, background: "rgba(59,130,246,0.12)", color: "#2563eb" };
+      case "mot":
+        return { ...base, background: "rgba(245,158,11,0.12)", color: "#d97706" };
+      case "diagnosis":
+        return { ...base, background: "rgba(139,92,246,0.12)", color: "#7c3aed" };
+      default:
+        return { ...base, background: "rgba(107,114,128,0.12)", color: "#6b7280" };
+    }
+  };
+
   const getCustomerStatusBadgeColors = (status) => {
     const normalized = (status || "").toLowerCase();
     if (normalized === "waiting") {
@@ -1925,13 +1947,19 @@ export default function Appointments() {
                           {job.customer || "-"}
                         </td>
                         <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)" }}>
-                          <span style={{
-                            fontSize: "13px",
-                            fontWeight: "600",
-                            color: "var(--text-primary)"
+                          <div style={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: "4px",
+                            maxHeight: "52px",
+                            overflowY: "auto",
                           }}>
-                            {getDetectedJobTypeLabel(job)}
-                          </span>
+                            {Array.from(getDetectedJobTypeLabels(job)).filter(Boolean).map((label) => (
+                              <span key={label} style={getJobTypeBadgeStyle(label)}>
+                                {label}
+                              </span>
+                            ))}
+                          </div>
                         </td>
                         <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)" }}>
                           <span

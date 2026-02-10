@@ -2,7 +2,6 @@
 
 import React, { useCallback, useMemo, useState } from "react";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
-import { useTheme } from "@/styles/themeProvider";
 import ModalPortal from "./ModalPortal";
 
 const generateTempJobId = () => `temp-${Date.now()}`;
@@ -27,9 +26,6 @@ export default function DocumentsUploadPopup({
   const [pendingDocuments, setPendingDocuments] = useState([]);
   const [uploadProgress, setUploadProgress] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
-  const [backgroundUploads, setBackgroundUploads] = useState(false);
-  const { resolvedMode } = useTheme();
-  const closeButtonColor = resolvedMode === "dark" ? "var(--accent-purple)" : "var(--danger)";
 
   const effectiveJobId = jobId ? String(jobId) : null;
 
@@ -38,15 +34,7 @@ export default function DocumentsUploadPopup({
     [uploadProgress]
   );
 
-  const resetStateWhenClosed = useCallback(() => {
-    setPendingDocuments([]);
-    setUploadProgress([]);
-    setIsUploading(false);
-    setBackgroundUploads(false);
-  }, []);
-
   const handleClose = useCallback(() => {
-    setBackgroundUploads(true);
     if (typeof onClose === "function") {
       onClose();
     }
@@ -102,8 +90,9 @@ export default function DocumentsUploadPopup({
           let lastLoaded = 0;
           const speedSamples = [];
 
+          let responseData = {};
           try {
-            await new Promise((resolve, reject) => {
+            responseData = await new Promise((resolve, reject) => {
               const xhr = new XMLHttpRequest();
               const formData = new FormData();
               formData.append("file", file);
@@ -139,7 +128,11 @@ export default function DocumentsUploadPopup({
 
               xhr.addEventListener("load", () => {
                 if (xhr.status >= 200 && xhr.status < 300) {
-                  resolve(true);
+                  try {
+                    resolve(JSON.parse(xhr.responseText));
+                  } catch (_) {
+                    resolve({});
+                  }
                 } else {
                   reject(new Error(`Upload failed with status ${xhr.status}`));
                 }
@@ -161,12 +154,15 @@ export default function DocumentsUploadPopup({
               timeRemaining: 0
             }));
 
+            const uploadedPath = responseData?.file?.path || "";
+
             if (targetJobId.startsWith("temp-")) {
               tempMetadata.push({
                 fileName: safeName,
                 contentType: file.type || "application/octet-stream",
                 jobId: targetJobId,
-                uploadedBy: userId || "system"
+                uploadedBy: userId || "system",
+                url: uploadedPath
               });
             }
           } catch (uploadError) {
@@ -188,27 +184,14 @@ export default function DocumentsUploadPopup({
           onAfterUpload();
         }
 
-        if (!backgroundUploads) {
-          setTimeout(() => {
-            if (typeof onClose === "function") {
-              onClose();
-            }
-            resetStateWhenClosed();
-          }, 1500);
-        }
+        setPendingDocuments([]);
       } finally {
         setIsUploading(false);
-        if (!backgroundUploads) {
-          setPendingDocuments([]);
-        }
       }
     },
     [
-      backgroundUploads,
       onAfterUpload,
-      onClose,
       onTempFilesQueued,
-      resetStateWhenClosed,
       updateProgressForFile,
       userId
     ]
@@ -261,6 +244,17 @@ export default function DocumentsUploadPopup({
     }
   }, [effectiveJobId, pendingDocuments, uploadDocumentsForJob]);
 
+  const hasRightPanel = existingDocuments.length > 0 || uploadProgress.length > 0;
+
+  const isImageType = (type = "") => /^image\/(png|jpe?g|gif|webp|svg|bmp)$/i.test(type);
+
+  const getDocThumbnailUrl = (doc) => {
+    const url = doc.url || doc.file_url || "";
+    const type = doc.type || doc.file_type || doc.contentType || "";
+    if (isImageType(type) && url) return url;
+    return null;
+  };
+
   if (!open) {
     return null;
   }
@@ -269,16 +263,13 @@ export default function DocumentsUploadPopup({
     <ModalPortal>
       <div
         style={{ ...popupOverlayStyles, zIndex: 1300 }}
-        onClick={() => {
-          setBackgroundUploads(true);
-          handleClose();
-        }}
+        onClick={handleClose}
       >
         <div
           onClick={(event) => event.stopPropagation()}
           style={{
             ...popupCardStyles,
-            width: uploadProgress.length > 0 ? "920px" : "650px",
+            width: hasRightPanel ? "920px" : "650px",
             maxWidth: "95%",
             maxHeight: "90vh",
             overflowY: "auto",
@@ -291,36 +282,17 @@ export default function DocumentsUploadPopup({
             border: "1px solid var(--surface-light)"
           }}
         >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div>
-            <h3 style={{ margin: 0, fontSize: "20px", fontWeight: "700", color: "var(--primary)" }}>
-              Upload Documents
-            </h3>
-            <p style={{ margin: "6px 0 0", fontSize: "13px", color: "var(--text-secondary)" }}>
-              {uploadProgress.length > 0 ? "Upload in progress..." : "Attach PDFs or images and upload immediately."}
-            </p>
-          </div>
-          <button
-            onClick={handleClose}
-            style={{
-              padding: "10px 14px",
-              borderRadius: "10px",
-              border: "1px solid var(--surface-light)",
-              background: "var(--surface-light)",
-              fontSize: "12px",
-              fontWeight: 700,
-              cursor: "pointer",
-              color: closeButtonColor,
-              textTransform: "uppercase",
-              letterSpacing: "0.05em"
-            }}
-          >
-            Close
-          </button>
+        <div>
+          <h3 style={{ margin: 0, fontSize: "20px", fontWeight: "700", color: "var(--primary)" }}>
+            Upload Documents
+          </h3>
+          <p style={{ margin: "6px 0 0", fontSize: "13px", color: "var(--text-secondary)" }}>
+            {uploadProgress.length > 0 ? "Upload in progress..." : "Attach PDFs or images and upload immediately."}
+          </p>
         </div>
 
-        <div style={{ display: "flex", gap: "20px", flexWrap: uploadProgress.length > 0 ? "nowrap" : "wrap" }}>
-          <div style={{ flex: uploadProgress.length > 0 ? "0 0 45%" : "1", display: "flex", flexDirection: "column", gap: "16px" }}>
+        <div style={{ display: "flex", gap: "20px", flexWrap: hasRightPanel ? "nowrap" : "wrap" }}>
+          <div style={{ flex: hasRightPanel ? "0 0 45%" : "1", display: "flex", flexDirection: "column", gap: "16px" }}>
             <label
               htmlFor="documents-input"
               style={{
@@ -425,63 +397,9 @@ export default function DocumentsUploadPopup({
                 {isUploading ? "Uploading..." : "Upload"}
               </button>
             </div>
-
-            {existingDocuments.length > 0 && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                <h4 style={{ margin: 0, fontSize: "14px", fontWeight: "600", color: "var(--text-primary)" }}>
-                  Uploaded ({existingDocuments.length})
-                </h4>
-                <div
-                  style={{
-                    maxHeight: "200px",
-                    overflowY: "auto",
-                    border: "1px solid var(--surface-light)",
-                    borderRadius: "12px",
-                    padding: "8px"
-                  }}
-                >
-                  {existingDocuments.map((doc, idx) => (
-                    <div
-                      key={doc.id || idx}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "8px",
-                        borderBottom: idx < existingDocuments.length - 1 ? "1px solid var(--surface-light)" : "none"
-                      }}
-                    >
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {doc.name || "Document"}
-                        </div>
-                        <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
-                          {doc.type || ""}
-                        </div>
-                      </div>
-                      <a
-                        href={doc.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          fontSize: "12px",
-                          fontWeight: "600",
-                          color: "var(--primary)",
-                          textDecoration: "none",
-                          marginLeft: "12px",
-                          flexShrink: 0
-                        }}
-                      >
-                        View
-                      </a>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
-          {uploadProgress.length > 0 && (
+          {hasRightPanel && (
             <div
               style={{
                 flex: "0 0 50%",
@@ -496,133 +414,228 @@ export default function DocumentsUploadPopup({
                 overflowY: "auto"
               }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                <h4 style={{ margin: 0, fontSize: "15px", fontWeight: "600", color: "var(--primary)" }}>
-                  Upload Progress
-                </h4>
-                {hasFailedUploads && (
-                  <button
-                    onClick={retryFailedUploads}
-                    disabled={isUploading}
-                    style={{
-                      padding: "6px 12px",
-                      borderRadius: "8px",
-                      border: "none",
-                      background: "var(--danger)",
-                      color: "white",
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      cursor: isUploading ? "not-allowed" : "pointer",
-                      opacity: isUploading ? 0.6 : 1
-                    }}
-                  >
-                    Retry Failed
-                  </button>
-                )}
-              </div>
-
-              {uploadProgress.map((item, idx) => {
-                const statusColor =
-                  item.status === "completed"
-                    ? "var(--success)"
-                    : item.status === "failed"
-                    ? "var(--danger)"
-                    : item.status === "uploading"
-                    ? "var(--primary)"
-                    : "var(--info)";
-
-                return (
-                  <div
-                    key={`progress-${idx}`}
-                    style={{
-                      padding: "12px",
-                      backgroundColor: "var(--info-surface)",
-                      borderRadius: "10px",
-                      border: `1px solid ${statusColor}`
-                    }}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                      <div
+              {uploadProgress.length > 0 && (
+                <>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                    <h4 style={{ margin: 0, fontSize: "15px", fontWeight: "600", color: "var(--primary)" }}>
+                      Upload Progress
+                    </h4>
+                    {hasFailedUploads && (
+                      <button
+                        onClick={retryFailedUploads}
+                        disabled={isUploading}
                         style={{
-                          fontSize: "13px",
+                          padding: "6px 12px",
+                          borderRadius: "8px",
+                          border: "none",
+                          background: "var(--danger)",
+                          color: "white",
+                          fontSize: "12px",
                           fontWeight: "600",
-                          color: statusColor,
-                          flex: 1,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                          marginRight: "8px"
+                          cursor: isUploading ? "not-allowed" : "pointer",
+                          opacity: isUploading ? 0.6 : 1
                         }}
                       >
-                        {item.fileName}
-                      </div>
-                      <div style={{ fontSize: "14px", fontWeight: "700", color: statusColor }}>
-                        {item.progress.toFixed(0)}%
-                      </div>
-                    </div>
-
-                    <div
-                      style={{
-                        width: "100%",
-                        height: "8px",
-                        backgroundColor: "var(--surface)",
-                        borderRadius: "4px",
-                        overflow: "hidden",
-                        marginBottom: "8px"
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: `${item.progress}%`,
-                          height: "100%",
-                          backgroundColor: statusColor,
-                          transition: "width 0.3s ease"
-                        }}
-                      />
-                    </div>
-
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        fontSize: "11px",
-                        color: "var(--info)"
-                      }}
-                    >
-                      <div>
-                        {item.status === "uploading" && (
-                          <>
-                            <span style={{ fontWeight: "600" }}>Speed: </span>
-                            {formatBytes(item.speed)}/s
-                          </>
-                        )}
-                        {item.status === "completed" && (
-                          <>
-                            <span style={{ fontWeight: "600" }}>Avg Speed: </span>
-                            {formatBytes(item.avgSpeed)}/s
-                          </>
-                        )}
-                        {item.status === "failed" && (
-                          <span style={{ color: "var(--danger)", fontWeight: "600" }}>Upload Failed</span>
-                        )}
-                        {item.status === "pending" && (
-                          <span style={{ color: "var(--info-dark)" }}>Waiting...</span>
-                        )}
-                      </div>
-                      <div>
-                        {item.status === "uploading" && item.timeRemaining > 0 && (
-                          <>
-                            <span style={{ fontWeight: "600" }}>Time: </span>
-                            {item.timeRemaining < 60
-                              ? `${Math.ceil(item.timeRemaining)}s`
-                              : `${Math.floor(item.timeRemaining / 60)}m ${Math.ceil(item.timeRemaining % 60)}s`}
-                          </>
-                        )}
-                      </div>
-                    </div>
+                        Retry Failed
+                      </button>
+                    )}
                   </div>
-                );
-              })}
+
+                  {uploadProgress.map((item, idx) => {
+                    const statusColor =
+                      item.status === "completed"
+                        ? "var(--success)"
+                        : item.status === "failed"
+                        ? "var(--danger)"
+                        : item.status === "uploading"
+                        ? "var(--primary)"
+                        : "var(--info)";
+
+                    return (
+                      <div
+                        key={`progress-${idx}`}
+                        style={{
+                          padding: "12px",
+                          backgroundColor: "var(--info-surface)",
+                          borderRadius: "10px",
+                          border: `1px solid ${statusColor}`
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                          <div
+                            style={{
+                              fontSize: "13px",
+                              fontWeight: "600",
+                              color: statusColor,
+                              flex: 1,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                              marginRight: "8px"
+                            }}
+                          >
+                            {item.fileName}
+                          </div>
+                          <div style={{ fontSize: "14px", fontWeight: "700", color: statusColor }}>
+                            {item.progress.toFixed(0)}%
+                          </div>
+                        </div>
+
+                        <div
+                          style={{
+                            width: "100%",
+                            height: "8px",
+                            backgroundColor: "var(--surface)",
+                            borderRadius: "4px",
+                            overflow: "hidden",
+                            marginBottom: "8px"
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: `${item.progress}%`,
+                              height: "100%",
+                              backgroundColor: statusColor,
+                              transition: "width 0.3s ease"
+                            }}
+                          />
+                        </div>
+
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            fontSize: "11px",
+                            color: "var(--info)"
+                          }}
+                        >
+                          <div>
+                            {item.status === "uploading" && (
+                              <>
+                                <span style={{ fontWeight: "600" }}>Speed: </span>
+                                {formatBytes(item.speed)}/s
+                              </>
+                            )}
+                            {item.status === "completed" && (
+                              <>
+                                <span style={{ fontWeight: "600" }}>Avg Speed: </span>
+                                {formatBytes(item.avgSpeed)}/s
+                              </>
+                            )}
+                            {item.status === "failed" && (
+                              <span style={{ color: "var(--danger)", fontWeight: "600" }}>Upload Failed</span>
+                            )}
+                            {item.status === "pending" && (
+                              <span style={{ color: "var(--info-dark)" }}>Waiting...</span>
+                            )}
+                          </div>
+                          <div>
+                            {item.status === "uploading" && item.timeRemaining > 0 && (
+                              <>
+                                <span style={{ fontWeight: "600" }}>Time: </span>
+                                {item.timeRemaining < 60
+                                  ? `${Math.ceil(item.timeRemaining)}s`
+                                  : `${Math.floor(item.timeRemaining / 60)}m ${Math.ceil(item.timeRemaining % 60)}s`}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+
+              {existingDocuments.length > 0 && (
+                <>
+                  {uploadProgress.length > 0 && (
+                    <div style={{ borderTop: "1px solid var(--surface-light)", margin: "4px 0" }} />
+                  )}
+                  <h4 style={{ margin: 0, fontSize: "15px", fontWeight: "600", color: "var(--primary)" }}>
+                    Uploaded Documents ({existingDocuments.length})
+                  </h4>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {existingDocuments.map((doc, idx) => {
+                      const thumbUrl = getDocThumbnailUrl(doc);
+                      const docName = doc.name || doc.fileName || doc.file_name || "Document";
+                      const docType = doc.type || doc.file_type || doc.contentType || "";
+                      const docUrl = doc.url || doc.file_url || "";
+                      return (
+                        <div
+                          key={doc.id || doc.file_id || idx}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "10px",
+                            padding: "8px",
+                            borderRadius: "10px",
+                            border: "1px solid var(--surface-light)",
+                            backgroundColor: "var(--info-surface)"
+                          }}
+                        >
+                          {thumbUrl ? (
+                            <img
+                              src={thumbUrl}
+                              alt={docName}
+                              style={{
+                                width: "48px",
+                                height: "48px",
+                                objectFit: "cover",
+                                borderRadius: "6px",
+                                flexShrink: 0,
+                                border: "1px solid var(--surface-light)"
+                              }}
+                            />
+                          ) : (
+                            <div
+                              style={{
+                                width: "48px",
+                                height: "48px",
+                                borderRadius: "6px",
+                                flexShrink: 0,
+                                backgroundColor: "var(--surface-light)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: "11px",
+                                fontWeight: "700",
+                                color: "var(--primary)",
+                                textTransform: "uppercase"
+                              }}
+                            >
+                              {docType.split("/").pop()?.substring(0, 4) || "FILE"}
+                            </div>
+                          )}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {docName}
+                            </div>
+                            <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
+                              {docType.split("/").pop() || "file"}
+                            </div>
+                          </div>
+                          {docUrl && (
+                            <a
+                              href={docUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                fontSize: "12px",
+                                fontWeight: "600",
+                                color: "var(--primary)",
+                                textDecoration: "none",
+                                flexShrink: 0
+                              }}
+                            >
+                              View
+                            </a>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>

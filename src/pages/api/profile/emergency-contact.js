@@ -50,13 +50,22 @@ export default async function handler(req, res) {
 
   try {
     const userId = await resolveUserId(req, res);
-    const { emergencyContact, address } = req.body || {};
+    const { name, phone, relationship, address } = req.body || {};
 
     const updatePayload = {};
-    if (emergencyContact !== undefined) {
-      updatePayload.emergency_contact = emergencyContact
-        ? { raw: emergencyContact }
-        : null;
+
+    // Store emergency contact as structured JSON in emergency_contact column
+    if (name !== undefined || phone !== undefined || relationship !== undefined) {
+      const ecObject = {};
+      if (name) ecObject.name = name;
+      if (phone) ecObject.phone = phone;
+      if (relationship) ecObject.relationship = relationship;
+      updatePayload.emergency_contact = Object.keys(ecObject).length > 0 ? ecObject : null;
+    }
+
+    // Store address in the dedicated home_address column
+    if (address !== undefined) {
+      updatePayload.home_address = address || null;
     }
 
     if (Object.keys(updatePayload).length === 0) {
@@ -73,9 +82,13 @@ export default async function handler(req, res) {
       return res.status(500).json({ success: false, message: "Failed to update emergency contact." });
     }
 
+    const ecParts = [name, phone, relationship].filter(Boolean);
     return res.status(200).json({
       success: true,
-      data: { emergencyContact: emergencyContact || "Not provided" },
+      data: {
+        emergencyContact: ecParts.length > 0 ? ecParts.join(", ") : "Not provided",
+        address: address || "No address on file",
+      },
     });
   } catch (error) {
     console.error("emergency-contact API error:", error);

@@ -30,7 +30,7 @@ function formatTime(value) {
 }
 
 function formatCurrency(value) {
-  return `Â£${Number(value ?? 0).toFixed(2)}`; // currency helper used across metrics
+  return `£${Number(value ?? 0).toFixed(2)}`; // currency helper used across metrics
 }
 
 function splitEmergencyContact(value) {
@@ -151,7 +151,7 @@ function ProfileCard({ title, action, children, style, headerStyle }) {
   );
 }
 
-function KpiCard({ icon, label, primary, secondary, accentColor }) {
+function KpiCard({ label, primary, secondary, accentColor }) {
   return (
     <div
       style={{
@@ -166,20 +166,6 @@ function KpiCard({ icon, label, primary, secondary, accentColor }) {
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-        <span
-          style={{
-            fontSize: "1rem",
-            width: "28px",
-            height: "28px",
-            display: "grid",
-            placeItems: "center",
-            borderRadius: "9px",
-            background: "rgba(var(--accent-purple-rgb), 0.14)",
-            color: "var(--accent-purple)",
-          }}
-        >
-          {icon}
-        </span>
         <span style={{ fontSize: "0.76rem", fontWeight: 600, color: "var(--text-secondary)" }}>
           {label}
         </span>
@@ -199,7 +185,8 @@ function LeaveRequestModal({ isOpen, onClose, onSubmit, isSubmitting }) {
   const [form, setForm] = useState({
     type: "Holiday",
     startDate: "",
-    endDate: "",
+    totalDays: 1,
+    halfDay: "None",
     notes: "",
   });
   const [error, setError] = useState(null);
@@ -212,17 +199,42 @@ function LeaveRequestModal({ isOpen, onClose, onSubmit, isSubmitting }) {
     setError(null);
   };
 
+  // Auto-calculate end date from start date + total days
+  const computedEndDate = (() => {
+    if (!form.startDate || !form.totalDays || form.totalDays < 1) return "";
+    const start = new Date(form.startDate + "T00:00:00");
+    if (isNaN(start.getTime())) return "";
+    let daysToAdd = Math.max(1, Math.floor(Number(form.totalDays))) - 1;
+    const result = new Date(start);
+    while (daysToAdd > 0) {
+      result.setDate(result.getDate() + 1);
+      const day = result.getDay();
+      if (day !== 0 && day !== 6) daysToAdd--;
+    }
+    return result.toISOString().split("T")[0];
+  })();
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!form.startDate || !form.endDate) {
-      setError("Start date and end date are required.");
+    if (!form.startDate) {
+      setError("Start date is required.");
       return;
     }
-    if (new Date(form.endDate) < new Date(form.startDate)) {
-      setError("End date must be on or after start date.");
+    if (!form.totalDays || form.totalDays < 1) {
+      setError("Total days off must be at least 1.");
       return;
     }
-    onSubmit(form);
+    if (!computedEndDate) {
+      setError("Could not calculate end date. Check your inputs.");
+      return;
+    }
+    onSubmit({
+      type: form.type,
+      startDate: form.startDate,
+      endDate: computedEndDate,
+      halfDay: form.halfDay,
+      notes: form.notes,
+    });
   };
 
   const modal = (
@@ -295,14 +307,52 @@ function LeaveRequestModal({ isOpen, onClose, onSubmit, isSubmitting }) {
             required
           />
 
-          <CalendarField
-            label="End Date"
-            name="endDate"
-            id="leave-end-date"
-            value={form.endDate}
-            onChange={handleChange}
-            required
-          />
+          <div style={{ display: "flex", gap: "12px" }}>
+            <label style={{ ...modalLabelStyle, flex: 1 }}>
+              Total Days Off
+              <input
+                type="number"
+                name="totalDays"
+                min="1"
+                value={form.totalDays}
+                onChange={handleChange}
+                style={modalInputStyle}
+              />
+            </label>
+            <div style={{ flex: 1 }}>
+              <DropdownField
+                label="Half Day"
+                name="halfDay"
+                value={form.halfDay}
+                onChange={handleChange}
+                options={[
+                  { label: "None", value: "None" },
+                  { label: "Half Day (AM)", value: "AM" },
+                  { label: "Half Day (PM)", value: "PM" },
+                ]}
+              />
+            </div>
+          </div>
+
+          {computedEndDate && form.startDate && (
+            <div style={{
+              padding: "10px 12px",
+              borderRadius: "10px",
+              background: "rgba(var(--accent-purple-rgb), 0.08)",
+              fontSize: "0.85rem",
+              color: "var(--text-secondary)",
+              fontWeight: 500,
+            }}>
+              End Date: <span style={{ fontWeight: 700, color: "var(--text-primary)" }}>
+                {new Date(computedEndDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
+              </span>
+              {form.halfDay !== "None" && (
+                <span style={{ marginLeft: "8px", fontSize: "0.8rem", color: "var(--accent-purple)" }}>
+                  ({form.halfDay === "AM" ? "Morning half day" : "Afternoon half day"})
+                </span>
+              )}
+            </div>
+          )}
 
           <label style={modalLabelStyle}>
             Notes (optional)
@@ -706,7 +756,10 @@ export function ProfilePage({
 
   // Emergency contact edit state
   const [ecEditing, setEcEditing] = useState(false);
-  const [ecValue, setEcValue] = useState("");
+  const [ecName, setEcName] = useState("");
+  const [ecPhone, setEcPhone] = useState("");
+  const [ecRelationship, setEcRelationship] = useState("");
+  const [ecAddress, setEcAddress] = useState("");
   const [ecSaving, setEcSaving] = useState(false);
   const [ecError, setEcError] = useState(null);
 
@@ -734,10 +787,13 @@ export function ProfilePage({
   }, []);
 
   const handleStartEcEdit = useCallback(() => {
-    setEcValue(profile?.emergencyContact || "");
+    setEcName(emergencyParts.name === "Not provided" ? "" : emergencyParts.name);
+    setEcPhone(emergencyParts.phone === "Not provided" ? "" : emergencyParts.phone);
+    setEcRelationship(emergencyParts.relationship === "Not provided" ? "" : emergencyParts.relationship);
+    setEcAddress(profile?.address === "Not provided" ? "" : (profile?.address || ""));
     setEcError(null);
     setEcEditing(true);
-  }, [profile?.emergencyContact]);
+  }, [emergencyParts, profile?.address]);
 
   const handleSaveEc = useCallback(async () => {
     setEcSaving(true);
@@ -747,17 +803,27 @@ export function ProfilePage({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ emergencyContact: ecValue.trim() }),
+        body: JSON.stringify({
+          name: ecName.trim(),
+          phone: ecPhone.trim(),
+          relationship: ecRelationship.trim(),
+          address: ecAddress.trim(),
+        }),
       });
       if (!response.ok) {
         const payload = await response.json().catch(() => null);
         throw new Error(payload?.message || "Failed to update emergency contact.");
       }
+      const ecParts = [ecName.trim(), ecPhone.trim(), ecRelationship.trim()].filter(Boolean);
       setUserProfileData((prev) => {
         if (!prev?.profile) return prev;
         return {
           ...prev,
-          profile: { ...prev.profile, emergencyContact: ecValue.trim() || "Not provided" },
+          profile: {
+            ...prev.profile,
+            emergencyContact: ecParts.length > 0 ? ecParts.join(", ") : "Not provided",
+            address: ecAddress.trim() || "No address on file",
+          },
         };
       });
       setEcEditing(false);
@@ -766,7 +832,7 @@ export function ProfilePage({
     } finally {
       setEcSaving(false);
     }
-  }, [ecValue]);
+  }, [ecName, ecPhone, ecRelationship, ecAddress]);
 
   const profileStaffVehicles = useMemo(() => {
     if (!profile?.userId) return [];
@@ -899,32 +965,28 @@ export function ProfilePage({
               }}
             >
               <KpiCard
-                icon="ðŸ•’"
                 label="Total Hours (logged)"
                 primary={`${aggregatedStats?.totalHours?.toFixed(1) ?? "0.0"}`}
                 accentColor="var(--accent-purple)"
               />
               {isAdminOrManager && (
                 <KpiCard
-                  icon="ðŸ’·"
                   label="Hourly Rate"
                   primary={formatCurrency(profile.hourlyRate ?? 0)}
                   accentColor="var(--success)"
                 />
               )}
               <KpiCard
-                icon="â±ï¸"
                 label="Overtime Hours"
                 primary={`${aggregatedStats?.overtimeHours ?? 0}`}
                 secondary={
                   aggregatedStats?.overtimeHours
                     ? `Balance ${formatCurrency(aggregatedStats.overtimeBalance)}`
-                    : "Balance Â£0.00"
+                    : "Balance £0.00"
                 }
                 accentColor="var(--danger)"
               />
               <KpiCard
-                icon="ðŸ–ï¸"
                 label="Leave Remaining"
                 primary={
                   aggregatedStats?.leaveRemaining !== null
@@ -1011,20 +1073,50 @@ export function ProfilePage({
               >
                 {ecEditing ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                      <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>
-                        Emergency Contact
+                    <div style={{ display: "grid", gap: "10px" }}>
+                      <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>Name</span>
+                        <input
+                          type="text"
+                          value={ecName}
+                          onChange={(e) => { setEcName(e.target.value); setEcError(null); }}
+                          placeholder="Full name"
+                          style={inputStyle}
+                        />
                       </label>
-                      <input
-                        type="text"
-                        value={ecValue}
-                        onChange={(e) => {
-                          setEcValue(e.target.value);
-                          setEcError(null);
-                        }}
-                        placeholder="Name, phone, relationship"
-                        style={inputStyle}
-                      />
+                      <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>Phone</span>
+                        <input
+                          type="tel"
+                          value={ecPhone}
+                          onChange={(e) => { setEcPhone(e.target.value); setEcError(null); }}
+                          placeholder="Phone number"
+                          style={inputStyle}
+                        />
+                      </label>
+                      <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>Relationship</span>
+                        <input
+                          type="text"
+                          value={ecRelationship}
+                          onChange={(e) => { setEcRelationship(e.target.value); setEcError(null); }}
+                          placeholder="e.g. Partner, Parent, Sibling"
+                          style={inputStyle}
+                        />
+                      </label>
+                      <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>Address</span>
+                        <input
+                          type="text"
+                          value={ecAddress}
+                          onChange={(e) => {
+                            setEcAddress(e.target.value);
+                            setEcError(null);
+                          }}
+                          placeholder="Home address"
+                          style={inputStyle}
+                        />
+                      </label>
                     </div>
                     {ecError && <div style={{ color: "var(--danger)", fontSize: "0.82rem" }}>{ecError}</div>}
                     <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>

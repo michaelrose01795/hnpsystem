@@ -16,7 +16,7 @@ import {
   updateCustomer,
 } from "@/lib/database/customers";
 import { createOrUpdateVehicle, getVehicleByReg } from "@/lib/database/vehicles";
-import { addJobToDatabase, addJobFile, getJobByNumber } from "@/lib/database/jobs";
+import { addJobToDatabase, getJobByNumber } from "@/lib/database/jobs";
 import { supabase } from "@/lib/supabaseClient"; // import supabase client for job request inserts
 import NewCustomerPopup from "@/components/popups/NewCustomerPopup"; // import new customer popup
 import ExistingCustomerPopup from "@/components/popups/ExistingCustomerPopup"; // import existing customer popup
@@ -734,33 +734,6 @@ export default function CreateJobCardPage() {
     }
   };
 
-  const linkUploadedFilesToJob = async (jobId) => { // Link previously uploaded files to the newly created job
-    if (uploadedFiles.length === 0) return;
-
-    try {
-      // Call API to update temp uploaded files with actual job ID
-      const response = await fetch('/api/jobcards/link-uploaded-files', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          jobId: jobId,
-          files: uploadedFiles
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to link uploaded files');
-      }
-
-      setUploadedFiles([]); // Clear after linking
-    } catch (error) {
-      console.error("Failed to link uploaded files to job:", error);
-      // Don't throw - files are already uploaded, linking can be done manually if needed
-    }
-  };
-
   const captureTempUploadMetadata = useCallback((metadataList = []) => {
     if (!Array.isArray(metadataList) || metadataList.length === 0) {
       return;
@@ -1337,19 +1310,17 @@ export default function CreateJobCardPage() {
   // Helper to link files to a specific job by ID
   const linkUploadedFilesToJobById = async (jobId, files) => {
     if (!files || files.length === 0) return;
-    for (const file of files) {
-      try {
-        await addJobFile({
-          jobId,
-          fileName: file.fileName,
-          fileUrl: file.publicUrl,
-          fileType: file.contentType,
-          folder: "documents",
-          storagePath: file.storagePath,
-        });
-      } catch (err) {
-        console.error("Error linking file to job:", err);
+    try {
+      const response = await fetch('/api/jobcards/link-uploaded-files', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId, files })
+      });
+      if (!response.ok) {
+        throw new Error('Failed to link uploaded files');
       }
+    } catch (err) {
+      console.error("Error linking files to job:", err);
     }
   };
 
@@ -2803,6 +2774,11 @@ export default function CreateJobCardPage() {
           jobId={null}
           userId={dbUserId || null}
           onTempFilesQueued={captureTempUploadMetadata}
+          existingDocuments={uploadedFiles.map((f) => ({
+            name: f.fileName,
+            type: f.contentType,
+            url: f.url || "",
+          }))}
         />
 
       </div>

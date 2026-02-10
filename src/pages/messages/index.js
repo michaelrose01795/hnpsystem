@@ -2672,6 +2672,7 @@ function MessagesPage() {
                 Start Chat
               </button>
             </div>
+              </div>
             </div>
           </div>
         </ModalPortal>
