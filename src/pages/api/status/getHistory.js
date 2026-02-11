@@ -10,6 +10,7 @@ import {
   resolveSubStatusId,
   normalizeStatusId,
 } from "@/lib/status/statusFlow"; // Import status metadata map for enrichment
+import { getDisplayName } from "@/lib/users/displayName";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL; // Read Supabase project URL from environment
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY; // Read optional service role key for elevated permissions
@@ -142,7 +143,7 @@ const fetchJobActionEvents = async (jobId) => {
   const keyEventsPromise = dbClient
     .from("key_tracking_events")
     .select(
-      "key_event_id, action, notes, performed_by, occurred_at, user:performed_by (name, first_name, last_name)"
+      "key_event_id, action, notes, performed_by, occurred_at, user:performed_by (first_name, last_name)"
     )
     .eq("job_id", jobId)
     .order("occurred_at", { ascending: true });
@@ -150,7 +151,7 @@ const fetchJobActionEvents = async (jobId) => {
   const vehicleEventsPromise = dbClient
     .from("vehicle_tracking_events")
     .select(
-      "event_id, status, location, notes, created_by, occurred_at, user:created_by (name, first_name, last_name)"
+      "event_id, status, location, notes, created_by, occurred_at, user:created_by (first_name, last_name)"
     )
     .eq("job_id", jobId)
     .order("occurred_at", { ascending: true });
@@ -158,7 +159,7 @@ const fetchJobActionEvents = async (jobId) => {
   const clockingPromise = dbClient
     .from("job_clocking")
     .select(
-      "id, user_id, clock_in, clock_out, work_type, user:user_id (name, first_name, last_name)"
+      "id, user_id, clock_in, clock_out, work_type, user:user_id (first_name, last_name)"
     )
     .eq("job_id", jobId)
     .order("clock_in", { ascending: true });
@@ -166,7 +167,7 @@ const fetchJobActionEvents = async (jobId) => {
   const partsPromise = dbClient
     .from("parts_requests")
     .select(
-      "request_id, status, description, pre_pick_location, created_at, updated_at, requester:requested_by (name, first_name, last_name)"
+      "request_id, status, description, pre_pick_location, created_at, updated_at, requester:requested_by (first_name, last_name)"
     )
     .eq("job_id", jobId)
     .order("updated_at", { ascending: true });
@@ -181,9 +182,8 @@ const fetchJobActionEvents = async (jobId) => {
   const actionEntries = [];
   const getUserName = (user) => {
     if (!user) return null;
-    if (user.name) return user.name;
-    const parts = [user.first_name, user.last_name].filter(Boolean);
-    return parts.length ? parts.join(" ") : null;
+    const name = getDisplayName(user);
+    return name === "Unknown user" ? null : name;
   };
 
   if (keyRes.error) {

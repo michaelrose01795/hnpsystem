@@ -85,7 +85,7 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
       setLoading(true);
       try {
         const { data, error } = await supabaseClient
-          .from("profiles")
+          .from("users")
           .select("dark_mode")
           .eq("user_id", dbUserId)
           .maybeSingle();
@@ -123,11 +123,9 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
       try {
         const normalized = normalizeMode(nextMode);
         await supabaseClient
-          .from("profiles")
-          .upsert(
-            { user_id: dbUserId, dark_mode: normalized === "system" ? null : normalized === "dark" },
-            { onConflict: "user_id" }
-          );
+          .from("users")
+          .update({ dark_mode: normalized === "system" ? null : normalized === "dark" })
+          .eq("user_id", dbUserId);
       } catch (err) {
         console.error("Failed to persist theme preference", err.message || err);
       }

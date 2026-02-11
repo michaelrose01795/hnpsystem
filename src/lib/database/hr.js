@@ -4,6 +4,7 @@
 import dayjs from "dayjs";
 import { supabase } from "@/lib/supabaseClient";
 import { getDatabaseClient } from "@/lib/database/client"; // Use the service client for privileged HR operations.
+import { getDisplayName } from "@/lib/users/displayName";
 
 const DEFAULT_ATTENDANCE_LIMIT = 50;
 
@@ -140,10 +141,7 @@ export async function deleteTrainingCourse(courseId) { // Remove a training cour
 function formatEmployee(user) {
   if (!user) return { id: null, name: "Unknown" };
   const id = user.user_id ?? user.id ?? null;
-  const first = user.first_name || "";
-  const last = user.last_name || "";
-  const name = `${first} ${last}`.trim() || user.email || "Unknown user";
-  return { id, name };
+  return { id, name: getDisplayName(user) };
 }
 
 // Retrieve attendance logs for a specified date range with employee details
@@ -398,7 +396,9 @@ async function countTableRows(table, column = "*", filters = (query) => query) {
 
 // Get total employees with active/inactive breakdown
 async function getTotalEmployeesSnapshot() {
-  const totalEmployees = await countTableRows("users", "user_id");
+  const totalEmployees = await countTableRows("users", "user_id", (query) =>
+    query.eq("is_active", true)
+  );
 
   const today = dayjs().format("YYYY-MM-DD");
   const onLeave = await countTableRows("hr_absences", "*", (query) =>
@@ -504,7 +504,8 @@ export async function getUpcomingAbsences(daysAhead = 14) {
         user:users!hr_absences_user_id_fkey(
           user_id,
           first_name,
-          last_name
+          last_name,
+          department
         )
       `
     )
@@ -518,27 +519,10 @@ export async function getUpcomingAbsences(daysAhead = 14) {
     throw error;
   }
 
-  const userIds = Array.from(new Set((data || []).map((absence) => absence.user_id).filter(Boolean)));
-  let departmentMap = {};
-  if (userIds.length > 0) {
-    const { data: profiles, error: profileError } = await supabase
-      .from("hr_employee_profiles")
-      .select("user_id, department")
-      .in("user_id", userIds);
-    if (profileError) {
-      console.error("❌ getUpcomingAbsences profile lookup error", profileError);
-    } else {
-      departmentMap = (profiles || []).reduce((acc, row) => {
-        acc[row.user_id] = row.department;
-        return acc;
-      }, {});
-    }
-  }
-
   return (data || []).map((absence) => ({
     id: absence.absence_id,
     employee: formatEmployee(absence.user).name,
-    department: departmentMap[absence.user_id] || "Unknown",
+    department: absence.user?.department || "Unknown",
     type: absence.type,
     startDate: absence.start_date,
     endDate: absence.end_date,
@@ -561,7 +545,8 @@ export async function getActiveWarnings(limit = 5) {
         user:users!hr_disciplinary_cases_user_id_fkey(
           user_id,
           first_name,
-          last_name
+          last_name,
+          department
         )
       `
     )
@@ -574,27 +559,10 @@ export async function getActiveWarnings(limit = 5) {
     throw error;
   }
 
-  const userIds = Array.from(new Set((data || []).map((warning) => warning.user_id).filter(Boolean)));
-  let departmentMap = {};
-  if (userIds.length > 0) {
-    const { data: profiles, error: profileError } = await supabase
-      .from("hr_employee_profiles")
-      .select("user_id, department")
-      .in("user_id", userIds);
-    if (profileError) {
-      console.error("❌ getActiveWarnings profile lookup error", profileError);
-    } else {
-      departmentMap = (profiles || []).reduce((acc, row) => {
-        acc[row.user_id] = row.department;
-        return acc;
-      }, {});
-    }
-  }
-
   return (data || []).map((warning) => ({
     id: warning.case_id,
     employee: formatEmployee(warning.user).name,
-    department: departmentMap[warning.user_id] || "Unknown",
+    department: warning.user?.department || "Unknown",
     level: warning.severity || warning.incident_type || "Warning",
     issuedOn: warning.incident_date,
     notes: warning.notes,
@@ -653,8 +621,9 @@ export async function getTrainingRenewals(limit = 5) {
 // Get performance metrics by department
 export async function getDepartmentPerformance() {
   const { data, error } = await supabase
-    .from("hr_employee_profiles")
+    .from("users")
     .select("department")
+    .eq("is_active", true)
     .not("department", "is", null);
 
   if (error) {
@@ -828,15 +797,19 @@ const formatEmergencyContact = (value) => {
 
 // Get complete employee directory with profile details
 export async function getEmployeeDirectory() {
-  const [profilesResult, activeAbsenceMap] = await Promise.all([
+  const [usersResult, activeAbsenceMap] = await Promise.all([
     supabase
-      .from("hr_employee_profiles")
+      .from("users")
       .select(
         `
-          profile_id,
           user_id,
-          department,
+          first_name,
+          last_name,
+          email,
           job_title,
+          phone,
+          role,
+          department,
           employment_type,
           employment_status,
           start_date,
@@ -852,60 +825,47 @@ export async function getEmployeeDirectory() {
           national_insurance_number,
           keycloak_user_id,
           home_address,
-          created_at,
-          user:users!hr_employee_profiles_user_id_fkey(
-            user_id,
-            first_name,
-            last_name,
-            email,
-            job_title,
-            phone,
-            role,
-            created_at
-          )
+          created_at
         `
       )
+      .eq("is_active", true)
       .order("created_at", { ascending: true }),
     getActiveAbsenceMap(),
   ]);
 
-  const { data, error } = profilesResult;
+  const { data, error } = usersResult;
 
   if (error) {
     console.error("❌ getEmployeeDirectory error", error);
     throw error;
   }
 
-  return (data || []).map((profile) => {
-    const user = profile.user || {};
-    const userId = user.user_id || profile.user_id;
-    const storedEmploymentStatus = profile.employment_status || "Active";
+  return (data || []).map((user) => {
+    const userId = user.user_id;
+    const storedEmploymentStatus = user.employment_status || "Active";
     const status = activeAbsenceMap.get(userId) || storedEmploymentStatus;
-    const name =
-      `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
-      user.email ||
-      "Unknown user";
-    const emergencyDetails = formatEmergencyContact(profile.emergency_contact);
-    const contractedHours = profile.contracted_hours ?? null;
-    const hourlyRate = profile.hourly_rate;
-    const overtimeRate = profile.overtime_rate;
-    const annualSalary = profile.annual_salary;
-    const payrollReference = profile.payroll_reference;
-    const nationalInsuranceNumber = profile.national_insurance_number;
-    const keycloakUserId = profile.keycloak_user_id;
-    const homeAddress = profile.home_address;
+    const name = getDisplayName(user);
+    const emergencyDetails = formatEmergencyContact(user.emergency_contact);
+    const contractedHours = user.contracted_hours ?? null;
+    const hourlyRate = user.hourly_rate;
+    const overtimeRate = user.overtime_rate;
+    const annualSalary = user.annual_salary;
+    const payrollReference = user.payroll_reference;
+    const nationalInsuranceNumber = user.national_insurance_number;
+    const keycloakUserId = user.keycloak_user_id;
+    const homeAddress = user.home_address;
 
     return {
       id: `EMP-${userId}`,
       userId,
       name,
-      jobTitle: profile.job_title || user.job_title || "Employee",
-      department: profile.department || "Unassigned",
+      jobTitle: user.job_title || "Employee",
+      department: user.department || "Unassigned",
       role: user.role || "Employee",
-      employmentType: profile.employment_type || "Full-time",
+      employmentType: user.employment_type || "Full-time",
       status,
-      startDate: profile.start_date,
-      probationEnd: deriveProbationEnd(profile.start_date),
+      startDate: user.start_date,
+      probationEnd: deriveProbationEnd(user.start_date),
       contractedHours: contractedHours !== null ? Number(contractedHours) : 40,
       hourlyRate: hourlyRate !== null && hourlyRate !== undefined ? Number(hourlyRate) : 0,
       overtimeRate: overtimeRate !== null && overtimeRate !== undefined ? Number(overtimeRate) : null,
@@ -917,7 +877,7 @@ export async function getEmployeeDirectory() {
       phone: user.phone || "N/A",
       emergencyContact: emergencyDetails.contact,
       address: homeAddress || emergencyDetails.address,
-      documents: normalizeDocuments(profile.documents),
+      documents: normalizeDocuments(user.documents),
     };
   });
 }
@@ -1097,29 +1057,19 @@ export async function getLeaveRequests({ limit = 50 } = {}) {
 
 // Aggregate leave balances by employee using approved hr_absences rows
 export async function getLeaveBalances() {
-  const [{ data: profiles, error: profileError }, { data: absences, error: absencesError }] = await Promise.all([
+  const [{ data: users, error: usersError }, { data: absences, error: absencesError }] = await Promise.all([
     supabase
-      .from("hr_employee_profiles")
-      .select(
-        `
-          user_id,
-          department,
-          employment_type,
-          user:users!hr_employee_profiles_user_id_fkey(
-            first_name,
-            last_name,
-            email
-          )
-        `
-      ),
+      .from("users")
+      .select("user_id, first_name, last_name, email, department, employment_type")
+      .eq("is_active", true),
     supabase
       .from("hr_absences")
       .select("user_id, start_date, end_date, approval_status"),
   ]);
 
-  if (profileError) {
-    console.error("❌ getLeaveBalances profiles error", profileError);
-    throw profileError;
+  if (usersError) {
+    console.error("❌ getLeaveBalances users error", usersError);
+    throw usersError;
   }
 
   if (absencesError) {
@@ -1136,16 +1086,16 @@ export async function getLeaveBalances() {
     approvedTotals.set(absence.user_id, current + days);
   });
 
-  return (profiles || []).map((profile) => {
-    const userId = profile.user_id;
-    const entitlement = estimateAnnualEntitlement(profile.employment_type);
+  return (users || []).map((user) => {
+    const userId = user.user_id;
+    const entitlement = estimateAnnualEntitlement(user.employment_type);
     const taken = approvedTotals.get(userId) || 0;
     const remaining = Math.max(entitlement - taken, 0);
 
     return {
       employeeId: `EMP-${userId}`,
-      employee: formatEmployee(profile.user).name,
-      department: profile.department || "Unassigned",
+      employee: getDisplayName(user),
+      department: user.department || "Unassigned",
       entitlement,
       taken,
       remaining,

@@ -160,18 +160,18 @@ export default function AdminUserManagement() {
     if (!userId) return;
     const label = name ? `${name}` : "this user";
     const confirmed = await confirm(
-      `Are you sure you want to remove ${label} from the system? All linked records will be deleted.`
+      `Are you sure you want to deactivate ${label}? They will be marked as inactive and can be restored later.`
     );
     if (!confirmed) return;
     try {
       const response = await fetch(`/api/admin/users?userId=${userId}`, { method: "DELETE" });
       const payload = await response.json();
       if (!response.ok || !payload?.success) {
-        throw new Error(payload?.message || "Failed to delete user");
+        throw new Error(payload?.message || "Failed to deactivate user");
       }
       setDbUsers((prev) => prev.filter((user) => user.id !== userId));
     } catch (err) {
-      alert(err.message || "Unable to delete user");
+      alert(err.message || "Unable to deactivate user");
     }
   };
 

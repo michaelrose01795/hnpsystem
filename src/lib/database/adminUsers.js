@@ -80,14 +80,17 @@ export async function createAdminUser(payload) {
 
 export async function deleteAdminUser(userId, actorId) {
   if (!isServiceClient) {
-    throw new Error("Server missing SUPABASE_SERVICE_ROLE_KEY; cannot delete users.");
+    throw new Error("Server missing SUPABASE_SERVICE_ROLE_KEY; cannot deactivate users.");
   }
 
-  const { error } = await adminClient.from(USERS_TABLE).delete().eq("user_id", userId);
+  const { error } = await adminClient
+    .from(USERS_TABLE)
+    .update({ is_active: false, updated_at: new Date().toISOString() })
+    .eq("user_id", userId);
   if (error) throw error;
 
   await logActivity({
-    action: "delete",
+    action: "deactivate",
     tableName: USERS_TABLE,
     recordId: userId,
     userId: actorId || null,

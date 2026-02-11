@@ -3,7 +3,7 @@ TO DO:
 Continue flow with job number 55
 
 
-
+go through how users work and missmatch users, and deleting users randomly. make sure everything is correct, set up a test for this to see if it works on the front end so i can see it visually 
 
 
 
@@ -76,7 +76,4 @@ npm i -g vercel@latest
 
 
 
-ADD vscode-pdf extention to IPAD 
-
-
-waketime extetnion 
+wakatime extetnion dads pc

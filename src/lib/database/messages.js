@@ -3,6 +3,7 @@
 // file location: src/lib/database/messages.js
 import { createClient } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
+import { getDisplayName } from "@/lib/users/displayName";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -17,10 +18,7 @@ const assertMessagingWriteAccess = () => {
   }
 };
 
-const buildFullName = (user) => {
-  const parts = [user?.first_name, user?.last_name].filter(Boolean);
-  return parts.join(" ").trim() || user?.email || "Unknown user";
-};
+const buildFullName = (user) => getDisplayName(user);
 
 const formatUserProfile = (user) => {
   if (!user) return null;

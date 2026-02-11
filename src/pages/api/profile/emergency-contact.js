@@ -71,7 +71,7 @@ export default async function handler(req, res) {
     }
 
     const { error: updateError } = await supabase
-      .from("hr_employee_profiles")
+      .from("users")
       .update(updatePayload)
       .eq("user_id", userId);
 

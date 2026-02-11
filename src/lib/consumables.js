@@ -1,6 +1,7 @@
 // file location: src/lib/consumables.js
 // Central Supabase helpers for consumable stock-check workflows
 import { supabase } from "@/lib/supabaseClient";
+import { getDisplayName } from "@/lib/users/displayName";
 
 const formatConsumable = (row) => ({
   id: row.id,
@@ -19,7 +20,7 @@ const formatStockCheckRow = (row) => ({
   createdAt: row.created_at,
   consumableName: row.consumables?.name || row.consumable_name || null,
   consumableLocation: row.consumables?.location || null,
-  technicianName: row.technician?.name || row.technician_name || null,
+  technicianName: row.technician ? getDisplayName(row.technician) : (row.technician_name || null),
 });
 
 const mapStockCheckStatusToRequest = (status) => {
@@ -174,7 +175,7 @@ export async function submitStockCheckRequest({ consumableIds = [], technicianId
       status,
       created_at,
       consumables ( id, name, location ),
-      technician:users!consumable_stock_checks_technician_id_fkey ( user_id, name )
+      technician:users!consumable_stock_checks_technician_id_fkey ( user_id, first_name, last_name )
     `
     );
 
@@ -198,7 +199,7 @@ export async function listConsumableStockChecks() {
       status,
       created_at,
       consumables ( id, name, location ),
-      technician:users!consumable_stock_checks_technician_id_fkey ( user_id, name )
+      technician:users!consumable_stock_checks_technician_id_fkey ( user_id, first_name, last_name )
     `
     )
     .order("created_at", { ascending: false });

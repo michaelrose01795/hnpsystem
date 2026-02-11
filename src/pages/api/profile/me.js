@@ -6,19 +6,10 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import { supabase } from "@/lib/supabaseClient";
 import { getDatabaseClient } from "@/lib/database/client";
+import { getDisplayName } from "@/lib/users/displayName";
 import dayjs from "dayjs";
 
 const adminDb = getDatabaseClient();
-
-// Format employee data consistently
-function formatEmployee(user) {
-  if (!user) return { id: null, name: "Unknown" };
-  const id = user.user_id ?? user.id ?? null;
-  const first = user.first_name || "";
-  const last = user.last_name || "";
-  const name = `${first} ${last}`.trim() || user.email || `User ${id ?? ""}`.trim();
-  return { id, name };
-}
 
 // Get user's attendance logs
 async function getUserAttendanceLogs(userId, limit = 50) {
@@ -226,14 +217,18 @@ async function getUserLeaveBalance(userId, employmentType) {
   };
 }
 
-// Get user's profile from HR employee profiles
+// Get user's profile directly from users table
 async function getUserProfile(userId) {
   const { data, error } = await supabase
-    .from("hr_employee_profiles")
+    .from("users")
     .select(
       `
-        profile_id,
         user_id,
+        first_name,
+        last_name,
+        email,
+        phone,
+        role,
         department,
         job_title,
         employment_type,
@@ -242,15 +237,7 @@ async function getUserProfile(userId) {
         emergency_contact,
         home_address,
         hourly_rate,
-        overtime_rate,
-        user:user_id(
-          user_id,
-          first_name,
-          last_name,
-          email,
-          phone,
-          role
-        )
+        overtime_rate
       `
     )
     .eq("user_id", userId)
@@ -263,23 +250,17 @@ async function getUserProfile(userId) {
 
   if (!data) return null;
 
-  const user = data.user || {};
-  const name =
-    `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
-    user.email ||
-    "Unknown user";
+  const name = getDisplayName(data);
 
   // Format emergency contact — handles both structured JSON and legacy { raw: "..." } format
   const formatEmergencyContact = (value) => {
     if (!value) return "Not provided";
     if (typeof value === "string") return value;
     if (typeof value === "object") {
-      // New structured format: { name, phone, relationship }
       if (value.name) {
         const parts = [value.name, value.phone, value.relationship].filter(Boolean);
         return parts.join(", ");
       }
-      // Legacy format: { raw: "Name, Phone, Relationship" }
       if (value.raw) return value.raw;
     }
     return "Not provided";
@@ -291,14 +272,14 @@ async function getUserProfile(userId) {
     name,
     jobTitle: data.job_title || "Employee",
     department: data.department || "Unassigned",
-    role: user.role || "Employee",
+    role: data.role || "Employee",
     employmentType: data.employment_type || "Full-time",
     startDate: data.start_date,
     hourlyRate: Number(data.hourly_rate ?? 0),
     overtimeRate: Number(data.overtime_rate ?? 0),
-    keycloakId: user.email ? `kc-${user.email.split("@")[0]}` : `kc-${userId}`,
-    email: user.email,
-    phone: user.phone || "N/A",
+    keycloakId: data.email ? `kc-${data.email.split("@")[0]}` : `kc-${userId}`,
+    email: data.email,
+    phone: data.phone || "N/A",
     emergencyContact: formatEmergencyContact(data.emergency_contact),
     address: data.home_address || "Not provided",
   };

@@ -3,6 +3,7 @@
 // file location: src/lib/users/devUsers.js
 
 import { supabase } from "@/lib/supabaseClient";
+import { getDisplayName } from "@/lib/users/displayName";
 
 // Create a slug from display name for deterministic fake emails
 const slugify = (txt) =>
@@ -25,11 +26,7 @@ const buildRosterMap = (rows = []) =>
   rows.reduce((acc, row) => {
     const role = row.role || "Technician";
     if (!acc[role]) acc[role] = [];
-    const display =
-      `${row.first_name || ""} ${row.last_name || ""}`.trim() ||
-      row.email ||
-      "Unknown user";
-    acc[role].push(display);
+    acc[role].push(getDisplayName(row));
     return acc;
   }, {});
 

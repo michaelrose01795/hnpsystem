@@ -6,16 +6,7 @@ const mapUsersToNameList = (grouped = {}) =>
   Object.fromEntries(
     Object.entries(grouped).map(([role, users]) => [
       role,
-      users.map((user) => {
-        if (user.name) {
-          return user.name;
-        }
-        const parts = [user.firstName, user.lastName].filter(Boolean);
-        const joined = parts.join(" ").trim();
-        if (joined) return joined;
-        if (user.email) return user.email;
-        return "Unknown user";
-      }),
+      users.map((user) => user.name || "Unknown user"),
     ])
   );
 

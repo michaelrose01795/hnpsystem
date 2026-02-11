@@ -1,5 +1,6 @@
 // file location: src/lib/status/jobStatusSnapshot.js
 import { getDatabaseClient } from "@/lib/database/client";
+import { getDisplayName } from "@/lib/users/displayName";
 import {
   getMainStatusMetadata,
   getSubStatusMetadata,
@@ -121,9 +122,8 @@ const buildClockingSummary = (clockingRows = []) => {
 
 const getUserName = (user) => {
   if (!user) return null;
-  if (user.name) return user.name;
-  const parts = [user.first_name, user.last_name].filter(Boolean);
-  return parts.length ? parts.join(" ") : null;
+  const name = getDisplayName(user);
+  return name === "Unknown user" ? null : name;
 };
 
 const resolveActorName = (value) => {
@@ -313,7 +313,7 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
     db
       .from("key_tracking_events")
       .select(
-        "key_event_id, action, notes, performed_by, occurred_at, user:performed_by (name, first_name, last_name)"
+        "key_event_id, action, notes, performed_by, occurred_at, user:performed_by (first_name, last_name)"
       )
       .eq("job_id", jobIdValue)
       .order("occurred_at", { ascending: false })
@@ -321,7 +321,7 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
     db
       .from("vehicle_tracking_events")
       .select(
-        "event_id, status, location, notes, created_by, occurred_at, user:created_by (name, first_name, last_name)"
+        "event_id, status, location, notes, created_by, occurred_at, user:created_by (first_name, last_name)"
       )
       .eq("job_id", jobIdValue)
       .order("occurred_at", { ascending: false })
@@ -335,7 +335,7 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
       .maybeSingle(),
     db
       .from("job_clocking")
-      .select("id, user_id, clock_in, clock_out, work_type, user:user_id (name, first_name, last_name)")
+      .select("id, user_id, clock_in, clock_out, work_type, user:user_id (first_name, last_name)")
       .eq("job_id", jobIdValue)
       .order("clock_in", { ascending: true }),
   ]);

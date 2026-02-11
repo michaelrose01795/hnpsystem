@@ -209,8 +209,8 @@ export default function CreateJobCardPage() {
       }
 
       const { data, error } = await supabase
-        .from("user_signatures")
-        .select("id, user_id, file_url, storage_path")
+        .from("users")
+        .select("user_id, signature_file_url, signature_storage_path")
         .eq("user_id", dbUserId)
         .maybeSingle();
 
@@ -837,18 +837,15 @@ export default function CreateJobCardPage() {
 
       const publicUrl = supabase.storage.from("user-signatures").getPublicUrl(objectPath).data.publicUrl;
 
-      const payload = {
-        user_id: dbUserId,
-        storage_path: objectPath,
-        file_url: publicUrl,
-        updated_at: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-      };
-
       const { data, error } = await supabase
-        .from("user_signatures")
-        .upsert(payload, { onConflict: "user_id" })
-        .select()
+        .from("users")
+        .update({
+          signature_storage_path: objectPath,
+          signature_file_url: publicUrl,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", dbUserId)
+        .select("user_id, signature_file_url, signature_storage_path")
         .single();
 
       if (error) {
@@ -885,7 +882,7 @@ export default function CreateJobCardPage() {
 
       const publicUrl = supabase.storage.from("job-documents").getPublicUrl(storagePath).data.publicUrl;
 
-      const signatureUrl = userSignature?.file_url || null;
+      const signatureUrl = userSignature?.signature_file_url || null;
 
       const { data: sheetRecord, error: sheetError } = await supabase
         .from("job_check_sheets")

@@ -1,163 +1,211 @@
 // ✅ Connected to Supabase (server-side)
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/database/users.js
-import { getDatabaseClient } from "@/lib/database/client"; // Import the shared Supabase client accessor so every query reuses the same connection.
+import { getDatabaseClient } from "@/lib/database/client";
+import { getDisplayName } from "@/lib/users/displayName";
 
-const db = getDatabaseClient(); // Instantiate a reusable client reference for this module.
-const USERS_TABLE = "users"; // Declare the exact table name to avoid hard-coded strings throughout the file.
-const USER_COLUMNS = [ // Enumerate every column required by the schema for consistent selects.
-  "user_id", // Primary key for referencing users elsewhere.
-  "first_name", // Required first name column per schema.
-  "last_name", // Required last name column per schema.
-  "email", // Unique user email for logins and notifications.
-  "password_hash", // Securely stored password hash for authentication.
-  "role", // Application role such as Admin, Tech, etc.
-  "job_title", // Display job title used for dev login categories.
-  "phone", // Optional contact number for staff.
-  "created_at", // Timestamp for auditing when the user was created.
-  "updated_at", // Timestamp for auditing when the user was last modified.
-].join(", "); // Combine the column list into a comma-separated string for Supabase select calls.
+const db = getDatabaseClient();
+const USERS_TABLE = "users";
+const USER_COLUMNS = [
+  "user_id",
+  "first_name",
+  "last_name",
+  "email",
+  "password_hash",
+  "role",
+  "job_title",
+  "phone",
+  "created_at",
+  "updated_at",
+  "dark_mode",
+  "is_active",
+  "department",
+  "employment_type",
+  "start_date",
+  "manager_id",
+  "photo_url",
+  "emergency_contact",
+  "documents",
+  "employment_status",
+  "contracted_hours",
+  "hourly_rate",
+  "overtime_rate",
+  "annual_salary",
+  "payroll_reference",
+  "national_insurance_number",
+  "keycloak_user_id",
+  "home_address",
+  "signature_storage_path",
+  "signature_file_url",
+].join(", ");
 
-const mapUserRow = (row = {}) => ({ // Normalize returned rows into a predictable object shape.
-  id: row.user_id, // Expose the numeric primary key as a friendly id field.
-  firstName: row.first_name, // Surface the first name using camelCase for JS consumers.
-  lastName: row.last_name, // Surface the last name using camelCase for JS consumers.
-  name: `${row.first_name || ""} ${row.last_name || ""}`.trim(), // Combine first and last name into full name for display.
-  email: row.email, // Pass through the stored email.
-  role: row.role, // Pass through the stored application role.
-  jobTitle: row.job_title, // Surface the job title for UI grouping.
-  phone: row.phone, // Pass through optional phone value.
-  passwordHash: row.password_hash, // Provide access to the hashed password when needed server-side.
-  createdAt: row.created_at, // Include creation timestamp for audit displays.
-  updatedAt: row.updated_at, // Include update timestamp for audit displays.
-}); // Close the mapper helper so every exported function can reuse it.
+const mapUserRow = (row = {}) => ({
+  id: row.user_id,
+  firstName: row.first_name,
+  lastName: row.last_name,
+  name: getDisplayName(row),
+  email: row.email,
+  role: row.role,
+  jobTitle: row.job_title,
+  phone: row.phone,
+  passwordHash: row.password_hash,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+  darkMode: row.dark_mode,
+  isActive: row.is_active,
+  department: row.department,
+  employmentType: row.employment_type,
+  startDate: row.start_date,
+  managerId: row.manager_id,
+  photoUrl: row.photo_url,
+  emergencyContact: row.emergency_contact,
+  documents: row.documents,
+  employmentStatus: row.employment_status,
+  contractedHours: row.contracted_hours,
+  hourlyRate: row.hourly_rate,
+  overtimeRate: row.overtime_rate,
+  annualSalary: row.annual_salary,
+  payrollReference: row.payroll_reference,
+  nationalInsuranceNumber: row.national_insurance_number,
+  keycloakUserId: row.keycloak_user_id,
+  homeAddress: row.home_address,
+  signatureStoragePath: row.signature_storage_path,
+  signatureFileUrl: row.signature_file_url,
+});
 
-const ensureUserPayload = (payload = {}) => { // Validate that required fields exist before insert/update operations.
-  const requiredFields = ["first_name", "last_name", "email", "password_hash", "role"]; // Define schema-mandated fields that cannot be null.
-  const missing = requiredFields.filter((field) => !payload[field]); // Collect any required fields that lack truthy values.
-  if (missing.length) { // If validation found gaps, throw immediately.
-    throw new Error(`Missing required user fields: ${missing.join(", ")}`); // Provide a clear error listing the missing keys.
-  } // Close validation guard.
-}; // Finish helper definition.
+const ensureUserPayload = (payload = {}) => {
+  const requiredFields = ["first_name", "last_name", "email", "password_hash", "role"];
+  const missing = requiredFields.filter((field) => !payload[field]);
+  if (missing.length) {
+    throw new Error(`Missing required user fields: ${missing.join(", ")}`);
+  }
+};
 
-const DEFAULT_TECH_ROLES = ["Techs", "Technician", "Technician Lead", "Lead Technician"]; // Default role names that qualify as technicians.
-const DEFAULT_TEST_ROLES = ["MOT Tester", "Tester"]; // Default role names that qualify as MOT testers.
+const DEFAULT_TECH_ROLES = ["Techs", "Technician", "Technician Lead", "Lead Technician"];
+const DEFAULT_TEST_ROLES = ["MOT Tester", "Tester"];
 
-const fetchUsersByRoles = async (roles) => { // Shared helper to fetch users restricted to a set of roles.
-  if (!roles || roles.length === 0) { // Guard against empty role lists.
-    return []; // No roles means no users to return.
-  } // Close guard.
+const fetchUsersByRoles = async (roles) => {
+  if (!roles || roles.length === 0) {
+    return [];
+  }
   const escapedList = roles
     .map((roleName) => `"${roleName.replace(/"/g, '\\"')}"`)
     .join(",");
   const roleFilter = `role.in.(${escapedList})`;
-  const { data, error } = await db // Execute the select query.
-    .from(USERS_TABLE) // Target the users table.
-    .select(USER_COLUMNS) // Fetch canonical columns.
+  const { data, error } = await db
+    .from(USERS_TABLE)
+    .select(USER_COLUMNS)
+    .eq("is_active", true)
     .or(roleFilter)
-    .order("first_name", { ascending: true }); // Order alphabetically by first name.
-  if (error) { // Handle query failures.
-    throw new Error(`Failed to fetch users by role: ${error.message}`); // Provide descriptive diagnostics.
-  } // Close guard.
-  return (data || []).map(mapUserRow); // Map rows into camelCase format.
-}; // End helper.
+    .order("first_name", { ascending: true });
+  if (error) {
+    throw new Error(`Failed to fetch users by role: ${error.message}`);
+  }
+  return (data || []).map(mapUserRow);
+};
 
-export const getTechnicianUsers = () => fetchUsersByRoles(DEFAULT_TECH_ROLES); // Convenience export to fetch technician roles.
+export const getTechnicianUsers = () => fetchUsersByRoles(DEFAULT_TECH_ROLES);
 
-export const getMotTesterUsers = () => fetchUsersByRoles(DEFAULT_TEST_ROLES); // Convenience export to fetch MOT tester roles.
+export const getMotTesterUsers = () => fetchUsersByRoles(DEFAULT_TEST_ROLES);
 
-export const getAllUsers = async () => { // Retrieve every user row ordered by primary key.
-  const { data, error } = await db // Execute the query using the shared client.
-    .from(USERS_TABLE) // Target the users table defined above.
-    .select(USER_COLUMNS) // Pull the canonical column set so consumers get consistent shapes.
-    .order("user_id", { ascending: true }); // Order results to keep output deterministic.
-  if (error) { // Check for database-level errors.
-    throw new Error(`Failed to fetch users: ${error.message}`); // Surface descriptive error upstream for handling.
-  } // Close error guard.
-  return (data || []).map(mapUserRow); // Map each raw row into the normalized JS-friendly shape.
-}; // End getAllUsers.
+export const getAllUsers = async ({ includeInactive = false } = {}) => {
+  let query = db
+    .from(USERS_TABLE)
+    .select(USER_COLUMNS)
+    .order("user_id", { ascending: true });
+  if (!includeInactive) {
+    query = query.eq("is_active", true);
+  }
+  const { data, error } = await query;
+  if (error) {
+    throw new Error(`Failed to fetch users: ${error.message}`);
+  }
+  return (data || []).map(mapUserRow);
+};
 
-export const getUsersGroupedByRole = async () => { // Fetch all users and bucket them by role name.
-  const { data, error } = await db // Execute the select statement.
-    .from(USERS_TABLE) // Target the users table.
-    .select(USER_COLUMNS) // Fetch canonical columns.
-    .order("role", { ascending: true }) // Order by role for consistent grouping.
-    .order("first_name", { ascending: true }) // Order within each role alphabetically.
-    .order("last_name", { ascending: true }) // Add secondary name sort for users with same first name.
-    .order("user_id", { ascending: true }); // Add stable sort by ID to prevent role switching for users with identical names.
-  if (error) { // Handle query issues.
-    throw new Error(`Failed to fetch users grouped by role: ${error.message}`); // Provide descriptive diagnostics.
-  } // Close guard.
-  return (data || []).reduce((acc, row) => { // Build a dictionary keyed by role.
-    const shaped = mapUserRow(row); // Normalize row once.
-  const key = shaped.role || "Unassigned"; // Group by role only (permissions), not job title.
-    if (!acc[key]) { // Initialize bucket if needed.
-      acc[key] = []; // Create new array for this role.
-    } // Close guard.
-    acc[key].push(shaped); // Push the shaped user into the role bucket.
-    return acc; // Continue accumulating.
-  }, {}); // Start from an empty object accumulator.
-}; // End getUsersGroupedByRole.
+export const getUsersGroupedByRole = async () => {
+  const { data, error } = await db
+    .from(USERS_TABLE)
+    .select(USER_COLUMNS)
+    .eq("is_active", true)
+    .order("role", { ascending: true })
+    .order("first_name", { ascending: true })
+    .order("last_name", { ascending: true })
+    .order("user_id", { ascending: true });
+  if (error) {
+    throw new Error(`Failed to fetch users grouped by role: ${error.message}`);
+  }
+  return (data || []).reduce((acc, row) => {
+    const shaped = mapUserRow(row);
+    const key = shaped.role || "Unassigned";
+    if (!acc[key]) {
+      acc[key] = [];
+    }
+    acc[key].push(shaped);
+    return acc;
+  }, {});
+};
 
-export const getUserById = async (userId) => { // Retrieve a single user by numeric identifier.
-  if (typeof userId !== "number") { // Validate the input because the column is integer-based.
-    throw new Error("getUserById requires a numeric userId."); // Fail early with helpful context.
-  } // Close validation guard.
-  const { data, error } = await db // Run a filtered select query.
-    .from(USERS_TABLE) // Target the users table.
-    .select(USER_COLUMNS) // Fetch the canonical column list.
-    .eq("user_id", userId) // Apply the equality filter to primary key.
-    .maybeSingle(); // Request at most one row to reduce payload size.
-  if (error) { // Handle Supabase errors.
-    throw new Error(`Failed to fetch user ${userId}: ${error.message}`); // Provide context-rich error text.
-  } // Close error guard.
-  return data ? mapUserRow(data) : null; // Return a mapped user or null when not found.
-}; // End getUserById.
+export const getUserById = async (userId, { includeInactive = false } = {}) => {
+  if (typeof userId !== "number") {
+    throw new Error("getUserById requires a numeric userId.");
+  }
+  let query = db
+    .from(USERS_TABLE)
+    .select(USER_COLUMNS)
+    .eq("user_id", userId);
+  if (!includeInactive) {
+    query = query.eq("is_active", true);
+  }
+  const { data, error } = await query.maybeSingle();
+  if (error) {
+    throw new Error(`Failed to fetch user ${userId}: ${error.message}`);
+  }
+  return data ? mapUserRow(data) : null;
+};
 
-export const createUser = async (payload) => { // Insert a brand-new user using validated payload.
-  ensureUserPayload(payload); // Verify required fields exist before hitting the database.
-  const { data, error } = await db // Execute an insert with returning clause.
-    .from(USERS_TABLE) // Target the users table.
-    .insert([payload]) // Insert a single row using the provided payload.
-    .select(USER_COLUMNS) // Request the canonical columns in the returning row.
-    .single(); // Expect exactly one row back from the insert.
-  if (error) { // Inspect for insert failures.
-    throw new Error(`Failed to create user: ${error.message}`); // Raise descriptive error for upstream handling.
-  } // Close error guard.
-  return mapUserRow(data); // Return the inserted row using the normalized mapper.
-}; // End createUser.
+export const createUser = async (payload) => {
+  ensureUserPayload(payload);
+  const { data, error } = await db
+    .from(USERS_TABLE)
+    .insert([payload])
+    .select(USER_COLUMNS)
+    .single();
+  if (error) {
+    throw new Error(`Failed to create user: ${error.message}`);
+  }
+  return mapUserRow(data);
+};
 
-export const updateUser = async (userId, updates = {}) => { // Update an existing user by primary key.
-  if (typeof userId !== "number") { // Ensure the identifier is valid.
-    throw new Error("updateUser requires a numeric userId."); // Provide guidance for callers.
-  } // Close validation guard.
-  if (Object.keys(updates).length === 0) { // Disallow empty update payloads to reduce accidental writes.
-    throw new Error("updateUser requires at least one field to update."); // Inform the caller about the contract.
-  } // Close empty payload guard.
-  const { data, error } = await db // Execute the update statement.
-    .from(USERS_TABLE) // Target the users table.
-    .update(updates) // Apply the provided updates directly to the row.
-    .eq("user_id", userId) // Scope the update to the requested record.
-    .select(USER_COLUMNS) // Return the canonical column set after the update.
-    .single(); // Expect exactly one updated row back.
-  if (error) { // Check whether the update failed.
-    throw new Error(`Failed to update user ${userId}: ${error.message}`); // Provide explicit error text for observability.
-  } // Close error guard.
-  return mapUserRow(data); // Return the updated row in normalized form.
-}; // End updateUser.
+export const updateUser = async (userId, updates = {}) => {
+  if (typeof userId !== "number") {
+    throw new Error("updateUser requires a numeric userId.");
+  }
+  if (Object.keys(updates).length === 0) {
+    throw new Error("updateUser requires at least one field to update.");
+  }
+  const { data, error } = await db
+    .from(USERS_TABLE)
+    .update(updates)
+    .eq("user_id", userId)
+    .select(USER_COLUMNS)
+    .single();
+  if (error) {
+    throw new Error(`Failed to update user ${userId}: ${error.message}`);
+  }
+  return mapUserRow(data);
+};
 
-export const deleteUser = async (userId) => { // Permanently remove a user row by primary key.
-  if (typeof userId !== "number") { // Validate the identifier before mutating data.
-    throw new Error("deleteUser requires a numeric userId."); // Warn the caller about incorrect usage.
-  } // Close validation guard.
-  const { error } = await db // Execute the delete query.
-    .from(USERS_TABLE) // Target the users table for deletion.
-    .delete() // Issue the delete command.
-    .eq("user_id", userId); // Restrict the delete to the specified primary key.
-  if (error) { // Capture any failure from Supabase.
-    throw new Error(`Failed to delete user ${userId}: ${error.message}`); // Provide descriptive diagnostic text.
-  } // Close error guard.
-  return { success: true, deletedId: userId }; // Return a simple acknowledgement payload.
-}; // End deleteUser.
-
-// This users data-access layer exposes validated CRUD helpers backed by the Supabase users table.
+export const deleteUser = async (userId) => {
+  if (typeof userId !== "number") {
+    throw new Error("deleteUser requires a numeric userId.");
+  }
+  const { error } = await db
+    .from(USERS_TABLE)
+    .update({ is_active: false, updated_at: new Date().toISOString() })
+    .eq("user_id", userId);
+  if (error) {
+    throw new Error(`Failed to deactivate user ${userId}: ${error.message}`);
+  }
+  return { success: true, deactivatedId: userId };
+};

@@ -103,10 +103,6 @@ async function handleCreateOrUpdate(req, res) {
       phone: payload.phone || null,
       role,
       jobTitle: payload.jobTitle,
-    });
-
-    const profileRecord = await upsertEmployeeProfile({
-      userId: userRecord.user_id,
       payload,
     });
 
@@ -145,7 +141,7 @@ async function handleCreateOrUpdate(req, res) {
   }
 }
 
-async function upsertUser({ email, firstName, lastName, phone, role, jobTitle }) {
+async function upsertUser({ email, firstName, lastName, phone, role, jobTitle, payload }) {
   const { data: existingUser, error: lookupError } = await supabaseService
     .from("users")
     .select("user_id, email")
@@ -154,12 +150,46 @@ async function upsertUser({ email, firstName, lastName, phone, role, jobTitle })
 
   if (lookupError) throw lookupError;
 
+  // Build the combined user + employee fields payload
+  const buildEmployeeFields = () => {
+    const ec = payload.emergencyContact;
+    let emergencyContact = null;
+    if (ec) {
+      if (typeof ec === "string") emergencyContact = { raw: ec };
+      else if (typeof ec === "object" && ec.raw) emergencyContact = ec;
+      else if (typeof ec === "object" && ec.name) {
+        const parts = [ec.name, ec.phone, ec.relationship].filter(Boolean);
+        emergencyContact = parts.length > 0 ? { raw: parts.join(", ") } : null;
+      } else {
+        emergencyContact = { raw: String(ec) };
+      }
+    }
+
+    return {
+      department: payload.department || null,
+      employment_type: payload.employmentType || null,
+      employment_status: payload.status || null,
+      start_date: toIsoDate(payload.startDate),
+      manager_id: payload.managerId || null,
+      emergency_contact: emergencyContact,
+      contracted_hours: toNumberOrNull(payload.contractedHours),
+      hourly_rate: toNumberOrNull(payload.hourlyRate),
+      overtime_rate: toNumberOrNull(payload.overtimeRate),
+      annual_salary: toNumberOrNull(payload.annualSalary),
+      payroll_reference: payload.payrollNumber || null,
+      national_insurance_number: payload.nationalInsurance || null,
+      keycloak_user_id: payload.keycloakId || null,
+      home_address: payload.address || null,
+    };
+  };
+
   const userPayload = {
     first_name: firstName,
     last_name: lastName,
     phone: phone || null,
     job_title: jobTitle || null,
     role,
+    ...buildEmployeeFields(),
   };
 
   if (existingUser) {
@@ -183,49 +213,6 @@ async function upsertUser({ email, firstName, lastName, phone, role, jobTitle })
     .from("users")
     .insert(insertPayload)
     .select("user_id, first_name, last_name, email, role, job_title")
-    .single();
-
-  if (error) throw error;
-  return data;
-}
-
-async function upsertEmployeeProfile({ userId, payload }) {
-  const profilePayload = {
-    user_id: userId,
-    department: payload.department || null,
-    job_title: payload.jobTitle || null,
-    employment_type: payload.employmentType || null,
-    employment_status: payload.status || null,
-    start_date: toIsoDate(payload.startDate),
-    manager_id: payload.managerId || null,
-    emergency_contact: (() => {
-      // Store as { raw: "Name, Phone, Relationship" } for consistency
-      const ec = payload.emergencyContact;
-      if (!ec) return null;
-      if (typeof ec === "string") return { raw: ec };
-      if (typeof ec === "object" && ec.raw) return ec;
-      // Handle structured { name, phone, relationship } from profile page
-      if (typeof ec === "object" && ec.name) {
-        const parts = [ec.name, ec.phone, ec.relationship].filter(Boolean);
-        return parts.length > 0 ? { raw: parts.join(", ") } : null;
-      }
-      return { raw: String(ec) };
-    })(),
-    documents: null,
-    contracted_hours: toNumberOrNull(payload.contractedHours),
-    hourly_rate: toNumberOrNull(payload.hourlyRate),
-    overtime_rate: toNumberOrNull(payload.overtimeRate),
-    annual_salary: toNumberOrNull(payload.annualSalary),
-    payroll_reference: payload.payrollNumber || null,
-    national_insurance_number: payload.nationalInsurance || null,
-    keycloak_user_id: payload.keycloakId || null,
-    home_address: payload.address || null,
-  };
-
-  const { data, error } = await supabaseService
-    .from("hr_employee_profiles")
-    .upsert(profilePayload, { onConflict: "user_id" })
-    .select("*")
     .single();
 
   if (error) throw error;

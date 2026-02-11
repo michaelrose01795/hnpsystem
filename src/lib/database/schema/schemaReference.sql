@@ -272,32 +272,6 @@ CREATE TABLE public.hr_disciplinary_cases (
   CONSTRAINT hr_disciplinary_cases_pkey PRIMARY KEY (case_id),
   CONSTRAINT hr_disciplinary_cases_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
 );
-CREATE TABLE public.hr_employee_profiles (
-  profile_id bigint NOT NULL DEFAULT nextval('hr_employee_profiles_profile_id_seq'::regclass),
-  user_id integer NOT NULL UNIQUE,
-  department text,
-  job_title text,
-  employment_type text,
-  start_date date,
-  manager_id integer,
-  photo_url text,
-  emergency_contact jsonb,
-  documents jsonb,
-  created_at timestamp with time zone NOT NULL DEFAULT now(),
-  updated_at timestamp with time zone NOT NULL DEFAULT now(),
-  employment_status text,
-  contracted_hours numeric,
-  hourly_rate numeric,
-  overtime_rate numeric,
-  annual_salary numeric,
-  payroll_reference text,
-  national_insurance_number text,
-  keycloak_user_id text,
-  home_address text,
-  CONSTRAINT hr_employee_profiles_pkey PRIMARY KEY (profile_id),
-  CONSTRAINT hr_employee_profiles_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id),
-  CONSTRAINT hr_employee_profiles_manager_id_fkey FOREIGN KEY (manager_id) REFERENCES public.users(user_id)
-);
 CREATE TABLE public.hr_payroll_adjustments (
   adjustment_id bigint NOT NULL DEFAULT nextval('hr_payroll_adjustments_adjustment_id_seq'::regclass),
   payroll_id bigint,
@@ -1200,14 +1174,6 @@ CREATE TABLE public.payment_plans (
   CONSTRAINT payment_plans_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT payment_plans_invoice_id_fkey FOREIGN KEY (invoice_id) REFERENCES public.invoices(id)
 );
-CREATE TABLE public.profiles (
-  user_id integer NOT NULL,
-  dark_mode boolean,
-  created_at timestamp with time zone NOT NULL DEFAULT now(),
-  updated_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT profiles_pkey PRIMARY KEY (user_id),
-  CONSTRAINT profiles_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
-);
 CREATE TABLE public.staff_vehicle_history (
   history_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
   vehicle_id uuid NOT NULL,
@@ -1308,16 +1274,6 @@ CREATE TABLE public.tracking_oil_stock (
   CONSTRAINT tracking_oil_stock_consumable_id_fkey FOREIGN KEY (consumable_id) REFERENCES public.workshop_consumables(id),
   CONSTRAINT tracking_oil_stock_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id)
 );
-CREATE TABLE public.user_signatures (
-  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
-  user_id integer NOT NULL UNIQUE,
-  storage_path text NOT NULL,
-  file_url text NOT NULL,
-  created_at timestamp with time zone NOT NULL DEFAULT now(),
-  updated_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT user_signatures_pkey PRIMARY KEY (id),
-  CONSTRAINT user_signatures_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
-);
 CREATE TABLE public.users (
   user_id integer NOT NULL DEFAULT nextval('users_user_id_seq'::regclass),
   first_name character varying NOT NULL,
@@ -1330,8 +1286,27 @@ CREATE TABLE public.users (
   updated_at timestamp with time zone DEFAULT now(),
   dark_mode boolean DEFAULT false,
   job_title text,
-  name text,
-  CONSTRAINT users_pkey PRIMARY KEY (user_id)
+  department text,
+  employment_type text,
+  start_date date,
+  manager_id integer,
+  photo_url text,
+  emergency_contact jsonb,
+  documents jsonb,
+  employment_status text,
+  contracted_hours numeric,
+  hourly_rate numeric,
+  overtime_rate numeric,
+  annual_salary numeric,
+  payroll_reference text,
+  national_insurance_number text,
+  keycloak_user_id text,
+  home_address text,
+  signature_storage_path text,
+  signature_file_url text,
+  is_active boolean NOT NULL DEFAULT true,
+  CONSTRAINT users_pkey PRIMARY KEY (user_id),
+  CONSTRAINT users_manager_id_fkey FOREIGN KEY (manager_id) REFERENCES public.users(user_id)
 );
 CREATE TABLE public.vehicle_tracking_events (
   event_id bigint NOT NULL DEFAULT nextval('vehicle_tracking_events_event_id_seq'::regclass),
