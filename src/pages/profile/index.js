@@ -290,26 +290,37 @@ function LeaveRequestModal({ isOpen, onClose, onSubmit, isSubmitting }) {
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-          <DropdownField
-            label="Leave Type"
-            name="type"
-            value={form.type}
-            onChange={handleChange}
-            options={[
-              { label: "Holiday", value: "Holiday" },
-              { label: "Sickness", value: "Sickness" },
-              { label: "Unpaid Leave", value: "Unpaid Leave" },
-            ]}
-          />
-
-          <CalendarField
-            label="Start Date"
-            name="startDate"
-            id="leave-start-date"
-            value={form.startDate}
-            onChange={handleChange}
-            required
-          />
+          <div style={{ display: "flex", gap: "12px" }}>
+            <div style={{ flex: 1 }}>
+              <DropdownField
+                label="Leave Type"
+                name="type"
+                value={form.type}
+                onChange={handleChange}
+                className="leave-modal-field"
+                controlStyle={modalControlStyle}
+                labelStyle={modalLabelStyle}
+                options={[
+                  { label: "Holiday", value: "Holiday" },
+                  { label: "Sickness", value: "Sickness" },
+                  { label: "Unpaid Leave", value: "Unpaid Leave" },
+                ]}
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <CalendarField
+                label="Start Date"
+                name="startDate"
+                id="leave-start-date"
+                value={form.startDate}
+                onChange={handleChange}
+                className="leave-modal-field"
+                controlStyle={modalControlStyle}
+                labelStyle={modalLabelStyle}
+                required
+              />
+            </div>
+          </div>
 
           <div style={{ display: "flex", gap: "12px" }}>
             <label style={{ ...modalLabelStyle, flex: 1 }}>
@@ -332,6 +343,9 @@ function LeaveRequestModal({ isOpen, onClose, onSubmit, isSubmitting }) {
                 name="halfDay"
                 value={form.halfDay}
                 onChange={handleChange}
+                className="leave-modal-field"
+                controlStyle={modalControlStyle}
+                labelStyle={modalLabelStyle}
                 options={[
                   { label: "None", value: "None" },
                   { label: "Half Day (AM)", value: "AM" },
@@ -420,6 +434,17 @@ const modalInputStyle = {
   color: "var(--text-primary)",
   fontSize: "0.9rem",
   fontWeight: 500,
+};
+
+// Same as modalInputStyle but with extra resets for dropdown/calendar API button controls
+const modalControlStyle = {
+  ...modalInputStyle,
+  minHeight: "unset",
+  height: "auto",
+  boxShadow: "none",
+  backdropFilter: "none",
+  WebkitBackdropFilter: "none",
+  transition: "none",
 };
 
 const modalCancelBtnStyle = {
@@ -823,9 +848,10 @@ export function ProfilePage({
       }
       setLeaveModalOpen(false);
       setProfileReloadKey((prev) => prev + 1);
+      alert("Leave request submitted successfully.");
     } catch (err) {
       console.error("Leave request error:", err);
-      alert(err.message || "Failed to submit leave request.");
+      alert("Failed to submit leave request. " + (err.message || ""));
     } finally {
       setLeaveSubmitting(false);
     }

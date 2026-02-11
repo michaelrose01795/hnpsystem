@@ -47,7 +47,7 @@ export default function HomeRedirect() {
               ? "Loading your account..."
               : redirectTarget === "/login"
               ? "Redirecting to login..."
-              : "Redirecting to newsfeed..."}
+              : ""}
           </h2>
           <p className="redirect-sub">Just a moment while we get things ready.</p>
         </div>

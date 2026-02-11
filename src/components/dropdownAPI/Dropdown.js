@@ -35,6 +35,8 @@ export default function Dropdown({
   searchPlaceholder = "Search options",
   id,
   style,
+  controlStyle,
+  labelStyle,
   ...rest
 }) {
   const wrapperStyle = style
@@ -324,7 +326,7 @@ export default function Dropdown({
   return (
     <div className={wrapperClasses} ref={dropdownRef} style={wrapperStyle} {...rest}>
       {label && (
-        <label className="dropdown-api__label" htmlFor={controlId}>
+        <label className="dropdown-api__label" htmlFor={controlId} style={labelStyle}>
           {label}
         </label>
       )}
@@ -332,6 +334,7 @@ export default function Dropdown({
         id={controlId}
         type="button"
         className="dropdown-api__control"
+        style={controlStyle}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         onClick={toggle}

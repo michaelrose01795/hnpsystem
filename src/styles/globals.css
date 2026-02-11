@@ -959,26 +959,26 @@ body:has(.login-page-wrapper) {
 }
 
 .dropdown-api--sm .dropdown-api__control {
-  padding: 10px 14px;
-  border-radius: 18px;
+  padding: 8px 10px;
+  border-radius: 10px;
 }
 
 .dropdown-api__label {
-  font-size: 0.82rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: var(--text-secondary);
-  letter-spacing: 0.01em;
 }
 
 .dropdown-api__control {
   width: 100%;
-  min-height: 56px;
-  border-radius: 24px;
-  border: none;
-  background: rgba(var(--surface-rgb), 0.95);
+  min-height: unset;
+  border-radius: 10px;
+  border: 1px solid var(--border, #ccc);
+  background: var(--background);
   color: var(--text-primary);
-  font-size: 0.95rem;
-  padding: 16px 46px 14px 18px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 10px 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1001,7 +1001,7 @@ body:has(.login-page-wrapper) {
 
 .dropdown-api.is-open .dropdown-api__control,
 .dropdown-api__control:focus-visible {
-  border: none;
+  border: 1px solid var(--primary);
   outline: none;
   background-color: var(--surface);
 }
@@ -1015,7 +1015,7 @@ body:has(.login-page-wrapper) {
   flex: 1;
   text-align: left;
   color: var(--text-primary);
-  font-weight: 600;
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1040,18 +1040,17 @@ body:has(.login-page-wrapper) {
 
 .dropdown-api__menu {
   position: absolute;
-  top: calc(100% + 10px);
+  top: calc(100% + 6px);
   left: 0;
   width: 100%;
-  border-radius: 22px;
-  border: 1px solid var(--border);
-  background: rgba(var(--surface-rgb), 0.98);
-  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid var(--border, #ccc);
+  background: var(--background);
+  padding: 4px;
   max-height: 260px;
   overflow-y: auto;
   z-index: 1250;
-  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.12);
-  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 
 .dropdown-api__search {
@@ -1060,8 +1059,8 @@ body:has(.login-page-wrapper) {
 
 .dropdown-api__search-input {
   width: 100%;
-  border-radius: 14px;
-  border: 1px solid var(--surface-light);
+  border-radius: 8px;
+  border: 1px solid var(--border, #ccc);
   background: var(--surface);
   color: var(--text-primary);
   font-size: 0.9rem;
@@ -1080,12 +1079,12 @@ body:has(.login-page-wrapper) {
 .dropdown-api__option {
   width: 100%;
   border: 1px solid transparent;
-  border-radius: 16px;
+  border-radius: 8px;
   background: transparent;
   text-align: left;
-  padding: 10px 12px;
+  padding: 8px 10px;
   color: var(--text-primary);
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -1137,12 +1136,14 @@ body:has(.login-page-wrapper) {
 }
 
 [data-theme="dark"] .dropdown-api__control {
-  background: rgba(15, 23, 42, 0.7);
+  background: var(--background);
+  border-color: var(--border, #ccc);
 }
 
 [data-theme="dark"] .dropdown-api__menu {
-  background: rgba(15, 23, 42, 0.95);
-  box-shadow: 0 30px 50px rgba(0, 0, 0, 0.55);
+  background: var(--background);
+  border-color: var(--border, #ccc);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
 [data-theme="dark"] .dropdown-api__option.is-selected {
@@ -1630,6 +1631,98 @@ body:has(.login-page-wrapper) {
 }
 .dropdown-api.compact-picker .dropdown-api__control:hover:not(:disabled) {
   border-color: var(--primary) !important;
+}
+
+/* Leave modal dropdown/calendar overrides – match "Total Working Days Off" input style */
+.dropdown-api.leave-modal-field .dropdown-api__control {
+  min-height: unset !important;
+  height: auto !important;
+  padding: 10px 12px !important;
+  border-radius: 10px !important;
+  border: 1px solid var(--border, #ccc) !important;
+  background: var(--background) !important;
+  color: var(--text-primary) !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  box-shadow: none !important;
+  transition: none !important;
+}
+.dropdown-api.leave-modal-field .dropdown-api__label {
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  color: var(--text-secondary) !important;
+}
+.dropdown-api.leave-modal-field .dropdown-api__value {
+  font-weight: 500 !important;
+  font-size: 0.9rem !important;
+}
+.dropdown-api.leave-modal-field .dropdown-api__chevron {
+  color: var(--text-secondary) !important;
+  opacity: 0.6 !important;
+}
+.dropdown-api.leave-modal-field.is-open .dropdown-api__control,
+.dropdown-api.leave-modal-field .dropdown-api__control:focus-visible {
+  border: 1px solid var(--border, #ccc) !important;
+  outline: none !important;
+  background: var(--background) !important;
+  box-shadow: none !important;
+}
+.dropdown-api.leave-modal-field .dropdown-api__control:hover:not(:disabled) {
+  border-color: var(--text-secondary) !important;
+  background: var(--background) !important;
+}
+[data-theme="dark"] .dropdown-api.leave-modal-field .dropdown-api__control {
+  background: var(--background) !important;
+  border: 1px solid var(--border, #ccc) !important;
+}
+.calendar-api.leave-modal-field .calendar-api__control {
+  padding: 10px 12px !important;
+  border-radius: 10px !important;
+  border: 1px solid var(--border, #ccc) !important;
+  background: var(--background) !important;
+  color: var(--text-primary) !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+  transition: none !important;
+}
+.calendar-api.leave-modal-field .calendar-api__label {
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  color: var(--text-secondary) !important;
+}
+.calendar-api.leave-modal-field .calendar-api__value {
+  font-weight: 500 !important;
+  font-size: 0.9rem !important;
+  color: var(--text-primary) !important;
+}
+.calendar-api.leave-modal-field .calendar-api__value.is-placeholder {
+  color: var(--text-secondary) !important;
+  font-weight: 400 !important;
+}
+.calendar-api.leave-modal-field .calendar-api__icon {
+  color: var(--text-secondary) !important;
+  opacity: 0.6 !important;
+  width: 16px !important;
+  height: 16px !important;
+}
+.calendar-api.leave-modal-field .calendar-api__control:hover:not(:disabled) {
+  border-color: var(--text-secondary) !important;
+  background: var(--background) !important;
+}
+.calendar-api.leave-modal-field .calendar-api__control:hover:not(:disabled) .calendar-api__icon {
+  color: var(--text-secondary) !important;
+}
+.calendar-api.leave-modal-field .calendar-api__control:focus {
+  border: 1px solid var(--border, #ccc) !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+[data-theme="dark"] .calendar-api.leave-modal-field .calendar-api__control {
+  background: var(--background) !important;
+  border: 1px solid var(--border, #ccc) !important;
 }
 
 .timepicker-api__control:hover:not(:disabled) {

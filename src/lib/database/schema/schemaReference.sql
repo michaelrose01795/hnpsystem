@@ -192,7 +192,6 @@ CREATE TABLE public.customer_payment_methods (
   CONSTRAINT customer_payment_methods_pkey PRIMARY KEY (method_id),
   CONSTRAINT customer_payment_methods_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id)
 );
--- REMOVED: customer_vehicle_links (unused — dropped in addtable.sql)
 CREATE TABLE public.customers (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   firstname text,

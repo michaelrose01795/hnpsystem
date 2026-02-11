@@ -1678,140 +1678,278 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 No customer requests or authorised work found for this job.
               </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px", maxHeight: "600px", overflowY: "auto", flex: 1 }}>
-                {allRequests.map((request) => {
-                  const baseAllocated = partAllocations[request.id] || [];
-                  const vhcAllocated =
-                    request.type === "vhc" && request.vhcItemId
-                      ? vhcPartsByItemId.get(String(request.vhcItemId)) || []
-                      : [];
-                  const allocatedParts = [...baseAllocated, ...vhcAllocated].filter(
-                    (part, index, arr) => arr.findIndex((entry) => entry.id === part.id) === index
-                  );
-
-                  if (request.type === "vhc") {
-                    console.log(`[PartsTab RENDER] VHC Request ${request.id}:`, {
-                      requestId: request.id,
-                      vhcItemId: request.vhcItemId,
-                      lookupKey: request.id,
-                      partAllocationsHasKey: request.id in partAllocations,
-                      baseAllocated: baseAllocated.length,
-                      vhcAllocated: vhcAllocated.length,
-                      finalAllocatedParts: allocatedParts.length,
-                      partAllocationKeys: Object.keys(partAllocations).filter(k => k.startsWith('vhc-')),
-                    });
-                  }
-                return (
-                  <div
-                    key={request.id}
-                    style={{
-                      padding: "12px",
-                      borderRadius: "10px",
-                      border: "1px solid var(--surface-light)",
-                      background: "var(--surface-muted)",
-                    }}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
-                      <div>
-                        <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--accent-purple)" }}>
-                          {request.type === "customer" ? "Customer Request" : "VHC Authorised"}
-                        </div>
-                        <div style={{ fontSize: "13px", color: "var(--info-dark)", marginTop: "2px" }}>
-                          {request.description}
-                        </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxHeight: "600px", overflowY: "auto", flex: 1 }}>
+                {/* Customer Requests - always shown at the top */}
+                {(() => {
+                  const customerRequests = allRequests.filter((r) => r.type === "customer");
+                  return (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                      <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                        Customer Requests
                       </div>
-                      <button
-                        type="button"
-                        disabled={!canEdit}
-                        onClick={() => handleAssignSelectedToRequest(request.id)}
-                        style={{
-                          padding: "6px 10px",
-                          borderRadius: "6px",
-                          border: !canEdit
-                            ? "1px solid var(--surface-light)"
-                            : assignMode && assignTargetRequestId === request.id
-                            ? selectedPartIds.length > 0
-                              ? "1px solid var(--success)"
-                              : "1px solid var(--warning)"
-                            : "1px solid var(--accent-purple)",
-                          background: !canEdit
-                            ? "var(--surface-light)"
-                            : assignMode && assignTargetRequestId === request.id
-                            ? selectedPartIds.length > 0
-                              ? "var(--success)"
-                              : "var(--warning)"
-                            : "var(--accent-purple)",
-                          color: !canEdit ? "var(--text-secondary)" : "white",
-                          fontSize: "11px",
-                          fontWeight: 600,
-                          cursor: !canEdit ? "not-allowed" : "pointer",
-                        }}
-                      >
-                        {assignMode && assignTargetRequestId === request.id
-                          ? selectedPartIds.length > 0
-                            ? "Assign"
-                            : "Select parts"
-                          : "Assign selected"}
-                      </button>
+                      {customerRequests.length === 0 ? (
+                        <div style={{ padding: "10px", fontSize: "12px", color: "var(--info)", border: "1px dashed var(--surface-light)", borderRadius: "8px", textAlign: "center" }}>
+                          No customer requests reported.
+                        </div>
+                      ) : (
+                        customerRequests.map((request) => {
+                          const baseAllocated = partAllocations[request.id] || [];
+                          const allocatedParts = [...baseAllocated].filter(
+                            (part, index, arr) => arr.findIndex((entry) => entry.id === part.id) === index
+                          );
+                          return (
+                            <div
+                              key={request.id}
+                              style={{
+                                padding: "12px",
+                                borderRadius: "10px",
+                                border: "1px solid var(--surface-light)",
+                                background: "var(--surface-muted)",
+                              }}
+                            >
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+                                <div>
+                                  <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--accent-purple)" }}>
+                                    Customer Request
+                                  </div>
+                                  <div style={{ fontSize: "13px", color: "var(--info-dark)", marginTop: "2px" }}>
+                                    {request.description}
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  disabled={!canEdit}
+                                  onClick={() => handleAssignSelectedToRequest(request.id)}
+                                  style={{
+                                    padding: "6px 10px",
+                                    borderRadius: "6px",
+                                    border: !canEdit
+                                      ? "1px solid var(--surface-light)"
+                                      : assignMode && assignTargetRequestId === request.id
+                                      ? selectedPartIds.length > 0
+                                        ? "1px solid var(--success)"
+                                        : "1px solid var(--warning)"
+                                      : "1px solid var(--accent-purple)",
+                                    background: !canEdit
+                                      ? "var(--surface-light)"
+                                      : assignMode && assignTargetRequestId === request.id
+                                      ? selectedPartIds.length > 0
+                                        ? "var(--success)"
+                                        : "var(--warning)"
+                                      : "var(--accent-purple)",
+                                    color: !canEdit ? "var(--text-secondary)" : "white",
+                                    fontSize: "11px",
+                                    fontWeight: 600,
+                                    cursor: !canEdit ? "not-allowed" : "pointer",
+                                  }}
+                                >
+                                  {assignMode && assignTargetRequestId === request.id
+                                    ? selectedPartIds.length > 0
+                                      ? "Assign"
+                                      : "Select parts"
+                                    : "Assign selected"}
+                                </button>
+                              </div>
+                              {allocatedParts.length > 0 && (
+                                <div
+                                  style={{
+                                    marginTop: "10px",
+                                    marginLeft: "14px",
+                                    paddingLeft: "12px",
+                                    borderLeft: "2px solid var(--surface-light)",
+                                  }}
+                                >
+                                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                                    <thead>
+                                      <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
+                                        <th style={{ textAlign: "left", padding: "6px" }}>Part number</th>
+                                        <th style={{ textAlign: "left", padding: "6px" }}>Description</th>
+                                        <th style={{ textAlign: "right", padding: "6px" }}>Qty</th>
+                                        <th style={{ textAlign: "right", padding: "6px" }}>Retail</th>
+                                        <th style={{ textAlign: "right", padding: "6px" }}>Cost</th>
+                                        <th style={{ textAlign: "center", padding: "6px" }}>Unassign</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {allocatedParts.map((part) => (
+                                        <tr key={part.id} style={{ background: "var(--accent-purple-surface)", borderTop: "1px solid var(--surface-light)" }}>
+                                          <td style={{ padding: "6px", fontWeight: 600, color: "var(--accent-purple)" }}>
+                                            {part.partNumber}
+                                          </td>
+                                          <td style={{ padding: "6px", color: "var(--info-dark)" }}>{part.description || part.name}</td>
+                                          <td style={{ padding: "6px", textAlign: "right" }}>{part.quantity}</td>
+                                          <td style={{ padding: "6px", textAlign: "right" }}>{formatMoney(part.unitPrice)}</td>
+                                          <td style={{ padding: "6px", textAlign: "right" }}>{formatMoney(part.unitCost)}</td>
+                                          <td style={{ padding: "6px", textAlign: "center" }}>
+                                            <button
+                                              type="button"
+                                              onClick={() => handleUnassignPart(part.id)}
+                                              disabled={!canEdit}
+                                              style={{
+                                                padding: "4px 8px",
+                                                borderRadius: "6px",
+                                                border: "1px solid var(--danger)",
+                                                background: !canEdit ? "var(--surface-light)" : "var(--danger-surface)",
+                                                color: !canEdit ? "var(--text-secondary)" : "var(--danger)",
+                                                fontSize: "10px",
+                                                fontWeight: 600,
+                                                cursor: !canEdit ? "not-allowed" : "pointer",
+                                              }}
+                                            >
+                                              Unassign
+                                            </button>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })
+                      )}
                     </div>
-                    {allocatedParts.length > 0 && (
-                      <div
-                        style={{
-                          marginTop: "10px",
-                          marginLeft: "14px",
-                          paddingLeft: "12px",
-                          borderLeft: "2px solid var(--surface-light)",
-                        }}
-                      >
-                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                            <thead>
-                              <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
-                                <th style={{ textAlign: "left", padding: "6px" }}>Part number</th>
-                                <th style={{ textAlign: "left", padding: "6px" }}>Description</th>
-                                <th style={{ textAlign: "right", padding: "6px" }}>Qty</th>
-                                <th style={{ textAlign: "right", padding: "6px" }}>Retail</th>
-                                <th style={{ textAlign: "right", padding: "6px" }}>Cost</th>
-                                <th style={{ textAlign: "center", padding: "6px" }}>Unassign</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {allocatedParts.map((part) => (
-                                <tr key={part.id} style={{ background: "var(--accent-purple-surface)", borderTop: "1px solid var(--surface-light)" }}>
-                                  <td style={{ padding: "6px", fontWeight: 600, color: "var(--accent-purple)" }}>
-                                    {part.partNumber}
-                                  </td>
-                                  <td style={{ padding: "6px", color: "var(--info-dark)" }}>{part.description || part.name}</td>
-                                  <td style={{ padding: "6px", textAlign: "right" }}>{part.quantity}</td>
-                                  <td style={{ padding: "6px", textAlign: "right" }}>{formatMoney(part.unitPrice)}</td>
-                                  <td style={{ padding: "6px", textAlign: "right" }}>{formatMoney(part.unitCost)}</td>
-                                  <td style={{ padding: "6px", textAlign: "center" }}>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleUnassignPart(part.id)}
-                                      disabled={!canEdit}
-                                      style={{
-                                        padding: "4px 8px",
-                                        borderRadius: "6px",
-                                        border: "1px solid var(--danger)",
-                                        background: !canEdit ? "var(--surface-light)" : "var(--danger-surface)",
-                                        color: !canEdit ? "var(--text-secondary)" : "var(--danger)",
-                                        fontSize: "10px",
-                                        fontWeight: 600,
-                                        cursor: !canEdit ? "not-allowed" : "pointer",
-                                      }}
-                                    >
-                                      Unassign
-                                    </button>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                  );
+                })()}
+
+                {/* VHC Requests - always shown below customer requests */}
+                {(() => {
+                  const vhcRequests = allRequests.filter((r) => r.type === "vhc");
+                  return (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                      <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                        VHC Requests
                       </div>
-                    )}
-                  </div>
-                );
-              })}
+                      {vhcRequests.length === 0 ? (
+                        <div style={{ padding: "10px", fontSize: "12px", color: "var(--info)", border: "1px dashed var(--surface-light)", borderRadius: "8px", textAlign: "center" }}>
+                          No VHC requests reported.
+                        </div>
+                      ) : (
+                        vhcRequests.map((request) => {
+                          const baseAllocated = partAllocations[request.id] || [];
+                          const vhcAllocated =
+                            request.vhcItemId
+                              ? vhcPartsByItemId.get(String(request.vhcItemId)) || []
+                              : [];
+                          const allocatedParts = [...baseAllocated, ...vhcAllocated].filter(
+                            (part, index, arr) => arr.findIndex((entry) => entry.id === part.id) === index
+                          );
+                          return (
+                            <div
+                              key={request.id}
+                              style={{
+                                padding: "12px",
+                                borderRadius: "10px",
+                                border: "1px solid var(--surface-light)",
+                                background: "var(--surface-muted)",
+                              }}
+                            >
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+                                <div>
+                                  <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--accent-purple)" }}>
+                                    VHC Authorised
+                                  </div>
+                                  <div style={{ fontSize: "13px", color: "var(--info-dark)", marginTop: "2px" }}>
+                                    {request.description}
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  disabled={!canEdit}
+                                  onClick={() => handleAssignSelectedToRequest(request.id)}
+                                  style={{
+                                    padding: "6px 10px",
+                                    borderRadius: "6px",
+                                    border: !canEdit
+                                      ? "1px solid var(--surface-light)"
+                                      : assignMode && assignTargetRequestId === request.id
+                                      ? selectedPartIds.length > 0
+                                        ? "1px solid var(--success)"
+                                        : "1px solid var(--warning)"
+                                      : "1px solid var(--accent-purple)",
+                                    background: !canEdit
+                                      ? "var(--surface-light)"
+                                      : assignMode && assignTargetRequestId === request.id
+                                      ? selectedPartIds.length > 0
+                                        ? "var(--success)"
+                                        : "var(--warning)"
+                                      : "var(--accent-purple)",
+                                    color: !canEdit ? "var(--text-secondary)" : "white",
+                                    fontSize: "11px",
+                                    fontWeight: 600,
+                                    cursor: !canEdit ? "not-allowed" : "pointer",
+                                  }}
+                                >
+                                  {assignMode && assignTargetRequestId === request.id
+                                    ? selectedPartIds.length > 0
+                                      ? "Assign"
+                                      : "Select parts"
+                                    : "Assign selected"}
+                                </button>
+                              </div>
+                              {allocatedParts.length > 0 && (
+                                <div
+                                  style={{
+                                    marginTop: "10px",
+                                    marginLeft: "14px",
+                                    paddingLeft: "12px",
+                                    borderLeft: "2px solid var(--surface-light)",
+                                  }}
+                                >
+                                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                                    <thead>
+                                      <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
+                                        <th style={{ textAlign: "left", padding: "6px" }}>Part number</th>
+                                        <th style={{ textAlign: "left", padding: "6px" }}>Description</th>
+                                        <th style={{ textAlign: "right", padding: "6px" }}>Qty</th>
+                                        <th style={{ textAlign: "right", padding: "6px" }}>Retail</th>
+                                        <th style={{ textAlign: "right", padding: "6px" }}>Cost</th>
+                                        <th style={{ textAlign: "center", padding: "6px" }}>Unassign</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {allocatedParts.map((part) => (
+                                        <tr key={part.id} style={{ background: "var(--accent-purple-surface)", borderTop: "1px solid var(--surface-light)" }}>
+                                          <td style={{ padding: "6px", fontWeight: 600, color: "var(--accent-purple)" }}>
+                                            {part.partNumber}
+                                          </td>
+                                          <td style={{ padding: "6px", color: "var(--info-dark)" }}>{part.description || part.name}</td>
+                                          <td style={{ padding: "6px", textAlign: "right" }}>{part.quantity}</td>
+                                          <td style={{ padding: "6px", textAlign: "right" }}>{formatMoney(part.unitPrice)}</td>
+                                          <td style={{ padding: "6px", textAlign: "right" }}>{formatMoney(part.unitCost)}</td>
+                                          <td style={{ padding: "6px", textAlign: "center" }}>
+                                            <button
+                                              type="button"
+                                              onClick={() => handleUnassignPart(part.id)}
+                                              disabled={!canEdit}
+                                              style={{
+                                                padding: "4px 8px",
+                                                borderRadius: "6px",
+                                                border: "1px solid var(--danger)",
+                                                background: !canEdit ? "var(--surface-light)" : "var(--danger-surface)",
+                                                color: !canEdit ? "var(--text-secondary)" : "var(--danger)",
+                                                fontSize: "10px",
+                                                fontWeight: 600,
+                                                cursor: !canEdit ? "not-allowed" : "pointer",
+                                              }}
+                                            >
+                                              Unassign
+                                            </button>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  );
+                })()}
             </div>
             )}
           </div>

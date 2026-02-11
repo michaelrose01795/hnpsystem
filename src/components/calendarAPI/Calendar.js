@@ -19,6 +19,8 @@ export default function Calendar({
   required = false,
   name,
   style,
+  controlStyle,
+  labelStyle,
   ...rest
 }) {
   const wrapperStyle = style
@@ -235,9 +237,8 @@ export default function Calendar({
   return (
     <div ref={calendarRef} className={containerClassName} style={wrapperStyle} {...rest}>
       {label && (
-        <label htmlFor={controlId} className="calendar-api__label">
-          {label}
-          {required && <span className="calendar-api__required"> *</span>}
+        <label htmlFor={controlId} className="calendar-api__label" style={labelStyle}>
+          <span>{label}{required && <span className="calendar-api__required"> *</span>}</span>
         </label>
       )}
 
@@ -246,6 +247,7 @@ export default function Calendar({
         id={controlId}
         type="button"
         className="calendar-api__control"
+        style={controlStyle}
         onClick={() => !disabled && setIsOpen(!isOpen)}
         onKeyDown={handleKeyDown}
         disabled={disabled}
