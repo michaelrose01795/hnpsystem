@@ -2,51 +2,8 @@
 // file location: src/pages/hr/disciplinary.js
 import React from "react";
 import Layout from "@/components/Layout";
-import { SectionCard, StatusTag } from "@/components/HR/MetricCard";
+import { SectionCard } from "@/components/HR/MetricCard";
 import { CalendarField } from "@/components/calendarAPI"; // Date input component
-
-// TODO: Back these incident lists with real disciplinary case records from the database.
-
-// TODO: Replace placeholder incident data with live case records before shipping.
-const placeholderIncidents = [
-  {
-    id: "INC-1",
-    employee: "Aaron Blake",
-    department: "Workshop",
-    level: "Written Warning",
-    reportedOn: "2024-02-02",
-    status: "Open",
-    notes: "Repeated late arrivals. Monitoring punctuality for 30 days.",
-  },
-  {
-    id: "INC-2",
-    employee: "Emily Chen",
-    department: "Service",
-    level: "Verbal Warning",
-    reportedOn: "2024-02-26",
-    status: "Closed",
-    notes: "Missing paperwork on job handovers. Completed refresher training.",
-  },
-];
-
-const placeholderIncidentsLog = [
-  {
-    id: "LOG-1",
-    jobNumber: "J-20451",
-    type: "Incident Report",
-    recordedBy: "Sarah Thompson",
-    outcome: "Awaiting review",
-    createdAt: "2024-03-08",
-  },
-  {
-    id: "LOG-2",
-    jobNumber: "J-20402",
-    type: "Safety Breach",
-    recordedBy: "Workshop QC",
-    outcome: "Closed",
-    createdAt: "2024-02-17",
-  },
-];
 
 function DisciplinaryContent() {
   return (
@@ -61,63 +18,19 @@ function DisciplinaryContent() {
           <SectionCard
             title="Active Warnings"
             subtitle="Warnings that still require follow-up or monitoring."
-            action={
-              <button type="button" style={buttonStylePrimary}>
-                Add warning
-              </button>
-            }
           >
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {placeholderIncidents.map((incident) => (
-                <div
-                  key={incident.id}
-                  style={{
-                    border: "1px solid var(--accent-purple-surface)",
-                    borderRadius: "12px",
-                    padding: "12px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "6px",
-                    background: "rgba(var(--grey-accent-rgb), 0.8)",
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontWeight: 600 }}>{incident.employee}</span>
-                    <StatusTag
-                      label={incident.level}
-                      tone={incident.level.includes("Final") ? "danger" : "warning"}
-                    />
-                  </div>
-                  <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>
-                    Reported {new Date(incident.reportedOn).toLocaleDateString()} • {incident.department}
-                  </span>
-                  <p style={{ margin: 0, color: "var(--info-dark)" }}>{incident.notes}</p>
-                  <StatusTag label={incident.status} tone={incident.status === "Open" ? "warning" : "success"} />
-                </div>
-              ))}
-            </div>
+            <p style={{ fontSize: "0.75rem", color: "var(--info)", fontStyle: "italic", margin: 0 }}>
+              TODO: Fetch active warnings from Supabase disciplinary table. Display employee name, department, warning level, reported date, status, and notes for each open case.
+            </p>
           </SectionCard>
 
           <SectionCard
             title="Incident Log"
             subtitle="Recent case entries and their current outcome."
-            action={
-              <button type="button" style={buttonStyleSecondary}>
-                Export log
-              </button>
-            }
           >
-            <ul style={{ margin: 0, paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "8px" }}>
-              {placeholderIncidentsLog.map((entry) => (
-                <li key={entry.id} style={{ color: "var(--info-dark)" }}>
-                  <strong>{entry.type}</strong> • Job {entry.jobNumber} • {entry.recordedBy} •{" "}
-                  <StatusTag
-                    label={entry.outcome}
-                    tone={entry.outcome === "Closed" ? "success" : "warning"}
-                  />
-                </li>
-              ))}
-            </ul>
+            <p style={{ fontSize: "0.75rem", color: "var(--info)", fontStyle: "italic", margin: 0 }}>
+              TODO: Fetch incident log from Supabase. Display incident type, job number, recorded by, outcome status, and export functionality.
+            </p>
           </SectionCard>
       </section>
 
@@ -167,8 +80,8 @@ function DisciplinaryContent() {
               </button>
             </div>
           </form>
-          <p style={{ color: "var(--info)", marginTop: "18px" }}>
-            These controls are placeholders for UX validation. Wire up Supabase tables for incidents and warnings before launch.
+          <p style={{ fontSize: "0.75rem", color: "var(--info)", fontStyle: "italic", marginTop: "18px" }}>
+            TODO: Wire form submission to Supabase incidents table. Save record should persist the incident and refresh the active warnings list.
           </p>
       </SectionCard>
     </div>
@@ -186,16 +99,6 @@ const buttonStylePrimary = {
   border: "none",
   background: "var(--danger)",
   color: "white",
-  fontWeight: 600,
-  cursor: "pointer",
-};
-
-const buttonStyleSecondary = {
-  padding: "8px 14px",
-  borderRadius: "10px",
-  border: "1px solid var(--warning)",
-  background: "var(--surface)",
-  color: "var(--warning)",
   fontWeight: 600,
   cursor: "pointer",
 };

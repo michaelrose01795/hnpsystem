@@ -3,30 +3,7 @@
 import React from "react"; // React runtime for the payroll workspace
 import Layout from "@/components/Layout"; // shared layout wrapper
 import { useHrOperationsData } from "@/hooks/useHrData"; // Supabase-backed HR aggregation hook
-import { SectionCard, StatusTag } from "@/components/HR/MetricCard"; // HR specific UI components
-
-// TODO: Pull payroll data, pay rises, and overtime summaries from Supabase tables.
-
-const payriseRequests = [
-  {
-    id: "PR-1",
-    employee: "Michael Green",
-    submittedOn: "2024-03-05",
-    requestedRate: 24.0,
-    currentRate: 22.1,
-    approver: "Sarah Thompson",
-    status: "Awaiting HR",
-  },
-  {
-    id: "PR-2",
-    employee: "Katie Lewis",
-    submittedOn: "2024-02-22",
-    requestedRate: 21.0,
-    currentRate: 20.0,
-    approver: "HR Team",
-    status: "Approved",
-  },
-];
+import { SectionCard } from "@/components/HR/MetricCard"; // HR specific UI components
 
 function PayrollContent() {
   const { data, isLoading, error } = useHrOperationsData();
@@ -105,43 +82,9 @@ function PayrollContent() {
         </SectionCard>
 
         <SectionCard title="Pay Rise Requests" subtitle="Approval workflow: Employee → Manager → HR">
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            {payriseRequests.map((request) => (
-              <div
-                key={request.id}
-                style={{
-                  border: "1px solid var(--accent-purple-surface)",
-                  borderRadius: "12px",
-                  padding: "12px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "6px",
-                  background: "rgba(var(--info-rgb), 0.04)",
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{request.employee}</span>
-                  <StatusTag tone={request.status === "Approved" ? "success" : "warning"} label={request.status} />
-                </div>
-                <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>
-                  Submitted {new Date(request.submittedOn).toLocaleDateString()}
-                </span>
-                <div style={{ display: "flex", gap: "14px", fontSize: "0.85rem", color: "var(--info-dark)" }}>
-                  <span>Current £{request.currentRate.toFixed(2)}</span>
-                  <span>Requested £{request.requestedRate.toFixed(2)}</span>
-                  <span>Approver: {request.approver}</span>
-                </div>
-                <div style={{ display: "flex", gap: "10px" }}>
-                  <button type="button" style={buttonStyleSecondary}>
-                    Approve
-                  </button>
-                  <button type="button" style={buttonStyleGhost}>
-                    Request edits
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+          <p style={{ fontSize: "0.75rem", color: "var(--info)", fontStyle: "italic", margin: 0 }}>
+            TODO: Fetch pay rise requests from Supabase. Display employee name, current/requested rate, approver, status, and approve/reject actions.
+          </p>
         </SectionCard>
       </section>
 
@@ -248,12 +191,3 @@ const buttonStyleSecondary = {
   cursor: "pointer",
 };
 
-const buttonStyleGhost = {
-  padding: "8px 14px",
-  borderRadius: "10px",
-  border: "1px solid transparent",
-  background: "transparent",
-  color: "var(--danger)",
-  fontWeight: 600,
-  cursor: "pointer",
-};

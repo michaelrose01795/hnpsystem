@@ -6,14 +6,6 @@ import { useHrOperationsData } from "@/hooks/useHrData"; // Supabase-backed HR a
 import { SectionCard, StatusTag } from "@/components/HR/MetricCard"; // shared HR UI widgets
 import { CalendarField } from "@/components/calendarAPI"; // Date input component
 
-// TODO: Swap placeholder course catalogue for real LMS integration after testing.
-// TODO: Persist assigned courses and renewals in the HR training database tables.
-const placeholderCourses = [
-  { id: "COURSE-1", name: "Hybrid Vehicle Safety", mandatory: true, duration: "4 hrs" },
-  { id: "COURSE-2", name: "Customer Experience Excellence", mandatory: false, duration: "2 hrs" },
-  { id: "COURSE-3", name: "MOT Standards Update 2024", mandatory: true, duration: "3 hrs" },
-];
-
 function TrainingContent() {
   const { data, isLoading, error } = useHrOperationsData();
   const trainingRenewals = data?.trainingRenewals ?? [];
@@ -90,19 +82,10 @@ function TrainingContent() {
         <SectionCard
           title="Training Catalogue"
           subtitle="Courses available to assign"
-          action={
-            <button type="button" style={buttonStyleSecondary}>
-              Add course
-            </button>
-          }
         >
-          <ul style={{ margin: 0, paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "10px" }}>
-            {placeholderCourses.map((course) => (
-              <li key={course.id} style={{ color: "var(--info-dark)" }}>
-                <strong>{course.name}</strong> — {course.duration} {course.mandatory ? "(Mandatory)" : "(Optional)"}
-              </li>
-            ))}
-          </ul>
+          <p style={{ fontSize: "0.75rem", color: "var(--info)", fontStyle: "italic", margin: 0 }}>
+            TODO: Fetch course catalogue from LMS/Supabase. Display course name, duration, mandatory flag, and an "Add course" action.
+          </p>
         </SectionCard>
       </section>
 
@@ -123,16 +106,14 @@ function TrainingContent() {
           </label>
           <label style={labelStyle}>
             <span>Training Course</span>
-            <select style={inputStyle} defaultValue="">
+            <select style={inputStyle} defaultValue="" disabled>
               <option value="" disabled>
                 Select course
               </option>
-              {placeholderCourses.map((course) => (
-                <option key={course.id} value={course.id}>
-                  {course.name}
-                </option>
-              ))}
             </select>
+            <span style={{ fontSize: "0.75rem", color: "var(--info)", fontStyle: "italic" }}>
+              TODO: Populate course options from the training catalogue database table.
+            </span>
           </label>
           <CalendarField
             label="Due Date"
@@ -158,14 +139,8 @@ function TrainingContent() {
       </SectionCard>
 
       <SectionCard title="Training Compliance Snapshot" subtitle="High-level view of overall compliance rates.">
-        <div style={{ display: "flex", gap: "18px", flexWrap: "wrap" }}>
-          <ComplianceCard title="Workshop" percent={88} status="On Track" />
-          <ComplianceCard title="Service" percent={76} status="Needs Attention" />
-          <ComplianceCard title="Sales" percent={91} status="On Track" />
-          <ComplianceCard title="Valet" percent={64} status="Behind" />
-        </div>
-        <p style={{ color: "var(--info)", marginTop: "16px" }}>
-          These percentages use placeholder data for UI verification. Replace with real metrics once Supabase views are ready.
+        <p style={{ fontSize: "0.75rem", color: "var(--info)", fontStyle: "italic", margin: 0 }}>
+          TODO: Calculate compliance percentages per department from Supabase training records. Show percentage cards for each department with on-track/behind status.
         </p>
       </SectionCard>
     </div>
@@ -177,45 +152,12 @@ export default function HrTrainingQualifications({ embedded = false } = {}) {
   return embedded ? content : <Layout>{content}</Layout>;
 }
 
-function ComplianceCard({ title, percent, status }) {
-  const tone = percent >= 85 ? "success" : percent >= 70 ? "warning" : "danger"; // simple tone mapping
-
-  return (
-    <div
-      style={{
-        flex: "1 1 220px",
-        background: "var(--surface)",
-        padding: "18px",
-        borderRadius: "12px",
-        boxShadow: "none",
-        display: "flex",
-        flexDirection: "column",
-        gap: "8px",
-      }}
-    >
-      <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{title}</span>
-      <span style={{ fontSize: "2rem", fontWeight: 700, color: "var(--info)" }}>{percent}%</span>
-      <StatusTag label={status} tone={tone} />
-    </div>
-  );
-}
-
 const buttonStylePrimary = {
   padding: "10px 18px",
   borderRadius: "10px",
   border: "none",
   background: "var(--danger)",
   color: "white",
-  fontWeight: 600,
-  cursor: "pointer",
-};
-
-const buttonStyleSecondary = {
-  padding: "8px 14px",
-  borderRadius: "10px",
-  border: "1px solid var(--warning)",
-  background: "var(--surface)",
-  color: "var(--danger)",
   fontWeight: 600,
   cursor: "pointer",
 };

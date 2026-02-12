@@ -3,7 +3,13 @@ TO DO:
 Continue flow with job number 55
 
 
+have it so only one active clocking status at once per user, example if a user forgets to clock out have it so they are auto clocked out at 12am every morning if the clocking is still active and have it if they log in, this creates a new clcoking adding the clock out time to the time before they clocked in to the new one. for refece this section is within the /profile page within the "Attendance History" section but make sure it updates within the database as well. 
+ 
 go through how users work and missmatch users, and deleting users randomly. make sure everything is correct, set up a test for this to see if it works on the front end so i can see it visually 
+
+
+CHECKK
+Within the hr/manager page, change it so all of the tabs and sections within the tabs which use mock data, rmeove this and wihtin that section add small print todo with a short descripton saying what is needed to be done. add this todo front end. 
 
 
 
@@ -46,6 +52,10 @@ have it so the top bar doesnt show anythe mode or Welcome back section when in t
 Go though each page and set which section has what level of colour level 1-4,  
 Change to base layer " /* Level 3 (Bottom layer - pale red): page background + outer shell */
   --layer-section-level-3: #ffeaea;" adjust in all places where users 
+
+
+
+
 
 
 

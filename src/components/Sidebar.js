@@ -462,47 +462,71 @@ export default function Sidebar({
             {accountSections.flatMap((section) => section.items).map((item) => {
               if (item.action === "logout") {
                 return (
-                  <div key="clock-logout-row" style={{ display: "flex", gap: "8px", width: "100%" }}>
-                    <button
-                      type="button"
-                      onClick={handleClockToggle}
-                      disabled={clockLoading}
-                      style={{
-                        flex: 1,
-                        padding: "10px 8px",
-                        borderRadius: "10px",
-                        background: isClockedIn
-                          ? "var(--danger, #e53935)"
-                          : "var(--success, #43a047)",
-                        color: "#fff",
-                        fontWeight: 700,
-                        fontSize: "0.82rem",
-                        border: "none",
-                        cursor: clockLoading ? "not-allowed" : "pointer",
-                        opacity: clockLoading ? 0.6 : 1,
-                        transition: "background 0.2s, opacity 0.2s",
-                      }}
-                    >
-                      {clockLoading ? "..." : isClockedIn ? "Clock Out" : "Clock In"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleLogout}
-                      style={{
-                        flex: 1,
-                        padding: "10px 8px",
-                        borderRadius: "10px",
-                        background: "var(--primary)",
-                        color: "var(--surface)",
-                        fontWeight: 700,
-                        fontSize: "0.82rem",
-                        border: "none",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Logout
-                    </button>
-                  </div>
+                  <Fragment key="clock-logout-row">
+                    <div style={{ display: "flex", gap: "8px", width: "100%" }}>
+                      <button
+                        type="button"
+                        onClick={handleClockToggle}
+                        disabled={clockLoading}
+                        style={{
+                          flex: 1,
+                          padding: "10px 8px",
+                          borderRadius: "10px",
+                          background: isClockedIn
+                            ? "var(--danger, #e53935)"
+                            : "var(--success, #43a047)",
+                          color: "#fff",
+                          fontWeight: 700,
+                          fontSize: "0.82rem",
+                          border: "none",
+                          cursor: clockLoading ? "not-allowed" : "pointer",
+                          opacity: clockLoading ? 0.6 : 1,
+                          transition: "background 0.2s, opacity 0.2s",
+                        }}
+                      >
+                        {clockLoading ? "..." : isClockedIn ? "Clock Out" : "Clock In"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleLogout}
+                        style={{
+                          flex: 1,
+                          padding: "10px 8px",
+                          borderRadius: "10px",
+                          background: "var(--primary)",
+                          color: "var(--surface)",
+                          fontWeight: 700,
+                          fontSize: "0.82rem",
+                          border: "none",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Logout
+                      </button>
+                    </div>
+                    {process.env.NODE_ENV !== "production" && (
+                      <Link
+                        href="/dev/user-diagnostic"
+                        style={{
+                          display: "block",
+                          width: "100%",
+                          padding: "8px 8px",
+                          marginTop: "8px",
+                          borderRadius: "10px",
+                          border: "1px solid var(--surface-light)",
+                          background: "transparent",
+                          color: "var(--text-secondary)",
+                          fontWeight: 600,
+                          fontSize: "0.78rem",
+                          textAlign: "center",
+                          textDecoration: "none",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Diagnostics
+                      </Link>
+                    )}
+                  </Fragment>
                 );
               }
 

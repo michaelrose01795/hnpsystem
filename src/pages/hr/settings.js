@@ -4,9 +4,6 @@ import React from "react";
 import Layout from "@/components/Layout";
 import { SectionCard } from "@/components/HR/MetricCard";
 
-// TODO: Persist policy uploads, shift rules, and access controls to the HR settings tables.
-
-// TODO: Replace placeholder policy uploads and access matrix with real configuration storage.
 function SettingsContent() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
@@ -51,8 +48,8 @@ function SettingsContent() {
                 </button>
               </div>
             </form>
-            <p style={{ color: "var(--info)", marginTop: "16px" }}>
-              Placeholder upload form. Connect to Supabase Storage and metadata tables before deployment.
+            <p style={{ fontSize: "0.75rem", color: "var(--info)", fontStyle: "italic", marginTop: "16px" }}>
+              TODO: Wire upload to Supabase Storage. Persist policy metadata (title, category, file URL) in the policies table.
             </p>
           </SectionCard>
 
@@ -82,34 +79,8 @@ function SettingsContent() {
           title="Role-Based Access"
           subtitle="Control which roles can access HR functionality."
         >
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
-                  <th style={{ textAlign: "left", paddingBottom: "10px" }}>Role</th>
-                  <th>HR Dashboard</th>
-                  <th>Employee Records</th>
-                  <th>Payroll</th>
-                  <th>Leave Approvals</th>
-                  <th>Recruitment</th>
-                </tr>
-              </thead>
-              <tbody>
-                {accessMatrix.map((row) => (
-                  <tr key={row.role} style={{ borderTop: "1px solid var(--accent-purple-surface)" }}>
-                    <td style={{ padding: "12px 0", fontWeight: 600 }}>{row.role}</td>
-                    <td style={cellStyle}>{renderToggle(row.hrDashboard)}</td>
-                    <td style={cellStyle}>{renderToggle(row.employeeRecords)}</td>
-                    <td style={cellStyle}>{renderToggle(row.payroll)}</td>
-                    <td style={cellStyle}>{renderToggle(row.leave)}</td>
-                    <td style={cellStyle}>{renderToggle(row.recruitment)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p style={{ color: "var(--info)", marginTop: "16px" }}>
-            Toggle boxes are placeholders to visualise permissions. Integrate with Supabase policy tables later.
+          <p style={{ fontSize: "0.75rem", color: "var(--info)", fontStyle: "italic", margin: 0 }}>
+            TODO: Fetch role permissions from Supabase policy tables. Display editable access matrix with roles (HR Manager, Admin, Manager, Employee) and toggles for each HR module (Dashboard, Records, Payroll, Leave, Recruitment).
           </p>
         </SectionCard>
 
@@ -137,33 +108,7 @@ export default function HrSettingsPolicies({ embedded = false } = {}) {
   return embedded ? content : <Layout>{content}</Layout>;
 }
 
-const accessMatrix = [
-  { role: "HR Manager", hrDashboard: true, employeeRecords: true, payroll: true, leave: true, recruitment: true },
-  { role: "Admin Manager / Owner", hrDashboard: true, employeeRecords: true, payroll: true, leave: true, recruitment: true },
-  { role: "Manager (Service/Sales/Workshop)", hrDashboard: true, employeeRecords: false, payroll: false, leave: true, recruitment: false },
-  { role: "Employee", hrDashboard: false, employeeRecords: false, payroll: false, leave: false, recruitment: false },
-];
 
-function renderToggle(isEnabled) {
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: "36px",
-        height: "20px",
-        borderRadius: "999px",
-        backgroundColor: isEnabled ? "var(--success)" : "var(--info)",
-        color: "white",
-        fontWeight: 700,
-        fontSize: "0.7rem",
-      }}
-    >
-      {isEnabled ? "ON" : "OFF"}
-    </span>
-  );
-}
 
 function ToggleSetting({ label, defaultChecked }) {
   return (
@@ -224,7 +169,3 @@ const inputStyle = {
   background: "var(--surface)",
 };
 
-const cellStyle = {
-  textAlign: "center",
-  padding: "12px 0",
-};
