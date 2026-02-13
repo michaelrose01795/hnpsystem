@@ -229,187 +229,46 @@ const PartsTabNew = forwardRef(function PartsTabNew(
 
   // Get customer requests and authorized work
   const allRequests = useMemo(() => {
-    // Prefer canonical job_requests data, then gracefully fall back to legacy requests arrays.
+    // Prefer jobRequests/job_requests from the database (has proper request_id)
     const requestsSource = Array.isArray(jobData.jobRequests)
       ? jobData.jobRequests
       : Array.isArray(jobData.job_requests)
       ? jobData.job_requests
+      : Array.isArray(jobData.requests)
+      ? jobData.requests
       : [];
 
-    const fallbackCustomerLabel = "Reported request";
-    const fallbackVhcLabel = "VHC authorised item";
-    const isPlaceholderDescription = (value) =>
-      [fallbackCustomerLabel.toLowerCase(), fallbackVhcLabel.toLowerCase(), "vhc item"].includes(
-        String(value || "").trim().toLowerCase()
-      );
-
-    const requestsById = new Map();
-    const addRequest = (request) => {
-      if (!request?.id) return;
-      const key = String(request.id);
-      const existing = requestsById.get(key);
-      if (!existing) {
-        requestsById.set(key, request);
-        return;
-      }
-
-      // Keep richer details when duplicate entries are discovered across payload shapes.
-      requestsById.set(key, {
-        ...existing,
-        ...request,
-        description:
-          existing.description && !isPlaceholderDescription(existing.description)
-            ? existing.description
-            : request.description || existing.description || fallbackCustomerLabel,
-      });
-    };
-
-    const customerRequestDescriptionById = new Map();
-    const vhcRequestDescriptionByItemId = new Map();
-    requestsSource.forEach((req) => {
-      if (!req || typeof req !== "object") return;
-      const source = String(req.request_source || req.requestSource || "customer_request").toLowerCase();
-      const requestId = req.request_id || req.requestId || null;
-      const vhcItemId = req.vhc_item_id || req.vhcItemId || null;
-      const description = req.text || req.description || req.note_text || req.noteText || "";
-
-      if (source === "vhc_authorised" || source === "vhc_authorized") {
-        if (vhcItemId != null && description) {
-          vhcRequestDescriptionByItemId.set(String(vhcItemId), description);
-        }
-        return;
-      }
-
-      if (requestId != null && description) {
-        customerRequestDescriptionById.set(String(requestId), description);
-      }
-    });
-
-    (Array.isArray(jobData.authorizedVhcItems) ? jobData.authorizedVhcItems : []).forEach((item) => {
-      const vhcItemId = item?.vhcItemId ?? null;
-      const description = item?.label || item?.description || "";
-      if (vhcItemId != null && description) {
-        vhcRequestDescriptionByItemId.set(String(vhcItemId), description);
-      }
-    });
-
-    requestsSource.forEach((req, index) => {
-      if (!req || typeof req !== "object") return;
-      const source = String(req.request_source || req.requestSource || "customer_request").toLowerCase();
-      const rawId = req.request_id || req.requestId || null;
-      const vhcItemId = req.vhc_item_id || req.vhcItemId || null;
-      const description = req.text || req.description || req.note_text || req.noteText || fallbackCustomerLabel;
-      const sortOrder = req.sort_order ?? req.sortOrder ?? index;
-
-      if (source === "vhc_authorised" || source === "vhc_authorized") {
-        const vhcKey = vhcItemId != null ? `vhc-${vhcItemId}` : rawId ? `vhc-${rawId}` : null;
-        addRequest({
-          id: vhcKey,
-          type: "vhc",
-          description,
-          section: req.section || "",
-          severity: "authorized",
-          vhcItemId,
-          sortOrder,
-        });
-        return;
-      }
-
-      addRequest({
-        id: rawId != null ? rawId : `customer-fallback-${index}`,
+    const customerReqs = requestsSource
+      .filter((req) => {
+        // Only include customer requests that have a valid database ID
+        const id = req.request_id || req.requestId;
+        const source = req.request_source || req.requestSource || "customer_request";
+        return id != null && source === "customer_request";
+      })
+      .map((req) => ({
+        id: req.request_id || req.requestId,
         type: "customer",
-        description,
+        description: typeof req === "string" ? req : req.text || req.description || "",
         jobType: req.job_type || req.jobType || "Customer",
         hours: req.hours || null,
-        sortOrder,
-      });
-    });
+      }));
 
-    // Legacy jobs.requests support (array of strings or lightweight objects).
-    (Array.isArray(jobData.requests) ? jobData.requests : []).forEach((req, index) => {
-      const description =
-        typeof req === "string"
-          ? req
-          : req?.text || req?.description || req?.note_text || req?.noteText || "";
-      if (!description) return;
-      addRequest({
-        id: `customer-legacy-${index}`,
-        type: "customer",
-        description,
-        jobType: req?.job_type || req?.jobType || "Customer",
-        hours: req?.hours || null,
-        sortOrder: index,
-      });
-    });
-
-    // Canonical VHC authorised items from pre-joined table.
-    (Array.isArray(jobData.authorizedVhcItems) ? jobData.authorizedVhcItems : []).forEach((item, index) => {
-      const vhcItemId = item?.vhcItemId ?? null;
-      if (vhcItemId == null) return;
-      addRequest({
-        id: `vhc-${vhcItemId}`,
+    // VHC authorized work - use canonical pre-joined data from server
+    const vhcReqs = (Array.isArray(jobData.authorizedVhcItems) ? jobData.authorizedVhcItems : [])
+      .map((item) => ({
+        id: `vhc-${item.vhcItemId}`,
         type: "vhc",
-        description: item.label || item.description || "VHC item",
+        description: item.label || item.description || "VHC Item",
         section: item.section || "",
         severity: "authorized",
-        vhcItemId,
-        sortOrder: index,
-      });
-    });
+        vhcItemId: item.vhcItemId,
+      }));
 
-    // Keep request cards visible even if upstream request payload is sparse/missing after allocation.
-    jobParts.forEach((part) => {
-      if (part?.allocatedToRequestId != null) {
-        const requestIdKey = String(part.allocatedToRequestId);
-        const linkedDescription =
-          customerRequestDescriptionById.get(requestIdKey) ||
-          part.request_notes ||
-          part.description ||
-          part.name ||
-          fallbackCustomerLabel;
-        addRequest({
-          id: part.allocatedToRequestId,
-          type: "customer",
-          description: linkedDescription,
-          jobType: "Customer",
-          hours: null,
-          sortOrder: Number.MAX_SAFE_INTEGER,
-        });
-      }
-
-      if (part?.vhcItemId != null) {
-        const vhcKey = String(part.vhcItemId);
-        const linkedDescription =
-          vhcRequestDescriptionByItemId.get(vhcKey) ||
-          part.request_notes ||
-          part.description ||
-          part.name ||
-          fallbackVhcLabel;
-        addRequest({
-          id: `vhc-${part.vhcItemId}`,
-          type: "vhc",
-          description: linkedDescription,
-          section: "",
-          severity: "authorized",
-          vhcItemId: part.vhcItemId,
-          sortOrder: Number.MAX_SAFE_INTEGER,
-        });
-      }
-    });
-
-    const allReqs = Array.from(requestsById.values());
-    const customerReqs = allReqs
-      .filter((req) => req.type === "customer")
-      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
-    const vhcReqs = allReqs
-      .filter((req) => req.type === "vhc")
-      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
-
-    const orderedReqs = [...customerReqs, ...vhcReqs];
-    console.log("[PartsTab] All requests:", orderedReqs);
+    const allReqs = [...customerReqs, ...vhcReqs];
+    console.log("[PartsTab] All requests:", allReqs);
     console.log("[PartsTab] VHC requests:", vhcReqs);
-    return orderedReqs;
-  }, [jobData.jobRequests, jobData.job_requests, jobData.requests, jobData.authorizedVhcItems, jobParts]);
+    return allReqs;
+  }, [jobData.jobRequests, jobData.job_requests, jobData.requests, jobData.authorizedVhcItems]);
 
   // Group parts by allocated request (including VHC items)
   useEffect(() => {

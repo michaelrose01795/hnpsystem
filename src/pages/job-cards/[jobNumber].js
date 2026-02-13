@@ -43,9 +43,6 @@ import { TimePickerField } from "@/components/timePickerAPI";
 import ClockingHistorySection from "@/components/JobCards/ClockingHistorySection";
 import { buildApiUrl } from "@/utils/apiClient";
 import { popupCardStyles, popupOverlayStyles } from "@/styles/appTheme";
-import JobCardShell from "@/features/jobCard/ui/JobCardShell";
-import SummaryTiles from "@/features/jobCard/ui/SummaryTiles";
-import SectionCard from "@/features/jobCard/ui/SectionCard";
 
 const deriveVhcSeverity = (check = {}) => {
   const fields = [
@@ -1761,21 +1758,6 @@ export default function JobCardDetailPage() {
     { id: "documents", label: "Documents"},
     { id: "invoice", label: "Invoice"}
   ];
-  const summaryTiles = [
-    { label: "Job Type", value: jobData.jobType || "N/A", tone: "neutral", valueColor: "var(--primary)" },
-    {
-      label: "Parts Authorised",
-      value: `${Array.isArray(jobData.partsAllocations) ? jobData.partsAllocations.length : 0}`,
-      tone: "pink",
-      valueColor: "var(--danger)",
-    },
-    {
-      label: "Clocked Hours",
-      value: Number(jobData?.clockedHours || 0).toFixed(1),
-      tone: "green",
-      valueColor: "var(--success-dark)",
-    },
-  ];
 
   const pageStackStyle = {
     display: "flex",
@@ -1787,7 +1769,6 @@ export default function JobCardDetailPage() {
   return (
     <JobCardErrorBoundary>
       <Layout>
-      <JobCardShell>
       <div style={pageStackStyle}>
         {isArchiveMode && (
           <section
@@ -2115,7 +2096,6 @@ export default function JobCardDetailPage() {
           </section>
         )}
 
-        <SummaryTiles items={summaryTiles} />
         {/* ✅ Vehicle & Customer Info Bar */}
         <section style={{
           display: "grid",
@@ -2346,158 +2326,139 @@ export default function JobCardDetailPage() {
         `}</style>
 
         {/* ✅ Tab Content */}
-        <section>
+        <section style={{
+          backgroundColor: "var(--layer-section-level-2)",
+          borderRadius: "12px",
+          boxShadow: "none",
+          border: "1px solid var(--surface-light)",
+          padding: "24px"
+        }}>
           {/* Preload all tabs on page load; switch by display only. */}
           <div style={{ display: activeTab === "customer-requests" ? "block" : "none" }}>
-            <SectionCard title="Customer Requests">
-              <CustomerRequestsTab
-                jobData={jobData}
-                canEdit={canEdit}
-                onUpdate={handleUpdateRequests}
-                onToggleVhcRequired={handleToggleVhcRequired}
-                vhcSummary={vhcSummaryCounts}
-                vhcChecks={jobVhcChecks}
-                notes={jobNotes}
-                partsJobItems={jobData?.parts_job_items || []}
-              />
-            </SectionCard>
+            <CustomerRequestsTab
+              jobData={jobData}
+              canEdit={canEdit}
+              onUpdate={handleUpdateRequests}
+              onToggleVhcRequired={handleToggleVhcRequired}
+              vhcSummary={vhcSummaryCounts}
+              vhcChecks={jobVhcChecks}
+              notes={jobNotes}
+              partsJobItems={jobData?.parts_job_items || []}
+            />
           </div>
 
           <div style={{ display: activeTab === "contact" ? "block" : "none" }}>
-            <SectionCard title="Contact">
-              <ContactTab
-                jobData={jobData}
-                canEdit={canEdit}
-                onSaveCustomerDetails={handleCustomerDetailsSave}
-                customerSaving={customerSaving}
-              />
-            </SectionCard>
+            <ContactTab
+              jobData={jobData}
+              canEdit={canEdit}
+              onSaveCustomerDetails={handleCustomerDetailsSave}
+              customerSaving={customerSaving}
+            />
           </div>
 
           <div style={{ display: activeTab === "scheduling" ? "block" : "none" }}>
-            <SectionCard title="Scheduling">
-              <SchedulingTab
-                jobData={jobData}
-                canEdit={canEdit}
-                customerVehicles={customerVehicles}
-                customerVehiclesLoading={customerVehiclesLoading}
-                bookingRequest={jobData?.bookingRequest}
-                onBookingFlowSave={handleBookingFlowSave}
-                bookingFlowSaving={bookingFlowSaving}
-                onBookingApproval={handleBookingApproval}
-                bookingApprovalSaving={bookingApprovalSaving}
-                onAppointmentSave={handleAppointmentSave}
-                appointmentSaving={appointmentSaving}
-              />
-            </SectionCard>
+            <SchedulingTab
+              jobData={jobData}
+              canEdit={canEdit}
+              customerVehicles={customerVehicles}
+              customerVehiclesLoading={customerVehiclesLoading}
+              bookingRequest={jobData?.bookingRequest}
+              onBookingFlowSave={handleBookingFlowSave}
+              bookingFlowSaving={bookingFlowSaving}
+              onBookingApproval={handleBookingApproval}
+              bookingApprovalSaving={bookingApprovalSaving}
+              onAppointmentSave={handleAppointmentSave}
+              appointmentSaving={appointmentSaving}
+            />
           </div>
 
           <div style={{ display: activeTab === "service-history" ? "block" : "none" }}>
-            <SectionCard title="Service History">
-              <ServiceHistoryTab vehicleJobHistory={vehicleJobHistory} />
-            </SectionCard>
+            <ServiceHistoryTab vehicleJobHistory={vehicleJobHistory} />
           </div>
 
           {canViewPartsTab && (
             <div style={{ display: activeTab === "parts" ? "block" : "none" }}>
-              <SectionCard title="Parts">
-                <PartsTabNew
-                  jobData={jobData}
-                  canEdit={canEdit}
-                  onRefreshJob={() => fetchJobData({ silent: true, force: true })}
-                  actingUserId={actingUserId}
-                  actingUserNumericId={actingUserNumericId}
-                  invoiceReady={invoicePrerequisitesMet}
-                />
-              </SectionCard>
+              <PartsTabNew
+                jobData={jobData}
+                canEdit={canEdit}
+                onRefreshJob={() => fetchJobData({ silent: true, force: true })}
+                actingUserId={actingUserId}
+                actingUserNumericId={actingUserNumericId}
+                invoiceReady={invoicePrerequisitesMet}
+              />
             </div>
           )}
 
           <div style={{ display: activeTab === "notes" ? "block" : "none" }}>
-            <SectionCard title="Notes">
-              <NotesTabNew
-                jobData={jobData}
-                canEdit={canEdit}
-                actingUserNumericId={actingUserNumericId}
-                onNotesChange={(nextNotes) => {
-                  setJobNotes(nextNotes || []);
-                  setSharedNote(nextNotes?.[0]?.noteText || "");
-                  setSharedNoteMeta(nextNotes?.[0] || null);
-                }}
-              />
-            </SectionCard>
+            <NotesTabNew
+              jobData={jobData}
+              canEdit={canEdit}
+              actingUserNumericId={actingUserNumericId}
+              onNotesChange={(nextNotes) => {
+                setJobNotes(nextNotes || []);
+                setSharedNote(nextNotes?.[0]?.noteText || "");
+                setSharedNoteMeta(nextNotes?.[0] || null);
+              }}
+            />
           </div>
 
           <div style={{ display: activeTab === "write-up" ? "block" : "none", height: "100%" }}>
-            <SectionCard title="Write Up">
-              <div
-                style={{
-                  height: "100%",
-                  overflow: "hidden",
-                  display: "flex",
-                  flexDirection: "column",
-                }}
-              >
-                <WriteUpForm
-                  jobNumber={jobData?.jobNumber || jobNumber}
-                  jobCardData={jobData}
-                  showHeader={false}
-                  onSaveSuccess={() => fetchJobData({ silent: true, force: true })}
-                />
-              </div>
-            </SectionCard>
+            <div
+              style={{
+                height: "100%",
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <WriteUpForm
+                jobNumber={jobData?.jobNumber || jobNumber}
+                jobCardData={jobData}
+                showHeader={false}
+                onSaveSuccess={() => fetchJobData({ silent: true, force: true })}
+              />
+            </div>
           </div>
 
           <div style={{ display: activeTab === "vhc" ? "block" : "none" }}>
-            <SectionCard title="Vehicle Health Check">
-              <VHCTab
-                jobNumber={jobNumber}
-                jobData={jobData}
-                onFinancialTotalsChange={setVhcFinancialTotalsFromPanel}
-                onJobDataRefresh={() => fetchJobData({ silent: true, force: true })}
-              />
-            </SectionCard>
+            <VHCTab
+              jobNumber={jobNumber}
+              jobData={jobData}
+              onFinancialTotalsChange={setVhcFinancialTotalsFromPanel}
+              onJobDataRefresh={() => fetchJobData({ silent: true, force: true })}
+            />
           </div>
 
           <div style={{ display: activeTab === "warranty" ? "block" : "none" }}>
-            <SectionCard title="Warranty">
-              <WarrantyTab
-                jobData={jobData}
-                canEdit={canEdit}
-                onLinkComplete={() => fetchJobData({ silent: true, force: true })}
-              />
-            </SectionCard>
+            <WarrantyTab
+              jobData={jobData}
+              canEdit={canEdit}
+              onLinkComplete={() => fetchJobData({ silent: true, force: true })}
+            />
           </div>
 
           <div style={{ display: activeTab === "clocking" ? "block" : "none" }}>
-            <SectionCard title="Clocking">
-              <ClockingTab jobData={jobData} canEdit={canEdit} />
-            </SectionCard>
+            <ClockingTab jobData={jobData} canEdit={canEdit} />
           </div>
 
           <div style={{ display: activeTab === "messages" ? "block" : "none" }}>
-            <SectionCard title="Messages">
-              <MessagesTab
-                thread={jobData?.messagingThread}
-                jobNumber={jobData?.jobNumber || jobNumber}
-                customerEmail={jobData?.customerEmail}
-              />
-            </SectionCard>
+            <MessagesTab
+              thread={jobData?.messagingThread}
+              jobNumber={jobData?.jobNumber || jobNumber}
+              customerEmail={jobData?.customerEmail}
+            />
           </div>
 
           <div style={{ display: activeTab === "documents" ? "block" : "none" }}>
-            <SectionCard title="Documents">
-              <DocumentsTab
-                documents={jobDocuments}
-                canDelete={canManageDocuments}
-                onDelete={handleDeleteDocument}
-                onManageDocuments={canManageDocuments ? () => setShowDocumentsPopup(true) : undefined}
-              />
-            </SectionCard>
+            <DocumentsTab
+              documents={jobDocuments}
+              canDelete={canManageDocuments}
+              onDelete={handleDeleteDocument}
+              onManageDocuments={canManageDocuments ? () => setShowDocumentsPopup(true) : undefined}
+            />
           </div>
 
           <div data-invoice-print-area style={{ display: activeTab === "invoice" ? "block" : "none" }}>
-            <SectionCard title="Invoice">
             {!invoicePrerequisitesMet && (
               <div
                 style={{
@@ -2523,7 +2484,6 @@ export default function JobCardDetailPage() {
               </div>
             )}
             <InvoiceSection jobData={jobData} />
-            </SectionCard>
           </div>
         </section>
         <InvoiceBuilderPopup
@@ -2566,7 +2526,6 @@ export default function JobCardDetailPage() {
         )}
 
       </div>
-      </JobCardShell>
 
       </Layout>
     </JobCardErrorBoundary>
@@ -7273,3 +7232,4 @@ function DocumentsTab({
     </div>
   );
 }
+

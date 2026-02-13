@@ -415,7 +415,7 @@ const DrumBrakesSection = ({
     </div>
 );
 
-export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, initialData, locked = false, inlineMode = false }) {
+export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, initialData, locked = false }) {
   const normalisedInitial = useMemo(() => normaliseBrakesState(initialData), [initialData]);
 
   const [data, setData] = useState(normalisedInitial.data);
@@ -910,7 +910,6 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
   return (
     <VHCModalShell
       isOpen={isOpen}
-      inlineMode={inlineMode}
       title="Brakes & Hubs"
       locked={locked}
       width="1280px"

@@ -250,7 +250,7 @@ function AutoCompleteInput({ value, onChange, options, placeholder }) {
   );
 }
 
-export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, initialData = null, locked = false, inlineMode = false }) {
+export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, initialData = null, locked = false }) {
   const normalizedInitialTyres = useMemo(() => buildNormalizedTyres(initialData || {}), [initialData]);
   const [tyres, setTyres] = useState(normalizedInitialTyres);
 
@@ -603,7 +603,6 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
   return (
     <VHCModalShell
       isOpen={isOpen}
-      inlineMode={inlineMode}
       onClose={handleClose}
       title="Wheels & Tyres"
       locked={locked}

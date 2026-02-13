@@ -11,7 +11,6 @@ import { getAllJobs, updateJobStatus } from "@/lib/database/jobs"; // import dat
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { useUser } from "@/context/UserContext";
 import { DropdownField } from "@/components/dropdownAPI";
-import { deriveJobTypeLabelFromJob } from "@/lib/jobType/label";
 
 const TODAY_STATUSES = ["Booked", "Checked In", "In Progress", "Invoiced", "Complete"];
 
@@ -61,7 +60,18 @@ const getJobDate = (job) => {
   return null;
 };
 
-const deriveJobType = (job) => deriveJobTypeLabelFromJob(job);
+const deriveJobType = (job) => {
+  // Use detected job categories from create page if available
+  if (Array.isArray(job?.jobCategories) && job.jobCategories.length > 0) {
+    return job.jobCategories.join(", ");
+  }
+  // Fallback to type field
+  const baseType = normalizeString(job?.type);
+  if (baseType.includes("mot")) return "MOT";
+  if (baseType.includes("service")) return "Service";
+  if (baseType.includes("diag")) return "Diagnose";
+  return "Other";
+};
 
 const getRequestsCount = (requests) => {
   if (!requests) return 0;

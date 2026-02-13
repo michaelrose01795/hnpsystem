@@ -10,8 +10,6 @@ export default function VHCModalShell({
   subtitle,
   width = "1080px",
   height = "640px",
-  fullScreen = false,
-  inlineMode = false,
   onClose,
   footer = null,
   children,
@@ -23,74 +21,17 @@ export default function VHCModalShell({
   const { resolvedMode } = useTheme();
   const closeButtonColor = resolvedMode === "dark" ? "var(--accent-purple)" : "var(--danger)";
   const isBlockingLocked = locked && lockedOverlay;
+  if (!isOpen || typeof document === "undefined") return null;
 
-  const overlayStyle = fullScreen
-    ? {
-        ...vhcModalStyles.overlay,
-        background: "var(--surface)",
-        backdropFilter: "none",
-        padding: 0,
-        alignItems: "stretch",
-      }
-    : vhcModalStyles.overlay;
-
-  const containerStyle = fullScreen
-    ? {
-        ...vhcModalStyles.container({ width, height }),
-        width: "100vw",
-        maxWidth: "100vw",
-        height: "100dvh",
-        maxHeight: "100dvh",
-        borderRadius: 0,
-        border: "none",
-      }
-    : vhcModalStyles.container({ width, height });
-
-  const headerStyle = fullScreen
-    ? {
-        ...vhcModalStyles.header,
-        borderBottom: "1px solid var(--border)",
-      }
-    : vhcModalStyles.header;
-
-  const bodyStyle = fullScreen
-    ? {
-        ...vhcModalStyles.body,
-        background: "var(--surface)",
-      }
-    : vhcModalStyles.body;
-
-  const footerStyle = fullScreen
-    ? {
-        ...vhcModalStyles.footer,
-        backgroundColor: "var(--surface)",
-      }
-    : vhcModalStyles.footer;
-
-  const inlineWrapperStyle = {
-    position: "relative",
-    width: "100%",
-    marginTop: "16px",
-  };
-
-  const inlineContainerStyle = {
-    ...vhcModalStyles.container({ width, height }),
-    width: "100%",
-    maxWidth: "100%",
-    maxHeight: "none",
-    minHeight: "620px",
-    borderRadius: "16px",
-  };
-
-  if (!isOpen) return null;
-
-  const content = (
-    <div style={inlineMode ? inlineWrapperStyle : overlayStyle}>
-      <div style={inlineMode ? inlineContainerStyle : containerStyle}>
-        <div style={{ ...(inlineMode ? vhcModalStyles.header : headerStyle), position: "relative", zIndex: 3 }}>
+  return createPortal(
+    <div style={vhcModalStyles.overlay}>
+      <div style={vhcModalStyles.container({ width, height })}>
+        <div style={{ ...vhcModalStyles.header, position: "relative", zIndex: 3 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
             <h2 style={vhcModalStyles.headerTitle}>{title}</h2>
-            {subtitle ? <p style={vhcModalStyles.headerSubtitle}>{subtitle}</p> : null}
+            {subtitle ? (
+              <p style={vhcModalStyles.headerSubtitle}>{subtitle}</p>
+            ) : null}
           </div>
           {!hideCloseButton && (
             <button
@@ -116,7 +57,7 @@ export default function VHCModalShell({
 
         <div
           style={{
-            ...(inlineMode ? vhcModalStyles.body : bodyStyle),
+            ...vhcModalStyles.body,
             pointerEvents: isBlockingLocked ? "none" : "auto",
             filter: isBlockingLocked ? "grayscale(0.1)" : "none",
           }}
@@ -148,7 +89,7 @@ export default function VHCModalShell({
         {footer ? (
           <div
             style={{
-              ...(inlineMode ? vhcModalStyles.footer : footerStyle),
+              ...vhcModalStyles.footer,
               pointerEvents: isBlockingLocked ? "none" : "auto",
               filter: isBlockingLocked ? "grayscale(0.1)" : "none",
             }}
@@ -204,12 +145,9 @@ export default function VHCModalShell({
           </div>
         ) : null}
       </div>
-    </div>
+    </div>,
+    document.body
   );
-
-  if (inlineMode) return content;
-  if (typeof document === "undefined") return null;
-  return createPortal(content, document.body);
 }
 
 export const buildModalButton = (variant = "primary", { disabled = false } = {}) => ({

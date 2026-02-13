@@ -1,294 +1,83 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Top-Down Vehicle Diagram</title>
-  <style>
-    :root {
-      --page-bg: #edf0f3;
-      --card-bg: #f7f8fa;
-      --card-border: #c8ced6;
+TO DO:
 
-      --car-outline: #2f3741;
-      --car-top: #d8dee5;
-      --car-mid: #cfd6de;
-      --car-low: #c4ccd5;
-      --glass: #b6c0cb;
-      --panel-line: #4b5562;
-      --arch: #5b6673;
+Continue flow with job number 55
 
-      --wheel-bg: #ffffff;
-      --wheel-border: #2b333d;
-      --wheel-text: #1b222b;
 
-      --selected: #c1121f;
-      --selected-soft: rgba(193, 18, 31, 0.14);
-    }
+have it so only one active clocking status at once per user, example if a user forgets to clock out have it so they are auto clocked out at 12am every morning if the clocking is still active and have it if they log in, this creates a new clcoking adding the clock out time to the time before they clocked in to the new one. for refece this section is within the /profile page within the "Attendance History" section but make sure it updates within the database as well. 
+ 
 
-    * { box-sizing: border-box; }
 
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      background: radial-gradient(circle at 50% 15%, #f5f7f9 0%, var(--page-bg) 52%, #e6eaee 100%);
-      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-      padding: 20px;
-      color: #1f2731;
-    }
+FIND OUT yes work on this 
+Can we add an auto detect text box locations, tick box location, signature box location, correct orientation, so the app can turn the uploaded document into a live seach which can be ticked, signed, reg field etc auto filled out. or is this not possible. 
 
-    .card {
-      width: min(620px, 100%);
-      border: 1px solid var(--card-border);
-      background: var(--card-bg);
-      border-radius: 18px;
-      padding: 18px;
-      box-shadow: 0 8px 24px rgba(20, 28, 38, 0.08);
-    }
 
-    .canvas {
-      position: relative;
-      width: min(460px, 100%);
-      aspect-ratio: 4 / 6;
-      margin: 0 auto;
-      border: 1px dashed #bcc3cc;
-      border-radius: 16px;
-      background: linear-gradient(180deg, #f0f3f6 0%, #e7ebef 100%);
-      overflow: hidden;
-    }
+DO THISSSS
+work on implementing "AI" within whole app search chat "AI job detection system"
 
-    .front-label {
-      position: absolute;
-      top: 2.5%;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.16em;
-      color: #4b5562;
-      z-index: 8;
-    }
 
-    /* Vehicle silhouette */
-    .car {
-      position: absolute;
-      left: 50%;
-      top: 7%;
-      transform: translateX(-50%);
-      width: 44%;
-      height: 86%;
-      z-index: 2;
 
-      border: 2px solid var(--car-outline);
-      background: linear-gradient(180deg, var(--car-top) 0%, var(--car-mid) 48%, var(--car-low) 100%);
+make sure the "ALLOCATE PARTS" part section always shows the customer request (at the top) and VHC request (blow the cusomter request) at all times if its been reported, now remove the requests from that sectin even if a part has been allocated to that request.
 
-      /* Tapered bonnet + shoulders + tapered boot */
-      clip-path: polygon(
-        50% 0%,
-        68% 4%,
-        76% 10%,
-        79% 18%,
-        81% 28%,
-        82% 40%,
-        83% 60%,
-        82% 74%,
-        79% 86%,
-        73% 94%,
-        62% 99%,
-        50% 100%,
-        38% 99%,
-        27% 94%,
-        21% 86%,
-        18% 74%,
-        17% 60%,
-        18% 40%,
-        19% 28%,
-        21% 18%,
-        24% 10%,
-        32% 4%
-      );
 
-      border-radius: 22px;
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.42),
-        inset 0 -1px 0 rgba(32, 40, 50, 0.14);
-    }
+Fix it so when i click allocated with an authoirse request it works the same with a normal request. 
 
-    .car::before,
-    .car::after {
-      content: "";
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 64%;
-      border: 1px solid var(--panel-line);
-      background: rgba(238, 241, 245, 0.34);
-    }
 
-    /* Bonnet contour */
-    .car::before {
-      top: 8%;
-      height: 14%;
-      border-radius: 14px 14px 10px 10px;
-    }
 
-    /* Boot contour */
-    .car::after {
-      bottom: 8%;
-      height: 14%;
-      border-radius: 10px 10px 14px 14px;
-    }
+Within write up and VHC tab inside the tab section, when the VHC is fully complete (Everything is authorised or delcined) change the background colour to green, and when everything is ticked within the write up section change the write up tab button background to green as well. so the part moves to on job to within the row of the request its been allocated to, link this though the database as well. 
 
-    .roof {
-      position: absolute;
-      left: 50%;
-      top: 30%;
-      transform: translateX(-50%);
-      width: 54%;
-      height: 40%;
-      border: 1px solid var(--panel-line);
-      border-radius: 20px;
-      background: linear-gradient(180deg, #cad3dd 0%, var(--glass) 100%);
-      z-index: 3;
-    }
+CHECK
+Sub-job number, make sure database table update and is all linked. 
 
-    .windshield,
-    .rear-glass {
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 48%;
-      border: 1px solid #5a6572;
-      background: linear-gradient(180deg, #d4dbe3 0%, #bec8d2 100%);
-      z-index: 4;
-    }
+add the changes to the database into the addtables.sql for me to put into the table editor. 
 
-    .windshield {
-      top: 19%;
-      height: 11%;
-      border-radius: 12px 12px 8px 8px;
-    }
 
-    .rear-glass {
-      bottom: 19%;
-      height: 11%;
-      border-radius: 8px 8px 12px 12px;
-    }
 
-    .spine {
-      position: absolute;
-      left: 50%;
-      top: 12%;
-      transform: translateX(-50%);
-      width: 6%;
-      height: 76%;
-      border-radius: 999px;
-      background: rgba(58, 66, 76, 0.1);
-      z-index: 5;
-    }
 
-    /* Wheel arches */
-    .arch {
-      position: absolute;
-      width: 16%;
-      height: 17%;
-      border: 2px solid var(--arch);
-      border-radius: 14px;
-      background: rgba(112, 124, 138, 0.1);
-      z-index: 1;
-    }
 
-    .arch.nsf { left: 10%; top: 20.5%; }
-    .arch.osf { right: 10%; top: 20.5%; }
-    .arch.nsr { left: 10%; bottom: 20.5%; }
-    .arch.osr { right: 10%; bottom: 20.5%; }
+CHECKKKK
+have it so when in smaller screen than the full windows and full ipad size the sidebar open button and status open button are only shown at the top of the page in a 50/50 tab button style layout. add a close button on the "My Dashboard" row. 
 
-    .wheel {
-      position: absolute;
-      width: 90px;
-      height: 76px;
-      border-radius: 12px;
-      border: 2px solid var(--wheel-border);
-      background: var(--wheel-bg);
-      color: var(--wheel-text);
-      font-size: 14px;
-      font-weight: 700;
-      letter-spacing: 0.03em;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      z-index: 7;
-      transition: transform .14s ease, border-color .14s ease, background .14s ease;
-    }
+CHECKKK
+have it so the top bar doesnt show anythe mode or Welcome back section when in this modesand have it so the search bar isnt insdie the top bar its underneath the navigator and status button taking up the whole width. 
 
-    .wheel:hover,
-    .wheel:focus-visible {
-      transform: translateY(-1px);
-      border-color: #151b23;
-      outline: none;
-    }
 
-    .wheel.selected {
-      border-color: var(--selected);
-      color: #730f19;
-      background: var(--selected-soft);
-      box-shadow: 0 0 0 2px rgba(193, 18, 31, 0.2);
-    }
 
-    .wheel.nsf { left: 9%; top: 24%; }
-    .wheel.osf { right: 9%; top: 24%; }
-    .wheel.nsr { left: 9%; bottom: 24%; }
-    .wheel.osr { right: 9%; bottom: 24%; }
 
-    @media (max-width: 560px) {
-      .wheel { width: 74px; height: 66px; font-size: 13px; }
+Go though each page and set which section has what level of colour level 1-4,  
+Change to base layer " /* Level 3 (Bottom layer - pale red): page background + outer shell */
+  --layer-section-level-3: #ffeaea;" adjust in all places where users 
 
-      .arch.nsf,
-      .arch.nsr,
-      .wheel.nsf,
-      .wheel.nsr { left: 5%; }
 
-      .arch.osf,
-      .arch.osr,
-      .wheel.osf,
-      .wheel.osr { right: 5%; }
-    }
-  </style>
-</head>
-<body>
-  <section class="card" aria-label="Vehicle wheel diagram">
-    <div class="canvas">
-      <span class="front-label">FRONT</span>
 
-      <div class="car" aria-hidden="true"></div>
-      <div class="roof" aria-hidden="true"></div>
-      <div class="windshield" aria-hidden="true"></div>
-      <div class="rear-glass" aria-hidden="true"></div>
-      <div class="spine" aria-hidden="true"></div>
 
-      <div class="arch nsf" aria-hidden="true"></div>
-      <div class="arch osf" aria-hidden="true"></div>
-      <div class="arch nsr" aria-hidden="true"></div>
-      <div class="arch osr" aria-hidden="true"></div>
 
-      <button type="button" class="wheel nsf" data-wheel="NSF" aria-label="Nearside Front">NSF</button>
-      <button type="button" class="wheel osf" data-wheel="OSF" aria-label="Offside Front">OSF</button>
-      <button type="button" class="wheel nsr" data-wheel="NSR" aria-label="Nearside Rear">NSR</button>
-      <button type="button" class="wheel osr" data-wheel="OSR" aria-label="Offside Rear">OSR</button>
-    </div>
-  </section>
 
-  <script>
-    const wheels = Array.from(document.querySelectorAll('.wheel'));
-    wheels.forEach((wheel) => {
-      wheel.addEventListener('click', () => {
-        wheels.forEach((w) => w.classList.remove('selected'));
-        wheel.classList.add('selected');
-      });
-    });
-  </script>
-</body>
-</html>
+
+
+
+TO BE COMPLETED AT END:
+
+Go through the status of each section and job to make sure status is good and matchs and works well within the database. 
+
+
+
+
+With every page within the top bar to the right of the search add a "?" button which opens a drop down (link to drop down style api) which shows (contact support (this opens messages tab and starts a new message with the uers Lead tech (add this in small print within the section as a todo) which within the text box to send the message shows a / comand which tells the sender the page the user was on and then the user can then input text after either reporting a concern, bug, or a question. The next in the drop down is a "Tutorial" button which gives multiple steps describing what each section and button does inside an overlay type style making the background darker and the section or button the tutorial is telling how to use lighter with the description box like a bubble which is inside the darker section and the bubble is following the light and dark theme, there is also a "Next" and "back" button which flicks through the each section and button to do with that page/the tab selected at the time of the button press with also an "Finish" button which closes the overlay and tutorial section. What woul dbe the best way to implement this? as an api with a file linked to each page and tab which has all of the buttons and section anmes and descriptions inside the api linking or a section within the actual code which reads the code and sees what section does what same with buttons, unless theres another way which is commonly used for tutorials like im describing.
+
+NOTE:
+
+
+See if database strucure links to all of the code with the src/lib/database/schema/schemaReference.sql also see if any tables are in the src/lib/database/schema/schemaReference.sql and are not being used inside the code and why they arent being used. Make sure that all of the code and inputes saves to the database where required and in the corrected locations add any tables/columns to src/lib/database/schema/addtable.sql
+
+
+
+Add any database tables / columns to file location: src/lib/database/schema/addtable.sql, can to see if the table is already inside the file location: src/lib/database/schema/schemaReference.sql file first
+
+
+
+npm i next@latest
+npm i -g vercel@latest
+
+
+
+wakatime extetnion dads pc

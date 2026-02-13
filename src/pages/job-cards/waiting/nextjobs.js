@@ -16,7 +16,6 @@ import { getTechnicianUsers, getMotTesterUsers } from "@/lib/database/users";
 import { normalizeDisplayName } from "@/utils/nameUtils";
 import { supabase } from "@/lib/supabaseClient";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
-import { deriveJobTypeLabelFromJob } from "@/lib/jobType/label";
 
 // Layout constants ensure consistent panel sizing and scroll thresholds
 const VISIBLE_JOBS_PER_PANEL = 5;
@@ -134,7 +133,38 @@ const formatAppointmentTime = (job) => {
   }
 };
 
-const deriveJobTypeLabel = (job) => deriveJobTypeLabelFromJob(job);
+const JOB_TYPE_KEYWORDS = [
+  { label: "MOT", keywords: ["mot"] },
+  { label: "Service", keywords: ["service", "oil", "inspection", "maintenance"] },
+  { label: "Diagnose", keywords: ["diagnos", "fault", "warning", "investigation", "check"] },
+];
+
+const deriveJobTypeLabel = (job) => {
+  const categories = (job?.jobCategories || []).map((category) => toStatusKey(category));
+  if (categories.some((category) => category.includes("MOT"))) return "MOT";
+  if (categories.some((category) => category.includes("SERVICE"))) return "Service";
+  if (categories.some((category) => category.includes("DIAG"))) return "Diagnose";
+
+  const baseType = toStatusKey(job?.type);
+  if (baseType.includes("MOT")) return "MOT";
+  if (baseType.includes("SERVICE")) return "Service";
+  if (baseType.includes("DIAG")) return "Diagnose";
+
+  const haystack = [
+    job?.description || "",
+    typeof job?.requests === "string" ? job.requests : JSON.stringify(job?.requests || ""),
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  for (const mapping of JOB_TYPE_KEYWORDS) {
+    if (mapping.keywords.some((keyword) => haystack.includes(keyword))) {
+      return mapping.label;
+    }
+  }
+
+  return "Other";
+};
 
 const formatClockInTime = (value) => {
   if (!value) return "";

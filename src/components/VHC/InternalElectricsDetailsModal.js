@@ -46,7 +46,7 @@ const statusSelectStyle = {
   width: "auto",
 };
 
-export default function InternalElectricsDetailsModal({ isOpen, onClose, onComplete, initialData, locked = false, summaryItems = [], inlineMode = false }) {
+export default function InternalElectricsDetailsModal({ isOpen, onClose, onComplete, initialData, locked = false, summaryItems = [] }) {
   // Find matching summary item for a concern to get its approval status from the database
   const findSummaryItemForConcern = (category, concern) => {
     if (!concern || !category || !Array.isArray(summaryItems)) return null;
@@ -246,7 +246,6 @@ export default function InternalElectricsDetailsModal({ isOpen, onClose, onCompl
   return (
     <VHCModalShell
       isOpen={isOpen}
-      inlineMode={inlineMode}
       onClose={handleClose}
       title="Internal"
       locked={locked}
