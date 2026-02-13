@@ -2,29 +2,7 @@ TO DO:
 
 Continue flow with job number 55. UPLAOD IMAGE FROM ONEDRIVE
 
-make sure the "ALLOCATE PARTS" part section always shows the customer request (at the top) and VHC request (blow the cusomter request) at all times if its been reported, now remove the requests from that sectin even if a part has been allocated to that request.
 
-tighten the fallback labels ("Reported request" / "VHC authorised item") to pull more specific text from linked rows when available.
-
-only show the “Parts” tab within the jobcards/myjobs/[jobnumber] page if the VHC is set to not required, if the “Parts” tab is hidden show the VHC tab, if the “Parts” is shown hide the VHC tab.
-
-Within in that page, remove the “Daniel Hughes • GK19YHF • VAUXHALL” section below the “Job #00055” section. Change the “Job #00055” section to just “00055” for example
-
-Add a new tab called “Documents” this is a mirror of the documents tab within the jobnumber/[jobnumber] page
-
-Add the “00055” section into a section which is the same design as within the “ Updated 13 Feb at 10:25 Clock Out Complete Job (locked)” section but seperate from that section
-
-What background card does “Fault” and “Rectification” sections sit in within the write up tab? Can we make that background card NOT THE ACUTATL CARD WHERE THE “Fault” and “Rectification” TEXT ARE WITHIN UT THE ONE BEHIND IT TO MATCH THE BACKGROUND OF THE FIRST CARD COLOUR
-
-What about deleting that card?
-
-Link the “JOB TYPE” section to the ai job type detection to the database so when the job detection is found within the create page so it all links to show the found job type
-
-Make sure that changes everywhere where used job type like this
-
-I need to move the “WARRANTY EXTRAS” button into a better location within the write up tab as well as “WRITE-UP” button within the  “WARRANTY EXTRAS” section, find a good place to put these buttons, have it so it only ahows when warrenty jobcard
-
-Remove the “Requests” bubble and text
 
 
 

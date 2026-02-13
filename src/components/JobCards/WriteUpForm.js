@@ -1964,6 +1964,12 @@ const renderLastSaved = () => (
     });
   }, [rectificationTasks]);
 
+  useEffect(() => {
+    if (!isWarrantyJob && activeTab !== "writeup") {
+      setActiveTab("writeup");
+    }
+  }, [isWarrantyJob, activeTab]);
+
   // ✅ Loading state with spinner animation
   if (loading) {
     return (
@@ -2074,6 +2080,63 @@ const renderLastSaved = () => (
         gap: "8px"
       }}>
         <div style={{ flex: 1, minHeight: 0 }}>
+          {isWarrantyJob && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                marginBottom: "12px",
+              }}
+            >
+              <div
+                style={{
+                  display: "inline-flex",
+                  gap: "6px",
+                  padding: "6px",
+                  borderRadius: "999px",
+                  border: "1px solid var(--surface-light)",
+                  backgroundColor: "var(--layer-section-level-3)",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("writeup")}
+                  style={{
+                    borderRadius: "999px",
+                    border: "1px solid transparent",
+                    padding: "8px 14px",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    background: activeTab === "writeup" ? "var(--accent-purple)" : "transparent",
+                    color: activeTab === "writeup" ? "white" : "var(--text-primary)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
+                  }}
+                >
+                  Write-Up
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("extras")}
+                  style={{
+                    borderRadius: "999px",
+                    border: "1px solid transparent",
+                    padding: "8px 14px",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    background: activeTab === "extras" ? "var(--accent-purple)" : "transparent",
+                    color: activeTab === "extras" ? "white" : "var(--text-primary)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
+                  }}
+                >
+                  Warranty Extras
+                </button>
+              </div>
+            </div>
+          )}
           {activeTab === "writeup" ? (
             <div
               style={{
@@ -2095,27 +2158,6 @@ const renderLastSaved = () => (
                     </div>
                     {renderLastSaved()}
                     {renderSectionEditorMeta("fault")}
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <span style={statusBadgeStyle}>Requests</span>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("extras")}
-                      style={{
-                        borderRadius: "999px",
-                        border: "1px solid var(--surface-light)",
-                        padding: "8px 14px",
-                        fontSize: "12px",
-                        fontWeight: 700,
-                        cursor: "pointer",
-                        background: "var(--surface)",
-                        color: "var(--text-primary)",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.04em",
-                      }}
-                    >
-                      Warranty Extras
-                    </button>
                   </div>
                 </div>
                 <div
@@ -2288,26 +2330,6 @@ const renderLastSaved = () => (
               gap: "16px",
               minHeight: 0
             }}>
-              <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "flex-end" }}>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("writeup")}
-                  style={{
-                    borderRadius: "999px",
-                    border: "1px solid var(--surface-light)",
-                    padding: "8px 14px",
-                    fontSize: "12px",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    background: "var(--surface)",
-                    color: "var(--text-primary)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.04em",
-                  }}
-                >
-                  Write-Up
-                </button>
-              </div>
               {metadataFields.map((fieldConfig) => (
                 <div
                   key={fieldConfig.field}

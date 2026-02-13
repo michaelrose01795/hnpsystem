@@ -163,6 +163,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           eta_time: item.eta_time || null,
           supplier_reference: item.supplier_reference || null,
           prePickLocation: item.pre_pick_location || item.prePickLocation || null,
+          requestNotes: item.request_notes || item.requestNotes || "",
           part: partData,
         };
       });
@@ -229,6 +230,15 @@ const PartsTabNew = forwardRef(function PartsTabNew(
 
   // Get customer requests and authorized work
   const allRequests = useMemo(() => {
+    const toText = (value) => (value === null || value === undefined ? "" : String(value).trim());
+    const firstText = (...values) => {
+      for (const value of values) {
+        const text = toText(value);
+        if (text) return text;
+      }
+      return "";
+    };
+
     // Prefer jobRequests/job_requests from the database (has proper request_id)
     const requestsSource = Array.isArray(jobData.jobRequests)
       ? jobData.jobRequests
@@ -238,37 +248,190 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       ? jobData.requests
       : [];
 
+    const vhcChecksSource = Array.isArray(jobData.vhcChecks)
+      ? jobData.vhcChecks
+      : Array.isArray(jobData.vhc_checks)
+      ? jobData.vhc_checks
+      : [];
+
+    const vhcRequestRowsByItemId = new Map();
+    requestsSource.forEach((req) => {
+      if (!req || typeof req === "string") return;
+      const vhcItemId = req.vhc_item_id ?? req.vhcItemId ?? null;
+      if (vhcItemId === null || vhcItemId === undefined) return;
+      const key = String(vhcItemId);
+      if (!vhcRequestRowsByItemId.has(key)) {
+        vhcRequestRowsByItemId.set(key, []);
+      }
+      vhcRequestRowsByItemId.get(key).push(req);
+    });
+
+    const vhcChecksById = new Map();
+    vhcChecksSource.forEach((check) => {
+      const id = check?.vhc_id ?? check?.vhcId ?? null;
+      if (id === null || id === undefined) return;
+      vhcChecksById.set(String(id), check);
+    });
+
+    const resolveVhcLabel = (primary, vhcItemId, index) => {
+      const key = vhcItemId === null || vhcItemId === undefined ? "" : String(vhcItemId);
+      const linkedRequestRows = key ? vhcRequestRowsByItemId.get(key) || [] : [];
+      const linkedRequestText = linkedRequestRows
+        .map((row) =>
+          firstText(
+            row?.text,
+            row?.description,
+            row?.note_text,
+            row?.noteText,
+            row?.issue_description,
+            row?.issueDescription,
+            row?.section
+          )
+        )
+        .find(Boolean);
+      const linkedCheck = key ? vhcChecksById.get(key) : null;
+      const linkedCheckText = firstText(
+        linkedCheck?.issue_title,
+        linkedCheck?.issue_description,
+        linkedCheck?.section,
+        linkedCheck?.measurement
+      );
+      return (
+        firstText(...primary, linkedRequestText, linkedCheckText) ||
+        `VHC authorised item ${index + 1}`
+      );
+    };
+
     const customerReqs = requestsSource
       .filter((req) => {
-        // Only include customer requests that have a valid database ID
-        const id = req.request_id || req.requestId;
-        const source = req.request_source || req.requestSource || "customer_request";
-        return id != null && source === "customer_request";
+        if (!req) return false;
+        if (typeof req === "string") return req.trim().length > 0;
+        const source = String(req.request_source || req.requestSource || "customer_request")
+          .toLowerCase()
+          .trim();
+        const hasVhcItemId =
+          req.vhc_item_id !== null &&
+          req.vhc_item_id !== undefined &&
+          String(req.vhc_item_id).trim() !== "";
+        const hasVhcItemIdCamel =
+          req.vhcItemId !== null &&
+          req.vhcItemId !== undefined &&
+          String(req.vhcItemId).trim() !== "";
+        const isVhcSource = source.startsWith("vhc");
+        return !isVhcSource && !hasVhcItemId && !hasVhcItemIdCamel;
       })
-      .map((req) => ({
-        id: req.request_id || req.requestId,
-        type: "customer",
-        description: typeof req === "string" ? req : req.text || req.description || "",
-        jobType: req.job_type || req.jobType || "Customer",
-        hours: req.hours || null,
-      }));
+      .map((req, index) => {
+        const persistedId =
+          typeof req === "object" && req
+            ? req.request_id ?? req.requestId ?? null
+            : null;
+        const linkedPartText =
+          persistedId !== null && persistedId !== undefined
+            ? jobParts
+                .filter((part) => String(part?.allocatedToRequestId || "") === String(persistedId))
+                .map((part) => firstText(part?.requestNotes, part?.description, part?.name))
+                .find(Boolean)
+            : "";
+        const description =
+          typeof req === "string"
+            ? firstText(req)
+            : firstText(req.text, req.description, req.note_text, req.noteText, linkedPartText) ||
+              `Reported request ${index + 1}`;
+        return {
+          id: persistedId ?? `customer-local-${index}-${String(description).slice(0, 24)}`,
+          type: "customer",
+          description,
+          jobType:
+            typeof req === "string" ? "Customer" : req.job_type || req.jobType || "Customer",
+          hours: typeof req === "string" ? null : req.hours || null,
+          canAllocate: persistedId !== null && persistedId !== undefined,
+        };
+      });
 
     // VHC authorized work - use canonical pre-joined data from server
-    const vhcReqs = (Array.isArray(jobData.authorizedVhcItems) ? jobData.authorizedVhcItems : [])
-      .map((item) => ({
-        id: `vhc-${item.vhcItemId}`,
-        type: "vhc",
-        description: item.label || item.description || "VHC Item",
-        section: item.section || "",
-        severity: "authorized",
-        vhcItemId: item.vhcItemId,
+    const vhcReqsFromAuthorizedRows = (Array.isArray(jobData.authorizedVhcItems) ? jobData.authorizedVhcItems : [])
+      .map((item, index) => {
+        const vhcItemId = item.vhcItemId ?? item.vhc_item_id ?? null;
+        return {
+          id: `vhc-${vhcItemId}`,
+          type: "vhc",
+          description: resolveVhcLabel(
+            [
+              item.label,
+              item.description,
+              item.issueDescription,
+              item.issue_description,
+              item.noteText,
+              item.note_text,
+              item.issue_title,
+              item.section,
+            ],
+            vhcItemId,
+            index
+          ),
+          section: item.section || "",
+          severity: "authorized",
+          vhcItemId,
+          canAllocate: vhcItemId !== null && vhcItemId !== undefined,
+        };
+      });
+
+    // Backfill from job_requests so reported VHC requests stay visible even if canonical rows lag
+    const vhcReqsFromRequests = requestsSource
+      .filter((req) => {
+        if (!req || typeof req === "string") return false;
+        const source = String(req.request_source || req.requestSource || "")
+          .toLowerCase()
+          .trim();
+        const vhcItemId = req.vhc_item_id ?? req.vhcItemId ?? null;
+        return source.startsWith("vhc") || (vhcItemId !== null && vhcItemId !== undefined);
+      })
+      .map((req, index) => {
+        const vhcItemId = req.vhc_item_id ?? req.vhcItemId ?? null;
+        const fallbackRequestId = req.request_id ?? req.requestId ?? null;
+        const id = vhcItemId ? `vhc-${vhcItemId}` : `vhc-request-${fallbackRequestId ?? index}`;
+        return {
+          id,
+          type: "vhc",
+          description: resolveVhcLabel(
+            [
+              req.text,
+              req.description,
+              req.note_text,
+              req.noteText,
+              req.issue_title,
+              req.issue_description,
+              req.section,
+            ],
+            vhcItemId,
+            index
+          ),
+          section: req.section || "",
+          severity: "authorized",
+          vhcItemId,
+          canAllocate: vhcItemId !== null && vhcItemId !== undefined,
+        };
       }));
 
-    const allReqs = [...customerReqs, ...vhcReqs];
+    const vhcReqMap = new Map();
+    [...vhcReqsFromAuthorizedRows, ...vhcReqsFromRequests].forEach((row) => {
+      if (!row?.id) return;
+      vhcReqMap.set(String(row.id), row);
+    });
+
+    const allReqs = [...customerReqs, ...Array.from(vhcReqMap.values())];
     console.log("[PartsTab] All requests:", allReqs);
-    console.log("[PartsTab] VHC requests:", vhcReqs);
+    console.log("[PartsTab] VHC requests:", Array.from(vhcReqMap.values()));
     return allReqs;
-  }, [jobData.jobRequests, jobData.job_requests, jobData.requests, jobData.authorizedVhcItems]);
+  }, [
+    jobData.jobRequests,
+    jobData.job_requests,
+    jobData.requests,
+    jobData.authorizedVhcItems,
+    jobData.vhcChecks,
+    jobData.vhc_checks,
+    jobParts,
+  ]);
 
   // Group parts by allocated request (including VHC items)
   useEffect(() => {
@@ -1718,29 +1881,29 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                 </div>
                                 <button
                                   type="button"
-                                  disabled={!canEdit}
+                                  disabled={!canEdit || !request.canAllocate}
                                   onClick={() => handleAssignSelectedToRequest(request.id)}
                                   style={{
                                     padding: "6px 10px",
                                     borderRadius: "6px",
-                                    border: !canEdit
+                                    border: !canEdit || !request.canAllocate
                                       ? "1px solid var(--surface-light)"
                                       : assignMode && assignTargetRequestId === request.id
                                       ? selectedPartIds.length > 0
                                         ? "1px solid var(--success)"
                                         : "1px solid var(--warning)"
                                       : "1px solid var(--accent-purple)",
-                                    background: !canEdit
+                                    background: !canEdit || !request.canAllocate
                                       ? "var(--surface-light)"
                                       : assignMode && assignTargetRequestId === request.id
                                       ? selectedPartIds.length > 0
                                         ? "var(--success)"
                                         : "var(--warning)"
                                       : "var(--accent-purple)",
-                                    color: !canEdit ? "var(--text-secondary)" : "white",
+                                    color: !canEdit || !request.canAllocate ? "var(--text-secondary)" : "white",
                                     fontSize: "11px",
                                     fontWeight: 600,
-                                    cursor: !canEdit ? "not-allowed" : "pointer",
+                                    cursor: !canEdit || !request.canAllocate ? "not-allowed" : "pointer",
                                   }}
                                 >
                                   {assignMode && assignTargetRequestId === request.id
@@ -1848,7 +2011,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
                                 <div>
                                   <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--accent-purple)" }}>
-                                    VHC Authorised
+                                    VHC Request
                                   </div>
                                   <div style={{ fontSize: "13px", color: "var(--info-dark)", marginTop: "2px" }}>
                                     {request.description}
@@ -1856,29 +2019,29 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                 </div>
                                 <button
                                   type="button"
-                                  disabled={!canEdit}
+                                  disabled={!canEdit || !request.canAllocate}
                                   onClick={() => handleAssignSelectedToRequest(request.id)}
                                   style={{
                                     padding: "6px 10px",
                                     borderRadius: "6px",
-                                    border: !canEdit
+                                    border: !canEdit || !request.canAllocate
                                       ? "1px solid var(--surface-light)"
                                       : assignMode && assignTargetRequestId === request.id
                                       ? selectedPartIds.length > 0
                                         ? "1px solid var(--success)"
                                         : "1px solid var(--warning)"
                                       : "1px solid var(--accent-purple)",
-                                    background: !canEdit
+                                    background: !canEdit || !request.canAllocate
                                       ? "var(--surface-light)"
                                       : assignMode && assignTargetRequestId === request.id
                                       ? selectedPartIds.length > 0
                                         ? "var(--success)"
                                         : "var(--warning)"
                                       : "var(--accent-purple)",
-                                    color: !canEdit ? "var(--text-secondary)" : "white",
+                                    color: !canEdit || !request.canAllocate ? "var(--text-secondary)" : "white",
                                     fontSize: "11px",
                                     fontWeight: 600,
-                                    cursor: !canEdit ? "not-allowed" : "pointer",
+                                    cursor: !canEdit || !request.canAllocate ? "not-allowed" : "pointer",
                                   }}
                                 >
                                   {assignMode && assignTargetRequestId === request.id

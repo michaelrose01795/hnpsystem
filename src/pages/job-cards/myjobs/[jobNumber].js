@@ -9,15 +9,17 @@ import { useUser } from "@/context/UserContext";
 import { useNextAction } from "@/context/NextActionContext";
 import { useRoster } from "@/context/RosterContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
-import { getJobByNumber, updateJob, updateJobStatus } from "@/lib/database/jobs";
+import { getJobByNumber, updateJob, updateJobStatus, deleteJobFile } from "@/lib/database/jobs";
 import { getVHCChecksByJob } from "@/lib/database/vhc";
 import { getClockingStatus } from "@/lib/database/clocking";
 import { clockInToJob, clockOutFromJob, getUserActiveJobs } from "@/lib/database/jobClocking";
 import { supabase } from "@/lib/supabaseClient";
 import WriteUpForm from "@/components/JobCards/WriteUpForm";
+import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
 import { getJobByNumberOrReg, saveChecksheet } from "@/lib/database/jobs";
 import { createJobNote, getNotesByJob } from "@/lib/database/notes";
 import { logJobSubStatus } from "@/lib/services/jobStatusService";
+import { deriveJobTypeDisplay } from "@/lib/jobType/display";
 import {
   getMainStatusMetadata,
   normalizeStatusId,
@@ -99,77 +101,7 @@ const deriveSectionStatusFromSavedData = (savedData = {}) => {
   return derived;
 };
 
-const normalizeJobTypeKey = (value) =>
-  typeof value === "string" ? value.trim().toLowerCase() : "";
-
-const JOB_TYPE_KEYWORDS = [
-  { label: "MOT", keywords: ["mot"] },
-  { label: "Service", keywords: ["service", "oil", "inspection", "maintenance"] },
-  { label: "Diagnose", keywords: ["diagnos", "fault", "warning", "investigation", "check"] },
-];
-
-const extractRequestText = (requests) => {
-  if (!requests) return "";
-  if (Array.isArray(requests)) {
-    return requests
-      .map((entry) => {
-        if (typeof entry === "string") return entry;
-        if (entry && typeof entry === "object") {
-          return entry.text || entry.description || entry.note || entry.label || "";
-        }
-        return "";
-      })
-      .filter(Boolean)
-      .join(" ");
-  }
-  if (typeof requests === "string") {
-    try {
-      const parsed = JSON.parse(requests);
-      if (Array.isArray(parsed)) {
-        return extractRequestText(parsed);
-      }
-    } catch {
-      return requests;
-    }
-    return requests;
-  }
-  if (typeof requests === "object") {
-    return Object.values(requests)
-      .map((value) => (typeof value === "string" ? value : ""))
-      .filter(Boolean)
-      .join(" ");
-  }
-  return "";
-};
-
-const deriveJobTypeLabel = (jobCard) => {
-  const categories = (jobCard?.jobCategories || []).map(normalizeJobTypeKey);
-  if (categories.some((category) => category.includes("mot"))) return "MOT";
-  if (categories.some((category) => category.includes("service"))) return "Service";
-  if (categories.some((category) => category.includes("diag"))) return "Diagnose";
-
-  const requestText = extractRequestText(jobCard?.requests);
-
-  const haystack = [
-    jobCard?.description || "",
-    requestText,
-  ]
-    .join(" ")
-    .toLowerCase();
-
-  for (const mapping of JOB_TYPE_KEYWORDS) {
-    if (mapping.keywords.some((keyword) => haystack.includes(keyword))) {
-      return mapping.label;
-    }
-  }
-
-  const baseType = normalizeJobTypeKey(jobCard?.type);
-  if (baseType.includes("mot")) return "MOT";
-  if (baseType.includes("service")) return "Service";
-  if (baseType.includes("diag")) return "Diagnose";
-
-  return "Other";
-};
+const deriveJobTypeLabel = (jobCard) => deriveJobTypeDisplay(jobCard, { includeExtraCount: true });
 
 const isConcernLocked = (concern) => {
   if (!concern || typeof concern !== "object") return false;
@@ -227,6 +159,45 @@ const formatDateTime = (date) => {
     return "N/A";
   }
 };
+
+const mapJobFileRecord = (record = {}) => ({
+  id: record.file_id ?? record.id ?? null,
+  name: record.file_name || record.name || "Document",
+  url: record.file_url || record.url || "",
+  type: record.file_type || record.type || "",
+  folder: (record.folder || "general").toLowerCase(),
+  uploadedBy: record.uploaded_by || record.uploadedBy || null,
+  uploadedAt: record.uploaded_at || record.uploadedAt || null
+});
+
+const deriveStoragePathFromUrl = (url = "") => {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    const marker = "/job-documents/";
+    const idx = parsed.pathname.indexOf(marker);
+    if (idx >= 0) {
+      return decodeURIComponent(parsed.pathname.substring(idx + marker.length));
+    }
+    const storageIdx = parsed.pathname.indexOf("/storage/v1/object/public/");
+    if (storageIdx >= 0) {
+      const segment = parsed.pathname.substring(storageIdx + "/storage/v1/object/public/".length);
+      if (segment.startsWith("job-documents/")) {
+        return decodeURIComponent(segment.substring("job-documents/".length));
+      }
+    }
+  } catch (_err) {
+    // fallback to string parsing
+  }
+  const fallbackMarker = "/job-documents/";
+  const fallbackIdx = url.indexOf(fallbackMarker);
+  if (fallbackIdx >= 0) {
+    return decodeURIComponent(url.substring(fallbackIdx + fallbackMarker.length));
+  }
+  return null;
+};
+
+const JOB_DOCUMENT_BUCKET = "job-documents";
 
 const PARTS_STATUS_STYLES = {
   pending: { background: "var(--warning-surface)", color: "var(--danger-dark)" },
@@ -381,6 +352,8 @@ export default function TechJobDetailPage() {
   const [partRequestQuantity, setPartRequestQuantity] = useState(1);
   const [partsSubmitting, setPartsSubmitting] = useState(false);
   const [partsFeedback, setPartsFeedback] = useState("");
+  const [jobDocuments, setJobDocuments] = useState([]);
+  const [showDocumentsPopup, setShowDocumentsPopup] = useState(false);
   const [notes, setNotes] = useState([]);
   const [notesLoading, setNotesLoading] = useState(false);
   const [notesSubmitting, setNotesSubmitting] = useState(false);
@@ -425,6 +398,24 @@ export default function TechJobDetailPage() {
 
   const jobCardId = jobData?.jobCard?.id ?? null;
   const jobCardStatus = jobData?.jobCard?.status || "";
+  const jobRequiresVhc = jobData?.jobCard?.vhcRequired === true;
+  const visibleTabs = useMemo(() => {
+    const tabs = ["overview"];
+    if (jobRequiresVhc) {
+      tabs.push("vhc");
+    } else {
+      tabs.push("parts");
+    }
+    tabs.push("notes", "write-up", "documents");
+    return tabs;
+  }, [jobRequiresVhc]);
+
+  useEffect(() => {
+    if (!visibleTabs.includes(activeTab)) {
+      setActiveTab("overview");
+    }
+  }, [activeTab, visibleTabs]);
+
   const jobNumberForStatusFlow =
     jobNumber ||
     jobData?.jobCard?.jobNumber ||
@@ -730,6 +721,8 @@ export default function TechJobDetailPage() {
       }
 
       setJobData(job);
+      const mappedFiles = ((job?.jobCard?.files || job?.files || [])).map(mapJobFileRecord);
+      setJobDocuments(mappedFiles);
 
       const jobCardIdForFetch = job?.jobCard?.id;
       if (jobCardIdForFetch) {
@@ -1607,6 +1600,51 @@ export default function TechJobDetailPage() {
     }
   };
 
+  const handleDeleteDocument = useCallback(
+    async (file) => {
+      if (!file?.id) return;
+      const confirmDelete = await confirm(`Delete ${file.name || "this file"}?`);
+      if (!confirmDelete) return;
+
+      try {
+        const storagePath = deriveStoragePathFromUrl(file.url);
+        if (storagePath) {
+          const { error: removeError } = await supabase.storage
+            .from(JOB_DOCUMENT_BUCKET)
+            .remove([storagePath]);
+          if (removeError) {
+            console.warn("Failed to remove file from storage:", removeError);
+          }
+        }
+
+        const result = await deleteJobFile(file.id);
+        if (!result?.success) {
+          alert(result?.error?.message || "Failed to delete document");
+          return;
+        }
+
+        setJobDocuments((prev) => prev.filter((doc) => doc.id !== file.id));
+        setJobData((prev) => {
+          if (!prev?.jobCard) return prev;
+          const nextJobCardFiles = (prev.jobCard.files || []).filter(
+            (doc) => (doc.file_id ?? doc.id) !== file.id
+          );
+          return {
+            ...prev,
+            jobCard: {
+              ...prev.jobCard,
+              files: nextJobCardFiles,
+            },
+          };
+        });
+      } catch (deleteError) {
+        console.error("Failed to delete document:", deleteError);
+        alert(deleteError?.message || "Failed to delete document");
+      }
+    },
+    [confirm]
+  );
+
   // Handler: VHC button click - only navigate if VHC is required
   const handleVhcClick = () => {
     if (!jobData?.jobCard?.vhcRequired) {
@@ -1923,6 +1961,7 @@ export default function TechJobDetailPage() {
   });
   const isTech =
     (username && allowedTechNames.has(username)) || hasRoleAccess;
+  const canManageDocuments = isTech;
 
   useEffect(() => {
     if (!jobCardId || !jobData?.jobCard?.status) return;
@@ -2034,7 +2073,6 @@ export default function TechJobDetailPage() {
 
   // Extract job data
   const { jobCard, customer, vehicle } = jobData;
-  const jobRequiresVhc = jobCard?.vhcRequired === true;
   const snapshotTechStatus = statusSnapshot?.tech?.status || null;
   const techStatusDisplay =
     (snapshotTechStatus && TECH_DISPLAY[snapshotTechStatus]) ||
@@ -2214,18 +2252,25 @@ export default function TechJobDetailPage() {
           borderRadius: "8px",
           flexShrink: 0
         }}>
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
+          <div style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-start",
+            backgroundColor: "var(--surface)",
+            border: "1px solid var(--surface-light)",
+            borderRadius: "12px",
+            padding: "10px 14px",
+          }}>
             <h1 style={{
               color: "var(--primary)",
               fontSize: "28px",
               fontWeight: "700",
-              margin: "0"
+              margin: "0",
+              lineHeight: 1
             }}>
-              Job #{jobCard.jobNumber}
+              {jobCard.jobNumber}
             </h1>
-            <p style={{ color: "var(--grey-accent)", fontSize: "14px", margin: 0 }}>
-              {customer?.firstName} {customer?.lastName} • {vehicle?.reg} • {vehicle?.makeModel}
-            </p>
           </div>
           <div style={{
             display: "flex",
@@ -2417,7 +2462,7 @@ export default function TechJobDetailPage() {
           WebkitOverflowScrolling: "touch",
           marginBottom: "12px",
         }}>
-          {["overview", "vhc", "parts", "notes", "write-up"].map((tab) => {
+          {visibleTabs.map((tab) => {
             const isActive = activeTab === tab;
             const isComplete =
               (tab === "vhc" && isVhcCompleted) ||
@@ -2428,6 +2473,7 @@ export default function TechJobDetailPage() {
               parts: "Parts",
               notes: "Notes",
               "write-up": "Write-Up",
+              documents: "Documents",
             };
             const baseBackground = isActive ? "var(--primary)" : "transparent";
             const completeBackground = isActive ? "var(--success)" : "var(--success-surface)";
@@ -3697,9 +3743,9 @@ export default function TechJobDetailPage() {
               overflow: "hidden",
               display: "flex",
               flexDirection: "column",
-              borderRadius: "12px",
-              border: "1px solid var(--surface-light)",
-              backgroundColor: "var(--layer-section-level-2)"
+              borderRadius: 0,
+              border: "none",
+              backgroundColor: "transparent"
             }}>
               <WriteUpForm
                 jobNumber={jobNumber}
@@ -3724,11 +3770,211 @@ export default function TechJobDetailPage() {
               />
             </div>
           )}
+
+          {/* DOCUMENTS TAB */}
+          {activeTab === "documents" && (
+            <div style={{
+              backgroundColor: "var(--layer-section-level-2)",
+              padding: "24px",
+              borderRadius: "12px",
+              border: "1px solid var(--surface-light)",
+            }}>
+              <DocumentsTab
+                documents={jobDocuments}
+                canDelete={canManageDocuments}
+                onDelete={handleDeleteDocument}
+                onManageDocuments={canManageDocuments ? () => setShowDocumentsPopup(true) : undefined}
+              />
+            </div>
+          )}
         </div>
         </div>
 
         {/* Bottom Action Bar */}
       </div>
+      <DocumentsUploadPopup
+        open={showDocumentsPopup}
+        onClose={() => setShowDocumentsPopup(false)}
+        jobId={jobData?.jobCard?.id ? String(jobData.jobCard.id) : null}
+        userId={user?.user_id || dbUserId || null}
+        onAfterUpload={fetchJobData}
+        existingDocuments={jobDocuments}
+      />
     </Layout>
+  );
+}
+
+function DocumentsTab({
+  documents = [],
+  canDelete,
+  onDelete,
+  onManageDocuments
+}) {
+  const sortedDocuments = useMemo(() => {
+    return [...(documents || [])].sort((a, b) => {
+      const aTime = new Date(a.uploadedAt || a.uploaded_at || 0).getTime();
+      const bTime = new Date(b.uploadedAt || b.uploaded_at || 0).getTime();
+      return bTime - aTime;
+    });
+  }, [documents]);
+
+  const formatTimestamp = (value) => {
+    if (!value) return "Unknown";
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+      return "Unknown";
+    }
+    return parsed.toLocaleString();
+  };
+
+  const handlePreview = (doc) => {
+    if (!doc?.url) return;
+    const targetUrl = doc.url.startsWith("http")
+      ? doc.url
+      : `${window.location.origin}${doc.url}`;
+    window.open(targetUrl, "_blank", "noopener,noreferrer");
+  };
+
+  return (
+    <div>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: "16px",
+          flexWrap: "wrap",
+          marginBottom: "12px"
+        }}
+      >
+        <div />
+        {typeof onManageDocuments === "function" && (
+          <button
+            type="button"
+            onClick={onManageDocuments}
+            style={{
+              padding: "10px 18px",
+              borderRadius: "10px",
+              border: "none",
+              backgroundColor: "var(--primary)",
+              color: "white",
+              fontWeight: "600",
+              fontSize: "14px",
+              cursor: "pointer"
+            }}
+          >
+            Upload Documents
+          </button>
+        )}
+      </div>
+
+      {sortedDocuments.length === 0 ? (
+        <div
+          style={{
+            padding: "28px",
+            borderRadius: "12px",
+            border: "1px dashed var(--accent-purple-surface)",
+            textAlign: "center",
+            color: "var(--info)",
+            fontSize: "14px"
+          }}
+        >
+          No stored documents yet. Upload check-sheets, signed paperwork, or customer photos to keep
+          everything in one place.
+        </div>
+      ) : (
+        <div
+          style={{
+            borderRadius: "12px",
+            border: "1px solid var(--accent-purple-surface)",
+            overflow: "hidden"
+          }}
+        >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "2.5fr 1fr 1fr 0.8fr",
+              gap: "12px",
+              padding: "14px 18px",
+              backgroundColor: "var(--accent-purple-surface)",
+              fontSize: "12px",
+              fontWeight: "600",
+              color: "var(--accent-purple)"
+            }}
+          >
+            <span>File</span>
+            <span>Folder</span>
+            <span>Uploaded</span>
+            <span style={{ textAlign: "right" }}>Actions</span>
+          </div>
+          {sortedDocuments.map((doc) => (
+            <div
+              key={doc.id || doc.file_id || doc.url}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "2.5fr 1fr 1fr 0.8fr",
+                gap: "12px",
+                padding: "16px 18px",
+                borderTop: "1px solid var(--accent-purple-surface)",
+                alignItems: "center"
+              }}
+            >
+              <div>
+                <div style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-primary)" }}>
+                  {doc.name || doc.file_name || "Document"}
+                </div>
+                <div style={{ fontSize: "12px", color: "var(--info)" }}>
+                  {(doc.type || doc.file_type || "unknown").split("/").pop()}
+                </div>
+                <div style={{ fontSize: "11px", color: "var(--info-dark)", marginTop: "4px" }}>
+                  Uploaded by {doc.uploadedBy || doc.uploaded_by || "system"}
+                </div>
+              </div>
+              <div style={{ fontSize: "13px", color: "var(--info)" }}>
+                {(doc.folder || "general").replace(/-/g, " ")}
+              </div>
+              <div style={{ fontSize: "13px", color: "var(--info)" }}>
+                {formatTimestamp(doc.uploadedAt || doc.uploaded_at)}
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+                <button
+                  type="button"
+                  onClick={() => handlePreview(doc)}
+                  style={{
+                    padding: "6px 10px",
+                    borderRadius: "8px",
+                    border: "1px solid var(--info)",
+                    backgroundColor: "var(--surface)",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    cursor: "pointer"
+                  }}
+                >
+                  View
+                </button>
+                {canDelete && (
+                  <button
+                    type="button"
+                    onClick={() => typeof onDelete === "function" && onDelete(doc)}
+                    style={{
+                      padding: "6px 10px",
+                      borderRadius: "8px",
+                      border: "1px solid var(--danger)",
+                      backgroundColor: "var(--danger-surface)",
+                      color: "var(--danger)",
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      cursor: "pointer"
+                    }}
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
