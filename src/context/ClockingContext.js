@@ -1,9 +1,9 @@
 // ✅ Connected to Supabase (frontend)
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/context/ClockingContext.js
-import React, { createContext, useContext, useState, useEffect } from "react";
+// Uses /api/profile/clock API which handles auto-closing stale records server-side
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useUser } from "@/context/UserContext";
-import { supabase } from "@/lib/supabaseClient"; // Supabase client
 
 // Create context
 const ClockingContext = createContext();
@@ -15,8 +15,8 @@ export const ClockingProvider = ({ children }) => {
   const [hoursWorked, setHoursWorked] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // Fetch today's clocking info
-  const fetchClockingStatus = async () => {
+  // Fetch clocking status via the server API (handles auto-close of stale records)
+  const fetchClockingStatus = useCallback(async () => {
     if (!dbUserId) {
       setClockedIn(false);
       setHoursWorked(0);
@@ -25,29 +25,20 @@ export const ClockingProvider = ({ children }) => {
     }
     setLoading(true);
     try {
-      const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-      const { data, error } = await supabase
-        // ⚠️ Verify: table or column not found in Supabase schema
-        .from("clocking")
-        .select("*")
-        .eq("user_id", dbUserId)
-        .eq("date", today)
-        .order("clock_in", { ascending: true });
+      const res = await fetch(`/api/profile/clock?userId=${dbUserId}`);
+      const json = await res.json();
 
-      if (error) throw error;
-
-      if (data?.length > 0) {
-        const lastRecord = data[data.length - 1];
-        setClockedIn(!lastRecord.clock_out); // clocked in if no clock_out
-
-        // calculate hours worked
-        let total = 0;
-        data.forEach((record) => {
-          if (record.clock_in && record.clock_out) {
-            total += (new Date(record.clock_out) - new Date(record.clock_in)) / 3600000;
-          }
-        });
-        setHoursWorked(Number(total.toFixed(2)));
+      if (json.success && json.data) {
+        setClockedIn(json.data.isClockedIn);
+        // If clocked in, calculate hours from clock-in time to now
+        if (json.data.isClockedIn && json.data.activeRecord?.clockIn) {
+          const clockInTime = new Date(json.data.activeRecord.clockIn);
+          const now = new Date();
+          const hours = (now - clockInTime) / 3600000;
+          setHoursWorked(Number(hours.toFixed(2)));
+        } else {
+          setHoursWorked(0);
+        }
       } else {
         setClockedIn(false);
         setHoursWorked(0);
@@ -57,15 +48,15 @@ export const ClockingProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [dbUserId]);
 
   useEffect(() => {
     if (dbUserId) {
       fetchClockingStatus();
     }
-  }, [dbUserId]);
+  }, [dbUserId, fetchClockingStatus]);
 
-  // Clock in
+  // Clock in via the server API (auto-closes stale records if needed)
   const clockIn = async () => {
     if (!dbUserId) {
       console.warn("Clock in attempted without resolved users.user_id");
@@ -73,13 +64,17 @@ export const ClockingProvider = ({ children }) => {
     }
     setLoading(true);
     try {
-      const today = new Date().toISOString().split("T")[0];
-      // ⚠️ Verify: table or column not found in Supabase schema
-      const { error } = await supabase.from("clocking").insert([
-        { user_id: dbUserId, date: today, clock_in: new Date().toISOString() },
-      ]);
-      if (error) throw error;
-      setClockedIn(true);
+      const res = await fetch(`/api/profile/clock?userId=${dbUserId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "clock-in", userId: dbUserId }),
+      });
+      const json = await res.json();
+      if (!json.success) {
+        console.error("Clock In Error:", json.message);
+      } else {
+        setClockedIn(true);
+      }
       await fetchClockingStatus();
     } catch (err) {
       console.error("Clock In Error:", err.message);
@@ -88,7 +83,7 @@ export const ClockingProvider = ({ children }) => {
     }
   };
 
-  // Clock out
+  // Clock out via the server API
   const clockOut = async () => {
     if (!dbUserId) {
       console.warn("Clock out attempted without resolved users.user_id");
@@ -96,32 +91,17 @@ export const ClockingProvider = ({ children }) => {
     }
     setLoading(true);
     try {
-      const today = new Date().toISOString().split("T")[0];
-      const { data, error } = await supabase
-        // ⚠️ Verify: table or column not found in Supabase schema
-        .from("clocking")
-        .select("*")
-        .eq("user_id", dbUserId)
-        .eq("date", today)
-        .is("clock_out", null)
-        .order("clock_in", { ascending: false })
-        .limit(1)
-        .single();
-
-      if (error && error.code !== "PGRST116") throw error;
-      if (!data) {
-        console.warn("No active clock-in record found.");
-        setLoading(false);
-        return;
+      const res = await fetch(`/api/profile/clock?userId=${dbUserId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "clock-out", userId: dbUserId }),
+      });
+      const json = await res.json();
+      if (!json.success) {
+        console.error("Clock Out Error:", json.message);
+      } else {
+        setClockedIn(false);
       }
-
-      await supabase
-        // ⚠️ Verify: table or column not found in Supabase schema
-        .from("clocking")
-        .update({ clock_out: new Date().toISOString() })
-        .eq("id", data.id);
-
-      setClockedIn(false);
       await fetchClockingStatus();
     } catch (err) {
       console.error("Clock Out Error:", err.message);

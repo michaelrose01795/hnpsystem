@@ -11,8 +11,48 @@ import dayjs from "dayjs";
 
 const adminDb = getDatabaseClient();
 
+// Auto-close any stale active records from previous days for this user
+async function autoCloseStaleRecords(userId) {
+  const today = dayjs().format("YYYY-MM-DD");
+
+  const { data: staleRecords, error: fetchError } = await supabase
+    .from("time_records")
+    .select("id, user_id, date, clock_in")
+    .eq("user_id", userId)
+    .is("clock_out", null)
+    .lt("date", today);
+
+  if (fetchError || !staleRecords || staleRecords.length === 0) return;
+
+  for (const record of staleRecords) {
+    const clockOutTime = `${record.date}T23:59:59.000Z`;
+    const clockInTime = new Date(record.clock_in);
+    const clockOut = new Date(clockOutTime);
+    const hoursWorked = Number(((clockOut - clockInTime) / (1000 * 60 * 60)).toFixed(2));
+
+    const dayOfWeek = new Date(record.date).getDay();
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const notes = isWeekend ? "Weekend - Auto-closed at midnight" : "Auto-closed at midnight";
+
+    await supabase
+      .from("time_records")
+      .update({
+        clock_out: clockOutTime,
+        hours_worked: hoursWorked,
+        notes,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", record.id);
+
+    console.log(`Auto-closed stale record ${record.id} for user ${userId} from ${record.date}`);
+  }
+}
+
 // Get user's attendance logs
 async function getUserAttendanceLogs(userId, limit = 50) {
+  // Auto-close any stale records before fetching
+  await autoCloseStaleRecords(userId);
+
   const effectiveEnd = dayjs().format("YYYY-MM-DD");
   const effectiveStart = dayjs(effectiveEnd).subtract(30, "day").format("YYYY-MM-DD");
 

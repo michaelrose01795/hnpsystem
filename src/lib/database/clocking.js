@@ -5,38 +5,82 @@ import { supabase } from "@/lib/supabaseClient";
 import dayjs from "dayjs";
 
 /* ============================================
+   AUTO-CLOSE STALE RECORD
+   Closes a record from a previous day at midnight
+============================================ */
+const autoCloseStaleRecord = async (record) => {
+  const clockOutTime = `${record.date}T23:59:59.000Z`;
+  const clockInTime = new Date(record.clock_in);
+  const clockOut = new Date(clockOutTime);
+  const hoursWorked = Number(((clockOut - clockInTime) / (1000 * 60 * 60)).toFixed(2));
+
+  const dayOfWeek = new Date(record.date).getDay();
+  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+  const notes = isWeekend ? "Weekend - Auto-closed at midnight" : "Auto-closed at midnight";
+
+  const { error } = await supabase
+    .from("time_records")
+    .update({
+      clock_out: clockOutTime,
+      hours_worked: hoursWorked,
+      notes,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", record.id);
+
+  if (error) {
+    console.error("Failed to auto-close stale record:", record.id, error);
+    return { success: false, error };
+  }
+
+  console.log(`Auto-closed stale record ${record.id} from ${record.date} (${hoursWorked} hrs)`);
+  return { success: true, closedRecord: { ...record, clock_out: clockOutTime, hours_worked: hoursWorked, notes } };
+};
+
+/* ============================================
    CLOCK IN
-   ✅ Enhanced with validation and error handling
+   ✅ Enhanced with validation, error handling,
+      and auto-close of stale previous-day records
 ============================================ */
 export const clockIn = async (userId) => {
   console.log("⏰ clockIn called for user:", userId); // debug log
-  
+
   try {
     // ✅ Validate user ID
     if (!userId) {
       throw new Error("User ID is required");
     }
 
-    // ✅ Check if already clocked in
+    const today = dayjs().format("YYYY-MM-DD");
+
+    // ✅ Check for ANY active (un-clocked-out) record across all dates
     const { data: existing } = await supabase
       .from("time_records")
       .select("*")
       .eq("user_id", userId)
       .is("clock_out", null)
+      .order("clock_in", { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     if (existing) {
-      console.warn("⚠️ User already clocked in:", existing);
-      return { 
-        success: false, 
-        error: { message: "You are already clocked in" },
-        data: existing
-      };
+      if (existing.date === today) {
+        // Already clocked in today — reject
+        console.warn("⚠️ User already clocked in today:", existing);
+        return {
+          success: false,
+          error: { message: "You are already clocked in" },
+          data: existing
+        };
+      }
+
+      // Stale record from a previous day — auto-close at midnight
+      console.log("⚠️ Found stale record from", existing.date, "- auto-closing at midnight");
+      await autoCloseStaleRecord(existing);
     }
 
     // ✅ Create new clock-in record
     const clockInTime = new Date().toISOString();
-    const date = dayjs().format("YYYY-MM-DD");
 
     const { data, error } = await supabase
       .from("time_records")
@@ -44,7 +88,7 @@ export const clockIn = async (userId) => {
         user_id: userId,
         clock_in: clockInTime,
         clock_out: null,
-        date: date,
+        date: today,
         hours_worked: null,
         break_minutes: 0,
         notes: null,
@@ -66,7 +110,7 @@ export const clockIn = async (userId) => {
     if (error) throw error;
 
     console.log("✅ Clock-in successful:", data);
-    return { success: true, data };
+    return { success: true, data, autoClosedPrevious: !!existing };
   } catch (error) {
     console.error("❌ clockIn error:", error);
     return { success: false, error: { message: error.message } };

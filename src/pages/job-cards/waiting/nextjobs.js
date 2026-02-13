@@ -1758,7 +1758,7 @@ export default function NextJobsPage() {
           <div
             style={{
               ...popupOverlayStyles,
-              zIndex: 1300, // Above job details popup
+              zIndex: 10000, // Above job details popup
             }}
             onClick={() => setAssignPopup(false)} // Close when clicking overlay
           >

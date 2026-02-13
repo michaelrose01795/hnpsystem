@@ -1,7 +1,7 @@
 // API endpoint for clock-in / clock-out
 // Uses the existing time_records table for attendance tracking
 // POST { action: "clock-in" } or { action: "clock-out" }
-// GET returns today's active clock-in record (if any)
+// GET returns the active clock-in record (if any), auto-closing stale records from previous days
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import { supabase } from "@/lib/supabaseClient";
@@ -44,18 +44,47 @@ async function resolveUserId(req, res) {
   return data.user_id;
 }
 
+// Auto-close a stale record from a previous day at midnight of that day
+async function autoCloseStaleRecord(record) {
+  const clockOutTime = `${record.date}T23:59:59.000Z`;
+  const clockInTime = new Date(record.clock_in);
+  const clockOut = new Date(clockOutTime);
+  const hoursWorked = Number(((clockOut - clockInTime) / (1000 * 60 * 60)).toFixed(2));
+
+  const dayOfWeek = new Date(record.date).getDay();
+  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+  const notes = isWeekend ? "Weekend - Auto-closed at midnight" : "Auto-closed at midnight";
+
+  const { error } = await supabase
+    .from("time_records")
+    .update({
+      clock_out: clockOutTime,
+      hours_worked: hoursWorked,
+      notes,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", record.id);
+
+  if (error) {
+    console.error("Failed to auto-close stale record:", record.id, error);
+  } else {
+    console.log(`Auto-closed stale record ${record.id} from ${record.date} (${hoursWorked} hrs)`);
+  }
+
+  return { closedRecord: record, error };
+}
+
 export default async function handler(req, res) {
   try {
     const userId = await resolveUserId(req, res);
     const today = new Date().toISOString().split("T")[0];
 
     if (req.method === "GET") {
-      // Return today's active (un-clocked-out) record
+      // Find ANY active (un-clocked-out) record for this user
       const { data: activeRecord, error } = await supabase
         .from("time_records")
         .select("id, user_id, date, clock_in, clock_out, hours_worked, notes")
         .eq("user_id", userId)
-        .eq("date", today)
         .is("clock_out", null)
         .order("clock_in", { ascending: false })
         .limit(1)
@@ -64,6 +93,23 @@ export default async function handler(req, res) {
       if (error) {
         console.error("Failed to fetch active clock record:", error);
         return res.status(500).json({ success: false, message: "Failed to check clock status." });
+      }
+
+      // If there's an active record from a previous day, auto-close it at midnight
+      if (activeRecord && activeRecord.date < today) {
+        await autoCloseStaleRecord(activeRecord);
+        return res.status(200).json({
+          success: true,
+          data: {
+            isClockedIn: false,
+            activeRecord: null,
+            autoClosedRecord: {
+              id: activeRecord.id,
+              date: activeRecord.date,
+              message: "Previous session was auto-closed at midnight.",
+            },
+          },
+        });
       }
 
       return res.status(200).json({
@@ -85,21 +131,27 @@ export default async function handler(req, res) {
       const { action } = req.body || {};
 
       if (action === "clock-in") {
-        // Check if already clocked in today
+        // Check for ANY active (un-clocked-out) record across all dates
         const { data: existing } = await supabase
           .from("time_records")
-          .select("id")
+          .select("id, date, clock_in")
           .eq("user_id", userId)
-          .eq("date", today)
           .is("clock_out", null)
+          .order("clock_in", { ascending: false })
           .limit(1)
           .maybeSingle();
 
         if (existing) {
-          return res.status(400).json({
-            success: false,
-            message: "Already clocked in. Please clock out first.",
-          });
+          if (existing.date === today) {
+            // Already clocked in today — reject
+            return res.status(400).json({
+              success: false,
+              message: "Already clocked in. Please clock out first.",
+            });
+          }
+
+          // Stale record from a previous day — auto-close it at midnight
+          await autoCloseStaleRecord(existing);
         }
 
         const now = new Date().toISOString();
@@ -125,7 +177,7 @@ export default async function handler(req, res) {
 
         return res.status(200).json({
           success: true,
-          message: "Clocked in successfully.",
+          message: existing ? "Previous session auto-closed at midnight. Clocked in successfully." : "Clocked in successfully.",
           data: {
             id: inserted.id,
             clockIn: inserted.clock_in,
@@ -135,7 +187,7 @@ export default async function handler(req, res) {
       }
 
       if (action === "clock-out") {
-        // Find the active clock-in record for today
+        // Find the active clock-in record (any date)
         const { data: activeRecord, error: findError } = await supabase
           .from("time_records")
           .select("id, clock_in, date")
