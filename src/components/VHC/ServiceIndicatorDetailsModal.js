@@ -8,6 +8,7 @@ import themeConfig, {
   popupCardStyles,
 } from "@/styles/appTheme";
 import { DropdownField } from "@/components/dropdownAPI";
+import IssueAutocomplete from "@/components/vhc/IssueAutocomplete";
 
 const palette = themeConfig.palette;
 
@@ -73,6 +74,13 @@ const concernTargets = [
   { key: "oil", label: "Oil Level" },
   ...UNDER_BONNET_ITEMS.map((item) => ({ key: item, label: item })),
 ];
+
+const resolveServiceSectionKey = (target = "") => {
+  if (target === "service") return "service_service_reminder";
+  if (target === "oil") return "service_oil_level";
+  if (target === "Miscellaneous") return "service_under_bonnet_miscellaneous";
+  return "service_under_bonnet_general";
+};
 
 export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onClose, onComplete, locked = false, inlineMode = false }) {
   const contentWrapperStyle = {
@@ -537,27 +545,42 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                 Target: {activeConcernLabel}
               </span>
 
-              <textarea
-                value={newConcern}
-                onChange={(e) => setNewConcern(e.target.value)}
-                placeholder="Describe concern..."
-                style={{
-                  minHeight: "110px",
-                  resize: "vertical",
-                  borderRadius: "16px",
-                  border: `1px solid ${palette.border}`,
-                  padding: "12px",
-                  fontSize: "14px",
-                  color: palette.textPrimary,
-                  outline: "none",
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = palette.accent;
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = palette.border;
-                }}
-              />
+              {activeConcernTarget === "Miscellaneous" ? (
+                <input
+                  type="text"
+                  value={newConcern}
+                  onChange={(event) => setNewConcern(event.target.value)}
+                  placeholder="Describe concern..."
+                  readOnly={locked}
+                  style={{
+                    width: "100%",
+                    borderRadius: "16px",
+                    border: `1px solid ${palette.border}`,
+                    padding: "12px",
+                    fontSize: "14px",
+                    color: palette.textPrimary,
+                    outline: "none",
+                    background: palette.surface,
+                  }}
+                />
+              ) : (
+                <IssueAutocomplete
+                  sectionKey={resolveServiceSectionKey(activeConcernTarget)}
+                  value={newConcern}
+                  onChange={setNewConcern}
+                  onSelect={setNewConcern}
+                  disabled={locked}
+                  placeholder="Describe concern..."
+                  inputStyle={{
+                    borderRadius: "16px",
+                    border: `1px solid ${palette.border}`,
+                    padding: "12px",
+                    fontSize: "14px",
+                    color: palette.textPrimary,
+                    outline: "none",
+                  }}
+                />
+              )}
 
               <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                 {STATUS_OPTIONS.map((status) => {
@@ -588,6 +611,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
               <button
                 type="button"
                 onClick={addConcern}
+                disabled={locked}
                 style={{ ...createVhcButtonStyle("primary"), alignSelf: "flex-end" }}
               >
                 Save Concern

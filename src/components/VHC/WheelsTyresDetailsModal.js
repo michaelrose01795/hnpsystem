@@ -10,10 +10,18 @@ import themeConfig, {
 import TyreDiagram, { getReadingStatus } from "@/components/VHC/TyreDiagram";
 import TyresSection from "@/components/VHC/TyresSection"; // Import shared tyre search component
 import { DropdownField } from "@/components/dropdownAPI";
+import IssueAutocomplete from "@/components/vhc/IssueAutocomplete";
 
 const palette = themeConfig.palette;
 
 const WHEELS = ["NSF", "OSF", "NSR", "OSR"];
+const WHEEL_SECTION_KEYS = {
+  NSF: "wheels_nsf",
+  OSF: "wheels_osf",
+  NSR: "wheels_nsr",
+  OSR: "wheels_osr",
+  Spare: "wheels_spare",
+};
 
 const TREAD_SECTIONS = [
   { key: "outer", label: "Outer" },
@@ -651,11 +659,20 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
               minHeight: 0,
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
-              <h2 style={{ margin: 0, fontSize: "22px", fontWeight: 700, color: palette.accent }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "nowrap",
+                gap: "12px",
+                overflowX: "auto",
+              }}
+            >
+              <h2 style={{ margin: 0, fontSize: "22px", fontWeight: 700, color: palette.accent, whiteSpace: "nowrap", flexShrink: 0 }}>
                 {activeWheel === "Spare" ? "Spare / Kit Details" : `${activeWheel} Tyre Details`}
               </h2>
-              <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "nowrap", flexShrink: 0 }}>
                 {activeWheel !== "Spare" ? (
                   <>
                     <button
@@ -707,8 +724,18 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                 <>
                   <div style={sectionCardStyle}>
                     <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Tyre Details</span>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "18px", marginTop: "10px" }}>
-                      <div style={{ flex: "1 1 220px", minWidth: "220px" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexWrap: "nowrap",
+                        gap: "12px",
+                        marginTop: "10px",
+                        alignItems: "flex-end",
+                        overflowX: "auto",
+                        paddingBottom: "2px",
+                      }}
+                    >
+                      <div style={{ flex: "0 0 190px", minWidth: "190px" }}>
                         <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>
                           <span style={{ fontWeight: 700, color: palette.textPrimary }}>Make</span>
                           <AutoCompleteInput
@@ -719,22 +746,14 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                           />
                         </label>
                       </div>
-                      <div
-                        style={{
-                          flex: "2 1 360px",
-                          minWidth: "240px",
-                          display: "grid",
-                          gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-                          gap: "12px",
-                        }}
-                      >
+                      <div style={{ display: "flex", flexWrap: "nowrap", gap: "12px", alignItems: "flex-end" }}>
                         <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>
                           Size
                           <input
                             value={currentTyre.size}
                             onChange={(event) => updateTyre("size", event.target.value)}
                             placeholder="e.g. 205/55 R16"
-                            style={baseInputStyle}
+                            style={{ ...baseInputStyle, width: "150px", minWidth: "150px" }}
                           />
                         </label>
                         <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>
@@ -743,7 +762,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                             value={currentTyre.load}
                             onChange={(event) => updateTyre("load", event.target.value)}
                             placeholder="e.g. 91"
-                            style={baseInputStyle}
+                            style={{ ...baseInputStyle, width: "110px", minWidth: "110px" }}
                           />
                         </label>
                         <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>
@@ -752,7 +771,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                             value={currentTyre.speed}
                             onChange={(event) => updateTyre("speed", event.target.value)}
                             placeholder="e.g. V"
-                            style={baseInputStyle}
+                            style={{ ...baseInputStyle, width: "110px", minWidth: "110px" }}
                           />
                         </label>
                       </div>
@@ -1041,17 +1060,14 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
               </h3>
             </div>
 
-            <input
+            <IssueAutocomplete
+              sectionKey={WHEEL_SECTION_KEYS[concernTarget] || "wheels_nsf"}
               value={concernInput}
-              onChange={(event) => setConcernInput(event.target.value)}
+              onChange={setConcernInput}
+              onSelect={setConcernInput}
+              disabled={locked}
               placeholder="Describe concern..."
-              style={baseInputStyle}
-              onFocus={(e) => {
-                e.target.style.borderColor = palette.accent;
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = palette.border;
-              }}
+              inputStyle={baseInputStyle}
             />
 
             <div style={{ display: "flex", gap: "10px" }}>
@@ -1093,6 +1109,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                 <button
                   type="button"
                   onClick={addConcern}
+                  disabled={locked}
                   style={{ ...createVhcButtonStyle("primary") }}
                 >
                   {concernEditIndex !== null ? "Save" : "Add Concern"}

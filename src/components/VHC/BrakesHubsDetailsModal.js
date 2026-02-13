@@ -9,6 +9,7 @@ import themeConfig, {
 } from "@/styles/appTheme";
 import BrakeDiagram from "@/components/VHC/BrakeDiagram";
 import { DropdownField } from "@/components/dropdownAPI";
+import IssueAutocomplete from "@/components/vhc/IssueAutocomplete";
 
 const palette = themeConfig.palette;
 
@@ -222,7 +223,7 @@ const PadsSection = ({
       <DropdownField
         value={padData.status || "Green"}
         onChange={(e) => onStatusChange?.(e.target.value)}
-        style={{ ...dropdownFieldStyle, minWidth: "140px" }}
+        style={{ ...dropdownFieldStyle, width: "11ch", minWidth: "11ch" }}
         onFocus={enhanceFocus}
         onBlur={resetFocus}
       >
@@ -308,7 +309,7 @@ const DiscsSection = ({
             <DropdownField
               value={discData.measurements?.status || "Green"}
               onChange={(e) => onMeasurementStatusChange?.(e.target.value)}
-              style={{ ...dropdownFieldStyle, minWidth: "140px" }}
+              style={{ ...dropdownFieldStyle, width: "11ch", minWidth: "11ch" }}
               onFocus={enhanceFocus}
               onBlur={resetFocus}
             >
@@ -326,7 +327,7 @@ const DiscsSection = ({
           <DropdownField
             value={discData.visual?.status || "Green"}
             onChange={(e) => onVisualStatusChange?.(e.target.value)}
-            style={dropdownFieldStyle}
+            style={{ ...dropdownFieldStyle, width: "11ch", minWidth: "11ch" }}
             onFocus={enhanceFocus}
             onBlur={resetFocus}
           >
@@ -474,6 +475,14 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
     ...padLabels,
     ...discLabels,
     rearDrums: "Rear Drum",
+  };
+
+  const areaSuggestionKeys = {
+    frontPads: "brakes_front_pads",
+    rearPads: "brakes_rear_pads",
+    frontDiscs: "brakes_front_discs",
+    rearDiscs: "brakes_rear_discs",
+    rearDrums: "brakes_rear_drum",
   };
 
   const activeIssueEntries = useMemo(() => {
@@ -1154,22 +1163,27 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                   </strong>
                 </span>
                 <label style={fieldLabelStyle}>Concern</label>
-                <input
-                  type="text"
+                <IssueAutocomplete
+                  sectionKey={areaSuggestionKeys[concernPopup.category] || "brakes_front_pads"}
                   value={concernPopup.tempConcern.issue}
-                  onChange={(e) =>
+                  onChange={(nextValue) =>
                     setConcernPopup((prev) => ({
                       ...prev,
-                      tempConcern: { ...prev.tempConcern, issue: e.target.value },
+                      tempConcern: { ...prev.tempConcern, issue: nextValue },
                     }))
                   }
+                  onSelect={(nextValue) =>
+                    setConcernPopup((prev) => ({
+                      ...prev,
+                      tempConcern: { ...prev.tempConcern, issue: nextValue },
+                    }))
+                  }
+                  disabled={locked}
                   placeholder="Describe the issue…"
-                  style={{
+                  inputStyle={{
                     ...selectBaseStyle,
                     width: "100%",
                   }}
-                  onFocus={enhanceFocus}
-                  onBlur={resetFocus}
                 />
 
                 <label style={fieldLabelStyle}>Severity</label>
@@ -1215,6 +1229,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                         addConcern(concernPopup.category, concernPopup.tempConcern, concernPopup.editIndex);
                         resetConcernPopup();
                       }}
+                      disabled={locked}
                       style={buildModalButton("primary")}
                     >
                       {concernPopup.editIndex !== null ? "Save" : "Add Concern"}

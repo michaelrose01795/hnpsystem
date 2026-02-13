@@ -57,26 +57,29 @@ export default function VHCModalShell({
               <p style={vhcModalStyles.headerSubtitle}>{subtitle}</p>
             ) : null}
           </div>
-          {!hideCloseButton && (
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close modal"
-              style={{
-                ...createVhcButtonStyle("ghost"),
-                border: "none",
-                boxShadow: "none",
-                padding: "6px 12px",
-                fontSize: "0.95rem",
-                fontWeight: 700,
-                color: closeButtonColor,
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-              }}
-            >
-              Close
-            </button>
-          )}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+            {inlineMode && footer ? footer : null}
+            {!hideCloseButton && (
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Close modal"
+                style={{
+                  ...createVhcButtonStyle("ghost"),
+                  border: "none",
+                  boxShadow: "none",
+                  padding: "6px 12px",
+                  fontSize: "0.95rem",
+                  fontWeight: 700,
+                  color: closeButtonColor,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                Close
+              </button>
+            )}
+          </div>
         </div>
 
         <div
@@ -110,7 +113,7 @@ export default function VHCModalShell({
           {children}
         </div>
 
-        {footer ? (
+        {!inlineMode && footer ? (
           <div
             style={{
               ...vhcModalStyles.footer,

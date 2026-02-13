@@ -7,6 +7,7 @@ import themeConfig, {
   popupOverlayStyles,
   popupCardStyles,
 } from "@/styles/appTheme";
+import IssueAutocomplete from "@/components/vhc/IssueAutocomplete";
 
 const palette = themeConfig.palette;
 
@@ -18,6 +19,17 @@ const CATEGORY_ORDER = [
   "Driveshafts/oil leaks",
   "Miscellaneous",
 ];
+
+const UNDERSIDE_SECTION_KEYS = {
+  "Exhaust system/catalyst": "underside_exhaust_system_catalyst",
+  Steering: "underside_steering",
+  "Front suspension": "underside_front_suspension",
+  "Rear suspension": "underside_rear_suspension",
+  "Driveshafts/oil leaks": "underside_driveshafts_oil_leaks",
+  Miscellaneous: "underside_miscellaneous",
+};
+
+const isMiscCategory = (category = "") => category === "Miscellaneous";
 
 const STATUS_OPTIONS = ["Red", "Amber", "Green"];
 
@@ -339,26 +351,49 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
 
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               <label style={fieldLabelStyle}>Issue</label>
-              <input
-                type="text"
-                placeholder="Describe the issue…"
-                value={activeConcern.temp.issue}
-                onChange={(e) =>
-                  setActiveConcern((prev) => ({
-                    ...prev,
-                    temp: { ...prev.temp, issue: e.target.value },
-                  }))
-                }
-                style={inputStyle}
-                onFocus={(e) => {
-                  e.target.style.borderColor = palette.accent;
-                  e.target.style.boxShadow = "0 0 0 3px rgba(var(--primary-rgb),0.12)";
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = palette.border;
-                  e.target.style.boxShadow = "inset 0 1px 3px rgba(var(--shadow-rgb),0.05)";
-                }}
-              />
+              {isMiscCategory(activeConcern.category) ? (
+                <input
+                  type="text"
+                  placeholder="Describe the issue…"
+                  value={activeConcern.temp.issue}
+                  onChange={(e) =>
+                    setActiveConcern((prev) => ({
+                      ...prev,
+                      temp: { ...prev.temp, issue: e.target.value },
+                    }))
+                  }
+                  readOnly={locked}
+                  style={inputStyle}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = palette.accent;
+                    e.target.style.boxShadow = "0 0 0 3px rgba(var(--primary-rgb),0.12)";
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = palette.border;
+                    e.target.style.boxShadow = "inset 0 1px 3px rgba(var(--shadow-rgb),0.05)";
+                  }}
+                />
+              ) : (
+                <IssueAutocomplete
+                  sectionKey={UNDERSIDE_SECTION_KEYS[activeConcern.category] || "underside_miscellaneous"}
+                  value={activeConcern.temp.issue}
+                  onChange={(nextValue) =>
+                    setActiveConcern((prev) => ({
+                      ...prev,
+                      temp: { ...prev.temp, issue: nextValue },
+                    }))
+                  }
+                  onSelect={(nextValue) =>
+                    setActiveConcern((prev) => ({
+                      ...prev,
+                      temp: { ...prev.temp, issue: nextValue },
+                    }))
+                  }
+                  disabled={locked}
+                  placeholder="Describe the issue…"
+                  inputStyle={inputStyle}
+                />
+              )}
 
               <label style={fieldLabelStyle}>Status</label>
               <select
@@ -378,7 +413,7 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
                 ))}
               </select>
 
-              <button type="button" onClick={addConcern} style={{ ...createVhcButtonStyle("primary"), alignSelf: "flex-end" }}>
+              <button type="button" onClick={addConcern} disabled={locked} style={{ ...createVhcButtonStyle("primary"), alignSelf: "flex-end" }}>
                 Add Concern
               </button>
             </div>
@@ -433,21 +468,33 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
                         </div>
                       )}
                       <label style={fieldLabelStyle}>Issue</label>
-                      <input
-                        type="text"
-                        value={concern.issue}
-                        onChange={(e) => updateConcern(activeConcern.category, idx, "issue", e.target.value)}
-                        readOnly={rowLocked}
-                        style={inputStyle}
-                        onFocus={(e) => {
-                          e.target.style.borderColor = palette.accent;
-                          e.target.style.boxShadow = "0 0 0 3px rgba(var(--primary-rgb),0.12)";
-                        }}
-                        onBlur={(e) => {
-                          e.target.style.borderColor = palette.border;
-                          e.target.style.boxShadow = "inset 0 1px 3px rgba(var(--shadow-rgb),0.05)";
-                        }}
-                      />
+                      {isMiscCategory(activeConcern.category) ? (
+                        <input
+                          type="text"
+                          value={concern.issue}
+                          onChange={(e) => updateConcern(activeConcern.category, idx, "issue", e.target.value)}
+                          readOnly={rowLocked}
+                          style={inputStyle}
+                          onFocus={(e) => {
+                            e.target.style.borderColor = palette.accent;
+                            e.target.style.boxShadow = "0 0 0 3px rgba(var(--primary-rgb),0.12)";
+                          }}
+                          onBlur={(e) => {
+                            e.target.style.borderColor = palette.border;
+                            e.target.style.boxShadow = "inset 0 1px 3px rgba(var(--shadow-rgb),0.05)";
+                          }}
+                        />
+                      ) : (
+                        <IssueAutocomplete
+                          sectionKey={UNDERSIDE_SECTION_KEYS[activeConcern.category] || "underside_miscellaneous"}
+                          value={concern.issue}
+                          onChange={(nextValue) => updateConcern(activeConcern.category, idx, "issue", nextValue)}
+                          onSelect={(nextValue) => updateConcern(activeConcern.category, idx, "issue", nextValue)}
+                          disabled={rowLocked}
+                          placeholder="Describe the issue…"
+                          inputStyle={inputStyle}
+                        />
+                      )}
 
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
                         <select

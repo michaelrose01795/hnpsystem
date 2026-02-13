@@ -16,10 +16,11 @@ import { clockInToJob, clockOutFromJob, getUserActiveJobs } from "@/lib/database
 import { supabase } from "@/lib/supabaseClient";
 import WriteUpForm from "@/components/JobCards/WriteUpForm";
 import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
+import ModalPortal from "@/components/popups/ModalPortal";
 import { getJobByNumberOrReg, saveChecksheet } from "@/lib/database/jobs";
 import { createJobNote, getNotesByJob } from "@/lib/database/notes";
 import { logJobSubStatus } from "@/lib/services/jobStatusService";
-import { deriveJobTypeDisplay } from "@/lib/jobType/display";
+import { deriveJobTypeDisplay, formatDetectedJobTypeLabel } from "@/lib/jobType/display";
 import {
   getMainStatusMetadata,
   normalizeStatusId,
@@ -358,6 +359,7 @@ export default function TechJobDetailPage() {
   const [notesLoading, setNotesLoading] = useState(false);
   const [notesSubmitting, setNotesSubmitting] = useState(false);
   const [isCompleteJobHover, setIsCompleteJobHover] = useState(false);
+  const [showJobTypesPopup, setShowJobTypesPopup] = useState(false);
 
   // VHC state management
   const [vhcData, setVhcData] = useState({
@@ -2089,6 +2091,11 @@ export default function TechJobDetailPage() {
   }).length;
   const clockedHours = formatClockingDuration(clockedMinutesTotal);
   const isWarrantyJob = (jobCard?.jobSource || "").toLowerCase() === "warranty";
+  const categories = Array.isArray(jobCard?.jobCategories) ? jobCard.jobCategories : [];
+  const detectedJobTypes =
+    categories.length > 0
+      ? categories.map((entry) => formatDetectedJobTypeLabel(entry))
+      : [deriveJobTypeLabel(jobCard)];
 
   // Quick stats data for display
   const quickStats = [
@@ -2097,6 +2104,7 @@ export default function TechJobDetailPage() {
       value: deriveJobTypeLabel(jobCard),
       accent: "var(--info-dark)",
       pill: false,
+      onClick: () => setShowJobTypesPopup(true),
     },
     {
       label: "Parts authorised",
@@ -2253,14 +2261,15 @@ export default function TechJobDetailPage() {
           flexShrink: 0
         }}>
           <div style={{
-            flex: 1,
-            display: "flex",
+            display: "inline-flex",
             alignItems: "center",
             justifyContent: "flex-start",
             backgroundColor: "var(--surface)",
             border: "1px solid var(--surface-light)",
             borderRadius: "12px",
             padding: "10px 14px",
+            width: "fit-content",
+            flexShrink: 0,
           }}>
             <h1 style={{
               color: "var(--primary)",
@@ -2278,6 +2287,7 @@ export default function TechJobDetailPage() {
             gap: "12px",
             flexWrap: "wrap",
             justifyContent: "flex-end",
+            marginLeft: "auto",
             backgroundColor: "var(--surface)",
             border: "1px solid var(--surface-light)",
             borderRadius: "12px",
@@ -3800,6 +3810,106 @@ export default function TechJobDetailPage() {
         onAfterUpload={fetchJobData}
         existingDocuments={jobDocuments}
       />
+      {showJobTypesPopup && (
+        <ModalPortal>
+          <div
+            className="popup-backdrop"
+            onClick={(event) => {
+              if (event.target === event.currentTarget) {
+                setShowJobTypesPopup(false);
+              }
+            }}
+          >
+            <div
+              className="popup-card"
+              style={{
+                borderRadius: "32px",
+                width: "100%",
+                maxWidth: "560px",
+                maxHeight: "88vh",
+                overflowY: "auto",
+                border: "1px solid var(--surface-light)",
+              }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div style={{ padding: "28px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "16px",
+                  }}
+                >
+                  <h3
+                    style={{
+                      margin: 0,
+                      fontSize: "18px",
+                      fontWeight: 700,
+                      color: "var(--primary)",
+                      letterSpacing: "0.02em",
+                    }}
+                  >
+                    Job Types
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowJobTypesPopup(false)}
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      cursor: "pointer",
+                      fontSize: "22px",
+                      lineHeight: 1,
+                      color: "var(--info)",
+                    }}
+                    aria-label="Close job types popup"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <p style={{ margin: "0 0 14px 0", fontSize: "13px", color: "var(--info)" }}>
+                  Detected and linked job type categories for this job card.
+                </p>
+
+                <div style={{ display: "grid", gap: "10px" }}>
+                  {detectedJobTypes.map((jobType, index) => (
+                    <div
+                      key={`${jobType}-${index}`}
+                      style={{
+                        border: "1px solid var(--surface-light)",
+                        borderRadius: "12px",
+                        backgroundColor: "var(--surface-light)",
+                        padding: "12px 14px",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        gap: "12px",
+                      }}
+                    >
+                      <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)" }}>
+                        {jobType}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: 700,
+                          color: "var(--accent-purple)",
+                          letterSpacing: "0.05em",
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        Type {index + 1}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </ModalPortal>
+      )}
     </Layout>
   );
 }

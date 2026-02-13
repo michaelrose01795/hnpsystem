@@ -8,6 +8,7 @@ import themeConfig, {
   popupCardStyles,
 } from "@/styles/appTheme";
 import { DropdownField } from "@/components/dropdownAPI";
+import IssueAutocomplete from "@/components/vhc/IssueAutocomplete";
 
 const palette = themeConfig.palette;
 
@@ -25,6 +26,20 @@ const CATEGORY_ORDER = [
   "Trims",
   "Miscellaneous",
 ];
+
+const EXTERNAL_SECTION_KEYS = {
+  [HORN_LABEL]: "external_wipers_washers_horn",
+  "Front Lights": "external_front_lights",
+  "Rear lights": "external_rear_lights",
+  "Wheel Trim": "external_wheel_trim",
+  "Clutch/Transmission operations": "external_clutch_transmission_operations",
+  "Number plates": "external_number_plates",
+  Doors: "external_doors",
+  Trims: "external_trims",
+  Miscellaneous: "external_miscellaneous",
+};
+
+const isMiscCategory = (category = "") => category === "Miscellaneous";
 
 const createDefaultCategoryData = () =>
   CATEGORY_ORDER.reduce((acc, key) => {
@@ -378,26 +393,49 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
 
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               <label style={fieldLabelStyle}>Issue</label>
-              <input
-                type="text"
-                placeholder="Describe the issue…"
-                value={activeConcern.temp.issue}
-                onChange={(e) =>
-                  setActiveConcern((prev) => ({
-                    ...prev,
-                    temp: { ...prev.temp, issue: e.target.value },
-                  }))
-                }
-                style={inputStyle}
-                onFocus={(e) => {
-                  e.target.style.borderColor = palette.accent;
-                  e.target.style.boxShadow = "0 0 0 3px rgba(var(--primary-rgb),0.12)";
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = palette.border;
-                  e.target.style.boxShadow = "inset 0 1px 3px rgba(var(--shadow-rgb),0.05)";
-                }}
-              />
+              {isMiscCategory(activeConcern.category) ? (
+                <input
+                  type="text"
+                  placeholder="Describe the issue…"
+                  value={activeConcern.temp.issue}
+                  onChange={(e) =>
+                    setActiveConcern((prev) => ({
+                      ...prev,
+                      temp: { ...prev.temp, issue: e.target.value },
+                    }))
+                  }
+                  readOnly={locked}
+                  style={inputStyle}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = palette.accent;
+                    e.target.style.boxShadow = "0 0 0 3px rgba(var(--primary-rgb),0.12)";
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = palette.border;
+                    e.target.style.boxShadow = "inset 0 1px 3px rgba(var(--shadow-rgb),0.05)";
+                  }}
+                />
+              ) : (
+                <IssueAutocomplete
+                  sectionKey={EXTERNAL_SECTION_KEYS[activeConcern.category] || "external_miscellaneous"}
+                  value={activeConcern.temp.issue}
+                  onChange={(nextValue) =>
+                    setActiveConcern((prev) => ({
+                      ...prev,
+                      temp: { ...prev.temp, issue: nextValue },
+                    }))
+                  }
+                  onSelect={(nextValue) =>
+                    setActiveConcern((prev) => ({
+                      ...prev,
+                      temp: { ...prev.temp, issue: nextValue },
+                    }))
+                  }
+                  disabled={locked}
+                  placeholder="Describe the issue…"
+                  inputStyle={inputStyle}
+                />
+              )}
 
               <label style={fieldLabelStyle}>Status</label>
               <DropdownField
@@ -421,6 +459,7 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
               <button
                 type="button"
                 onClick={addConcern}
+                disabled={locked}
                 style={{ ...createVhcButtonStyle("primary"), alignSelf: "flex-end" }}
               >
                 Add Concern
@@ -477,21 +516,33 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
                         </div>
                       )}
                       <label style={fieldLabelStyle}>Issue</label>
-                      <input
-                        type="text"
-                        value={concern.issue}
-                        onChange={(e) => updateConcern(activeConcern.category, idx, "issue", e.target.value)}
-                        readOnly={rowLocked}
-                        style={inputStyle}
-                        onFocus={(e) => {
-                          e.target.style.borderColor = palette.accent;
-                          e.target.style.boxShadow = "0 0 0 3px rgba(var(--primary-rgb),0.12)";
-                        }}
-                        onBlur={(e) => {
-                          e.target.style.borderColor = palette.border;
-                          e.target.style.boxShadow = "inset 0 1px 3px rgba(var(--shadow-rgb),0.05)";
-                        }}
-                      />
+                      {isMiscCategory(activeConcern.category) ? (
+                        <input
+                          type="text"
+                          value={concern.issue}
+                          onChange={(e) => updateConcern(activeConcern.category, idx, "issue", e.target.value)}
+                          readOnly={rowLocked}
+                          style={inputStyle}
+                          onFocus={(e) => {
+                            e.target.style.borderColor = palette.accent;
+                            e.target.style.boxShadow = "0 0 0 3px rgba(var(--primary-rgb),0.12)";
+                          }}
+                          onBlur={(e) => {
+                            e.target.style.borderColor = palette.border;
+                            e.target.style.boxShadow = "inset 0 1px 3px rgba(var(--shadow-rgb),0.05)";
+                          }}
+                        />
+                      ) : (
+                        <IssueAutocomplete
+                          sectionKey={EXTERNAL_SECTION_KEYS[activeConcern.category] || "external_miscellaneous"}
+                          value={concern.issue}
+                          onChange={(nextValue) => updateConcern(activeConcern.category, idx, "issue", nextValue)}
+                          onSelect={(nextValue) => updateConcern(activeConcern.category, idx, "issue", nextValue)}
+                          disabled={rowLocked}
+                          placeholder="Describe the issue…"
+                          inputStyle={inputStyle}
+                        />
+                      )}
 
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
                         <DropdownField
