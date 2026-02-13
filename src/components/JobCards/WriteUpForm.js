@@ -2074,6 +2074,57 @@ const renderLastSaved = () => (
         gap: "8px"
       }}>
         <div style={{ flex: 1, minHeight: 0 }}>
+          {isWarrantyJob && (
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "12px" }}>
+              <div
+                style={{
+                  display: "inline-flex",
+                  gap: "6px",
+                  padding: "6px",
+                  borderRadius: "999px",
+                  border: "1px solid var(--surface-light)",
+                  backgroundColor: "var(--surface)",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("writeup")}
+                  style={{
+                    borderRadius: "999px",
+                    border: "1px solid transparent",
+                    padding: "8px 14px",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    background: activeTab === "writeup" ? "var(--primary)" : "transparent",
+                    color: activeTab === "writeup" ? "var(--surface)" : "var(--text-primary)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
+                  }}
+                >
+                  Write-Up
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("extras")}
+                  style={{
+                    borderRadius: "999px",
+                    border: "1px solid transparent",
+                    padding: "8px 14px",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    background: activeTab === "extras" ? "var(--primary)" : "transparent",
+                    color: activeTab === "extras" ? "var(--surface)" : "var(--text-primary)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
+                  }}
+                >
+                  Warranty Extras
+                </button>
+              </div>
+            </div>
+          )}
           {activeTab === "writeup" ? (
             <div
               style={{
@@ -2096,27 +2147,7 @@ const renderLastSaved = () => (
                     {renderLastSaved()}
                     {renderSectionEditorMeta("fault")}
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <span style={statusBadgeStyle}>Requests</span>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("extras")}
-                      style={{
-                        borderRadius: "999px",
-                        border: "1px solid var(--surface-light)",
-                        padding: "8px 14px",
-                        fontSize: "12px",
-                        fontWeight: 700,
-                        cursor: "pointer",
-                        background: "var(--surface)",
-                        color: "var(--text-primary)",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.04em",
-                      }}
-                    >
-                      Warranty Extras
-                    </button>
-                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }} />
                 </div>
                 <div
                   style={{
@@ -2288,26 +2319,6 @@ const renderLastSaved = () => (
               gap: "16px",
               minHeight: 0
             }}>
-              <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "flex-end" }}>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("writeup")}
-                  style={{
-                    borderRadius: "999px",
-                    border: "1px solid var(--surface-light)",
-                    padding: "8px 14px",
-                    fontSize: "12px",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    background: "var(--surface)",
-                    color: "var(--text-primary)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.04em",
-                  }}
-                >
-                  Write-Up
-                </button>
-              </div>
               {metadataFields.map((fieldConfig) => (
                 <div
                   key={fieldConfig.field}

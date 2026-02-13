@@ -45,7 +45,7 @@ const statusSelectStyle = {
   width: "auto",
 };
 
-export default function UndersideDetailsModal({ isOpen, onClose, onComplete, initialData, locked = false, summaryItems = [] }) {
+export default function UndersideDetailsModal({ isOpen, onClose, onComplete, initialData, locked = false, summaryItems = [], inlineMode = false }) {
   // Find matching summary item for a concern to get its approval status from the database
   const findSummaryItemForConcern = (category, concern) => {
     if (!concern || !category || !Array.isArray(summaryItems)) return null;
@@ -245,6 +245,7 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
   return (
     <VHCModalShell
       isOpen={isOpen}
+      inlineMode={inlineMode}
       onClose={handleClose}
       title="Underside"
       locked={locked}

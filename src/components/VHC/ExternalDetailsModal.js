@@ -58,7 +58,7 @@ const statusSelectStyle = {
   width: "auto",
 };
 
-export default function ExternalDetailsModal({ isOpen, onClose, onComplete, initialData, locked = false, summaryItems = [] }) {
+export default function ExternalDetailsModal({ isOpen, onClose, onComplete, initialData, locked = false, summaryItems = [], inlineMode = false }) {
   // Find matching summary item for a concern to get its approval status from the database
   const findSummaryItemForConcern = (category, concern) => {
     if (!concern || !category || !Array.isArray(summaryItems)) return null;
@@ -283,6 +283,7 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
   return (
     <VHCModalShell
       isOpen={isOpen}
+      inlineMode={inlineMode}
       onClose={handleClose}
       title="External"
       locked={locked}

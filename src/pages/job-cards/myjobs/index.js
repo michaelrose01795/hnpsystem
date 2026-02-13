@@ -14,6 +14,7 @@ import { getUserActiveJobs } from "@/lib/database/jobClocking";
 import { supabase } from "@/lib/supabaseClient";
 import { summarizePartsPipeline } from "@/lib/partsPipeline";
 import { normalizeDisplayName } from "@/utils/nameUtils";
+import { deriveJobTypeLabelFromJob } from "@/lib/jobType/label";
 
 const STATUS_BADGE_STYLES = {
   Waiting: { background: "var(--warning-surface)", color: "var(--danger-dark)" },
@@ -784,7 +785,7 @@ export default function MyJobsPage() {
                   }
                 };
 
-                const jobType = job.type || "Service";
+                const jobType = deriveJobTypeLabelFromJob(job);
                 const partsPending = (job.partsRequests || []).some((request) => {
                   const status = (request.status || "").toLowerCase();
                   return !["picked", "fitted", "cancelled"].includes(status);
