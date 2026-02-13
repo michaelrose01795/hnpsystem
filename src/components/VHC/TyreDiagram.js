@@ -2,20 +2,19 @@
 import React from "react";
 import themeConfig from "@/styles/appTheme";
 
-const { palette, shadows } = themeConfig;
+const { palette } = themeConfig;
 
-const DIAGRAM_WIDTH = 308;
-const DIAGRAM_HEIGHT = 380;
-const FRONT_Y = 70;
-const REAR_Y = 230; // widened vertical gap so labels don't crowd other content
+const DIAGRAM_WIDTH = 310;
+const DIAGRAM_HEIGHT = 382.47;
 const TYRE_WIDTH = 42;
 const TYRE_HEIGHT = 90;
+const SHOW_ALIGNMENT_DEBUG = false;
 
 const TYRE_KEYS = [
-  { key: "nsf", label: "N/S/F", position: { x: 38, y: FRONT_Y } },
-  { key: "osf", label: "O/S/F", position: { x: 226, y: FRONT_Y } },
-  { key: "nsr", label: "N/S/R", position: { x: 38, y: REAR_Y } },
-  { key: "osr", label: "O/S/R", position: { x: 226, y: REAR_Y } },
+  { key: "nsf", label: "N/S/F", position: { left: 19.154, top: 30.264 } },
+  { key: "osf", label: "O/S/F", position: { left: 80.194, top: 30.264 } },
+  { key: "nsr", label: "N/S/R", position: { left: 19.154, top: 72.374 } },
+  { key: "osr", label: "O/S/R", position: { left: 80.194, top: 72.374 } },
 ];
 
 const statusPalette = {
@@ -46,11 +45,6 @@ const resolveTyreEntry = (value) => {
 
 export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareActive = false, onSpareSelect }) {
   const activeKey = activeTyre?.toLowerCase();
-  const svgPrimary = palette.textPrimary;
-  const svgMuted = palette.textMuted;
-  const bodyFill = palette.accentSurface;
-  const cabinFill = palette.surfaceAlt;
-  const axleColor = palette.border;
 
   const containerStyle = {
     width: "100%",
@@ -64,32 +58,53 @@ export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareAct
     alignItems: "center",
     justifyContent: "center",
     boxShadow: "none",
-    color: svgPrimary,
+    color: palette.textPrimary,
+  };
+
+  const stageStyle = {
+    width: "100%",
+    maxWidth: "360px",
+    aspectRatio: `${DIAGRAM_WIDTH} / ${DIAGRAM_HEIGHT}`,
+    position: "relative",
+    overflow: "hidden",
+    borderRadius: "16px",
+  };
+
+  const backgroundStyle = {
+    position: "absolute",
+    inset: 0,
+    width: "100%",
+    height: "100%",
+    backgroundImage: "url('/images/wheels-tyres/vehicle-bg.png')",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
+    backgroundSize: "contain",
+    zIndex: 1,
+  };
+
+  const frontRearLabelStyle = {
+    position: "absolute",
+    left: "50%",
+    transform: "translateX(-50%)",
+    fontSize: "11px",
+    letterSpacing: "2px",
+    color: palette.textMuted,
+    fontWeight: 700,
+    zIndex: 3,
   };
 
   return (
     <div style={containerStyle}>
-      <svg
-        viewBox={`0 0 ${DIAGRAM_WIDTH} ${DIAGRAM_HEIGHT}`}
-        role="img"
-        aria-label="Vehicle tyre overview diagram"
-        style={{ width: "100%", height: "auto", maxWidth: "360px" }}
-      >
-        <rect
-          x="58"
-          y="46"
-          width="190"
-          height="260"
-          rx="48"
-          fill={bodyFill}
-          stroke={palette.border}
-          strokeWidth="2"
-          strokeDasharray="10 8"
-          opacity="0.9"
+      <div style={stageStyle}>
+        <svg
+          viewBox={`0 0 ${DIAGRAM_WIDTH} ${DIAGRAM_HEIGHT}`}
+          role="img"
+          aria-label="Vehicle tyre overview diagram"
+          style={backgroundStyle}
         />
-        <rect x="82" y="72" width="142" height="208" rx="34" fill={cabinFill} opacity="0.8" />
-        <line x1="58" y1={FRONT_Y + TYRE_HEIGHT / 2} x2="248" y2={FRONT_Y + TYRE_HEIGHT / 2} stroke={axleColor} strokeWidth="5" strokeLinecap="round" />
-        <line x1="58" y1={REAR_Y + TYRE_HEIGHT / 2} x2="248" y2={REAR_Y + TYRE_HEIGHT / 2} stroke={axleColor} strokeWidth="5" strokeLinecap="round" />
+
+        <div style={{ ...frontRearLabelStyle, top: "8%" }}>FRONT</div>
+        <div style={{ ...frontRearLabelStyle, bottom: "7%" }}>REAR</div>
 
         {TYRE_KEYS.map(({ key, label, position }) => {
           const entry = tyres?.[key];
@@ -101,66 +116,75 @@ export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareAct
           const isActive = activeKey === key;
 
           return (
-            <g
+            <React.Fragment
               key={key}
-              onClick={() => onSelect?.(key)}
-              style={{ cursor: onSelect ? "pointer" : "default" }}
             >
-              <rect
-                x={position.x}
-                y={position.y}
-                width={TYRE_WIDTH}
-                height={TYRE_HEIGHT}
-                rx="12"
-                fill={colors.fill}
-                stroke={isActive ? palette.accent : palette.border}
-                strokeWidth={isActive ? 3 : 1.5}
-                filter="url(#tyreShadow)"
-              />
-              <text
-                x={position.x + TYRE_WIDTH / 2}
-                y={position.y + TYRE_HEIGHT / 2}
-                textAnchor="middle"
-                dominantBaseline="middle"
-                fill={colors.text}
-                fontSize="12"
-                fontWeight="700"
+              <button
+                type="button"
+                onClick={() => onSelect?.(key)}
+                aria-label={`${label} tyre`}
+                style={{
+                  position: "absolute",
+                  left: `${position.left}%`,
+                  top: `${position.top}%`,
+                  transform: "translate(-50%, -50%)",
+                  width: `${TYRE_WIDTH}px`,
+                  height: `${TYRE_HEIGHT}px`,
+                  borderRadius: "12px",
+                  border: `${isActive ? 3 : 1.5}px solid ${isActive ? palette.accent : palette.border}`,
+                  background: colors.fill,
+                  color: colors.text,
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  lineHeight: 1.2,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  textAlign: "center",
+                  cursor: onSelect ? "pointer" : "default",
+                  boxShadow: "0 4px 8px rgba(var(--shadow-rgb),0.55)",
+                  zIndex: 4,
+                }}
               >
                 {displayText}
-              </text>
-              <text
-                x={position.x + TYRE_WIDTH / 2}
-                y={position.y + TYRE_HEIGHT + 20}
-                textAnchor="middle"
-                fill={isActive ? palette.accent : colors.label}
-                fontSize="12"
-                fontWeight="700"
+              </button>
+              <div
+                style={{
+                  position: "absolute",
+                  left: `${position.left}%`,
+                  top: `${position.top}%`,
+                  transform: "translate(-50%, calc(-50% + 62px))",
+                  color: isActive ? palette.accent : colors.label,
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  textAlign: "center",
+                  zIndex: 4,
+                  pointerEvents: "none",
+                }}
               >
                 {label}
-              </text>
-            </g>
+              </div>
+
+              {SHOW_ALIGNMENT_DEBUG ? (
+                <span
+                  style={{
+                    position: "absolute",
+                    left: `${position.left}%`,
+                    top: `${position.top}%`,
+                    transform: "translate(-50%, -50%)",
+                    width: "6px",
+                    height: "6px",
+                    borderRadius: "999px",
+                    background: "var(--danger)",
+                    zIndex: 5,
+                    pointerEvents: "none",
+                  }}
+                />
+              ) : null}
+            </React.Fragment>
           );
         })}
-
-        <text x={DIAGRAM_WIDTH / 2} y="60" textAnchor="middle" fontSize="11" fill={svgMuted} letterSpacing="2">
-          FRONT
-        </text>
-        <text x={DIAGRAM_WIDTH / 2} y={DIAGRAM_HEIGHT - 20} textAnchor="middle" fontSize="11" fill={svgMuted} letterSpacing="2">
-          REAR
-        </text>
-        <text x="20" y={DIAGRAM_HEIGHT / 2} textAnchor="middle" fontSize="11" fill={svgMuted} transform={`rotate(-90 20 ${DIAGRAM_HEIGHT / 2})`}>
-          
-        </text>
-        <text x={DIAGRAM_WIDTH - 22} y={DIAGRAM_HEIGHT / 2} textAnchor="middle" fontSize="11" fill={svgMuted} transform={`rotate(90 ${DIAGRAM_WIDTH - 22} ${DIAGRAM_HEIGHT / 2})`}>
-          
-        </text>
-
-        <defs>
-          <filter id="tyreShadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="rgba(var(--shadow-rgb),0.55)" />
-          </filter>
-        </defs>
-      </svg>
+      </div>
 
       <button
         type="button"
