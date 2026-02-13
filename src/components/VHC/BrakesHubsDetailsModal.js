@@ -415,7 +415,7 @@ const DrumBrakesSection = ({
     </div>
 );
 
-export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, initialData, locked = false }) {
+export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, initialData, locked = false, inlineMode = false }) {
   const normalisedInitial = useMemo(() => normaliseBrakesState(initialData), [initialData]);
 
   const [data, setData] = useState(normalisedInitial.data);
@@ -912,6 +912,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
       isOpen={isOpen}
       title="Brakes & Hubs"
       locked={locked}
+      inlineMode={inlineMode}
       width="1280px"
       height="780px"
       hideCloseButton

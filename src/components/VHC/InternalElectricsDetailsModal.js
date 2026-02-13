@@ -46,7 +46,7 @@ const statusSelectStyle = {
   width: "auto",
 };
 
-export default function InternalElectricsDetailsModal({ isOpen, onClose, onComplete, initialData, locked = false, summaryItems = [] }) {
+export default function InternalElectricsDetailsModal({ isOpen, onClose, onComplete, initialData, locked = false, summaryItems = [], inlineMode = false }) {
   // Find matching summary item for a concern to get its approval status from the database
   const findSummaryItemForConcern = (category, concern) => {
     if (!concern || !category || !Array.isArray(summaryItems)) return null;
@@ -249,6 +249,7 @@ export default function InternalElectricsDetailsModal({ isOpen, onClose, onCompl
       onClose={handleClose}
       title="Internal"
       locked={locked}
+      inlineMode={inlineMode}
       lockedOverlay={false}
       hideCloseButton
       width="1280px"

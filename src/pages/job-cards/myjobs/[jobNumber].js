@@ -2702,7 +2702,7 @@ export default function TechJobDetailPage() {
           {/* VHC TAB */}
           {activeTab === "vhc" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "20px", height: "100%" }}>
-              {showVhcReopenButton ? (
+              {!activeSection && (showVhcReopenButton ? (
                 <div style={{
                   backgroundColor: "var(--layer-section-level-2)",
                   borderRadius: "12px",
@@ -3229,12 +3229,13 @@ export default function TechJobDetailPage() {
                 </div>
               )}
                 </>
-              )}
+              ))}
 
               {/* VHC Modals */}
               {activeSection === "wheelsTyres" && (
                 <WheelsTyresDetailsModal
                   isOpen={true}
+                  inlineMode
                   onClose={(data) => handleSectionDismiss("wheelsTyres", data)}
                   onComplete={(data) => handleSectionComplete("wheelsTyres", data)}
                   initialData={vhcData.wheelsTyres}
@@ -3245,6 +3246,7 @@ export default function TechJobDetailPage() {
               {activeSection === "brakesHubs" && (
                 <BrakesHubsDetailsModal
                   isOpen={true}
+                  inlineMode
                   onClose={(data) => handleSectionDismiss("brakesHubs", data)}
                   onComplete={(data) => handleSectionComplete("brakesHubs", data)}
                   initialData={vhcData.brakesHubs}
@@ -3255,6 +3257,7 @@ export default function TechJobDetailPage() {
               {activeSection === "serviceIndicator" && (
                 <ServiceIndicatorDetailsModal
                   isOpen={true}
+                  inlineMode
                   onClose={(data) => handleSectionDismiss("serviceIndicator", data)}
                   onComplete={(data) => handleSectionComplete("serviceIndicator", data)}
                   initialData={vhcData.serviceIndicator}
@@ -3265,6 +3268,7 @@ export default function TechJobDetailPage() {
               {activeSection === "externalInspection" && (
                 <ExternalDetailsModal
                   isOpen={true}
+                  inlineMode
                   onClose={(data) => handleSectionDismiss("externalInspection", data)}
                   onComplete={(data) => handleSectionComplete("externalInspection", data)}
                   initialData={vhcData.externalInspection}
@@ -3275,6 +3279,7 @@ export default function TechJobDetailPage() {
               {activeSection === "internalElectrics" && (
                 <InternalElectricsDetailsModal
                   isOpen={true}
+                  inlineMode
                   onClose={(data) => handleSectionDismiss("internalElectrics", data)}
                   onComplete={(data) => handleSectionComplete("internalElectrics", data)}
                   initialData={vhcData.internalElectrics}
@@ -3285,6 +3290,7 @@ export default function TechJobDetailPage() {
               {activeSection === "underside" && (
                 <UndersideDetailsModal
                   isOpen={true}
+                  inlineMode
                   onClose={(data) => handleSectionDismiss("underside", data)}
                   onComplete={(data) => handleSectionComplete("underside", data)}
                   initialData={vhcData.underside}

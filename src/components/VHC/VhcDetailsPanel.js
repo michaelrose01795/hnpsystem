@@ -5973,6 +5973,7 @@ export default function VhcDetailsPanel({
         </div>
       )}
 
+      {!activeSection && (
       <div style={PANEL_SECTION_STYLE}>
         {enableTabs ? (
           <>
@@ -6624,10 +6625,12 @@ export default function VhcDetailsPanel({
           </>
         )}
       </div>
+      )}
 
       {activeSection === "wheelsTyres" && (
         <WheelsTyresDetailsModal
           isOpen
+          inlineMode
           initialData={vhcData.wheelsTyres}
           onClose={(draft) => handleSectionDismiss("wheelsTyres", draft)}
           onComplete={(data) => handleSectionComplete("wheelsTyres", data)}
@@ -6637,6 +6640,7 @@ export default function VhcDetailsPanel({
       {activeSection === "brakesHubs" && (
         <BrakesHubsDetailsModal
           isOpen
+          inlineMode
           initialData={vhcData.brakesHubs}
           onClose={(draft) => handleSectionDismiss("brakesHubs", draft)}
           onComplete={(data) => handleSectionComplete("brakesHubs", data)}
@@ -6646,6 +6650,7 @@ export default function VhcDetailsPanel({
       {activeSection === "serviceIndicator" && (
         <ServiceIndicatorDetailsModal
           isOpen
+          inlineMode
           initialData={vhcData.serviceIndicator}
           onClose={(draft) => handleSectionDismiss("serviceIndicator", draft)}
           onComplete={(data) => handleSectionComplete("serviceIndicator", data)}
@@ -6655,6 +6660,7 @@ export default function VhcDetailsPanel({
       {activeSection === "externalInspection" && (
         <ExternalDetailsModal
           isOpen
+          inlineMode
           initialData={vhcData.externalInspection}
           onClose={(draft) => handleSectionDismiss("externalInspection", draft)}
           onComplete={(data) => handleSectionComplete("externalInspection", data)}
@@ -6665,6 +6671,7 @@ export default function VhcDetailsPanel({
       {activeSection === "internalElectrics" && (
         <InternalElectricsDetailsModal
           isOpen
+          inlineMode
           initialData={vhcData.internalElectrics}
           onClose={(draft) => handleSectionDismiss("internalElectrics", draft)}
           onComplete={(data) => handleSectionComplete("internalElectrics", data)}
@@ -6675,6 +6682,7 @@ export default function VhcDetailsPanel({
       {activeSection === "underside" && (
         <UndersideDetailsModal
           isOpen
+          inlineMode
           initialData={vhcData.underside}
           onClose={(draft) => handleSectionDismiss("underside", draft)}
           onComplete={(data) => handleSectionComplete("underside", data)}

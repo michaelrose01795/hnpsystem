@@ -10,6 +10,7 @@ export default function VHCModalShell({
   subtitle,
   width = "1080px",
   height = "640px",
+  inlineMode = false,
   onClose,
   footer = null,
   children,
@@ -21,11 +22,34 @@ export default function VHCModalShell({
   const { resolvedMode } = useTheme();
   const closeButtonColor = resolvedMode === "dark" ? "var(--accent-purple)" : "var(--danger)";
   const isBlockingLocked = locked && lockedOverlay;
-  if (!isOpen || typeof document === "undefined") return null;
+  if (!isOpen) return null;
 
-  return createPortal(
-    <div style={vhcModalStyles.overlay}>
-      <div style={vhcModalStyles.container({ width, height })}>
+  const shellContent = (
+    <div
+      style={
+        inlineMode
+          ? {
+              width: "100%",
+              padding: 0,
+              margin: 0,
+            }
+          : vhcModalStyles.overlay
+      }
+    >
+      <div
+        style={
+          inlineMode
+            ? {
+                ...vhcModalStyles.container({ width, height }),
+                width: "100%",
+                maxWidth: "100%",
+                height: "auto",
+                maxHeight: "none",
+                minHeight: "calc(100vh - 210px)",
+              }
+            : vhcModalStyles.container({ width, height })
+        }
+      >
         <div style={{ ...vhcModalStyles.header, position: "relative", zIndex: 3 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
             <h2 style={vhcModalStyles.headerTitle}>{title}</h2>
@@ -145,9 +169,15 @@ export default function VHCModalShell({
           </div>
         ) : null}
       </div>
-    </div>,
-    document.body
+    </div>
   );
+
+  if (inlineMode) {
+    return shellContent;
+  }
+
+  if (typeof document === "undefined") return null;
+  return createPortal(shellContent, document.body);
 }
 
 export const buildModalButton = (variant = "primary", { disabled = false } = {}) => ({

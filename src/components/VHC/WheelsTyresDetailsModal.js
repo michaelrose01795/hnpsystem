@@ -250,7 +250,7 @@ function AutoCompleteInput({ value, onChange, options, placeholder }) {
   );
 }
 
-export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, initialData = null, locked = false }) {
+export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, initialData = null, locked = false, inlineMode = false }) {
   const normalizedInitialTyres = useMemo(() => buildNormalizedTyres(initialData || {}), [initialData]);
   const [tyres, setTyres] = useState(normalizedInitialTyres);
 
@@ -606,6 +606,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
       onClose={handleClose}
       title="Wheels & Tyres"
       locked={locked}
+      inlineMode={inlineMode}
       hideCloseButton
       width="1280px"
       height="780px"
