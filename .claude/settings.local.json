@@ -37,7 +37,9 @@
       "Bash(npx:*)",
       "Bash(xxd:*)",
       "Bash(python3:*)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "Bash(lsof:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []
