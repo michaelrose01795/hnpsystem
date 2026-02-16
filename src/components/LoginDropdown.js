@@ -188,47 +188,45 @@ export default function LoginDropdown({
         className="login-dropdown__control"
       />
 
-      {selectedCategory && (
-        <Dropdown
-          label="Select Department"
-          placeholder="Choose a department"
-          options={departmentOptions}
-          value={selectedDepartment || ""}
-          onChange={(raw) => {
-            const nextDepartment =
-              (typeof raw === "string" && raw) || raw?.value || raw?.label || "";
-            setSelectedDepartment(nextDepartment);
-            setSelectedUser(null);
-          }}
-          className="login-dropdown__control"
-        />
-      )}
+      <Dropdown
+        label="Select Department"
+        placeholder="Choose a department"
+        options={departmentOptions}
+        value={selectedDepartment || ""}
+        disabled={!selectedCategory}
+        onChange={(raw) => {
+          const nextDepartment =
+            (typeof raw === "string" && raw) || raw?.value || raw?.label || "";
+          setSelectedDepartment(nextDepartment);
+          setSelectedUser(null);
+        }}
+        className="login-dropdown__control"
+      />
 
-      {selectedDepartment && (
-        <Dropdown
-          label="Select User"
-          placeholder="Choose a user"
-          options={userDropdownOptions}
-          value={selectedUserId}
-          onChange={(raw, option) => {
-            const nextId =
-              (typeof raw === "object" && String(raw.id ?? raw.user_id ?? raw.value ?? "")) ||
-              option?.value ||
-              option?.key ||
-              "";
-            const nextUser =
-              (typeof raw === "object" && raw) ||
-              userOptions.find(
-                (user) =>
-                  String(user.id ?? user.user_id ?? user.email ?? user.name ?? "") ===
-                  String(nextId)
-              ) ||
-              null;
-            setSelectedUser(nextUser);
-          }}
-          className="login-dropdown__control"
-        />
-      )}
+      <Dropdown
+        label="Select User"
+        placeholder="Choose a user"
+        options={userDropdownOptions}
+        value={selectedUserId}
+        disabled={!selectedDepartment}
+        onChange={(raw, option) => {
+          const nextId =
+            (typeof raw === "object" && String(raw.id ?? raw.user_id ?? raw.value ?? "")) ||
+            option?.value ||
+            option?.key ||
+            "";
+          const nextUser =
+            (typeof raw === "object" && raw) ||
+            userOptions.find(
+              (user) =>
+                String(user.id ?? user.user_id ?? user.email ?? user.name ?? "") ===
+                String(nextId)
+            ) ||
+            null;
+          setSelectedUser(nextUser);
+        }}
+        className="login-dropdown__control"
+      />
     </div>
   );
 }

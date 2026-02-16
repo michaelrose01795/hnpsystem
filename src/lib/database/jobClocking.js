@@ -139,6 +139,24 @@ const deriveJobMeta = (job = {}) => {
   };
 };
 
+const normaliseStatusText = (value) =>
+  (value || "")
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]+/g, " ");
+
+const shouldPromoteToInProgress = (status) => {
+  const normalised = normaliseStatusText(status);
+  if (!normalised) return true;
+  return (
+    normalised.includes("waiting") ||
+    normalised.includes("booked") ||
+    normalised.includes("checked in") ||
+    normalised.includes("pending")
+  );
+};
+
 const resolveDateStamp = (timestamp) => {
   const date = timestamp ? new Date(timestamp) : new Date();
   if (Number.isNaN(date.getTime())) {
@@ -322,7 +340,20 @@ export const clockInToJob = async (...rawArgs) => {
     }
 
     const jobsById = await fetchJobsByIds([jobIdInt]);
-    const mapped = mapClockingRow(data, jobsById.get(jobIdInt));
+    const currentJob = jobsById.get(jobIdInt);
+    if (shouldPromoteToInProgress(currentJob?.status)) {
+      const { error: statusError } = await db
+        .from(JOB_TABLE)
+        .update({ status: "In Progress", updated_at: clockInTimestamp })
+        .eq("id", jobIdInt);
+      if (statusError) {
+        console.warn("Failed to promote job status to In Progress:", statusError.message);
+      } else if (currentJob) {
+        currentJob.status = "In Progress";
+      }
+    }
+
+    const mapped = mapClockingRow(data, currentJob);
     await logJobSubStatus(jobIdInt, "Technician Started", userIdInt, "Technician clocked in");
     if (typeof window !== "undefined") {
       window.dispatchEvent(

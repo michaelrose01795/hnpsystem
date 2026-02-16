@@ -3439,7 +3439,7 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
   try {
     const { data: job, error: jobError } = await supabase
       .from("jobs")
-      .select("id, assigned_to, description")
+      .select("id, assigned_to, description, status, vhc_required, vhc_completed_at")
       .eq("job_number", jobNumber)
       .single();
 
@@ -3499,6 +3499,28 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
       const jobUpdateResult = await updateJob(job.id, { description: formattedJobDescription });
       if (!jobUpdateResult.success) {
         console.error("⚠️ Failed to synchronise job description:", jobUpdateResult.error);
+      }
+    }
+
+    const writeUpIsComplete =
+      completionStatus === "complete" || completionStatus === "waiting_additional_work";
+    const vhcSatisfied = !Boolean(job.vhc_required) || Boolean(job.vhc_completed_at);
+    if (writeUpIsComplete && vhcSatisfied) {
+      const normalisedStatus = (job.status || "")
+        .toString()
+        .trim()
+        .toLowerCase()
+        .replace(/[_-]+/g, " ");
+      const alreadyCompleteLike =
+        normalisedStatus.includes("technician work completed") ||
+        normalisedStatus.includes("tech complete") ||
+        normalisedStatus === "complete" ||
+        normalisedStatus.includes("invoiced");
+      if (!alreadyCompleteLike) {
+        const statusResult = await updateJobStatus(job.id, "Technician Work Completed");
+        if (!statusResult?.success) {
+          console.warn("⚠️ Write-up saved but failed to promote status to Technician Work Completed.");
+        }
       }
     }
 

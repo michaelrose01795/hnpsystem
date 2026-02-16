@@ -450,7 +450,31 @@ export default function JobCardDetailPage() {
     };
   }, [jobData?.vhcChecks]);
   const vhcDecisionComplete = vhcDecisionSummary.allDecided;
-  const vhcTabComplete = vhcDecisionComplete || Boolean(jobData?.vhcCompletedAt);
+  const vhcTabReadyByRedAmberDecisions = useMemo(() => {
+    const checks = Array.isArray(jobData?.vhcChecks) ? jobData.vhcChecks : [];
+    const redAmberChecks = checks.filter((check) => {
+      const section = (check?.section || "").toString().trim();
+      if (section === "VHC_CHECKSHEET" || section === "VHC Checksheet") {
+        return false;
+      }
+      const severity = resolveVhcSeverity(check);
+      return severity === "red" || severity === "amber";
+    });
+
+    if (redAmberChecks.length === 0) {
+      return false;
+    }
+
+    return redAmberChecks.every((check) => {
+      const decision = normaliseDecisionStatus(
+        check?.approval_status ??
+          check?.approvalStatus ??
+          check?.display_status ??
+          check?.status
+      );
+      return decision === "authorized" || decision === "declined";
+    });
+  }, [jobData?.vhcChecks]);
 
   // Invoice tab is visible for anyone who can open this page to make review easier
   const canViewInvoice = true;
@@ -2242,7 +2266,7 @@ export default function JobCardDetailPage() {
               const isVhcTab = tab.id === "vhc";
               const isCompleteHighlight =
                 (isWriteUpTab && writeUpComplete) ||
-                (isVhcTab && vhcTabComplete);
+                (isVhcTab && vhcTabReadyByRedAmberDecisions);
               const tabBackground = isCompleteHighlight
                 ? isActive
                   ? "var(--success)"
@@ -7232,4 +7256,3 @@ function DocumentsTab({
     </div>
   );
 }
-

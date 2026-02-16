@@ -100,18 +100,6 @@ const getMakeModel = (job) => {
   return combined || "N/A";
 };
 
-const formatCreatedAt = (value) => {
-  if (!value) return "";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "";
-  return parsed.toLocaleString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit"
-  });
-};
-
 export default function MyJobsPage() {
   const router = useRouter();
   const { user, status: techStatus, currentJob, dbUserId } = useUser();
@@ -753,15 +741,12 @@ export default function MyJobsPage() {
                 <div style={{ minWidth: "140px", flex: "0 0 auto" }}>Customer</div>
                 <div style={{ minWidth: "160px", flex: "1 1 auto" }}>Make/Model</div>
                 <div style={{ minWidth: "80px" }}>Type</div>
-                <div style={{ minWidth: "90px", textAlign: "center" }}>Clocked</div>
-                <div style={{ minWidth: "100px", textAlign: "center" }}>Created</div>
               </div>
               {filteredJobs.map((job) => {
                 const isClockedOn = activeJobIds.has(job.id);
                 const displayStatusLabel = resolveTechStatusLabel(job, { isClockedOn });
                 const statusStyle = getStatusBadgeStyle(displayStatusLabel);
                 const statusTooltip = resolveTechStatusTooltip(job, { isClockedOn });
-                const createdAt = formatCreatedAt(job.createdAt);
                 const description = job.description?.trim();
                 const makeModel = getMakeModel(job);
 
@@ -790,7 +775,6 @@ export default function MyJobsPage() {
                   const status = (request.status || "").toLowerCase();
                   return !["picked", "fitted", "cancelled"].includes(status);
                 });
-                const clockStateLabel = isClockedOn ? "Clocked On" : "Clocked Off";
                 const partsIndicatorColor = partsPending ? "var(--danger)" : "var(--info)";
                 const jobPipeline = summarizePartsPipeline(job.partsAllocations || [], {
                   quantityField: "quantityRequested",
@@ -907,36 +891,6 @@ export default function MyJobsPage() {
                       {jobType}
                     </span>
 
-                    {/* Clocked Status */}
-                    <div
-                      className="myjobs-cell myjobs-clock"
-                      style={{
-                        fontSize: "11px",
-                        fontWeight: "600",
-                        color: isClockedOn ? "var(--success)" : "var(--text-secondary)",
-                        padding: "4px 10px",
-                        borderRadius: "6px",
-                        backgroundColor: isClockedOn ? "var(--success-surface)" : "var(--surface-light)",
-                        minWidth: "90px",
-                        textAlign: "center"
-                      }}
-                    >
-                      {isClockedOn ? "Clocked" : "Off"}
-                    </div>
-
-                    {/* Created Date */}
-                    <span
-                      className="myjobs-cell myjobs-date"
-                      style={{
-                        fontSize: "12px",
-                        color: "var(--text-secondary)",
-                        minWidth: "100px",
-                        textAlign: "center"
-                      }}
-                    >
-                      {createdAt || "N/A"}
-                    </span>
-
                   </div>
                 );
               })}
@@ -999,28 +953,6 @@ export default function MyJobsPage() {
           </div>
         </div>
 
-        {/* Quick Info Box */}
-        <div style={{
-          background: "var(--surface-light)",
-          border: "1px solid var(--danger)",
-          borderRadius: "12px",
-          padding: "16px 20px",
-          display: "flex",
-          alignItems: "center",
-          gap: "12px",
-          boxShadow: "none"
-        }}>
-          <div style={{ fontSize: "24px" }}>💡</div>
-          <div>
-            <p style={{ fontSize: "14px", fontWeight: "600", color: "var(--danger)", margin: "0 0 4px 0" }}>
-              VHC Status Legend
-            </p>
-            <p style={{ fontSize: "13px", color: "var(--danger-dark)", margin: 0 }}>
-              🟢 <strong>Green Badge</strong> = VHC Required for this job | 
-              🔴 <strong>Red Badge</strong> = VHC Not Required
-            </p>
-          </div>
-        </div>
       </div>
 
       {/* Start Job Modal */}

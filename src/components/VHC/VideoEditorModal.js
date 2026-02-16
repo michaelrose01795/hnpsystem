@@ -10,15 +10,37 @@ export default function VideoEditorModal({ isOpen, videoFile, onSave, onCancel, 
   const [isMuted, setIsMuted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const [processing, setProcessing] = useState(false);
 
   const videoRef = useRef(null);
   const videoUrlRef = useRef(null);
 
+  const getPreferredVideoMimeType = () => {
+    const candidates = [
+      "video/mp4;codecs=avc1.42E01E,mp4a.40.2",
+      "video/mp4",
+      "video/webm;codecs=vp9",
+      "video/webm;codecs=vp8",
+      "video/webm",
+    ];
+    return candidates.find((type) => MediaRecorder.isTypeSupported(type)) || "";
+  };
+
   // Load video when modal opens
   useEffect(() => {
     if (isOpen && videoFile) {
-      loadVideo();
+      setVideoLoaded(false);
+      setLoadError("");
+      setIsPlaying(false);
+      setCurrentTime(0);
+      const ensureLoad = () => {
+        const loaded = loadVideo();
+        if (!loaded) {
+          requestAnimationFrame(ensureLoad);
+        }
+      };
+      ensureLoad();
     }
 
     return () => {
@@ -32,35 +54,26 @@ export default function VideoEditorModal({ isOpen, videoFile, onSave, onCancel, 
   // Load video
   const loadVideo = () => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video) return false;
 
-    const url = URL.createObjectURL(videoFile);
-    videoUrlRef.current = url;
+    if (videoUrlRef.current) {
+      URL.revokeObjectURL(videoUrlRef.current);
+      videoUrlRef.current = null;
+    }
+
+    const isStringSource = typeof videoFile === "string";
+    const isBlobSource = typeof Blob !== "undefined" && videoFile instanceof Blob;
+    if (!isStringSource && !isBlobSource) {
+      setLoadError("Unsupported video source.");
+      return true;
+    }
+
+    const url = isStringSource ? videoFile : URL.createObjectURL(videoFile);
+    videoUrlRef.current = isStringSource ? null : url;
     video.src = url;
+    video.load();
 
-    video.onloadedmetadata = () => {
-      const dur = video.duration;
-      setDuration(dur);
-      setTrimStart(0);
-      setTrimEnd(dur);
-      setVideoLoaded(true);
-    };
-
-    video.ontimeupdate = () => {
-      setCurrentTime(video.currentTime);
-
-      // Stop at trim end
-      if (video.currentTime >= trimEnd) {
-        video.pause();
-        setIsPlaying(false);
-        video.currentTime = trimStart;
-      }
-    };
-
-    video.onended = () => {
-      setIsPlaying(false);
-      video.currentTime = trimStart;
-    };
+    return true;
   };
 
   // Play/Pause
@@ -150,16 +163,8 @@ export default function VideoEditorModal({ isOpen, videoFile, onSave, onCancel, 
         });
       }
 
-      const options = { mimeType: "video/webm;codecs=vp9" };
-
-      if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-        options.mimeType = "video/webm;codecs=vp8";
-      }
-
-      if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-        options.mimeType = "video/webm";
-      }
-
+      const preferredMimeType = getPreferredVideoMimeType();
+      const options = preferredMimeType ? { mimeType: preferredMimeType } : {};
       const mediaRecorder = new MediaRecorder(stream, options);
       const chunks = [];
 
@@ -170,9 +175,11 @@ export default function VideoEditorModal({ isOpen, videoFile, onSave, onCancel, 
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: "video/webm" });
-        const fileName = `edited_video_${Date.now()}.webm`;
-        const file = new File([blob], fileName, { type: "video/webm" });
+        const outputMimeType = preferredMimeType || "video/webm";
+        const extension = outputMimeType.includes("mp4") ? "mp4" : "webm";
+        const blob = new Blob(chunks, { type: outputMimeType });
+        const fileName = `edited_video_${Date.now()}.${extension}`;
+        const file = new File([blob], fileName, { type: outputMimeType });
         setProcessing(false);
         onSave(file);
       };
@@ -280,22 +287,56 @@ export default function VideoEditorModal({ isOpen, videoFile, onSave, onCancel, 
           justifyContent: "center",
           position: "relative",
         }}>
-          {!videoLoaded ? (
+          <video
+            ref={videoRef}
+            onLoadedMetadata={(e) => {
+              const dur = e.currentTarget.duration;
+              if (Number.isFinite(dur) && dur > 0) {
+                setDuration(dur);
+                setTrimStart(0);
+                setTrimEnd(dur);
+              }
+              setLoadError("");
+              setVideoLoaded(true);
+            }}
+            onLoadedData={() => {
+              setLoadError("");
+              setVideoLoaded(true);
+            }}
+            onError={() => {
+              setVideoLoaded(false);
+              setIsPlaying(false);
+              setLoadError("Video format not supported in this browser.");
+            }}
+            onTimeUpdate={(e) => {
+              const video = e.currentTarget;
+              setCurrentTime(video.currentTime);
+              if (video.currentTime >= trimEnd) {
+                video.pause();
+                setIsPlaying(false);
+                video.currentTime = trimStart;
+              }
+            }}
+            onEnded={(e) => {
+              setIsPlaying(false);
+              e.currentTarget.currentTime = trimStart;
+            }}
+            style={{
+              maxWidth: "100%",
+              maxHeight: "100%",
+              borderRadius: "8px",
+              visibility: videoLoaded ? "visible" : "hidden",
+            }}
+            muted={isMuted}
+          />
+          {!videoLoaded && (
             <div style={{ textAlign: "center", color: "var(--info)" }}>
               <div style={{ fontSize: "48px", marginBottom: "8px" }}>🎥</div>
-              <div style={{ fontSize: "14px" }}>Loading video...</div>
+              <div style={{ fontSize: "14px" }}>{loadError || "Loading video..."}</div>
             </div>
-          ) : (
+          )}
+          {videoLoaded && (
             <>
-              <video
-                ref={videoRef}
-                style={{
-                  maxWidth: "100%",
-                  maxHeight: "100%",
-                  borderRadius: "8px",
-                }}
-                muted={isMuted}
-              />
 
               {/* Play/Pause Overlay */}
               <button

@@ -391,7 +391,6 @@ export default function TechJobDetailPage() {
   const [isReopenMode, setIsReopenMode] = useState(false);
   const [saveStatus, setSaveStatus] = useState("idle");
   const [saveError, setSaveError] = useState("");
-  const [lastSavedAt, setLastSavedAt] = useState(null);
   const saveTimeoutRef = useRef(null);
   const [showVhcSummary, setShowVhcSummary] = useState(false);
   const [showGreenItems, setShowGreenItems] = useState(false);
@@ -1067,7 +1066,6 @@ export default function TechJobDetailPage() {
             await logJobSubStatus(jobCardId, "VHC Started", dbUserId, "VHC started");
             setVhcStartedLogged(true);
           }
-          setLastSavedAt(new Date());
           if (saveTimeoutRef.current) {
             clearTimeout(saveTimeoutRef.current);
           }
@@ -2825,12 +2823,6 @@ export default function TechJobDetailPage() {
                       {saveStatus === "error" && (
                         <span style={{ fontSize: "13px", color: "var(--danger)" }}>{saveError || "Save failed"}</span>
                       )}
-                      {lastSavedAt && (
-                        <span style={{ fontSize: "12px", color: "var(--info)" }}>
-                          Last saved: {formatDateTime(lastSavedAt)}
-                        </span>
-                      )}
-
                       <button
                         type="button"
                         onClick={() => setShowVhcSummary((prev) => !prev)}
@@ -3747,39 +3739,38 @@ export default function TechJobDetailPage() {
           )}
 
           {/* WRITE-UP TAB */}
-          {activeTab === "write-up" && (
-            <div style={{
-              height: "100%",
-              overflow: "hidden",
-              display: "flex",
-              flexDirection: "column",
-              borderRadius: 0,
-              border: "none",
-              backgroundColor: "transparent"
-            }}>
-              <WriteUpForm
-                jobNumber={jobNumber}
-                showHeader={false}
-                onCompletionChange={(nextStatus) => {
-                  setJobData((prev) => {
-                    if (!prev?.jobCard) return prev;
-                    const nextWriteUp = {
-                      ...(prev.jobCard.writeUp || {}),
-                      completion_status: nextStatus,
-                    };
-                    return {
-                      ...prev,
-                      jobCard: {
-                        ...prev.jobCard,
-                        completionStatus: nextStatus,
-                        writeUp: nextWriteUp,
-                      },
-                    };
-                  });
-                }}
-              />
-            </div>
-          )}
+          <div style={{
+            height: "100%",
+            overflow: "hidden",
+            display: activeTab === "write-up" ? "flex" : "none",
+            flexDirection: "column",
+            borderRadius: 0,
+            border: "none",
+            backgroundColor: "transparent"
+          }}>
+            <WriteUpForm
+              jobNumber={jobNumber}
+              jobCardData={jobData}
+              showHeader={false}
+              onCompletionChange={(nextStatus) => {
+                setJobData((prev) => {
+                  if (!prev?.jobCard) return prev;
+                  const nextWriteUp = {
+                    ...(prev.jobCard.writeUp || {}),
+                    completion_status: nextStatus,
+                  };
+                  return {
+                    ...prev,
+                    jobCard: {
+                      ...prev.jobCard,
+                      completionStatus: nextStatus,
+                      writeUp: nextWriteUp,
+                    },
+                  };
+                });
+              }}
+            />
+          </div>
 
           {/* DOCUMENTS TAB */}
           {activeTab === "documents" && (

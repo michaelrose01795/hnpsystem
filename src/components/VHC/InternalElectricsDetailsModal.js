@@ -238,6 +238,9 @@ export default function InternalElectricsDetailsModal({ isOpen, onClose, onCompl
     }));
   };
 
+  const activeConcernEntries = data[activeConcern.category]?.concerns ?? [];
+  const shouldScrollConcernEntries = activeConcernEntries.length > 2;
+
   const handleClose = () => {
     if (typeof onClose === "function") {
       onClose(data);
@@ -424,11 +427,12 @@ export default function InternalElectricsDetailsModal({ isOpen, onClose, onCompl
                 display: "flex",
                 flexDirection: "column",
                 gap: "10px",
-                overflowY: "auto",
-                paddingRight: "4px",
+                overflowY: shouldScrollConcernEntries ? "auto" : "visible",
+                maxHeight: shouldScrollConcernEntries ? "360px" : "none",
+                paddingRight: shouldScrollConcernEntries ? "6px" : "0px",
               }}
             >
-              {(data[activeConcern.category]?.concerns ?? []).length === 0 ? (
+              {activeConcernEntries.length === 0 ? (
                 <div
                   style={{
                     padding: "16px",
@@ -442,7 +446,7 @@ export default function InternalElectricsDetailsModal({ isOpen, onClose, onCompl
                   No concerns added yet. Document issues as they are discovered.
                 </div>
               ) : (
-                data[activeConcern.category].concerns.map((concern, idx) => {
+                activeConcernEntries.map((concern, idx) => {
                   const rowLocked = isConcernLocked(concern, activeConcern.category);
                   const lockReason = getLockReason(concern, activeConcern.category);
                   const isDeclined = lockReason === "declined";

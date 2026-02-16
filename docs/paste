@@ -1,14 +1,20 @@
 TO DO:
 
 Continue flow with job number 55. UPLAOD IMAGE FROM ONEDRIVE
-
-
-
-
-
-HERE
-have it so only one active clocking status at once per user, example if a user forgets to clock out have it so they are auto clocked out at 12am every morning if the clocking is still active and have it if they log in, this creates a new clcoking adding the clock out time to the time before they clocked in to the new one. for refece this section is within the /profile page within the "Attendance History" section but make sure it updates within the database as well. 
  
+
+
+have it so the VHC background tab button within the job-cards/[jobnuber] page is only green when the items within the red and amber sections are either set to authorised or declinded. dont use the same reason as the backgroun colour does within the job-cards/myjobs/[jobnumber] page 
+
+
+have it so the check box at the end of the red and amber tables cannon be selected until the parts and labour column check boxes have been checked. 
+
+
+ADD INTERCOOL HOSE AS A PART WITHIN DATABASE GOODS IN!!!
+
+
+
+have it os the "Add Parts - Wipers/Washers/Horn" popup within the parts identifed tab will show this instead for example "Near Side Front Wiper blade split, requires replacing" do this for all of the popups, if required create an AI like feauture which detects the detial to be shown here instead. Have the AI feaure to give tips and hits thoughtout the VHC tab with over 1000 hinds and tips for when tabs and actions are carried out. 
 
 
 FIND OUT yes work on this 
@@ -19,10 +25,10 @@ DO THISSSS
 work on implementing "AI" within whole app search chat "AI job detection system"
 
 
-
+CHECKKK
 make sure the "ALLOCATE PARTS" part section always shows the customer request (at the top) and VHC request (blow the cusomter request) at all times if its been reported, now remove the requests from that sectin even if a part has been allocated to that request.
 
-
+CHECKKKK
 Fix it so when i click allocated with an authoirse request it works the same with a normal request. 
 
 
@@ -45,6 +51,8 @@ CHECKKK
 have it so the top bar doesnt show anythe mode or Welcome back section when in this modesand have it so the search bar isnt insdie the top bar its underneath the navigator and status button taking up the whole width. 
 
 
+
+Add overlay to the video which is like a bubble which goes to a fix location within the recording which the user can press during the recording Like ar tiles which give the title an colour of the issue. have it so it alwyas show the front pads and discs measurenmetns as well as all 4 tyres no matter red amber or green. with the ohter conerns always show either red or amber. never green. 
 
 
 Go though each page and set which section has what level of colour level 1-4,  

@@ -17,6 +17,17 @@ export default function CameraCaptureModal({ isOpen, onClose, onCapture, initial
   const mediaRecorderRef = useRef(null);
   const recordingTimerRef = useRef(null);
 
+  const getPreferredVideoMimeType = () => {
+    const candidates = [
+      "video/mp4;codecs=avc1.42E01E,mp4a.40.2",
+      "video/mp4",
+      "video/webm;codecs=vp9",
+      "video/webm;codecs=vp8",
+      "video/webm",
+    ];
+    return candidates.find((type) => MediaRecorder.isTypeSupported(type)) || "";
+  };
+
   // Initialize camera on modal open
   useEffect(() => {
     if (isOpen) {
@@ -180,18 +191,8 @@ export default function CameraCaptureModal({ isOpen, onClose, onCapture, initial
     }
 
     try {
-      const options = { mimeType: "video/webm;codecs=vp9" };
-
-      // Fallback to vp8 if vp9 not supported
-      if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-        options.mimeType = "video/webm;codecs=vp8";
-      }
-
-      // Fallback to default if webm not supported
-      if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-        options.mimeType = "video/webm";
-      }
-
+      const preferredMimeType = getPreferredVideoMimeType();
+      const options = preferredMimeType ? { mimeType: preferredMimeType } : {};
       const mediaRecorder = new MediaRecorder(cameraStream, options);
       const chunks = [];
 
@@ -202,9 +203,11 @@ export default function CameraCaptureModal({ isOpen, onClose, onCapture, initial
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: "video/webm" });
-        const fileName = `video_${Date.now()}.webm`;
-        const file = new File([blob], fileName, { type: "video/webm" });
+        const outputMimeType = preferredMimeType || "video/webm";
+        const extension = outputMimeType.includes("mp4") ? "mp4" : "webm";
+        const blob = new Blob(chunks, { type: outputMimeType });
+        const fileName = `video_${Date.now()}.${extension}`;
+        const file = new File([blob], fileName, { type: outputMimeType });
         onCapture(file, "video");
         stopCamera();
         onClose();

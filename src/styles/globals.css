@@ -760,6 +760,13 @@ body:has(.login-page-wrapper) {
   gap: 16px;
 }
 
+.login-dev-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 340px;
+}
+
 @media (min-width: 1100px) {
   .login-stack {
     max-width: 100%;
@@ -833,6 +840,11 @@ body:has(.login-page-wrapper) {
 .login-loading-text {
   font-size: 0.75rem;
   color: rgba(var(--text-secondary-rgb), 0.7);
+  min-height: 18px;
+}
+
+.login-loading-text.is-hidden {
+  visibility: hidden;
 }
 
 .login-preview {

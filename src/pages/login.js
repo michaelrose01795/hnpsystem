@@ -309,7 +309,7 @@ export default function LoginPage() {
               className="login-card--dev"
               title="Developer Login"
             >
-              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              <div className="login-dev-content">
                 <LoginDropdown
                   selectedCategory={selectedCategory}
                   setSelectedCategory={setSelectedCategory}
@@ -322,9 +322,16 @@ export default function LoginPage() {
                   roleCategories={loginRoleCategories}
                 />
 
-                {(loadingDevUsers || rosterLoading) && (
-                  <p className="login-loading-text">Loading database users for dev login...</p>
-                )}
+                <p
+                  className={[
+                    "login-loading-text",
+                    !(loadingDevUsers || rosterLoading) ? "is-hidden" : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                >
+                  Loading database users for dev login...
+                </p>
 
 
                 <button

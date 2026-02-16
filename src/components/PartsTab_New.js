@@ -389,7 +389,12 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       .map((req, index) => {
         const vhcItemId = req.vhc_item_id ?? req.vhcItemId ?? null;
         const fallbackRequestId = req.request_id ?? req.requestId ?? null;
-        const id = vhcItemId ? `vhc-${vhcItemId}` : `vhc-request-${fallbackRequestId ?? index}`;
+        const id =
+          vhcItemId !== null && vhcItemId !== undefined
+            ? `vhc-${vhcItemId}`
+            : fallbackRequestId !== null && fallbackRequestId !== undefined
+            ? fallbackRequestId
+            : `vhc-request-local-${index}`;
         return {
           id,
           type: "vhc",
@@ -409,7 +414,9 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           section: req.section || "",
           severity: "authorized",
           vhcItemId,
-          canAllocate: vhcItemId !== null && vhcItemId !== undefined,
+          canAllocate:
+            (vhcItemId !== null && vhcItemId !== undefined) ||
+            (fallbackRequestId !== null && fallbackRequestId !== undefined),
         };
       });
 
@@ -419,7 +426,51 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       vhcReqMap.set(String(row.id), row);
     });
 
-    const allReqs = [...customerReqs, ...Array.from(vhcReqMap.values())];
+    const customerReqMap = new Map(
+      customerReqs.map((row) => [String(row.id), row])
+    );
+
+    // Backfill customer requests from allocated parts so reported requests
+    // remain visible even when request rows are temporarily missing.
+    jobParts.forEach((part) => {
+      const requestId = part?.allocatedToRequestId;
+      if (requestId === null || requestId === undefined || requestId === "") return;
+      const key = String(requestId);
+      if (customerReqMap.has(key)) return;
+      const description =
+        firstText(part?.requestNotes, part?.description, part?.name) ||
+        `Reported request ${key}`;
+      customerReqMap.set(key, {
+        id: requestId,
+        type: "customer",
+        description,
+        jobType: "Customer",
+        hours: null,
+        canAllocate: true,
+      });
+    });
+
+    // Backfill VHC requests from allocated parts so they remain visible after allocation.
+    jobParts.forEach((part, index) => {
+      const vhcItemId = part?.vhcItemId;
+      if (vhcItemId === null || vhcItemId === undefined || vhcItemId === "") return;
+      const key = `vhc-${vhcItemId}`;
+      if (vhcReqMap.has(key)) return;
+      const description =
+        firstText(part?.requestNotes, part?.description, part?.name) ||
+        `VHC authorised item ${index + 1}`;
+      vhcReqMap.set(key, {
+        id: key,
+        type: "vhc",
+        description,
+        section: "",
+        severity: "authorized",
+        vhcItemId,
+        canAllocate: true,
+      });
+    });
+
+    const allReqs = [...Array.from(customerReqMap.values()), ...Array.from(vhcReqMap.values())];
     console.log("[PartsTab] All requests:", allReqs);
     console.log("[PartsTab] VHC requests:", Array.from(vhcReqMap.values()));
     return allReqs;

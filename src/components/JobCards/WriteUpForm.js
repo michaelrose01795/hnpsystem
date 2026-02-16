@@ -396,16 +396,6 @@ const extractTasksFromChecklist = (rawChecklist) => {
   return Array.isArray(parsed.tasks) ? parsed.tasks : [];
 };
 
-const formatLastSavedTime = (value) => {
-  if (!value) return "Not saved yet";
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) return "Not saved yet";
-  return `Last saved ${date.toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-  })}`;
-};
-
 const sectionBoxStyle = {
   backgroundColor: "var(--layer-section-level-3)",
   padding: "18px",
@@ -696,7 +686,6 @@ export default function WriteUpForm({
   const [, setAuthorizedItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [lastSavedAt, setLastSavedAt] = useState(null);
   const [writeUpData, setWriteUpData] = useState({
     fault: "",
     caused: "",
@@ -978,7 +967,6 @@ export default function WriteUpForm({
             ...prev,
             completionStatus: nextCompletionStatus,
           }));
-          setLastSavedAt(new Date());
 
           const requestsForPartsStatus = jobData?.jobCard?.partsRequests || [];
           const desiredStatus = determineJobStatusFromTasks(
@@ -1479,7 +1467,6 @@ export default function WriteUpForm({
           }));
         }
 
-        setLastSavedAt(new Date());
         markFieldsSynced({
           ...sanitizedFields,
           causeSignature: buildCauseSignature(normalizedCauseEntries),
@@ -1919,11 +1906,6 @@ export default function WriteUpForm({
       </span>
     );
   };
-const renderLastSaved = () => (
-    <span style={{ ...sectionSubtitleStyle, color: "var(--info-dark)" }}>
-      {formatLastSavedTime(lastSavedAt)}
-    </span>
-  );
   const stripRequestPrefix = (value = "") =>
     value.replace(/^Request\s*\d+\s*:\s*/i, "");
   const metadataFields = [
@@ -2156,7 +2138,6 @@ const renderLastSaved = () => (
                         {faultProgressLabel}
                       </span>
                     </div>
-                    {renderLastSaved()}
                     {renderSectionEditorMeta("fault")}
                   </div>
                 </div>
@@ -2206,7 +2187,6 @@ const renderLastSaved = () => (
                         {causeProgressLabel}
                       </span>
                     </div>
-                    {renderLastSaved()}
                     {renderSectionEditorMeta("cause")}
                   </div>
                     {canAddCause && (
@@ -2273,7 +2253,6 @@ const renderLastSaved = () => (
                         {rectificationProgressLabel}
                       </span>
                     </div>
-                    {renderLastSaved()}
                     {renderSectionEditorMeta("rectification")}
                   </div>
                   {showRectificationStatus && (

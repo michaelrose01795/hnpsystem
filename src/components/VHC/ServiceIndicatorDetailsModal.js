@@ -63,12 +63,6 @@ const normaliseOilStatus = (value) => {
   return value;
 };
 
-const statusPillStyles = {
-  Red: { background: "rgba(var(--danger-rgb), 0.16)", color: palette.danger, border: "rgba(var(--danger-rgb), 0.32)" },
-  Amber: { background: "rgba(var(--warning-rgb), 0.16)", color: palette.warning, border: "rgba(var(--warning-rgb), 0.32)" },
-  Green: { background: "rgba(var(--info-rgb), 0.16)", color: palette.success, border: "rgba(var(--info-rgb), 0.32)" },
-};
-
 const concernTargets = [
   { key: "service", label: "Service Reminder" },
   { key: "oil", label: "Oil Level" },
@@ -160,7 +154,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
               {label} Concerns
             </span>
             <span style={{ fontSize: "18px", fontWeight: 700, color: palette.textPrimary }}>
-              {concernsList.length} issue{concernsList.length === 1 ? "" : "s"} logged
+              {concernsList.length} total
             </span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
@@ -270,8 +264,6 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
     ]);
     setNewConcern("");
     setConcernStatus("Red");
-    setShowConcernModal(false);
-    setActiveConcernTarget(null);
   };
 
   const updateConcern = (idx, updates) => {
@@ -296,6 +288,10 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
 
   const activeConcernLabel =
     concernTargets.find((target) => target.key === activeConcernTarget)?.label || activeConcernTarget || "selected area";
+  const activeConcernEntries = concerns
+    .map((concern, index) => ({ ...concern, _globalIndex: index }))
+    .filter((concern) => concern.source === activeConcernTarget);
+  const shouldScrollConcernEntries = activeConcernEntries.length > 2;
 
   const canComplete = !!serviceChoice && !!oilStatus;
 
@@ -447,15 +443,16 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
               }}
             >
               {UNDER_BONNET_ITEMS.map((item) => {
-                const count = concerns.filter((concern) => concern.source === item).length;
+                const itemConcerns = concerns.filter((concern) => concern.source === item);
+                const count = itemConcerns.length;
+                const redCount = itemConcerns.filter((concern) => concern.status === "Red").length;
+                const amberCount = itemConcerns.filter((concern) => concern.status === "Amber").length;
+                const greenCount = itemConcerns.filter((concern) => concern.status === "Green").length;
                 return (
                   <button
                     key={item}
                     type="button"
-                    onClick={() => {
-                      setActiveConcernTarget(item);
-                      setShowConcernModal(true);
-                    }}
+                    onClick={() => openConcernFor(item)}
                     style={{
                       padding: "12px",
                       borderRadius: "14px",
@@ -469,35 +466,33 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                       cursor: "pointer",
                     }}
                   >
-                    {item}
-                    {count > 0 ? (
-                      <span
-                        style={{
-                          position: "absolute",
-                          top: "12px",
-                          right: "12px",
-                          padding: "4px 10px",
-                          borderRadius: "999px",
-                          background: palette.accentSurface,
-                          border: `1px solid ${palette.border}`,
-                          fontSize: "11px",
-                          fontWeight: 600,
-                          color: palette.accent,
-                        }}
-                      >
-                        {count}
-                      </span>
-                    ) : null}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                      <span>{item}</span>
+                      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                        <span style={{ fontSize: "11px", color: palette.textMuted, fontWeight: 600 }}>
+                          {count} total
+                        </span>
+                        {redCount > 0 ? (
+                          <span style={{ fontSize: "11px", color: palette.danger, fontWeight: 700 }}>
+                            Red {redCount}
+                          </span>
+                        ) : null}
+                        {amberCount > 0 ? (
+                          <span style={{ fontSize: "11px", color: palette.warning, fontWeight: 700 }}>
+                            Amber {amberCount}
+                          </span>
+                        ) : null}
+                        {greenCount > 0 ? (
+                          <span style={{ fontSize: "11px", color: palette.success, fontWeight: 700 }}>
+                            Green {greenCount}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
                   </button>
                 );
               })}
             </div>
-            <ConcernPanel
-              label="Under Bonnet"
-              concernsList={concernsBySource.underBonnet}
-              onAdd={() => openConcernFor(UNDER_BONNET_ITEMS[0])}
-              showSource
-            />
           </div>
         </div>
       </div>
@@ -524,26 +519,26 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
-                Add Concern
+                {activeConcernLabel}
               </h3>
-            <button
-              type="button"
-              onClick={() => {
-                setShowConcernModal(false);
-                setActiveConcernTarget(null);
-                setNewConcern("");
-                setConcernStatus("Red");
-              }}
-              style={{ ...createVhcButtonStyle("ghost"), padding: "6px 14px" }}
-            >
+              <button
+                type="button"
+                onClick={() => {
+                  setShowConcernModal(false);
+                  setActiveConcernTarget(null);
+                  setNewConcern("");
+                  setConcernStatus("Red");
+                }}
+                style={{ ...createVhcButtonStyle("ghost"), padding: "6px 14px" }}
+              >
                 Close
               </button>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              <span style={{ fontSize: "13px", color: palette.textMuted }}>
-                Target: {activeConcernLabel}
-              </span>
+              <label style={{ fontSize: "12px", letterSpacing: "0.08em", textTransform: "uppercase", color: palette.textMuted }}>
+                Issue
+              </label>
 
               {activeConcernTarget === "Miscellaneous" ? (
                 <input
@@ -582,31 +577,28 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                 />
               )}
 
-              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                {STATUS_OPTIONS.map((status) => {
-                  const paletteStyles = statusPillStyles[status];
-                  const isActive = concernStatus === status;
-                  return (
-                    <button
-                      key={status}
-                      type="button"
-                      onClick={() => setConcernStatus(status)}
-                      style={{
-                        padding: "10px 18px",
-                        borderRadius: "999px",
-                        border: `1px solid ${isActive ? palette.accent : paletteStyles.border}`,
-                        background: isActive ? palette.accent : paletteStyles.background,
-                        color: isActive ? "var(--text-inverse)" : paletteStyles.color,
-                        fontWeight: 600,
-                        cursor: "pointer",
-                        transition: "all 0.2s ease",
-                      }}
-                    >
-                      {status}
-                    </button>
-                  );
-                })}
-              </div>
+              <label style={{ fontSize: "12px", letterSpacing: "0.08em", textTransform: "uppercase", color: palette.textMuted }}>
+                Status
+              </label>
+              <DropdownField
+                value={concernStatus}
+                onChange={(e) => setConcernStatus(e.target.value)}
+                className="vhc-concern-dropdown"
+                style={{
+                  borderRadius: "14px",
+                  border: `1px solid ${palette.border}`,
+                  padding: "10px 12px",
+                  background: palette.surface,
+                  fontSize: "14px",
+                  color: palette.textPrimary,
+                }}
+              >
+                {STATUS_OPTIONS.map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </DropdownField>
 
               <button
                 type="button"
@@ -623,11 +615,12 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                 display: "flex",
                 flexDirection: "column",
                 gap: "10px",
-                overflowY: "auto",
-                paddingRight: "4px",
+                overflowY: shouldScrollConcernEntries ? "auto" : "visible",
+                maxHeight: shouldScrollConcernEntries ? "360px" : "none",
+                paddingRight: shouldScrollConcernEntries ? "6px" : "0px",
               }}
             >
-              {concerns.length === 0 ? (
+              {activeConcernEntries.length === 0 ? (
                 <div
                   style={{
                     padding: "16px",
@@ -638,12 +631,12 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                     fontSize: "13px",
                   }}
                 >
-                  No concerns logged yet. Captured issues will appear here for quick edits.
+                  No concerns logged yet for this item.
                 </div>
               ) : (
-                concerns.map((concern, idx) => (
+                activeConcernEntries.map((concern) => (
                   <div
-                    key={`${concern.source}-${idx}`}
+                    key={`${concern.source}-${concern._globalIndex}`}
                     style={{
                       display: "flex",
                       flexDirection: "column",
@@ -655,10 +648,10 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                     }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: "13px", fontWeight: 600, color: palette.textMuted }}>{concern.source}</span>
+                      <span style={{ fontSize: "13px", fontWeight: 600, color: palette.textMuted }}>{activeConcernLabel}</span>
                       <DropdownField
                         value={concern.status}
-                        onChange={(e) => updateConcern(idx, { status: e.target.value })}
+                        onChange={(e) => updateConcern(concern._globalIndex, { status: e.target.value })}
                         className="vhc-concern-dropdown"
                         style={{
                           borderRadius: "999px",
@@ -677,22 +670,41 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                         ))}
                       </DropdownField>
                     </div>
-                    <textarea
-                      value={getConcernText(concern)}
-                      onChange={(e) => updateConcern(idx, { text: e.target.value })}
-                      rows={3}
-                      style={{
-                        borderRadius: "14px",
-                        border: `1px solid ${palette.border}`,
-                        padding: "10px 12px",
-                        fontSize: "14px",
-                        color: palette.textPrimary,
-                        outline: "none",
-                      }}
-                    />
+                    {activeConcernTarget === "Miscellaneous" ? (
+                      <textarea
+                        value={getConcernText(concern)}
+                        onChange={(e) => updateConcern(concern._globalIndex, { text: e.target.value })}
+                        rows={3}
+                        style={{
+                          borderRadius: "14px",
+                          border: `1px solid ${palette.border}`,
+                          padding: "10px 12px",
+                          fontSize: "14px",
+                          color: palette.textPrimary,
+                          outline: "none",
+                        }}
+                      />
+                    ) : (
+                      <IssueAutocomplete
+                        sectionKey={resolveServiceSectionKey(activeConcernTarget)}
+                        value={getConcernText(concern)}
+                        onChange={(nextValue) => updateConcern(concern._globalIndex, { text: nextValue })}
+                        onSelect={(nextValue) => updateConcern(concern._globalIndex, { text: nextValue })}
+                        disabled={locked}
+                        placeholder="Describe concern..."
+                        inputStyle={{
+                          borderRadius: "14px",
+                          border: `1px solid ${palette.border}`,
+                          padding: "10px 12px",
+                          fontSize: "14px",
+                          color: palette.textPrimary,
+                          outline: "none",
+                        }}
+                      />
+                    )}
                     <button
                       type="button"
-                      onClick={() => deleteConcern(idx)}
+                      onClick={() => deleteConcern(concern._globalIndex)}
                       style={{ ...createVhcButtonStyle("ghost"), color: palette.danger, borderColor: palette.border }}
                     >
                       Remove
