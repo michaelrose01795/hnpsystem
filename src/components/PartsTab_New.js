@@ -411,7 +411,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           vhcItemId,
           canAllocate: vhcItemId !== null && vhcItemId !== undefined,
         };
-      }));
+      });
 
     const vhcReqMap = new Map();
     [...vhcReqsFromAuthorizedRows, ...vhcReqsFromRequests].forEach((row) => {
