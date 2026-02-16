@@ -724,6 +724,26 @@ CREATE TABLE public.key_tracking_events (
   CONSTRAINT key_tracking_events_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT key_tracking_events_performed_by_fkey FOREIGN KEY (performed_by) REFERENCES public.users(user_id)
 );
+CREATE TABLE public.labour_time_overrides (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  normalized_key text NOT NULL,
+  override_time_hours numeric NOT NULL CHECK (override_time_hours >= 0::numeric),
+  scope text NOT NULL CHECK (scope = ANY (ARRAY['user'::text, 'global'::text])),
+  user_id uuid,
+  usage_count integer NOT NULL DEFAULT 0,
+  last_used_at timestamp with time zone,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT labour_time_overrides_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.labour_time_presets (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  normalized_key text NOT NULL,
+  display_description text NOT NULL,
+  default_time_hours numeric NOT NULL CHECK (default_time_hours >= 0::numeric),
+  tags ARRAY NOT NULL DEFAULT '{}'::text[],
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT labour_time_presets_pkey PRIMARY KEY (id)
+);
 CREATE TABLE public.message_thread_members (
   member_id integer NOT NULL DEFAULT nextval('message_thread_members_member_id_seq'::regclass),
   thread_id integer NOT NULL,
@@ -1128,6 +1148,36 @@ CREATE TABLE public.parts_requests (
   CONSTRAINT parts_requests_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES public.users(user_id),
   CONSTRAINT parts_requests_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT parts_requests_part_id_fkey FOREIGN KEY (part_id) REFERENCES public.parts_catalog(id)
+);
+CREATE TABLE public.parts_search_events (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid,
+  job_id uuid,
+  context_text text NOT NULL,
+  selected_suggestion text,
+  final_query text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT parts_search_events_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.parts_search_learned (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  normalized_context_key text NOT NULL,
+  learned_query text NOT NULL,
+  scope text NOT NULL CHECK (scope = ANY (ARRAY['user'::text, 'global'::text])),
+  user_id uuid,
+  usage_count integer NOT NULL DEFAULT 0,
+  last_used_at timestamp with time zone,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT parts_search_learned_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.parts_search_presets (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  normalized_context_key text NOT NULL,
+  context_keywords ARRAY NOT NULL DEFAULT '{}'::text[],
+  suggested_query text NOT NULL,
+  tags ARRAY NOT NULL DEFAULT '{}'::text[],
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT parts_search_presets_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.parts_stock_movements (
   id uuid NOT NULL DEFAULT gen_random_uuid(),

@@ -1387,7 +1387,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             setCatalogSuccessMessage("");
             setCatalogSubmitError("");
           }}
-          placeholder={canAllocateParts ? "Search by part number, name, supplier..." : "Search disabled"}
+          placeholder={canAllocateParts ? "Search by part number or description..." : "Search disabled"}
           style={{
             width: "100%",
             padding: "10px 12px",

@@ -89,6 +89,20 @@ const inputStyle = {
   color: "var(--text-primary)",
 };
 
+const addPartInputStyle = {
+  ...inputStyle,
+  height: "42px",
+  minHeight: "42px",
+  padding: "8px 12px",
+};
+
+const addPartFieldStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "6px",
+  minWidth: "160px",
+};
+
 const textareaStyle = {
   ...inputStyle,
   minHeight: "96px",
@@ -861,6 +875,76 @@ function GoodsInPage() {
           background: var(--layer-section-level-1);
           box-shadow: none;
         }
+        .add-part-section {
+          padding: 20px 22px;
+          gap: 16px;
+        }
+        .add-part-toolbar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+        .add-part-fields-shell {
+          border: 1px solid var(--surface-light);
+          background: var(--layer-section-level-2);
+          border-radius: 14px;
+          padding: 12px;
+          overflow: hidden;
+        }
+        .add-part-fields-grid {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(160px, 1fr));
+          gap: 10px;
+        }
+        .add-part-fields-row-span-3 {
+          grid-template-columns: repeat(3, minmax(160px, 1fr));
+          margin-top: 10px;
+        }
+        .add-part-actions {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+        .invoice-details-section {
+          padding: 20px 22px;
+          gap: 16px;
+        }
+        .invoice-details-shell {
+          border: 1px solid var(--surface-light);
+          background: var(--layer-section-level-2);
+          border-radius: 14px;
+          padding: 12px;
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
+        .invoice-details-toolbar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+        @media (max-width: 900px) {
+          .add-part-section {
+            padding: 16px;
+          }
+          .invoice-details-section {
+            padding: 16px;
+          }
+          .add-part-fields-grid,
+          .add-part-fields-row-span-3 {
+            grid-template-columns: repeat(2, minmax(140px, 1fr));
+          }
+          .add-part-actions {
+            flex-direction: column;
+            align-items: stretch;
+          }
+        }
       `}</style>
       <div style={{ display: "flex", flexDirection: "column", gap: "18px", padding: "12px" }}>
         {toast && (
@@ -932,8 +1016,8 @@ function GoodsInPage() {
           ))}
         </div>
 
-        <section style={sectionCardStyle}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <section style={sectionCardStyle} className="invoice-details-section">
+          <div className="invoice-details-toolbar">
             <h2 style={{ margin: 0 }}>Invoice details</h2>
             <div style={{ display: "flex", gap: "10px" }}>
               <button style={secondaryButtonStyle} onClick={() => setSupplierModalOpen(true)}>
@@ -951,113 +1035,115 @@ function GoodsInPage() {
               />
             </div>
           </div>
-          <div style={fieldGridStyle}>
-            <div>
-              <label style={labelStyle}>Supplier</label>
-              <input
-                style={inputStyle}
-                value={invoiceForm.supplierName}
-                onChange={(event) => handleInvoiceChange("supplierName", event.target.value)}
-                placeholder="Supplier name"
-              />
-              {invoiceForm.supplierAccountNumber && (
-                <small style={{ color: "var(--text-secondary)" }}>
-                  Account #{invoiceForm.supplierAccountNumber}
-                </small>
-              )}
+          <div className="invoice-details-shell">
+            <div style={fieldGridStyle}>
+              <div>
+                <label style={labelStyle}>Supplier</label>
+                <input
+                  style={inputStyle}
+                  value={invoiceForm.supplierName}
+                  onChange={(event) => handleInvoiceChange("supplierName", event.target.value)}
+                  placeholder="Supplier name"
+                />
+                {invoiceForm.supplierAccountNumber && (
+                  <small style={{ color: "var(--text-secondary)" }}>
+                    Account #{invoiceForm.supplierAccountNumber}
+                  </small>
+                )}
+              </div>
+              <div>
+                <label style={labelStyle}>Invoice number</label>
+                <input
+                  style={inputStyle}
+                  value={invoiceForm.invoiceNumber}
+                  onChange={(event) => handleInvoiceChange("invoiceNumber", event.target.value)}
+                  placeholder="INV-001"
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Delivery note number</label>
+                <input
+                  style={inputStyle}
+                  value={invoiceForm.deliveryNoteNumber}
+                  onChange={(event) => handleInvoiceChange("deliveryNoteNumber", event.target.value)}
+                  placeholder="DN-001"
+                />
+              </div>
+              <div style={compactFieldWrapStyle}>
+                <label style={labelStyle}>Invoice date</label>
+                <div className="compact-calendar">
+                  <CalendarField
+                    value={invoiceForm.invoiceDate}
+                    onChange={(event) => handleInvoiceChange("invoiceDate", event.target.value)}
+                    name="invoiceDate"
+                    helperText=""
+                    style={{ width: "100%" }}
+                  />
+                </div>
+              </div>
+              <div style={compactFieldWrapStyle}>
+                <label style={labelStyle}>Price level</label>
+                <div className="compact-dropdown">
+                  <DropdownField
+                    value={invoiceForm.priceLevel}
+                    onChange={(event) => handleInvoiceChange("priceLevel", event.target.value)}
+                    style={{ width: "100%" }}
+                    placeholder="Select price level"
+                  >
+                    {PRICE_LEVEL_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </DropdownField>
+                </div>
+              </div>
+              <div style={compactFieldWrapStyle}>
+                <label style={labelStyle}>Franchise</label>
+                <div className="compact-dropdown">
+                  <DropdownField
+                    value={partForm.franchise}
+                    onChange={(event) => handlePartChange("franchise", event.target.value)}
+                    style={{ width: "100%" }}
+                    placeholder="Select franchise"
+                  >
+                    {FRANCHISE_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </DropdownField>
+                </div>
+              </div>
             </div>
-            <div>
-              <label style={labelStyle}>Invoice number</label>
-              <input
-                style={inputStyle}
-                value={invoiceForm.invoiceNumber}
-                onChange={(event) => handleInvoiceChange("invoiceNumber", event.target.value)}
-                placeholder="INV-001"
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Delivery note number</label>
-              <input
-                style={inputStyle}
-                value={invoiceForm.deliveryNoteNumber}
-                onChange={(event) => handleInvoiceChange("deliveryNoteNumber", event.target.value)}
-                placeholder="DN-001"
-              />
-            </div>
-            <div style={compactFieldWrapStyle}>
-              <label style={labelStyle}>Invoice date</label>
-              <div className="compact-calendar">
-                <CalendarField
-                  value={invoiceForm.invoiceDate}
-                  onChange={(event) => handleInvoiceChange("invoiceDate", event.target.value)}
-                  name="invoiceDate"
-                  helperText=""
-                  style={{ width: "100%" }}
+            <div style={splitFieldRowStyle}>
+              <div>
+                <label style={labelStyle}>Supplier address</label>
+                <div style={addressFieldStyle}>
+                  {invoiceForm.supplierAddress || "—"}
+                </div>
+              </div>
+              <div>
+                <label style={labelStyle}>Notes</label>
+                <textarea
+                  style={notesTextareaStyle}
+                  value={invoiceForm.notes}
+                  onChange={(event) => handleInvoiceChange("notes", event.target.value)}
+                  placeholder="Internal notes"
                 />
               </div>
             </div>
-            <div style={compactFieldWrapStyle}>
-              <label style={labelStyle}>Price level</label>
-              <div className="compact-dropdown">
-                <DropdownField
-                  value={invoiceForm.priceLevel}
-                  onChange={(event) => handleInvoiceChange("priceLevel", event.target.value)}
-                  style={{ width: "100%" }}
-                  placeholder="Select price level"
-                >
-                  {PRICE_LEVEL_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </DropdownField>
+            {invoiceScanPayload && (
+              <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                Last scan: {invoiceScanPayload.fileName} ·
+                {invoiceScanPayload.extracted.invoiceNumber && ` Invoice ${invoiceScanPayload.extracted.invoiceNumber}`}
               </div>
-            </div>
-            <div style={compactFieldWrapStyle}>
-              <label style={labelStyle}>Franchise</label>
-              <div className="compact-dropdown">
-                <DropdownField
-                  value={partForm.franchise}
-                  onChange={(event) => handlePartChange("franchise", event.target.value)}
-                  style={{ width: "100%" }}
-                  placeholder="Select franchise"
-                >
-                  {FRANCHISE_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </DropdownField>
-              </div>
-            </div>
+            )}
           </div>
-          <div style={splitFieldRowStyle}>
-            <div>
-              <label style={labelStyle}>Supplier address</label>
-              <div style={addressFieldStyle}>
-                {invoiceForm.supplierAddress || "—"}
-              </div>
-            </div>
-            <div>
-              <label style={labelStyle}>Notes</label>
-              <textarea
-                style={notesTextareaStyle}
-                value={invoiceForm.notes}
-                onChange={(event) => handleInvoiceChange("notes", event.target.value)}
-                placeholder="Internal notes"
-              />
-            </div>
-          </div>
-          {invoiceScanPayload && (
-            <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-              Last scan: {invoiceScanPayload.fileName} ·
-              {invoiceScanPayload.extracted.invoiceNumber && ` Invoice ${invoiceScanPayload.extracted.invoiceNumber}`}
-            </div>
-          )}
         </section>
 
-        <section style={sectionCardStyle}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <section style={sectionCardStyle} className="add-part-section">
+          <div className="add-part-toolbar">
             <h2 style={{ margin: 0 }}>Add part</h2>
             <button style={secondaryButtonStyle} onClick={() => setPartSearchOpen(true)}>
               Search catalogue
@@ -1076,136 +1162,136 @@ function GoodsInPage() {
               {partError}
             </div>
           )}
-          <div style={fieldGridStyle}>
-            <div>
-              <label style={labelStyle}>Part number</label>
-              <input
-                style={inputStyle}
-                value={partForm.partNumber}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    setPartSearchOpen(true);
-                  }
-                }}
-                onChange={(event) => handlePartChange("partNumber", event.target.value)}
-                placeholder="e.g., FPAD1"
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Quantity</label>
-              <input
-                type="number"
-                style={{ ...inputStyle, width: "8ch" }}
-                min="0"
-                value={partForm.quantity}
-                onChange={(event) => {
-                  const nextValue = event.target.value;
-                  handlePartChange("quantity", nextValue === "" ? "" : Number(nextValue));
-                }}
-              />
-            </div>
-            <div style={{ position: "relative" }}>
-              <label style={labelStyle}>Bin location</label>
-              <input
-                type="text"
-                style={{ ...inputStyle, width: "6ch" }}
-                value={partForm.binLocation}
-                onChange={(event) => handlePartChange("binLocation", event.target.value)}
-                onFocus={() => setShowBinSuggestions(true)}
-                onBlur={() => {
-                  setTimeout(() => setShowBinSuggestions(false), 120);
-                }}
-                placeholder="A1"
-              />
-              {showBinSuggestions && partForm.binLocation.trim() !== "" && (
-                <div
-                  className="bin-suggestions"
-                  style={{
-                    position: "absolute",
-                    top: "100%",
-                    left: 0,
-                    width: "6ch",
-                    marginTop: "6px",
-                    maxHeight: "200px",
-                    overflowY: "auto",
-                    borderRadius: "12px",
-                    zIndex: 10,
+          <div className="add-part-fields-shell">
+            <div className="add-part-fields-grid">
+              <div style={addPartFieldStyle}>
+                <label style={labelStyle}>Part number</label>
+                <input
+                  style={addPartInputStyle}
+                  value={partForm.partNumber}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      setPartSearchOpen(true);
+                    }
                   }}
-                  onMouseDown={(event) => event.preventDefault()}
-                >
-                  {filteredBinLocations.length === 0 ? (
-                    <div style={{ padding: "10px 12px", fontSize: "0.9rem", color: "var(--text-secondary)" }}>
-                      No matches
-                    </div>
-                  ) : (
-                    filteredBinLocations.map((location) => (
-                      <button
-                        key={location}
-                        type="button"
-                        className="bin-suggestion-button"
-                        style={{
-                          width: "100%",
-                          textAlign: "left",
-                          padding: "10px 12px",
-                          border: "1px solid transparent",
-                          background: "transparent",
-                          cursor: "pointer",
-                          fontSize: "0.9rem",
-                          color: "var(--text-primary)",
-                        }}
-                        onClick={() => {
-                          handlePartChange("binLocation", location);
-                          setShowBinSuggestions(false);
-                        }}
-                      >
-                        {location}
-                      </button>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
-            <div style={{ display: "flex", gap: "12px", alignItems: "flex-end" }}>
-              <div>
+                  onChange={(event) => handlePartChange("partNumber", event.target.value)}
+                  placeholder="e.g., FPAD1"
+                />
+              </div>
+              <div style={addPartFieldStyle}>
+                <label style={labelStyle}>Quantity</label>
+                <input
+                  type="number"
+                  style={addPartInputStyle}
+                  min="0"
+                  value={partForm.quantity}
+                  onChange={(event) => {
+                    const nextValue = event.target.value;
+                    handlePartChange("quantity", nextValue === "" ? "" : Number(nextValue));
+                  }}
+                />
+              </div>
+              <div style={addPartFieldStyle}>
                 <label style={labelStyle}>Retail price</label>
                 <input
-                  style={{ ...inputStyle, width: "12ch" }}
+                  style={addPartInputStyle}
                   value={partForm.retailPrice}
                   onChange={(event) => handlePartChange("retailPrice", event.target.value)}
                   placeholder="0.00"
                 />
               </div>
-              <div>
+              <div style={addPartFieldStyle}>
                 <label style={labelStyle}>Cost price</label>
                 <input
-                  style={{ ...inputStyle, width: "10ch" }}
+                  style={addPartInputStyle}
                   value={partForm.costPrice}
                   onChange={(event) => handlePartChange("costPrice", event.target.value)}
                   placeholder="0.00"
                 />
               </div>
             </div>
-            <div>
-              <label style={labelStyle}>Discount code</label>
-              <input
-                style={{ ...inputStyle, width: "13ch" }}
-                value={partForm.discountCode}
-                onChange={(event) => handlePartChange("discountCode", event.target.value)}
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Description</label>
-              <textarea
-                style={autoExpandTextareaStyle}
-                value={partForm.description}
-                onChange={(event) => handlePartChange("description", event.target.value)}
-                rows={1}
-                onInput={(event) => {
-                  event.target.style.height = "auto";
-                  event.target.style.height = `${event.target.scrollHeight}px`;
-                }}
-              />
+            <div className="add-part-fields-grid add-part-fields-row-span-3">
+              <div style={{ ...addPartFieldStyle, position: "relative" }}>
+                <label style={labelStyle}>Bin location</label>
+                <input
+                  type="text"
+                  style={addPartInputStyle}
+                  value={partForm.binLocation}
+                  onChange={(event) => handlePartChange("binLocation", event.target.value)}
+                  onFocus={() => setShowBinSuggestions(true)}
+                  onBlur={() => {
+                    setTimeout(() => setShowBinSuggestions(false), 120);
+                  }}
+                  placeholder="A1"
+                />
+                {showBinSuggestions && partForm.binLocation.trim() !== "" && (
+                  <div
+                    className="bin-suggestions"
+                    style={{
+                      position: "absolute",
+                      top: "100%",
+                      left: 0,
+                      width: "100%",
+                      minWidth: "140px",
+                      marginTop: "6px",
+                      maxHeight: "200px",
+                      overflowY: "auto",
+                      borderRadius: "12px",
+                      zIndex: 10,
+                    }}
+                    onMouseDown={(event) => event.preventDefault()}
+                  >
+                    {filteredBinLocations.length === 0 ? (
+                      <div style={{ padding: "10px 12px", fontSize: "0.9rem", color: "var(--text-secondary)" }}>
+                        No matches
+                      </div>
+                    ) : (
+                      filteredBinLocations.map((location) => (
+                        <button
+                          key={location}
+                          type="button"
+                          className="bin-suggestion-button"
+                          style={{
+                            width: "100%",
+                            textAlign: "left",
+                            padding: "10px 12px",
+                            border: "1px solid transparent",
+                            background: "transparent",
+                            cursor: "pointer",
+                            fontSize: "0.9rem",
+                            color: "var(--text-primary)",
+                          }}
+                          onClick={() => {
+                            handlePartChange("binLocation", location);
+                            setShowBinSuggestions(false);
+                          }}
+                        >
+                          {location}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+              <div style={addPartFieldStyle}>
+                <label style={labelStyle}>Discount code</label>
+                <input
+                  style={addPartInputStyle}
+                  value={partForm.discountCode}
+                  onChange={(event) => handlePartChange("discountCode", event.target.value)}
+                />
+              </div>
+              <div style={addPartFieldStyle}>
+                <label style={labelStyle}>Description</label>
+                <input
+                  type="text"
+                  style={addPartInputStyle}
+                  value={partForm.description}
+                  onChange={(event) => handlePartChange("description", event.target.value)}
+                  placeholder="Description"
+                />
+              </div>
             </div>
           </div>
 
@@ -1494,23 +1580,29 @@ function GoodsInPage() {
             </div>
           )}
 
-          <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+          <div className="add-part-actions">
             <button
               onClick={() => setIsAdvancedPanelOpen((state) => !state)}
-              style={{ ...secondaryButtonStyle, order: 0 }}
+              style={{ ...secondaryButtonStyle, padding: "8px 14px" }}
             >
               {isAdvancedPanelOpen ? "Hide details" : "Update details"}
             </button>
-            <button
-              onClick={() => setPartForm(createDefaultPartForm())}
-              style={secondaryButtonStyle}
-              disabled={savingPart}
-            >
-              Clear
-            </button>
-            <button style={primaryButtonStyle(savingPart)} onClick={handleAddPart} disabled={savingPart}>
-              {savingPart ? "Adding..." : "Add part"}
-            </button>
+            <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "nowrap" }}>
+              <button
+                onClick={() => setPartForm(createDefaultPartForm())}
+                style={{ ...secondaryButtonStyle, padding: "8px 14px" }}
+                disabled={savingPart}
+              >
+                Clear
+              </button>
+              <button
+                style={{ ...primaryButtonStyle(savingPart), padding: "10px 16px" }}
+                onClick={handleAddPart}
+                disabled={savingPart}
+              >
+                {savingPart ? "Adding..." : "Add part"}
+              </button>
+            </div>
           </div>
         </section>
 
@@ -1604,7 +1696,7 @@ function GoodsInPage() {
                             onClick={() => handleRemoveItem(item.id)}
                             disabled={removingItemId === item.id}
                           >
-                            {removingItemId === item.id ? "Removing..." : "Remove"}
+                            {removingItemId === item.id ? "Removing" : "Remove"}
                           </button>
                         </td>
                       </tr>
@@ -1663,9 +1755,11 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const searchRequestRef = useRef(0);
 
   const searchSuppliers = useCallback(
     async (term = "") => {
+      const requestId = ++searchRequestRef.current;
       try {
         setLoading(true);
         const params = new URLSearchParams();
@@ -1678,14 +1772,21 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
         if (!response.ok || !payload?.success) {
           throw new Error(payload?.message || "Unable to search suppliers");
         }
+        if (requestId !== searchRequestRef.current) {
+          return;
+        }
         const suppliers = payload.suppliers || [];
         setResults(suppliers);
         setError(suppliers.length ? "" : "No suppliers found");
       } catch (err) {
         console.error(err);
-        setError(err.message);
+        if (requestId === searchRequestRef.current) {
+          setError(err.message);
+        }
       } finally {
-        setLoading(false);
+        if (requestId === searchRequestRef.current) {
+          setLoading(false);
+        }
       }
     },
     []
@@ -1705,14 +1806,30 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
 
   return (
     <div style={popupOverlayStyles}>
-      <div style={{ ...popupCardStyles, padding: "24px", maxWidth: "720px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-          <h3 style={{ margin: 0 }}>Supplier accounts</h3>
-          <button onClick={onClose} style={secondaryButtonStyle}>
+      <div
+        className="popup-card"
+        style={{
+          ...popupCardStyles,
+          borderRadius: "32px",
+          width: "100%",
+          maxWidth: "760px",
+          height: "620px",
+          maxHeight: "90vh",
+          padding: "24px",
+          border: "1px solid var(--surface-light)",
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <h3 style={{ margin: 0, color: "var(--text-primary)" }}>Supplier accounts</h3>
+          <button onClick={onClose} style={{ ...secondaryButtonStyle, borderRadius: "12px" }}>
             Close
           </button>
         </div>
-        <div style={{ marginBottom: "12px" }}>
+        <div>
           <input
             style={inputStyle}
             placeholder="Search name, account number, phone, or city"
@@ -1729,28 +1846,39 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
             }}
           />
         </div>
-        {!query.trim() ? (
-          <div style={{ padding: "16px", color: "var(--text-secondary)" }}>
-            Enter a supplier name, account number, phone, or city to see results.
-          </div>
-        ) : loading ? (
-          <div style={{ padding: "24px", textAlign: "center" }}>Searching...</div>
-        ) : error ? (
-          <div style={{ padding: "12px", color: "var(--danger)" }}>{error}</div>
-        ) : (
-          <div style={{ maxHeight: "420px", overflowY: "auto" }}>
-            {results.map((result) => {
+        <div
+          style={{
+            border: "1px solid var(--surface-light)",
+            borderRadius: "16px",
+            background: "var(--layer-section-level-1)",
+            padding: "10px",
+            minHeight: "392px",
+            maxHeight: "392px",
+            overflowY: "auto",
+          }}
+        >
+          {!query.trim() ? (
+            <div style={{ padding: "16px", color: "var(--text-secondary)" }}>
+              Enter a supplier name, account number, phone, or city to see results.
+            </div>
+          ) : loading ? (
+            <div style={{ padding: "24px", textAlign: "center" }}>Searching...</div>
+          ) : error ? (
+            <div style={{ padding: "12px", color: "var(--danger)" }}>{error}</div>
+          ) : (
+            results.map((result, index) => {
               const missingLinkedAccount = !result.linked_account_id;
               return (
                 <button
                   key={result.account_number}
                   style={{
                     width: "100%",
+                    minHeight: "88px",
                     textAlign: "left",
                     padding: "12px",
                     border: "1px solid var(--surface-light)",
-                    borderRadius: "10px",
-                    marginBottom: "8px",
+                    borderRadius: "12px",
+                    marginBottom: index === results.length - 1 ? 0 : "8px",
                     cursor: "pointer",
                     background: "var(--surface)",
                     color: "var(--text-primary)",
@@ -1787,9 +1915,9 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
                   )}
                 </button>
               );
-            })}
-          </div>
-        )}
+            })
+          )}
+        </div>
       </div>
     </div>
   );

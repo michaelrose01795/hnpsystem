@@ -1,22 +1,16 @@
 TO DO:
 
-Continue flow with job number 55. UPLAOD IMAGE FROM ONEDRIVE
- 
-
-
-have it so the VHC background tab button within the job-cards/[jobnuber] page is only green when the items within the red and amber sections are either set to authorised or declinded. dont use the same reason as the backgroun colour does within the job-cards/myjobs/[jobnumber] page 
-
-
-have it so the check box at the end of the red and amber tables cannon be selected until the parts and labour column check boxes have been checked. 
-
-
-ADD INTERCOOL HOSE AS A PART WITHIN DATABASE GOODS IN!!!
+Continue flow with job number 55. UPLAOD IMAGE FROM ONEDRIVE on MUM OR DADS PC
 
 
 
-have it os the "Add Parts - Wipers/Washers/Horn" popup within the parts identifed tab will show this instead for example "Add Parts - Near Side Front Wiper blade split, requires replacing" do this for all of the popups, if required create an AI like feauture which detects the detial to be shown here instead. Have the AI feaure to give tips and hits thoughtout the VHC tab with over 1000 hinds and tips for when tabs and actions are carried out. 
+Check AI updates with add part search and Labour time added
 
-have it so the "SEARCH PARTS CATALOGUE" section isnt case sensisive and also impletents AI liek features to predict the search word depending on the "Add Parts - Near Side Front Wiper blade split, requires replacing" heading for example. 
+ CHECKKKKK
+have it so the "Remove Front Wiper from the VHC item?" alert uses the in app alert instead.  
+
+
+
 
 
 FIND OUT yes work on this 
@@ -27,10 +21,11 @@ DO THISSSS
 work on implementing "AI" within whole app search chat "AI job detection system"
 
 
+
+
 CHECKKK
 make sure the "ALLOCATE PARTS" part section always shows the customer request (at the top) and VHC request (blow the cusomter request) at all times if its been reported, now remove the requests from that sectin even if a part has been allocated to that request.
 
-CHECKKKK
 Fix it so when i click allocated with an authoirse request it works the same with a normal request. 
 
 

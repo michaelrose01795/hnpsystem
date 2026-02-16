@@ -5264,7 +5264,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
             setCatalogSuccessMessage("");
             setCatalogSubmitError("");
           }}
-          placeholder={canAllocateParts ? "Search by part number, name, supplier, or price" : "Stock allocation disabled"}
+          placeholder={canAllocateParts ? "Search by part number or description" : "Stock allocation disabled"}
           style={{
             width: "100%",
             padding: "12px",

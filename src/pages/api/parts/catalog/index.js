@@ -30,28 +30,82 @@ const sanitizeTerm = (value = "") =>
     .replace(/[%]/g, "")
     .replace(/,/g, "");
 
+const PRIORITY_SEARCH_FIELDS = ["part_number", "description", "name"];
+
+const SEARCHABLE_FIELDS = [
+  "part_number",
+  "name",
+  "supplier",
+  "category",
+  "description",
+  "oem_reference",
+  "storage_location",
+];
+
+const tokenizeSearch = (term) =>
+  term
+    .toLowerCase()
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter(Boolean)
+    .slice(0, 8);
+
+const buildWordVariants = (token = "") => {
+  const variants = new Set();
+  if (!token) return variants;
+  variants.add(token);
+
+  if (token.length > 3 && token.endsWith("ies")) {
+    variants.add(`${token.slice(0, -3)}y`);
+  }
+  if (token.length > 3 && token.endsWith("es")) {
+    variants.add(token.slice(0, -2));
+  }
+  if (token.length > 3 && token.endsWith("s")) {
+    variants.add(token.slice(0, -1));
+  }
+  if (token.length > 2 && !token.endsWith("s")) {
+    variants.add(`${token}s`);
+  }
+  return variants;
+};
+
 const buildSearchQuery = (query, term) => {
   if (!term) return query;
-  const pattern = `%${term}%`;
-  const clauses = [
-    `part_number.ilike.${pattern}`,
-    `name.ilike.${pattern}`,
-    `supplier.ilike.${pattern}`,
-    `category.ilike.${pattern}`,
-    `description.ilike.${pattern}`,
-    `oem_reference.ilike.${pattern}`,
-    `storage_location.ilike.${pattern}`,
-  ];
-  clauses.push(`part_number.eq.${term}`);
-  clauses.push(`name.eq.${term}`);
+  const clauses = new Set();
+  const normalizedTerm = term.toLowerCase();
+  const addLikeClauses = (value, fields = SEARCHABLE_FIELDS) => {
+    const pattern = `%${value}%`;
+    fields.forEach((field) => {
+      clauses.add(`${field}.ilike.${pattern}`);
+    });
+  };
+
+  // Prioritize direct part number + description + name matching.
+  addLikeClauses(normalizedTerm, PRIORITY_SEARCH_FIELDS);
+  // Also search across other catalogue fields.
+  addLikeClauses(normalizedTerm);
+
+  const tokens = tokenizeSearch(normalizedTerm);
+  tokens.forEach((token) => {
+    buildWordVariants(token).forEach((variant) => {
+      if (variant.length >= 2) {
+        addLikeClauses(variant);
+      }
+    });
+  });
+
+  clauses.add(`part_number.eq.${term}`);
+  clauses.add(`description.eq.${term}`);
+  clauses.add(`name.eq.${term}`);
   if (/^\d+(?:\.\d+)?$/.test(term)) {
     const numericValue = Number.parseFloat(term);
     if (!Number.isNaN(numericValue)) {
-      clauses.push(`unit_price.eq.${numericValue}`);
-      clauses.push(`unit_cost.eq.${numericValue}`);
+      clauses.add(`unit_price.eq.${numericValue}`);
+      clauses.add(`unit_cost.eq.${numericValue}`);
     }
   }
-  return query.or(clauses.join(","));
+  return query.or(Array.from(clauses).join(","));
 };
 
 export default async function handler(req, res) {

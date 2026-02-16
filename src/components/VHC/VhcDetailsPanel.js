@@ -1,12 +1,13 @@
 // file location: src/components/VHC/VhcDetailsPanel.js
 "use client";
 
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "@/lib/supabaseClient";
 import { summariseTechnicianVhc } from "@/lib/vhc/summary";
 import { saveChecksheet } from "@/lib/database/jobs";
 import { useUser } from "@/context/UserContext";
+import { useConfirmation } from "@/context/ConfirmationContext";
 import WheelsTyresDetailsModal from "@/components/VHC/WheelsTyresDetailsModal";
 import BrakesHubsDetailsModal from "@/components/VHC/BrakesHubsDetailsModal";
 import ServiceIndicatorDetailsModal from "@/components/VHC/ServiceIndicatorDetailsModal";
@@ -25,6 +26,7 @@ import {
   StockStatusBadge,
   PartRowCells,
 } from "@/components/VHC/VhcSharedComponents";
+import { isValidUuid } from "@/features/labour-times/normalization";
 
 const STATUS_BADGES = {
   red: "var(--danger)",
@@ -74,6 +76,118 @@ const TAB_OPTIONS = [
   { id: "photos", label: "Photos" },
   { id: "videos", label: "Videos" },
 ];
+
+const normalizeInlineText = (value = "") =>
+  String(value || "")
+    .replace(/\s+/g, " ")
+    .replace(/\s*[-|:]\s*/g, " - ")
+    .trim();
+
+const trimDisplayText = (value = "", max = 88) => {
+  const text = normalizeInlineText(value);
+  if (!text) return "";
+  if (text.length <= max) return text;
+  return `${text.slice(0, max - 1).trim()}…`;
+};
+
+const buildLabourSuggestionDescription = ({
+  detailLabel = "",
+  detailContent = "",
+  detailRows = [],
+  measurement = "",
+  locationLabel = "",
+}) => {
+  return [detailLabel, detailContent, ...(detailRows || []), measurement, locationLabel]
+    .map((part) => normalizeInlineText(part || ""))
+    .filter(Boolean)
+    .join(" ");
+};
+
+const resolveAddPartsTitleDetail = (target = {}) => {
+  if (!target || typeof target !== "object") return "VHC Item";
+  const label = normalizeInlineText(target.label || "");
+  const detail = normalizeInlineText(target.detail || target.concern || target.notes || "");
+  const section = normalizeInlineText(target.section || target.sectionName || "");
+  const rows = Array.isArray(target.rows)
+    ? target.rows.map((row) => normalizeInlineText(row)).filter(Boolean)
+    : [];
+
+  const candidates = [detail, ...rows, label, section].filter(Boolean);
+  const picked = candidates.find((candidate) => {
+    if (!label) return true;
+    const candidateLower = candidate.toLowerCase();
+    const labelLower = label.toLowerCase();
+    return !candidateLower.includes(labelLower) || candidate.length > label.length + 8;
+  });
+
+  return trimDisplayText(picked || label || section || "VHC Item");
+};
+
+const PARTS_SEARCH_STOP_WORDS = new Set([
+  "add",
+  "parts",
+  "part",
+  "near",
+  "off",
+  "side",
+  "front",
+  "rear",
+  "left",
+  "right",
+  "requires",
+  "require",
+  "replace",
+  "replacing",
+  "replacement",
+  "issue",
+  "check",
+  "item",
+  "vehicle",
+  "split",
+  "worn",
+  "and",
+  "the",
+  "for",
+  "with",
+]);
+
+const PARTS_PREDICTION_RULES = [
+  { match: /wiper|washer|screenwash|windscreen|rear\s*wipe|blade/i, terms: ["wiper blade", "washer jet", "washer pump", "screen wash"] },
+  { match: /horn/i, terms: ["horn", "horn switch", "horn relay"] },
+  { match: /tyre|tire|tread|puncture|wheel/i, terms: ["tyre", "valve", "wheel balance", "alloy wheel"] },
+  { match: /brake|pad|disc|caliper|hub/i, terms: ["brake pads", "brake disc", "caliper", "hub bearing"] },
+  { match: /battery|charging|alternator/i, terms: ["battery", "alternator", "battery terminal"] },
+  { match: /bulb|lamp|light|headlight|taillight/i, terms: ["bulb", "headlight", "tail light", "indicator bulb"] },
+  { match: /exhaust|catalyst|cat\b|silencer/i, terms: ["exhaust", "catalytic converter", "silencer"] },
+  { match: /suspension|shock|spring|strut/i, terms: ["suspension arm", "shock absorber", "spring"] },
+  { match: /steering|track rod|rack/i, terms: ["track rod end", "steering rack", "steering joint"] },
+  { match: /air\s*con|a\/c|heating|ventilation|blower/i, terms: ["cabin filter", "blower motor", "air con condenser"] },
+  { match: /service reminder|service indicator|oil/i, terms: ["engine oil", "oil filter", "service kit"] },
+];
+
+const buildPredictedPartSearchTerms = (target = {}, title = "") => {
+  const sourceText = normalizeInlineText(
+    `${title} ${target?.label || ""} ${target?.detail || target?.notes || ""} ${target?.section || ""}`
+  );
+  const collected = [];
+
+  PARTS_PREDICTION_RULES.forEach((rule) => {
+    if (rule.match.test(sourceText)) {
+      collected.push(...rule.terms);
+    }
+  });
+
+  const fallbackTokens = sourceText
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 4 && !PARTS_SEARCH_STOP_WORDS.has(token));
+
+  collected.push(...fallbackTokens.slice(0, 4));
+
+  return Array.from(new Set(collected)).slice(0, 8);
+};
 
 const HEALTH_SECTION_CONFIG = [
   {
@@ -890,6 +1004,7 @@ export default function VhcDetailsPanel({
   const isCustomerView = viewMode === "customer";
   const router = useRouter();
   const { authUserId, dbUserId } = useUser() || {};
+  const { confirm } = useConfirmation();
   const resolvedJobNumber = jobNumber || router.query?.jobNumber;
 
   const [job, setJob] = useState(null);
@@ -928,10 +1043,22 @@ export default function VhcDetailsPanel({
   const [selectedParts, setSelectedParts] = useState([]);
   const [addingParts, setAddingParts] = useState(false);
   const [addPartsMessage, setAddPartsMessage] = useState("");
+  const [partsSearchSuggestions, setPartsSearchSuggestions] = useState([]);
+  const [partsSearchSuggestionsLoading, setPartsSearchSuggestionsLoading] = useState(false);
+  const [selectedSuggestionQuery, setSelectedSuggestionQuery] = useState("");
+  const [partsLearningSavedAt, setPartsLearningSavedAt] = useState(null);
   const [showNewPartForm, setShowNewPartForm] = useState(false);
   const [newPartSaving, setNewPartSaving] = useState(false);
   const [newPartError, setNewPartError] = useState("");
   const [newPartForm, setNewPartForm] = useState(() => createDefaultNewPartForm());
+  const [labourSuggestionsByItem, setLabourSuggestionsByItem] = useState({});
+  const [labourSuggestionsLoadingByItem, setLabourSuggestionsLoadingByItem] = useState({});
+  const [openLabourSuggestionItemId, setOpenLabourSuggestionItemId] = useState(null);
+  const [selectedLabourSuggestionByItem, setSelectedLabourSuggestionByItem] = useState({});
+  const [savedLabourOverrideByItem, setSavedLabourOverrideByItem] = useState({});
+  const labourOverrideDebounceRef = useRef({});
+  const labourSuggestionRequestRef = useRef({});
+  const partsLearningDebounceRef = useRef(null);
   const refreshJobData = useCallback(
     (...args) => {
       if (typeof onJobDataRefresh !== "function") {
@@ -2030,6 +2157,109 @@ export default function VhcDetailsPanel({
     );
   }, [addPartsTarget?.vhcId, partsIdentified, resolveCanonicalVhcId]);
 
+  const addPartsModalTitle = useMemo(() => {
+    const target = addPartsTarget || {};
+    if (target.detail || target.label || target.section || (target.rows && target.rows.length > 0)) {
+      return `Add Parts - ${resolveAddPartsTitleDetail(target)}`;
+    }
+    if (!target.vhcId) {
+      return "Add Parts - VHC Item";
+    }
+    const summaryItem = summaryItems.find((entry) => String(entry.id) === String(target.vhcId));
+    return `Add Parts - ${resolveAddPartsTitleDetail({
+      label: summaryItem?.label || "VHC Item",
+      detail: summaryItem?.concernText || summaryItem?.notes || "",
+      section: summaryItem?.sectionName || summaryItem?.category?.label || "",
+      rows: summaryItem?.rows || [],
+    })}`;
+  }, [addPartsTarget, summaryItems]);
+
+  const addPartsVehicleContext = useMemo(() => {
+    const vehicle = job?.vehicle || {};
+    return {
+      make: vehicle.make || vehicle.manufacturer || "",
+      model: vehicle.model || "",
+      derivative: vehicle.derivative || vehicle.trim || vehicle.variant || "",
+      engine: vehicle.engine || vehicle.engine_size || vehicle.engineSize || "",
+      year: vehicle.year || vehicle.model_year || vehicle.registration_year || "",
+      vin: vehicle.vin || vehicle.chassis || vehicle.chassis_number || "",
+      reg: vehicle.registration || vehicle.reg || vehicle.registration_number || "",
+    };
+  }, [job?.vehicle]);
+
+  const addPartsContextText = useMemo(() => {
+    const target = addPartsTarget || {};
+    const vehicleBits = Object.values(addPartsVehicleContext)
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+    const issueBits = [
+      target?.label || "",
+      target?.detail || target?.notes || "",
+      target?.section || "",
+      Array.isArray(target?.rows) ? target.rows.join(" ") : "",
+    ]
+      .map((part) => normalizeInlineText(part))
+      .filter(Boolean)
+      .join(" ");
+
+    return [addPartsModalTitle, issueBits, vehicleBits].filter(Boolean).join(" ").trim();
+  }, [addPartsTarget, addPartsModalTitle, addPartsVehicleContext]);
+
+  const runPartsSuggestions = useCallback(async () => {
+    if (!isAddPartsModalOpen) return;
+    const contextText = addPartsContextText.trim();
+    if (!contextText) {
+      setPartsSearchSuggestions([]);
+      return;
+    }
+
+    setPartsSearchSuggestionsLoading(true);
+    try {
+      const response = await fetch("/api/vhc/parts-search-suggestions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contextText,
+          vehicleContext: addPartsVehicleContext,
+          userId: isValidUuid(authUserId) ? authUserId : isValidUuid(dbUserId) ? dbUserId : null,
+          jobId: job?.id || null,
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.message || "Unable to fetch part suggestions");
+      }
+      const suggestions = Array.isArray(payload.suggestions) ? payload.suggestions : [];
+      setPartsSearchSuggestions(suggestions);
+      if (suggestions.length > 0) {
+        const firstQuery = suggestions[0].query;
+        setAddPartsSearch((prev) => {
+          if (String(prev || "").trim().length > 0) return prev;
+          setSelectedSuggestionQuery(firstQuery);
+          return firstQuery;
+        });
+      }
+    } catch (error) {
+      console.warn("Failed to run parts suggestions", error);
+      setPartsSearchSuggestions([]);
+    } finally {
+      setPartsSearchSuggestionsLoading(false);
+    }
+  }, [
+    isAddPartsModalOpen,
+    addPartsContextText,
+    addPartsVehicleContext,
+    authUserId,
+    dbUserId,
+    job?.id,
+  ]);
+
+  useEffect(() => {
+    if (!isAddPartsModalOpen) return;
+    runPartsSuggestions();
+  }, [isAddPartsModalOpen, addPartsContextText, addPartsTarget?.vhcId, runPartsSuggestions]);
+
   // Combined VHC items with their parts for Parts Authorized section
   const vhcItemsWithPartsAuthorized = useMemo(() => {
     const authorizedItems = severityLists.authorized || [];
@@ -2712,7 +2942,6 @@ export default function VhcDetailsPanel({
 
       // Clear selection
       setSeveritySelections((prev) => ({ ...prev, [severity]: [] }));
-
     },
     [severitySelections, severityLists, resolveCanonicalVhcId, resolveLabourHoursValue, resolveLabourCompleteValue, authUserId, dbUserId, refreshJobData, createVhcCheckForDisplayId]
   );
@@ -2792,6 +3021,120 @@ export default function VhcDetailsPanel({
     [resolveCanonicalVhcId, resolveLabourHoursValue, resolveLabourCompleteValue, authUserId, dbUserId, refreshJobData]
   );
 
+  const labourSuggestionUserId = useMemo(() => {
+    if (isValidUuid(authUserId)) return authUserId;
+    if (isValidUuid(dbUserId)) return dbUserId;
+    return null;
+  }, [authUserId, dbUserId]);
+
+  const saveLabourOverride = useCallback(
+    async ({ itemId, description, timeHours, scope = "user", immediate = false }) => {
+      const parsedTime = Number(timeHours);
+      if (!description || !Number.isFinite(parsedTime) || parsedTime < 0) return;
+      if (scope === "user" && !labourSuggestionUserId) return;
+
+      const executeSave = async () => {
+        try {
+          const response = await fetch("/api/vhc/labour-time-overrides", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              description,
+              timeHours: parsedTime,
+              scope,
+              userId: labourSuggestionUserId,
+            }),
+          });
+
+          const result = await response.json();
+          if (response.ok && result?.success) {
+            setSavedLabourOverrideByItem((prev) => ({ ...prev, [itemId]: Date.now() }));
+          }
+        } catch (error) {
+          console.warn("Failed to save labour override", error);
+        }
+      };
+
+      if (immediate) {
+        if (labourOverrideDebounceRef.current[itemId]) {
+          clearTimeout(labourOverrideDebounceRef.current[itemId]);
+          delete labourOverrideDebounceRef.current[itemId];
+        }
+        await executeSave();
+        return;
+      }
+
+      if (labourOverrideDebounceRef.current[itemId]) {
+        clearTimeout(labourOverrideDebounceRef.current[itemId]);
+      }
+
+      labourOverrideDebounceRef.current[itemId] = setTimeout(() => {
+        executeSave();
+        delete labourOverrideDebounceRef.current[itemId];
+      }, 650);
+    },
+    [labourSuggestionUserId]
+  );
+
+  const fetchLabourSuggestions = useCallback(
+    async ({ itemId, description }) => {
+      const text = String(description || "").trim();
+      if (!text) {
+        setLabourSuggestionsByItem((prev) => ({ ...prev, [itemId]: [] }));
+        return;
+      }
+
+      const requestKey = `${itemId}-${Date.now()}`;
+      labourSuggestionRequestRef.current[itemId] = requestKey;
+      setLabourSuggestionsLoadingByItem((prev) => ({ ...prev, [itemId]: true }));
+
+      try {
+        const response = await fetch("/api/vhc/labour-time-suggestions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            description: text,
+            userId: labourSuggestionUserId,
+            jobId: job?.id || null,
+          }),
+        });
+        const result = await response.json();
+
+        if (labourSuggestionRequestRef.current[itemId] !== requestKey) {
+          return;
+        }
+
+        if (response.ok && result?.success) {
+          setLabourSuggestionsByItem((prev) => ({
+            ...prev,
+            [itemId]: Array.isArray(result.suggestions) ? result.suggestions : [],
+          }));
+        } else {
+          setLabourSuggestionsByItem((prev) => ({ ...prev, [itemId]: [] }));
+        }
+      } catch (error) {
+        console.warn("Failed to fetch labour suggestions", error);
+        if (labourSuggestionRequestRef.current[itemId] === requestKey) {
+          setLabourSuggestionsByItem((prev) => ({ ...prev, [itemId]: [] }));
+        }
+      } finally {
+        if (labourSuggestionRequestRef.current[itemId] === requestKey) {
+          setLabourSuggestionsLoadingByItem((prev) => ({ ...prev, [itemId]: false }));
+        }
+      }
+    },
+    [labourSuggestionUserId, job?.id]
+  );
+
+  useEffect(() => {
+    return () => {
+      Object.values(labourOverrideDebounceRef.current).forEach((timeoutHandle) => {
+        clearTimeout(timeoutHandle);
+      });
+      labourOverrideDebounceRef.current = {};
+    };
+  }, []);
+
   const renderSeverityTable = (severity) => {
     const items = severityLists[severity] || [];
     if (items.length === 0) {
@@ -2804,9 +3147,19 @@ export default function VhcDetailsPanel({
       SERVICE_CHOICE_LABELS[serviceChoiceKey] || serviceChoiceKey || "";
     const normaliseServiceText = (value = "") =>
       value.toString().toLowerCase().replace(/\s+/g, " ").trim();
-    const selectedIds = severitySelections[severity] || [];
+    const isRedOrAmberTable = severity === "red" || severity === "amber";
+    const isRowSelectionEligible = (item) => {
+      if (!isRedOrAmberTable) return true;
+      const entry = getEntryForItem(item.id);
+      const resolvedLabourHours = resolveLabourHoursValue(item.id, entry);
+      const labourComplete = resolveLabourCompleteValue(entry, resolvedLabourHours);
+      return Boolean(entry.partsComplete && labourComplete);
+    };
+    const selectableIds = new Set(items.filter((item) => isRowSelectionEligible(item)).map((item) => item.id));
+    const selectedIds = (severitySelections[severity] || []).filter((itemId) => selectableIds.has(itemId));
     const selectedSet = new Set(selectedIds);
-    const allChecked = items.length > 0 && selectedSet.size === items.length;
+    const selectableCount = selectableIds.size;
+    const allChecked = selectableCount > 0 && selectedSet.size === selectableCount;
     const theme = SEVERITY_THEME[severity] || { border: "var(--info-surface)" };
 
     return (
@@ -2840,7 +3193,14 @@ export default function VhcDetailsPanel({
                     <input
                       type="checkbox"
                       checked={allChecked}
-                      onChange={(event) => handleSelectAll(severity, items, event.target.checked)}
+                      disabled={selectableCount === 0}
+                      onChange={(event) =>
+                        handleSelectAll(
+                          severity,
+                          items.filter((item) => selectableIds.has(item.id)),
+                          event.target.checked
+                        )
+                      }
                     />
                   </th>
                 )}
@@ -2864,6 +3224,7 @@ export default function VhcDetailsPanel({
                   ? LOCATION_LABELS[item.location] || item.location.replace(/_/g, " ")
                   : null;
                 const isChecked = selectedSet.has(item.id);
+                const isSelectionEligible = selectableIds.has(item.id);
                 const isWarranty = warrantyRows.has(String(item.id));
                 // prefer explicit severity column over display_status (approval)
                 const rowSeverity = normaliseColour(item.vhcCheck?.severity || item.vhcCheck?.display_status) || item.severityKey || item.rawSeverity || severity;
@@ -2934,6 +3295,19 @@ export default function VhcDetailsPanel({
                   (contentKey.includes(labelKey) || labelKey.includes(contentKey));
                 const statusKey = `${severity}-${item.id}`;
                 const isStatusHovered = hoveredStatusId === statusKey;
+                const labourSuggestionDescription = buildLabourSuggestionDescription({
+                  detailLabel,
+                  detailContent,
+                  detailRows,
+                  measurement: item.measurement || "",
+                  locationLabel: locationLabel ? `Location ${locationLabel}` : "",
+                });
+                const labourSuggestions = Array.isArray(labourSuggestionsByItem[item.id]) ? labourSuggestionsByItem[item.id] : [];
+                const labourSuggestionsLoading = Boolean(labourSuggestionsLoadingByItem[item.id]);
+                const labourSuggestionOpen = openLabourSuggestionItemId === item.id;
+                const selectedLabourSuggestion = selectedLabourSuggestionByItem[item.id] || null;
+                const recentSavedAt = Number(savedLabourOverrideByItem[item.id] || 0);
+                const showSavedBadge = recentSavedAt > 0 && Date.now() - recentSavedAt < 2500;
 
                 return (
                   <tr
@@ -3107,7 +3481,7 @@ export default function VhcDetailsPanel({
                       </div>
                     </td>
                     <td style={{ padding: "12px 8px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", position: "relative" }}>
                         <input
                           type="checkbox"
                           checked={resolveLabourCompleteValue(entry, resolvedLabourHours)}
@@ -3143,6 +3517,22 @@ export default function VhcDetailsPanel({
                                 labourComplete: !isBlank,
                               },
                             }));
+
+                            const parsedValue = Number(value);
+                            const shouldLearn =
+                              !isBlank &&
+                              Number.isFinite(parsedValue) &&
+                              (!selectedLabourSuggestion || Number(selectedLabourSuggestion.timeHours) !== parsedValue);
+
+                            if (shouldLearn) {
+                              saveLabourOverride({
+                                itemId: item.id,
+                                description: labourSuggestionDescription,
+                                timeHours: parsedValue,
+                                scope: "user",
+                                immediate: false,
+                              });
+                            }
                           }}
                           onBlur={(event) => {
                             // Don't persist in authorized/declined sections
@@ -3152,7 +3542,30 @@ export default function VhcDetailsPanel({
                               authorizedViewIds.has(resolveCanonicalVhcId(item.id))
                             )
                               return;
-                            persistLabourHours(item.id, event.target.value);
+                            const value = event.target.value;
+                            const parsedValue = Number(value);
+                            const shouldLearn =
+                              value !== "" &&
+                              Number.isFinite(parsedValue) &&
+                              (!selectedLabourSuggestion || Number(selectedLabourSuggestion.timeHours) !== parsedValue);
+                            persistLabourHours(item.id, value);
+                            if (shouldLearn) {
+                              saveLabourOverride({
+                                itemId: item.id,
+                                description: labourSuggestionDescription,
+                                timeHours: parsedValue,
+                                scope: "user",
+                                immediate: true,
+                              });
+                            }
+                            setOpenLabourSuggestionItemId((prev) => (prev === item.id ? null : prev));
+                          }}
+                          onFocus={() => {
+                            setOpenLabourSuggestionItemId(item.id);
+                            fetchLabourSuggestions({
+                              itemId: item.id,
+                              description: labourSuggestionDescription,
+                            });
                           }}
                           placeholder="0.0"
                           style={{
@@ -3169,7 +3582,103 @@ export default function VhcDetailsPanel({
                             authorizedViewIds.has(resolveCanonicalVhcId(item.id))
                           }
                         />
+                        {showSavedBadge ? (
+                          <span style={{ fontSize: "11px", color: "var(--success)", fontWeight: 600 }}>Saved</span>
+                        ) : null}
                         <span style={{ fontSize: "12px", color: "var(--info)", whiteSpace: "nowrap" }}>£{labourCost.toFixed(2)}</span>
+                        {labourSuggestionOpen ? (
+                          <div
+                            style={{
+                              position: "absolute",
+                              top: "100%",
+                              left: "24px",
+                              marginTop: "6px",
+                              width: "320px",
+                              maxHeight: "240px",
+                              overflowY: "auto",
+                              border: "1px solid var(--accent-purple-surface)",
+                              borderRadius: "10px",
+                              background: "var(--surface)",
+                              boxShadow: "0 12px 24px rgba(var(--text-primary-rgb), 0.14)",
+                              zIndex: 12,
+                            }}
+                          >
+                            {labourSuggestionsLoading ? (
+                              <div style={{ padding: "10px 12px", fontSize: "12px", color: "var(--info)" }}>Loading suggestions…</div>
+                            ) : labourSuggestions.length === 0 ? (
+                              <div style={{ padding: "10px 12px", fontSize: "12px", color: "var(--info)" }}>No labour suggestions found.</div>
+                            ) : (
+                              labourSuggestions.map((suggestion) => (
+                                <button
+                                  key={`${item.id}-${suggestion.id}-${suggestion.timeHours}`}
+                                  type="button"
+                                  onMouseDown={(event) => event.preventDefault()}
+                                  onClick={() => {
+                                    const nextValue = Number(suggestion.timeHours).toFixed(1);
+                                    setItemEntries((prev) => ({
+                                      ...prev,
+                                      [item.id]: {
+                                        ...ensureEntryValue(prev, item.id),
+                                        laborHours: nextValue,
+                                        labourComplete: true,
+                                      },
+                                    }));
+                                    setSelectedLabourSuggestionByItem((prev) => ({
+                                      ...prev,
+                                      [item.id]: {
+                                        source: suggestion.source,
+                                        scope: suggestion.scope,
+                                        timeHours: Number(suggestion.timeHours),
+                                      },
+                                    }));
+                                    persistLabourHours(item.id, nextValue);
+                                    if (suggestion.source === "learned") {
+                                      saveLabourOverride({
+                                        itemId: item.id,
+                                        description: labourSuggestionDescription,
+                                        timeHours: suggestion.timeHours,
+                                        scope: suggestion.scope || "user",
+                                        immediate: true,
+                                      });
+                                    }
+                                    setOpenLabourSuggestionItemId(null);
+                                  }}
+                                  style={{
+                                    width: "100%",
+                                    border: "none",
+                                    borderBottom: "1px solid var(--surface-light)",
+                                    background: "var(--surface)",
+                                    textAlign: "left",
+                                    padding: "9px 11px",
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", alignItems: "center" }}>
+                                    <div style={{ fontSize: "12px", color: "var(--text-primary)", fontWeight: 600 }}>
+                                      {suggestion.displayDescription || labourSuggestionDescription}
+                                    </div>
+                                    <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--accent-purple)" }}>
+                                      {Number(suggestion.timeHours).toFixed(1)}h
+                                    </div>
+                                  </div>
+                                  <div style={{ marginTop: "4px", display: "flex", alignItems: "center", gap: "8px" }}>
+                                    <span
+                                      style={{
+                                        fontSize: "10px",
+                                        fontWeight: 700,
+                                        textTransform: "uppercase",
+                                        letterSpacing: "0.08em",
+                                        color: suggestion.source === "learned" ? "var(--success)" : "var(--info)",
+                                      }}
+                                    >
+                                      {suggestion.source === "learned" ? "learned" : "preset"}
+                                    </span>
+                                  </div>
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        ) : null}
                       </div>
                     </td>
                     <td style={{ padding: "12px 8px" }}>
@@ -3300,6 +3809,12 @@ export default function VhcDetailsPanel({
                         <input
                           type="checkbox"
                           checked={isChecked}
+                          disabled={!isSelectionEligible}
+                          title={
+                            !isSelectionEligible
+                              ? "Complete both Parts and Labour before selecting this row."
+                              : ""
+                          }
                           onChange={() => toggleRowSelection(severity, item.id)}
                         />
                       </td>
@@ -4037,11 +4552,25 @@ export default function VhcDetailsPanel({
     });
   }, []);
 
-  const openAddPartsModal = useCallback((vhcId, label) => {
-    setAddPartsTarget({ vhcId, label: label || "VHC Item" });
+  const openAddPartsModal = useCallback((vhcId, context = {}) => {
+    const nextContext =
+      context && typeof context === "object"
+        ? context
+        : { label: String(context || "VHC Item") };
+    setAddPartsTarget({
+      vhcId,
+      label: nextContext.label || "VHC Item",
+      detail: nextContext.detail || nextContext.concern || nextContext.notes || "",
+      section: nextContext.section || nextContext.sectionName || "",
+      rows: Array.isArray(nextContext.rows) ? nextContext.rows : [],
+    });
     setAddPartsSearch("");
     setAddPartsResults([]);
     setAddPartsError("");
+    setPartsSearchSuggestions([]);
+    setPartsSearchSuggestionsLoading(false);
+    setSelectedSuggestionQuery("");
+    setPartsLearningSavedAt(null);
     setSelectedParts([]);
     setAddPartsMessage("");
     setShowNewPartForm(false);
@@ -4055,6 +4584,10 @@ export default function VhcDetailsPanel({
     setAddPartsSearch("");
     setAddPartsResults([]);
     setAddPartsError("");
+    setPartsSearchSuggestions([]);
+    setPartsSearchSuggestionsLoading(false);
+    setSelectedSuggestionQuery("");
+    setPartsLearningSavedAt(null);
     setSelectedParts([]);
     setAddPartsMessage("");
     setShowNewPartForm(false);
@@ -4195,6 +4728,36 @@ export default function VhcDetailsPanel({
     }
   }, [newPartForm]);
 
+  const savePartsSearchLearning = useCallback(
+    async ({ finalQuery, selectedSuggestion = "" }) => {
+      const cleanQuery = String(finalQuery || "").trim();
+      const cleanContext = String(addPartsContextText || "").trim();
+      if (!cleanQuery || cleanQuery.length < 2 || !cleanContext) return;
+      const learningUserId = isValidUuid(authUserId) ? authUserId : isValidUuid(dbUserId) ? dbUserId : null;
+      if (!learningUserId) return;
+
+      try {
+        await fetch("/api/vhc/parts-search-learning", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contextText: cleanContext,
+            vehicleContext: addPartsVehicleContext,
+            finalQuery: cleanQuery,
+            selectedSuggestion: selectedSuggestion || null,
+            userId: learningUserId,
+            jobId: job?.id || null,
+            scope: "user",
+          }),
+        });
+        setPartsLearningSavedAt(Date.now());
+      } catch (error) {
+        console.warn("Failed to save parts search learning", error);
+      }
+    },
+    [addPartsContextText, addPartsVehicleContext, authUserId, dbUserId, job?.id]
+  );
+
   useEffect(() => {
     if (!isAddPartsModalOpen) return;
     const trimmed = addPartsSearch.trim();
@@ -4214,16 +4777,69 @@ export default function VhcDetailsPanel({
       setAddPartsLoading(true);
       setAddPartsError("");
       try {
-        const params = new URLSearchParams({ search: trimmed, limit: "25" });
-        const response = await fetch(`/api/parts/catalog?${params.toString()}`);
-        const payload = await response.json();
-        if (!response.ok || !payload?.success) {
-          throw new Error(payload?.message || "Unable to search parts catalogue");
+        const normalizedSearch = trimmed.toLowerCase();
+        const searchCatalog = async (term) => {
+          const params = new URLSearchParams({ search: term, limit: "25" });
+          const response = await fetch(`/api/parts/catalog?${params.toString()}`);
+          const payload = await response.json();
+          if (!response.ok || !payload?.success) {
+            throw new Error(payload?.message || "Unable to search parts catalogue");
+          }
+          return Array.isArray(payload.parts) ? payload.parts : [];
+        };
+
+        let results = await searchCatalog(normalizedSearch);
+        const searchTokens = normalizedSearch.split(/\s+/).filter((token) => token.length >= 2);
+        // Fallback: when full phrase returns no rows, search by each token and merge.
+        if (results.length === 0 && searchTokens.length > 1) {
+          const tokenResultSets = await Promise.all(searchTokens.map((token) => searchCatalog(token)));
+          const mergedById = new Map();
+          tokenResultSets.flat().forEach((item) => {
+            if (item?.id && !mergedById.has(item.id)) {
+              mergedById.set(item.id, item);
+            }
+          });
+          results = Array.from(mergedById.values());
         }
         if (!isActive) return;
-        const results = Array.isArray(payload.parts) ? payload.parts : [];
-        setAddPartsResults(results);
-        setAddPartsError(results.length === 0 ? "No matching parts found." : "");
+        const rankedResults = [...results].sort((a, b) => {
+          const tokenMatchScore = (item) => {
+            const haystack =
+              `${item?.part_number || ""} ${item?.name || ""} ${item?.description || ""} ${item?.supplier || ""}`
+                .toLowerCase();
+            return searchTokens.reduce((count, token) => (haystack.includes(token) ? count + 1 : count), 0);
+          };
+          const textFor = (item) =>
+            `${item?.part_number || ""} ${item?.name || ""} ${item?.description || ""} ${item?.supplier || ""}`
+              .toLowerCase();
+          const score = (item) => {
+            const haystack = textFor(item);
+            const tokenHits = tokenMatchScore(item);
+            if (haystack.startsWith(normalizedSearch)) return 0;
+            if (String(item?.part_number || "").toLowerCase().startsWith(normalizedSearch)) return 1;
+            if (haystack.includes(normalizedSearch)) return 2;
+            if (tokenHits >= 2) return 3;
+            if (tokenHits === 1) return 4;
+            return 5;
+          };
+          return score(a) - score(b);
+        });
+        setAddPartsResults(rankedResults);
+        setAddPartsError(rankedResults.length === 0 ? "No matching parts found." : "");
+
+        const normalizedTypedQuery = trimmed.toLowerCase();
+        const normalizedSelectedSuggestion = String(selectedSuggestionQuery || "").trim().toLowerCase();
+        if (normalizedTypedQuery && normalizedTypedQuery.length >= 2 && normalizedTypedQuery !== normalizedSelectedSuggestion) {
+          if (partsLearningDebounceRef.current) {
+            clearTimeout(partsLearningDebounceRef.current);
+          }
+          partsLearningDebounceRef.current = setTimeout(() => {
+            savePartsSearchLearning({
+              finalQuery: trimmed,
+              selectedSuggestion: "",
+            });
+          }, 700);
+        }
       } catch (error) {
         if (!isActive) return;
         setAddPartsResults([]);
@@ -4238,8 +4854,12 @@ export default function VhcDetailsPanel({
     return () => {
       isActive = false;
       clearTimeout(timer);
+      if (partsLearningDebounceRef.current) {
+        clearTimeout(partsLearningDebounceRef.current);
+        partsLearningDebounceRef.current = null;
+      }
     };
-  }, [addPartsSearch, isAddPartsModalOpen]);
+  }, [addPartsSearch, isAddPartsModalOpen, selectedSuggestionQuery, savePartsSearchLearning]);
 
   const persistPartMeta = useCallback(
     async (partId, meta) => {
@@ -4608,8 +5228,8 @@ export default function VhcDetailsPanel({
     async (partItem, displayVhcId) => {
       if (!partItem?.id) return;
       const confirmRemove =
-        typeof window !== "undefined"
-          ? window.confirm(`Remove ${partItem.part?.name || "this part"} from the VHC item?`)
+        typeof confirm === "function"
+          ? await confirm(`Remove ${partItem.part?.name || "this part"} from the VHC item?`)
           : true;
       if (!confirmRemove) return;
 
@@ -4674,7 +5294,7 @@ export default function VhcDetailsPanel({
         });
       }
     },
-    [job?.parts_job_items, removeVhcItemAlias, resolveCanonicalVhcId, refreshJobData]
+    [confirm, job?.parts_job_items, removeVhcItemAlias, resolveCanonicalVhcId, refreshJobData]
   );
 
   // Handler for "Add to Job" button click
@@ -4991,7 +5611,12 @@ export default function VhcDetailsPanel({
                                 onClick={(event) => {
                                   event.stopPropagation();
                                   if (canAddPart) {
-                                    openAddPartsModal(vhcId, vhcLabel);
+                                    openAddPartsModal(vhcId, {
+                                      label: vhcLabel,
+                                      detail: vhcNotes,
+                                      section: vhcItem?.sectionName || vhcItem?.categoryLabel || "",
+                                      rows: vhcItem?.rows || [],
+                                    });
                                   }
                                 }}
                                 disabled={!canAddPart}
@@ -6693,7 +7318,7 @@ export default function VhcDetailsPanel({
 
       <VHCModalShell
         isOpen={isAddPartsModalOpen}
-        title={`Add Parts - ${addPartsTarget?.label || "VHC Item"}`}
+        title={addPartsModalTitle}
         subtitle="Search the parts catalogue and add one or more items to this VHC row."
         width="960px"
         height="720px"
@@ -6747,8 +7372,14 @@ export default function VhcDetailsPanel({
               <input
                 type="text"
                 value={addPartsSearch}
-                onChange={(event) => setAddPartsSearch(event.target.value)}
-                placeholder="Search by part number, name, or supplier"
+                onChange={(event) => {
+                  const nextValue = event.target.value;
+                  setAddPartsSearch(nextValue);
+                  if (String(selectedSuggestionQuery || "").trim().toLowerCase() !== nextValue.trim().toLowerCase()) {
+                    setSelectedSuggestionQuery("");
+                  }
+                }}
+                placeholder="Search by part number or description"
                 style={{
                   flex: 1,
                   minWidth: "220px",
@@ -6776,7 +7407,68 @@ export default function VhcDetailsPanel({
               >
                 {showNewPartForm ? "Close new part" : "Add new part"}
               </button>
+              <button
+                type="button"
+                onClick={runPartsSuggestions}
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid var(--accent-purple-surface)",
+                  background: "var(--surface)",
+                  color: "var(--info-dark)",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+                title="Refresh search suggestions"
+              >
+                ↻
+              </button>
             </div>
+            {partsSearchSuggestions.length > 0 && (
+              <div style={{ marginTop: "10px", display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center" }}>
+                <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--primary)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                  Search suggestions
+                </span>
+                {partsSearchSuggestions.map((suggestion) => (
+                  <button
+                    key={`parts-search-suggestion-${suggestion.id}-${suggestion.query}`}
+                    type="button"
+                    onClick={() => {
+                      const query = String(suggestion.query || "").trim();
+                      if (!query) return;
+                      setAddPartsSearch(query);
+                      setSelectedSuggestionQuery(query);
+                      savePartsSearchLearning({
+                        finalQuery: query,
+                        selectedSuggestion: query,
+                      });
+                    }}
+                    style={{
+                      border: "1px solid var(--accent-purple-surface)",
+                      borderRadius: "999px",
+                      padding: "6px 10px",
+                      background: "var(--surface)",
+                      color: "var(--info-dark)",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {suggestion.query}
+                  </button>
+                ))}
+              </div>
+            )}
+            {partsSearchSuggestionsLoading && (
+              <div style={{ marginTop: "8px", fontSize: "12px", color: "var(--info)" }}>
+                Loading suggestions…
+              </div>
+            )}
+            {partsLearningSavedAt && Date.now() - partsLearningSavedAt < 2500 && (
+              <div style={{ marginTop: "8px", fontSize: "12px", color: "var(--success)", fontWeight: 600 }}>
+                Saved
+              </div>
+            )}
             {addPartsLoading && (
               <div style={{ marginTop: "8px", fontSize: "12px", color: "var(--info)" }}>
                 Searching…

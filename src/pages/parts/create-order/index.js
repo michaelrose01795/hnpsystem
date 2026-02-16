@@ -1152,7 +1152,7 @@ export default function PartsJobCardPage() {
             type="search"
             value={partSearchQuery}
             onChange={(event) => setPartSearchQuery(event.target.value)}
-            placeholder="Search by part number, name, or supplier"
+            placeholder="Search by part number or description"
             style={{
               ...inputStyle,
               width: "100%",

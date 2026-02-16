@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "backfill:vhc-severity": "node scripts/backfill-vhc-severity.js",
-    "migrate:add-severity": "node scripts/run-migration-add-severity.js"
+    "migrate:add-severity": "node scripts/run-migration-add-severity.js",
+    "seed:labour-presets": "node scripts/seed-labour-presets.js",
+    "seed:parts-search-presets": "node scripts/seed-parts-search-presets.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.81.1",

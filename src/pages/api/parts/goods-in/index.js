@@ -70,6 +70,33 @@ const parseScanPayload = (value) => {
   }
 };
 
+const normalizeInvoiceNumber = (value) => {
+  const cleaned = sanitizeText(value);
+  if (!cleaned) return null;
+  return cleaned.replace(/\s+/g, " ");
+};
+
+const findExistingSupplierInvoice = async ({ supplierAccountId, invoiceNumber }) => {
+  const supplierId = sanitizeText(supplierAccountId);
+  const invoice = normalizeInvoiceNumber(invoiceNumber);
+  if (!supplierId || !invoice) return null;
+
+  const { data, error } = await supabase
+    .from("parts_goods_in")
+    .select("id, goods_in_number, invoice_number")
+    .eq("supplier_account_id", supplierId)
+    .ilike("invoice_number", invoice)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data || null;
+};
+
 const fetchNextGoodsInNumber = async () => {
   const { data, error } = await supabase
     .from("parts_goods_in")
@@ -242,15 +269,27 @@ async function handler(req, res, session) {
     }
 
     const { uuid: auditUuid, numeric: auditNumeric } = resolveAuditIds(userId, userNumericId);
+    const normalizedInvoiceNumber = normalizeInvoiceNumber(invoiceNumber);
     const invoiceDateValue = parseDateOnly(invoiceDate) || new Date().toISOString().slice(0, 10);
 
     try {
+      const existing = await findExistingSupplierInvoice({
+        supplierAccountId,
+        invoiceNumber: normalizedInvoiceNumber,
+      });
+      if (existing) {
+        return res.status(409).json({
+          success: false,
+          message: `Invoice number ${normalizedInvoiceNumber} already exists for this supplier (Goods In ${existing.goods_in_number}).`,
+        });
+      }
+
       const created = await createGoodsInRecord({
         supplier_account_id: sanitizeText(supplierAccountId),
         supplier_name: supplierName.trim(),
         supplier_address: sanitizeText(supplierAddress),
         supplier_contact: sanitizeText(supplierContact),
-        invoice_number: invoiceNumber.trim(),
+        invoice_number: normalizedInvoiceNumber,
         delivery_note_number: sanitizeText(deliveryNoteNumber),
         invoice_date: invoiceDateValue,
         price_level: parsePriceLevel(priceLevel),
