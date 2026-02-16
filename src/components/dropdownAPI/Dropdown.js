@@ -39,6 +39,22 @@ export default function Dropdown({
   labelStyle,
   ...rest
 }) {
+  const extractedControlStyle = style
+    ? {
+        border: style.border,
+        borderColor: style.borderColor,
+        borderWidth: style.borderWidth,
+        borderStyle: style.borderStyle,
+        borderRadius: style.borderRadius,
+        background: style.background,
+        backgroundColor: style.backgroundColor,
+        boxShadow: style.boxShadow,
+        padding: style.padding,
+        fontSize: style.fontSize,
+        color: style.color,
+        outline: style.outline,
+      }
+    : undefined;
   const wrapperStyle = style
     ? {
         ...style,
@@ -53,6 +69,9 @@ export default function Dropdown({
         padding: undefined,
       }
     : undefined;
+  const mergedControlStyle = extractedControlStyle
+    ? { ...extractedControlStyle, ...(controlStyle || {}) }
+    : controlStyle;
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [menuPosition, setMenuPosition] = useState(null);
@@ -334,7 +353,7 @@ export default function Dropdown({
         id={controlId}
         type="button"
         className="dropdown-api__control"
-        style={controlStyle}
+        style={mergedControlStyle}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         onClick={toggle}

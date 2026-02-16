@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { getIssueSuggestions, resolveIssueSectionKey } from "@/lib/vhc/issueSuggestions";
+import { useTheme } from "@/styles/themeProvider";
 
 const DEBOUNCE_MS = 150;
 const DISPLAY_LIMIT = 12;
@@ -110,6 +111,7 @@ export default function IssueAutocomplete({
   placeholder = "Describe the issue...",
   inputStyle,
 }) {
+  const { resolvedMode } = useTheme();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -238,6 +240,7 @@ export default function IssueAutocomplete({
             results.map((suggestion, index) => {
               const isActive = index === activeIndex;
               const parts = buildHighlightParts(suggestion, query);
+              const highlightColor = resolvedMode === "dark" ? "var(--accent-purple)" : "var(--danger)";
 
               return (
                 <button
@@ -255,7 +258,12 @@ export default function IssueAutocomplete({
                 >
                   {parts.map((part, partIndex) =>
                     part.highlight ? (
-                      <strong key={`${suggestion}-part-${partIndex}`}>{part.text}</strong>
+                      <strong
+                        key={`${suggestion}-part-${partIndex}`}
+                        style={{ color: highlightColor, fontWeight: 800 }}
+                      >
+                        {part.text}
+                      </strong>
                     ) : (
                       <span key={`${suggestion}-part-${partIndex}`}>{part.text}</span>
                     ),

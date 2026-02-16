@@ -1,5 +1,5 @@
-// API endpoint to create a new VHC check item in the database
-import { supabase } from "@/lib/supabaseClient";
+// file location: src/pages/api/jobcards/create-vhc-item.js
+import { upsertVhcIssueRow } from "@/lib/vhc/upsertVhcIssueRow";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -11,65 +11,60 @@ export default async function handler(req, res) {
       jobId,
       jobNumber,
       section,
+      subAreaKey,
+      sourceKey,
+      sourceBucket,
       issueTitle,
       issueDescription,
+      issueText,
       measurement,
-      labourHours
-    } = req.body;
+      labourHours,
+      partsCost,
+      severity,
+      approvalStatus,
+      authorizationState,
+    } = req.body || {};
 
-    // Validate required fields
-    if (!jobId) {
-      return res.status(400).json({ success: false, message: "jobId is required" });
+    if (!jobId && !jobNumber) {
+      return res.status(400).json({ success: false, message: "jobId or jobNumber is required" });
     }
 
     if (!section || !issueTitle) {
-      return res.status(400).json({
-        success: false,
-        message: "section and issueTitle are required"
-      });
+      return res.status(400).json({ success: false, message: "section and issueTitle are required" });
     }
 
-    // Build the insert payload
-    const insertData = {
-      job_id: jobId,
-      section: section,
+    const { row, identity } = await upsertVhcIssueRow({
+      jobId,
+      jobNumber,
+      section,
+      subAreaKey: subAreaKey || issueTitle,
+      sourceKey: sourceKey || subAreaKey || issueTitle,
       issue_title: issueTitle,
-      issue_description: issueDescription || null,
-      measurement: measurement || null,
-      labour_hours: labourHours === "" || labourHours === null || labourHours === undefined ? null : parseFloat(labourHours) || 0,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-
-    // Insert the vhc_checks record
-    const { data, error } = await supabase
-      .from("vhc_checks")
-      .insert([insertData])
-      .select("vhc_id, job_id, section, issue_title, issue_description, measurement, labour_hours, created_at, updated_at")
-      .single();
-
-    if (error) {
-      console.error("Error creating VHC check item:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to create VHC check item",
-        error: error.message
-      });
-    }
+      issue_description: issueDescription || measurement || "",
+      issueText: issueText || issueDescription || measurement || issueTitle,
+      sourceBucket: sourceBucket || sourceKey || subAreaKey || "",
+      parts_cost: Number(partsCost) || 0,
+      labour_hours: labourHours === "" || labourHours === null || labourHours === undefined ? 0 : Number(labourHours) || 0,
+      labour_rate_gbp: 85,
+      display_status: null,
+      approval_status: approvalStatus || "pending",
+      authorization_state: authorizationState || null,
+      severity: severity || "amber",
+    });
 
     return res.status(200).json({
       success: true,
-      vhcId: data.vhc_id,
-      data: data,
-      message: "VHC check item created successfully"
+      vhcId: row?.vhc_id,
+      data: row,
+      identity,
+      message: "VHC check item upserted successfully",
     });
-
   } catch (error) {
     console.error("API error:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      error: error.message
+      error: error.message,
     });
   }
 }

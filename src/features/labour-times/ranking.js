@@ -6,6 +6,14 @@ const toTokenSet = (value = "") => {
   return new Set(tokenize(value));
 };
 
+const resolveSourcePriority = (item = {}) => {
+  if (item.source === "learned" && item.scope === "user") return 0;
+  if (item.source === "learned" && item.scope === "global") return 1;
+  if (item.source === "preset") return 2;
+  if (item.source === "fallback") return 3;
+  return 4;
+};
+
 export const scoreMatch = ({ queryText = "", candidateText = "", candidateTags = [] } = {}) => {
   const queryTokens = toTokenSet(queryText);
   if (queryTokens.size === 0) return 0;
@@ -44,12 +52,14 @@ export const rankSuggestions = ({
     return {
       ...item,
       _textualScore: textualScore,
+      _sourcePriority: resolveSourcePriority(item),
       _fallbackOrder: Number.isFinite(item.defaultOrder) ? item.defaultOrder : index,
       _usageCount: Number(item.usageCount || 0),
     };
   });
 
   scored.sort((a, b) => {
+    if (a._sourcePriority !== b._sourcePriority) return a._sourcePriority - b._sourcePriority;
     if (b._textualScore !== a._textualScore) return b._textualScore - a._textualScore;
     if (b._usageCount !== a._usageCount) return b._usageCount - a._usageCount;
     return a._fallbackOrder - b._fallbackOrder;
@@ -63,5 +73,7 @@ export const rankSuggestions = ({
     normalizedKey: item.normalizedKey,
     timeHours: Number(item.timeHours),
     usageCount: Number(item._usageCount || 0),
+    confidence: item.confidence || null,
+    reason: item.reason || null,
   }));
 };

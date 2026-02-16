@@ -5,7 +5,7 @@
 //       - Sidebar toggle button shrunk and edge-aligned on mobile/tablet
 //       - All page sections optimized for vertical phone mode
 // ✅ Imports converted to use absolute alias "@/"
-import React, { useCallback, useEffect, useState } from "react"; // import React hooks
+import React, { useCallback, useEffect, useRef, useState } from "react"; // import React hooks
 import Link from "next/link"; // import Next.js link component
 import { useRouter } from "next/router"; // import router for navigation
 import { useUser } from "@/context/UserContext"; // import user context
@@ -25,6 +25,7 @@ import { useMessagesBadge } from "@/hooks/useMessagesBadge";
 import { roleCategories } from "@/config/users";
 import { getUserActiveJobs, clockOutFromJob } from "@/lib/database/jobClocking";
 import { DropdownField } from "@/components/dropdownAPI";
+import { getWelcomeQuoteSlotKey } from "@/lib/welcomeQuoteSlot";
 
 const SERVICE_ACTION_ROLES = new Set([
   "service",
@@ -51,6 +52,7 @@ const PARTS_ACTION_LINKS = [
 ];
 
 const MODE_STORAGE_KEY = "appModeSelection";
+const DEFAULT_WELCOME_QUOTE = "Progress grows when clear actions are completed with care.";
 const MODE_ROLE_MAP = {
   Retail: new Set((roleCategories.Retail || []).map((role) => role.toLowerCase())),
   Sales: new Set((roleCategories.Sales || []).map((role) => role.toLowerCase())),
@@ -96,6 +98,8 @@ export default function Layout({
   const timelineJobNumber = jobNumber || activeJobId || currentJob?.jobNumber || null;
   const [currentJobStatus, setCurrentJobStatus] = useState("booked");
   const [statusSidebarRefreshKey, setStatusSidebarRefreshKey] = useState(0);
+  const [welcomeQuote, setWelcomeQuote] = useState(DEFAULT_WELCOME_QUOTE);
+  const welcomeQuoteSlotKeyRef = useRef(null);
 
   const statusSidebarRoles = [
     "admin manager",
@@ -178,6 +182,16 @@ export default function Layout({
   const motTestersList = usersByRole?.["MOT Tester"] || [];
   const allowedTechNames = new Set([...techsList, ...motTestersList]);
   const normalizedUsername = typeof user?.username === "string" ? user.username.trim() : "";
+  const fallbackName =
+    typeof user?.username === "string" && user.username.trim() ? user.username.trim() : "Guest";
+  const firstName =
+    normalizedUsername.split(/\s+/).filter(Boolean)[0] || fallbackName;
+  const userIdForQuote =
+    user?.authUuid ||
+    user?.id ||
+    user?.email ||
+    normalizedUsername ||
+    null;
   const hasTechRole = userRoles.some((role) => role.includes("tech") || role.includes("mot"));
   const isTech = (normalizedUsername && allowedTechNames.has(normalizedUsername)) || hasTechRole;
   const canViewStatusSidebar = userRoles.some((role) =>
@@ -211,6 +225,48 @@ export default function Layout({
   useEffect(() => {
     setIsStatusSidebarOpen(false);
   }, [isTablet]);
+
+  useEffect(() => {
+    if (!userIdForQuote) {
+      setWelcomeQuote(DEFAULT_WELCOME_QUOTE);
+      welcomeQuoteSlotKeyRef.current = getWelcomeQuoteSlotKey(new Date());
+      return;
+    }
+
+    let cancelled = false;
+
+    const maybeRefreshQuote = async () => {
+      const nextSlotKey = getWelcomeQuoteSlotKey(new Date());
+      if (welcomeQuoteSlotKeyRef.current === nextSlotKey) {
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `/api/welcome-quote?userId=${encodeURIComponent(String(userIdForQuote))}`
+        );
+        if (!response.ok) {
+          return;
+        }
+        const payload = await response.json();
+        if (cancelled) return;
+        if (typeof payload?.quote === "string" && payload.quote.trim()) {
+          setWelcomeQuote(payload.quote);
+        }
+        welcomeQuoteSlotKeyRef.current = payload?.slotKey || nextSlotKey;
+      } catch (_error) {
+        // Keep existing quote if fetch fails.
+      }
+    };
+
+    maybeRefreshQuote();
+    const timerId = window.setInterval(maybeRefreshQuote, 30 * 1000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timerId);
+    };
+  }, [userIdForQuote]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -891,11 +947,22 @@ export default function Layout({
                   <div
                     style={{
                       display: "flex",
-                      alignItems: "baseline",
-                      flexWrap: "wrap",
-                      gap: "8px",
+                      flexDirection: "column",
+                      alignItems: "flex-start",
+                      gap: "4px",
                     }}
                   >
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: "0.72rem",
+                        fontWeight: 500,
+                        color: colors.mutedText,
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      {welcomeQuote}
+                    </p>
                     <h1
                       style={{
                         fontSize: "1.15rem",
@@ -905,7 +972,7 @@ export default function Layout({
                         lineHeight: 1.1,
                       }}
                     >
-                      Welcome back, {user?.username || "Guest"}
+                      Welcome {firstName}
                     </h1>
                     {availableModes.length > 0 && (
                       <div

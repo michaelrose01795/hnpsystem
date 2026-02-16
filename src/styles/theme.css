@@ -59,6 +59,7 @@
   --search-surface-muted: var(--surface-light);
   --search-text: #000000;
   --overlay: rgba(var(--primary-rgb), 0.35);
+  --vhc-vehicle-diagram-image: url('/profile/LightCar.png');
 
   /* Three-tier background system - Light Mode */
   /* Level 1 (Top layer - almost white): inner cards, stats blocks */
@@ -153,6 +154,7 @@
   --search-surface-muted: #3a3a42;
   --search-text: #c1a3ff;
   --overlay: rgba(var(--accent-purple-rgb), 0.5);
+  --vhc-vehicle-diagram-image: url('/profile/DarkCar.png');
 
   /* Three-tier background system - Dark Mode */
   /* Level 1 (Top layer - softened charcoal): inner cards, stats blocks */

@@ -5,12 +5,20 @@ import { createPortal } from "react-dom";
 import { getNotesByJob, createJobNote, updateJobNote, deleteJobNote } from "@/lib/database/notes";
 import { normalizeRequests } from "@/lib/jobcards/utils";
 
-export default function NotesTabNew({ jobData, canEdit, actingUserNumericId, onNotesChange }) {
+export default function NotesTabNew({
+  jobData,
+  canEdit,
+  actingUserNumericId,
+  onNotesChange,
+  onNoteAdded,
+  highlightNoteIds = []
+}) {
   const jobId = jobData?.id;
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newNoteText, setNewNoteText] = useState("");
   const [newNoteHidden, setNewNoteHidden] = useState(true); // Default: hidden from customer
+  const [showAddNote, setShowAddNote] = useState(false);
   const [savingNewNote, setSavingNewNote] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [editingNoteText, setEditingNoteText] = useState("");
@@ -33,6 +41,10 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId, onN
       : [];
     return parts.filter((part) => part?.authorised === true);
   }, [jobData?.partsAllocations, jobData?.parts_job_items]);
+  const highlightedNoteIdSet = useMemo(
+    () => new Set(Array.isArray(highlightNoteIds) ? highlightNoteIds : []),
+    [highlightNoteIds]
+  );
 
   // Load notes
   useEffect(() => {
@@ -72,8 +84,13 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId, onN
       });
 
       if (result.success) {
+        const createdNoteId = result?.data?.note_id ?? null;
+        if (createdNoteId && typeof onNoteAdded === "function") {
+          onNoteAdded(createdNoteId);
+        }
         setNewNoteText("");
         setNewNoteHidden(true); // Reset to default
+        setShowAddNote(false);
         await loadNotes();
       } else {
         setError(result.error?.message || "Failed to create note");
@@ -296,72 +313,118 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId, onN
 
       {/* Add New Note */}
       {canEdit && (
-        <div
-          style={{
-            padding: "16px",
-            backgroundColor: "var(--layer-section-level-1)",
-            borderRadius: "12px",
-            border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
-            marginBottom: "20px",
-          }}
-        >
-          <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-primary)", marginBottom: "12px" }}>
-            Add New Note
-          </div>
-          <textarea
-            value={newNoteText}
-            onChange={(e) => setNewNoteText(e.target.value)}
-            onInput={(e) => {
-              e.currentTarget.style.height = "auto";
-              const next = Math.min(e.currentTarget.scrollHeight, 220);
-              e.currentTarget.style.height = `${next}px`;
-            }}
-            placeholder="Type your note here..."
-            style={{
-              width: "100%",
-              height: "56px",
-              minHeight: "56px",
-              maxHeight: "220px",
-              padding: "12px",
-              borderRadius: "8px",
-              border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
-              fontSize: "14px",
-              lineHeight: 1.6,
-              resize: "none",
-              overflowY: "auto",
-              backgroundColor: "var(--surface)",
-              color: "var(--text-primary)",
-              marginBottom: "12px",
-            }}
-          />
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "var(--text-secondary)", cursor: "pointer" }}>
-              <input
-                type="checkbox"
-                checked={newNoteHidden}
-                onChange={(e) => setNewNoteHidden(e.target.checked)}
-                style={{ width: "16px", height: "16px", cursor: "pointer" }}
-              />
-              Hide from customer
-            </label>
+        <>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showAddNote ? "12px" : "20px" }}>
+            <div style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
+              {notes.length} note{notes.length === 1 ? "" : "s"}
+            </div>
             <button
-              onClick={handleAddNote}
-              disabled={!newNoteText.trim() || savingNewNote}
+              onClick={() => setShowAddNote(true)}
               style={{
                 padding: "10px 20px",
+                backgroundColor: "var(--primary)",
+                color: "var(--text-inverse)",
+                border: "1px solid var(--primary)",
                 borderRadius: "8px",
-                border: "none",
-                backgroundColor: !newNoteText.trim() || savingNewNote ? "var(--surface-light)" : "var(--primary)",
-                color: !newNoteText.trim() || savingNewNote ? "var(--text-secondary)" : "var(--text-inverse)",
-                fontWeight: 700,
+                cursor: "pointer",
                 fontSize: "14px",
-                cursor: !newNoteText.trim() || savingNewNote ? "not-allowed" : "pointer",
+                fontWeight: "600",
+                display: showAddNote ? "none" : "inline-flex",
               }}
             >
-              {savingNewNote ? "Adding..." : "Add Note"}
+              Add New Note
             </button>
           </div>
-        </div>
+
+          {showAddNote && (
+            <div
+              style={{
+                padding: "20px",
+                backgroundColor: "var(--layer-section-level-3)",
+                borderRadius: "12px",
+                border: "1px solid var(--surface-light)",
+                marginBottom: "20px",
+              }}
+            >
+              <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-primary)", marginBottom: "12px" }}>
+                Add New Note
+              </div>
+              <textarea
+                value={newNoteText}
+                onChange={(e) => setNewNoteText(e.target.value)}
+                onInput={(e) => {
+                  e.currentTarget.style.height = "auto";
+                  const next = Math.min(e.currentTarget.scrollHeight, 220);
+                  e.currentTarget.style.height = `${next}px`;
+                }}
+                placeholder="Type your note here..."
+                style={{
+                  width: "100%",
+                  height: "56px",
+                  minHeight: "56px",
+                  maxHeight: "220px",
+                  padding: "12px",
+                  borderRadius: "8px",
+                  border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
+                  fontSize: "14px",
+                  lineHeight: 1.6,
+                  resize: "none",
+                  overflowY: "auto",
+                  backgroundColor: "var(--surface)",
+                  color: "var(--text-primary)",
+                  marginBottom: "12px",
+                }}
+              />
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "var(--text-secondary)", cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={newNoteHidden}
+                    onChange={(e) => setNewNoteHidden(e.target.checked)}
+                    style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                  />
+                  Hide from customer
+                </label>
+                <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+                  <button
+                    onClick={() => {
+                      setShowAddNote(false);
+                      setNewNoteText("");
+                    }}
+                    style={{
+                      padding: "10px 18px",
+                      backgroundColor: "var(--surface)",
+                      color: "var(--info)",
+                      border: "1px solid var(--info)",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      fontSize: "14px",
+                      fontWeight: "500"
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleAddNote}
+                    disabled={!newNoteText.trim() || savingNewNote}
+                    style={{
+                      padding: "10px 18px",
+                      backgroundColor: !newNoteText.trim() || savingNewNote ? "var(--surface-light)" : "var(--info)",
+                      color: !newNoteText.trim() || savingNewNote ? "var(--text-secondary)" : "white",
+                      border: "1px solid var(--info-dark)",
+                      borderRadius: "8px",
+                      cursor: !newNoteText.trim() || savingNewNote ? "not-allowed" : "pointer",
+                      fontSize: "14px",
+                      fontWeight: "600",
+                    }}
+                  >
+                    {savingNewNote ? "Saving..." : "Save Note"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Notes List */}
@@ -395,15 +458,17 @@ export default function NotesTabNew({ jobData, canEdit, actingUserNumericId, onN
           notes.map((note, index) => {
             const isEditing = editingNoteId === note.noteId;
             const linkLabel = resolveLinkLabel(note);
+            const isHighlighted = highlightedNoteIdSet.has(note.noteId);
 
             return (
               <div
                 key={note.noteId}
                 style={{
                   padding: "14px",
-                  backgroundColor: "var(--layer-section-level-1)",
+                  backgroundColor: isHighlighted ? "var(--success-surface)" : "var(--layer-section-level-1)",
                   borderRadius: "12px",
                   border: `1px solid ${note.hiddenFromCustomer ? "var(--warning)" : "var(--success)"}`,
+                  transition: "background-color 0.2s ease",
                 }}
               >
                 {/* Header */}

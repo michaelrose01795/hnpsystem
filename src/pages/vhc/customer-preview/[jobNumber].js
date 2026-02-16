@@ -8,6 +8,7 @@ import Image from "next/image";
 import { supabase } from "@/lib/supabaseClient";
 import { summariseTechnicianVhc, parseVhcBuilderPayload } from "@/lib/vhc/summary";
 import { normaliseDecisionStatus, resolveSeverityKey } from "@/lib/vhc/summaryStatus";
+import { buildVhcQuoteLinesModel } from "@/lib/vhc/quoteLines";
 import { useTheme } from "@/styles/themeProvider";
 
 const formatCurrency = (value) => {
@@ -178,6 +179,7 @@ export default function CustomerPreviewPage() {
               vhc_id,
               job_id,
               section,
+              severity,
               issue_description,
               issue_title,
               measurement,
@@ -693,6 +695,8 @@ export default function CustomerPreviewPage() {
         labourHours: labourHoursByVhcItem.get(itemId) || (vhcCheck?.labour_hours ? Number(vhcCheck.labour_hours) : 0),
         partsCost: partsCostByVhcItem.get(itemId) || (vhcCheck?.parts_cost ? Number(vhcCheck.parts_cost) : 0),
         totalOverride: vhcCheck?.total_override,
+        labourComplete: Boolean(vhcCheck?.labour_complete),
+        partsComplete: Boolean(vhcCheck?.parts_complete),
         total: resolveItemTotal(itemId),
       };
 
@@ -780,6 +784,38 @@ export default function CustomerPreviewPage() {
     });
   }, [jobFiles]);
 
+  const visibleTabs = useMemo(() => {
+    return TAB_OPTIONS.filter((tab) => {
+      if (tab.id === "photos") return photoFiles.length > 0;
+      if (tab.id === "videos") return videoFiles.length > 0;
+      return true;
+    });
+  }, [photoFiles.length, videoFiles.length]);
+
+  useEffect(() => {
+    const stillVisible = visibleTabs.some((tab) => tab.id === activeTab);
+    if (!stillVisible) {
+      setActiveTab("summary");
+    }
+  }, [activeTab, visibleTabs]);
+
+  const quoteViewModel = useMemo(
+    () =>
+      buildVhcQuoteLinesModel({
+        job,
+        sections,
+        vhcChecksData,
+        partsJobItems,
+        vhcIdAliases,
+        authorizedViewRows,
+        labourRate: LABOUR_RATE,
+        mode: "withPlaceholders",
+      }),
+    [job, sections, vhcChecksData, partsJobItems, vhcIdAliases, authorizedViewRows]
+  );
+  const displaySeverityLists = quoteViewModel.severityLists || {};
+  const displayTotals = quoteViewModel.totals || { red: 0, amber: 0, green: 0, authorized: 0, declined: 0 };
+
 
 
   // Handle back button
@@ -795,7 +831,7 @@ export default function CustomerPreviewPage() {
 
     try {
       const response = await fetch("/api/vhc/update-item-status", {
-        method: "POST",
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           vhcItemId: itemId,
@@ -804,8 +840,8 @@ export default function CustomerPreviewPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to update status");
+        alert("Read only.");
+        return;
       }
 
       // Refresh VHC checks data
@@ -818,8 +854,8 @@ export default function CustomerPreviewPage() {
         setVhcChecksData(updatedChecks);
       }
     } catch (err) {
-      console.error("Failed to update status:", err);
-      alert(`Failed to update status: ${err.message}`);
+      console.warn("Status update blocked in read-only mode:", err);
+      alert("Read only.");
     } finally {
       setUpdatingStatus((prev) => {
         const next = new Set(prev);
@@ -835,19 +871,17 @@ export default function CustomerPreviewPage() {
     const isAuthorized = item.approvalStatus === "authorized" || item.approvalStatus === "completed";
     const isDeclined = item.approvalStatus === "declined";
 
-    // Only show authorize/decline checkboxes for pending red/amber items
-    const showDecision = (severity === "red" || severity === "amber") && !isAuthorized && !isDeclined;
-
     const detailLabel = item.label || item.sectionName || "Recorded item";
     const detailContent = item.concernText || item.notes || "";
     const measurement = item.measurement || "";
     const categoryLabel = item.categoryLabel || item.sectionName || "Recorded Section";
-    const total = item.total || 0;
-    
+    const total = Number(item.total_gbp ?? item.total ?? 0);
+
     // Get parts and labour information
-    const partsCost = item.partsCost || 0;
-    const labourHours = item.labourHours || 0;
-    const labourCost = Number.isFinite(labourHours) ? labourHours * LABOUR_RATE : 0;
+    const partsCost = Number(item.parts_gbp ?? item.partsCost ?? 0);
+    const labourHours = Number(item.labour_hours ?? item.labourHours ?? 0);
+    const labourRate = Number(item.labour_rate_gbp ?? LABOUR_RATE);
+    const labourCost = Number.isFinite(labourHours) ? labourHours * labourRate : 0;
 
     // Calculate wear percentage for tyres and brake pads
     const categoryId = item.category?.id || "";
@@ -921,6 +955,9 @@ export default function CustomerPreviewPage() {
           </div>
           <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--accent-purple)", marginTop: "2px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
             <span>{detailLabel}</span>
+            {item.rowIdLabel && (
+              <span style={{ fontSize: "11px", color: "var(--info)" }}>{item.rowIdLabel}</span>
+            )}
           </div>
           {detailContent && (
             <div style={{ marginTop: "6px", fontWeight: 500, color: "var(--info-dark)" }}>- {detailContent}</div>
@@ -986,46 +1023,28 @@ export default function CustomerPreviewPage() {
 
         {/* Status Cell */}
         <td style={{ padding: "12px 8px", textAlign: "center" }}>
-          {showDecision ? (
-            <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", justifyContent: "center" }}>
-              <label style={{ display: "flex", gap: "4px", alignItems: "center", fontSize: "12px", cursor: isUpdating ? "not-allowed" : "pointer" }}>
-                <input
-                  type="checkbox"
-                  checked={isAuthorized}
-                  disabled={isUpdating}
-                  onChange={(e) => updateEntryStatus(item.id, e.target.checked ? "authorized" : null)}
-                  style={{ width: "14px", height: "14px", cursor: isUpdating ? "not-allowed" : "pointer" }}
-                />
-                <span style={{ fontSize: "11px" }}>Authorise</span>
-              </label>
-              <label style={{ display: "flex", gap: "4px", alignItems: "center", fontSize: "12px", cursor: isUpdating ? "not-allowed" : "pointer" }}>
-                <input
-                  type="checkbox"
-                  checked={isDeclined}
-                  disabled={isUpdating}
-                  onChange={(e) => updateEntryStatus(item.id, e.target.checked ? "declined" : null)}
-                  style={{ width: "14px", height: "14px", cursor: isUpdating ? "not-allowed" : "pointer" }}
-                />
-                <span style={{ fontSize: "11px" }}>Decline</span>
-              </label>
-            </div>
-          ) : isAuthorized || isDeclined ? (
-            <div style={{
-              padding: "4px 8px",
-              borderRadius: "8px",
-              background: isAuthorized ? "var(--success-surface)" : "var(--danger-surface)",
-              color: isAuthorized ? "var(--success)" : "var(--danger)",
-              fontSize: "11px",
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
-              textAlign: "center"
-            }}>
-              {isAuthorized ? "✓ Authorised" : "✗ Declined"}
-            </div>
-          ) : (
-            <div style={{ fontSize: "12px", color: "var(--info)" }}>—</div>
-          )}
+          <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", justifyContent: "center" }}>
+            <label style={{ display: "flex", gap: "4px", alignItems: "center", fontSize: "12px", cursor: isUpdating ? "not-allowed" : "pointer" }}>
+              <input
+                type="checkbox"
+                checked={isAuthorized}
+                disabled={isUpdating}
+                onChange={(e) => updateEntryStatus(item.id, e.target.checked ? "authorized" : null)}
+                style={{ width: "14px", height: "14px", cursor: isUpdating ? "not-allowed" : "pointer", accentColor: "var(--success)" }}
+              />
+              <span style={{ fontSize: "11px", color: "var(--success)" }}>Authorise</span>
+            </label>
+            <label style={{ display: "flex", gap: "4px", alignItems: "center", fontSize: "12px", cursor: isUpdating ? "not-allowed" : "pointer" }}>
+              <input
+                type="checkbox"
+                checked={isDeclined}
+                disabled={isUpdating}
+                onChange={(e) => updateEntryStatus(item.id, e.target.checked ? "declined" : null)}
+                style={{ width: "14px", height: "14px", cursor: isUpdating ? "not-allowed" : "pointer", accentColor: "var(--danger)" }}
+              />
+              <span style={{ fontSize: "11px", color: "var(--danger)" }}>Decline</span>
+            </label>
+          </div>
         </td>
       </tr>
     );
@@ -1040,7 +1059,7 @@ export default function CustomerPreviewPage() {
     let declinedTotal = 0;
 
     items.forEach((item) => {
-      const total = item.total || 0;
+      const total = Number(item.total_gbp ?? item.total ?? 0);
       if (item.approvalStatus === "authorized" || item.approvalStatus === "completed") {
         authorizedTotal += total;
       } else if (item.approvalStatus === "declined") {
@@ -1108,7 +1127,11 @@ export default function CustomerPreviewPage() {
                   <th style={{ textAlign: "left", padding: "12px 8px", width: "15%" }}>Parts</th>
                   <th style={{ textAlign: "left", padding: "12px 8px", width: "18%" }}>Labour</th>
                   <th style={{ textAlign: "left", padding: "12px 8px", width: "15%" }}>Total</th>
-                  <th style={{ textAlign: "left", padding: "12px 8px", width: "12%" }}>Status</th>
+                  <th style={{ textAlign: "left", padding: "12px 8px", width: "12%" }}>
+                    Authorise /
+                    <br />
+                    Decline
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -1124,10 +1147,10 @@ export default function CustomerPreviewPage() {
   // Render Financial Totals Grid - matching VhcSharedComponents design
   const renderFinancialTotalsGrid = () => {
     const gridItems = [
-      { label: "Red Work", value: customerTotals.red, color: "var(--danger)" },
-      { label: "Amber Work", value: customerTotals.amber, color: "var(--warning)" },
-      { label: "Authorized", value: customerTotals.authorized, color: "var(--success)" },
-      { label: "Declined", value: customerTotals.declined, color: "var(--info)" },
+      { label: "Red Work", value: displayTotals.red, color: "var(--danger)" },
+      { label: "Amber Work", value: displayTotals.amber, color: "var(--warning)" },
+      { label: "Authorized", value: displayTotals.authorized, color: "var(--success)" },
+      { label: "Declined", value: displayTotals.declined, color: "var(--info)" },
     ];
 
     return (
@@ -1167,22 +1190,22 @@ export default function CustomerPreviewPage() {
       {renderFinancialTotalsGrid()}
 
       {/* Red Items section */}
-      {severityLists.red && severityLists.red.length > 0 &&
-        renderCustomerSection("Red Items", severityLists.red, "red")}
+      {displaySeverityLists.red && displaySeverityLists.red.length > 0 &&
+        renderCustomerSection("Red Items", displaySeverityLists.red, "red")}
 
       {/* Amber Items section */}
-      {severityLists.amber && severityLists.amber.length > 0 &&
-        renderCustomerSection("Amber Items", severityLists.amber, "amber")}
+      {displaySeverityLists.amber && displaySeverityLists.amber.length > 0 &&
+        renderCustomerSection("Amber Items", displaySeverityLists.amber, "amber")}
 
       {/* Authorised section */}
-      {severityLists.authorized && severityLists.authorized.length > 0 &&
-        renderCustomerSection("Authorised", severityLists.authorized, "authorized")}
+      {displaySeverityLists.authorized && displaySeverityLists.authorized.length > 0 &&
+        renderCustomerSection("Authorised", displaySeverityLists.authorized, "authorized")}
 
       {/* Declined section */}
-      {severityLists.declined && severityLists.declined.length > 0 &&
-        renderCustomerSection("Declined", severityLists.declined, "declined")}
+      {displaySeverityLists.declined && displaySeverityLists.declined.length > 0 &&
+        renderCustomerSection("Declined", displaySeverityLists.declined, "declined")}
 
-      {renderCustomerSection("Green Items", severityLists.green || [], "green")}
+      {renderCustomerSection("Green Items", displaySeverityLists.green || [], "green")}
     </div>
   );
 
@@ -1444,7 +1467,7 @@ export default function CustomerPreviewPage() {
         <div style={{ background: "var(--surface)", borderBottom: "1px solid var(--info-surface)" }}>
           <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
             <div style={{ display: "flex", gap: "8px" }}>
-              {TAB_OPTIONS.map((tab) => (
+              {visibleTabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
@@ -1503,3 +1526,4 @@ export default function CustomerPreviewPage() {
     </>
   );
 }
+

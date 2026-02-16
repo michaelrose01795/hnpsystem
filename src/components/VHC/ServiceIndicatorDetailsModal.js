@@ -1,5 +1,6 @@
 // file location: src/components/VHC/ServiceIndicatorDetailsModal.js
 import React, { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
 import themeConfig, {
   createVhcButtonStyle,
@@ -497,24 +498,27 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
         </div>
       </div>
 
-      {showConcernModal ? (
+      {showConcernModal && typeof document !== "undefined"
+        ? createPortal(
         <div
           style={{
             ...popupOverlayStyles,
-            zIndex: 1300,
+            zIndex: 5600,
             padding: "24px",
           }}
         >
           <div
             style={{
               ...popupCardStyles,
-              width: "min(460px, 92%)",
-              maxHeight: "86%",
+              width: "min(520px, 92vw)",
+              maxWidth: "92vw",
+              minHeight: "480px",
+              maxHeight: "90vh",
               padding: "24px",
               display: "flex",
               flexDirection: "column",
               gap: "16px",
-              overflow: "hidden",
+              overflow: "visible",
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -714,8 +718,10 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
               )}
             </div>
           </div>
-        </div>
-      ) : null}
+        </div>,
+          document.body
+        )
+        : null}
     </VHCModalShell>
   );
 }

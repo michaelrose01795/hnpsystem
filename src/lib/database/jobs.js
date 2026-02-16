@@ -9,6 +9,7 @@ import {
   resolveMainStatusId,
   resolveSubStatusId,
 } from "@/lib/status/statusFlow";
+import { syncHealthCheckToCanonicalVhc } from "@/lib/vhc/saveVhcItem";
 import dayjs from "dayjs";
 
 const supabase = getDatabaseClient();
@@ -472,7 +473,7 @@ export const getAllJobs = async () => {
       ),
       technician:assigned_to(user_id, first_name, last_name, email, role),
       appointments(appointment_id, scheduled_time, status, notes, created_at, updated_at),
-      vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at, approval_status, display_status, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by),
+      vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at, approval_status, display_status, severity, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by),
       parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, pre_pick_location, created_at, updated_at),
       parts_job_items!parts_job_items_job_id_fkey(
         id,
@@ -1058,7 +1059,7 @@ export const getJobByNumber = async (jobNumber, options = {}) => {
         created_at,
         updated_at
       ),
-      vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at, approval_status, display_status, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by),
+      vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at, approval_status, display_status, severity, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by),
       parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, pre_pick_location, created_at, updated_at),
       parts_job_items!parts_job_items_job_id_fkey(
         id,
@@ -1186,7 +1187,7 @@ export const getJobByNumber = async (jobNumber, options = {}) => {
           created_at,
           updated_at
         ),
-        vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at, approval_status, display_status, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by),
+        vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at, approval_status, display_status, severity, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by),
         parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, pre_pick_location, created_at, updated_at),
         parts_job_items!parts_job_items_job_id_fkey(
           id,
@@ -1375,7 +1376,7 @@ export const getJobByNumberOrReg = async (searchTerm) => {
       ),
       technician:assigned_to(user_id, first_name, last_name, email),
       appointments(appointment_id, scheduled_time, status, notes),
-      vhc_checks(vhc_id, section, issue_title, issue_description),
+      vhc_checks(vhc_id, section, issue_title, issue_description, severity),
       parts_requests(request_id, part_id, quantity, status, pre_pick_location),
       parts_job_items!parts_job_items_job_id_fkey(
         id,
@@ -1494,7 +1495,7 @@ export const getJobByNumberOrReg = async (searchTerm) => {
         ),
         technician:assigned_to(user_id, first_name, last_name, email),
         appointments(appointment_id, scheduled_time, status, notes),
-        vhc_checks(vhc_id, section, issue_title, issue_description),
+        vhc_checks(vhc_id, section, issue_title, issue_description, severity),
         parts_requests(request_id, part_id, quantity, status, pre_pick_location),
         parts_job_items!parts_job_items_job_id_fkey(
           id,
@@ -3798,6 +3799,12 @@ export const saveChecksheet = async (jobNumber, vhcData) => {
       section: "VHC_CHECKSHEET",
       title: "Technician VHC Checksheet",
       data: vhcData,
+    });
+
+    await syncHealthCheckToCanonicalVhc({
+      job_number: jobNumber,
+      vhcData,
+      labour_rate_gbp: 85,
     });
 
     return { success: true };

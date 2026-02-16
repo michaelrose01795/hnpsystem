@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useState, useCallback, useRef } from "react"
 import { useRouter } from "next/router";
 import { supabase } from "@/lib/supabaseClient";
 import { summariseTechnicianVhc } from "@/lib/vhc/summary";
+import { buildVhcQuoteLinesModel } from "@/lib/vhc/quoteLines";
 import { saveChecksheet } from "@/lib/database/jobs";
 import { useUser } from "@/context/UserContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
@@ -27,6 +28,8 @@ import {
   PartRowCells,
 } from "@/components/VHC/VhcSharedComponents";
 import { isValidUuid } from "@/features/labour-times/normalization";
+
+const LABOUR_SUGGEST_DEBUG = process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_DEBUG_LABOUR_SUGGESTIONS === "1";
 
 const STATUS_BADGES = {
   red: "var(--danger)",
@@ -442,6 +445,7 @@ const RANK_TO_SEVERITY = {
   0: "green",
 };
 const LABOUR_RATE = 155;
+const QUOTE_LABOUR_RATE = 85;
 const SEVERITY_META = {
   red: { title: "Red Repairs", description: "", accent: "var(--danger)" },
   amber: { title: "Amber Repairs", description: "", accent: "var(--warning)" },
@@ -996,6 +1000,7 @@ export default function VhcDetailsPanel({
   readOnly = false,
   customActions = null,
   onCheckboxesComplete = null,
+  onCheckboxesLockReason = null,
   onFinancialTotalsChange = null,
   onJobDataRefresh = null,
   viewMode = "full",
@@ -1054,10 +1059,11 @@ export default function VhcDetailsPanel({
   const [labourSuggestionsByItem, setLabourSuggestionsByItem] = useState({});
   const [labourSuggestionsLoadingByItem, setLabourSuggestionsLoadingByItem] = useState({});
   const [openLabourSuggestionItemId, setOpenLabourSuggestionItemId] = useState(null);
-  const [selectedLabourSuggestionByItem, setSelectedLabourSuggestionByItem] = useState({});
+  const [, setSelectedLabourSuggestionByItem] = useState({});
   const [savedLabourOverrideByItem, setSavedLabourOverrideByItem] = useState({});
   const labourOverrideDebounceRef = useRef({});
   const labourSuggestionRequestRef = useRef({});
+  const labourEditSessionRef = useRef({});
   const partsLearningDebounceRef = useRef(null);
   const refreshJobData = useCallback(
     (...args) => {
@@ -1251,7 +1257,7 @@ export default function VhcDetailsPanel({
             customer:customer_id(*),
             vehicle:vehicle_id(*),
             technician:assigned_to(user_id, first_name, last_name, email, role, phone),
-            vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at, approval_status, display_status, approved_by, approved_at, labour_hours, parts_cost, total_override, labour_complete, parts_complete),
+            vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at, approval_status, display_status, severity, approved_by, approved_at, labour_hours, parts_cost, total_override, labour_complete, parts_complete),
             parts_job_items(
               id,
               part_id,
@@ -1531,6 +1537,42 @@ export default function VhcDetailsPanel({
     [vhcData]
   );
   const sections = builderSummary.sections || [];
+  const summaryQuoteModel = useMemo(
+    () =>
+      buildVhcQuoteLinesModel({
+        job,
+        sections,
+        vhcChecksData,
+        partsJobItems: jobParts,
+        vhcIdAliases,
+        authorizedViewRows,
+        labourRate: QUOTE_LABOUR_RATE,
+        mode: "quotedOnly",
+      }),
+    [job, sections, vhcChecksData, jobParts, vhcIdAliases, authorizedViewRows]
+  );
+  const quoteSeverityLists = summaryQuoteModel.severityLists || {};
+  const quoteTotals = summaryQuoteModel.totals || { red: 0, amber: 0, green: 0, authorized: 0, declined: 0 };
+  const summaryDevDebugLine = useMemo(() => { // Build a compact dev-only debug line to prove Summary receives severity and pricing fields.
+    const samples = (vhcChecksData || []).slice(0, 5).map((check) => { // Take first five raw vhc_checks rows for quick visual validation.
+      const id = check?.vhc_id ?? "na";
+      const severity = check?.severity ?? "null";
+      const displayStatus = check?.display_status ?? "null";
+      const labourHours = check?.labour_hours ?? "null";
+      const partsCost = check?.parts_cost ?? "null";
+      return `${id}:${severity}:${displayStatus}:${labourHours}:${partsCost}`;
+    }); // Format each sample as vhc_id:severity:display_status:labour_hours:parts_cost.
+    return [
+      `job=${resolvedJobNumber || job?.job_number || "unknown"}`,
+      `red=${(quoteSeverityLists.red || []).length}`,
+      `amber=${(quoteSeverityLists.amber || []).length}`,
+      `green=${(quoteSeverityLists.green || []).length}`,
+      `other=${(quoteSeverityLists.other || []).length}`,
+      `authorized=${(quoteSeverityLists.authorized || []).length}`,
+      `declined=${(quoteSeverityLists.declined || []).length}`,
+      `sample=[${samples.join(", ")}]`,
+    ].join(" | "); // Keep this as a single short line so layout remains unchanged.
+  }, [job?.job_number, quoteSeverityLists, resolvedJobNumber, vhcChecksData]);
   const wheelTreadLookup = useMemo(() => {
     const lookup = new Map();
     const tyres = vhcData?.wheelsTyres;
@@ -2652,35 +2694,42 @@ export default function VhcDetailsPanel({
     });
   }, [vhcApprovalLookup, severityLists]);
 
-  // Check if all checkboxes are complete and notify parent
-  // IMPORTANT: Also checks for pending approval status - job cannot be completed if any items are still pending
+  // Check if Summary actions can be enabled and notify parent with completion + lock reason.
+  // IMPORTANT: Only gate on Parts/Labour checkbox columns in Summary.
   useEffect(() => {
-    if (!onCheckboxesComplete) return;
+    if (!onCheckboxesComplete && !onCheckboxesLockReason) return;
 
-    // Check for any pending items (items that haven't been authorized or declined)
-    const allPendingItems = [...(severityLists.red || []), ...(severityLists.amber || [])];
+    const emitState = (complete, reason = "") => {
+      if (onCheckboxesComplete) onCheckboxesComplete(complete);
+      if (onCheckboxesLockReason) onCheckboxesLockReason(reason);
+    };
 
-    // If there are any pending items that need approval, job cannot be completed
-    if (allPendingItems.length > 0) {
-      onCheckboxesComplete(false);
+    if (!summaryItems.length) {
+      emitState(true, "");
       return;
     }
 
-    // If all items have been authorized or declined, check the checkboxes
-    const allItems = [...(severityLists.authorized || []), ...(severityLists.declined || [])];
-    if (allItems.length === 0) {
-      // No VHC items at all, allow completion
-      onCheckboxesComplete(true);
-      return;
-    }
-
-    const allComplete = allItems.every((item) => {
+    let missingParts = 0;
+    let missingLabour = 0;
+    summaryItems.forEach((item) => {
       const entry = getEntryForItem(item.id);
-      return entry.partsComplete && entry.labourComplete;
+      if (!entry.partsComplete) missingParts += 1;
+      if (!entry.labourComplete) missingLabour += 1;
     });
 
-    onCheckboxesComplete(allComplete);
-  }, [itemEntries, severityLists, onCheckboxesComplete]);
+    if (missingParts > 0 || missingLabour > 0) {
+      if (missingParts > 0 && missingLabour > 0) {
+        emitState(false, "Complete parts and labour tickboxes in Summary.");
+      } else if (missingParts > 0) {
+        emitState(false, "Complete parts tickboxes in Summary.");
+      } else {
+        emitState(false, "Complete labour tickboxes in Summary.");
+      }
+      return;
+    }
+
+    emitState(true, "");
+  }, [itemEntries, summaryItems, onCheckboxesComplete, onCheckboxesLockReason]);
 
   const parseNumericValue = (value) => {
     const num = parseFloat(value);
@@ -3079,10 +3128,6 @@ export default function VhcDetailsPanel({
   const fetchLabourSuggestions = useCallback(
     async ({ itemId, description }) => {
       const text = String(description || "").trim();
-      if (!text) {
-        setLabourSuggestionsByItem((prev) => ({ ...prev, [itemId]: [] }));
-        return;
-      }
 
       const requestKey = `${itemId}-${Date.now()}`;
       labourSuggestionRequestRef.current[itemId] = requestKey;
@@ -3105,6 +3150,9 @@ export default function VhcDetailsPanel({
         }
 
         if (response.ok && result?.success) {
+          if (LABOUR_SUGGEST_DEBUG) {
+            console.log("[VHC labour] Suggestions loaded", { itemId, count: Array.isArray(result.suggestions) ? result.suggestions.length : 0 });
+          }
           setLabourSuggestionsByItem((prev) => ({
             ...prev,
             [itemId]: Array.isArray(result.suggestions) ? result.suggestions : [],
@@ -3132,11 +3180,12 @@ export default function VhcDetailsPanel({
         clearTimeout(timeoutHandle);
       });
       labourOverrideDebounceRef.current = {};
+      labourEditSessionRef.current = {};
     };
   }, []);
 
-  const renderSeverityTable = (severity) => {
-    const items = severityLists[severity] || [];
+  const renderSeverityTable = (severity, itemsOverride = null) => {
+    const items = itemsOverride || severityLists[severity] || [];
     if (items.length === 0) {
       return <EmptyStateMessage message={`No ${severity} items recorded.`} />;
     }
@@ -3209,17 +3258,43 @@ export default function VhcDetailsPanel({
             <tbody>
               {items.map((item) => {
                 const entry = getEntryForItem(item.id);
-                const resolvedPartsCost = resolvePartsCost(item.id, entry);
-                const resolvedLabourHours = resolveLabourHoursValue(item.id, entry);
-                const labourCost = computeLabourCost(resolvedLabourHours);
-                const totalCost = computeRowTotal(entry, resolvedPartsCost, resolvedLabourHours);
+                const quoteParts = Number.isFinite(Number(item.parts_gbp)) ? Number(item.parts_gbp) : null;
+                const quoteLabourHours = Number.isFinite(Number(item.labour_hours)) ? Number(item.labour_hours) : null;
+                const quoteLabourRate = Number.isFinite(Number(item.labour_rate_gbp)) ? Number(item.labour_rate_gbp) : LABOUR_RATE;
+                const quoteTotal = Number.isFinite(Number(item.total_gbp)) ? Number(item.total_gbp) : null;
+                const resolvedPartsCost = quoteParts !== null ? quoteParts : resolvePartsCost(item.id, entry);
+                const hasLocalLabourHoursValue =
+                  entry?.laborHours !== null &&
+                  entry?.laborHours !== undefined;
+                const resolvedLabourHours = hasLocalLabourHoursValue
+                  ? String(entry.laborHours)
+                  : quoteLabourHours !== null
+                    ? String(quoteLabourHours)
+                    : resolveLabourHoursValue(item.id, entry);
+                const labourCost =
+                  quoteLabourHours !== null
+                    ? quoteLabourHours * quoteLabourRate
+                    : computeLabourCost(resolvedLabourHours);
+                const totalCost =
+                  quoteTotal !== null ? quoteTotal : computeRowTotal(entry, resolvedPartsCost, resolvedLabourHours);
                 const totalDisplayValue =
                   entry.totalOverride !== "" && entry.totalOverride !== null
                     ? entry.totalOverride
                     : totalCost.toFixed(2);
                 const partsDisplayValue =
                   resolvedPartsCost !== undefined ? resolvedPartsCost.toFixed(2) : "";
-                const statusState = resolveVhcRowStatusView(item, entry, resolvedPartsCost, resolvedLabourHours);
+                const effectiveEntry =
+                  itemsOverride && item
+                    ? {
+                        ...entry,
+                        status: item.approvalStatus || entry.status,
+                        partsComplete:
+                          typeof item.partsComplete === "boolean" ? item.partsComplete : entry.partsComplete,
+                        labourComplete:
+                          typeof item.labourComplete === "boolean" ? item.labourComplete : entry.labourComplete,
+                      }
+                    : entry;
+                const statusState = resolveVhcRowStatusView(item, effectiveEntry, resolvedPartsCost, resolvedLabourHours);
                 const locationLabel = item.location
                   ? LOCATION_LABELS[item.location] || item.location.replace(/_/g, " ")
                   : null;
@@ -3305,7 +3380,6 @@ export default function VhcDetailsPanel({
                 const labourSuggestions = Array.isArray(labourSuggestionsByItem[item.id]) ? labourSuggestionsByItem[item.id] : [];
                 const labourSuggestionsLoading = Boolean(labourSuggestionsLoadingByItem[item.id]);
                 const labourSuggestionOpen = openLabourSuggestionItemId === item.id;
-                const selectedLabourSuggestion = selectedLabourSuggestionByItem[item.id] || null;
                 const recentSavedAt = Number(savedLabourOverrideByItem[item.id] || 0);
                 const showSavedBadge = recentSavedAt > 0 && Date.now() - recentSavedAt < 2500;
 
@@ -3324,6 +3398,9 @@ export default function VhcDetailsPanel({
                       </div>
                       <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--accent-purple)", marginTop: "2px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
                         <span>{detailLabel}</span>
+                        {item.rowIdLabel ? (
+                          <span style={{ fontSize: "11px", color: "var(--info)", fontWeight: 600 }}>{item.rowIdLabel}</span>
+                        ) : null}
                       </div>
                       {detailRows.length > 0 ? (
                         <div style={{ marginTop: "6px", display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -3471,9 +3548,9 @@ export default function VhcDetailsPanel({
                       <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
                         <input
                           type="checkbox"
-                          checked={entry.partsComplete || false}
+                          checked={effectiveEntry.partsComplete || false}
                           disabled={true}
-                          title={entry.partsComplete ? "Parts added or marked as not required" : "Add parts or mark as not required"}
+                          title={effectiveEntry.partsComplete ? "Parts added or marked as not required" : "Add parts or mark as not required"}
                         />
                         <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--accent-purple)" }}>
                           {partsDisplayValue ? `£${partsDisplayValue}` : "—"}
@@ -3484,16 +3561,16 @@ export default function VhcDetailsPanel({
                       <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", position: "relative" }}>
                         <input
                           type="checkbox"
-                          checked={resolveLabourCompleteValue(entry, resolvedLabourHours)}
+                          checked={resolveLabourCompleteValue(effectiveEntry, resolvedLabourHours)}
                           onChange={(event) => event.preventDefault()}
                           disabled={
                             readOnly ||
                             severity === "authorized" ||
-                            severity === "declined" ||
-                            authorizedViewIds.has(resolveCanonicalVhcId(item.id))
+                            severity === "declined"
                           }
                         />
                         <input
+                          className="labour-hours-input"
                           type="number"
                           min="0"
                           step="0.1"
@@ -3502,13 +3579,13 @@ export default function VhcDetailsPanel({
                             // Don't allow changes in authorized/declined sections
                             if (
                               severity === "authorized" ||
-                              severity === "declined" ||
-                              authorizedViewIds.has(resolveCanonicalVhcId(item.id))
+                              severity === "declined"
                             )
                               return;
 
                             const value = event.target.value;
                             const isBlank = value === "";
+                            const existingSession = labourEditSessionRef.current[item.id] || {};
                             setItemEntries((prev) => ({
                               ...prev,
                               [item.id]: {
@@ -3517,39 +3594,30 @@ export default function VhcDetailsPanel({
                                 labourComplete: !isBlank,
                               },
                             }));
-
-                            const parsedValue = Number(value);
-                            const shouldLearn =
-                              !isBlank &&
-                              Number.isFinite(parsedValue) &&
-                              (!selectedLabourSuggestion || Number(selectedLabourSuggestion.timeHours) !== parsedValue);
-
-                            if (shouldLearn) {
-                              saveLabourOverride({
-                                itemId: item.id,
-                                description: labourSuggestionDescription,
-                                timeHours: parsedValue,
-                                scope: "user",
-                                immediate: false,
-                              });
-                            }
+                            labourEditSessionRef.current[item.id] = {
+                              ...existingSession,
+                              initialValue: existingSession.initialValue ?? String(resolvedLabourHours ?? ""),
+                              latestValue: value,
+                            };
                           }}
                           onBlur={(event) => {
                             // Don't persist in authorized/declined sections
                             if (
                               severity === "authorized" ||
-                              severity === "declined" ||
-                              authorizedViewIds.has(resolveCanonicalVhcId(item.id))
+                              severity === "declined"
                             )
                               return;
                             const value = event.target.value;
                             const parsedValue = Number(value);
-                            const shouldLearn =
+                            const editSession = labourEditSessionRef.current[item.id] || {};
+                            const initialRaw = String(editSession.initialValue ?? "");
+                            const initialParsedValue = Number(initialRaw);
+                            const hasChangedValue =
                               value !== "" &&
                               Number.isFinite(parsedValue) &&
-                              (!selectedLabourSuggestion || Number(selectedLabourSuggestion.timeHours) !== parsedValue);
+                              (initialRaw === "" || !Number.isFinite(initialParsedValue) || Math.abs(initialParsedValue - parsedValue) > 0.0001);
                             persistLabourHours(item.id, value);
-                            if (shouldLearn) {
+                            if (hasChangedValue) {
                               saveLabourOverride({
                                 itemId: item.id,
                                 description: labourSuggestionDescription,
@@ -3557,11 +3625,19 @@ export default function VhcDetailsPanel({
                                 scope: "user",
                                 immediate: true,
                               });
+                              if (LABOUR_SUGGEST_DEBUG) {
+                                console.log("[VHC labour] Saved user override from manual edit", { itemId: item.id, parsedValue });
+                              }
                             }
+                            delete labourEditSessionRef.current[item.id];
                             setOpenLabourSuggestionItemId((prev) => (prev === item.id ? null : prev));
                           }}
                           onFocus={() => {
                             setOpenLabourSuggestionItemId(item.id);
+                            labourEditSessionRef.current[item.id] = {
+                              initialValue: String(resolvedLabourHours ?? ""),
+                              latestValue: String(resolvedLabourHours ?? ""),
+                            };
                             fetchLabourSuggestions({
                               itemId: item.id,
                               description: labourSuggestionDescription,
@@ -3578,8 +3654,7 @@ export default function VhcDetailsPanel({
                           disabled={
                             readOnly ||
                             severity === "authorized" ||
-                            severity === "declined" ||
-                            authorizedViewIds.has(resolveCanonicalVhcId(item.id))
+                            severity === "declined"
                           }
                         />
                         {showSavedBadge ? (
@@ -3593,7 +3668,8 @@ export default function VhcDetailsPanel({
                               top: "100%",
                               left: "24px",
                               marginTop: "6px",
-                              width: "320px",
+                              width: "fit-content",
+                              maxWidth: "calc(100vw - 48px)",
                               maxHeight: "240px",
                               overflowY: "auto",
                               border: "1px solid var(--accent-purple-surface)",
@@ -3606,7 +3682,7 @@ export default function VhcDetailsPanel({
                             {labourSuggestionsLoading ? (
                               <div style={{ padding: "10px 12px", fontSize: "12px", color: "var(--info)" }}>Loading suggestions…</div>
                             ) : labourSuggestions.length === 0 ? (
-                              <div style={{ padding: "10px 12px", fontSize: "12px", color: "var(--info)" }}>No labour suggestions found.</div>
+                              <div style={{ padding: "10px 12px", fontSize: "12px", color: "var(--info)" }}>Suggested labour time</div>
                             ) : (
                               labourSuggestions.map((suggestion) => (
                                 <button
@@ -3629,18 +3705,14 @@ export default function VhcDetailsPanel({
                                         source: suggestion.source,
                                         scope: suggestion.scope,
                                         timeHours: Number(suggestion.timeHours),
+                                        suggestionApplied: true,
                                       },
                                     }));
+                                    labourEditSessionRef.current[item.id] = {
+                                      initialValue: nextValue,
+                                      latestValue: nextValue,
+                                    };
                                     persistLabourHours(item.id, nextValue);
-                                    if (suggestion.source === "learned") {
-                                      saveLabourOverride({
-                                        itemId: item.id,
-                                        description: labourSuggestionDescription,
-                                        timeHours: suggestion.timeHours,
-                                        scope: suggestion.scope || "user",
-                                        immediate: true,
-                                      });
-                                    }
                                     setOpenLabourSuggestionItemId(null);
                                   }}
                                   style={{
@@ -3651,28 +3723,20 @@ export default function VhcDetailsPanel({
                                     textAlign: "left",
                                     padding: "9px 11px",
                                     cursor: "pointer",
+                                    whiteSpace: "nowrap",
                                   }}
                                 >
                                   <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", alignItems: "center" }}>
-                                    <div style={{ fontSize: "12px", color: "var(--text-primary)", fontWeight: 600 }}>
-                                      {suggestion.displayDescription || labourSuggestionDescription}
-                                    </div>
-                                    <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--accent-purple)" }}>
-                                      {Number(suggestion.timeHours).toFixed(1)}h
-                                    </div>
-                                  </div>
-                                  <div style={{ marginTop: "4px", display: "flex", alignItems: "center", gap: "8px" }}>
-                                    <span
+                                    <div
                                       style={{
-                                        fontSize: "10px",
-                                        fontWeight: 700,
-                                        textTransform: "uppercase",
-                                        letterSpacing: "0.08em",
-                                        color: suggestion.source === "learned" ? "var(--success)" : "var(--info)",
+                                        fontSize: "12px",
+                                        color: suggestion.source === "fallback" ? "var(--warning)" : "var(--text-primary)",
+                                        fontWeight: 600,
+                                        whiteSpace: "nowrap",
                                       }}
                                     >
-                                      {suggestion.source === "learned" ? "learned" : "preset"}
-                                    </span>
+                                      {`AI suggestion: ${Number(suggestion.timeHours).toFixed(1)}h`}
+                                    </div>
                                   </div>
                                 </button>
                               ))
@@ -4285,7 +4349,7 @@ export default function VhcDetailsPanel({
               customer:customer_id(*),
               vehicle:vehicle_id(*),
               technician:assigned_to(user_id, first_name, last_name, email, role, phone),
-              vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at, approval_status, display_status, approved_by, approved_at, labour_hours, parts_cost, total_override, labour_complete, parts_complete),
+              vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at, approval_status, display_status, severity, approved_by, approved_at, labour_hours, parts_cost, total_override, labour_complete, parts_complete),
               parts_job_items(
                 id,
                 part_id,
@@ -4937,7 +5001,7 @@ export default function VhcDetailsPanel({
           customer:customer_id(*),
           vehicle:vehicle_id(*),
           technician:assigned_to(user_id, first_name, last_name, email, role, phone),
-          vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at),
+          vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at, severity),
           parts_job_items(
             id,
             part_id,
@@ -6655,9 +6719,14 @@ export default function VhcDetailsPanel({
             <div style={TAB_CONTENT_STYLE}>
               {activeTab === "summary" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-                  {/* Only show Red/Amber sections if there are pending items */}
-                  {["red", "amber"].map((severity) => {
-                    const items = severityLists[severity] || [];
+                {process.env.NODE_ENV !== "production" && ( // Render a visible dev-only line so Summary data path can be verified quickly.
+                  <div style={{ fontSize: "11px", color: "var(--info)", opacity: 0.85, wordBreak: "break-word" }}>
+                    DEV Summary Debug: {summaryDevDebugLine}
+                  </div>
+                )}
+                {/* Only show Red/Amber sections if there are pending items */}
+                {["red", "amber"].map((severity) => {
+                    const items = quoteSeverityLists[severity] || [];
                     if (items.length === 0) return null;
                     const meta = SEVERITY_META[severity];
                     const severityTheme = SEVERITY_THEME[severity] || { border: "var(--info-surface)", background: "var(--danger-surface)" };
@@ -6673,12 +6742,7 @@ export default function VhcDetailsPanel({
                     items.forEach((item) => {
                       const entry = getEntryForItem(item.id);
                       const decisionKey = resolveVhcRowDecisionKey(item, entry);
-                      const resolvedPartsCost = resolvePartsCost(item.id, entry);
-                      const resolvedLabourHours = resolveLabourHoursValue(item.id, entry);
-                      const totalCost = computeRowTotal(entry, resolvedPartsCost, resolvedLabourHours);
-                      const finalTotal = entry.totalOverride !== "" && entry.totalOverride !== null
-                        ? parseFloat(entry.totalOverride)
-                        : totalCost;
+                      const finalTotal = Number(item.total_gbp ?? item.total ?? 0);
 
                       if (selectedSet.has(item.id)) {
                         selectedTotal += finalTotal;
@@ -6736,13 +6800,13 @@ export default function VhcDetailsPanel({
                             </div>
                           </div>
                         </div>
-                        {renderSeverityTable(severity)}
+                        {renderSeverityTable(severity, items)}
                       </div>
                     );
                   })}
 
                   {/* Authorised section - only show if there are authorized items */}
-                  {severityLists.authorized && severityLists.authorized.length > 0 ? (
+                  {quoteSeverityLists.authorized && quoteSeverityLists.authorized.length > 0 ? (
                     <div
                       style={{
                         border: "2px solid var(--success)",
@@ -6760,19 +6824,19 @@ export default function VhcDetailsPanel({
                           <div>
                             <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--success)" }}>Authorised</h2>
                           </div>
-                          {customerTotals.authorized > 0 && (
+                          {quoteTotals.authorized > 0 && (
                             <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--success)" }}>
-                              {formatCurrency(customerTotals.authorized)}
+                              {formatCurrency(quoteTotals.authorized)}
                             </div>
                           )}
                         </div>
                       </div>
-                      {renderSeverityTable("authorized")}
+                      {renderSeverityTable("authorized", quoteSeverityLists.authorized)}
                     </div>
                   ) : null}
 
                   {/* Declined section - only show if there are declined items */}
-                  {severityLists.declined && severityLists.declined.length > 0 ? (
+                  {quoteSeverityLists.declined && quoteSeverityLists.declined.length > 0 ? (
                     <div
                       style={{
                         border: "2px solid var(--danger)",
@@ -6790,14 +6854,14 @@ export default function VhcDetailsPanel({
                           <div>
                             <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--danger)" }}>Declined</h2>
                           </div>
-                          {customerTotals.declined > 0 && (
+                          {quoteTotals.declined > 0 && (
                             <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--danger)" }}>
-                              {formatCurrency(customerTotals.declined)}
+                              {formatCurrency(quoteTotals.declined)}
                             </div>
                           )}
                         </div>
                       </div>
-                      {renderSeverityTable("declined")}
+                      {renderSeverityTable("declined", quoteSeverityLists.declined)}
                     </div>
                   ) : null}
 
@@ -6960,9 +7024,14 @@ export default function VhcDetailsPanel({
             )}
             <div style={TAB_CONTENT_STYLE}>
               <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                {process.env.NODE_ENV !== "production" && ( // Render same debug line for embedded layout mode used by job-cards Summary.
+                  <div style={{ fontSize: "11px", color: "var(--info)", opacity: 0.85, wordBreak: "break-word" }}>
+                    DEV Summary Debug: {summaryDevDebugLine}
+                  </div>
+                )}
                 {/* Only show Red/Amber sections if there are pending items */}
                 {["red", "amber"].map((severity) => {
-                  const items = severityLists[severity] || [];
+                  const items = quoteSeverityLists[severity] || [];
                   if (items.length === 0) return null;
                   const meta = SEVERITY_META[severity];
                   const severityTheme = SEVERITY_THEME[severity] || { border: "var(--info-surface)", background: "var(--danger-surface)" };
@@ -6978,12 +7047,7 @@ export default function VhcDetailsPanel({
                   items.forEach((item) => {
                     const entry = getEntryForItem(item.id);
                     const decisionKey = resolveVhcRowDecisionKey(item, entry);
-                    const resolvedPartsCost = resolvePartsCost(item.id, entry);
-                    const resolvedLabourHours = resolveLabourHoursValue(item.id, entry);
-                    const totalCost = computeRowTotal(entry, resolvedPartsCost, resolvedLabourHours);
-                    const finalTotal = entry.totalOverride !== "" && entry.totalOverride !== null
-                      ? parseFloat(entry.totalOverride)
-                      : totalCost;
+                    const finalTotal = Number(item.total_gbp ?? item.total ?? 0);
 
                     if (selectedSet.has(item.id)) {
                       selectedTotal += finalTotal;
@@ -7041,13 +7105,13 @@ export default function VhcDetailsPanel({
                           </div>
                         </div>
                       </div>
-                      {renderSeverityTable(severity)}
+                      {renderSeverityTable(severity, items)}
                     </div>
                   );
                 })}
 
                 {/* Authorised section - show if there are authorized items */}
-                {severityLists.authorized && severityLists.authorized.length > 0 && (
+                {quoteSeverityLists.authorized && quoteSeverityLists.authorized.length > 0 && (
                   <div
                     style={{
                       border: "2px solid var(--success)",
@@ -7065,19 +7129,19 @@ export default function VhcDetailsPanel({
                         <div>
                           <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--success)" }}>Authorised</h2>
                         </div>
-                        {customerTotals.authorized > 0 && (
+                        {quoteTotals.authorized > 0 && (
                           <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--success)" }}>
-                            {formatCurrency(customerTotals.authorized)}
+                            {formatCurrency(quoteTotals.authorized)}
                           </div>
                         )}
                       </div>
                     </div>
-                    {renderSeverityTable("authorized")}
+                    {renderSeverityTable("authorized", quoteSeverityLists.authorized)}
                   </div>
                 )}
 
                 {/* Declined section - show if there are declined items */}
-                {severityLists.declined && severityLists.declined.length > 0 && (
+                {quoteSeverityLists.declined && quoteSeverityLists.declined.length > 0 && (
                   <div
                     style={{
                       border: "2px solid var(--danger)",
@@ -7095,14 +7159,14 @@ export default function VhcDetailsPanel({
                         <div>
                           <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--danger)" }}>Declined</h2>
                         </div>
-                        {customerTotals.declined > 0 && (
+                        {quoteTotals.declined > 0 && (
                           <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--danger)" }}>
-                            {formatCurrency(customerTotals.declined)}
+                            {formatCurrency(quoteTotals.declined)}
                           </div>
                         )}
                       </div>
                     </div>
-                    {renderSeverityTable("declined")}
+                    {renderSeverityTable("declined", quoteSeverityLists.declined)}
                   </div>
                 )}
 
@@ -7915,6 +7979,17 @@ export default function VhcDetailsPanel({
 
         .vhc-tabs-scroll-container::-webkit-scrollbar-thumb:hover {
           background: var(--scrollbar-thumb-hover);
+        }
+
+        .labour-hours-input {
+          -moz-appearance: textfield;
+          appearance: textfield;
+        }
+
+        .labour-hours-input::-webkit-outer-spin-button,
+        .labour-hours-input::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
         }
       `}</style>
     </div>

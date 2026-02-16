@@ -6,22 +6,42 @@ const { palette } = themeConfig;
 
 const DIAGRAM_WIDTH = 310;
 const DIAGRAM_HEIGHT = 382.47;
-const TYRE_WIDTH = 42;
-const TYRE_HEIGHT = 90;
+const TYRE_HIT_WIDTH = 30;
+const TYRE_HIT_HEIGHT = 70;
 const SHOW_ALIGNMENT_DEBUG = false;
 
 const TYRE_KEYS = [
-  { key: "nsf", label: "N/S/F", position: { left: 19.154, top: 30.264 } },
-  { key: "osf", label: "O/S/F", position: { left: 80.194, top: 30.264 } },
-  { key: "nsr", label: "N/S/R", position: { left: 19.154, top: 72.374 } },
-  { key: "osr", label: "O/S/R", position: { left: 80.194, top: 72.374 } },
+  { key: "nsf", label: "N/S/F", position: { left: 27.2, top: 23.2 } },
+  { key: "osf", label: "O/S/F", position: { left: 72.2, top: 23.2 } },
+  { key: "nsr", label: "N/S/R", position: { left: 27.2, top: 72.374 } },
+  { key: "osr", label: "O/S/R", position: { left: 72.2, top: 72.374 } },
 ];
 
 const statusPalette = {
-  unknown: { fill: "var(--border)", text: "var(--text-primary)", label: "var(--accent-purple-surface)" },
-  danger: { fill: "var(--danger)", text: "var(--text-primary)", label: "var(--danger)" },
-  advisory: { fill: "var(--warning)", text: "var(--text-primary)", label: "var(--warning)" },
-  good: { fill: "var(--success)", text: "var(--text-primary)", label: "var(--success)" },
+  unknown: {
+    fill: "#9ca3af",
+    text: "var(--text-primary)",
+    label: "var(--text-secondary)",
+    border: "#7f8894",
+  },
+  danger: {
+    fill: "#b85252",
+    text: "#ffffff",
+    label: "var(--danger-dark)",
+    border: "#944242",
+  },
+  advisory: {
+    fill: "#b88a42",
+    text: "#ffffff",
+    label: "var(--warning-dark)",
+    border: "#967038",
+  },
+  good: {
+    fill: "#4f8a62",
+    text: "#ffffff",
+    label: "var(--success-dark)",
+    border: "#417150",
+  },
 };
 
 export const getReadingStatus = (value) => {
@@ -66,31 +86,16 @@ export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareAct
     maxWidth: "360px",
     aspectRatio: `${DIAGRAM_WIDTH} / ${DIAGRAM_HEIGHT}`,
     position: "relative",
-    overflow: "hidden",
+    margin: 0,
+    padding: 0,
     borderRadius: "16px",
-  };
-
-  const backgroundStyle = {
-    position: "absolute",
-    inset: 0,
-    width: "100%",
-    height: "100%",
-    backgroundImage: "url('/images/wheels-tyres/vehicle-bg.png')",
-    backgroundPosition: "center",
+    backgroundColor: "inherit",
+    backgroundImage: "var(--vhc-vehicle-diagram-image)",
+    backgroundPosition: "50% 50%",
     backgroundRepeat: "no-repeat",
-    backgroundSize: "contain",
-    zIndex: 1,
-  };
-
-  const frontRearLabelStyle = {
-    position: "absolute",
-    left: "50%",
-    transform: "translateX(-50%)",
-    fontSize: "11px",
-    letterSpacing: "2px",
-    color: palette.textMuted,
-    fontWeight: 700,
-    zIndex: 3,
+    backgroundSize: "118% auto",
+    display: "grid",
+    placeItems: "center",
   };
 
   return (
@@ -100,11 +105,15 @@ export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareAct
           viewBox={`0 0 ${DIAGRAM_WIDTH} ${DIAGRAM_HEIGHT}`}
           role="img"
           aria-label="Vehicle tyre overview diagram"
-          style={backgroundStyle}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            opacity: 0,
+            pointerEvents: "none",
+          }}
         />
-
-        <div style={{ ...frontRearLabelStyle, top: "8%" }}>FRONT</div>
-        <div style={{ ...frontRearLabelStyle, bottom: "7%" }}>REAR</div>
 
         {TYRE_KEYS.map(({ key, label, position }) => {
           const entry = tyres?.[key];
@@ -128,42 +137,30 @@ export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareAct
                   left: `${position.left}%`,
                   top: `${position.top}%`,
                   transform: "translate(-50%, -50%)",
-                  width: `${TYRE_WIDTH}px`,
-                  height: `${TYRE_HEIGHT}px`,
-                  borderRadius: "12px",
-                  border: `${isActive ? 3 : 1.5}px solid ${isActive ? palette.accent : palette.border}`,
+                  width: `${TYRE_HIT_WIDTH}px`,
+                  height: `${TYRE_HIT_HEIGHT}px`,
+                  maxWidth: `${TYRE_HIT_WIDTH}px`,
+                  minWidth: `${TYRE_HIT_WIDTH}px`,
+                  borderRadius: "999px",
+                  border: `${isActive ? 2 : 1.5}px solid ${isActive ? "var(--primary)" : colors.border}`,
                   background: colors.fill,
+                  boxSizing: "border-box",
+                  padding: 0,
                   color: colors.text,
-                  fontSize: "12px",
-                  fontWeight: 700,
-                  lineHeight: 1.2,
+                  fontSize: "14px",
+                  fontWeight: 800,
+                  lineHeight: 1,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   textAlign: "center",
                   cursor: onSelect ? "pointer" : "default",
-                  boxShadow: "0 4px 8px rgba(var(--shadow-rgb),0.55)",
+                  boxShadow: "none",
                   zIndex: 4,
                 }}
               >
                 {displayText}
               </button>
-              <div
-                style={{
-                  position: "absolute",
-                  left: `${position.left}%`,
-                  top: `${position.top}%`,
-                  transform: "translate(-50%, calc(-50% + 62px))",
-                  color: isActive ? palette.accent : colors.label,
-                  fontSize: "12px",
-                  fontWeight: 700,
-                  textAlign: "center",
-                  zIndex: 4,
-                  pointerEvents: "none",
-                }}
-              >
-                {label}
-              </div>
 
               {SHOW_ALIGNMENT_DEBUG ? (
                 <span
@@ -184,26 +181,30 @@ export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareAct
             </React.Fragment>
           );
         })}
+
+        <button
+          type="button"
+          onClick={onSpareSelect}
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: "112%",
+            transform: "translate(-50%, -50%)",
+            borderRadius: "18px",
+            border: `1px solid ${spareActive ? "var(--primary)" : palette.border}`,
+            padding: "8px 18px",
+            background: spareActive ? "rgba(var(--primary-rgb), 0.12)" : palette.surfaceAlt,
+            color: spareActive ? "var(--primary)" : palette.textPrimary,
+            fontWeight: 600,
+            cursor: onSpareSelect ? "pointer" : "default",
+            boxShadow: "none",
+            transition: "transform 0.2s ease",
+            zIndex: 4,
+          }}
+        >
+          Spare / Kit
+        </button>
       </div>
-
-      <button
-        type="button"
-        onClick={onSpareSelect}
-        style={{
-          borderRadius: "18px",
-          border: `1px solid ${spareActive ? palette.accent : palette.border}`,
-          padding: "10px 20px",
-          background: spareActive ? palette.accent : palette.surfaceAlt,
-          color: spareActive ? "var(--surface)" : palette.textPrimary,
-          fontWeight: 600,
-          cursor: onSpareSelect ? "pointer" : "default",
-          boxShadow: "none",
-          transition: "transform 0.2s ease",
-        }}
-      >
-        Spare / Kit
-      </button>
-
     </div>
   );
 }

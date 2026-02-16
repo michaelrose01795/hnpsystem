@@ -1,5 +1,6 @@
 // file location: src/components/VHC/UndersideDetailsModal.js
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
 import themeConfig, {
   createVhcButtonStyle,
@@ -7,6 +8,7 @@ import themeConfig, {
   popupOverlayStyles,
   popupCardStyles,
 } from "@/styles/appTheme";
+import { DropdownField } from "@/components/dropdownAPI";
 import IssueAutocomplete from "@/components/vhc/IssueAutocomplete";
 
 const palette = themeConfig.palette;
@@ -319,24 +321,27 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
       </div>
       </div>
 
-      {activeConcern.open ? (
+      {activeConcern.open && typeof document !== "undefined"
+        ? createPortal(
         <div
           style={{
             ...popupOverlayStyles,
-            zIndex: 1400,
+            zIndex: 5600,
             padding: "24px",
           }}
         >
           <div
             style={{
               ...popupCardStyles,
-              width: "min(420px, 90%)",
-              maxHeight: "86%",
+              width: "min(520px, 92vw)",
+              maxWidth: "92vw",
+              minHeight: "480px",
+              maxHeight: "90vh",
               padding: "24px",
               display: "flex",
               flexDirection: "column",
               gap: "16px",
-              overflow: "hidden",
+              overflow: "visible",
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -399,7 +404,7 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
               )}
 
               <label style={fieldLabelStyle}>Status</label>
-              <select
+              <DropdownField
                 value={activeConcern.temp.status}
                 onChange={(e) =>
                   setActiveConcern((prev) => ({
@@ -407,6 +412,7 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
                     temp: { ...prev.temp, status: e.target.value },
                   }))
                 }
+                className="vhc-concern-dropdown"
                 style={statusSelectStyle}
               >
                 {STATUS_OPTIONS.map((option) => (
@@ -414,7 +420,7 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
                     {option}
                   </option>
                 ))}
-              </select>
+              </DropdownField>
 
               <button type="button" onClick={addConcern} disabled={locked} style={{ ...createVhcButtonStyle("primary"), alignSelf: "flex-end" }}>
                 Add Concern
@@ -501,9 +507,10 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
                       )}
 
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
-                        <select
+                        <DropdownField
                           value={concern.status}
                           onChange={(e) => updateConcern(activeConcern.category, idx, "status", e.target.value)}
+                          className="vhc-concern-dropdown"
                           style={{ ...statusSelectStyle, flex: "0 0 130px" }}
                           disabled={rowLocked}
                         >
@@ -512,7 +519,7 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
                               {option}
                             </option>
                           ))}
-                        </select>
+                        </DropdownField>
 
                         <button
                           type="button"
@@ -533,8 +540,10 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
               )}
             </div>
           </div>
-        </div>
-      ) : null}
+        </div>,
+          document.body
+        )
+        : null}
     </VHCModalShell>
   );
 }

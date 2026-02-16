@@ -1473,6 +1473,8 @@ CREATE TABLE public.vhc_checks (
   display_status text CHECK (display_status IS NULL OR (display_status = ANY (ARRAY['red'::text, 'amber'::text, 'green'::text, 'authorized'::text, 'declined'::text, 'completed'::text]))),
   authorization_state text DEFAULT 'n/a'::text,
   severity text CHECK (severity IS NULL OR (severity = ANY (ARRAY['red'::text, 'amber'::text, 'green'::text]))),
+  slot_code integer,
+  line_key text,
   CONSTRAINT vhc_checks_pkey PRIMARY KEY (vhc_id),
   CONSTRAINT vhc_checks_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
 );

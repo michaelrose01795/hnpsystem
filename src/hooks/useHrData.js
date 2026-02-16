@@ -2,7 +2,7 @@
 // file location: src/hooks/useHrData.js
 import { useEffect, useState } from "react"; // React primitives for managing stateful hooks
 
-export function useHrOperationsData() {
+export function useHrOperationsData(refreshKey = 0) {
   const [state, setState] = useState({
     data: null, // aggregated HR payload returned from the API
     isLoading: true, // loading indicator for consumers
@@ -44,7 +44,7 @@ export function useHrOperationsData() {
       isMounted = false; // mark hook as unmounted
       controller.abort(); // cancel pending fetch to avoid unnecessary work
     };
-  }, []);
+  }, [refreshKey]);
 
   return state; // expose aggregated state to consumers
 }

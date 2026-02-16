@@ -593,7 +593,7 @@ export function ProfilePage({
 
   // Only fetch HR operations data if user is admin/manager AND viewing another user's profile
   const shouldUseHrData = isAdminOrManager && (forcedUserName || adminPreviewOverride);
-  const { data: hrData, isLoading: hrLoading, error: hrError } = useHrOperationsData();
+  const { data: hrData, isLoading: hrLoading, error: hrError } = useHrOperationsData(profileReloadKey);
 
   const previewUserParam =
     forcedUserName || (typeof router.query.user === "string" ? router.query.user : null); // preview override
@@ -676,6 +676,14 @@ export function ProfilePage({
       if (typeof cleanup === "function") cleanup();
     };
   }, [reloadUserProfile, profileReloadKey]);
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setProfileReloadKey((prev) => prev + 1);
+    }, 30000);
+
+    return () => clearInterval(intervalId);
+  }, []);
 
   // Choose data source based on whether viewing as admin or own profile
   const data = shouldUseHrData ? hrData : null;
@@ -912,6 +920,8 @@ export function ProfilePage({
 
   const isLoading = shouldUseHrData ? hrLoading : userProfileLoading;
   const error = shouldUseHrData ? hrError : userProfileError;
+  const attendanceRecords = aggregatedStats?.attendanceRecords ?? [];
+  const shouldScrollAttendanceHistory = attendanceRecords.length >= 5;
 
   if (!user && !session?.user && !previewUserParam) {
     const fallback = (
@@ -1329,7 +1339,13 @@ export function ProfilePage({
                 <OvertimeLogForm onSessionSaved={handleOvertimeSessionSaved} userId={dbUserId} />
               </div>
 
-              <div style={{ maxHeight: "490px", overflowY: "auto", marginTop: "10px" }}>
+              <div
+                style={{
+                  maxHeight: shouldScrollAttendanceHistory ? "290px" : "none",
+                  overflowY: shouldScrollAttendanceHistory ? "auto" : "visible",
+                  marginTop: "10px",
+                }}
+              >
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
                     <tr
@@ -1352,7 +1368,7 @@ export function ProfilePage({
                     </tr>
                   </thead>
                   <tbody>
-                    {(aggregatedStats?.attendanceRecords ?? []).map((entry) => {
+                    {attendanceRecords.map((entry) => {
                       const nextDay = isNextDayClocking(entry.clockIn, entry.clockOut);
                       return (
                         <tr key={entry.id} style={{ borderTop: "1px solid rgba(var(--accent-purple-rgb), 0.18)" }}>
@@ -1390,7 +1406,7 @@ export function ProfilePage({
                         </tr>
                       );
                     })}
-                    {(aggregatedStats?.attendanceRecords ?? []).length === 0 && (
+                    {attendanceRecords.length === 0 && (
                       <tr>
                         <td colSpan={5} style={{ padding: "16px 0", color: "var(--text-secondary)", textAlign: "center" }}>
                           No records found.

@@ -335,7 +335,10 @@ export default function JobCardDetailPage() {
   const [sharedNoteMeta, setSharedNoteMeta] = useState(null);
   const [sharedNoteSaving, setSharedNoteSaving] = useState(false);
   const [jobNotes, setJobNotes] = useState([]);
+  const [pendingNewNoteIds, setPendingNewNoteIds] = useState([]);
+  const [highlightedNoteIds, setHighlightedNoteIds] = useState([]);
   const sharedNoteSaveRef = useRef(null);
+  const notesHighlightTimeoutRef = useRef(null);
   const jobRealtimeRefreshRef = useRef(null);
   const lastRealtimeFetchAtRef = useRef(0);
   const lastJobFetchAtRef = useRef(0);
@@ -497,6 +500,55 @@ export default function JobCardDetailPage() {
       setActiveTab("customer-requests");
     }
   }, [router.query.tab]);
+
+  const triggerNewNotesHighlight = useCallback((options = {}) => {
+    const { clearBadgeAfterMs = 3000 } = options;
+    setPendingNewNoteIds((currentIds) => {
+      if (!currentIds.length) return currentIds;
+      const idsToHighlight = [...currentIds];
+      setHighlightedNoteIds(idsToHighlight);
+      if (notesHighlightTimeoutRef.current) {
+        clearTimeout(notesHighlightTimeoutRef.current);
+      }
+      notesHighlightTimeoutRef.current = setTimeout(() => {
+        setHighlightedNoteIds([]);
+        setPendingNewNoteIds((latestIds) =>
+          latestIds.filter((id) => !idsToHighlight.includes(id))
+        );
+      }, clearBadgeAfterMs);
+      return currentIds;
+    });
+  }, []);
+
+  const handleNoteAdded = useCallback((noteId) => {
+    if (!noteId) return;
+    setPendingNewNoteIds((currentIds) =>
+      currentIds.includes(noteId) ? currentIds : [noteId, ...currentIds]
+    );
+  }, []);
+
+  const handleNotesChange = useCallback((nextNotes) => {
+    const normalizedNotes = nextNotes || [];
+    setJobNotes(normalizedNotes);
+    setSharedNote(normalizedNotes?.[0]?.noteText || "");
+    setSharedNoteMeta(normalizedNotes?.[0] || null);
+  }, []);
+
+  const handleTabClick = useCallback((tabId) => {
+    setActiveTab(tabId);
+    if (tabId === "notes") {
+      triggerNewNotesHighlight({ clearBadgeAfterMs: 3000 });
+    }
+  }, [triggerNewNotesHighlight]);
+
+  useEffect(() => {
+    setPendingNewNoteIds([]);
+    setHighlightedNoteIds([]);
+    if (notesHighlightTimeoutRef.current) {
+      clearTimeout(notesHighlightTimeoutRef.current);
+      notesHighlightTimeoutRef.current = null;
+    }
+  }, [jobData?.id]);
 
   // Watch for job completion and redirect to invoice tab
   const previousStatusRef = useRef(null);
@@ -936,6 +988,9 @@ export default function JobCardDetailPage() {
     return () => {
       if (sharedNoteSaveRef.current) {
         clearTimeout(sharedNoteSaveRef.current);
+      }
+      if (notesHighlightTimeoutRef.current) {
+        clearTimeout(notesHighlightTimeoutRef.current);
       }
       if (jobRealtimeRefreshRef.current) {
         clearTimeout(jobRealtimeRefreshRef.current);
@@ -1758,6 +1813,11 @@ export default function JobCardDetailPage() {
     grey: greyIssues.length
   };
   const vhcTabBadge = vhcSummaryCounts.red || vhcSummaryCounts.amber ? "⚠" : undefined;
+  const notesTabBadge = pendingNewNoteIds.length
+    ? pendingNewNoteIds.length > 9
+      ? "9+"
+      : String(pendingNewNoteIds.length)
+    : undefined;
   const jobDivisionLabel =
     typeof jobData.jobDivision === "string"
       ? jobData.jobDivision
@@ -1773,7 +1833,7 @@ export default function JobCardDetailPage() {
     { id: "scheduling", label: "Scheduling"},
     { id: "service-history", label: "Service History"},
     ...(canViewPartsTab ? [{ id: "parts", label: "Parts"}] : []),
-    { id: "notes", label: "Notes"},
+    { id: "notes", label: "Notes", badge: notesTabBadge},
     { id: "write-up", label: "Write Up"},
     ...(canViewVhcTab ? [{ id: "vhc", label: "VHC", badge: vhcTabBadge}] : []),
     { id: "warranty", label: "Warranty"},
@@ -2289,7 +2349,7 @@ export default function JobCardDetailPage() {
                 <button
                   key={tab.id}
                   onClick={(e) => {
-                    setActiveTab(tab.id);
+                    handleTabClick(tab.id);
                     e.currentTarget.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
                   }}
                   style={{
@@ -2318,8 +2378,15 @@ export default function JobCardDetailPage() {
                     <span
                       style={{
                         padding: "3px 8px",
-                        backgroundColor: isActive ? "rgba(255, 255, 255, 0.3)" : "var(--primary)",
-                        color: "white",
+                        backgroundColor:
+                          tab.id === "notes"
+                            ? isActive
+                              ? "rgba(255, 255, 255, 0.28)"
+                              : "var(--danger)"
+                            : isActive
+                            ? "rgba(255, 255, 255, 0.3)"
+                            : "var(--primary)",
+                        color: "var(--text-inverse)",
                         borderRadius: "8px",
                         fontSize: "11px",
                         fontWeight: "600",
@@ -2418,11 +2485,9 @@ export default function JobCardDetailPage() {
               jobData={jobData}
               canEdit={canEdit}
               actingUserNumericId={actingUserNumericId}
-              onNotesChange={(nextNotes) => {
-                setJobNotes(nextNotes || []);
-                setSharedNote(nextNotes?.[0]?.noteText || "");
-                setSharedNoteMeta(nextNotes?.[0] || null);
-              }}
+              onNotesChange={handleNotesChange}
+              onNoteAdded={handleNoteAdded}
+              highlightNoteIds={highlightedNoteIds}
             />
           </div>
 
@@ -2448,6 +2513,9 @@ export default function JobCardDetailPage() {
             <VHCTab
               jobNumber={jobNumber}
               jobData={jobData}
+              actingUserId={actingUserId}
+              actingUserNumericId={actingUserNumericId}
+              actingUserName={user?.name || user?.email || ""}
               onFinancialTotalsChange={setVhcFinancialTotalsFromPanel}
               onJobDataRefresh={() => fetchJobData({ silent: true, force: true })}
             />
@@ -5783,46 +5851,64 @@ function NotesTab({ value, onChange, canEdit, saving, meta }) {
 }
 
 // ✅ VHC Tab
-function VHCTab({ jobNumber, jobData, onFinancialTotalsChange, onJobDataRefresh }) {
+function VHCTab({
+  jobNumber,
+  jobData,
+  actingUserId = null,
+  actingUserNumericId = null,
+  actingUserName = "",
+  onFinancialTotalsChange,
+  onJobDataRefresh,
+}) {
   const [copied, setCopied] = useState(false);
   const [generatingLink, setGeneratingLink] = useState(false);
+  const [previewOpened, setPreviewOpened] = useState(false);
+  const [sendingVhc, setSendingVhc] = useState(false);
+  const [sendVhcMessage, setSendVhcMessage] = useState("");
 
-  // Check if customer view should be enabled
-  // All checkboxes must be complete (parts and labour for each row)
+  // Enable actions only when all Summary tab tickboxes are complete.
   const [allCheckboxesComplete, setAllCheckboxesComplete] = useState(false);
-
-  const hasPartsWithPrices = allCheckboxesComplete;
+  const [checkboxesLockReason, setCheckboxesLockReason] = useState("");
+  const actionsEnabled = allCheckboxesComplete;
 
   const customerViewUrl = useMemo(() => {
-    if (typeof window === 'undefined') return '';
+    if (typeof window === "undefined") return "";
     return `${window.location.origin}/vhc/customer-preview/${jobNumber}`;
   }, [jobNumber]);
 
+  useEffect(() => {
+    if (typeof window === "undefined" || !jobNumber) return;
+    const stored = window.localStorage.getItem(`vhc-preview-opened-${jobNumber}`);
+    if (stored === "1") {
+      setPreviewOpened(true);
+    }
+  }, [jobNumber]);
+
   const handleCustomerViewClick = () => {
-    window.open(customerViewUrl, '_blank');
+    setPreviewOpened(true);
+    if (typeof window !== "undefined" && jobNumber) {
+      window.localStorage.setItem(`vhc-preview-opened-${jobNumber}`, "1");
+    }
+    window.location.assign(customerViewUrl);
   };
 
-  // Generate a shareable link (24-hour expiry) and copy to clipboard
+  // Generate a shareable link (24-hour expiry) and copy to clipboard.
   const handleCopyToClipboard = async () => {
     setGeneratingLink(true);
     try {
-      // Request a share link from the API
       const response = await fetch(`/api/job-cards/${jobNumber}/share-link`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate share link');
+        throw new Error(errorData.error || "Failed to generate share link");
       }
 
       const { linkCode } = await response.json();
-
-      // Build the shareable URL
       const shareUrl = `${window.location.origin}/vhc/share/${jobNumber}/${linkCode}`;
 
-      // Copy to clipboard
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -5834,47 +5920,114 @@ function VHCTab({ jobNumber, jobData, onFinancialTotalsChange, onJobDataRefresh 
     }
   };
 
+  const handleSendVhc = async () => {
+    if (!actionsEnabled || !previewOpened || sendingVhc) return;
+
+    setSendingVhc(true);
+    setSendVhcMessage("");
+    try {
+      const response = await fetch(`/api/job-cards/${jobNumber}/send-vhc`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobId: jobData?.id ?? null,
+          customerEmail: jobData?.customerEmail || null,
+          sentBy: actingUserNumericId ?? actingUserId ?? null,
+          sentByName: actingUserName || null,
+        }),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.error || "Failed to send VHC");
+      }
+
+      setSendVhcMessage("VHC sent");
+      if (typeof onJobDataRefresh === "function") {
+        onJobDataRefresh();
+      }
+    } catch (error) {
+      console.error("Failed to send VHC", error);
+      setSendVhcMessage(error?.message || "Failed to send VHC");
+    } finally {
+      setSendingVhc(false);
+    }
+  };
+
   const customActions = (
     <>
       <button
         type="button"
         onClick={handleCustomerViewClick}
-        disabled={!hasPartsWithPrices}
+        disabled={!actionsEnabled}
         style={{
           padding: "8px 16px",
           borderRadius: "8px",
-          border: `1px solid ${hasPartsWithPrices ? "var(--primary)" : "var(--grey-accent)"}`,
-          backgroundColor: hasPartsWithPrices ? "var(--primary)" : "var(--surface-light)",
-          color: hasPartsWithPrices ? "var(--surface)" : "var(--grey-accent)",
+          border: `1px solid ${actionsEnabled ? "var(--primary)" : "var(--grey-accent)"}`,
+          backgroundColor: actionsEnabled ? "var(--primary)" : "var(--surface-light)",
+          color: actionsEnabled ? "var(--surface)" : "var(--grey-accent)",
           fontWeight: 600,
-          cursor: hasPartsWithPrices ? "pointer" : "not-allowed",
-          opacity: hasPartsWithPrices ? 1 : 0.5,
+          cursor: actionsEnabled ? "pointer" : "not-allowed",
+          opacity: actionsEnabled ? 1 : 0.5,
           fontSize: "13px",
         }}
-        title={!hasPartsWithPrices ? "Add parts prices and labour time to enable customer preview" : "Open customer preview in new tab"}
+        title={!actionsEnabled ? (checkboxesLockReason || "Summary checks are incomplete.") : "Open customer preview"}
       >
         Customer Preview
       </button>
       <button
         type="button"
         onClick={handleCopyToClipboard}
-        disabled={!hasPartsWithPrices || generatingLink}
+        disabled={!actionsEnabled || generatingLink}
         style={{
           padding: "8px 12px",
           borderRadius: "8px",
-          border: `1px solid ${hasPartsWithPrices ? "var(--info)" : "var(--grey-accent)"}`,
-          backgroundColor: hasPartsWithPrices ? (copied ? "var(--success)" : "var(--info)") : "var(--surface-light)",
-          color: hasPartsWithPrices ? "var(--surface)" : "var(--grey-accent)",
+          border: `1px solid ${actionsEnabled ? "var(--info)" : "var(--grey-accent)"}`,
+          backgroundColor: actionsEnabled ? (copied ? "var(--success)" : "var(--info)") : "var(--surface-light)",
+          color: actionsEnabled ? "var(--surface)" : "var(--grey-accent)",
           fontWeight: 600,
-          cursor: hasPartsWithPrices && !generatingLink ? "pointer" : "not-allowed",
-          opacity: hasPartsWithPrices ? 1 : 0.5,
+          cursor: actionsEnabled && !generatingLink ? "pointer" : "not-allowed",
+          opacity: actionsEnabled ? 1 : 0.5,
           fontSize: "13px",
           minWidth: "100px",
         }}
-        title={!hasPartsWithPrices ? "Add parts prices and labour time to enable customer preview" : copied ? "Copied!" : "Copy shareable link (expires in 24 hours)"}
+        title={!actionsEnabled ? (checkboxesLockReason || "Summary checks are incomplete.") : copied ? "Copied!" : "Copy shareable link (expires in 24 hours)"}
       >
-        {generatingLink ? "..." : copied ? "✓ Copied" : "📋 Copy Link"}
+        {generatingLink ? "..." : copied ? "Copied" : "Copy Link"}
       </button>
+      {previewOpened ? (
+        <button
+          type="button"
+          onClick={handleSendVhc}
+          disabled={!actionsEnabled || sendingVhc}
+          style={{
+            padding: "8px 12px",
+            borderRadius: "8px",
+            border: `1px solid ${actionsEnabled ? "var(--success)" : "var(--grey-accent)"}`,
+            backgroundColor: actionsEnabled ? "var(--success)" : "var(--surface-light)",
+            color: actionsEnabled ? "var(--surface)" : "var(--grey-accent)",
+            fontWeight: 600,
+            cursor: actionsEnabled && !sendingVhc ? "pointer" : "not-allowed",
+            opacity: actionsEnabled ? 1 : 0.5,
+            fontSize: "13px",
+            minWidth: "100px",
+          }}
+          title={!actionsEnabled ? (checkboxesLockReason || "Summary checks are incomplete.") : "Send interactive VHC to customer"}
+        >
+          {sendingVhc ? "Sending..." : "Send VHC"}
+        </button>
+      ) : null}
+      {sendVhcMessage ? (
+        <span
+          style={{
+            fontSize: "12px",
+            fontWeight: 600,
+            color: sendVhcMessage === "VHC sent" ? "var(--success)" : "var(--danger)",
+          }}
+        >
+          {sendVhcMessage}
+        </span>
+      ) : null}
     </>
   );
 
@@ -5885,6 +6038,7 @@ function VHCTab({ jobNumber, jobData, onFinancialTotalsChange, onJobDataRefresh 
         showNavigation={false}
         customActions={customActions}
         onCheckboxesComplete={setAllCheckboxesComplete}
+        onCheckboxesLockReason={setCheckboxesLockReason}
         onFinancialTotalsChange={onFinancialTotalsChange}
         onJobDataRefresh={onJobDataRefresh}
         enableTabs
@@ -7256,3 +7410,4 @@ function DocumentsTab({
     </div>
   );
 }
+

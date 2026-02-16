@@ -1,5 +1,6 @@
 // file location: src/components/VHC/BrakesHubsDetailsModal.js
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
 import themeConfig, {
   createVhcButtonStyle,
@@ -449,12 +450,16 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
     gap: "24px",
     height: "100%",
   };
+  const SECTION_PANEL_HEIGHT = 230;
   const sectionPanelBase = {
     ...vhcModalContentStyles.baseCard,
-    flex: 1,
+    flex: "0 0 auto",
+    minHeight: `${SECTION_PANEL_HEIGHT}px`,
+    maxHeight: `${SECTION_PANEL_HEIGHT}px`,
     gap: "12px",
     alignItems: "stretch",
     cursor: "default",
+    overflowY: "auto",
   };
 
   const activeConcernKeySet = useMemo(() => {
@@ -641,11 +646,15 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
 
   const popupCardStyle = {
     ...popupCardStyles,
-    width: "min(360px, 90vw)",
+    width: "min(520px, 92vw)",
+    maxWidth: "92vw",
+    minHeight: "480px",
+    maxHeight: "90vh",
     padding: "24px",
     display: "flex",
     flexDirection: "column",
     gap: "12px",
+    overflow: "visible",
   };
 
   const enhanceFocus = (event) => {
@@ -1092,7 +1101,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                 />
               )}
 
-              <div style={{ ...sectionPanelBase, flex: "0 0 auto" }}>
+              <div style={sectionPanelBase}>
                 <div
                   style={{
                     display: "flex",
@@ -1150,8 +1159,9 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
             </div>
           </div>
 
-          {concernPopup.open && (
-            <div style={popupOverlayStyle}>
+          {concernPopup.open && typeof document !== "undefined" &&
+            createPortal(
+            <div style={{ ...popupOverlayStyle, zIndex: 5600 }}>
               <div style={popupCardStyle}>
                 <h4 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
                   {concernPopup.editIndex !== null ? "Edit Concern" : "Add Concern"}
@@ -1237,8 +1247,9 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            </div>,
+              document.body
+            )}
         </div>
       </div>
     </VHCModalShell>

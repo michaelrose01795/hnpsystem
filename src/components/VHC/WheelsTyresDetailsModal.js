@@ -1,5 +1,6 @@
 // file location: src/components/VHC/WheelsTyresDetailsModal.js
 import React, { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
 import themeConfig, {
   createVhcButtonStyle,
@@ -11,6 +12,7 @@ import TyreDiagram, { getReadingStatus } from "@/components/VHC/TyreDiagram";
 import TyresSection from "@/components/VHC/TyresSection"; // Import shared tyre search component
 import { DropdownField } from "@/components/dropdownAPI";
 import IssueAutocomplete from "@/components/vhc/IssueAutocomplete";
+import { learnIssueSuggestion } from "@/lib/vhc/issueSuggestions";
 
 const palette = themeConfig.palette;
 
@@ -443,7 +445,8 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
   const updateTread = (section, value) => {
     setTyres((prev) => {
       const updated = { ...prev };
-      const wheel = updated[activeWheel];
+      const wheel =
+        activeWheel === "Spare" ? updated.Spare?.details : updated[activeWheel];
       if (!wheel) return prev;
 
       if (section === "outer") {
@@ -453,17 +456,39 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
           middle: wheel.treadLocked.middle ? wheel.tread.middle : value,
           inner: wheel.treadLocked.inner ? wheel.tread.inner : value,
         };
-        updated[activeWheel] = {
-          ...wheel,
-          tread: nextTread,
-          treadLocked: { ...wheel.treadLocked, outer: true },
-        };
+        if (activeWheel === "Spare") {
+          updated.Spare = {
+            ...updated.Spare,
+            details: {
+              ...updated.Spare.details,
+              tread: nextTread,
+              treadLocked: { ...wheel.treadLocked, outer: true },
+            },
+          };
+        } else {
+          updated[activeWheel] = {
+            ...wheel,
+            tread: nextTread,
+            treadLocked: { ...wheel.treadLocked, outer: true },
+          };
+        }
       } else {
-        updated[activeWheel] = {
-          ...wheel,
-          tread: { ...wheel.tread, [section]: value },
-          treadLocked: { ...wheel.treadLocked, [section]: true },
-        };
+        if (activeWheel === "Spare") {
+          updated.Spare = {
+            ...updated.Spare,
+            details: {
+              ...updated.Spare.details,
+              tread: { ...wheel.tread, [section]: value },
+              treadLocked: { ...wheel.treadLocked, [section]: true },
+            },
+          };
+        } else {
+          updated[activeWheel] = {
+            ...wheel,
+            tread: { ...wheel.tread, [section]: value },
+            treadLocked: { ...wheel.treadLocked, [section]: true },
+          };
+        }
       }
       return updated;
     });
@@ -533,11 +558,13 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
 
   const addConcern = () => {
     if (!concernTarget || !concernInput.trim()) return;
+    const nextText = concernInput.trim();
+    const sectionKey = WHEEL_SECTION_KEYS[concernTarget] || "wheels_nsf";
     setTyres((prev) => {
       const updated = { ...prev };
       const targetWheel = updated[concernTarget];
       const existing = targetWheel.concerns ?? [];
-      const next = { text: concernInput.trim(), status: concernStatus };
+      const next = { text: nextText, status: concernStatus };
       const nextConcerns =
         concernEditIndex === null
           ? [...existing, next]
@@ -548,6 +575,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
       };
       return updated;
     });
+    learnIssueSuggestion(sectionKey, nextText);
     setConcernInput("");
     setConcernStatus("Amber");
     setConcernTarget(null);
@@ -583,7 +611,6 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
     if (!onClose) return;
     onClose(tyres);
   };
-  const showSpareLookup = activeWheel !== "Spare" || ["spare", "space_saver"].includes(tyres.Spare?.type);
   const contentWrapperStyle = {
     ...vhcModalContentStyles.contentWrapper,
     gap: "20px",
@@ -691,17 +718,65 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                       Run Flat: {currentTyre.runFlat ? "Yes" : "No"}
                     </button>
                   </>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={toggleRunFlat}
-                    style={pillButton({ active: currentTyre.details.runFlat })}
-                  >
-                    Run Flat: {currentTyre.details.runFlat ? "Yes" : "No"}
-                  </button>
-                )}
+                ) : null}
               </div>
             </div>
+            {activeWheel === "Spare" && (
+              <div
+                style={{
+                  borderRadius: "999px",
+                  border: `1px solid ${palette.border}`,
+                  background: palette.surface,
+                  padding: "6px",
+                  width: "100%",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "6px",
+                    width: "100%",
+                    overflowX: "auto",
+                    overflowY: "hidden",
+                    scrollbarWidth: "thin",
+                    alignItems: "center",
+                    flexWrap: "nowrap",
+                  }}
+                >
+                  {SPARE_TYPES.map((type) => {
+                    const isActive = tyres.Spare.type === type.key;
+                    return (
+                      <button
+                        key={type.key}
+                        type="button"
+                        onClick={() =>
+                          setTyres((prev) => ({
+                            ...prev,
+                            Spare: { ...prev.Spare, type: type.key },
+                          }))
+                        }
+                        style={{
+                          flex: "0 0 auto",
+                          borderRadius: "999px",
+                          border: "1px solid transparent",
+                          padding: "10px 16px",
+                          fontSize: "0.85rem",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          background: isActive ? "var(--primary)" : "transparent",
+                          color: isActive ? "var(--text-inverse)" : palette.textPrimary,
+                          transition: "all 0.15s ease",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {type.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <div
               style={{
@@ -713,9 +788,9 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                 minHeight: 0,
               }}
             >
-              {showSpareLookup && (
+              {activeWheel !== "Spare" && (
                 <TyresSection
-                  contextLabel={`${activeWheel === "Spare" ? "Spare Tyre Lookup" : `${activeWheel} Tyre Lookup`}`}
+                  contextLabel={`${activeWheel} Tyre Lookup`}
                   selectedTyre={selectedLookupTyre}
                   onTyreSelected={handleTyreLookupSelect}
                 />
@@ -800,55 +875,86 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                 </>
               ) : (
                 <>
-                  <div style={sectionCardStyle}>
-                    <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Spare Type</span>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
-                      {SPARE_TYPES.map((type) => (
-                        <button
-                          key={type.key}
-                          type="button"
-                          onClick={() =>
-                            setTyres((prev) => ({
-                              ...prev,
-                              Spare: { ...prev.Spare, type: type.key },
-                            }))
-                          }
-                          style={pillButton({ active: tyres.Spare.type === type.key })}
-                        >
-                          {type.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
                   {tyres.Spare.type === "spare" ? (
-                    <div style={sectionCardStyle}>
-                      <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Spare Details</span>
-                      <AutoCompleteInput
-                        value={tyres.Spare.details.manufacturer}
-                        onChange={(value) => updateTyre("manufacturer", value)}
-                        options={tyreBrands}
-                        placeholder="Manufacturer"
-                      />
-                      <input
-                        value={tyres.Spare.details.size}
-                        onChange={(event) => updateTyre("size", event.target.value)}
-                        placeholder="Size"
-                        style={baseInputStyle}
-                      />
-                      <input
-                        value={tyres.Spare.details.load}
-                        onChange={(event) => updateTyre("load", event.target.value)}
-                        placeholder="Load"
-                        style={baseInputStyle}
-                      />
-                      <input
-                        value={tyres.Spare.details.speed}
-                        onChange={(event) => updateTyre("speed", event.target.value)}
-                        placeholder="Speed"
-                        style={baseInputStyle}
-                      />
-                    </div>
+                    <>
+                      <div style={sectionCardStyle}>
+                        <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Spare Details</span>
+                        <div
+                          style={{
+                            display: "flex",
+                            flexWrap: "nowrap",
+                            gap: "12px",
+                            marginTop: "10px",
+                            alignItems: "flex-end",
+                            overflowX: "auto",
+                            paddingBottom: "2px",
+                          }}
+                        >
+                          <div style={{ flex: "0 0 190px", minWidth: "190px" }}>
+                            <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>
+                              <span style={{ fontWeight: 700, color: palette.textPrimary }}>Make</span>
+                              <AutoCompleteInput
+                                value={tyres.Spare.details.manufacturer}
+                                onChange={(value) => updateTyre("manufacturer", value)}
+                                options={tyreBrands}
+                                placeholder="Select manufacturer"
+                              />
+                            </label>
+                          </div>
+                          <div style={{ display: "flex", flexWrap: "nowrap", gap: "12px", alignItems: "flex-end" }}>
+                            <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>
+                              Size
+                              <input
+                                value={tyres.Spare.details.size}
+                                onChange={(event) => updateTyre("size", event.target.value)}
+                                placeholder="e.g. 205/55 R16"
+                                style={{ ...baseInputStyle, width: "150px", minWidth: "150px" }}
+                              />
+                            </label>
+                            <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>
+                              Load Index
+                              <input
+                                value={tyres.Spare.details.load}
+                                onChange={(event) => updateTyre("load", event.target.value)}
+                                placeholder="e.g. 91"
+                                style={{ ...baseInputStyle, width: "110px", minWidth: "110px" }}
+                              />
+                            </label>
+                            <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>
+                              Speed Rating
+                              <input
+                                value={tyres.Spare.details.speed}
+                                onChange={(event) => updateTyre("speed", event.target.value)}
+                                placeholder="e.g. V"
+                                style={{ ...baseInputStyle, width: "110px", minWidth: "110px" }}
+                              />
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={sectionCardStyle}>
+                        <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>
+                          Spare Tread Depth (mm)
+                        </span>
+                        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                          {TREAD_SECTIONS.map((section) => (
+                            <input
+                              key={`spare-${section.key}`}
+                              value={tyres.Spare.details.tread?.[section.key] || ""}
+                              onChange={(event) => updateTread(section.key, event.target.value)}
+                              placeholder={section.label}
+                              style={{
+                                ...baseInputStyle,
+                                textAlign: "center",
+                                fontWeight: 600,
+                                flex: "1 1 120px",
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </>
                   ) : null}
 
                   {tyres.Spare.type === "repair_kit" ? (
@@ -1036,22 +1142,27 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
         </div>
       </div>
 
-      {concernTarget ? (
+      {concernTarget && typeof document !== "undefined"
+        ? createPortal(
         <div
           style={{
             ...popupOverlayStyles,
-            zIndex: 1200,
+            zIndex: 5600,
             padding: "24px",
           }}
         >
           <div
             style={{
               ...popupCardStyles,
-              width: "min(420px, 92%)",
+              width: "min(520px, 92vw)",
+              maxWidth: "92vw",
+              minHeight: "480px",
+              maxHeight: "90vh",
               padding: "24px",
               display: "flex",
               flexDirection: "column",
               gap: "16px",
+              overflow: "visible",
             }}
           >
             <div style={{ display: "flex", justifyContent: "flex-start", alignItems: "center" }}>
@@ -1117,8 +1228,10 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
               </div>
             </div>
           </div>
-        </div>
-      ) : null}
+        </div>,
+          document.body
+        )
+        : null}
     </VHCModalShell>
   );
 }

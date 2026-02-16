@@ -4,6 +4,9 @@ import { supabase } from "@/lib/supabaseClient";
 import { buildNormalizedKey, isValidUuid, tokenize } from "@/features/labour-times/normalization";
 import { rankSuggestions } from "@/features/labour-times/ranking";
 import { getCachedValue, setCachedValue } from "@/features/labour-times/cache";
+import { estimateLabourHours } from "@/features/labour-times/fallbackEstimator";
+
+const LABOUR_SUGGEST_DEBUG = process.env.NODE_ENV !== "production" && process.env.DEBUG_LABOUR_SUGGESTIONS === "1";
 
 const buildSearchFilter = (tokens = []) => {
   const clean = (tokens || []).filter(Boolean).slice(0, 4);
@@ -27,6 +30,35 @@ const dedupeByKey = (rows = []) => {
   return Array.from(byKey.values());
 };
 
+const buildFallbackSuggestion = ({ description = "", normalizedKey = "" } = {}) => {
+  const estimate = estimateLabourHours(description);
+  return {
+    id: `fallback:${normalizedKey || "default"}`,
+    source: "fallback",
+    scope: null,
+    displayDescription: description,
+    normalizedKey: normalizedKey || "",
+    timeHours: Number(estimate.hours),
+    usageCount: 0,
+    confidence: estimate.confidence || "low",
+    reason: estimate.reason || "fallback default",
+    tags: [],
+    defaultOrder: 999999,
+  };
+};
+
+const toSuggestionResponse = (item = {}) => ({
+  id: item.id,
+  source: item.source,
+  scope: item.scope || null,
+  displayDescription: item.displayDescription || "",
+  normalizedKey: item.normalizedKey || "",
+  timeHours: Number(item.timeHours),
+  usageCount: Number(item.usageCount || 0),
+  confidence: item.confidence || null,
+  reason: item.reason || null,
+});
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.status(405).json({ success: false, message: "Method not allowed" });
@@ -38,16 +70,29 @@ export default async function handler(req, res) {
     const userId = String(req.body?.userId || "").trim();
     const normalizedKey = buildNormalizedKey(description);
     const queryTokens = tokenize(description);
+    const fallbackSuggestion = buildFallbackSuggestion({ description, normalizedKey });
 
     if (!description || !normalizedKey) {
-      res.status(200).json({ success: true, suggestions: [] });
+      if (LABOUR_SUGGEST_DEBUG) {
+        console.log("[labour-time-suggestions] Using fallback for blank description");
+      }
+      res.status(200).json({
+        success: true,
+        normalizedKey,
+        suggestions: [toSuggestionResponse(fallbackSuggestion)],
+      });
       return;
     }
 
     const cacheKey = `labour:suggest:${normalizedKey}:${isValidUuid(userId) ? userId : "anon"}`;
     const cached = getCachedValue(cacheKey, 45000);
     if (cached) {
-      res.status(200).json({ success: true, suggestions: cached, cached: true });
+      const cachedWithFallback = Array.isArray(cached) ? cached : [];
+      const hasFallback = cachedWithFallback.some((item) => item?.source === "fallback");
+      const suggestions = hasFallback
+        ? cachedWithFallback
+        : [...cachedWithFallback.slice(0, 7), toSuggestionResponse(fallbackSuggestion)];
+      res.status(200).json({ success: true, normalizedKey, suggestions: suggestions.map(toSuggestionResponse), cached: true });
       return;
     }
 
@@ -133,8 +178,8 @@ export default async function handler(req, res) {
     ]);
 
     const overrideRows = [
-      ...(Array.isArray(globalOverridesResult?.data) ? globalOverridesResult.data : []),
       ...(Array.isArray(userOverridesResult?.data) ? userOverridesResult.data : []),
+      ...(Array.isArray(globalOverridesResult?.data) ? globalOverridesResult.data : []),
     ];
     const presetRows = Array.isArray(presetRowsResult?.data) ? presetRowsResult.data : [];
 
@@ -171,18 +216,31 @@ export default async function handler(req, res) {
       });
     });
 
-    const ranked = rankSuggestions({
+    candidates.push(fallbackSuggestion);
+
+    const rankedRaw = rankSuggestions({
       queryText: description,
       suggestions: dedupeByKey(candidates),
       limit: 8,
     });
+
+    const hasFallbackInRanked = rankedRaw.some((item) => item?.source === "fallback");
+    const ranked = hasFallbackInRanked ? rankedRaw : [...rankedRaw.slice(0, 7), toSuggestionResponse(fallbackSuggestion)];
+
+    if (LABOUR_SUGGEST_DEBUG) {
+      console.log("[labour-time-suggestions] Ranked suggestions", {
+        normalizedKey,
+        count: ranked.length,
+        hasFallback: ranked.some((item) => item?.source === "fallback"),
+      });
+    }
 
     setCachedValue(cacheKey, ranked);
 
     res.status(200).json({
       success: true,
       normalizedKey,
-      suggestions: ranked,
+      suggestions: ranked.map(toSuggestionResponse),
     });
   } catch (error) {
     console.error("Failed to fetch labour time suggestions", error);

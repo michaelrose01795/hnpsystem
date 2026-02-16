@@ -2,20 +2,18 @@ import React from "react";
 import { useTheme } from "@/styles/themeProvider";
 import themeConfig from "@/styles/appTheme";
 
-const { palette, shadows } = themeConfig;
+const { palette } = themeConfig;
 
 const DIAGRAM_WIDTH = 308;
 const DIAGRAM_HEIGHT = 380;
-const FRONT_Y = 70;
-const REAR_Y = 230; // widened vertical gap to mirror tyre diagram spacing
-const PAD_WIDTH = 44;
-const PAD_HEIGHT = 90;
+const PAD_WIDTH = 30;
+const PAD_HEIGHT = 70;
 
 const BRAKE_KEYS = [
-  { key: "nsf", label: "NSF", position: { x: 36, y: FRONT_Y } },
-  { key: "osf", label: "OSF", position: { x: 228, y: FRONT_Y } },
-  { key: "nsr", label: "NSR", position: { x: 36, y: REAR_Y } },
-  { key: "osr", label: "OSR", position: { x: 228, y: REAR_Y } },
+  { key: "nsf", label: "NSF", position: { xPct: 27.2, yPct: 23.2 } },
+  { key: "osf", label: "OSF", position: { xPct: 72.2, yPct: 23.2 } },
+  { key: "nsr", label: "NSR", position: { xPct: 27.2, yPct: 72.374 } },
+  { key: "osr", label: "OSR", position: { xPct: 72.2, yPct: 72.374 } },
 ];
 
 const getPadStatus = (value) => {
@@ -72,31 +70,22 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect }) {
         viewBox={`0 0 ${DIAGRAM_WIDTH} ${DIAGRAM_HEIGHT}`}
         role="img"
         aria-label="Brake pad and disc overview diagram"
-        style={{ width: "100%", height: "auto", maxWidth: "360px" }}
+        style={{
+          width: "100%",
+          height: "auto",
+          maxWidth: "360px",
+          backgroundImage: "var(--vhc-vehicle-diagram-image)",
+          backgroundPosition: "50% 50%",
+          backgroundRepeat: "no-repeat",
+          backgroundSize: "118% auto",
+          borderRadius: "16px",
+        }}
       >
-        <rect
-          x="60"
-          y="46"
-          width="188"
-          height="260"
-          rx="48"
-          fill={palette.accentSurface}
-          stroke={palette.border}
-          strokeWidth="2"
-          strokeDasharray="10 8"
-          opacity="0.6"
-        />
-        <line x1="60" y1={FRONT_Y + PAD_HEIGHT / 2} x2="248" y2={FRONT_Y + PAD_HEIGHT / 2} stroke={palette.border} strokeWidth="4" strokeLinecap="round" />
-        <line x1="60" y1={REAR_Y + PAD_HEIGHT / 2} x2="248" y2={REAR_Y + PAD_HEIGHT / 2} stroke={palette.border} strokeWidth="4" strokeLinecap="round" />
-
-        <text x={DIAGRAM_WIDTH / 2} y="60" textAnchor="middle" fontSize="11" fill={palette.textMuted} letterSpacing="2">
-          FRONT
-        </text>
-        <text x={DIAGRAM_WIDTH / 2} y={DIAGRAM_HEIGHT - 20} textAnchor="middle" fontSize="11" fill={palette.textMuted} letterSpacing="2">
-          REAR
-        </text>
-
         {BRAKE_KEYS.map(({ key, position }) => {
+          const centerX = (position.xPct / 100) * DIAGRAM_WIDTH;
+          const centerY = (position.yPct / 100) * DIAGRAM_HEIGHT;
+          const x = centerX - PAD_WIDTH / 2;
+          const y = centerY - PAD_HEIGHT / 2;
           const entry = brakes?.[key];
           const { measurement, overrideStatus, isDrum } = resolveBrakeEntry(entry);
 
@@ -125,19 +114,18 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect }) {
               style={{ cursor: onSelect ? "pointer" : "default" }}
             >
               <rect
-                x={position.x}
-                y={position.y}
+                x={x}
+                y={y}
                 width={PAD_WIDTH}
                 height={PAD_HEIGHT}
                 rx="12"
                 fill={colors.fill}
                 stroke={isActive ? palette.accent : palette.border}
                 strokeWidth={isActive ? 3 : 1.5}
-                filter="url(#brakeShadow)"
               />
               <text
-                x={position.x + PAD_WIDTH / 2}
-                y={position.y + PAD_HEIGHT / 2}
+                x={centerX}
+                y={centerY}
                 textAnchor="middle"
                 dominantBaseline="middle"
                 fill={colors.text}
@@ -149,12 +137,6 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect }) {
             </g>
           );
         })}
-
-        <defs>
-          <filter id="brakeShadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="rgba(var(--shadow-rgb),0.55)" />
-          </filter>
-        </defs>
       </svg>
     </div>
   );

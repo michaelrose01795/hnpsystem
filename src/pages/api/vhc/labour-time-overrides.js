@@ -6,6 +6,7 @@ import { buildNormalizedKey, isValidUuid } from "@/features/labour-times/normali
 import { clearCacheByPrefix } from "@/features/labour-times/cache";
 
 const GLOBAL_WRITE_ROLES = new Set(["admin", "manager"]);
+const LABOUR_OVERRIDE_DEBUG = process.env.NODE_ENV !== "production" && process.env.DEBUG_LABOUR_SUGGESTIONS === "1";
 
 const normalizeScope = (value = "") => {
   const cleaned = String(value || "").toLowerCase().trim();
@@ -24,6 +25,7 @@ export default async function handler(req, res) {
     const timeHours = Number(req.body?.timeHours);
     const scope = normalizeScope(req.body?.scope);
     const userId = String(req.body?.userId || "").trim();
+    const normalizedUserId = scope === "user" ? userId : null;
 
     if (!description) {
       res.status(400).json({ success: false, message: "description is required" });
@@ -31,7 +33,7 @@ export default async function handler(req, res) {
     }
 
     if (!Number.isFinite(timeHours) || timeHours < 0) {
-      res.status(400).json({ success: false, message: "timeHours must be a positive number" });
+      res.status(400).json({ success: false, message: "timeHours must be a non-negative number" });
       return;
     }
 
@@ -49,7 +51,7 @@ export default async function handler(req, res) {
       return;
     }
 
-    if (scope === "user" && !isValidUuid(userId)) {
+    if (scope === "user" && !isValidUuid(normalizedUserId)) {
       res.status(400).json({ success: false, message: "userId must be a UUID for user scoped overrides" });
       return;
     }
@@ -64,7 +66,7 @@ export default async function handler(req, res) {
       .limit(1);
 
     const existingResult = scope === "user"
-      ? await existingQuery.eq("user_id", userId).maybeSingle()
+      ? await existingQuery.eq("user_id", normalizedUserId).maybeSingle()
       : await existingQuery.is("user_id", null).maybeSingle();
 
     if (existingResult?.data?.id) {
@@ -96,7 +98,7 @@ export default async function handler(req, res) {
         normalized_key: normalizedKey,
         override_time_hours: timeHours,
         scope,
-        user_id: scope === "user" ? userId : null,
+        user_id: normalizedUserId,
         usage_count: 1,
         last_used_at: nowIso,
         updated_at: nowIso,
@@ -109,6 +111,9 @@ export default async function handler(req, res) {
     }
 
     clearCacheByPrefix("labour:suggest:");
+    if (LABOUR_OVERRIDE_DEBUG) {
+      console.log("[labour-time-overrides] Saved override", { normalizedKey, scope, userId: normalizedUserId, timeHours });
+    }
     res.status(200).json({ success: true, override: insertResult.data, mode: "created" });
   } catch (error) {
     console.error("Failed to save labour override", error);

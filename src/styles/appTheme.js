@@ -277,7 +277,7 @@ export const vhcModalStyles = {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 1100,
+    zIndex: 5000,
     padding: "24px",
   },
   container: ({ width = "1080px", height = "640px" } = {}) => ({
@@ -420,7 +420,7 @@ export const popupOverlayStyles = {
   alignItems: "center",
   justifyContent: "center",
   padding: "24px",
-  zIndex: 1200,
+  zIndex: 5500,
 };
 
 export const popupCardStyles = {
