@@ -186,13 +186,42 @@ export const upsertVhcIssueRow = async ({
       throw new Error(`Failed to upsert VHC issue row: ${error.message || error}`);
     }
 
-    const { data: existingRow, error: existingError } = await buildLegacyMatchQuery({
-      supabase: client,
-      jobId: resolvedJobId,
-      section: normalizedSection,
-      issueTitle: normalizedTitle,
-      issueText: normalizedIssueText,
-    });
+    let existingRow = null;
+    let existingError = null;
+
+    // If identity columns exist but the unique onConflict target is missing, still match by identity first.
+    if (slotCode !== null && slotCode !== undefined && lineKey) {
+      try {
+        const { data: identityRow, error: identityError } = await client
+          .from("vhc_checks")
+          .select("vhc_id")
+          .eq("job_id", resolvedJobId)
+          .eq("slot_code", slotCode)
+          .eq("line_key", lineKey)
+          .order("vhc_id", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (!identityError && identityRow?.vhc_id) {
+          existingRow = identityRow;
+        } else if (identityError) {
+          existingError = identityError;
+        }
+      } catch (identityLookupError) {
+        existingError = identityLookupError;
+      }
+    }
+
+    if (!existingRow) {
+      const legacyResult = await buildLegacyMatchQuery({
+        supabase: client,
+        jobId: resolvedJobId,
+        section: normalizedSection,
+        issueTitle: normalizedTitle,
+        issueText: normalizedIssueText,
+      });
+      existingRow = legacyResult?.data || null;
+      existingError = existingError || legacyResult?.error || null;
+    }
 
     if (existingError && existingError.code !== "PGRST116") {
       throw new Error(`Failed legacy VHC row lookup: ${existingError.message}`);

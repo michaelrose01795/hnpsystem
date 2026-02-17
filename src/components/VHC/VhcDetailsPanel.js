@@ -18,6 +18,7 @@ import UndersideDetailsModal from "@/components/VHC/UndersideDetailsModal";
 import PrePickLocationModal from "@/components/VHC/PrePickLocationModal";
 import VHCModalShell from "@/components/VHC/VHCModalShell";
 import { buildVhcRowStatusView, normaliseDecisionStatus, resolveSeverityKey } from "@/lib/vhc/summaryStatus";
+import { getSlotCode, makeLineKey, resolveLineType } from "@/lib/vhc/slotIdentity";
 import {
   EmptyStateMessage,
   SeverityBadge,
@@ -646,6 +647,12 @@ const normaliseColour = (value) => {
   if (colour.includes("grey") || colour.includes("gray")) return "grey";
   return null;
 };
+
+const normaliseLookupToken = (value) =>
+  String(value || "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
 
 const deriveHighestSeverity = (statuses = []) => {
   let highest = null;
@@ -1547,32 +1554,12 @@ export default function VhcDetailsPanel({
         vhcIdAliases,
         authorizedViewRows,
         labourRate: QUOTE_LABOUR_RATE,
-        mode: "quotedOnly",
+        mode: "withPlaceholders",
       }),
     [job, sections, vhcChecksData, jobParts, vhcIdAliases, authorizedViewRows]
   );
   const quoteSeverityLists = summaryQuoteModel.severityLists || {};
   const quoteTotals = summaryQuoteModel.totals || { red: 0, amber: 0, green: 0, authorized: 0, declined: 0 };
-  const summaryDevDebugLine = useMemo(() => { // Build a compact dev-only debug line to prove Summary receives severity and pricing fields.
-    const samples = (vhcChecksData || []).slice(0, 5).map((check) => { // Take first five raw vhc_checks rows for quick visual validation.
-      const id = check?.vhc_id ?? "na";
-      const severity = check?.severity ?? "null";
-      const displayStatus = check?.display_status ?? "null";
-      const labourHours = check?.labour_hours ?? "null";
-      const partsCost = check?.parts_cost ?? "null";
-      return `${id}:${severity}:${displayStatus}:${labourHours}:${partsCost}`;
-    }); // Format each sample as vhc_id:severity:display_status:labour_hours:parts_cost.
-    return [
-      `job=${resolvedJobNumber || job?.job_number || "unknown"}`,
-      `red=${(quoteSeverityLists.red || []).length}`,
-      `amber=${(quoteSeverityLists.amber || []).length}`,
-      `green=${(quoteSeverityLists.green || []).length}`,
-      `other=${(quoteSeverityLists.other || []).length}`,
-      `authorized=${(quoteSeverityLists.authorized || []).length}`,
-      `declined=${(quoteSeverityLists.declined || []).length}`,
-      `sample=[${samples.join(", ")}]`,
-    ].join(" | "); // Keep this as a single short line so layout remains unchanged.
-  }, [job?.job_number, quoteSeverityLists, resolvedJobNumber, vhcChecksData]);
   const wheelTreadLookup = useMemo(() => {
     const lookup = new Map();
     const tyres = vhcData?.wheelsTyres;
@@ -1770,6 +1757,7 @@ export default function VhcDetailsPanel({
 
         items.push({
           id: String(id),
+          sourceIssueTitle: heading || "Recorded item",
           label: heading || "Recorded item",
           notes: item.notes || item.issue_description || "",
           measurement: formatMeasurement(item.measurement),
@@ -2399,11 +2387,127 @@ export default function VhcDetailsPanel({
     return Boolean(entry?.labourComplete);
   };
 
+  const buildSummaryItemIdentity = useCallback((summaryItem) => {
+    if (!summaryItem) return null;
+    const section = summaryItem.sectionName || summaryItem.category?.label || "Vehicle Health Check";
+    const issueTitle = summaryItem.sourceIssueTitle || summaryItem.label || "VHC Item";
+    const issueDescription = summaryItem.notes || summaryItem.concernText || "";
+    const issueText = summaryItem.concernText || summaryItem.notes || issueTitle;
+    const sourceBucket = summaryItem.category?.label || summaryItem.category?.id || "";
+    const sourceKey = summaryItem.location || summaryItem.category?.id || issueTitle;
+    const subAreaKey = summaryItem.wheelKey || issueTitle;
+    const severity = summaryItem.rawSeverity || summaryItem.severityKey || "amber";
+    const slotCode = getSlotCode({
+      section,
+      subAreaKey,
+      sourceKey,
+      issueTitle,
+      issueDescription: issueText,
+    });
+    const lineType = resolveLineType({
+      slotCode,
+      section,
+      sourceBucket,
+    });
+    const lineKey = makeLineKey({
+      type: lineType,
+      issueText,
+      extra: { source: sourceBucket },
+    });
+    return {
+      section,
+      issueTitle,
+      issueDescription,
+      issueText,
+      sourceBucket,
+      sourceKey,
+      subAreaKey,
+      severity,
+      slotCode,
+      lineKey,
+    };
+  }, []);
+
+  const findExistingVhcItemId = useCallback(
+    (displayId, providedSummaryItem = null) => {
+      const canonicalId = resolveCanonicalVhcId(displayId);
+      const numericCanonicalId = Number(canonicalId);
+      if (Number.isInteger(numericCanonicalId)) {
+        return numericCanonicalId;
+      }
+
+      const summaryItem = providedSummaryItem || summaryItemLookup.get(String(displayId));
+      if (!summaryItem) return null;
+      const identity = buildSummaryItemIdentity(summaryItem);
+      if (!identity) return null;
+
+      const rows = (vhcChecksData || []).filter(
+        (check) => check && check.section !== "VHC_CHECKSHEET"
+      );
+      if (rows.length === 0) return null;
+
+      const pickLatest = (matches = []) => {
+        if (!Array.isArray(matches) || matches.length === 0) return null;
+        const sorted = [...matches].sort((a, b) => {
+          const aTime = new Date(a?.updated_at || a?.created_at || 0).getTime();
+          const bTime = new Date(b?.updated_at || b?.created_at || 0).getTime();
+          return bTime - aTime;
+        });
+        return sorted[0] || null;
+      };
+
+      const slotCode = Number(identity.slotCode);
+      if (Number.isFinite(slotCode) && identity.lineKey) {
+        const slotMatches = rows.filter(
+          (check) =>
+            Number(check?.slot_code) === slotCode &&
+            String(check?.line_key || "") === String(identity.lineKey)
+        );
+        const slotMatch = pickLatest(slotMatches);
+        if (slotMatch?.vhc_id && Number.isInteger(Number(slotMatch.vhc_id))) {
+          return Number(slotMatch.vhc_id);
+        }
+      }
+
+      const sectionToken = normaliseLookupToken(identity.section);
+      const titleToken = normaliseLookupToken(identity.issueTitle);
+      const issueToken = normaliseLookupToken(identity.issueText);
+      const sectionTitleMatches = rows.filter(
+        (check) =>
+          normaliseLookupToken(check?.section) === sectionToken &&
+          normaliseLookupToken(check?.issue_title) === titleToken
+      );
+      const strictMatch = pickLatest(
+        sectionTitleMatches.filter(
+          (check) => normaliseLookupToken(check?.issue_description) === issueToken
+        )
+      );
+      if (strictMatch?.vhc_id && Number.isInteger(Number(strictMatch.vhc_id))) {
+        return Number(strictMatch.vhc_id);
+      }
+
+      const relaxedMatch = pickLatest(sectionTitleMatches);
+      if (relaxedMatch?.vhc_id && Number.isInteger(Number(relaxedMatch.vhc_id))) {
+        return Number(relaxedMatch.vhc_id);
+      }
+
+      return null;
+    },
+    [buildSummaryItemIdentity, resolveCanonicalVhcId, summaryItemLookup, vhcChecksData]
+  );
+
   const createVhcCheckForDisplayId = useCallback(
-    async (displayId) => {
+    async (displayId, { allowCreate = true } = {}) => {
       const summaryItem = summaryItemLookup.get(String(displayId));
-      if (!summaryItem || !job?.id) return null;
+      const existingId = findExistingVhcItemId(displayId, summaryItem);
+      if (Number.isInteger(existingId)) {
+        await upsertVhcItemAlias(displayId, existingId);
+        return existingId;
+      }
+      if (!allowCreate || !summaryItem || !job?.id) return null;
       try {
+        const identity = buildSummaryItemIdentity(summaryItem);
+        if (!identity) return null;
         const entry = getEntryForItem(displayId);
         const resolvedLabourHours = resolveLabourHoursValue(displayId, entry);
         const createResponse = await fetch("/api/jobcards/create-vhc-item", {
@@ -2412,10 +2516,15 @@ export default function VhcDetailsPanel({
           body: JSON.stringify({
             jobId: job.id,
             jobNumber: resolvedJobNumber,
-            section: summaryItem.sectionName || summaryItem.category?.label || "Vehicle Health Check",
-            issueTitle: summaryItem.label,
-            issueDescription: summaryItem.notes || summaryItem.concernText || "",
+            section: identity.section,
+            subAreaKey: identity.subAreaKey,
+            sourceKey: identity.sourceKey,
+            sourceBucket: identity.sourceBucket,
+            issueTitle: identity.issueTitle,
+            issueDescription: identity.issueDescription,
+            issueText: identity.issueText,
             measurement: summaryItem.measurement || null,
+            severity: identity.severity,
             labourHours: resolvedLabourHours !== "" ? resolvedLabourHours : null,
           }),
         });
@@ -2431,15 +2540,27 @@ export default function VhcDetailsPanel({
 
         await upsertVhcItemAlias(displayId, createResult.vhcId);
         if (createResult.data) {
-          setVhcChecksData((prev) => [...prev, createResult.data]);
+          setVhcChecksData((prev) => {
+            const next = new Map((prev || []).map((check) => [String(check?.vhc_id), check]));
+            next.set(String(createResult.data.vhc_id), createResult.data);
+            return Array.from(next.values());
+          });
         }
-        return createResult.vhcId;
+        return Number(createResult.vhcId);
       } catch (error) {
         console.error("Failed to create VHC check item for status update:", error);
         return null;
       }
     },
-    [job?.id, resolvedJobNumber, summaryItemLookup, resolveLabourHoursValue, upsertVhcItemAlias]
+    [
+      buildSummaryItemIdentity,
+      findExistingVhcItemId,
+      job?.id,
+      resolvedJobNumber,
+      summaryItemLookup,
+      resolveLabourHoursValue,
+      upsertVhcItemAlias,
+    ]
   );
 
   const updateEntryStatus = async (itemId, status) => {
@@ -4432,41 +4553,12 @@ export default function VhcDetailsPanel({
       const parsedHours = Number(hoursValue);
       const labourHours = !isBlank && Number.isFinite(parsedHours) ? parsedHours : null;
 
-      // Find the item to get its details for potential vhc_checks record creation
-      const item = summaryItems.find(i => String(i.id) === String(displayVhcId));
-
       try {
         let vhcItemIdToUse = parsedId;
-
-        // If we don't have a valid numeric ID (no alias exists), we need to create a vhc_checks record
-        if (!Number.isInteger(parsedId) && item) {
-          if (isBlank) {
-            return;
-          }
-
-          // Create a vhc_checks record for this item
-          const createResponse = await fetch("/api/jobcards/create-vhc-item", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              jobId: job.id,
-              jobNumber: resolvedJobNumber,
-              section: item.sectionName || item.category?.label || "Vehicle Health Check",
-              issueTitle: item.label,
-              issueDescription: item.notes || item.concernText || "",
-              measurement: item.measurement || null,
-              labourHours: isBlank ? null : labourHours,
-            }),
+        if (!Number.isInteger(vhcItemIdToUse)) {
+          vhcItemIdToUse = await createVhcCheckForDisplayId(displayVhcId, {
+            allowCreate: !isBlank,
           });
-
-          if (createResponse.ok) {
-            const createResult = await createResponse.json();
-            if (createResult.success && createResult.vhcId) {
-              vhcItemIdToUse = createResult.vhcId;
-              // Create alias mapping
-              await upsertVhcItemAlias(displayVhcId, vhcItemIdToUse);
-            }
-          }
         }
 
         // Only proceed if we have a valid numeric ID
@@ -4540,7 +4632,7 @@ export default function VhcDetailsPanel({
         console.error("Failed to persist labour hours", error);
       }
     },
-    [authUserId, dbUserId, job?.id, resolveCanonicalVhcId, summaryItems, resolvedJobNumber, upsertVhcItemAlias, refreshJobData]
+    [authUserId, dbUserId, job?.id, resolveCanonicalVhcId, createVhcCheckForDisplayId, refreshJobData]
   );
 
   // Handler for Pre-Pick Location dropdown change
@@ -5182,30 +5274,9 @@ export default function VhcDetailsPanel({
 
     try {
       if (!Number.isInteger(vhcItemId)) {
-        const item = summaryItems.find((entry) => String(entry.id) === String(addPartsTarget.vhcId));
-        if (item && job?.id) {
-          const createResponse = await fetch("/api/jobcards/create-vhc-item", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              jobId: job.id,
-              jobNumber: resolvedJobNumber,
-              section: item.sectionName || item.category?.label || "Vehicle Health Check",
-              issueTitle: item.label,
-              issueDescription: item.notes || item.concernText || "",
-              measurement: item.measurement || null,
-              labourHours: 0,
-            }),
-          });
-
-          if (createResponse.ok) {
-            const createResult = await createResponse.json();
-            if (createResult.success && createResult.vhcId) {
-              vhcItemId = createResult.vhcId;
-              await upsertVhcItemAlias(addPartsTarget.vhcId, vhcItemId);
-            }
-          }
-        }
+        vhcItemId = await createVhcCheckForDisplayId(addPartsTarget.vhcId, {
+          allowCreate: true,
+        });
       }
 
       if (!Number.isInteger(vhcItemId)) {
@@ -5279,13 +5350,12 @@ export default function VhcDetailsPanel({
     addPartsTarget,
     authUserId,
     dbUserId,
+    createVhcCheckForDisplayId,
     handlePartAdded,
     job?.id,
     resolvedJobNumber,
     resolveCanonicalVhcId,
     selectedParts,
-    summaryItems,
-    upsertVhcItemAlias,
   ]);
 
   const handleRemovePart = useCallback(
@@ -6719,11 +6789,6 @@ export default function VhcDetailsPanel({
             <div style={TAB_CONTENT_STYLE}>
               {activeTab === "summary" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-                {process.env.NODE_ENV !== "production" && ( // Render a visible dev-only line so Summary data path can be verified quickly.
-                  <div style={{ fontSize: "11px", color: "var(--info)", opacity: 0.85, wordBreak: "break-word" }}>
-                    DEV Summary Debug: {summaryDevDebugLine}
-                  </div>
-                )}
                 {/* Only show Red/Amber sections if there are pending items */}
                 {["red", "amber"].map((severity) => {
                     const items = quoteSeverityLists[severity] || [];
@@ -7024,11 +7089,6 @@ export default function VhcDetailsPanel({
             )}
             <div style={TAB_CONTENT_STYLE}>
               <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-                {process.env.NODE_ENV !== "production" && ( // Render same debug line for embedded layout mode used by job-cards Summary.
-                  <div style={{ fontSize: "11px", color: "var(--info)", opacity: 0.85, wordBreak: "break-word" }}>
-                    DEV Summary Debug: {summaryDevDebugLine}
-                  </div>
-                )}
                 {/* Only show Red/Amber sections if there are pending items */}
                 {["red", "amber"].map((severity) => {
                   const items = quoteSeverityLists[severity] || [];

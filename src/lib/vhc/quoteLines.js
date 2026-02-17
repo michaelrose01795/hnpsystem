@@ -140,8 +140,16 @@ export const buildVhcQuoteLinesModel = ({
   });
 
   const checksMap = new Map();
+  const checksBySectionTitle = new Map();
   (vhcChecksData || []).forEach((check) => {
-    if (check?.vhc_id) checksMap.set(String(check.vhc_id), check);
+    if (!check?.vhc_id) return;
+    checksMap.set(String(check.vhc_id), check);
+    if (check.section === "VHC_CHECKSHEET") return;
+    const titleKey = buildSectionTitleKey(check.section || "Other", check.issue_title || "");
+    if (!checksBySectionTitle.has(titleKey)) {
+      checksBySectionTitle.set(titleKey, []);
+    }
+    checksBySectionTitle.get(titleKey).push(check);
   });
   Object.entries(vhcIdAliases || {}).forEach(([displayId, canonicalId]) => {
     const check = checksMap.get(String(canonicalId));
@@ -191,11 +199,24 @@ export const buildVhcQuoteLinesModel = ({
         if (!severity) return;
 
         const legacyId = `${sectionName}-${index}`;
-        const id = item?.vhc_id ? String(item.vhc_id) : vhcIdAliases?.[legacyId] ? legacyId : buildStableDisplayId(sectionName, item, index);
-        const canonicalId = String(vhcIdAliases?.[String(id)] || String(id));
-        const check = checksMap.get(canonicalId) || checksMap.get(String(id));
-
         const heading = item?.heading || item?.label || item?.issue_title || item?.name || item?.title || sectionName;
+        const titleKey = buildSectionTitleKey(sectionName, heading);
+        const titleMatches = checksBySectionTitle.get(titleKey) || [];
+
+        // When DB already has multiple rows for the same section/title (e.g. multiple concerns),
+        // don't emit a synthetic placeholder row; rely on concrete vhc_checks rows below.
+        const hasExplicitIdLink = Boolean(item?.vhc_id || vhcIdAliases?.[legacyId]);
+        if (!hasExplicitIdLink && titleMatches.length > 1) {
+          return;
+        }
+
+        const provisionalId = item?.vhc_id ? String(item.vhc_id) : vhcIdAliases?.[legacyId] ? legacyId : buildStableDisplayId(sectionName, item, index);
+        const provisionalCanonicalId = String(vhcIdAliases?.[String(provisionalId)] || String(provisionalId));
+        const matchedByTitle = !hasExplicitIdLink && titleMatches.length === 1 ? titleMatches[0] : null;
+        const check = checksMap.get(provisionalCanonicalId) || checksMap.get(String(provisionalId)) || matchedByTitle || null;
+        const id = check?.vhc_id ? String(check.vhc_id) : String(provisionalId);
+        const canonicalId = String(vhcIdAliases?.[String(id)] || check?.vhc_id || String(id));
+
         const category = resolveCategoryForItem(sectionName);
         const concerns = Array.isArray(item?.concerns) ? item.concerns : [];
         const primaryConcern = concerns.find((c) => normaliseColour(c?.status) === severity) || concerns[0] || null;
@@ -273,7 +294,9 @@ export const buildVhcQuoteLinesModel = ({
       }
     }
 
-    const severity = normaliseColour(check.severity || check.display_status) || item.severityKey || item.rawSeverity || "grey";
+    const severityFromColumn = normaliseColour(check.severity);
+    const severityFromDisplay = resolveDisplaySeverity(check.display_status);
+    const severity = severityFromColumn || severityFromDisplay || item.severityKey || item.rawSeverity || "grey";
     const parts = partsCostMap.get(itemId) ?? partsCostMap.get(canonicalId) ?? toNumber(check.parts_cost, 0);
     const labourHours = labourHoursMap.get(itemId) ?? labourHoursMap.get(canonicalId) ?? toNumber(check.labour_hours, 0);
     const totalOverride = toNumber(check.total_override, 0);
