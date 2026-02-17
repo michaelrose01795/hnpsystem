@@ -300,20 +300,25 @@ const buildTyreSection = (tyres) => {
     const tyre = tyres[wheelKey];
     if (!tyre || typeof tyre !== "object") return;
     const rows = [];
+    const hasCoreDetails =
+      Boolean(tyre.manufacturer) ||
+      Boolean(tyre.size) ||
+      Boolean(tyre.load) ||
+      Boolean(tyre.speed);
+    const treadSummary = formatTreadSegments(tyre.tread);
+    const averageTread = calculateAverageTread(tyre.tread);
     if (tyre.manufacturer) rows.push(`Make: ${tyre.manufacturer}`);
     if (tyre.size) rows.push(`Size: ${tyre.size}`);
     const loadSpeed = [];
     if (tyre.load) loadSpeed.push(`Load ${tyre.load}`);
     if (tyre.speed) loadSpeed.push(`Speed ${tyre.speed}`);
     if (loadSpeed.length > 0) rows.push(loadSpeed.join(" • "));
-    if (typeof tyre.runFlat === "boolean") {
+    if (typeof tyre.runFlat === "boolean" && (hasCoreDetails || treadSummary || averageTread || tyre.runFlat === true)) {
       rows.push(`Run Flat: ${tyre.runFlat ? "Yes" : "No"}`);
     }
-    const treadSummary = formatTreadSegments(tyre.tread);
     if (treadSummary) {
       rows.push(`Tread: ${treadSummary}`);
     }
-    const averageTread = calculateAverageTread(tyre.tread);
     if (averageTread) {
       rows.push(`Average Tread: ${averageTread}mm`);
     }
@@ -346,18 +351,39 @@ const buildTyreSection = (tyres) => {
   if (spare && typeof spare === "object") {
     const rows = [];
     const typeLabel = spare.type ? SPARE_TYPE_LABELS[spare.type] || spare.type : null;
-    if (typeLabel) rows.push(`Type: ${typeLabel}`);
-    if (spare.condition) rows.push(`Condition: ${spare.condition}`);
-    const dateText = formatSpareDate(spare);
-    if (dateText) rows.push(`Manufactured: ${dateText}`);
-    if (spare.note) rows.push(`Notes: ${spare.note}`);
     const details = spare.details || {};
-    if (details.manufacturer) rows.push(`Make: ${details.manufacturer}`);
-    if (details.size) rows.push(`Size: ${details.size}`);
-    const loadSpeed = [];
-    if (details.load) loadSpeed.push(`Load ${details.load}`);
-    if (details.speed) loadSpeed.push(`Speed ${details.speed}`);
-    if (loadSpeed.length > 0) rows.push(loadSpeed.join(" • "));
+    const hasSpareDetails =
+      Boolean(details.manufacturer) ||
+      Boolean(details.size) ||
+      Boolean(details.load) ||
+      Boolean(details.speed) ||
+      Boolean(formatTreadSegments(details.tread)) ||
+      Boolean(calculateAverageTread(details.tread));
+    const hasTypeSpecificData =
+      (spare.type === "spare" && hasSpareDetails) ||
+      (spare.type === "repair_kit" && Boolean(formatSpareDate(spare))) ||
+      (spare.type === "space_saver" && Boolean(spare.condition)) ||
+      (spare.type === "not_checked" && Boolean(spare.note)) ||
+      spare.type === "boot_full";
+    if (typeLabel && hasTypeSpecificData) rows.push(`Type: ${typeLabel}`);
+    if (spare.type === "space_saver" && spare.condition) {
+      rows.push(`Condition: ${spare.condition}`);
+    }
+    if (spare.type === "repair_kit") {
+      const dateText = formatSpareDate(spare);
+      if (dateText) rows.push(`Manufactured: ${dateText}`);
+    }
+    if (spare.type === "not_checked" && spare.note) {
+      rows.push(`Notes: ${spare.note}`);
+    }
+    if (spare.type === "spare") {
+      if (details.manufacturer) rows.push(`Make: ${details.manufacturer}`);
+      if (details.size) rows.push(`Size: ${details.size}`);
+      const loadSpeed = [];
+      if (details.load) loadSpeed.push(`Load ${details.load}`);
+      if (details.speed) loadSpeed.push(`Speed ${details.speed}`);
+      if (loadSpeed.length > 0) rows.push(loadSpeed.join(" • "));
+    }
     const spareConcerns = Array.isArray(spare.concerns)
       ? spare.concerns.map(normaliseConcern).filter(Boolean)
       : [];
@@ -403,16 +429,18 @@ const buildBrakesSection = (brakes) => {
     const statusLabel = normaliseStatus(pad.status);
     const measurementText = formatMeasurementList(pad.measurement);
     if (measurementText) rows.push(`Pad measurements: ${measurementText}`);
+    const statusForSummary =
+      measurementText || (statusLabel && statusLabel !== "Green") ? statusLabel : null;
     const concerns = Array.isArray(pad.concerns) ? pad.concerns.map(normaliseConcern).filter(Boolean) : [];
     concerns.forEach((concern) => {
       if (concern.status === "Red") red += 1;
       if (concern.status === "Amber") amber += 1;
       if (concern.status === "Grey") grey += 1;
     });
-    if (!statusLabel && rows.length === 0 && concerns.length === 0) return;
+    if (!statusForSummary && rows.length === 0 && concerns.length === 0) return;
     items.push({
       heading: label,
-      status: statusLabel || determineDominantStatus(concerns.map((concern) => concern.status)),
+      status: statusForSummary || determineDominantStatus(concerns.map((concern) => concern.status)),
       rows,
       concerns,
     });
@@ -428,6 +456,14 @@ const buildBrakesSection = (brakes) => {
     if (thicknessValues) rows.push(`Measurements: ${thicknessValues}`);
     const visualNotes = (disc.visual?.notes || disc.visual?.note || "").trim();
     if (visualNotes) rows.push(`Visual: ${visualNotes}`);
+    const measurementStatusForSummary =
+      thicknessValues || (measurementStatus && measurementStatus !== "Green")
+        ? measurementStatus
+        : null;
+    const visualStatusForSummary =
+      visualNotes || (visualStatus && visualStatus !== "Green")
+        ? visualStatus
+        : null;
     const concerns = Array.isArray(disc.concerns) ? disc.concerns.map(normaliseConcern).filter(Boolean) : [];
     concerns.forEach((concern) => {
       if (concern.status === "Red") red += 1;
@@ -435,8 +471,8 @@ const buildBrakesSection = (brakes) => {
       if (concern.status === "Grey") grey += 1;
     });
     const overallStatus = determineDominantStatus([
-      measurementStatus,
-      visualStatus,
+      measurementStatusForSummary,
+      visualStatusForSummary,
       ...concerns.map((concern) => concern.status),
     ]);
     if (rows.length === 0 && concerns.length === 0 && !overallStatus) return;

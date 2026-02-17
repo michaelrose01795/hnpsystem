@@ -15,6 +15,7 @@ export default function VHCModalShell({
   footer = null,
   children,
   hideCloseButton = false,
+  adaptiveHeight = false,
   locked = false,
   lockedMessage = "Authorised",
   lockedOverlay = true,
@@ -45,7 +46,7 @@ export default function VHCModalShell({
                 maxWidth: "100%",
                 height: "auto",
                 maxHeight: "none",
-                minHeight: "calc(100vh - 210px)",
+                minHeight: adaptiveHeight ? "auto" : "calc(100vh - 210px)",
               }
             : vhcModalStyles.container({ width, height })
         }

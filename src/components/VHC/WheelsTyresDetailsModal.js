@@ -113,6 +113,45 @@ const createSpareEntry = (source = {}) => ({
   details: createWheelEntry(source.details || {}),
 });
 
+const buildSparePayload = (spare = {}) => {
+  const type = spare.type || "spare";
+  const concerns = Array.isArray(spare.concerns) ? spare.concerns : [];
+
+  switch (type) {
+    case "spare":
+      return {
+        type,
+        concerns,
+        details: createWheelEntry(spare.details || {}),
+      };
+    case "repair_kit":
+      return {
+        type,
+        concerns,
+        month: spare.month || "",
+        year: spare.year || "",
+      };
+    case "space_saver":
+      return {
+        type,
+        concerns,
+        condition: spare.condition || "",
+      };
+    case "not_checked":
+      return {
+        type,
+        concerns,
+        note: spare.note || "",
+      };
+    case "boot_full":
+    default:
+      return {
+        type: "boot_full",
+        concerns,
+      };
+  }
+};
+
 const buildNormalizedTyres = (source = {}) => {
   const normalized = {};
   WHEELS.forEach((wheel) => {
@@ -270,10 +309,15 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
 
   const [activeWheel, setActiveWheel] = useState("NSF");
   const [copyActive, setCopyActive] = useState(false);
+  const [showValidation, setShowValidation] = useState(false);
   const [concernTarget, setConcernTarget] = useState(null);
   const [concernInput, setConcernInput] = useState("");
   const [concernStatus, setConcernStatus] = useState("Amber");
   const [concernEditIndex, setConcernEditIndex] = useState(null);
+
+  useEffect(() => {
+    setShowValidation(false);
+  }, [normalizedInitialTyres]);
 
   const allConcerns = useMemo(() => {
     return Object.keys(tyres).reduce(
@@ -364,24 +408,54 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
 
   const isWheelReady = (tyre) => hasTyreSpec(tyre) && isTreadComplete(tyre);
 
-  const allWheelsComplete = () => {
-    const mainComplete = WHEELS.every((wheel) => isWheelReady(tyres[wheel]));
+  const getMissingWheelKeys = () => {
+    const missing = WHEELS.filter((wheel) => !isWheelReady(tyres[wheel]));
     const spare = tyres.Spare;
+    let spareComplete = true;
 
     switch (spare.type) {
       case "spare":
-        return mainComplete && isWheelReady(spare.details);
+        spareComplete = isWheelReady(spare.details);
+        break;
       case "repair_kit":
-        return mainComplete && hasValue(spare.month) && hasValue(spare.year);
+        spareComplete = hasValue(spare.month) && hasValue(spare.year);
+        break;
       case "space_saver":
-        return mainComplete && hasValue(spare.condition);
+        spareComplete = hasValue(spare.condition);
+        break;
       case "not_checked":
-        return mainComplete && hasValue(spare.note);
+        spareComplete = hasValue(spare.note);
+        break;
       case "boot_full":
-        return mainComplete;
       default:
-        return mainComplete;
+        spareComplete = true;
+        break;
     }
+
+    if (!spareComplete) {
+      missing.push("Spare");
+    }
+
+    return missing;
+  };
+
+  const missingWheelKeys = getMissingWheelKeys();
+  const canComplete = missingWheelKeys.length === 0;
+
+  const handleSaveComplete = () => {
+    if (!canComplete) {
+      setShowValidation(true);
+      const firstMissing = missingWheelKeys[0];
+      if (firstMissing) setActiveWheel(firstMissing);
+      return;
+    }
+    onComplete({
+      NSF: createWheelEntry(tyres.NSF),
+      OSF: createWheelEntry(tyres.OSF),
+      NSR: createWheelEntry(tyres.NSR),
+      OSR: createWheelEntry(tyres.OSR),
+      Spare: buildSparePayload(tyres.Spare),
+    });
   };
 
   const updateTyre = (field, value) => {
@@ -609,12 +683,17 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
   const currentTyre = tyres[activeWheel];
   const handleClose = () => {
     if (!onClose) return;
-    onClose(tyres);
+    onClose({
+      NSF: createWheelEntry(tyres.NSF),
+      OSF: createWheelEntry(tyres.OSF),
+      NSR: createWheelEntry(tyres.NSR),
+      OSR: createWheelEntry(tyres.OSR),
+      Spare: buildSparePayload(tyres.Spare),
+    });
   };
   const contentWrapperStyle = {
     ...vhcModalContentStyles.contentWrapper,
     gap: "20px",
-    height: "100%",
   };
 
   const footer = (
@@ -624,9 +703,9 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
       </button>
       <button
         type="button"
-        onClick={() => onComplete(tyres)}
-        style={buildModalButton("primary", { disabled: !allWheelsComplete() })}
-        disabled={!allWheelsComplete()}
+        onClick={handleSaveComplete}
+        style={buildModalButton("primary", { disabled: locked })}
+        disabled={locked}
       >
         Save & Complete
       </button>
@@ -642,9 +721,9 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
       title="Wheels & Tyres"
       locked={locked}
       inlineMode={inlineMode}
+      adaptiveHeight
       hideCloseButton
       width="1280px"
-      height="780px"
       footer={footer}
     >
       <div style={contentWrapperStyle}>
@@ -652,7 +731,6 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
             style={{
               display: "flex",
               gap: "20px",
-              height: "100%",
               minHeight: 0,
               position: "relative",
             }}
@@ -668,6 +746,8 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
               <TyreDiagram
                 tyres={tyreDiagramReadings}
                 activeTyre={activeWheel === "Spare" ? null : activeWheel}
+                invalidTyres={showValidation ? missingWheelKeys.filter((wheel) => wheel !== "Spare") : []}
+                invalidSpare={showValidation && missingWheelKeys.includes("Spare")}
                 onSelect={(key) => {
                   if (!key) return;
                   setActiveWheel(key.toUpperCase());
@@ -699,6 +779,11 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
               <h2 style={{ margin: 0, fontSize: "22px", fontWeight: 700, color: palette.accent, whiteSpace: "nowrap", flexShrink: 0 }}>
                 {activeWheel === "Spare" ? "Spare / Kit Details" : `${activeWheel} Tyre Details`}
               </h2>
+              {showValidation && !canComplete ? (
+                <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--danger)", whiteSpace: "nowrap" }}>
+                  Complete all highlighted wheel sections to continue.
+                </span>
+              ) : null}
               <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "nowrap", flexShrink: 0 }}>
                 {activeWheel !== "Spare" ? (
                   <>
@@ -783,6 +868,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                 display: "flex",
                 flexDirection: "column",
                 gap: "18px",
+                flex: 1,
                 overflowY: "auto",
                 paddingRight: "8px",
                 minHeight: 0,
@@ -1055,7 +1141,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                 </>
               )}
 
-              <div style={{ ...sectionCardStyle, flex: "0 0 auto" }}>
+              <div style={{ ...sectionCardStyle, flex: "1 1 auto", minHeight: 0 }}>
                 <div
                   style={{
                     display: "flex",
@@ -1090,7 +1176,8 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                     display: "flex",
                     flexDirection: "column",
                     gap: "12px",
-                    maxHeight: "180px",
+                    flex: 1,
+                    minHeight: 0,
                     overflowY: "auto",
                   }}
                 >

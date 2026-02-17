@@ -174,19 +174,18 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
   const contentWrapperStyle = {
     ...vhcModalContentStyles.contentWrapper,
     gap: "24px",
-    height: "100%",
   };
   const summaryBadgeBase = vhcModalContentStyles.badge;
   const baseCardStyle = {
     ...vhcModalContentStyles.baseCard,
     alignItems: "flex-start",
-    height: "100%",
+    height: "auto",
   };
   const cardGridStyle = {
     ...vhcModalContentStyles.cardGrid,
     gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-    gridAutoRows: "minmax(0, 1fr)",
-    alignContent: "stretch",
+    gridAutoRows: "auto",
+    alignContent: "start",
   };
 
   const setCardHoverState = (element, hovering) => {
@@ -306,10 +305,10 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
       title="External"
       locked={locked}
       inlineMode={inlineMode}
+      adaptiveHeight
       lockedOverlay={false}
       hideCloseButton
       width="1280px"
-      height="780px"
       footer={modalFooter}
     >
       <div style={contentWrapperStyle}>
@@ -327,6 +326,8 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
               ...cardGridStyle,
               flex: 1,
               minHeight: 0,
+              overflowY: "auto",
+              paddingRight: "6px",
             }}
           >
           {CATEGORY_ORDER.map((category) => {

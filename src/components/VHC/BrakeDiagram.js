@@ -35,9 +35,10 @@ const resolveBrakeEntry = (entry) => {
   return { measurement: entry, overrideStatus: null, isDrum: false };
 };
 
-export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect }) {
+export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, invalidPositions = [] }) {
   const { resolvedMode } = useTheme();
   const activeKey = activeBrake?.toLowerCase();
+  const invalidSet = new Set((invalidPositions || []).map((key) => String(key).toLowerCase()));
   const isFrontActive = activeKey === "front" || activeKey === "nsf" || activeKey === "osf";
   const isRearActive = activeKey === "rear" || activeKey === "nsr" || activeKey === "osr";
   const unknownFill =
@@ -46,8 +47,10 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect }) {
     critical: { fill: "var(--danger)", text: "var(--text-inverse)", label: "var(--danger)" },
     advisory: { fill: "var(--warning)", text: "var(--text-inverse)", label: "var(--warning)" },
     good: { fill: "var(--success)", text: "var(--text-inverse)", label: "var(--success)" },
-    unknown: { fill: unknownFill, text: "var(--text-inverse)", label: unknownFill },
+    unknown: { fill: "#9ca3af", text: "var(--text-inverse)", label: unknownFill },
   };
+  const selectedAxleFill = resolvedMode === "dark" ? "rgba(126, 87, 194, 0.16)" : "rgba(214, 73, 73, 0.12)";
+  const selectedAxleStroke = resolvedMode === "dark" ? "rgba(126, 87, 194, 0.65)" : "rgba(214, 73, 73, 0.7)";
 
   const containerStyle = {
     width: "100%",
@@ -81,6 +84,35 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect }) {
           borderRadius: "16px",
         }}
       >
+        {isFrontActive ? (
+          <rect
+            x={((27.2 / 100) * DIAGRAM_WIDTH) - PAD_WIDTH / 2 - 16}
+            y={((23.2 / 100) * DIAGRAM_HEIGHT) - PAD_HEIGHT / 2 - 12}
+            width={((72.2 - 27.2) / 100) * DIAGRAM_WIDTH + PAD_WIDTH + 32}
+            height={PAD_HEIGHT + 24}
+            rx="18"
+            fill={selectedAxleFill}
+            stroke={selectedAxleStroke}
+            strokeWidth="2"
+            strokeDasharray="5 5"
+            pointerEvents="none"
+          />
+        ) : null}
+        {isRearActive ? (
+          <rect
+            x={((27.2 / 100) * DIAGRAM_WIDTH) - PAD_WIDTH / 2 - 16}
+            y={((72.374 / 100) * DIAGRAM_HEIGHT) - PAD_HEIGHT / 2 - 12}
+            width={((72.2 - 27.2) / 100) * DIAGRAM_WIDTH + PAD_WIDTH + 32}
+            height={PAD_HEIGHT + 24}
+            rx="18"
+            fill={selectedAxleFill}
+            stroke={selectedAxleStroke}
+            strokeWidth="2"
+            strokeDasharray="5 5"
+            pointerEvents="none"
+          />
+        ) : null}
+
         {BRAKE_KEYS.map(({ key, position }) => {
           const centerX = (position.xPct / 100) * DIAGRAM_WIDTH;
           const centerY = (position.yPct / 100) * DIAGRAM_HEIGHT;
@@ -106,6 +138,7 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect }) {
           const isFrontWheel = key === "nsf" || key === "osf";
           const isRearWheel = key === "nsr" || key === "osr";
           const isActive = (isFrontWheel && isFrontActive) || (isRearWheel && isRearActive);
+          const isInvalid = invalidSet.has(key);
 
           return (
             <g
@@ -120,8 +153,8 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect }) {
                 height={PAD_HEIGHT}
                 rx="12"
                 fill={colors.fill}
-                stroke={isActive ? palette.accent : palette.border}
-                strokeWidth={isActive ? 3 : 1.5}
+                stroke={isInvalid ? "var(--danger)" : isActive ? palette.accent : palette.border}
+                strokeWidth={isInvalid ? 3 : isActive ? 3 : 1.5}
               />
               <text
                 x={centerX}

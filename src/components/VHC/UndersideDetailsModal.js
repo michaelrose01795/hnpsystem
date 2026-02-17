@@ -159,19 +159,18 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
   const contentWrapperStyle = {
     ...vhcModalContentStyles.contentWrapper,
     gap: "24px",
-    height: "100%",
   };
   const summaryBadgeBase = vhcModalContentStyles.badge;
   const baseCardStyle = {
     ...vhcModalContentStyles.baseCard,
     alignItems: "flex-start",
-    height: "100%",
+    height: "auto",
   };
   const cardGridStyle = {
     ...vhcModalContentStyles.cardGrid,
     gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-    gridAutoRows: "minmax(0, 1fr)",
-    alignContent: "stretch",
+    gridAutoRows: "auto",
+    alignContent: "start",
   };
 
   const setCardHoverState = (element, hovering) => {
@@ -202,6 +201,12 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
     category: "",
     temp: { issue: "", status: "Red" },
   });
+  const [showValidation, setShowValidation] = useState(false);
+
+  const missingCategories = CATEGORY_ORDER.filter(
+    (category) => (data?.[category]?.concerns ?? []).length === 0,
+  );
+  const canComplete = missingCategories.length === 0;
 
   const enableConcern = (category) => {
     setActiveConcern({ open: true, category, temp: { issue: "", status: "Red" } });
@@ -248,12 +253,20 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
     }
   };
 
+  const handleSaveComplete = () => {
+    if (!canComplete) {
+      setShowValidation(true);
+      return;
+    }
+    onComplete(data);
+  };
+
   const modalFooter = (
     <>
       <button type="button" onClick={handleClose} style={buildModalButton("ghost")}>
         Close
       </button>
-      <button type="button" onClick={() => onComplete(data)} style={buildModalButton("primary")}>
+      <button type="button" onClick={handleSaveComplete} style={buildModalButton("primary")}>
         Save & Complete
       </button>
     </>
@@ -266,10 +279,10 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
       title="Underside"
       locked={locked}
       inlineMode={inlineMode}
+      adaptiveHeight
       lockedOverlay={false}
       hideCloseButton
       width="1280px"
-      height="780px"
       footer={modalFooter}
     >
       <div style={contentWrapperStyle}>
@@ -282,11 +295,18 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
             minHeight: 0,
           }}
         >
+          {showValidation && !canComplete ? (
+            <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--danger)" }}>
+              Complete all highlighted underside sections to continue.
+            </div>
+          ) : null}
           <div
             style={{
               ...cardGridStyle,
               flex: 1,
               minHeight: 0,
+              overflowY: "auto",
+              paddingRight: "6px",
             }}
           >
           {CATEGORY_ORDER.map((category) => {
@@ -295,15 +315,30 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
             const amberCount = concerns.filter((c) => c.status === "Amber").length;
             const greenCount = concerns.filter((c) => c.status === "Green").length;
             const loggedCount = redCount + amberCount + greenCount;
+            const isCategoryMissing = showValidation && missingCategories.includes(category);
 
             return (
               <button
                 key={category}
                 type="button"
                 onClick={() => enableConcern(category)}
-                style={baseCardStyle}
-                onMouseEnter={(e) => setCardHoverState(e.currentTarget, true)}
-                onMouseLeave={(e) => setCardHoverState(e.currentTarget, false)}
+                style={
+                  isCategoryMissing
+                    ? {
+                        ...baseCardStyle,
+                        border: "2px solid var(--danger)",
+                        background: "var(--danger-surface)",
+                      }
+                    : baseCardStyle
+                }
+                onMouseEnter={(e) => {
+                  if (isCategoryMissing) return;
+                  setCardHoverState(e.currentTarget, true);
+                }}
+                onMouseLeave={(e) => {
+                  if (isCategoryMissing) return;
+                  setCardHoverState(e.currentTarget, false);
+                }}
               >
                 <span style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, textAlign: "left" }}>
                   {category}

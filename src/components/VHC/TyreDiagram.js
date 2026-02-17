@@ -63,8 +63,17 @@ const resolveTyreEntry = (value) => {
   return { depth: value, overrideStatus: null };
 };
 
-export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareActive = false, onSpareSelect }) {
+export default function TyreDiagram({
+  tyres = {},
+  activeTyre,
+  onSelect,
+  spareActive = false,
+  onSpareSelect,
+  invalidTyres = [],
+  invalidSpare = false,
+}) {
   const activeKey = activeTyre?.toLowerCase();
+  const invalidTyreSet = new Set((invalidTyres || []).map((key) => String(key).toLowerCase()));
 
   const containerStyle = {
     width: "100%",
@@ -123,6 +132,7 @@ export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareAct
           const colors = statusPalette[status] || statusPalette.unknown;
           const displayText = overrideText || readingText;
           const isActive = activeKey === key;
+          const isInvalid = invalidTyreSet.has(key);
 
           return (
             <React.Fragment
@@ -142,7 +152,9 @@ export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareAct
                   maxWidth: `${TYRE_HIT_WIDTH}px`,
                   minWidth: `${TYRE_HIT_WIDTH}px`,
                   borderRadius: "999px",
-                  border: `${isActive ? 2 : 1.5}px solid ${isActive ? "var(--primary)" : colors.border}`,
+                  border: `${isInvalid ? 2 : isActive ? 2 : 1.5}px solid ${
+                    isInvalid ? "var(--danger)" : isActive ? "var(--primary)" : colors.border
+                  }`,
                   background: colors.fill,
                   boxSizing: "border-box",
                   padding: 0,
@@ -155,7 +167,7 @@ export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareAct
                   justifyContent: "center",
                   textAlign: "center",
                   cursor: onSelect ? "pointer" : "default",
-                  boxShadow: "none",
+                  boxShadow: isInvalid ? "0 0 0 2px var(--danger-surface)" : "none",
                   zIndex: 4,
                 }}
               >
@@ -191,13 +203,17 @@ export default function TyreDiagram({ tyres = {}, activeTyre, onSelect, spareAct
             top: "112%",
             transform: "translate(-50%, -50%)",
             borderRadius: "18px",
-            border: `1px solid ${spareActive ? "var(--primary)" : palette.border}`,
+            border: `1px solid ${invalidSpare ? "var(--danger)" : spareActive ? "var(--primary)" : palette.border}`,
             padding: "8px 18px",
-            background: spareActive ? "rgba(var(--primary-rgb), 0.12)" : palette.surfaceAlt,
-            color: spareActive ? "var(--primary)" : palette.textPrimary,
+            background: invalidSpare
+              ? "var(--danger-surface)"
+              : spareActive
+                ? "rgba(var(--primary-rgb), 0.12)"
+                : palette.surfaceAlt,
+            color: invalidSpare ? "var(--danger)" : spareActive ? "var(--primary)" : palette.textPrimary,
             fontWeight: 600,
             cursor: onSpareSelect ? "pointer" : "default",
-            boxShadow: "none",
+            boxShadow: invalidSpare ? "0 0 0 2px var(--danger-surface)" : "none",
             transition: "transform 0.2s ease",
             zIndex: 4,
           }}

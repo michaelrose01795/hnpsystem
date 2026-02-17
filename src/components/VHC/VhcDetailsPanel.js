@@ -816,6 +816,16 @@ const mapRows = (rows = []) => {
   return rows.filter((entry) => typeof entry === "string" && entry.trim().length > 0);
 };
 
+const splitRowKeyValue = (row = "") => {
+  const text = String(row || "").trim();
+  if (!text) return { key: "", value: "" };
+  const colonIndex = text.indexOf(":");
+  if (colonIndex === -1) return { key: "", value: text };
+  const key = text.slice(0, colonIndex).trim();
+  const value = text.slice(colonIndex + 1).trim();
+  return { key, value };
+};
+
 const determineItemSeverity = (item = {}) => {
   const direct = normaliseColour(item.status);
   if (direct === "red" || direct === "amber") return direct;
@@ -893,6 +903,34 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
             const concerns = Array.isArray(item.concerns) ? item.concerns.filter(Boolean) : [];
             const itemSeverity = determineItemSeverity(item);
             const theme = itemSeverity ? SEVERITY_THEME[itemSeverity] : null;
+            const wheelRowsSeverity =
+              config.key === "wheelsTyres"
+                ? (normaliseColour(item.status) || itemSeverity || "green")
+                : null;
+            const wheelRowsTint =
+              wheelRowsSeverity === "red"
+                ? {
+                    blockBg: "var(--danger-surface)",
+                    blockBorder: "var(--danger)",
+                    tileBg: "var(--surface)",
+                    tileBorder: "rgba(var(--danger-rgb), 0.35)",
+                    keyColor: "var(--danger)",
+                  }
+                : wheelRowsSeverity === "amber"
+                  ? {
+                      blockBg: "var(--warning-surface)",
+                      blockBorder: "var(--warning)",
+                      tileBg: "var(--surface)",
+                      tileBorder: "rgba(var(--warning-rgb), 0.35)",
+                      keyColor: "var(--warning-dark)",
+                    }
+                  : {
+                      blockBg: "var(--success-surface)",
+                      blockBorder: "var(--success)",
+                      tileBg: "var(--surface)",
+                      tileBorder: "rgba(var(--success-rgb), 0.35)",
+                      keyColor: "var(--success-dark)",
+                    };
             return (
               <div
                 key={`${config.key}-${idx}-${item.heading || item.label || "item"}`}
@@ -914,12 +952,12 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
                     flexWrap: "wrap",
                   }}
                 >
-                  <div style={{ minWidth: "200px" }}>
-                    <strong style={{ color: "var(--accent-purple)", fontSize: "14px" }}>
+                  <div style={{ minWidth: "220px" }}>
+                    <strong style={{ color: "var(--accent-purple)", fontSize: "15px" }}>
                       {item.heading || item.label || `Item ${idx + 1}`}
                     </strong>
                     {item.notes ? (
-                      <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "13px" }}>{item.notes}</p>
+                      <p style={{ margin: "6px 0 0", color: "var(--info)", fontSize: "13px" }}>{item.notes}</p>
                     ) : null}
                   </div>
                   {item.status ? (
@@ -938,16 +976,77 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
                   ) : null}
                 </div>
                 {rows.length > 0 ? (
-                  <ul style={{ margin: 0, paddingLeft: "18px", color: "var(--info-dark)", fontSize: "13px" }}>
-                    {rows.map((row, rowIdx) => (
-                      <li key={`${config.key}-${idx}-row-${rowIdx}`} style={{ marginBottom: "4px" }}>
-                        {row}
-                      </li>
-                    ))}
-                  </ul>
+                  <div
+                    style={{
+                      borderRadius: "12px",
+                      border: `1px solid ${config.key === "wheelsTyres" ? wheelRowsTint.blockBorder : "var(--accent-purple-surface)"}`,
+                      background: config.key === "wheelsTyres" ? wheelRowsTint.blockBg : "var(--surface)",
+                      padding: "12px",
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+                      gap: "10px",
+                    }}
+                  >
+                    {rows.map((row, rowIdx) => {
+                      const kv = splitRowKeyValue(row);
+                      return (
+                        <div
+                          key={`${config.key}-${idx}-row-${rowIdx}`}
+                          style={{
+                            borderRadius: "10px",
+                            background: config.key === "wheelsTyres" ? wheelRowsTint.tileBg : "var(--info-surface)",
+                            border: `1px solid ${config.key === "wheelsTyres" ? wheelRowsTint.tileBorder : "var(--accent-purple-surface)"}`,
+                            padding: "10px 12px",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "4px",
+                            minHeight: "64px",
+                          }}
+                        >
+                          {kv.key ? (
+                            <span
+                              style={{
+                                fontSize: "11px",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.08em",
+                                color: config.key === "wheelsTyres" ? wheelRowsTint.keyColor : "var(--info)",
+                                fontWeight: 700,
+                              }}
+                            >
+                              {kv.key}
+                            </span>
+                          ) : null}
+                          <span style={{ fontSize: "13px", color: "var(--info-dark)", fontWeight: 600, lineHeight: 1.45 }}>
+                            {kv.value || row}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 ) : null}
                 {concerns.length > 0 ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "8px",
+                      borderRadius: "12px",
+                      border: "1px solid var(--accent-purple-surface)",
+                      background: "var(--surface)",
+                      padding: "10px",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        letterSpacing: "0.08em",
+                        textTransform: "uppercase",
+                        color: "var(--accent-purple)",
+                      }}
+                    >
+                      Concern
+                    </span>
                     {concerns.map((concern, concernIdx) => (
                       <div
                         key={`${config.key}-${idx}-concern-${concernIdx}`}
@@ -958,6 +1057,7 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
                           fontSize: "13px",
                           color: "var(--info-dark)",
                           background: SEVERITY_THEME[normaliseColour(concern.status)]?.background || "var(--surface)",
+                          border: `1px solid ${SEVERITY_THEME[normaliseColour(concern.status)]?.border || "var(--accent-purple-surface)"}`,
                           borderRadius: "10px",
                           padding: "8px 10px",
                         }}

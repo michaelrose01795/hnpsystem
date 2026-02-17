@@ -81,7 +81,6 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
   const contentWrapperStyle = {
     ...vhcModalContentStyles.contentWrapper,
     gap: "20px",
-    height: "100%",
   };
   const cardShellStyle = {
     ...vhcModalContentStyles.baseCard,
@@ -102,6 +101,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
   const [activeConcernTarget, setActiveConcernTarget] = useState(null);
   const [newConcern, setNewConcern] = useState("");
   const [concernStatus, setConcernStatus] = useState("Red");
+  const [showValidation, setShowValidation] = useState(false);
   const getConcernText = (concern) =>
     (concern?.text ?? concern?.description ?? concern?.issue ?? "").toString();
 
@@ -110,6 +110,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
     setServiceChoice(initialData.serviceChoice ?? null);
     setOilStatus(normaliseOilStatus(initialData.oilStatus ?? null));
     setConcerns(initialData.concerns ?? []);
+    setShowValidation(false);
   }, [initialData]);
 
   const openConcernFor = (source) => {
@@ -295,10 +296,29 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
   const shouldScrollConcernEntries = activeConcernEntries.length > 2;
 
   const canComplete = !!serviceChoice && !!oilStatus;
+  const missingServiceChoice = !serviceChoice;
+  const missingOilStatus = !oilStatus;
+  const requiredCardStyle = {
+    border: "2px solid var(--danger)",
+    background: "var(--danger-surface)",
+  };
 
   const handleClose = () => {
     if (!onClose) return;
     onClose({
+      serviceChoice,
+      oilStatus,
+      concerns,
+      status: deriveServiceIndicatorStatus({ serviceChoice, oilStatus }),
+    });
+  };
+
+  const handleSaveComplete = () => {
+    if (!canComplete) {
+      setShowValidation(true);
+      return;
+    }
+    onComplete({
       serviceChoice,
       oilStatus,
       concerns,
@@ -313,16 +333,9 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
       </button>
       <button
         type="button"
-        onClick={() =>
-          onComplete({
-            serviceChoice,
-            oilStatus,
-            concerns,
-            status: deriveServiceIndicatorStatus({ serviceChoice, oilStatus }),
-          })
-        }
-        style={buildModalButton("primary", { disabled: !canComplete })}
-        disabled={!canComplete}
+        onClick={handleSaveComplete}
+        style={buildModalButton("primary", { disabled: locked })}
+        disabled={locked}
       >
         Save & Complete
       </button>
@@ -335,10 +348,10 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
       title="Service Indicator & Under Bonnet"
       locked={locked}
       inlineMode={inlineMode}
+      adaptiveHeight
       onClose={handleClose}
       hideCloseButton
       width="1280px"
-      height="780px"
       footer={footer}
     >
       <div style={contentWrapperStyle}>
@@ -346,12 +359,17 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
           style={{
             flex: 1,
             display: "grid",
-            gridTemplateRows: "1fr 1fr 1.8fr",
+            gridTemplateRows: showValidation && !canComplete ? "auto auto auto minmax(0, 1fr)" : "auto auto minmax(0, 1fr)",
             gap: "20px",
             minHeight: 0,
           }}
         >
-          <div style={cardShellStyle}>
+          {showValidation && !canComplete ? (
+            <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--danger)" }}>
+              Complete all highlighted sections to continue.
+            </div>
+          ) : null}
+          <div style={showValidation && missingServiceChoice ? { ...cardShellStyle, ...requiredCardStyle } : cardShellStyle}>
             <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
               Service Reminder
             </h3>
@@ -390,7 +408,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
             />
           </div>
 
-          <div style={cardShellStyle}>
+          <div style={showValidation && missingOilStatus ? { ...cardShellStyle, ...requiredCardStyle } : cardShellStyle}>
             <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
               Oil Level
             </h3>

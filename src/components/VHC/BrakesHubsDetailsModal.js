@@ -170,6 +170,20 @@ const getConcernRank = (concerns = []) =>
   }, 4);
 
 const computeAxleSeverityRank = (padSection, discSection) => {
+  const padMeasurement = (padSection?.measurement || "").trim();
+  const padHasData =
+    padMeasurement !== "" ||
+    (Array.isArray(padSection?.concerns) && padSection.concerns.length > 0) ||
+    (padSection?.status && padSection.status !== "Green");
+  const discValues = Array.isArray(discSection?.measurements?.values) ? discSection.measurements.values : [];
+  const discHasMeasurement = discValues.some((value) => String(value || "").trim() !== "");
+  const discHasData =
+    discHasMeasurement ||
+    (Array.isArray(discSection?.concerns) && discSection.concerns.length > 0) ||
+    ((discSection?.measurements?.status || "Green") !== "Green") ||
+    ((discSection?.visual?.status || "Green") !== "Green");
+  if (!padHasData && !discHasData) return 4;
+
   const measurementStatus = getPadStatus(padSection.measurement).status;
   const measurementRank = resolveDiagramRank(measurementStatus);
   const padRank = resolveDiagramRank(padSection.status);
@@ -188,6 +202,35 @@ const computeAxleSeverityRank = (padSection, discSection) => {
   );
 };
 
+const tabGroupShellStyle = {
+  display: "inline-flex",
+  gap: "6px",
+  padding: "6px",
+  borderRadius: "999px",
+  border: "1px solid var(--surface-light)",
+  background: "var(--surface)",
+  alignItems: "center",
+  flexWrap: "nowrap",
+};
+
+const buildTabPillStyle = (active = false) => ({
+  flex: "0 0 auto",
+  borderRadius: "999px",
+  border: "1px solid transparent",
+  padding: "10px 16px",
+  fontSize: "0.9rem",
+  fontWeight: 600,
+  cursor: "pointer",
+  background: active ? "var(--primary)" : "transparent",
+  color: active ? "var(--text-inverse)" : "var(--text-primary)",
+  transition: "all 0.15s ease",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  whiteSpace: "nowrap",
+  minHeight: "38px",
+});
+
 const PadsSection = ({
   title,
   padData = {},
@@ -197,10 +240,12 @@ const PadsSection = ({
   fieldLabelStyle,
   inputStyle,
   dropdownFieldStyle,
+  dropdownControlStyle,
   enhanceFocus,
   resetFocus,
+  panelStyle,
 }) => (
-  <div style={sectionPanelBase}>
+  <div style={{ ...sectionPanelBase, ...panelStyle }}>
     <div style={{ display: "flex", alignItems: "center" }}>
       <h3 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
         {title}
@@ -225,6 +270,7 @@ const PadsSection = ({
         value={padData.status || "Green"}
         onChange={(e) => onStatusChange?.(e.target.value)}
         style={{ ...dropdownFieldStyle, width: "11ch", minWidth: "11ch" }}
+        controlStyle={dropdownControlStyle}
         onFocus={enhanceFocus}
         onBlur={resetFocus}
       >
@@ -245,49 +291,45 @@ const DiscsSection = ({
   onVisualStatusChange,
   showDrumButton,
   onSwitchToDrum,
+  showSwitchInTabs = false,
   sectionPanelBase,
   fieldLabelStyle,
   inputStyle,
   dropdownFieldStyle,
+  dropdownControlStyle,
   enhanceFocus,
   resetFocus,
+  panelStyle,
 }) => {
-  const tabWrapperStyle = {
-    display: "inline-flex",
-    gap: "8px",
-    padding: "4px",
-    borderRadius: "999px",
-    backgroundColor: palette.accentSurface,
-    marginTop: "8px",
-  };
-
-  const tabButtonStyle = (active) => ({
-    ...createVhcButtonStyle(active ? "primary" : "ghost"),
-    backgroundColor: active ? palette.accent : "transparent",
-    color: active ? "var(--surface)" : palette.textPrimary,
-    padding: "8px 16px",
-    fontSize: "12px",
-    border: active ? "none" : "1px solid transparent",
-  });
-
   const activeTab = discData.tab || "measurements";
   return (
-    <div style={sectionPanelBase}>
+    <div style={{ ...sectionPanelBase, ...panelStyle }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
         <h3 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
           {title}
         </h3>
-        <div style={tabWrapperStyle}>
-          {["measurements", "visual"].map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => onTabChange?.(tab)}
-              style={tabButtonStyle(activeTab === tab)}
-            >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </button>
-          ))}
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+          <div style={tabGroupShellStyle}>
+            {["measurements", "visual"].map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => onTabChange?.(tab)}
+                style={buildTabPillStyle(activeTab === tab)}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </button>
+            ))}
+            {showDrumButton && showSwitchInTabs ? (
+              <button
+                type="button"
+                onClick={onSwitchToDrum}
+                style={buildTabPillStyle(false)}
+              >
+                Switch to Drum Brakes
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
 
@@ -311,6 +353,7 @@ const DiscsSection = ({
               value={discData.measurements?.status || "Green"}
               onChange={(e) => onMeasurementStatusChange?.(e.target.value)}
               style={{ ...dropdownFieldStyle, width: "11ch", minWidth: "11ch" }}
+              controlStyle={dropdownControlStyle}
               onFocus={enhanceFocus}
               onBlur={resetFocus}
             >
@@ -329,6 +372,7 @@ const DiscsSection = ({
             value={discData.visual?.status || "Green"}
             onChange={(e) => onVisualStatusChange?.(e.target.value)}
             style={{ ...dropdownFieldStyle, width: "11ch", minWidth: "11ch" }}
+            controlStyle={dropdownControlStyle}
             onFocus={enhanceFocus}
             onBlur={resetFocus}
           >
@@ -339,7 +383,7 @@ const DiscsSection = ({
         </>
       )}
 
-      {showDrumButton && (
+      {showDrumButton && !showSwitchInTabs && (
         <button
           type="button"
           onClick={onSwitchToDrum}
@@ -364,11 +408,23 @@ const DrumBrakesSection = ({
   onStatusChange,
   onSwitchToDisc,
   sectionPanelBase,
+  panelStyle,
 }) => (
-    <div style={sectionPanelBase}>
-      <h3 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
-        Drum Brakes
-      </h3>
+    <div style={{ ...sectionPanelBase, ...panelStyle }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+        <h3 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
+          Drum Brakes
+        </h3>
+        <div style={tabGroupShellStyle}>
+          <button
+            type="button"
+            onClick={onSwitchToDisc}
+            style={buildTabPillStyle(false)}
+          >
+            Switch to Disc Brakes
+          </button>
+        </div>
+      </div>
 
       <div
         style={{
@@ -399,21 +455,6 @@ const DrumBrakesSection = ({
         })}
       </div>
 
-      <button
-        type="button"
-        onClick={onSwitchToDisc}
-        style={{
-          ...buildModalButton("ghost"),
-          alignSelf: "flex-start",
-          padding: "10px 18px",
-          color: palette.accent,
-          border: `1px dashed ${palette.accent}`,
-          background: "transparent",
-          marginTop: "8px",
-        }}
-      >
-        Switch to Disc Brakes
-      </button>
     </div>
 );
 
@@ -422,6 +463,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
 
   const [data, setData] = useState(normalisedInitial.data);
   const [showDrum, setShowDrum] = useState(normalisedInitial.showDrum);
+  const [showValidation, setShowValidation] = useState(false);
   const [activeSide, setActiveSide] = useState("front");
   const hasInitializedRef = useRef(false);
   const [concernPopup, setConcernPopup] = useState({
@@ -439,6 +481,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
     if (hasInitializedRef.current) return;
     setData(normalisedInitial.data);
     setShowDrum(normalisedInitial.showDrum);
+    setShowValidation(false);
     hasInitializedRef.current = true;
   }, [isOpen, normalisedInitial]);
 
@@ -448,18 +491,15 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
   const contentWrapperStyle = {
     ...vhcModalContentStyles.contentWrapper,
     gap: "24px",
-    height: "100%",
   };
-  const SECTION_PANEL_HEIGHT = 230;
   const sectionPanelBase = {
     ...vhcModalContentStyles.baseCard,
     flex: "0 0 auto",
-    minHeight: `${SECTION_PANEL_HEIGHT}px`,
-    maxHeight: `${SECTION_PANEL_HEIGHT}px`,
+    minHeight: "0",
     gap: "12px",
     alignItems: "stretch",
     cursor: "default",
-    overflowY: "auto",
+    overflow: "visible",
   };
 
   const activeConcernKeySet = useMemo(() => {
@@ -622,9 +662,19 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
 
   const dropdownFieldStyle = {
     width: "100%",
-    border: "none",
-    padding: 0,
-    backgroundColor: "transparent",
+  };
+
+  const dropdownControlStyle = {
+    width: "100%",
+    padding: "10px 12px",
+    borderRadius: "12px",
+    border: `1px solid ${palette.border}`,
+    backgroundColor: palette.surface,
+    color: palette.textPrimary,
+    fontSize: "14px",
+    fontWeight: 600,
+    outline: "none",
+    boxShadow: "none",
   };
 
   const inputStyle = {
@@ -894,33 +944,66 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
     };
   }, [data, showDrum]);
 
-  // ✅ New completion logic
-  const isCompleteEnabled = () => {
-    const discComplete = (section) => {
-      if (!section) return false;
-      const hasMeasurementValues = section.measurements.values?.some((value) => value && value.trim() !== "");
-      const measurementReady = hasMeasurementValues && section.measurements.status;
-      const visualReady = section.visual.status;
-      return section.tab === "visual" ? Boolean(visualReady) : Boolean(measurementReady);
+  const discComplete = (section) => {
+    if (!section) return false;
+    const hasMeasurementValues = section.measurements.values?.some((value) => value && value.trim() !== "");
+    const measurementReady = hasMeasurementValues && section.measurements.status;
+    const visualReady = section.visual.status;
+    return section.tab === "visual" ? Boolean(visualReady) : Boolean(measurementReady);
+  };
+
+  const missingSections = useMemo(() => {
+    const frontPadMeasurement = (data.frontPads.measurement || "").trim();
+    const rearPadMeasurement = (data.rearPads.measurement || "").trim();
+    const missing = {
+      frontPads: !(frontPadMeasurement !== "" && data.frontPads.status !== ""),
+      frontDiscs: !discComplete(data.frontDiscs),
+      rearPads: false,
+      rearDiscs: false,
+      rearDrums: false,
     };
 
-    const frontPadMeasurement = (data.frontPads.measurement || "").trim();
-
-    const frontPadsDone =
-      frontPadMeasurement !== "" && data.frontPads.status !== "";
-    const frontDiscsDone = discComplete(data.frontDiscs);
-
-    if (!frontPadsDone || !frontDiscsDone) return false;
-
-    // For drum brake mode: only require front pads + front discs + drum status
     if (showDrum) {
-      return data.rearDrums.status !== "";
+      missing.rearDrums = data.rearDrums.status === "";
+    } else {
+      missing.rearPads = !(rearPadMeasurement !== "" && data.rearPads.status !== "");
+      missing.rearDiscs = !discComplete(data.rearDiscs);
     }
 
-    // For disc brake mode: require front pads + front discs + rear pads + rear discs
-    const rearPadMeasurement = (data.rearPads.measurement || "").trim();
-    const rearPadsDone = rearPadMeasurement !== "" && data.rearPads.status !== "";
-    return rearPadsDone && discComplete(data.rearDiscs);
+    return missing;
+  }, [data, showDrum]);
+
+  const canComplete = !Object.values(missingSections).some(Boolean);
+
+  const invalidBrakePositions = useMemo(() => {
+    if (!showValidation) return [];
+    const invalid = [];
+    const frontMissing = missingSections.frontPads || missingSections.frontDiscs;
+    const rearMissing = showDrum
+      ? missingSections.rearDrums
+      : missingSections.rearPads || missingSections.rearDiscs;
+    if (frontMissing) invalid.push("nsf", "osf");
+    if (rearMissing) invalid.push("nsr", "osr");
+    return invalid;
+  }, [missingSections, showDrum, showValidation]);
+
+  const requiredPanelStyle = {
+    border: "2px solid var(--danger)",
+    background: "var(--danger-surface)",
+  };
+
+  const handleSaveComplete = () => {
+    if (!canComplete) {
+      setShowValidation(true);
+      if (missingSections.frontPads || missingSections.frontDiscs) {
+        setActiveSide("front");
+      } else {
+        setActiveSide("rear");
+        if (missingSections.rearDrums) setShowDrum(true);
+      }
+      return;
+    }
+    onComplete(buildPayload());
   };
 
   if (!isOpen) return null;
@@ -931,8 +1014,8 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
       title="Brakes & Hubs"
       locked={locked}
       inlineMode={inlineMode}
+      adaptiveHeight
       width="1280px"
-      height="780px"
       hideCloseButton
       onClose={handleClose}
       footer={
@@ -942,9 +1025,9 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
           </button>
           <button
             type="button"
-            onClick={() => onComplete(buildPayload())}
-            disabled={!isCompleteEnabled()}
-            style={buildModalButton("primary", { disabled: !isCompleteEnabled() })}
+            onClick={handleSaveComplete}
+            disabled={locked}
+            style={buildModalButton("primary", { disabled: locked })}
           >
             Save & Complete
           </button>
@@ -957,7 +1040,6 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
           style={{
             display: "flex",
             gap: "20px",
-            height: "100%",
             minHeight: 0,
             position: "relative",
           }}
@@ -973,6 +1055,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
             <BrakeDiagram
               brakes={brakeDiagramValues}
               activeBrake={activeSide}
+              invalidPositions={invalidBrakePositions}
               onSelect={(side) => {
                 if (side === "front") {
                   setActiveSide("front");
@@ -998,6 +1081,11 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
               <h2 style={{ margin: 0, fontSize: "22px", fontWeight: 700, color: palette.accent }}>
                 {activeSide === "front" ? "Front Axle Checks" : showDrum ? "Rear Drum Checks" : "Rear Axle Checks"}
               </h2>
+              {showValidation && !canComplete ? (
+                <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--danger)" }}>
+                  Complete all highlighted brake sections to continue.
+                </span>
+              ) : null}
             </div>
 
             <div
@@ -1005,6 +1093,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                 display: "flex",
                 flexDirection: "column",
                 gap: "18px",
+                flex: 1,
                 overflowY: "auto",
                 paddingRight: "8px",
                 minHeight: 0,
@@ -1021,8 +1110,10 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                     fieldLabelStyle={fieldLabelStyle}
                     inputStyle={inputStyle}
                     dropdownFieldStyle={dropdownFieldStyle}
+                    dropdownControlStyle={dropdownControlStyle}
                     enhanceFocus={enhanceFocus}
                     resetFocus={resetFocus}
+                    panelStyle={showValidation && missingSections.frontPads ? requiredPanelStyle : null}
                   />
                   <DiscsSection
                     title={discLabels.frontDiscs}
@@ -1041,8 +1132,10 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                     fieldLabelStyle={fieldLabelStyle}
                     inputStyle={inputStyle}
                     dropdownFieldStyle={dropdownFieldStyle}
+                    dropdownControlStyle={dropdownControlStyle}
                     enhanceFocus={enhanceFocus}
                     resetFocus={resetFocus}
+                    panelStyle={showValidation && missingSections.frontDiscs ? requiredPanelStyle : null}
                   />
                 </>
               )}
@@ -1058,8 +1151,10 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                     fieldLabelStyle={fieldLabelStyle}
                     inputStyle={inputStyle}
                     dropdownFieldStyle={dropdownFieldStyle}
+                    dropdownControlStyle={dropdownControlStyle}
                     enhanceFocus={enhanceFocus}
                     resetFocus={resetFocus}
+                    panelStyle={showValidation && missingSections.rearPads ? requiredPanelStyle : null}
                   />
                   <DiscsSection
                     title={discLabels.rearDiscs}
@@ -1074,12 +1169,15 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                     }
                     showDrumButton
                     onSwitchToDrum={() => setShowDrum(true)}
+                    showSwitchInTabs
                     sectionPanelBase={sectionPanelBase}
                     fieldLabelStyle={fieldLabelStyle}
                     inputStyle={inputStyle}
                     dropdownFieldStyle={dropdownFieldStyle}
+                    dropdownControlStyle={dropdownControlStyle}
                     enhanceFocus={enhanceFocus}
                     resetFocus={resetFocus}
+                    panelStyle={showValidation && missingSections.rearDiscs ? requiredPanelStyle : null}
                   />
                 </>
               )}
@@ -1098,10 +1196,11 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                   }
                   onSwitchToDisc={() => setShowDrum(false)}
                   sectionPanelBase={sectionPanelBase}
+                  panelStyle={showValidation && missingSections.rearDrums ? requiredPanelStyle : null}
                 />
               )}
 
-              <div style={sectionPanelBase}>
+              <div style={{ ...sectionPanelBase, flex: "1 1 auto", minHeight: 0 }}>
                 <div
                   style={{
                     display: "flex",
@@ -1121,7 +1220,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                     No concerns recorded yet.
                   </span>
                 ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "12px" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "12px", flex: 1, minHeight: 0, overflowY: "auto", paddingRight: "4px" }}>
                     {activeIssueEntries.map((issue, idx) => (
                       <div
                         key={`${issue.area}-${idx}`}
