@@ -445,33 +445,36 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
                 />
               )}
 
-              <label style={fieldLabelStyle}>Status</label>
-              <DropdownField
-                value={activeConcern.temp.status}
-                onChange={(e) =>
-                  setActiveConcern((prev) => ({
-                    ...prev,
-                    temp: { ...prev.temp, status: e.target.value },
-                  }))
-                }
-                className="vhc-concern-dropdown"
-                style={statusSelectStyle}
-              >
-                {STATUS_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </DropdownField>
-
-              <button
-                type="button"
-                onClick={addConcern}
-                disabled={locked}
-                style={{ ...createVhcButtonStyle("primary"), alignSelf: "flex-end" }}
-              >
-                Add Concern
-              </button>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: "12px", flexWrap: "wrap" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: "0 0 150px", minWidth: "150px" }}>
+                  <label style={fieldLabelStyle}>Status</label>
+                  <DropdownField
+                    value={activeConcern.temp.status}
+                    onChange={(e) =>
+                      setActiveConcern((prev) => ({
+                        ...prev,
+                        temp: { ...prev.temp, status: e.target.value },
+                      }))
+                    }
+                    className="vhc-concern-dropdown"
+                    style={{ ...statusSelectStyle, width: "100%" }}
+                  >
+                    {STATUS_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </DropdownField>
+                </div>
+                <button
+                  type="button"
+                  onClick={addConcern}
+                  disabled={locked}
+                  style={{ ...createVhcButtonStyle("primary") }}
+                >
+                  Add Concern
+                </button>
+              </div>
             </div>
 
             <div

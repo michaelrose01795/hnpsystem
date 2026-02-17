@@ -671,12 +671,12 @@ const buildOptionalConcernSection = (data, title, key) => {
         if (concern.status === "Red") red += 1;
         if (concern.status === "Amber") amber += 1;
         if (concern.status === "Grey") grey += 1;
-        items.push({
-          heading: baseHeading,
-          status: concern.status,
-          rows: baseRows,
-          concerns: [concern],
-        });
+      });
+      items.push({
+        heading: baseHeading,
+        status: determineDominantStatus(concerns.map((concern) => concern.status)),
+        rows: baseRows,
+        concerns,
       });
       return;
     }

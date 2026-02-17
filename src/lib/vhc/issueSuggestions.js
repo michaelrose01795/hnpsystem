@@ -42,6 +42,81 @@ const STOP_WORDS = new Set([
   "check",
 ]);
 
+const MIN_HINT_QUERY_LENGTH = 4;
+const HINT_MIN_SCORE = 72;
+const HINT_SCORE_MARGIN = 8;
+
+const ISSUE_SECTION_LABEL_OVERRIDES = {
+  external_wipers_washers_horn: "External - Wipers/Washers/Horn",
+  external_front_lights: "External - Front Lights",
+  external_rear_lights: "External - Rear Lights",
+  external_wheel_trim: "External - Wheel Trim",
+  external_clutch_transmission_operations: "External - Clutch/Transmission",
+  external_number_plates: "External - Number Plates",
+  external_doors: "External - Doors",
+  external_trims: "External - Trims",
+  external_miscellaneous: "External - Miscellaneous",
+  internal_miscellaneous: "Internal - Miscellaneous",
+  underside_miscellaneous: "Underside - Miscellaneous",
+};
+
+const SECTION_HINT_KEYWORDS = [
+  {
+    sectionKey: "underside_miscellaneous",
+    terms: [
+      "underside",
+      "underbody",
+      "under seal",
+      "underseal",
+      "subframe",
+      "crossmember",
+      "chassis",
+      "jacking point",
+      "corrosion",
+      "rust",
+      "floor pan",
+      "undershield",
+      "undertray",
+    ],
+  },
+  {
+    sectionKey: "external_miscellaneous",
+    terms: [
+      "door",
+      "tailgate",
+      "bonnet",
+      "bumper",
+      "mirror",
+      "exterior",
+      "fuel flap",
+      "number plate",
+      "roof rail",
+      "body trim",
+      "weatherstrip",
+      "aerial",
+      "scuttle",
+    ],
+  },
+  {
+    sectionKey: "internal_miscellaneous",
+    terms: [
+      "interior",
+      "dashboard",
+      "cabin",
+      "glovebox",
+      "headlining",
+      "parcel shelf",
+      "center console",
+      "seat trim",
+      "armrest",
+      "cup holder",
+      "door card",
+      "trim rattle",
+      "footwell",
+    ],
+  },
+];
+
 const normaliseText = (value = "") =>
   value
     .toString()
@@ -174,9 +249,6 @@ const rankLearnedSuggestions = (items = [], normalizedQuery = "", limit = DEFAUL
 const resolveLegacySectionAlias = (lookup = "") => {
   const aliasMap = {
     miscellaneous: "",
-    "external_miscellaneous": "",
-    "internal_miscellaneous": "",
-    "underside_miscellaneous": "",
     "service_under_bonnet_miscellaneous": "",
   };
   return aliasMap[lookup] !== undefined ? aliasMap[lookup] : lookup;
@@ -269,6 +341,80 @@ export const learnIssueSuggestion = (sectionKey = "", issueText = "") => {
 };
 
 export const ISSUE_SECTION_LABELS = Object.keys(ISSUE_SUGGESTIONS_BY_SECTION).reduce((acc, key) => {
-  acc[key] = capitalize(key.replace(/_/g, " "));
+  acc[key] = ISSUE_SECTION_LABEL_OVERRIDES[key] || capitalize(key.replace(/_/g, " "));
   return acc;
 }, {});
+
+const scoreRankedSuggestion = (query, suggestion) => {
+  if (!suggestion) return 0;
+
+  const normalizedQuery = normalizeQuery(query);
+  const tierBase = [110, 92, 74, 58][suggestion.tier] || 0;
+  const containsBonus = suggestion.indexedText?.includes(normalizedQuery) ? 10 : 0;
+  const distancePenalty = Number.isFinite(suggestion.distance) ? Math.min(12, suggestion.distance) : 0;
+
+  return (
+    tierBase +
+    (suggestion.queryBoost || 0) +
+    (suggestion.componentPriority || 0) +
+    (suggestion.symptomPriority || 0) +
+    containsBonus -
+    distancePenalty
+  );
+};
+
+const getKeywordSectionHint = (resolvedSectionKey = "", normalizedQuery = "") => {
+  if (!resolvedSectionKey || !normalizedQuery) return null;
+
+  let best = null;
+  SECTION_HINT_KEYWORDS.forEach(({ sectionKey, terms = [] }) => {
+    if (sectionKey === resolvedSectionKey) return;
+    const score = terms.reduce((total, term) => {
+      if (!term) return total;
+      return normalizedQuery.includes(term) ? total + 1 : total;
+    }, 0);
+
+    if (score <= 0) return;
+    if (!best || score > best.score) {
+      best = { sectionKey, score };
+    }
+  });
+
+  if (!best || best.score < 1) return null;
+  return {
+    sectionKey: best.sectionKey,
+    label: ISSUE_SECTION_LABELS[best.sectionKey] || capitalize(best.sectionKey.replace(/_/g, " ")),
+  };
+};
+
+export const getIssueSectionHint = (sectionKey = "", query = "") => {
+  const resolvedSectionKey = resolveIssueSectionKey(sectionKey);
+  const normalizedQuery = normalizeQuery(query);
+  if (!resolvedSectionKey || normalizedQuery.length < MIN_HINT_QUERY_LENGTH) return null;
+
+  const keywordHint = getKeywordSectionHint(resolvedSectionKey, normalizedQuery);
+  if (keywordHint) return keywordHint;
+
+  const currentTop = rankSuggestions(resolvedSectionKey, normalizedQuery)[0];
+  const currentScore = scoreRankedSuggestion(normalizedQuery, currentTop);
+
+  let bestAlternative = null;
+  Object.keys(SECTION_TAXONOMY).forEach((candidateSectionKey) => {
+    if (candidateSectionKey === resolvedSectionKey) return;
+    const top = rankSuggestions(candidateSectionKey, normalizedQuery)[0];
+    if (!top) return;
+    const score = scoreRankedSuggestion(normalizedQuery, top);
+    if (!bestAlternative || score > bestAlternative.score) {
+      bestAlternative = { sectionKey: candidateSectionKey, score };
+    }
+  });
+
+  if (!bestAlternative) return null;
+  if (bestAlternative.score < HINT_MIN_SCORE) return null;
+  if (bestAlternative.score < currentScore + HINT_SCORE_MARGIN) return null;
+
+  return {
+    sectionKey: bestAlternative.sectionKey,
+    label: ISSUE_SECTION_LABELS[bestAlternative.sectionKey] || capitalize(bestAlternative.sectionKey.replace(/_/g, " ")),
+  };
+};

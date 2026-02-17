@@ -1,7 +1,7 @@
 // file location: src/components/vhc/IssueAutocomplete.js
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { getIssueSuggestions, resolveIssueSectionKey } from "@/lib/vhc/issueSuggestions";
+import { getIssueSectionHint, getIssueSuggestions, resolveIssueSectionKey } from "@/lib/vhc/issueSuggestions";
 import { useTheme } from "@/styles/themeProvider";
 
 const DEBOUNCE_MS = 150;
@@ -54,6 +54,12 @@ const mutedRowStyle = {
   ...rowStyle,
   color: "var(--text-secondary)",
   cursor: "default",
+};
+
+const hintRowStyle = {
+  ...mutedRowStyle,
+  borderTop: "1px solid var(--border)",
+  fontWeight: 600,
 };
 
 const normaliseText = (value = "") => value.toString().toLowerCase();
@@ -116,6 +122,7 @@ export default function IssueAutocomplete({
   const [loading, setLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [results, setResults] = useState([]);
+  const [crossSectionHint, setCrossSectionHint] = useState(null);
 
   const rootRef = useRef(null);
   const inputRef = useRef(null);
@@ -128,6 +135,7 @@ export default function IssueAutocomplete({
     if (trimmedQuery.length < 1) {
       setResults([]);
       setActiveIndex(-1);
+      setCrossSectionHint(null);
       setLoading(false);
       return undefined;
     }
@@ -137,6 +145,7 @@ export default function IssueAutocomplete({
       const nextResults = getIssueSuggestions(resolvedSectionKey, trimmedQuery, DISPLAY_LIMIT);
       setResults(nextResults);
       setActiveIndex(nextResults.length > 0 ? 0 : -1);
+      setCrossSectionHint(getIssueSectionHint(resolvedSectionKey, trimmedQuery));
       setLoading(false);
     }, DEBOUNCE_MS);
 
@@ -158,6 +167,12 @@ export default function IssueAutocomplete({
       document.removeEventListener("mousedown", handleOutsideMouseDown);
     };
   }, []);
+
+  useEffect(() => {
+    if (!open) {
+      setCrossSectionHint(null);
+    }
+  }, [open]);
 
   const isDropdownVisible = open && !disabled && query.trim().length >= 1;
 
@@ -272,6 +287,9 @@ export default function IssueAutocomplete({
               );
             })
           )}
+          {!loading && crossSectionHint ? (
+            <div style={hintRowStyle}>{`Add to ${crossSectionHint.label}?`}</div>
+          ) : null}
         </div>
       ) : null}
     </div>

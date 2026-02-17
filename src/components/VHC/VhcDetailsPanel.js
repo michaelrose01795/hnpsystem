@@ -619,6 +619,33 @@ const formatStatusLabel = (status) => {
   return status.toString().toUpperCase();
 };
 
+const formatBrakeConditionLabel = (status) => {
+  const raw = String(status || "").trim();
+  if (!raw) return null;
+  const lower = raw.toLowerCase();
+  if (lower === "good" || lower.includes("green")) return "Good";
+  if (lower === "monitor" || lower.includes("amber") || lower.includes("yellow")) return "Monitor";
+  if (lower === "replace" || lower.includes("red")) return "Replace";
+  return raw.charAt(0).toUpperCase() + raw.slice(1);
+};
+
+const mapBrakeConditionFromSeverity = (status) => {
+  const colour = normaliseColour(status);
+  if (colour === "green") return "Good";
+  if (colour === "amber") return "Monitor";
+  if (colour === "red") return "Replace";
+  return null;
+};
+
+const normaliseBrakeConditionSeverity = (status) => {
+  const raw = String(status || "").trim().toLowerCase();
+  if (!raw) return null;
+  if (raw === "good" || raw.includes("green")) return "green";
+  if (raw === "monitor" || raw.includes("amber") || raw.includes("yellow")) return "amber";
+  if (raw === "replace" || raw.includes("red")) return "red";
+  return normaliseColour(status);
+};
+
 const formatDateTime = (value) => {
   if (!value) return "—";
   const date = new Date(value);
@@ -826,6 +853,24 @@ const splitRowKeyValue = (row = "") => {
   return { key, value };
 };
 
+const groupWheelSpecRows = (rows = []) => {
+  if (!Array.isArray(rows) || rows.length === 0) return [];
+  const specRows = [];
+  const otherRows = [];
+
+  rows.forEach((row) => {
+    const lower = String(row || "").toLowerCase().trim();
+    if (lower.startsWith("make:") || lower.startsWith("size:") || lower.startsWith("load ")) {
+      specRows.push(String(row).trim());
+    } else {
+      otherRows.push(row);
+    }
+  });
+
+  if (specRows.length === 0) return rows;
+  return [{ type: "wheel_spec_group", title: "Tyre Spec", rows: specRows }, ...otherRows];
+};
+
 const determineItemSeverity = (item = {}) => {
   const direct = normaliseColour(item.status);
   if (direct === "red" || direct === "amber") return direct;
@@ -837,8 +882,132 @@ const determineItemSeverity = (item = {}) => {
   return null;
 };
 
+const formatDiscMeasurementSummary = (disc = {}) => {
+  const value = formatMeasurement(
+    disc?.measurements?.values || disc?.measurements?.thickness || disc?.measurements
+  );
+  return value ? `Disc thickness: ${value}` : null;
+};
+
+const buildBrakeSecondaryRow = (disc = {}) => {
+  const discMeasurement = formatDiscMeasurementSummary(disc);
+  if (discMeasurement) return discMeasurement;
+  const visualStatus = mapBrakeConditionFromSeverity(disc?.visual?.status);
+  if (visualStatus) return `Visual check: ${visualStatus}`;
+  return "Visual check: Not recorded";
+};
+
+const buildBrakeHealthCardItems = (items = [], brakesRaw = {}) => {
+  if (!Array.isArray(items) || items.length === 0) return items;
+  if (!brakesRaw || typeof brakesRaw !== "object") return items;
+
+  const pushConcernMetrics = (item = {}, concerns = []) => {
+    const normalized = concerns.filter(Boolean);
+    if (normalized.length > 0) {
+      item.concerns = normalized;
+    }
+    return item;
+  };
+
+  const frontPad = brakesRaw.frontPads || {};
+  const frontDisc = brakesRaw.frontDiscs || {};
+  const rearPad = brakesRaw.rearPads || {};
+  const rearDisc = brakesRaw.rearDiscs || {};
+  const rearDrum = brakesRaw.rearDrums || {};
+
+  const frontConcerns = [
+    ...(Array.isArray(frontPad.concerns) ? frontPad.concerns : []),
+    ...(Array.isArray(frontDisc.concerns) ? frontDisc.concerns : []),
+  ];
+  const rearDiscConcerns = [
+    ...(Array.isArray(rearPad.concerns) ? rearPad.concerns : []),
+    ...(Array.isArray(rearDisc.concerns) ? rearDisc.concerns : []),
+  ];
+  const rearDrumConcerns = Array.isArray(rearDrum.concerns) ? rearDrum.concerns : [];
+
+  const frontSeverity = deriveHighestSeverity([
+    normaliseBrakeConditionSeverity(frontPad.status),
+    normaliseBrakeConditionSeverity(frontDisc.measurements?.status),
+    normaliseBrakeConditionSeverity(frontDisc.visual?.status),
+    ...frontConcerns.map((concern) => normaliseBrakeConditionSeverity(concern?.status)),
+  ]);
+  const rearDiscSeverity = deriveHighestSeverity([
+    normaliseBrakeConditionSeverity(rearPad.status),
+    normaliseBrakeConditionSeverity(rearDisc.measurements?.status),
+    normaliseBrakeConditionSeverity(rearDisc.visual?.status),
+    ...rearDiscConcerns.map((concern) => normaliseBrakeConditionSeverity(concern?.status)),
+  ]);
+  const rearDrumSeverity = deriveHighestSeverity([
+    normaliseBrakeConditionSeverity(rearDrum.status),
+    ...rearDrumConcerns.map((concern) => normaliseBrakeConditionSeverity(concern?.status)),
+  ]);
+
+  const frontRows = [];
+  const frontPadMeasurement = formatMeasurement(frontPad.measurement);
+  frontRows.push(`Pad thickness: ${frontPadMeasurement || "Not recorded"}`);
+  frontRows.push(buildBrakeSecondaryRow(frontDisc));
+
+  const rearDiscRows = [];
+  const rearPadMeasurement = formatMeasurement(rearPad.measurement);
+  rearDiscRows.push(`Pad thickness: ${rearPadMeasurement || "Not recorded"}`);
+  rearDiscRows.push(buildBrakeSecondaryRow(rearDisc));
+
+  const displayItems = [];
+  if (frontRows.length > 0 || frontSeverity || frontConcerns.length > 0) {
+    displayItems.push(
+      pushConcernMetrics(
+        {
+          heading: "Front Brakes",
+          status: frontSeverity || "green",
+          statusLabel: mapBrakeConditionFromSeverity(frontSeverity || "green") || "Good",
+          rows: frontRows,
+        },
+        frontConcerns,
+      ),
+    );
+  }
+
+  const rawRearDrumStatusLabel = formatBrakeConditionLabel(rearDrum.status);
+  const useRearDrum =
+    brakesRaw._brakeType === "drum" ||
+    Boolean(rawRearDrumStatusLabel) ||
+    rearDrumConcerns.length > 0 ||
+    (!brakesRaw.rearPads && !brakesRaw.rearDiscs && rearDrum && typeof rearDrum === "object");
+
+  if (useRearDrum) {
+    if (rawRearDrumStatusLabel || rearDrumSeverity || rearDrumConcerns.length > 0) {
+      displayItems.push(
+        pushConcernMetrics(
+          {
+            heading: "Rear Drums",
+            status: rearDrumSeverity || normaliseBrakeConditionSeverity(rearDrum.status) || "green",
+            statusLabel: rawRearDrumStatusLabel || mapBrakeConditionFromSeverity(rearDrumSeverity || "green") || "Good",
+            rows: [],
+          },
+          rearDrumConcerns,
+        ),
+      );
+    }
+  } else if (rearDiscRows.length > 0 || rearDiscSeverity || rearDiscConcerns.length > 0) {
+    displayItems.push(
+      pushConcernMetrics(
+        {
+          heading: "Rear Brakes",
+          status: rearDiscSeverity || "green",
+          statusLabel: mapBrakeConditionFromSeverity(rearDiscSeverity || "green") || "Good",
+          rows: rearDiscRows,
+        },
+        rearDiscConcerns,
+      ),
+    );
+  }
+
+  return displayItems.length > 0 ? displayItems : items;
+};
+
 const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
-  const items = Array.isArray(section?.items) ? section.items : [];
+  const rawItems = Array.isArray(section?.items) ? section.items : [];
+  const items = config.key === "brakesHubs" ? buildBrakeHealthCardItems(rawItems, rawData) : rawItems;
   const hasItems = items.length > 0;
 
   return (
@@ -900,9 +1069,12 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
         <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
           {items.map((item, idx) => {
             const rows = mapRows(item.rows);
+            const displayRows = config.key === "wheelsTyres" ? groupWheelSpecRows(rows) : rows;
             const concerns = Array.isArray(item.concerns) ? item.concerns.filter(Boolean) : [];
             const itemSeverity = determineItemSeverity(item);
             const theme = itemSeverity ? SEVERITY_THEME[itemSeverity] : null;
+            const isBrakeSummaryItem =
+              config.key === "brakesHubs" && /brake/i.test(String(item.heading || item.label || ""));
             const wheelRowsSeverity =
               config.key === "wheelsTyres"
                 ? (normaliseColour(item.status) || itemSeverity || "green")
@@ -917,6 +1089,33 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
                     keyColor: "var(--danger)",
                   }
                 : wheelRowsSeverity === "amber"
+                  ? {
+                      blockBg: "var(--warning-surface)",
+                      blockBorder: "var(--warning)",
+                      tileBg: "var(--surface)",
+                      tileBorder: "rgba(var(--warning-rgb), 0.35)",
+                      keyColor: "var(--warning-dark)",
+                    }
+                  : {
+                      blockBg: "var(--success-surface)",
+                      blockBorder: "var(--success)",
+                      tileBg: "var(--surface)",
+                      tileBorder: "rgba(var(--success-rgb), 0.35)",
+                      keyColor: "var(--success-dark)",
+                    };
+            const brakeRowsSeverity = isBrakeSummaryItem
+              ? (normaliseColour(item.status) || itemSeverity || "green")
+              : null;
+            const brakeRowsTint =
+              brakeRowsSeverity === "red"
+                ? {
+                    blockBg: "var(--danger-surface)",
+                    blockBorder: "var(--danger)",
+                    tileBg: "var(--surface)",
+                    tileBorder: "rgba(var(--danger-rgb), 0.35)",
+                    keyColor: "var(--danger)",
+                  }
+                : brakeRowsSeverity === "amber"
                   ? {
                       blockBg: "var(--warning-surface)",
                       blockBorder: "var(--warning)",
@@ -971,31 +1170,92 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
                         ...buildSeverityBadgeStyles(item.status),
                       }}
                     >
-                      {normaliseColour(item.status) || item.status}
+                      {item.statusLabel || normaliseColour(item.status) || item.status}
                     </span>
                   ) : null}
                 </div>
-                {rows.length > 0 ? (
+                {displayRows.length > 0 ? (
                   <div
                     style={{
                       borderRadius: "12px",
-                      border: `1px solid ${config.key === "wheelsTyres" ? wheelRowsTint.blockBorder : "var(--accent-purple-surface)"}`,
-                      background: config.key === "wheelsTyres" ? wheelRowsTint.blockBg : "var(--surface)",
+                      border: `1px solid ${
+                        config.key === "wheelsTyres"
+                          ? wheelRowsTint.blockBorder
+                          : isBrakeSummaryItem
+                            ? brakeRowsTint.blockBorder
+                            : "var(--accent-purple-surface)"
+                      }`,
+                      background:
+                        config.key === "wheelsTyres"
+                          ? wheelRowsTint.blockBg
+                          : isBrakeSummaryItem
+                            ? brakeRowsTint.blockBg
+                            : "var(--surface)",
                       padding: "12px",
                       display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+                      gridTemplateColumns:
+                        config.key === "brakesHubs" && /brake/i.test(String(item.heading || item.label || ""))
+                          ? "repeat(2, minmax(0, 1fr))"
+                          : "repeat(auto-fit, minmax(240px, 1fr))",
                       gap: "10px",
                     }}
                   >
-                    {rows.map((row, rowIdx) => {
+                    {displayRows.map((row, rowIdx) => {
+                      if (row && typeof row === "object" && row.type === "wheel_spec_group") {
+                        return (
+                          <div
+                            key={`${config.key}-${idx}-row-group-${rowIdx}`}
+                            style={{
+                              borderRadius: "10px",
+                              background: config.key === "wheelsTyres" ? wheelRowsTint.tileBg : "var(--info-surface)",
+                              border: `1px solid ${config.key === "wheelsTyres" ? wheelRowsTint.tileBorder : "var(--accent-purple-surface)"}`,
+                              padding: "10px 12px",
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "6px",
+                              minHeight: "64px",
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontSize: "11px",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.08em",
+                                color: config.key === "wheelsTyres" ? wheelRowsTint.keyColor : "var(--info)",
+                                fontWeight: 700,
+                              }}
+                            >
+                              {row.title}
+                            </span>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                              {row.rows.map((line, lineIdx) => (
+                                <span key={`${config.key}-${idx}-row-group-${rowIdx}-line-${lineIdx}`} style={{ fontSize: "13px", color: "var(--info-dark)", fontWeight: 600, lineHeight: 1.45 }}>
+                                  {line}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      }
                       const kv = splitRowKeyValue(row);
                       return (
                         <div
                           key={`${config.key}-${idx}-row-${rowIdx}`}
                           style={{
                             borderRadius: "10px",
-                            background: config.key === "wheelsTyres" ? wheelRowsTint.tileBg : "var(--info-surface)",
-                            border: `1px solid ${config.key === "wheelsTyres" ? wheelRowsTint.tileBorder : "var(--accent-purple-surface)"}`,
+                            background:
+                              config.key === "wheelsTyres"
+                                ? wheelRowsTint.tileBg
+                                : isBrakeSummaryItem
+                                  ? brakeRowsTint.tileBg
+                                  : "var(--info-surface)",
+                            border: `1px solid ${
+                              config.key === "wheelsTyres"
+                                ? wheelRowsTint.tileBorder
+                                : isBrakeSummaryItem
+                                  ? brakeRowsTint.tileBorder
+                                  : "var(--accent-purple-surface)"
+                            }`,
                             padding: "10px 12px",
                             display: "flex",
                             flexDirection: "column",
@@ -1009,7 +1269,12 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
                                 fontSize: "11px",
                                 textTransform: "uppercase",
                                 letterSpacing: "0.08em",
-                                color: config.key === "wheelsTyres" ? wheelRowsTint.keyColor : "var(--info)",
+                                color:
+                                  config.key === "wheelsTyres"
+                                    ? wheelRowsTint.keyColor
+                                    : isBrakeSummaryItem
+                                      ? brakeRowsTint.keyColor
+                                      : "var(--info)",
                                 fontWeight: 700,
                               }}
                             >
@@ -1036,17 +1301,6 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
                       padding: "10px",
                     }}
                   >
-                    <span
-                      style={{
-                        fontSize: "11px",
-                        fontWeight: 700,
-                        letterSpacing: "0.08em",
-                        textTransform: "uppercase",
-                        color: "var(--accent-purple)",
-                      }}
-                    >
-                      Concern
-                    </span>
                     {concerns.map((concern, concernIdx) => (
                       <div
                         key={`${config.key}-${idx}-concern-${concernIdx}`}
@@ -2065,6 +2319,27 @@ export default function VhcDetailsPanel({
         note: note || null,
       });
     });
+
+    const rearDrums = brakes.rearDrums;
+    if (rearDrums && typeof rearDrums === "object") {
+      const rawStatusLabel = formatBrakeConditionLabel(rearDrums.status);
+      const concernStatuses = Array.isArray(rearDrums.concerns)
+        ? rearDrums.concerns.map((concern) => normaliseBrakeConditionSeverity(concern?.status)).filter(Boolean)
+        : [];
+      const status = deriveHighestSeverity([
+        normaliseBrakeConditionSeverity(rearDrums.status),
+        ...concernStatuses,
+      ]);
+      if (rawStatusLabel || status || concernStatuses.length > 0) {
+        pushEntry("rear", {
+          id: "rear-rearDrums",
+          label: "Rear Drums",
+          measurement: null,
+          status: status || normaliseBrakeConditionSeverity(rearDrums.status) || "green",
+          statusLabel: rawStatusLabel || mapBrakeConditionFromSeverity(status || "green") || "Good",
+        });
+      }
+    }
 
     return map;
   }, [vhcData?.brakesHubs]);
@@ -3717,7 +3992,10 @@ export default function VhcDetailsPanel({
                           }}
                         >
                           {supplementaryRows.map((entry) => {
-                            const entryStatusLabel = formatStatusLabel(entry.status);
+                            const entryStatusLabel =
+                              entry.statusLabel ||
+                              mapBrakeConditionFromSeverity(entry.status) ||
+                              formatStatusLabel(entry.status);
                             const badgeStyles = entry.status ? buildSeverityBadgeStyles(entry.status) : null;
                             return (
                               <div
