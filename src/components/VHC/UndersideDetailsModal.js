@@ -201,12 +201,6 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
     category: "",
     temp: { issue: "", status: "Red" },
   });
-  const [showValidation, setShowValidation] = useState(false);
-
-  const missingCategories = CATEGORY_ORDER.filter(
-    (category) => (data?.[category]?.concerns ?? []).length === 0,
-  );
-  const canComplete = missingCategories.length === 0;
 
   const enableConcern = (category) => {
     setActiveConcern({ open: true, category, temp: { issue: "", status: "Red" } });
@@ -254,10 +248,6 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
   };
 
   const handleSaveComplete = () => {
-    if (!canComplete) {
-      setShowValidation(true);
-      return;
-    }
     onComplete(data);
   };
 
@@ -295,11 +285,6 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
             minHeight: 0,
           }}
         >
-          {showValidation && !canComplete ? (
-            <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--danger)" }}>
-              Complete all highlighted underside sections to continue.
-            </div>
-          ) : null}
           <div
             style={{
               ...cardGridStyle,
@@ -315,28 +300,17 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
             const amberCount = concerns.filter((c) => c.status === "Amber").length;
             const greenCount = concerns.filter((c) => c.status === "Green").length;
             const loggedCount = redCount + amberCount + greenCount;
-            const isCategoryMissing = showValidation && missingCategories.includes(category);
 
             return (
               <button
                 key={category}
                 type="button"
                 onClick={() => enableConcern(category)}
-                style={
-                  isCategoryMissing
-                    ? {
-                        ...baseCardStyle,
-                        border: "2px solid var(--danger)",
-                        background: "var(--danger-surface)",
-                      }
-                    : baseCardStyle
-                }
+                style={baseCardStyle}
                 onMouseEnter={(e) => {
-                  if (isCategoryMissing) return;
                   setCardHoverState(e.currentTarget, true);
                 }}
                 onMouseLeave={(e) => {
-                  if (isCategoryMissing) return;
                   setCardHoverState(e.currentTarget, false);
                 }}
               >

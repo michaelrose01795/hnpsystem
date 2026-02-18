@@ -324,7 +324,24 @@ function GoodsInPage() {
   const filteredBinLocations = useMemo(() => {
     const query = String(partForm.binLocation || "").trim().toLowerCase();
     if (!query) return BIN_LOCATION_OPTIONS;
-    return BIN_LOCATION_OPTIONS.filter((location) => location.toLowerCase().includes(query));
+
+    // Keep all locations visible, but rank search hits to the top of the list.
+    const startsWithMatches = [];
+    const containsMatches = [];
+    const remaining = [];
+
+    BIN_LOCATION_OPTIONS.forEach((location) => {
+      const normalized = location.toLowerCase();
+      if (normalized.startsWith(query)) {
+        startsWithMatches.push(location);
+      } else if (normalized.includes(query)) {
+        containsMatches.push(location);
+      } else {
+        remaining.push(location);
+      }
+    });
+
+    return [...startsWithMatches, ...containsMatches, ...remaining];
   }, [partForm.binLocation]);
 
   const GOODS_IN_ROLES = useMemo(
@@ -2101,7 +2118,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
   const searchJobs = useCallback(async (term, signal) => {
     try {
       setLoading(true);
-      const params = new URLSearchParams({ search: term, limit: "20" });
+      const params = new URLSearchParams({ search: term, limit: "8" });
       const response = await fetch(`/api/parts/jobs/search?${params.toString()}`, { signal });
       const payload = await response.json();
       if (!response.ok || !payload?.success) {
@@ -2357,9 +2374,27 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
     color: "var(--text-primary)",
   });
 
+  const formatJobType = (value = "") => {
+    const text = String(value || "").trim();
+    if (!text) return "General";
+    return text
+      .split(/[_\s]+/)
+      .filter(Boolean)
+      .map((token) => token.charAt(0).toUpperCase() + token.slice(1).toLowerCase())
+      .join(" ");
+  };
+
   return (
     <div style={popupOverlayStyles}>
-      <div style={{ ...popupCardStyles, padding: "24px", maxWidth: "720px" }}>
+      <div
+        style={{
+          ...popupCardStyles,
+          padding: "24px",
+          maxWidth: "980px",
+          width: "min(98vw, 980px)",
+          overflow: "visible",
+        }}
+      >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
           <h3 style={{ margin: 0 }}>Add goods-in parts to a job</h3>
           <button onClick={onClose} style={secondaryButtonStyle} disabled={submitting}>
@@ -2368,17 +2403,20 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
         </div>
         <div style={{ display: "grid", gap: "16px", marginTop: "16px" }}>
           <div style={modalSectionStyle}>
-            <label style={labelStyle}>Search job number or customer</label>
+            <label style={labelStyle}>Search job number, registration, or customer name</label>
             <input
               style={inputStyle}
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="e.g., GJ12345"
+              placeholder="e.g., GJ12345, AB12CDE, Jane Smith"
               disabled={submitting}
             />
+            <div style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+              Detected from search: job number, vehicle reg, customer name, and job description.
+            </div>
             {loading && <div style={{ color: "var(--text-secondary)" }}>Searching...</div>}
             {error && <div style={{ color: "var(--danger)" }}>{error}</div>}
-            <div style={{ maxHeight: "260px", overflowY: "auto" }}>
+            <div>
               {jobResults.map((job) => {
                 const isSelected = selectedJob?.id === job.id;
                 return (
@@ -2391,15 +2429,11 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
                     }}
                     disabled={submitting}
                   >
-                    <div style={{ fontWeight: 600 }}>
-                      {job.job_number} · {job.customer || "Unknown customer"}
+                    <div style={{ fontWeight: 700 }}>
+                      {job.job_number || "No job"} · {job.vehicle_reg || "No reg"} · {job.customer || "Unknown customer"}
                     </div>
                     <div style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>
-                      {job.description || "No description"}
-                    </div>
-                    <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
-                      {job.vehicle_reg || "No reg"} · Updated{" "}
-                      {job.updated_at ? formatRelativeTime(job.updated_at) : "recently"}
+                      Job type: {formatJobType(job.type)}
                     </div>
                   </button>
                 );

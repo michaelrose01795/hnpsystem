@@ -445,8 +445,10 @@ const RANK_TO_SEVERITY = {
   1: "grey",
   0: "green",
 };
-const LABOUR_RATE = 155;
+const LABOUR_RATE = 150;
 const QUOTE_LABOUR_RATE = 85;
+const LABOUR_COST_DEFAULT_GBP = 150;
+const LABOUR_VAT_RATE = 0.2;
 const SEVERITY_META = {
   red: { title: "Red Repairs", description: "", accent: "var(--danger)" },
   amber: { title: "Amber Repairs", description: "", accent: "var(--warning)" },
@@ -1422,6 +1424,11 @@ export default function VhcDetailsPanel({
   const [openLabourSuggestionItemId, setOpenLabourSuggestionItemId] = useState(null);
   const [, setSelectedLabourSuggestionByItem] = useState({});
   const [savedLabourOverrideByItem, setSavedLabourOverrideByItem] = useState({});
+  const [labourCostModal, setLabourCostModal] = useState({
+    open: false,
+    itemId: null,
+    costInput: String(LABOUR_COST_DEFAULT_GBP),
+  });
   const labourOverrideDebounceRef = useRef({});
   const labourSuggestionRequestRef = useRef({});
   const labourEditSessionRef = useRef({});
@@ -3233,6 +3240,52 @@ export default function VhcDetailsPanel({
   };
 
   const computeLabourCost = (hours) => parseNumericValue(hours) * LABOUR_RATE;
+  const parseCurrencyValue = (value) => {
+    const numeric = Number.parseFloat(String(value || "").replace(/[^0-9.]/g, ""));
+    return Number.isFinite(numeric) && numeric >= 0 ? numeric : null;
+  };
+
+  const openLabourCostModal = (itemId, labourHoursValue) => {
+    const currentCost = computeLabourCost(labourHoursValue);
+    const defaultCost = currentCost > 0 ? currentCost : LABOUR_COST_DEFAULT_GBP;
+    setLabourCostModal({
+      open: true,
+      itemId,
+      costInput: defaultCost.toFixed(2),
+    });
+  };
+
+  const closeLabourCostModal = () => {
+    setLabourCostModal({
+      open: false,
+      itemId: null,
+      costInput: String(LABOUR_COST_DEFAULT_GBP),
+    });
+  };
+
+  const saveLabourCostModal = async () => {
+    const itemId = labourCostModal.itemId;
+    if (!itemId) {
+      closeLabourCostModal();
+      return;
+    }
+
+    const parsedCost = parseCurrencyValue(labourCostModal.costInput);
+    const netCost = parsedCost === null ? LABOUR_COST_DEFAULT_GBP : parsedCost;
+    const hoursValue = (netCost / LABOUR_RATE).toFixed(2);
+
+    setItemEntries((prev) => ({
+      ...prev,
+      [itemId]: {
+        ...ensureEntryValue(prev, itemId),
+        laborHours: hoursValue,
+        labourComplete: true,
+      },
+    }));
+
+    await persistLabourHours(itemId, hoursValue);
+    closeLabourCostModal();
+  };
 
   const resolvePartsCost = (itemId, entry) => {
     const canonicalId = resolveCanonicalVhcId(itemId);
@@ -4062,11 +4115,24 @@ export default function VhcDetailsPanel({
                           type="checkbox"
                           checked={resolveLabourCompleteValue(effectiveEntry, resolvedLabourHours)}
                           onChange={(event) => event.preventDefault()}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            if (
+                              readOnly ||
+                              severity === "authorized" ||
+                              severity === "declined"
+                            ) {
+                              return;
+                            }
+                            openLabourCostModal(item.id, resolvedLabourHours);
+                          }}
                           disabled={
                             readOnly ||
                             severity === "authorized" ||
                             severity === "declined"
                           }
+                          style={{ cursor: "pointer" }}
+                          title="Open labour cost editor"
                         />
                         <input
                           className="labour-hours-input"
@@ -5873,12 +5939,7 @@ export default function VhcDetailsPanel({
     const itemsById = new Map(
       (vhcItemsWithParts || []).map((item) => [String(item.vhcId), item])
     );
-    const orderedSourceItems = [
-      ...(severityLists.red || []),
-      ...(severityLists.amber || []),
-      ...(severityLists.authorized || []),
-      ...(severityLists.declined || []),
-    ];
+    const orderedSourceItems = Array.isArray(summaryItems) ? summaryItems : [];
     const filteredItems = orderedSourceItems.map((item) => {
       const key = String(item.id);
       const existing = itemsById.get(key);
@@ -5892,8 +5953,11 @@ export default function VhcDetailsPanel({
         canonicalVhcId: resolveCanonicalVhcId(key),
       };
     });
+    const filteredIds = new Set(filteredItems.map((item) => String(item.vhcId)));
+    const orphanItems = (vhcItemsWithParts || []).filter((item) => !filteredIds.has(String(item.vhcId)));
+    const displayItems = [...filteredItems, ...orphanItems];
 
-    if (!filteredItems || filteredItems.length === 0) {
+    if (!displayItems || displayItems.length === 0) {
       return <EmptyStateMessage message="No VHC repairs have been recorded yet." />;
     }
 
@@ -5926,7 +5990,7 @@ export default function VhcDetailsPanel({
               </tr>
             </thead>
             <tbody>
-              {filteredItems.map((item) => {
+              {displayItems.map((item) => {
                 const { vhcItem, linkedParts, vhcId, canonicalVhcId } = item;
                 const isPartsNotRequired = partsNotRequired.has(vhcId);
                 const isWarranty = warrantyRows.has(vhcId);
@@ -6244,7 +6308,7 @@ export default function VhcDetailsPanel({
         </div>
       </div>
     );
-  }, [vhcItemsWithParts, severityLists, resolveCanonicalVhcId, partsNotRequired, warrantyRows, partsCostByVhcItem, handlePartsNotRequiredToggle, handleVhcItemRowClick, expandedVhcItems, partDetails, handlePartDetailChange, handleRemovePart, removingPartIds, isCustomerView, openAddPartsModal, readOnly]);
+  }, [vhcItemsWithParts, summaryItems, resolveCanonicalVhcId, partsNotRequired, warrantyRows, partsCostByVhcItem, handlePartsNotRequiredToggle, handleVhcItemRowClick, expandedVhcItems, partDetails, handlePartDetailChange, handleRemovePart, removingPartIds, isCustomerView, openAddPartsModal, readOnly]);
 
   // Render VHC authorized items panel (similar to Parts Identified but for authorized items)
   const renderVhcAuthorizedPanel = useCallback(() => {
@@ -8389,6 +8453,146 @@ export default function VhcDetailsPanel({
           </div>
         </div>
       </VHCModalShell>
+
+      {labourCostModal.open && (
+        <div
+          className="popup-backdrop"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              closeLabourCostModal();
+            }
+          }}
+        >
+          <div
+            className="popup-card"
+            style={{
+              borderRadius: "32px",
+              width: "100%",
+              maxWidth: "560px",
+              border: "1px solid var(--surface-light)",
+              maxHeight: "88vh",
+              overflowY: "auto",
+            }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div style={{ padding: "32px" }}>
+              <h4
+                style={{
+                  margin: "0 0 16px 0",
+                  fontSize: "14px",
+                  fontWeight: "bold",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  color: "var(--primary)",
+                }}
+              >
+                Labour Cost
+              </h4>
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "8px",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      color: "#666",
+                    }}
+                  >
+                    Labour Net Cost (GBP)
+                  </label>
+                  <input
+                    type="text"
+                    value={labourCostModal.costInput}
+                    onChange={(event) => setLabourCostModal((prev) => ({ ...prev, costInput: event.target.value }))}
+                    placeholder="150.00"
+                    style={{
+                      width: "100%",
+                      padding: "12px 16px",
+                      borderRadius: "12px",
+                      border: "2px solid var(--surface-light)",
+                      backgroundColor: "var(--surface-light)",
+                      fontSize: "15px",
+                      transition: "border-color 0.2s",
+                    }}
+                    onFocus={(event) => {
+                      event.target.style.borderColor = "var(--primary)";
+                    }}
+                    onBlur={(event) => {
+                      event.target.style.borderColor = "var(--surface-light)";
+                    }}
+                  />
+                </div>
+
+                {(() => {
+                  const parsed = parseCurrencyValue(labourCostModal.costInput);
+                  const net = parsed === null ? LABOUR_COST_DEFAULT_GBP : parsed;
+                  const vat = net * LABOUR_VAT_RATE;
+                  const gross = net + vat;
+                  return (
+                    <div
+                      style={{
+                        borderRadius: "12px",
+                        border: "2px solid var(--surface-light)",
+                        background: "var(--surface-light)",
+                        padding: "12px 14px",
+                        display: "grid",
+                        gap: "8px",
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", color: "var(--info-dark)" }}>
+                        <span>Net</span>
+                        <strong>£{net.toFixed(2)}</strong>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", color: "var(--info-dark)" }}>
+                        <span>VAT (20%)</span>
+                        <strong>£{vat.toFixed(2)}</strong>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "15px", color: "var(--primary)", fontWeight: 700 }}>
+                        <span>Total inc VAT</span>
+                        <span>£{gross.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "6px" }}>
+                  <button
+                    type="button"
+                    onClick={closeLabourCostModal}
+                    style={{
+                      padding: "10px 18px",
+                      borderRadius: "10px",
+                      border: "1px solid var(--surface-light)",
+                      background: "var(--surface)",
+                      color: "var(--info-dark)",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={saveLabourCostModal}
+                    style={{
+                      padding: "10px 18px",
+                      borderRadius: "10px",
+                      border: "2px solid var(--primary)",
+                      background: "var(--primary)",
+                      color: "white",
+                      fontWeight: "bold",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Pre-Pick Location Modal */}
       <PrePickLocationModal
