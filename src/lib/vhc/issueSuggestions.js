@@ -60,6 +60,28 @@ const ISSUE_SECTION_LABEL_OVERRIDES = {
   underside_miscellaneous: "Underside - Miscellaneous",
 };
 
+const BLOCKED_SUGGESTION_KEYS = new Set([
+  "osr tyre tread noted nail in tyre requires repair",
+]);
+
+const WHEEL_COMMON_CONCERN_TEMPLATES = [
+  "{pos} tyre low tread depth, replacement tyres required",
+  "{pos} tyre uneven wear, alignment check recommended",
+  "{pos} tyre sidewall damage, replacement tyre required",
+  "{pos} tyre has a puncture in the tread, puncture repair required",
+  "{pos} tyre has a nail in the tread, puncture repair required",
+  "{pos} tyre has a nail in the tread, replacement tyres required",
+  "{pos} tyre pressure low, adjust and monitor",
+  "{pos} wheel rim damaged, repair recommended",
+];
+
+const WHEEL_POSITION_LABELS = {
+  wheels_nsf: "NSF",
+  wheels_osf: "OSF",
+  wheels_nsr: "NSR",
+  wheels_osr: "OSR",
+};
+
 const SECTION_HINT_KEYWORDS = [
   {
     sectionKey: "underside_miscellaneous",
@@ -123,7 +145,15 @@ const normaliseText = (value = "") =>
     .trim()
     .toLowerCase();
 
+const isBlockedSuggestion = (value = "") => BLOCKED_SUGGESTION_KEYS.has(normalizeQuery(value));
+
 const capitalize = (value = "") => value.charAt(0).toUpperCase() + value.slice(1);
+
+const getWheelCommonSuggestions = (sectionKey = "") => {
+  const pos = WHEEL_POSITION_LABELS[sectionKey];
+  if (!pos) return null;
+  return WHEEL_COMMON_CONCERN_TEMPLATES.map((template) => template.replace("{pos}", pos));
+};
 
 const queryCacheBySection = new Map();
 const learnedSuggestionsBySection = new Map();
@@ -287,8 +317,12 @@ export const getIssueSuggestions = (sectionKey = "", query = "", limit = DEFAULT
     return cached;
   }
 
-  const ranked = rankSuggestions(resolvedSectionKey, normalizedQuery);
-  const taxonomyResult = ranked.slice(0, normalizedLimit * 2).map((entry) => entry.text);
+  const wheelCommonSuggestions = getWheelCommonSuggestions(resolvedSectionKey);
+  const taxonomyResult = wheelCommonSuggestions
+    ? rankLearnedSuggestions(wheelCommonSuggestions, normalizedQuery, normalizedLimit * 2)
+    : rankSuggestions(resolvedSectionKey, normalizedQuery)
+        .slice(0, normalizedLimit * 2)
+        .map((entry) => entry.text);
   const learnedResult = rankLearnedSuggestions(
     getLearnedSuggestionsForSection(resolvedSectionKey),
     normalizedQuery,
@@ -298,6 +332,7 @@ export const getIssueSuggestions = (sectionKey = "", query = "", limit = DEFAULT
   const deduped = [];
   const seen = new Set();
   [...learnedResult, ...taxonomyResult].forEach((text) => {
+    if (isBlockedSuggestion(text)) return;
     const key = normaliseText(text);
     if (!key || seen.has(key)) return;
     seen.add(key);
@@ -314,6 +349,9 @@ export const learnIssueSuggestion = (sectionKey = "", issueText = "") => {
   const displayText = String(issueText || "").replace(/\s+/g, " ").trim();
   if (!resolvedSectionKey || !displayText) {
     return { learned: false, reason: "invalid_input" };
+  }
+  if (isBlockedSuggestion(displayText)) {
+    return { learned: false, reason: "blocked_phrase" };
   }
 
   const semanticKey = normalizeSemanticKey(displayText);

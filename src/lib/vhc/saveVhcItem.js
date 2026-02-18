@@ -2,6 +2,7 @@
 import { supabase } from "@/lib/supabaseClient";
 import { summariseTechnicianVhc } from "@/lib/vhc/summary";
 import { upsertVhcIssueRow } from "@/lib/vhc/upsertVhcIssueRow";
+import { buildStableDisplayId } from "@/lib/vhc/displayId";
 
 const DEFAULT_LABOUR_RATE_GBP = 85;
 
@@ -142,6 +143,7 @@ export const saveVhcItem = async (payload = {}, context = {}) => {
     approval_status: normalizeApprovalStatus(payload.status),
     authorization_state: payload.authorization_state ?? null,
     severity: normalizeSeverity(payload.severity),
+    display_id: payload.display_id || null,
   });
 
   existingRowsByDedupe.set(dedupeKey, row);
@@ -156,11 +158,12 @@ export const buildNormalizedVhcItems = ({ job_number, vhcData, labour_rate_gbp =
   sections.forEach((section) => {
     const sectionName = section?.title || section?.name || "Vehicle Health Check";
 
-    (section?.items || []).forEach((item) => {
+    (section?.items || []).forEach((item, index) => {
       const heading = collapseWhitespace(item?.heading || sectionName || "VHC Item");
       const concerns = Array.isArray(item?.concerns) ? item.concerns : [];
       const notes = collapseWhitespace(item?.notes || item?.measurement || "");
       const subAreaKey = resolveSubAreaForSummaryItem({ sectionName, heading, wheelKey: item?.wheelKey });
+      const displayId = buildStableDisplayId(sectionName, item, index);
 
       if (concerns.length > 0) {
         concerns.forEach((concern) => {
@@ -180,6 +183,7 @@ export const buildNormalizedVhcItems = ({ job_number, vhcData, labour_rate_gbp =
             labour_rate_gbp,
             status: "pending",
             source: "HEALTH_CHECK_POPUP",
+            display_id: displayId,
           };
           payload.dedupe_key = buildVhcDedupeKey(payload);
           if (!seen.has(payload.dedupe_key)) {
@@ -206,6 +210,7 @@ export const buildNormalizedVhcItems = ({ job_number, vhcData, labour_rate_gbp =
         labour_rate_gbp,
         status: "pending",
         source: "HEALTH_CHECK_POPUP",
+        display_id: displayId,
       };
       payload.dedupe_key = buildVhcDedupeKey(payload);
       if (!seen.has(payload.dedupe_key)) {

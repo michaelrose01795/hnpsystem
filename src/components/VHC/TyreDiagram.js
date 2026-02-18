@@ -1,5 +1,6 @@
 // file location: src/components/VHC/TyreDiagram.js
 import React from "react";
+import { useTheme } from "@/styles/themeProvider";
 import themeConfig from "@/styles/appTheme";
 
 const { palette } = themeConfig;
@@ -72,8 +73,11 @@ export default function TyreDiagram({
   invalidTyres = [],
   invalidSpare = false,
 }) {
+  const { resolvedMode } = useTheme();
   const activeKey = activeTyre?.toLowerCase();
   const invalidTyreSet = new Set((invalidTyres || []).map((key) => String(key).toLowerCase()));
+  const selectedWheelFill = resolvedMode === "dark" ? "rgba(126, 87, 194, 0.16)" : "rgba(214, 73, 73, 0.12)";
+  const selectedWheelStroke = resolvedMode === "dark" ? "rgba(126, 87, 194, 0.65)" : "rgba(214, 73, 73, 0.7)";
 
   const containerStyle = {
     width: "100%",
@@ -138,6 +142,24 @@ export default function TyreDiagram({
             <React.Fragment
               key={key}
             >
+              {isActive ? (
+                <span
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    left: `${position.left}%`,
+                    top: `${position.top}%`,
+                    transform: "translate(-50%, -50%)",
+                    width: `${TYRE_HIT_WIDTH + 22}px`,
+                    height: `${TYRE_HIT_HEIGHT + 22}px`,
+                    borderRadius: "18px",
+                    border: `2px dashed ${selectedWheelStroke}`,
+                    background: selectedWheelFill,
+                    pointerEvents: "none",
+                    zIndex: 3,
+                  }}
+                />
+              ) : null}
               <button
                 type="button"
                 onClick={() => onSelect?.(key)}

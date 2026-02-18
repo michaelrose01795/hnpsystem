@@ -29,6 +29,7 @@ import {
   PartRowCells,
 } from "@/components/VHC/VhcSharedComponents";
 import { isValidUuid } from "@/features/labour-times/normalization";
+import { buildStableDisplayId, formatMeasurement, resolveLocationKey, normalizeText, hashString, LOCATION_TOKENS } from "@/lib/vhc/displayId";
 
 const LABOUR_SUGGEST_DEBUG = process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_DEBUG_LABOUR_SUGGESTIONS === "1";
 
@@ -414,14 +415,7 @@ const CATEGORY_DEFINITIONS = [
   },
 ];
 
-const LOCATION_TOKENS = [
-  { key: "front_left", terms: ["front left", "nearside front", "nsf", "left front"] },
-  { key: "front_right", terms: ["front right", "offside front", "osf", "right front"] },
-  { key: "rear_left", terms: ["rear left", "nearside rear", "nsr", "left rear"] },
-  { key: "rear_right", terms: ["rear right", "offside rear", "osr", "right rear"] },
-  { key: "front", terms: ["front"] },
-  { key: "rear", terms: ["rear"] },
-];
+// LOCATION_TOKENS — imported from @/lib/vhc/displayId
 const LOCATION_LABELS = {
   front_left: "Nearside Front",
   front_right: "Offside Front",
@@ -560,16 +554,7 @@ const TAB_CONTENT_STYLE = {
   gap: "24px",
 };
 
-const normalizeText = (value = "") => value.toString().toLowerCase();
-
-const hashString = (value = "") => {
-  let hash = 0;
-  for (let i = 0; i < value.length; i += 1) {
-    hash = (hash << 5) - hash + value.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash).toString(36);
-};
+// normalizeText, hashString — imported from @/lib/vhc/displayId
 
 const resolveCategoryForItem = (sectionName = "", itemLabel = "") => {
   const reference = normalizeText(`${sectionName} ${itemLabel}`);
@@ -585,17 +570,7 @@ const resolveCategoryForItem = (sectionName = "", itemLabel = "") => {
   };
 };
 
-const resolveLocationKey = (item = {}) => {
-  const haystack = normalizeText(
-    `${item.label || ""} ${item.issue_title || ""} ${item.notes || item.issue_description || ""}`
-  );
-  for (const token of LOCATION_TOKENS) {
-    if (token.terms.some((term) => haystack.includes(term))) {
-      return token.key;
-    }
-  }
-  return null;
-};
+// resolveLocationKey — imported from @/lib/vhc/displayId
 
 const deriveBrakeLocationKey = (item = {}) => {
   const locationReference = normalizeText(item.location || "");
@@ -742,42 +717,9 @@ const buildTyreSpecLines = (tyre) => {
   return specs;
 };
 
-const formatMeasurement = (value) => {
-  if (!value && value !== 0) return null;
-  if (Array.isArray(value)) {
-    const merged = value.filter(Boolean).map((item) => item.toString().trim()).join(" / ");
-    return merged || null;
-  }
-  if (typeof value === "object") {
-    const merged = Object.values(value)
-      .filter(Boolean)
-      .map((item) => item.toString().trim())
-      .join(" / ");
-    return merged || null;
-  }
-  return value.toString();
-};
+// formatMeasurement — imported from @/lib/vhc/displayId
 
-const buildStableDisplayId = (sectionName, item = {}, index = 0) => {
-  const heading =
-    item.heading || item.label || item.issue_title || item.name || item.title || sectionName || "";
-  const primaryConcern =
-    Array.isArray(item.concerns) && item.concerns.length > 0
-      ? item.concerns[0]?.text || item.concerns[0]?.issue || item.concerns[0]?.description || ""
-      : "";
-  const rowText = Array.isArray(item.rows)
-    ? item.rows.map((row) => row.toString().trim()).filter(Boolean).join("|")
-    : "";
-  const measurement = formatMeasurement(item.measurement) || "";
-  const locationKey = resolveLocationKey(item) || "";
-  const wheelKey = item.wheelKey || "";
-  const rawKey = `${sectionName}|${heading}|${primaryConcern}|${rowText}|${measurement}|${locationKey}|${wheelKey}`;
-  const hashed = hashString(normalizeText(rawKey));
-  if (hashed) {
-    return `vhc-${hashed}`;
-  }
-  return `vhc-${normalizeText(sectionName).replace(/\s+/g, "-")}-${index}`;
-};
+// buildStableDisplayId — imported from @/lib/vhc/displayId
 
 const collectStatusesFromItems = (items = []) => {
   const statuses = [];
@@ -1625,7 +1567,7 @@ export default function VhcDetailsPanel({
             customer:customer_id(*),
             vehicle:vehicle_id(*),
             technician:assigned_to(user_id, first_name, last_name, email, role, phone),
-            vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at, approval_status, display_status, severity, approved_by, approved_at, labour_hours, parts_cost, total_override, labour_complete, parts_complete),
+            vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at, approval_status, display_status, severity, approved_by, approved_at, labour_hours, parts_cost, total_override, labour_complete, parts_complete, display_id),
             parts_job_items(
               id,
               part_id,
@@ -4894,7 +4836,7 @@ export default function VhcDetailsPanel({
               customer:customer_id(*),
               vehicle:vehicle_id(*),
               technician:assigned_to(user_id, first_name, last_name, email, role, phone),
-              vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at, approval_status, display_status, severity, approved_by, approved_at, labour_hours, parts_cost, total_override, labour_complete, parts_complete),
+              vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at, approval_status, display_status, severity, approved_by, approved_at, labour_hours, parts_cost, total_override, labour_complete, parts_complete, display_id),
               parts_job_items(
                 id,
                 part_id,
