@@ -263,40 +263,27 @@ export default async function handler(req, res) {
           approvalStatus: normalizedStatus,
         });
 
+        // Sync note_text, pre_pick_location, request_id directly on vhc_checks
         if (normalizedStatus === "authorized" || normalizedStatus === "completed") {
           await supabase
-            .from("vhc_authorized_items")
-            .upsert(
-              {
-                job_id: jobId,
-                job_number: jobNumber || "",
-                vhc_item_id: vhcItemId,
-                section: updatedRow?.section || vhcRow?.section || null,
-                issue_title: updatedRow?.issue_title || vhcRow?.issue_title || null,
-                issue_description: updatedRow?.issue_description || vhcRow?.issue_description || null,
-                measurement: updatedRow?.measurement || vhcRow?.measurement || null,
-                approval_status: normalizedStatus,
-                display_status: updatedRow?.display_status || null,
-                labour_hours: updatedRow?.labour_hours ?? null,
-                parts_cost: updatedRow?.parts_cost ?? null,
-                total_override: updatedRow?.total_override ?? null,
-                labour_complete: updatedRow?.labour_complete ?? false,
-                parts_complete: updatedRow?.parts_complete ?? false,
-                approved_at: updatedRow?.approved_at || null,
-                approved_by: updatedRow?.approved_by || null,
-                note_text: latestRequest?.note_text ?? null,
-                pre_pick_location: latestRequest?.pre_pick_location ?? null,
-                request_id: latestRequest?.request_id ?? null,
-                updated_at: new Date().toISOString(),
-              },
-              { onConflict: "job_number,vhc_item_id" }
-            );
+            .from("vhc_checks")
+            .update({
+              note_text: latestRequest?.note_text ?? null,
+              pre_pick_location: latestRequest?.pre_pick_location ?? null,
+              request_id: latestRequest?.request_id ?? null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("vhc_id", vhcItemId);
         } else if (normalizedStatus === "pending" || normalizedStatus === "declined") {
           await supabase
-            .from("vhc_authorized_items")
-            .delete()
-            .eq("job_id", jobId)
-            .eq("vhc_item_id", vhcItemId);
+            .from("vhc_checks")
+            .update({
+              note_text: null,
+              pre_pick_location: null,
+              request_id: null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("vhc_id", vhcItemId);
         }
       }
     }

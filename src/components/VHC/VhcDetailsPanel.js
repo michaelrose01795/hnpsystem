@@ -1655,7 +1655,6 @@ export default function VhcDetailsPanel({
                 unit_price
               )
             ),
-            vhc_item_aliases(display_id, vhc_item_id),
             job_files(
               file_id,
               file_name,
@@ -1695,7 +1694,6 @@ export default function VhcDetailsPanel({
           vhc_checks = [],
           parts_job_items = [],
           job_files = [],
-          vhc_item_aliases: aliasRows = [],
           ...jobFields
         } = jobRow;
         let resolvedParts = Array.isArray(parts_job_items) ? parts_job_items : [];
@@ -1705,11 +1703,13 @@ export default function VhcDetailsPanel({
             resolvedParts = fallbackParts;
           }
         }
-        const sanitizedAliasRows = Array.isArray(aliasRows) ? aliasRows.filter(Boolean) : [];
+        // Build alias map from display_id on vhc_checks (consolidated from vhc_item_aliases)
         const aliasMapFromDb = {};
-        sanitizedAliasRows.forEach((alias) => {
-          if (!alias?.display_id || alias.vhc_item_id === null || alias.vhc_item_id === undefined) return;
-          aliasMapFromDb[String(alias.display_id)] = String(alias.vhc_item_id);
+        const sanitizedAliasRows = [];
+        (vhc_checks || []).forEach((check) => {
+          if (!check?.display_id || check.vhc_id === null || check.vhc_id === undefined) return;
+          aliasMapFromDb[String(check.display_id)] = String(check.vhc_id);
+          sanitizedAliasRows.push({ display_id: check.display_id, vhc_item_id: check.vhc_id });
         });
 
         setVhcItemAliasRecords(sanitizedAliasRows);
@@ -1724,18 +1724,12 @@ export default function VhcDetailsPanel({
         // Store all VHC checks data for approval status lookup
         setVhcChecksData(vhc_checks || []);
 
-        if (jobRow?.id) {
-          const { data: authorizedRows, error: authorizedError } = await supabase
-            .from("vhc_authorized_items")
-            .select("*")
-            .eq("job_id", jobRow.id)
-            .order("approved_at", { ascending: false });
-          if (authorizedError) {
-            console.warn("[VHC] Failed to load authorized view rows", authorizedError);
-          }
-          setAuthorizedViewRows(Array.isArray(authorizedRows) ? authorizedRows : []);
-          setAuthorizedViewLoaded(true);
-        }
+        // Derive authorized view rows from vhc_checks (consolidated — no separate table needed)
+        const authorizedRows = (vhc_checks || []).filter(
+          (check) => check.approval_status === "authorized" || check.approval_status === "completed"
+        );
+        setAuthorizedViewRows(authorizedRows);
+        setAuthorizedViewLoaded(true);
 
         const builderRecord = vhc_checks.find(
           (check) => check.section === "VHC_CHECKSHEET"
@@ -1791,32 +1785,19 @@ export default function VhcDetailsPanel({
           table: "vhc_checks",
           filter: `job_id=eq.${job.id}`,
         },
-        (payload) => {
+        async (payload) => {
           const record = payload.new || payload.old;
-          if (!record || record.section !== "VHC_CHECKSHEET") return;
-          const parsed = safeJsonParse(record.issue_description || record.data);
-          if (!parsed) return;
-          setVhcData(buildVhcPayload(parsed));
-        }
-      )
-      .subscribe();
-
-    const authorisedChannel = supabase
-      .channel(`vhc-authorized-items-${job.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "vhc_authorized_items",
-          filter: `job_id=eq.${job.id}`,
-        },
-        async () => {
+          if (record?.section === "VHC_CHECKSHEET") {
+            const parsed = safeJsonParse(record.issue_description || record.data);
+            if (parsed) setVhcData(buildVhcPayload(parsed));
+          }
+          // Refresh authorized view rows from vhc_checks (consolidated)
           try {
             const { data } = await supabase
-              .from("vhc_authorized_items")
+              .from("vhc_checks")
               .select("*")
               .eq("job_id", job.id)
+              .in("approval_status", ["authorized", "completed"])
               .order("approved_at", { ascending: false });
             setAuthorizedViewRows(Array.isArray(data) ? data : []);
           } catch (e) {
@@ -1828,7 +1809,6 @@ export default function VhcDetailsPanel({
 
     return () => {
       supabase.removeChannel(checksChannel);
-      supabase.removeChannel(authorisedChannel);
     };
   }, [job?.id]);
 
@@ -2482,7 +2462,7 @@ export default function VhcDetailsPanel({
 
   const labourHoursByVhcItem = useMemo(() => {
     const map = new Map();
-    const fromVhcChecks = new Set(); // Track which items have labour from vhc_checks
+    const fromVhcChecks = new Set(); // Track which items are marked labour_complete in vhc_checks
 
     // First, get labour hours from vhc_checks (primary source of truth)
     vhcChecksData.forEach((check) => {
@@ -2490,10 +2470,11 @@ export default function VhcDetailsPanel({
       if (check.labour_hours === null || check.labour_hours === undefined || check.labour_hours === "") return;
       const hours = Number(check.labour_hours);
       if (!Number.isFinite(hours) || hours < 0) return; // Allow 0 values
-      if (hours === 0 && !check.labour_complete) return;
       const key = String(check.vhc_id);
       map.set(key, hours);
-      fromVhcChecks.add(key); // Mark as coming from vhc_checks
+      if (Boolean(check.labour_complete)) {
+        fromVhcChecks.add(key);
+      }
     });
 
     // Then, also check parts_job_items and take the maximum value
@@ -3164,8 +3145,7 @@ export default function VhcDetailsPanel({
 
           // Update labour hours if present in database
           const hasLabourHours = approvalData.labourHours !== null && approvalData.labourHours !== undefined;
-          const labourHoursValue = hasLabourHours ? Number(approvalData.labourHours) : null;
-          if (hasLabourHours && !(labourHoursValue === 0 && !approvalData.labourComplete)) {
+          if (hasLabourHours) {
             updatedEntry.laborHours = String(approvalData.labourHours);
           }
           if (approvalData.labourComplete !== null && approvalData.labourComplete !== undefined) {
@@ -5569,7 +5549,6 @@ export default function VhcDetailsPanel({
               qty_in_stock
             )
           ),
-          vhc_item_aliases(display_id, vhc_item_id),
           job_files(
             file_id,
             file_name,
@@ -5589,7 +5568,6 @@ export default function VhcDetailsPanel({
           vhc_checks = [],
           parts_job_items = [],
           job_files = [],
-          vhc_item_aliases: aliasRows = [],
           ...jobFields
         } = updatedJob;
         let resolvedParts = Array.isArray(parts_job_items) ? parts_job_items : [];
@@ -5599,11 +5577,13 @@ export default function VhcDetailsPanel({
             resolvedParts = fallbackParts;
           }
         }
-        const sanitizedAliasRows = Array.isArray(aliasRows) ? aliasRows.filter(Boolean) : [];
+        // Build alias map from display_id on vhc_checks (consolidated from vhc_item_aliases)
         const aliasMapFromDb = {};
-        sanitizedAliasRows.forEach((alias) => {
-          if (!alias?.display_id || alias.vhc_item_id === null || alias.vhc_item_id === undefined) return;
-          aliasMapFromDb[String(alias.display_id)] = String(alias.vhc_item_id);
+        const sanitizedAliasRows = [];
+        (vhc_checks || []).forEach((check) => {
+          if (!check?.display_id || check.vhc_id === null || check.vhc_id === undefined) return;
+          aliasMapFromDb[String(check.display_id)] = String(check.vhc_id);
+          sanitizedAliasRows.push({ display_id: check.display_id, vhc_item_id: check.vhc_id });
         });
         setVhcItemAliasRecords(sanitizedAliasRows);
         setVhcIdAliases(aliasMapFromDb);

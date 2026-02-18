@@ -38,6 +38,21 @@ const CHECK_COLUMNS = [ // Canonical column list for vhc_checks.
   "measurement", // Optional measurement captured during inspection.
   "approval_status", // Decision status for the VHC item.
   "display_status", // UI status override for the VHC item.
+  "labour_hours", // Estimated labour hours for the item.
+  "parts_cost", // Estimated parts cost for the item.
+  "total_override", // Manual total override.
+  "labour_complete", // Whether labour is complete.
+  "parts_complete", // Whether parts work is complete.
+  "approved_at", // Timestamp when item was approved.
+  "approved_by", // Who approved the item.
+  "authorization_state", // State of authorization.
+  "severity", // Severity rating (red, amber, green).
+  "slot_code", // Identity helper for deduplication.
+  "line_key", // Identity key for deduplication.
+  "note_text", // Additional notes (absorbed from vhc_authorized_items).
+  "pre_pick_location", // Pre-pick warehouse location (absorbed from vhc_authorized_items).
+  "request_id", // Associated job request (absorbed from vhc_authorized_items).
+  "display_id", // User-facing identifier (absorbed from vhc_item_aliases).
   "created_at", // Timestamp when the record was created.
   "updated_at", // Timestamp when the record was last updated.
 ].join(", "); // Join the columns for Supabase select statements.
@@ -84,6 +99,7 @@ const mapCheckRow = (row = {}) => { // Convert snake_case database row into came
 
   return {
     id: row.vhc_id, // Primary key value.
+    vhcId: row.vhc_id, // Alias for compatibility with authorized items consumers.
     jobId: row.job_id, // Job reference.
     section: row.section, // Section label.
     issueTitle: row.issue_title, // Issue title text.
@@ -92,6 +108,21 @@ const mapCheckRow = (row = {}) => { // Convert snake_case database row into came
     measurement: row.measurement, // Optional measurement.
     approvalStatus: row.approval_status, // Approval status.
     displayStatus: row.display_status, // Display status override.
+    labourHours: row.labour_hours, // Estimated labour hours.
+    partsCost: row.parts_cost, // Estimated parts cost.
+    totalOverride: row.total_override, // Manual total override.
+    labourComplete: row.labour_complete, // Whether labour is complete.
+    partsComplete: row.parts_complete, // Whether parts work is complete.
+    approvedAt: row.approved_at, // Approval timestamp.
+    approvedBy: row.approved_by, // Who approved the item.
+    authorizationState: row.authorization_state, // Authorization state.
+    severity: row.severity, // Severity rating.
+    slotCode: row.slot_code, // Identity helper for deduplication.
+    lineKey: row.line_key, // Identity key for deduplication.
+    noteText: row.note_text, // Additional notes.
+    prePickLocation: row.pre_pick_location, // Pre-pick warehouse location.
+    requestId: row.request_id, // Associated job request ID.
+    displayId: row.display_id, // User-facing identifier.
     createdAt: row.created_at, // Creation timestamp.
     updatedAt: row.updated_at, // Update timestamp.
   };

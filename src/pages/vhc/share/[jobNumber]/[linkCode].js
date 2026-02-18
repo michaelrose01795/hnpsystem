@@ -162,7 +162,7 @@ export default function PublicSharePreviewPage() {
         }
 
         const { jobData, expiresAt: linkExpiresAt } = data;
-        const { vhc_checks = [], parts_job_items = [], job_files = [], vhc_item_aliases = [], vhc_authorized_items = [], ...jobFields } = jobData || {};
+        const { vhc_checks = [], parts_job_items = [], job_files = [], ...jobFields } = jobData || {};
 
         setJob(jobFields);
         setVhcChecksData(vhc_checks || []);
@@ -170,17 +170,20 @@ export default function PublicSharePreviewPage() {
         setJobFiles(job_files || []);
         setExpiresAt(linkExpiresAt);
 
-        // Build alias map for display IDs -> canonical VHC IDs (same as customer preview)
+        // Build alias map from display_id on vhc_checks (consolidated from vhc_item_aliases)
         const aliasMap = {};
-        (vhc_item_aliases || []).forEach((alias) => {
-          if (alias?.display_id && alias?.vhc_item_id) {
-            aliasMap[String(alias.display_id)] = String(alias.vhc_item_id);
+        (vhc_checks || []).forEach((check) => {
+          if (check?.display_id && check?.vhc_id) {
+            aliasMap[String(check.display_id)] = String(check.vhc_id);
           }
         });
         setVhcIdAliases(aliasMap);
 
-        // Load authorized view rows from the same table used by customer preview
-        setAuthorizedViewRows(vhc_authorized_items || []);
+        // Derive authorized view rows from vhc_checks (consolidated)
+        const authorizedRows = (vhc_checks || []).filter(
+          (check) => check.approval_status === "authorized" || check.approval_status === "completed"
+        );
+        setAuthorizedViewRows(authorizedRows);
       } catch (err) {
         console.error("Error fetching job data:", err);
         setError("Failed to load job data. Please try again later.");
@@ -423,12 +426,12 @@ export default function PublicSharePreviewPage() {
 
 
 
-  // Build set of authorized view IDs from vhc_authorized_items table (same as customer preview)
+  // Build set of authorized view IDs from vhc_checks (consolidated)
   const authorizedViewIds = useMemo(() => {
     const ids = new Set();
     (authorizedViewRows || []).forEach((row) => {
-      if (row?.vhc_item_id) {
-        ids.add(String(row.vhc_item_id));
+      if (row?.vhc_item_id || row?.vhc_id) {
+        ids.add(String(row.vhc_item_id ?? row.vhc_id));
       }
     });
     return ids;

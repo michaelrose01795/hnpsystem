@@ -2816,8 +2816,6 @@ function CustomerRequestsTab({
   const vhcAliasMap = useMemo(() => {
     const rows = Array.isArray(jobData?.vhcItemAliases)
       ? jobData.vhcItemAliases
-      : Array.isArray(jobData?.vhc_item_aliases)
-      ? jobData.vhc_item_aliases
       : [];
     const map = new Map();
     rows.forEach((row) => {
@@ -2828,7 +2826,7 @@ function CustomerRequestsTab({
       map.set(String(displayId), String(vhcItemId));
     });
     return map;
-  }, [jobData?.vhcItemAliases, jobData?.vhc_item_aliases]);
+  }, [jobData?.vhcItemAliases]);
 
   const resolveCanonicalVhcId = useCallback(
     (value) => {
@@ -2864,7 +2862,7 @@ function CustomerRequestsTab({
     []
   );
 
-  // Authorised VHC items (single source of truth: vhc_authorized_items -> jobData.authorizedVhcItems)
+  // Authorised VHC items (source: vhc_checks where approval_status is authorized/completed)
   const authorisedRows = useMemo(() => {
     const canonicalAuthorized = Array.isArray(jobData?.authorizedVhcItems)
       ? jobData.authorizedVhcItems

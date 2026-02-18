@@ -224,10 +224,6 @@ export default function CustomerPreviewPage() {
               uploaded_at,
               uploaded_by
             ),
-            vhc_item_aliases(
-              display_id,
-              vhc_item_id
-            )
           `)
           .eq("job_number", jobNumber)
           .maybeSingle();
@@ -238,32 +234,26 @@ export default function CustomerPreviewPage() {
           return;
         }
 
-        const { vhc_checks = [], parts_job_items = [], job_files = [], vhc_item_aliases: aliasRows = [], ...jobFields } = jobData;
+        const { vhc_checks = [], parts_job_items = [], job_files = [], ...jobFields } = jobData;
         setJob(jobFields);
         setVhcChecksData(vhc_checks || []);
         setPartsJobItems(parts_job_items || []);
         setJobFiles(job_files || []);
 
-        // Log for debugging
-
-
-        // Build alias map from display_id to vhc_item_id
+        // Build alias map from display_id on vhc_checks (consolidated from vhc_item_aliases)
         const aliasMap = {};
-        (aliasRows || []).forEach((alias) => {
-          if (alias?.display_id && alias?.vhc_item_id) {
-            aliasMap[String(alias.display_id)] = String(alias.vhc_item_id);
+        (vhc_checks || []).forEach((check) => {
+          if (check?.display_id && check?.vhc_id) {
+            aliasMap[String(check.display_id)] = String(check.vhc_id);
           }
         });
         setVhcIdAliases(aliasMap);
 
-        // Fetch authorized view items separately
-        if (jobFields.id) {
-          const { data: authViewData } = await supabase
-            .from("vhc_authorized_items")
-            .select("vhc_item_id, approval_status")
-            .eq("job_id", jobFields.id);
-          setAuthorizedViewRows(authViewData || []);
-        }
+        // Derive authorized view rows from vhc_checks (consolidated — no separate table needed)
+        const authorizedRows = (vhc_checks || []).filter(
+          (check) => check.approval_status === "authorized" || check.approval_status === "completed"
+        );
+        setAuthorizedViewRows(authorizedRows);
       } catch (err) {
         console.error("Error fetching job data:", err);
         setError(err.message || "Failed to load job data");
@@ -480,12 +470,12 @@ export default function CustomerPreviewPage() {
     return null;
   }, [vhcChecksData, vhcChecksMap, resolveCanonicalVhcId]);
 
-  // Build set of authorized view IDs from vhc_authorized_items table
+  // Build set of authorized view IDs from vhc_checks (consolidated)
   const authorizedViewIds = useMemo(() => {
     const ids = new Set();
     (authorizedViewRows || []).forEach((row) => {
-      if (row?.vhc_item_id) {
-        ids.add(String(row.vhc_item_id));
+      if (row?.vhc_item_id || row?.vhc_id) {
+        ids.add(String(row.vhc_item_id ?? row.vhc_id));
       }
     });
     return ids;

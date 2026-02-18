@@ -473,7 +473,7 @@ export const getAllJobs = async () => {
       ),
       technician:assigned_to(user_id, first_name, last_name, email, role),
       appointments(appointment_id, scheduled_time, status, notes, created_at, updated_at),
-      vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at, approval_status, display_status, severity, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by),
+      vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at, approval_status, display_status, severity, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by, note_text, pre_pick_location, request_id, display_id),
       parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, pre_pick_location, created_at, updated_at),
       parts_job_items!parts_job_items_job_id_fkey(
         id,
@@ -794,102 +794,20 @@ export const getAuthorizedAdditionalWorkByJob = async (jobId) => {
 ============================================ */
 export const getAuthorizedVhcItemsWithDetails = async (jobId) => {
   try {
-    const { data: authorizedRows, error: authorizedError } = await supabase
-      .from("vhc_authorized_items")
+    // Query vhc_checks directly — authorized items data is now consolidated here
+    const { data: rows, error } = await supabase
+      .from("vhc_checks")
       .select("*")
       .eq("job_id", jobId)
+      .in("approval_status", ["authorized", "completed"])
       .order("approved_at", { ascending: false });
 
-    if (authorizedError) {
-      console.error("❌ Error fetching authorized VHC items:", authorizedError);
+    if (error) {
+      console.error("❌ Error fetching authorized VHC items:", error);
       return [];
     }
 
-    let rows = Array.isArray(authorizedRows) ? authorizedRows : [];
-
-    const { data: authorizationRows, error: authorizationError } = await supabase
-      .from("vhc_authorizations")
-      .select("id")
-      .eq("job_id", jobId)
-      .limit(1);
-
-    if (authorizationError && authorizationError.code !== "PGRST116") {
-      console.error("❌ Error fetching VHC authorizations:", authorizationError);
-      return rows;
-    }
-
-    const hasAuthorizations =
-      Array.isArray(authorizationRows) && authorizationRows.length > 0;
-
-    // Reconcile only when authorizations exist: avoid re-creating rows before any selection
-    const { data: jobRow, error: jobError } = await supabase
-      .from("jobs")
-      .select("job_number")
-      .eq("id", jobId)
-      .maybeSingle();
-
-    if (jobError) {
-      console.error("❌ Reconcile: failed to load job number:", jobError);
-      return [];
-    }
-
-    if (hasAuthorizations) {
-      const { data: checks, error: checksError } = await supabase
-        .from("vhc_checks")
-        .select("*")
-        .eq("job_id", jobId)
-        .in("approval_status", ["authorized", "completed"]);
-
-      if (checksError) {
-        console.error("❌ Reconcile: failed to load authorized vhc_checks:", checksError);
-        return rows;
-      }
-
-      const existingIds = new Set(rows.map((r) => String(r.vhc_item_id ?? r.vhc_id)));
-      const missingChecks = (checks || []).filter((check) => !existingIds.has(String(check.vhc_id)));
-
-      if (missingChecks.length > 0) {
-        const payload = missingChecks.map((check) => ({
-          job_id: jobId,
-          job_number: jobRow?.job_number || "",
-          vhc_item_id: check.vhc_id,
-          section: check.section || null,
-          issue_title: check.issue_title || null,
-          issue_description: check.issue_description || null,
-          measurement: check.measurement || null,
-          approval_status: check.approval_status,
-          display_status: check.display_status || null,
-          labour_hours: check.labour_hours ?? null,
-          parts_cost: check.parts_cost ?? null,
-          total_override: check.total_override ?? null,
-          labour_complete: check.labour_complete ?? false,
-          parts_complete: check.parts_complete ?? false,
-          approved_at: check.approved_at || null,
-          approved_by: check.approved_by || null,
-          note_text: null,
-          pre_pick_location: null,
-          request_id: null,
-          updated_at: check.updated_at || check.approved_at || new Date().toISOString(),
-        }));
-
-        const { error: upsertError } = await supabase
-          .from("vhc_authorized_items")
-          .upsert(payload, { onConflict: "job_number,vhc_item_id" });
-
-        if (upsertError) {
-          console.error("❌ Reconcile: failed to upsert vhc_authorized_items:", upsertError);
-        } else {
-          const { data: refetched } = await supabase
-            .from("vhc_authorized_items")
-            .select("*")
-            .eq("job_id", jobId)
-            .order("approved_at", { ascending: false });
-          rows = Array.isArray(refetched) ? refetched : rows;
-        }
-      }
-    }
-
-    return rows.map((row) => {
+    return (rows || []).map((row) => {
       const base = row.issue_title || row.section || "Authorised item";
       const detail =
         row.issue_description || row.note_text || null;
@@ -898,7 +816,7 @@ export const getAuthorizedVhcItemsWithDetails = async (jobId) => {
       const label = cleanedDetail ? `${base} - ${cleanedDetail}` : base;
 
       return {
-        vhcItemId: row.vhc_item_id ?? row.vhc_id ?? null,
+        vhcItemId: row.vhc_id ?? null,
         description: row.issue_title || row.issue_description || row.section || "Authorised item",
         label,
         issueDescription: row.issue_description || row.note_text || null,
@@ -1059,7 +977,7 @@ export const getJobByNumber = async (jobNumber, options = {}) => {
         created_at,
         updated_at
       ),
-      vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at, approval_status, display_status, severity, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by),
+      vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at, approval_status, display_status, severity, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by, note_text, pre_pick_location, request_id, display_id),
       parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, pre_pick_location, created_at, updated_at),
       parts_job_items!parts_job_items_job_id_fkey(
         id,
@@ -1145,16 +1063,16 @@ export const getJobByNumber = async (jobNumber, options = {}) => {
   const formattedJob = formatJobData(jobData);
   formattedJob.messagingThread = messagingThread;
 
-  const { data: vhcItemAliases, error: vhcAliasError } = await supabase
-    .from("vhc_item_aliases")
-    .select("display_id, vhc_item_id, created_at, updated_at")
-    .eq("job_id", jobData.id);
-
-  if (vhcAliasError) {
-    console.warn("⚠️ Unable to load VHC item aliases:", vhcAliasError.message || vhcAliasError);
-  } else {
-    formattedJob.vhcItemAliases = vhcItemAliases || [];
-  }
+  // Derive vhcItemAliases from display_id on vhc_checks (consolidated from vhc_item_aliases)
+  const vhcChecksForAliases = Array.isArray(formattedJob.vhcChecks) ? formattedJob.vhcChecks : [];
+  formattedJob.vhcItemAliases = vhcChecksForAliases
+    .filter((check) => check?.display_id || check?.displayId)
+    .map((check) => ({
+      display_id: check.display_id ?? check.displayId,
+      vhc_item_id: check.vhc_id ?? check.id ?? check.vhcId,
+      created_at: check.created_at ?? check.createdAt,
+      updated_at: check.updated_at ?? check.updatedAt,
+    }));
   
   if (
     jobData.warranty_vhc_master_job_id &&
@@ -1187,7 +1105,7 @@ export const getJobByNumber = async (jobNumber, options = {}) => {
           created_at,
           updated_at
         ),
-        vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at, approval_status, display_status, severity, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by),
+        vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at, approval_status, display_status, severity, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by, note_text, pre_pick_location, request_id, display_id),
         parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, pre_pick_location, created_at, updated_at),
         parts_job_items!parts_job_items_job_id_fkey(
           id,

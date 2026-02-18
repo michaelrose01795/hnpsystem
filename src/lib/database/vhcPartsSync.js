@@ -11,18 +11,19 @@ const resolveCanonicalVhcId = async ({ jobId, rawVhcId }) => {
   const displayId = String(rawVhcId).trim();
   if (!displayId) return null;
 
-  const { data: aliasRow, error: aliasError } = await supabase
-    .from("vhc_item_aliases")
-    .select("vhc_item_id")
+  // Look up by display_id on vhc_checks directly (consolidated from vhc_item_aliases)
+  const { data: checkRow, error: checkError } = await supabase
+    .from("vhc_checks")
+    .select("vhc_id")
     .eq("job_id", jobId)
     .eq("display_id", displayId)
     .maybeSingle();
 
-  if (aliasError) {
-    throw new Error(`Failed to resolve VHC alias for display id ${displayId}: ${aliasError.message}`);
+  if (checkError) {
+    throw new Error(`Failed to resolve VHC alias for display id ${displayId}: ${checkError.message}`);
   }
 
-  if (aliasRow?.vhc_item_id) return aliasRow.vhc_item_id;
+  if (checkRow?.vhc_id) return checkRow.vhc_id;
 
   const parsed = Number(displayId);
   if (!Number.isNaN(parsed)) {
@@ -293,33 +294,16 @@ export const syncVhcPartsAuthorisation = async ({ jobId, vhcItemId, approvalStat
       }
     }
 
+    // Write note_text, pre_pick_location, request_id directly on vhc_checks
     await supabase
-      .from("vhc_authorized_items")
-      .upsert(
-        {
-          job_id: resolvedJobId,
-          job_number: jobNumber || "",
-          vhc_item_id: canonicalVhcId,
-          section: vhcRow?.section || null,
-          issue_title: vhcRow?.issue_title || null,
-          issue_description: vhcRow?.issue_description || null,
-          measurement: vhcRow?.measurement || null,
-          approval_status: nextApprovalStatus,
-          display_status: nextApprovalStatus,
-          labour_hours: null,
-          parts_cost: null,
-          total_override: null,
-          labour_complete: false,
-          parts_complete: false,
-          approved_at: now,
-          approved_by: null,
-          note_text: noteText,
-          pre_pick_location: latestPrePickLocation,
-          request_id: primaryRequestId,
-          updated_at: now,
-        },
-        { onConflict: "job_number,vhc_item_id" }
-      );
+      .from("vhc_checks")
+      .update({
+        note_text: noteText,
+        pre_pick_location: latestPrePickLocation,
+        request_id: primaryRequestId,
+        updated_at: now,
+      })
+      .eq("vhc_id", canonicalVhcId);
   } else {
     const { error: requestDeleteError } = await supabase
       .from("job_requests")
@@ -352,11 +336,16 @@ export const syncVhcPartsAuthorisation = async ({ jobId, vhcItemId, approvalStat
       throw new Error(`Failed to delete rectification rows: ${rectificationDeleteError.message}`);
     }
 
+    // Clear consolidated columns on vhc_checks when declining/resetting
     await supabase
-      .from("vhc_authorized_items")
-      .delete()
-      .eq("job_id", resolvedJobId)
-      .eq("vhc_item_id", canonicalVhcId);
+      .from("vhc_checks")
+      .update({
+        note_text: null,
+        pre_pick_location: null,
+        request_id: null,
+        updated_at: now,
+      })
+      .eq("vhc_id", canonicalVhcId);
 
     const { data: notesToUpdate, error: notesError } = await supabase
       .from("job_notes")

@@ -84,11 +84,11 @@ export default async function handler(req, res) {
 
       // Fetch related collections separately to avoid complex nested-select failures.
       // Use Promise.all so requests are parallel, then inspect errors and return partial results with warnings.
-      const [vhcChecksRes, partsRes, filesRes, aliasesRes, authItemsRes] = await Promise.all([
+      const [vhcChecksRes, partsRes, filesRes] = await Promise.all([
         dbClient
           .from("vhc_checks")
           .select(
-            `vhc_id, job_id, section, issue_description, issue_title, measurement, created_at, updated_at, approval_status, display_status, approved_by, approved_at, labour_hours, parts_cost, total_override, labour_complete, parts_complete`
+            `vhc_id, job_id, section, issue_description, issue_title, measurement, created_at, updated_at, approval_status, display_status, approved_by, approved_at, labour_hours, parts_cost, total_override, labour_complete, parts_complete, note_text, pre_pick_location, request_id, display_id`
           )
           .eq("job_id", jobRow.id),
         dbClient
@@ -100,14 +100,6 @@ export default async function handler(req, res) {
         dbClient
           .from("job_files")
           .select(`file_id, file_name, file_url, file_type, folder, uploaded_at`)
-          .eq("job_id", jobRow.id),
-        dbClient
-          .from("vhc_item_aliases")
-          .select(`display_id, vhc_item_id`)
-          .eq("job_id", jobRow.id),
-        dbClient
-          .from("vhc_authorized_items")
-          .select(`vhc_item_id, approval_status`)
           .eq("job_id", jobRow.id),
       ]);
 
@@ -124,22 +116,12 @@ export default async function handler(req, res) {
         console.error("Error fetching job_files:", filesRes.error);
         warnings.push("job_files");
       }
-      if (aliasesRes.error) {
-        console.error("Error fetching vhc_item_aliases:", aliasesRes.error);
-        warnings.push("vhc_item_aliases");
-      }
-      if (authItemsRes.error) {
-        console.error("Error fetching vhc_authorized_items:", authItemsRes.error);
-        warnings.push("vhc_authorized_items");
-      }
 
       const jobData = {
         ...jobRow,
         vhc_checks: (vhcChecksRes.data) || [],
         parts_job_items: (partsRes.data) || [],
         job_files: (filesRes.data) || [],
-        vhc_item_aliases: (aliasesRes.data) || [],
-        vhc_authorized_items: (authItemsRes.data) || [],
       };
 
       return res.status(200).json({
@@ -147,7 +129,7 @@ export default async function handler(req, res) {
         valid: true,
         jobData,
         warnings: warnings.length ? warnings : undefined,
-        debug: process.env.NODE_ENV !== 'production' ? { vhcChecksError: vhcChecksRes.error, partsError: partsRes.error, filesError: filesRes.error, aliasesError: aliasesRes.error, authError: authItemsRes.error } : undefined,
+        debug: process.env.NODE_ENV !== 'production' ? { vhcChecksError: vhcChecksRes.error, partsError: partsRes.error, filesError: filesRes.error } : undefined,
         expiresAt: new Date(new Date(shareLink.created_at).getTime() + 24 * 60 * 60 * 1000).toISOString(),
       });
     } catch (error) {

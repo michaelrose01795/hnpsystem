@@ -17,17 +17,15 @@ export default async function handler(req, res) {
     }
 
     try {
-      const payload = {
-        job_id: jobId,
-        display_id: displayId,
-        vhc_item_id: Number(vhcItemId),
-        updated_at: new Date().toISOString(),
-      };
-
+      // Set display_id directly on vhc_checks (consolidated from vhc_item_aliases)
       const { data, error } = await supabase
-        .from("vhc_item_aliases")
-        .upsert(payload, { onConflict: "job_id,display_id" })
-        .select("id, job_id, display_id, vhc_item_id, created_at, updated_at")
+        .from("vhc_checks")
+        .update({
+          display_id: displayId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("vhc_id", Number(vhcItemId))
+        .select("vhc_id, job_id, display_id, created_at, updated_at")
         .single();
 
       if (error) {
@@ -36,7 +34,14 @@ export default async function handler(req, res) {
 
       return res.status(200).json({
         success: true,
-        alias: data,
+        alias: data ? {
+          id: data.vhc_id,
+          job_id: data.job_id,
+          display_id: data.display_id,
+          vhc_item_id: data.vhc_id,
+          created_at: data.created_at,
+          updated_at: data.updated_at,
+        } : null,
       });
     } catch (error) {
       console.error("Failed to upsert VHC item alias:", error);
@@ -51,14 +56,15 @@ export default async function handler(req, res) {
     }
 
     try {
+      // Clear display_id on the vhc_checks row
       let query = supabase
-        .from("vhc_item_aliases")
-        .delete()
+        .from("vhc_checks")
+        .update({ display_id: null, updated_at: new Date().toISOString() })
         .eq("job_id", jobId)
         .eq("display_id", displayId);
 
       if (vhcItemId !== null && vhcItemId !== undefined) {
-        query = query.eq("vhc_item_id", Number(vhcItemId));
+        query = query.eq("vhc_id", Number(vhcItemId));
       }
 
       const { error } = await query;

@@ -218,20 +218,9 @@ export default async function handler(req, res) {
       supabaseService.from("vhc_authorizations").select("*").eq("job_id", jobId),
       "vhc_authorizations"
     );
-    snapshotTables.vhc_authorized_items = await fetchRows(
-      supabaseService
-        .from("vhc_authorized_items")
-        .select("*")
-        .or(`job_id.eq.${jobId},job_number.eq.${normalizedJobNumber}`),
-      "vhc_authorized_items"
-    );
     snapshotTables.vhc_declinations = await fetchRows(
       supabaseService.from("vhc_declinations").select("*").eq("job_id", jobId),
       "vhc_declinations"
-    );
-    snapshotTables.vhc_item_aliases = await fetchRows(
-      supabaseService.from("vhc_item_aliases").select("*").eq("job_id", jobId),
-      "vhc_item_aliases"
     );
     snapshotTables.vhc_send_history = await fetchRows(
       supabaseService.from("vhc_send_history").select("*").eq("job_id", jobId),
@@ -503,16 +492,9 @@ export default async function handler(req, res) {
     if (overtimeError) throw new Error(overtimeError.message);
 
     // VHC
-    const { error: vhcAuthorizedItemsError } = await supabaseService
-      .from("vhc_authorized_items")
-      .delete()
-      .or(`job_id.eq.${jobId},job_number.eq.${normalizedJobNumber}`);
-    if (vhcAuthorizedItemsError) throw new Error(vhcAuthorizedItemsError.message);
-
     const vhcDeleteTables = [
       "vhc_authorizations",
       "vhc_declinations",
-      "vhc_item_aliases",
       "vhc_send_history",
     ];
     for (const table of vhcDeleteTables) {

@@ -1426,33 +1426,6 @@ CREATE TABLE public.vhc_authorizations (
   CONSTRAINT vhc_authorizations_pkey PRIMARY KEY (id),
   CONSTRAINT vhc_authorizations_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
 );
-CREATE TABLE public.vhc_authorized_items (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  job_id integer NOT NULL,
-  job_number text NOT NULL,
-  vhc_item_id integer NOT NULL,
-  section text,
-  issue_title text,
-  issue_description text,
-  measurement text,
-  approval_status text,
-  display_status text,
-  labour_hours numeric,
-  parts_cost numeric,
-  total_override numeric,
-  labour_complete boolean DEFAULT false,
-  parts_complete boolean DEFAULT false,
-  approved_at timestamp with time zone,
-  approved_by text,
-  note_text text,
-  pre_pick_location text,
-  request_id bigint,
-  created_at timestamp with time zone NOT NULL DEFAULT now(),
-  updated_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT vhc_authorized_items_pkey PRIMARY KEY (id),
-  CONSTRAINT vhc_authorized_items_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
-  CONSTRAINT vhc_authorized_items_vhc_item_id_fkey FOREIGN KEY (vhc_item_id) REFERENCES public.vhc_checks(vhc_id)
-);
 CREATE TABLE public.vhc_checks (
   vhc_id integer NOT NULL DEFAULT nextval('vhc_checks_vhc_id_seq'::regclass),
   job_id integer,
@@ -1475,6 +1448,10 @@ CREATE TABLE public.vhc_checks (
   severity text CHECK (severity IS NULL OR (severity = ANY (ARRAY['red'::text, 'amber'::text, 'green'::text]))),
   slot_code integer,
   line_key text,
+  note_text text,
+  pre_pick_location text,
+  request_id bigint,
+  display_id text,
   CONSTRAINT vhc_checks_pkey PRIMARY KEY (vhc_id),
   CONSTRAINT vhc_checks_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
 );
@@ -1488,17 +1465,6 @@ CREATE TABLE public.vhc_declinations (
   CONSTRAINT vhc_declinations_pkey PRIMARY KEY (id),
   CONSTRAINT vhc_declinations_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
 );
-CREATE TABLE public.vhc_item_aliases (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
-  job_id integer NOT NULL,
-  display_id text NOT NULL,
-  vhc_item_id integer NOT NULL,
-  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  CONSTRAINT vhc_item_aliases_pkey PRIMARY KEY (id),
-  CONSTRAINT vhc_item_aliases_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
-  CONSTRAINT vhc_item_aliases_vhc_item_id_fkey FOREIGN KEY (vhc_item_id) REFERENCES public.vhc_checks(vhc_id)
-);
 CREATE TABLE public.vhc_send_history (
   id integer NOT NULL DEFAULT nextval('vhc_send_history_id_seq'::regclass),
   job_id integer NOT NULL,
@@ -1509,6 +1475,12 @@ CREATE TABLE public.vhc_send_history (
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT vhc_send_history_pkey PRIMARY KEY (id),
   CONSTRAINT vhc_send_history_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
+);
+CREATE TABLE public.welcome_quotes (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  text text NOT NULL UNIQUE,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT welcome_quotes_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.workshop_consumable_budgets (
   budget_id bigint NOT NULL DEFAULT nextval('workshop_consumable_budgets_budget_id_seq'::regclass),
