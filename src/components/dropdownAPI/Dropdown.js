@@ -37,6 +37,10 @@ export default function Dropdown({
   style,
   controlStyle,
   labelStyle,
+  menuStyle,
+  optionStyle,
+  valueStyle,
+  chevronStyle,
   ...rest
 }) {
   const extractedControlStyle = style
@@ -360,10 +364,10 @@ export default function Dropdown({
         onKeyDown={handleControlKeyDown}
         disabled={disabled}
       >
-        <span className={`dropdown-api__value ${selectedOption ? "" : "is-placeholder"}`}>
+        <span className={`dropdown-api__value ${selectedOption ? "" : "is-placeholder"}`} style={valueStyle}>
           {selectedOption?.label || placeholder}
         </span>
-        <span className="dropdown-api__chevron" aria-hidden="true">
+        <span className="dropdown-api__chevron" aria-hidden="true" style={chevronStyle}>
           <svg width="16" height="16" viewBox="0 0 16 16" role="presentation">
             <path
               d="M4.5 6l3.5 3.5L11.5 6"
@@ -385,7 +389,7 @@ export default function Dropdown({
             role="listbox"
             aria-activedescendant={selectedOption ? `${controlId}-${selectedOption.key}` : undefined}
             ref={menuRef}
-            style={menuPosition ?? undefined}
+            style={menuPosition ? { ...(menuStyle || {}), ...menuPosition } : menuStyle}
           >
             {searchable && (
               <div className="dropdown-api__search">
@@ -435,6 +439,7 @@ export default function Dropdown({
                   disabled={option.disabled}
                   onClick={() => handleOptionSelect(option)}
                   onKeyDown={(event) => handleOptionKeyDown(event, option, index)}
+                  style={optionStyle}
                 >
                   <span className="dropdown-api__option-label">{option.label}</span>
                   {(option.description || option.meta) && (

@@ -179,6 +179,18 @@ const dropdownFieldStyle = {
   backgroundColor: "transparent",
 };
 
+const repairKitDropdownControlStyle = {
+  minHeight: "48px",
+  padding: "13px 12px",
+  borderRadius: "12px",
+  fontSize: "15px",
+};
+
+const repairKitDropdownOptionStyle = {
+  padding: "12px 10px",
+  fontSize: "0.95rem",
+};
+
 const pillButton = ({ active = false } = {}) => ({
   padding: "10px 18px",
   borderRadius: "999px",
@@ -1056,6 +1068,8 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                             }))
                           }
                           style={dropdownFieldStyle}
+                          controlStyle={repairKitDropdownControlStyle}
+                          optionStyle={repairKitDropdownOptionStyle}
                         >
                           <option value="">Month</option>
                           {months.map((month) => (
@@ -1073,6 +1087,8 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                             }))
                           }
                           style={dropdownFieldStyle}
+                          controlStyle={repairKitDropdownControlStyle}
+                          optionStyle={repairKitDropdownOptionStyle}
                         >
                           <option value="">Year</option>
                           {years.map((year) => (

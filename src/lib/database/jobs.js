@@ -3719,11 +3719,15 @@ export const saveChecksheet = async (jobNumber, vhcData) => {
       data: vhcData,
     });
 
-    await syncHealthCheckToCanonicalVhc({
-      job_number: jobNumber,
-      vhcData,
-      labour_rate_gbp: 85,
-    });
+    try {
+      await syncHealthCheckToCanonicalVhc({
+        job_number: jobNumber,
+        vhcData,
+        labour_rate_gbp: 85,
+      });
+    } catch (syncError) {
+      console.error("Warning: VHC sync to canonical rows failed:", syncError.message);
+    }
 
     return { success: true };
   } catch (error) {

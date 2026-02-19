@@ -216,33 +216,29 @@ export default function TyreDiagram({
           );
         })}
 
-        <button
-          type="button"
-          onClick={onSpareSelect}
-          style={{
-            position: "absolute",
-            left: "50%",
-            top: "112%",
-            transform: "translate(-50%, -50%)",
-            borderRadius: "18px",
-            border: `1px solid ${invalidSpare ? "var(--danger)" : spareActive ? "var(--primary)" : palette.border}`,
-            padding: "8px 18px",
-            background: invalidSpare
-              ? "var(--danger-surface)"
-              : spareActive
-                ? "rgba(var(--primary-rgb), 0.12)"
-                : palette.surfaceAlt,
-            color: invalidSpare ? "var(--danger)" : spareActive ? "var(--primary)" : palette.textPrimary,
-            fontWeight: 600,
-            cursor: onSpareSelect ? "pointer" : "default",
-            boxShadow: invalidSpare ? "0 0 0 2px var(--danger-surface)" : "none",
-            transition: "transform 0.2s ease",
-            zIndex: 4,
-          }}
-        >
-          Spare / Kit
-        </button>
       </div>
+      <button
+        type="button"
+        onClick={onSpareSelect}
+        style={{
+          borderRadius: "18px",
+          border: `1px solid ${invalidSpare ? "var(--danger)" : spareActive ? "var(--primary)" : palette.border}`,
+          padding: "8px 18px",
+          background: invalidSpare
+            ? "var(--danger-surface)"
+            : spareActive
+              ? "rgba(var(--primary-rgb), 0.12)"
+              : palette.surfaceAlt,
+          color: invalidSpare ? "var(--danger)" : spareActive ? "var(--primary)" : palette.textPrimary,
+          fontWeight: 600,
+          cursor: onSpareSelect ? "pointer" : "default",
+          boxShadow: invalidSpare ? "0 0 0 2px var(--danger-surface)" : "none",
+          transition: "transform 0.2s ease",
+          zIndex: 4,
+        }}
+      >
+        Spare / Kit
+      </button>
     </div>
   );
 }

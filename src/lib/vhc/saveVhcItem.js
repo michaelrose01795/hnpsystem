@@ -238,9 +238,13 @@ export const syncHealthCheckToCanonicalVhc = async ({ job_number, vhcData, labou
   const savedRows = [];
 
   for (const rowPayload of normalizedRows) {
-    const saved = await saveVhcItem(rowPayload, { jobId, existingRowsByDedupe });
-    if (saved?.row) {
-      savedRows.push(saved.row);
+    try {
+      const saved = await saveVhcItem(rowPayload, { jobId, existingRowsByDedupe });
+      if (saved?.row) {
+        savedRows.push(saved.row);
+      }
+    } catch (itemError) {
+      console.error(`[syncHealthCheckToCanonicalVhc] Failed to save "${rowPayload.category}":`, itemError.message);
     }
   }
 

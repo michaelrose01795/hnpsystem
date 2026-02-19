@@ -1125,9 +1125,9 @@ CREATE TABLE public.parts_job_items (
   labour_hours numeric DEFAULT 0,
   allocated_to_request_id bigint,
   CONSTRAINT parts_job_items_pkey PRIMARY KEY (id),
+  CONSTRAINT parts_job_items_vhc_item_id_fkey FOREIGN KEY (vhc_item_id) REFERENCES public.vhc_checks(vhc_id),
   CONSTRAINT parts_job_items_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT parts_job_items_part_id_fkey FOREIGN KEY (part_id) REFERENCES public.parts_catalog(id),
-  CONSTRAINT parts_job_items_vhc_item_id_fkey FOREIGN KEY (vhc_item_id) REFERENCES public.vhc_checks(vhc_id),
   CONSTRAINT parts_job_items_allocated_to_request_id_fkey FOREIGN KEY (allocated_to_request_id) REFERENCES public.job_requests(request_id)
 );
 CREATE TABLE public.parts_requests (
@@ -1432,7 +1432,7 @@ CREATE TABLE public.vhc_checks (
   section character varying,
   issue_title character varying,
   issue_description text,
-  measurement character varying,
+  measurement text,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
   approval_status text DEFAULT 'pending'::text CHECK (approval_status IS NULL OR (approval_status = ANY (ARRAY['pending'::text, 'authorized'::text, 'declined'::text, 'completed'::text]))),
@@ -1445,7 +1445,7 @@ CREATE TABLE public.vhc_checks (
   approved_by text,
   display_status text CHECK (display_status IS NULL OR (display_status = ANY (ARRAY['red'::text, 'amber'::text, 'green'::text, 'authorized'::text, 'declined'::text, 'completed'::text]))),
   authorization_state text DEFAULT 'n/a'::text,
-  severity text CHECK (severity IS NULL OR (severity = ANY (ARRAY['red'::text, 'amber'::text, 'green'::text]))),
+  severity text CHECK (severity IS NULL OR (severity = ANY (ARRAY['red'::text, 'amber'::text, 'green'::text, 'grey'::text]))),
   slot_code integer,
   line_key text,
   note_text text,
@@ -1564,8 +1564,8 @@ CREATE TABLE public.writeup_rectification_items (
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT writeup_rectification_items_pkey PRIMARY KEY (id),
+  CONSTRAINT writeup_rectification_items_vhc_item_id_fkey FOREIGN KEY (vhc_item_id) REFERENCES public.vhc_checks(vhc_id),
   CONSTRAINT writeup_rectification_items_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT writeup_rectification_items_writeup_id_fkey FOREIGN KEY (writeup_id) REFERENCES public.job_writeups(writeup_id),
-  CONSTRAINT writeup_rectification_items_vhc_item_id_fkey FOREIGN KEY (vhc_item_id) REFERENCES public.vhc_checks(vhc_id),
   CONSTRAINT writeup_rectification_items_authorization_id_fkey FOREIGN KEY (authorization_id) REFERENCES public.vhc_authorizations(id)
 );
