@@ -1463,11 +1463,8 @@ export default function Appointments() {
                 const availabilityLabelColor = isCalmDay
                   ? "var(--text-secondary)"
                   : severityStyle?.textColor || "var(--text-primary)";
-                const todayShadow = isToday ? "0 0 0 2px var(--primary)" : null;
-                const baseShadows = [todayShadow].filter(Boolean).join(", ");
-                const baseBoxShadow = baseShadows || "none";
-                const hoverShadow = "0 0 0 2px var(--accent-purple)";
-                const hoverComposite = baseShadows ? `${baseShadows}, ${hoverShadow}` : hoverShadow;
+                const baseOutline = isToday ? "2px solid var(--primary)" : "none";
+                const hoverOutline = "2px solid var(--accent-purple)";
                 
                 return (
                   <tr
@@ -1478,13 +1475,18 @@ export default function Appointments() {
                       backgroundColor: rowBackground,
                       transition: "background-color 0.2s",
                       borderLeft: severityBorderLeft,
-                      boxShadow: "none",
+                      outline: baseOutline,
+                      outlineOffset: "-2px",
+                      position: "relative",
+                      zIndex: isToday ? 2 : 1,
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.boxShadow = hoverComposite;
+                      e.currentTarget.style.zIndex = "5";
+                      e.currentTarget.style.outline = hoverOutline;
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.boxShadow = baseBoxShadow;
+                      e.currentTarget.style.zIndex = isToday ? "2" : "1";
+                      e.currentTarget.style.outline = baseOutline;
                     }}
                   >
                     <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)", fontWeight: isSelected ? "600" : "400" }}>

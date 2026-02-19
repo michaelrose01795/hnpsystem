@@ -297,12 +297,16 @@ const GlobalSearch = ({
     }
   };
 
-  const searchBackground = isDarkMode ? "var(--search-surface)" : "var(--surface)";
+  const searchBackground = isDarkMode
+    ? "rgba(var(--primary-rgb), 0.14)"
+    : "rgba(var(--primary-rgb), 0.08)";
   const dropdownBackground = "var(--layer-section-level-2)";
-  const baseBorderColor = isDarkMode ? "rgba(var(--accent-purple-rgb), 0.65)" : "var(--surface-light)";
+  const baseBorderColor = isDarkMode
+    ? "rgba(var(--primary-rgb), 0.5)"
+    : "rgba(var(--primary-rgb), 0.35)";
   const borderColor = isFocused ? accentColor : baseBorderColor;
   const textColor = isDarkMode ? "var(--search-text)" : "var(--text-primary)";
-  const placeholderColor = isDarkMode ? "rgba(10, 10, 12, 0.6)" : "var(--border)";
+  const placeholderColor = isDarkMode ? "rgba(var(--primary-rgb), 0.7)" : "rgba(var(--primary-rgb), 0.7)";
   const drawerBorderColor = isDarkMode ? "rgba(var(--accent-purple-rgb), 0.45)" : "var(--surface)";
 
   const dropdownZIndex = 2147483647;
@@ -348,7 +352,7 @@ const GlobalSearch = ({
               const active = index === activeIndex;
               const chipLabel = typeLabels[item.type] || "Result";
               const itemBackground = active
-                ? `${accentColor}14`
+                ? "rgba(var(--primary-rgb), 0.14)"
                 : "transparent";
               const itemColor = active ? accentColor : textColor;
 
@@ -365,10 +369,10 @@ const GlobalSearch = ({
                     width: "100%",
                     padding: "14px 16px",
                     border: "none",
-                    borderBottom:
-                      index === combinedResults.length - 1
+                      borderBottom:
+                        index === combinedResults.length - 1
                         ? "none"
-                        : `1px solid ${isDarkMode ? "rgba(var(--accent-purple-rgb), 0.3)" : "var(--surface)"}`,
+                        : `1px solid ${isDarkMode ? "rgba(var(--primary-rgb), 0.3)" : "rgba(var(--primary-rgb), 0.14)"}`,
                     backgroundColor: itemBackground,
                     color: itemColor,
                     cursor: "pointer",
@@ -395,8 +399,8 @@ const GlobalSearch = ({
                       fontSize: "0.7rem",
                       padding: "4px 8px",
                       borderRadius: "999px",
-                      backgroundColor: active ? accentColor : "var(--search-surface-muted)",
-                      color: active ? "var(--surface)" : textColor,
+                      backgroundColor: active ? accentColor : "rgba(var(--primary-rgb), 0.12)",
+                      color: active ? "var(--text-inverse)" : "var(--primary-dark)",
                       textTransform: "uppercase",
                       fontWeight: 700,
                       letterSpacing: "0.05em",
@@ -434,19 +438,21 @@ const GlobalSearch = ({
   return (
     <div
       ref={containerRef}
-      style={{ position: "relative", width: "100%", maxWidth: "480px", zIndex: dropdownZIndex }}
+      style={{ position: "relative", width: "100%", maxWidth: "100%", zIndex: dropdownZIndex }}
     >
       <div
         ref={controlRef}
         style={{
           display: "flex",
           alignItems: "center",
-          gap: "8px",
-          backgroundColor: searchBackground,
+          gap: "6px",
+          background: searchBackground,
           border: `1px solid ${borderColor}`,
           borderRadius: "999px",
-          padding: "8px 12px",
-          boxShadow: "none",
+          padding: "3px 8px",
+          boxShadow: isFocused
+            ? "0 0 0 2px rgba(var(--primary-rgb), 0.22)"
+            : "0 1px 0 rgba(var(--primary-rgb), 0.1)",
           transition: "all 0.2s ease",
         }}
       >
@@ -463,14 +469,14 @@ const GlobalSearch = ({
           }}
           onBlur={() => setIsFocused(false)}
           onKeyDown={handleKeyDown}
-          placeholder="Search jobs, customers, buttons..."
+          placeholder="Gloable Search"
           style={{
             flex: 1,
-            border: "none",
-            outline: "none",
+              border: "none",
+              outline: "none",
               backgroundColor: "transparent",
               color: textColor,
-              fontSize: "0.95rem",
+              fontSize: "0.84rem",
           }}
         />
 
@@ -484,10 +490,10 @@ const GlobalSearch = ({
               setFeedback("Search job numbers, customers, registrations…");
             }}
             style={{
-            background: "none",
+              background: "none",
               border: "none",
               cursor: "pointer",
-              fontSize: "0.9rem",
+              fontSize: "0.8rem",
               color: placeholderColor,
             }}
             aria-label="Clear search"

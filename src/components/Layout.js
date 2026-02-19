@@ -1148,15 +1148,19 @@ export default function Layout({
                         key={action.href}
                         href={action.href}
                         style={{
-                          padding: "8px 16px",
+                          padding: "0 14px",
+                          height: "34px",
                           borderRadius: "999px",
                           border: active ? "1px solid var(--primary-dark)" : "1px solid var(--surface-light)",
                           backgroundColor: active ? "var(--primary-dark)" : "var(--surface-light)",
                           color: active ? "var(--surface)" : "var(--primary-dark)",
                           fontWeight: 600,
                           fontSize: "0.85rem",
+                          lineHeight: 1,
                           textDecoration: "none",
                           boxShadow: "none",
+                          display: "inline-flex",
+                          alignItems: "center",
                           transition:
                             "background-color 0.2s ease, color 0.2s ease",
                           whiteSpace: "nowrap",
@@ -1193,15 +1197,19 @@ export default function Layout({
                         key={action.href}
                         href={action.href}
                         style={{
-                          padding: isMobile ? "10px 18px" : "10px 20px",
+                          padding: isMobile ? "0 14px" : "0 14px",
+                          height: "34px",
                           borderRadius: "999px",
                           border: active ? "1px solid var(--primary-dark)" : "1px solid rgba(var(--primary-rgb),0.35)",
                           backgroundColor: active ? "var(--primary-dark)" : "rgba(var(--primary-rgb),0.08)",
                           color: active ? "var(--surface)" : "var(--primary-dark)",
                           fontWeight: 700,
                           fontSize: "0.9rem",
+                          lineHeight: 1,
                           textDecoration: "none",
                           boxShadow: "none",
+                          display: "inline-flex",
+                          alignItems: "center",
                           transition: "background-color 0.2s ease, color 0.2s ease",
                           whiteSpace: "nowrap",
                         }}
@@ -1230,7 +1238,7 @@ export default function Layout({
                       flex: "1 1 auto",
                       minWidth: "240px",
                       width: "100%",
-                      maxWidth: `${navDrawerTargetWidth}px`,
+                      maxWidth: "100%",
                       position: "relative",
                     }}
                   >

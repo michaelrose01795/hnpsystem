@@ -755,12 +755,13 @@ const formatTreadDepthSummary = (tread = {}) => {
 const buildTyreSpecLines = (tyre) => {
   if (!tyre || typeof tyre !== "object") return [];
   const specs = [];
-  if (tyre.manufacturer) specs.push(`Make: ${tyre.manufacturer}`);
-  if (tyre.size) {
-    const loadPart = tyre.load ? ` ${tyre.load}` : "";
-    const speedPart = tyre.speed ? ` ${tyre.speed}` : "";
-    specs.push(`Size: ${tyre.size}${loadPart}${speedPart}`.trim());
-  }
+  const loadPart = tyre.load ? ` ${tyre.load}` : "";
+  const speedPart = tyre.speed ? ` ${tyre.speed}` : "";
+  const fullSize = tyre.size ? `${tyre.size}${loadPart}${speedPart}`.trim() : "";
+  const makeAndSize = [tyre.manufacturer, fullSize].filter(Boolean).join(" ").trim();
+  if (makeAndSize) specs.push(`Make: ${makeAndSize}`);
+  else if (tyre.manufacturer) specs.push(`Make: ${tyre.manufacturer}`);
+  else if (fullSize) specs.push(`Size: ${fullSize}`);
   if (typeof tyre.runFlat === "boolean") {
     specs.push(`Run Flat: ${tyre.runFlat ? "Yes" : "No"}`);
   }
@@ -2347,6 +2348,7 @@ export default function VhcDetailsPanel({
         label: `${key} Tyre`,
         measurement: depthSummary ? `Tread depths: ${depthSummary}` : null,
         status,
+        hideLabel: true,
         spec,
       });
     });
@@ -3883,9 +3885,16 @@ export default function VhcDetailsPanel({
     const isRowSelectionEligible = (item) => {
       if (!isRedOrAmberTable) return true;
       const entry = getEntryForItem(item.id);
+      const effectiveEntry = {
+        ...entry,
+        partsComplete:
+          typeof item?.partsComplete === "boolean" ? item.partsComplete : entry.partsComplete,
+        labourComplete:
+          typeof item?.labourComplete === "boolean" ? item.labourComplete : entry.labourComplete,
+      };
       const resolvedLabourHours = resolveLabourHoursValue(item.id, entry);
-      const labourComplete = resolveLabourCompleteValue(entry, resolvedLabourHours);
-      return Boolean(entry.partsComplete && labourComplete);
+      const labourComplete = resolveLabourCompleteValue(effectiveEntry, resolvedLabourHours);
+      return Boolean(effectiveEntry.partsComplete && labourComplete);
     };
     const selectableIds = new Set(items.filter((item) => isRowSelectionEligible(item)).map((item) => item.id));
     const selectedIds = (severitySelections[severity] || []).filter((itemId) => selectableIds.has(itemId));
@@ -4035,6 +4044,9 @@ export default function VhcDetailsPanel({
                   detailLabel = "Service Reminder";
                   detailRows = [serviceChoiceLabel];
                   detailContent = "";
+                }
+                if (item.categoryId === "wheels_tyres" && /\bwheel\b/i.test(detailLabel)) {
+                  detailLabel = detailLabel.replace(/\bwheel\b/i, "Tyre");
                 }
 
                 // Avoid repeating the same phrase twice (e.g. "Service reminder / oil - Service reminder/Oil...").
@@ -4196,7 +4208,9 @@ export default function VhcDetailsPanel({
                                   color: "var(--info-dark)",
                                 }}
                               >
-                                <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{entry.label}</span>
+                                {!entry.hideLabel ? (
+                                  <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{entry.label}</span>
+                                ) : null}
                                 {entry.measurement ? <span>{entry.measurement}</span> : null}
                                 {entryStatusLabel && badgeStyles ? (
                                   <span

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ACCENT_PALETTES, useTheme } from "@/styles/themeProvider";
 
-const LIGHT_LOGO_SRC = "/images/logo/LightLogo.png";
+const LIGHT_LOGO_SRC = "/images/logo/Logo.png";
 
 const DEFAULT_TARGET_RGB = {
   light: { r: 220, g: 38, b: 38 },
