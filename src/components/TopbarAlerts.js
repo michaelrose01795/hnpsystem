@@ -1,6 +1,5 @@
 import React from "react";
 import { useAlerts } from "@/context/AlertContext";
-import { useTheme } from "@/styles/themeProvider";
 
 const toneStyles = {
   success: { bg: "var(--success)", text: "var(--surface)" },
@@ -43,8 +42,7 @@ export function AlertBadge() {
 
 export default function TopbarAlerts() {
   const { alerts, dismissAlert } = useAlerts();
-  const { resolvedMode } = useTheme();
-  const closeButtonColor = resolvedMode === "dark" ? "var(--accent-purple)" : "var(--danger)";
+  const closeButtonColor = "var(--accent-purple)";
   if (!alerts.length) return null;
 
   const latestAlerts = alerts.slice(-1);

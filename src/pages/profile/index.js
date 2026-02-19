@@ -779,6 +779,19 @@ export function ProfilePage({
     [isDark]
   );
 
+  const accentDropdownControlStyle = useMemo(
+    () => ({
+      ...themeButtonStyle,
+      width: "100%",
+      justifyContent: "space-between",
+      padding: "8px 12px",
+      background: isDark ? "var(--surface-light)" : "var(--surface)",
+      color: "var(--text-primary)",
+      border: `1px solid ${isDark ? "var(--border)" : "var(--primary)"}`,
+    }),
+    [isDark, themeButtonStyle]
+  );
+
   const aggregatedStats = useMemo(() => {
     if (!profile) return null; // bail if profile missing
 
@@ -1023,19 +1036,13 @@ export function ProfilePage({
               </p>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
-              <div style={{ minWidth: "195px", maxWidth: "240px", width: "100%" }}>
+              <div style={{ minWidth: "170px", maxWidth: "170px", width: "170px", order: 1 }}>
                 <DropdownField
-                  label="Accent colour"
                   value={accent}
                   onValueChange={setAccent}
                   options={accentOptions}
                   className="profile-accent-dropdown"
-                  controlStyle={{
-                    ...themeButtonStyle,
-                    width: "100%",
-                    justifyContent: "space-between",
-                    padding: "8px 12px",
-                  }}
+                  controlStyle={accentDropdownControlStyle}
                   valueStyle={{ display: "inline-flex", alignItems: "center", minWidth: 0 }}
                   optionStyle={{ padding: "10px 12px" }}
                 />
@@ -1043,7 +1050,7 @@ export function ProfilePage({
               <button
                 type="button"
                 onClick={toggleTheme}
-                style={themeButtonStyle}
+                style={{ ...themeButtonStyle, order: 2 }}
                 aria-label="Cycle theme"
               >
                 {themeLabel}

@@ -5,8 +5,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
-import Image from "next/image";
 import { useTheme } from "@/styles/themeProvider";
+import BrandLogo from "@/components/BrandLogo";
 import { summariseTechnicianVhc, parseVhcBuilderPayload } from "@/lib/vhc/summary";
 import { normaliseDecisionStatus, resolveSeverityKey } from "@/lib/vhc/summaryStatus";
 
@@ -76,9 +76,6 @@ export default function PublicSharePreviewPage() {
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => { setIsMounted(true); }, []);
   const { resolvedMode } = useTheme();
-  const logoSrc = (isMounted ? resolvedMode : "light") === "dark"
-    ? "/images/logo/DarkLogo.png"
-    : "/images/logo/LightLogo.png"; 
 
   // Read-only pill style that switches background for light/dark themes
   const readOnlyPillStyle = useMemo(() => {
@@ -1034,13 +1031,11 @@ export default function PublicSharePreviewPage() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "24px" }}>
             {/* Logo on the left to match customer-preview */}
             <div style={{ flexShrink: 0 }}>
-              <Image
-                src={logoSrc}
+              <BrandLogo
                 alt="HP Logo"
                 width={120}
                 height={50}
                 style={{ objectFit: "contain" }}
-                priority
               />
             </div>
 
@@ -1082,7 +1077,7 @@ export default function PublicSharePreviewPage() {
                 )}
 
                 {/* Read-only pill - theme aware */}
-                <div style={{ ...readOnlyPillStyle, borderColor: ( (isMounted ? resolvedMode : "light") === "dark" ) ? "rgba(var(--accent-purple-rgb), 0.25)" : "rgba(var(--danger-rgb), 0.25)", color: ( (isMounted ? resolvedMode : "light") === "dark" ) ? "var(--accent-purple)" : "var(--danger)" }}>
+                <div style={{ ...readOnlyPillStyle, borderColor: "rgba(var(--accent-purple-rgb), 0.25)", color: "var(--accent-purple)" }}>
                   Read-only
                 </div>
               </div>

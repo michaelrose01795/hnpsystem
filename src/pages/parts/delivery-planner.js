@@ -1438,8 +1438,7 @@ function DeliveryJobModal({
   error,
   saving,
 }) {
-  const { resolvedMode } = useTheme();
-  const closeButtonColor = resolvedMode === "dark" ? "var(--accent-purple)" : "var(--danger)";
+  const closeButtonColor = "var(--accent-purple)";
   if (!job) return null;
   const items = Array.isArray(job.items) ? job.items : [];
   const totalQuantity =

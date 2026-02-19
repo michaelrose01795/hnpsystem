@@ -1,5 +1,4 @@
 import React from "react";
-import { useTheme } from "@/styles/themeProvider";
 import themeConfig from "@/styles/appTheme";
 
 const { palette } = themeConfig;
@@ -36,21 +35,19 @@ const resolveBrakeEntry = (entry) => {
 };
 
 export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, invalidPositions = [] }) {
-  const { resolvedMode } = useTheme();
   const activeKey = activeBrake?.toLowerCase();
   const invalidSet = new Set((invalidPositions || []).map((key) => String(key).toLowerCase()));
   const isFrontActive = activeKey === "front" || activeKey === "nsf" || activeKey === "osf";
   const isRearActive = activeKey === "rear" || activeKey === "nsr" || activeKey === "osr";
-  const unknownFill =
-    resolvedMode === "dark" ? "var(--danger)" : "var(--accent-purple)";
+  const unknownFill = "var(--accent-purple)";
   const statusPalette = {
     critical: { fill: "var(--danger)", text: "var(--text-inverse)", label: "var(--danger)" },
     advisory: { fill: "var(--warning)", text: "var(--text-inverse)", label: "var(--warning)" },
     good: { fill: "var(--success)", text: "var(--text-inverse)", label: "var(--success)" },
     unknown: { fill: "#9ca3af", text: "var(--text-inverse)", label: unknownFill },
   };
-  const selectedAxleFill = resolvedMode === "dark" ? "rgba(126, 87, 194, 0.16)" : "rgba(214, 73, 73, 0.12)";
-  const selectedAxleStroke = resolvedMode === "dark" ? "rgba(126, 87, 194, 0.65)" : "rgba(214, 73, 73, 0.7)";
+  const selectedAxleFill = "rgba(var(--accent-purple-rgb), 0.16)";
+  const selectedAxleStroke = "rgba(var(--accent-purple-rgb), 0.65)";
 
   const containerStyle = {
     width: "100%",

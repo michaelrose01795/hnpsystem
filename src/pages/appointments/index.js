@@ -1182,7 +1182,7 @@ export default function Appointments() {
       case "mot":
         return { ...base, background: "rgba(245,158,11,0.12)", color: "#d97706" };
       case "diagnosis":
-        return { ...base, background: "rgba(139,92,246,0.12)", color: "#7c3aed" };
+        return { ...base, background: "rgba(var(--accent-purple-rgb), 0.12)", color: "var(--accent-purple)" };
       default:
         return { ...base, background: "rgba(107,114,128,0.12)", color: "#6b7280" };
     }

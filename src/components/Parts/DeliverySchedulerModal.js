@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
-import { useTheme } from "@/styles/themeProvider";
 import { CalendarField } from "@/components/calendarAPI";
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
@@ -28,8 +27,7 @@ export default function DeliverySchedulerModal({
   deliveries = [],
   onScheduled,
 }) {
-  const { resolvedMode } = useTheme();
-  const closeButtonColor = resolvedMode === "dark" ? "var(--accent-purple)" : "var(--danger)";
+  const closeButtonColor = "var(--accent-purple)";
   const [scheduleMode, setScheduleMode] = useState("existing");
   const [selectedDeliveryId, setSelectedDeliveryId] = useState("");
   const [newDeliveryDate, setNewDeliveryDate] = useState(todayIso());

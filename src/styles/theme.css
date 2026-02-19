@@ -42,6 +42,14 @@
   --accent-purple: #d10000;
   --accent-purple-surface: #ffe5e5;
   --accent-purple-rgb: 209, 0, 0;
+  --accent-layer-1: #f2c6c6;
+  --accent-layer-2: #f7d7d7;
+  --accent-layer-3: #fbe9e9;
+  --accent-layer-4: #fdf2f2;
+  --accent-layer-1-rgb: 242, 198, 198;
+  --accent-layer-2-rgb: 247, 215, 215;
+  --accent-layer-3-rgb: 251, 233, 233;
+  --accent-layer-4-rgb: 253, 242, 242;
   --accent-orange: #fb923c;
   --accent-orange-surface: #fff7ed;
   --accent-orange-rgb: 251, 146, 60;
@@ -63,13 +71,13 @@
 
   /* Three-tier background system - Light Mode */
   /* Level 1 (Top layer - almost white): inner cards, stats blocks */
-  --layer-section-level-1: #fde8e8;
+  --layer-section-level-1: var(--accent-layer-1);
   /* Level 2 (Middle layer - softer blush): primary card sections */
-  --layer-section-level-2: #ffdede;
+  --layer-section-level-2: var(--accent-layer-2);
   /* Level 3 (Bottom layer - pale red): page background + outer shell */
-  --layer-section-level-3: #ffeaea;
+  --layer-section-level-3: var(--accent-layer-3);
   /* Level 4 (Extra dark if needed) */
-  --layer-section-level-4: #ffcdcd;
+  --layer-section-level-4: var(--accent-layer-4);
   --row-background: #ffffff;
   --text-color: var(--text-primary);
 
@@ -89,8 +97,8 @@
   --layout-stack-gap: 20px;
 
   /* Scrollbar colors */
-  --scrollbar-thumb: #ef4444;
-  --scrollbar-thumb-hover: #dc2626;
+  --scrollbar-thumb: var(--primary);
+  --scrollbar-thumb-hover: var(--primary-dark);
 }
 
 :root[data-theme="dark"] {
@@ -102,17 +110,17 @@
   --surface-light: #23232b;
   --surface-muted: #1d1d24;
   --surface-gradient: #111116;
-  --border: #b497ff;
+  --border: #d06f6f;
   --text-primary: #f8f7ff;
   --text-primary-rgb: 248, 247, 255;
   --text-secondary: #f2f2ff;
   --text-secondary-rgb: 242, 242, 255;
   --text-inverse: #0a0a0c;
   --text-inverse-rgb: 10, 10, 12;
-  --primary: #b497ff;
-  --primary-light: #c6a8ff;
-  --primary-dark: #8e72da;
-  --primary-rgb: 180, 151, 255;
+  --primary: #f87171;
+  --primary-light: #fca5a5;
+  --primary-dark: #dc2626;
+  --primary-rgb: 248, 113, 113;
   --grey-accent: #94a3b8;
   --grey-accent-rgb: 148, 163, 184;
   --grey-accent-light: #4b5563;
@@ -131,16 +139,24 @@
   --danger-surface: rgba(255, 122, 122, 0.5);
   --danger-rgb: 255, 122, 122;
   --info: #ffffff;
-  --info-dark: #c8c5ff;
+  --info-dark: #f87171;
   --info-surface: rgba(var(--info-rgb), 0.18);
   --info-rgb: 255, 255, 255;
-  --accent-purple: #c1a3ff;
+  --accent-purple: #f87171;
   --accent-purple-surface: rgba(var(--accent-purple-rgb), 0.22);
-  --accent-purple-rgb: 193, 163, 255;
-  --accent-orange: #d1c1ff;
+  --accent-purple-rgb: 248, 113, 113;
+  --accent-layer-1: #1f1010;
+  --accent-layer-2: #2b1515;
+  --accent-layer-3: #381c1c;
+  --accent-layer-4: #462323;
+  --accent-layer-1-rgb: 31, 16, 16;
+  --accent-layer-2-rgb: 43, 21, 21;
+  --accent-layer-3-rgb: 56, 28, 28;
+  --accent-layer-4-rgb: 70, 35, 35;
+  --accent-orange: #f87171;
   --accent-orange-surface: rgba(var(--warning-rgb), 0.2);
-  --accent-orange-rgb: 209, 193, 255;
-  --accent-blue: #8f7cfb;
+  --accent-orange-rgb: 248, 113, 113;
+  --accent-blue: #f87171;
   --accent-blue-surface: rgba(var(--info-rgb), 0.2);
   --calendar-selection-border: #c8641a;
   --calendar-saturday-row-bg: #1c1a27;
@@ -152,29 +168,29 @@
   --calendar-today-pill-text: var(--text-primary);
   --search-surface: #2a2a32;
   --search-surface-muted: #3a3a42;
-  --search-text: #c1a3ff;
+  --search-text: #f87171;
   --overlay: rgba(var(--accent-purple-rgb), 0.5);
   --vhc-vehicle-diagram-image: url('/profile/DarkCar.png');
 
   /* Three-tier background system - Dark Mode */
   /* Level 1 (Top layer - softened charcoal): inner cards, stats blocks */
-  --layer-section-level-1: #2d1f3d;
+  --layer-section-level-1: var(--accent-layer-1);
   /* Level 2 (Middle layer - muted grey): section containers */
-  --layer-section-level-2: #221732;
+  --layer-section-level-2: var(--accent-layer-2);
   /* Level 3 (Bottom layer - dark purple): outer shell */
-  --layer-section-level-3: #1a0f2e;
+  --layer-section-level-3: var(--accent-layer-3);
   /* Level 4 (Extra dark if needed) */
-  --layer-section-level-4: #120a20;
-  --row-background: #251a35;
+  --layer-section-level-4: var(--accent-layer-4);
+  --row-background: #2b1515;
   --text-color: #ffffff;
 
   /* Section gradient shadows - Dark Mode (for future use) */
-  --section-gradient-outer: #1d1230;
-  --section-gradient-inner: #281b38;
-  --section-gradient-center: #2f2040;
+  --section-gradient-outer: var(--accent-layer-2);
+  --section-gradient-inner: var(--accent-layer-3);
+  --section-gradient-center: var(--accent-layer-4);
   --layer-gradient: var(--layer-section-level-3);
 
   /* Scrollbar colors */
-  --scrollbar-thumb: #a855f7;
-  --scrollbar-thumb-hover: #9333ea;
+  --scrollbar-thumb: var(--primary);
+  --scrollbar-thumb-hover: var(--primary-light);
 }

@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
-import Image from "next/image";
+import BrandLogo from "@/components/BrandLogo";
 import { supabase } from "@/lib/supabaseClient";
 import { summariseTechnicianVhc, parseVhcBuilderPayload } from "@/lib/vhc/summary";
 import { normaliseDecisionStatus, resolveSeverityKey } from "@/lib/vhc/summaryStatus";
@@ -153,11 +153,6 @@ export default function CustomerPreviewPage() {
   useEffect(() => {
     setIsMounted(true);
   }, []);
-
-  // Determine logo based on theme
-  const logoSrc = (isMounted ? resolvedMode : "light") === "dark"
-    ? "/images/logo/DarkLogo.png"
-    : "/images/logo/LightLogo.png";
 
   // Fetch job data
   useEffect(() => {
@@ -1392,13 +1387,11 @@ export default function CustomerPreviewPage() {
           <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "24px" }}>
             {/* Logo on the left */}
             <div style={{ flexShrink: 0 }}>
-              <Image
-                src={logoSrc}
+              <BrandLogo
                 alt="HP Logo"
                 width={120}
                 height={50}
                 style={{ objectFit: "contain" }}
-                priority
               />
             </div>
 

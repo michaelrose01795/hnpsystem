@@ -921,7 +921,7 @@ export default function PartsJobCardPage() {
                   style={{
                     borderRadius: "10px",
                     border: "1px solid transparent",
-                    background: isDarkMode ? "var(--accent-purple)" : "var(--danger)",
+                    background: "var(--accent-purple)",
                     padding: "8px 14px",
                     fontWeight: 600,
                     cursor: "pointer",
@@ -1138,7 +1138,7 @@ export default function PartsJobCardPage() {
                   fontWeight: 700,
                   letterSpacing: "0.05em",
                   textTransform: "uppercase",
-                  color: isDarkMode ? "var(--accent-purple)" : "var(--danger)",
+                  color: "var(--accent-purple)",
                   cursor: "pointer",
                   padding: "6px 0",
                 }}

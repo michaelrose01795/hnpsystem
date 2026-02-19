@@ -3,14 +3,13 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { useUser } from "@/context/UserContext";
 import { useMessagesBadge } from "@/hooks/useMessagesBadge";
 import { sidebarSections } from "@/config/navigation";
 import { departmentDashboardShortcuts } from "@/config/departmentDashboards";
-import { useTheme } from "@/styles/themeProvider";
+import BrandLogo from "@/components/BrandLogo";
 
 const hiddenHrRoutes = new Set([
   "/hr/employees",
@@ -35,8 +34,6 @@ export default function Sidebar({
 }) {
   const pathname = usePathname();
   const { user, logout, dbUserId } = useUser();
-  const { resolvedMode } = useTheme(); // tap into the existing theme provider so logo swaps instantly on toggle
-  const [isMounted, setIsMounted] = useState(false);
   const { unreadCount } = useMessagesBadge(dbUserId);
   const derivedRoles = user?.roles?.map((role) => role.toLowerCase()) || [];
   const userRoles =
@@ -49,14 +46,6 @@ export default function Sidebar({
     if (!shortcut.roles || shortcut.roles.length === 0) return true;
     return shortcut.roles.some((role) => userRoles.includes(role));
   });
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  const logoSrc =
-    (isMounted ? resolvedMode : "light") === "dark"
-      ? "/images/logo/DarkLogo.png"
-      : "/images/logo/LightLogo.png"; // choose the appropriate asset for the resolved theme
   const headerLogoStyle = {
     width: "100%",
     height: "auto",
@@ -256,13 +245,10 @@ export default function Sidebar({
             alignItems: "center",
           }}
         >
-          <Image
-            src={logoSrc}
+          <BrandLogo
             alt="H&P logo"
             width={800}
             height={240}
-            priority
-            sizes="(max-width: 768px) 95vw, 480px"
             style={headerLogoStyle}
           />
         </div>

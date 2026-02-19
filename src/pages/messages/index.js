@@ -755,9 +755,9 @@ function MessagesPage() {
     });
   }, [threadSearchTerm, threads]);
 
-  const userNameColor = isDark ? "#a855f7" : "#dc2626";
+  const userNameColor = "var(--accent-purple)";
   const systemTitleColor = userNameColor;
-  const unreadBackgroundColor = isDark ? "rgba(168, 85, 247, 0.15)" : "rgba(220, 38, 38, 0.12)";
+  const unreadBackgroundColor = "rgba(var(--accent-purple-rgb), 0.14)";
 
   const isGroupLeader = useMemo(() => {
     if (!activeThread || activeThread.type !== "group" || !dbUserId) return false;

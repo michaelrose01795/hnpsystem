@@ -526,8 +526,7 @@ function DeliveryJobRow({ job, index, total, onView, onMove, onMarkDelivered, ac
 
 function DeliveryJobViewModal({ job, onClose }) {
   const items = Array.isArray(job.items) ? job.items : [];
-  const { resolvedMode } = useTheme();
-  const closeButtonColor = resolvedMode === "dark" ? "var(--accent-purple)" : "var(--danger)";
+  const closeButtonColor = "var(--accent-purple)";
 
   return (
     <ModalPortal>

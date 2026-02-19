@@ -255,7 +255,7 @@ export default function IssueAutocomplete({
             results.map((suggestion, index) => {
               const isActive = index === activeIndex;
               const parts = buildHighlightParts(suggestion, query);
-              const highlightColor = resolvedMode === "dark" ? "var(--accent-purple)" : "var(--danger)";
+              const highlightColor = "var(--accent-purple)";
 
               return (
                 <button

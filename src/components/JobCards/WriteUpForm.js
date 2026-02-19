@@ -680,7 +680,7 @@ export default function WriteUpForm({
   const { usersByRole, isLoading: rosterLoading } = useRoster();
   const { resolvedMode } = useTheme();
   const isDarkMode = resolvedMode === "dark";
-  const closeButtonColor = isDarkMode ? "var(--accent-purple)" : "var(--danger)";
+  const closeButtonColor = "var(--accent-purple)";
 
   const [jobData, setJobData] = useState(jobCardData);
   const [, setAuthorizedItems] = useState([]);

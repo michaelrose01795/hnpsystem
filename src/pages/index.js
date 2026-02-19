@@ -2,6 +2,7 @@
 import { useEffect, useMemo } from "react";
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
+import BrandLogo from "@/components/BrandLogo";
 
 export default function HomeRedirect() {
   const router = useRouter(); // get the Next.js router
@@ -26,16 +27,7 @@ export default function HomeRedirect() {
     <div className="redirect-screen" role="status" aria-live="polite">
       <div className="redirect-card">
         <div className="login-brand redirect-brand" aria-hidden="true">
-          <img
-            src="/images/logo/LightLogo.png"
-            alt=""
-            className="login-logo login-logo-light"
-          />
-          <img
-            src="/images/logo/DarkLogo.png"
-            alt=""
-            className="login-logo login-logo-dark"
-          />
+          <BrandLogo alt="" className="login-logo" />
         </div>
         <div className="redirect-spinner" aria-hidden="true"></div>
         <div className="redirect-copy">

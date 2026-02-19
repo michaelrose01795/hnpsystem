@@ -1,6 +1,5 @@
 // file location: src/components/VHC/TyreDiagram.js
 import React from "react";
-import { useTheme } from "@/styles/themeProvider";
 import themeConfig from "@/styles/appTheme";
 
 const { palette } = themeConfig;
@@ -73,11 +72,10 @@ export default function TyreDiagram({
   invalidTyres = [],
   invalidSpare = false,
 }) {
-  const { resolvedMode } = useTheme();
   const activeKey = activeTyre?.toLowerCase();
   const invalidTyreSet = new Set((invalidTyres || []).map((key) => String(key).toLowerCase()));
-  const selectedWheelFill = resolvedMode === "dark" ? "rgba(126, 87, 194, 0.16)" : "rgba(214, 73, 73, 0.12)";
-  const selectedWheelStroke = resolvedMode === "dark" ? "rgba(126, 87, 194, 0.65)" : "rgba(214, 73, 73, 0.7)";
+  const selectedWheelFill = "rgba(var(--accent-purple-rgb), 0.16)";
+  const selectedWheelStroke = "rgba(var(--accent-purple-rgb), 0.65)";
 
   const containerStyle = {
     width: "100%",

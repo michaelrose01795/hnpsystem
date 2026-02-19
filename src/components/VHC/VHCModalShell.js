@@ -2,7 +2,6 @@
 import React from "react";
 import { createPortal } from "react-dom";
 import { vhcModalStyles, createVhcButtonStyle } from "@/styles/appTheme";
-import { useTheme } from "@/styles/themeProvider";
 
 export default function VHCModalShell({
   isOpen,
@@ -20,8 +19,7 @@ export default function VHCModalShell({
   lockedMessage = "Authorised",
   lockedOverlay = true,
 }) {
-  const { resolvedMode } = useTheme();
-  const closeButtonColor = resolvedMode === "dark" ? "var(--accent-purple)" : "var(--danger)";
+  const closeButtonColor = "var(--accent-purple)";
   const isBlockingLocked = locked && lockedOverlay;
   if (!isOpen) return null;
 

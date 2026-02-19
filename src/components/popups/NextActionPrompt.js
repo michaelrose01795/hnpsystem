@@ -4,7 +4,6 @@
 import React, { useMemo, useState } from "react"; // import React helpers
 import { useNextAction } from "@/context/NextActionContext"; // import next action context hook
 import { useUser } from "@/context/UserContext"; // import user context to capture performer id
-import { useTheme } from "@/styles/themeProvider";
 import ModalPortal from "./ModalPortal";
 
 const KEY_LOCATIONS = [
@@ -33,8 +32,7 @@ const statusLabelForAction = (actionType, fallback) => {
 export default function NextActionPrompt() {
   const { nextAction, clearNextAction, markOpened } = useNextAction(); // read action state
   const { dbUserId, user } = useUser(); // read supabase user id and identity
-  const { resolvedMode } = useTheme();
-  const closeButtonColor = resolvedMode === "dark" ? "var(--accent-purple)" : "var(--danger)";
+  const closeButtonColor = "var(--accent-purple)";
   const [isOpen, setIsOpen] = useState(false); // track modal visibility
   const [keyLocation, setKeyLocation] = useState(KEY_LOCATIONS[0]); // selected key hook
   const [vehicleLocation, setVehicleLocation] = useState(VEHICLE_LOCATIONS[0]); // selected bay

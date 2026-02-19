@@ -8,6 +8,7 @@ import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import LoginDropdown from "@/components/LoginDropdown";
 import CustomerViewPreview from "@/components/CustomerViewPreview";
+import BrandLogo from "@/components/BrandLogo";
 import { supabase } from "@/lib/supabaseClient"; // Database connection
 import { roleCategories } from "@/config/users"; // Dev users config
 
@@ -237,16 +238,7 @@ export default function LoginPage() {
       <div className="login-page-wrapper">
         <div className="login-stack">
           <div className="login-brand">
-            <img
-              src="/images/logo/LightLogo.png"
-              alt="HP Automotive"
-              className="login-logo login-logo-light"
-            />
-            <img
-              src="/images/logo/DarkLogo.png"
-              alt="HP Automotive"
-              className="login-logo login-logo-dark"
-            />
+            <BrandLogo alt="HP Automotive" className="login-logo" />
           </div>
 
           <div className="login-card-stack">

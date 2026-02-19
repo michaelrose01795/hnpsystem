@@ -17,13 +17,6 @@ create a flow for create a job card, start from the /create page and then based 
 
 
 
-add a colour prefence, add 7 colours like Grey blue green yellow pink orange purple to add a custopmers preference on the accent colours, have it so the 7 colours work well in light and dark mode, if needed add 14 colours 7 for light mode in Grey blue green yellow pink orange purple and 7 for dark mode in Grey blue green yellow pink orange purple. have it so this is a drop down named accent colour within the /profile page to the left of the "System (dark)" have it so the drop down follows the dropdown style api, give a small circle colour preview, have it so it shows the left side of the text as the lgiht mode colour and the right side as the dark mode colour. make sure the drop down uses the dropdown style api however override the dropdown style api so the dropdown button matches the light/dark/system button style. 
-
-
-
-
-
-
 
 VIDEO UPDATE WHEN WORKING
 Add overlay to the video which is like a bubble which goes to a fix location within the recording which the user can press during the recording Like ar tiles which give the title an colour of the issue. have it so it alwyas show the front pads and discs measurenmetns as well as all 4 tyres no matter red amber or green. with the ohter conerns always show either red or amber. never green. 
