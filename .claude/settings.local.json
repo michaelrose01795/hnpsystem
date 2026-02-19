@@ -39,7 +39,9 @@
       "Bash(python3:*)",
       "Bash(node -e:*)",
       "Bash(lsof:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(wc:*)",
+      "Bash(xargs:*)"
     ],
     "deny": [],
     "ask": []

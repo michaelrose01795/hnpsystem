@@ -1339,6 +1339,11 @@ export default function VhcDetailsPanel({
   const [vhcItemAliasRecords, setVhcItemAliasRecords] = useState([]);
   const [removingPartIds, setRemovingPartIds] = useState(new Set());
   const [hoveredStatusId, setHoveredStatusId] = useState(null);
+  // Track the item currently being edited in the Total column and its raw edit value,
+  // so the input shows whatever the user is typing (including empty string) without
+  // immediately snapping back to the computed Parts+Labour total mid-edit.
+  const [totalEditItemId, setTotalEditItemId] = useState(null);
+  const [totalEditValue, setTotalEditValue] = useState("");
   const [vhcChecksData, setVhcChecksData] = useState([]);
   const [authorizedViewRows, setAuthorizedViewRows] = useState([]);
   const [authorizedViewLoaded, setAuthorizedViewLoaded] = useState(false);
@@ -1375,6 +1380,9 @@ export default function VhcDetailsPanel({
   const labourSuggestionRequestRef = useRef({});
   const labourEditSessionRef = useRef({});
   const partsLearningDebounceRef = useRef(null);
+  // Track item IDs where totalOverride has been touched by the user so the
+  // DB-init effect never overwrites an in-progress edit or an explicit clear.
+  const totalOverrideTouchedRef = useRef(new Set());
   const refreshJobData = useCallback(
     (...args) => {
       if (typeof onJobDataRefresh !== "function") {
@@ -2667,6 +2675,16 @@ export default function VhcDetailsPanel({
     return map;
   }, [partsIdentified, partsNotRequired, summaryItems, vhcIdAliases]);
 
+  const partsAuthorizedByVhcItemId = useMemo(() => {
+    const map = new Map();
+    partsAuthorized.forEach((part) => {
+      if (!part?.vhc_item_id) return;
+      const key = String(part.vhc_item_id);
+      map.set(key, (map.get(key) || 0) + 1);
+    });
+    return map;
+  }, [partsAuthorized]);
+
   const ensureEntryValue = (state, itemId) =>
     state[itemId] || { partsCost: "", laborHours: null, totalOverride: "", status: null, labourComplete: false, partsComplete: false };
 
@@ -2980,7 +2998,7 @@ export default function VhcDetailsPanel({
     }
   };
 
-  // Auto-update partsComplete checkbox based on parts being added or marked as not required
+  // Auto-update partsComplete checkbox and parts_cost based on parts being added or marked as not required
   useEffect(() => {
     setItemEntries((prev) => {
       const updated = { ...prev };
@@ -2997,29 +3015,78 @@ export default function VhcDetailsPanel({
       allItems.forEach((item) => {
         const itemId = item.id;
         const canonicalId = resolveCanonicalVhcId(itemId);
-        const hasParts = partsCostByVhcItem.has(canonicalId);
-        const isNotRequired = partsNotRequired.has(String(itemId));
+        const existingVhcId = findExistingVhcItemId(itemId, item);
+        const candidateIds = new Set([
+          String(itemId),
+          String(canonicalId),
+        ]);
+        if (Number.isInteger(existingVhcId)) {
+          candidateIds.add(String(existingVhcId));
+        }
+
+        const hasParts = Array.from(candidateIds).some((id) => {
+          if (!id) return false;
+          return partsCostByVhcItem.has(id) || partsAuthorizedByVhcItemId.has(id);
+        });
+        const isNotRequired = Array.from(candidateIds).some((id) => partsNotRequired.has(String(id)));
+        const entry = ensureEntryValue(prev, itemId);
+
         const shouldBeComplete = hasParts || isNotRequired;
 
-        const entry = ensureEntryValue(prev, itemId);
-        if (entry.partsComplete !== shouldBeComplete) {
-          updated[itemId] = { ...entry, partsComplete: shouldBeComplete };
+        // null  → item not in map (no parts, not "not required") — don't overwrite DB
+        // 0     → item is "not required" — write 0 to DB
+        // N > 0 → item has parts — write total cost to DB
+        const calculatedPartsCost = Array.from(candidateIds).reduce((value, id) => {
+          if (value !== null) return value;
+          return partsCostByVhcItem.has(id) ? partsCostByVhcItem.get(id) : null;
+        }, null);
+
+        const currentStoredPartsCost =
+          entry.partsCost !== "" && entry.partsCost !== null && entry.partsCost !== undefined
+            ? parseFloat(entry.partsCost)
+            : null;
+
+        const partsCompleteChanged = entry.partsComplete !== shouldBeComplete;
+        const clearPartsCost = !hasParts && !isNotRequired && currentStoredPartsCost !== null;
+        const partsCostNeedsUpdate =
+          calculatedPartsCost !== null
+            ? calculatedPartsCost !== currentStoredPartsCost
+            : clearPartsCost;
+
+        if (partsCompleteChanged || partsCostNeedsUpdate) {
+          const newEntry = { ...entry, partsComplete: shouldBeComplete };
+          if (calculatedPartsCost !== null) {
+            newEntry.partsCost = String(calculatedPartsCost);
+          } else if (clearPartsCost) {
+            newEntry.partsCost = "";
+          }
+          updated[itemId] = newEntry;
           hasChanges = true;
 
           // Also persist to database if the item has a valid VHC ID
-          const parsedId = Number(canonicalId);
-          if (Number.isInteger(parsedId) && shouldBeComplete !== entry.partsComplete) {
+          const parsedId = Array.from(candidateIds).reduce((resolved, id) => {
+            if (Number.isInteger(resolved)) return resolved;
+            const numeric = Number(id);
+            return Number.isInteger(numeric) ? numeric : resolved;
+          }, null);
+          if (Number.isInteger(parsedId)) {
+            const dbPayload = {
+              vhcItemId: parsedId,
+              partsComplete: shouldBeComplete,
+              approvedBy: "system",
+            };
+            if (calculatedPartsCost !== null) {
+              dbPayload.partsCost = calculatedPartsCost;
+            } else if (clearPartsCost) {
+              dbPayload.partsCost = 0;
+            }
             // Update database asynchronously
             fetch("/api/vhc/update-item-status", {
               method: "PATCH",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                vhcItemId: parsedId,
-                partsComplete: shouldBeComplete,
-                approvedBy: "system"
-              }),
+              body: JSON.stringify(dbPayload),
             }).catch((error) => {
-              console.error("Failed to save parts complete status", error);
+              console.error("Failed to save parts complete/cost status", error);
             });
           }
         }
@@ -3027,7 +3094,81 @@ export default function VhcDetailsPanel({
 
       return hasChanges ? updated : prev;
     });
-  }, [partsCostByVhcItem, partsNotRequired, severityLists, resolveCanonicalVhcId]);
+  }, [
+    partsCostByVhcItem,
+    partsAuthorizedByVhcItemId,
+    partsNotRequired,
+    severityLists,
+    resolveCanonicalVhcId,
+    findExistingVhcItemId,
+  ]);
+
+  // Direct sync of parts_cost from parts_job_items → vhc_checks.
+  // Uses ALL jobParts (no VHC-origin filter) to match the quote model that already displays
+  // the correct price. Fires whenever jobParts or vhcChecksData change, sends a PATCH only
+  // when the stored DB value differs from the computed total.
+  useEffect(() => {
+    if (!jobParts.length || !vhcChecksData.length) return;
+
+    // Build cost map: vhc_item_id → sum(qty * unit_price)  — same logic as buildVhcQuoteLinesModel
+    const costMap = new Map();
+    jobParts.forEach((part) => {
+      if (!part?.vhc_item_id) return;
+      const key = String(part.vhc_item_id);
+      const qty = Number(part.quantity_requested) || 1;
+      const unitPrice = Number(part.unit_price ?? part?.part?.unit_price ?? 0);
+      if (!Number.isFinite(unitPrice)) return;
+      costMap.set(key, (costMap.get(key) || 0) + qty * unitPrice);
+    });
+
+    if (!costMap.size) return;
+
+    vhcChecksData.forEach((check) => {
+      if (!check?.vhc_id || check.section === "VHC_CHECKSHEET") return;
+      const key = String(check.vhc_id);
+      if (!costMap.has(key)) return;
+
+      const computedCost = costMap.get(key);
+      const storedCost =
+        check.parts_cost !== null && check.parts_cost !== undefined
+          ? parseFloat(check.parts_cost)
+          : null;
+
+      if (storedCost === computedCost) return; // Already in sync
+
+      const nextPartsComplete = computedCost > 0 || Boolean(check.parts_complete);
+
+      fetch("/api/vhc/update-item-status", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          vhcItemId: check.vhc_id,
+          partsCost: computedCost,
+          partsComplete: nextPartsComplete,
+          approvedBy: "system",
+        }),
+      })
+        .then((res) => {
+          if (!res.ok) return;
+          // Update local vhcChecksData so the effect doesn't re-fire and
+          // so the DB-init effect picks up the correct value for itemEntries.
+          setVhcChecksData((prev) =>
+            prev.map((c) =>
+              c.vhc_id === check.vhc_id
+                ? {
+                    ...c,
+                    parts_cost: String(computedCost),
+                    parts_complete: nextPartsComplete,
+                  }
+                : c
+            )
+          );
+        })
+        .catch((error) =>
+          console.error("Failed to sync parts cost to vhc_checks", error)
+        );
+    });
+  }, [jobParts, vhcChecksData]);
 
   // Load labour hours from parts_job_items (when parts with labour hours are added)
   // DO NOT auto-check labourComplete when loading from parts
@@ -3102,8 +3243,14 @@ export default function VhcDetailsPanel({
           // Update parts complete status
           updatedEntry.partsComplete = approvalData.partsComplete || false;
 
-          // Update total override if present in database
-          if (approvalData.totalOverride !== null && approvalData.totalOverride !== undefined) {
+          // Update total override if present in database — but skip if the user
+          // has already touched this field (typed or cleared) to prevent the
+          // effect from overwriting in-progress edits or explicit clears.
+          if (
+            !totalOverrideTouchedRef.current.has(String(item.id)) &&
+            approvalData.totalOverride !== null &&
+            approvalData.totalOverride !== undefined
+          ) {
             updatedEntry.totalOverride = String(approvalData.totalOverride);
           }
 
@@ -3748,10 +3895,13 @@ export default function VhcDetailsPanel({
                     : computeLabourCost(resolvedLabourHours);
                 const totalCost =
                   quoteTotal !== null ? quoteTotal : computeRowTotal(entry, resolvedPartsCost, resolvedLabourHours);
-                const totalDisplayValue =
-                  entry.totalOverride !== "" && entry.totalOverride !== null
-                    ? entry.totalOverride
-                    : totalCost.toFixed(2);
+                const totalDisplayValue = (() => {
+                  if (entry.totalOverride !== "" && entry.totalOverride !== null)
+                    return entry.totalOverride;
+                  const rounded = parseFloat(totalCost.toFixed(2));
+                  // Show no decimals for whole numbers, 2 decimals otherwise (e.g. 400 not 400.00, but 400.50 not 400.5)
+                  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2);
+                })();
                 const partsDisplayValue =
                   resolvedPartsCost !== undefined ? resolvedPartsCost.toFixed(2) : "";
                 const effectiveEntry =
@@ -4238,9 +4388,61 @@ export default function VhcDetailsPanel({
                           type="number"
                           min="0"
                           step="0.01"
-                          value={totalDisplayValue}
-                          onChange={(event) => updateEntryValue(item.id, "totalOverride", event.target.value)}
+                          value={totalEditItemId === item.id ? totalEditValue : totalDisplayValue}
+                          onFocus={() => {
+                            // When the user clicks in, seed the edit buffer with the current
+                            // displayed value so they see the same number they were looking at.
+                            setTotalEditItemId(item.id);
+                            setTotalEditValue(
+                              entry.totalOverride !== "" && entry.totalOverride !== null && entry.totalOverride !== undefined
+                                ? String(entry.totalOverride)
+                                : (() => { const r = parseFloat(totalCost.toFixed(2)); return Number.isInteger(r) ? String(r) : r.toFixed(2); })()
+                            );
+                          }}
+                          onChange={(event) => {
+                            // Keep the edit buffer in sync so the input shows exactly what
+                            // the user is typing (including empty string — no snap-back).
+                            totalOverrideTouchedRef.current.add(String(item.id));
+                            setTotalEditValue(event.target.value);
+                            updateEntryValue(item.id, "totalOverride", event.target.value);
+                          }}
+                          onBlur={() => {
+                            // Stop showing the edit buffer — revert to totalDisplayValue.
+                            setTotalEditItemId(null);
+                            setTotalEditValue("");
+                            if (readOnly || severity === "authorized" || severity === "declined") return;
+                            totalOverrideTouchedRef.current.add(String(item.id));
+                            const rawValue = entry.totalOverride;
+                            const isEmpty = rawValue === "" || rawValue === null || rawValue === undefined;
+                            const parsedValue = isEmpty ? null : parseFloat(rawValue);
+                            if (!isEmpty && (!Number.isFinite(parsedValue) || parsedValue < 0)) return;
+                            const canonicalId = resolveCanonicalVhcId(item.id);
+                            const parsedId = Number(canonicalId);
+                            if (!Number.isInteger(parsedId)) return;
+                            updateEntryValue(item.id, "totalOverride", isEmpty ? "" : String(parsedValue));
+                            fetch("/api/vhc/update-item-status", {
+                              method: "PATCH",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                vhcItemId: parsedId,
+                                totalOverride: isEmpty ? null : parsedValue,
+                                approvedBy: authUserId || dbUserId || null,
+                              }),
+                            })
+                              .then((res) => {
+                                if (!res.ok) return;
+                                setVhcChecksData((prev) =>
+                                  prev.map((c) =>
+                                    c.vhc_id === parsedId
+                                      ? { ...c, total_override: isEmpty ? null : parsedValue }
+                                      : c
+                                  )
+                                );
+                              })
+                              .catch((error) => console.error("Failed to save total override", error));
+                          }}
                           placeholder="0.00"
+                          className="vhc-total-input"
                           style={{
                             width: "70px",
                             padding: "4px 6px",

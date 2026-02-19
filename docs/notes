@@ -4,65 +4,27 @@ Continue flow with job number 55.
 what are all of the database tables used within the vhc tab section. can we use one table? 
 
 
-FIXXXX STILLL
-Fix the “Parts Identified” tab within the jobcards/[jobnumber] page so it shows the correct rows from the table, atm there are these rows within the summary tab
+
+so i have archiving for job numbers, this is everything links to a job is archived and saved as read only intead of full functions. 
 
 
 
-CHECKKKKK
-have it so the "Remove Front Wiper from the VHC item?" alert uses the in app alert instead.  
-
-
-have it so the "Green Items" section within the "/vhc/customer-preview/00055" page like it shows within the "/job-cards/00055" page inside the summary tab. 
-
-
-FIND OUT yes work on this 
-Can we add an auto detect text box locations, tick box location, signature box location, correct orientation, so the app can turn the uploaded document into a live seach which can be ticked, signed, reg field etc auto filled out. or is this not possible. 
-
-
-DO THISSSS
-work on implementing "AI" within whole app search chat "AI job detection system"
-
-
-
-
-CHECKKK
-make sure the "ALLOCATE PARTS" part section always shows the customer request (at the top) and VHC request (blow the cusomter request) at all times if its been reported, now remove the requests from that sectin even if a part has been allocated to that request.
-
-Fix it so when i click allocated with an authoirse request it works the same with a normal request. 
-
-
-
-Within write up and VHC tab inside the tab section, when the VHC is fully complete (Everything is authorised or delcined) change the background colour to green, and when everything is ticked within the write up section change the write up tab button background to green as well. so the part moves to on job to within the row of the request its been allocated to, link this though the database as well. 
-
-CHECK
-Sub-job number, make sure database table update and is all linked. 
-
-add the changes to the database into the addtables.sql for me to put into the table editor. 
+create a flow for create a job card, start from the /create page and then based on the code used create a story line with "bla bla bla > bla bla bla" like actions to show next page / feaute/ tap/ section. use a code to show which sections are linked to what eg showing the same infomation where else that feaute is used etc. add the databazse table used and if the table can be made better save the data add the database table name and columns withn the story line. have the story line more like bullet points created in a new folder under docs which will be named Jobcard Flow. 
 
 
 
 
 
-CHECKKKK
-have it so when in smaller screen than the full windows and full ipad size the sidebar open button and status open button are only shown at the top of the page in a 50/50 tab button style layout. add a close button on the "My Dashboard" row. 
-
-CHECKKK
-have it so the top bar doesnt show anythe mode or Welcome back section when in this modesand have it so the search bar isnt insdie the top bar its underneath the navigator and status button taking up the whole width. 
 
 
 
+
+
+
+
+
+VIDEO UPDATE WHEN WORKING
 Add overlay to the video which is like a bubble which goes to a fix location within the recording which the user can press during the recording Like ar tiles which give the title an colour of the issue. have it so it alwyas show the front pads and discs measurenmetns as well as all 4 tyres no matter red amber or green. with the ohter conerns always show either red or amber. never green. 
-
-
-Go though each page and set which section has what level of colour level 1-4,  
-Change to base layer " /* Level 3 (Bottom layer - pale red): page background + outer shell */
-  --layer-section-level-3: #ffeaea;" adjust in all places where users 
-
-
-
-
-
 
 
 

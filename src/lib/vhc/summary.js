@@ -233,6 +233,15 @@ const formatMeasurementList = (value) => {
   return cleaned.join(" / ");
 };
 
+const formatDrumConditionLabel = (value) => {
+  const raw = String(value || "").trim().toLowerCase();
+  if (!raw) return null;
+  if (raw === "good") return "Good";
+  if (raw === "monitor") return "Monitor";
+  if (raw === "replace") return "Replace";
+  return null;
+};
+
 // ✅ Calculate the average tread depth for a tyre
 const calculateAverageTread = (tread = {}) => {
   const values = ["outer", "middle", "inner"]
@@ -450,18 +459,23 @@ const buildBrakesSection = (brakes) => {
     const disc = brakes[key];
     if (!disc) return;
     const rows = [];
+    const activeTab = String(disc.tab || "measurements").toLowerCase();
     const measurementStatus = normaliseStatus(disc.measurements?.status);
     const visualStatus = normaliseStatus(disc.visual?.status);
     const thicknessValues = formatMeasurementList(disc.measurements?.values);
-    if (thicknessValues) rows.push(`Measurements: ${thicknessValues}`);
+    if (activeTab === "visual") {
+      rows.push("Visual");
+    } else if (thicknessValues) {
+      rows.push(`Measurements: ${thicknessValues}`);
+    }
     const visualNotes = (disc.visual?.notes || disc.visual?.note || "").trim();
     if (visualNotes) rows.push(`Visual: ${visualNotes}`);
     const measurementStatusForSummary =
-      thicknessValues || (measurementStatus && measurementStatus !== "Green")
+      (activeTab !== "visual" && thicknessValues) || (measurementStatus && measurementStatus !== "Green")
         ? measurementStatus
         : null;
     const visualStatusForSummary =
-      visualNotes || (visualStatus && visualStatus !== "Green")
+      activeTab === "visual" || visualNotes || (visualStatus && visualStatus !== "Green")
         ? visualStatus
         : null;
     const concerns = Array.isArray(disc.concerns) ? disc.concerns.map(normaliseConcern).filter(Boolean) : [];
@@ -476,9 +490,16 @@ const buildBrakesSection = (brakes) => {
       ...concerns.map((concern) => concern.status),
     ]);
     if (rows.length === 0 && concerns.length === 0 && !overallStatus) return;
+    const measurementSummary =
+      activeTab === "visual"
+        ? "Visual"
+        : thicknessValues
+          ? `Measurements: ${thicknessValues}`
+          : null;
     items.push({
       heading: label,
       status: overallStatus,
+      measurement: measurementSummary,
       rows,
       concerns,
     });
@@ -491,6 +512,7 @@ const buildBrakesSection = (brakes) => {
 
   const rearDrums = brakes.rearDrums;
   if (rearDrums && typeof rearDrums === "object") {
+    const drumConditionLabel = formatDrumConditionLabel(rearDrums.status);
     const drumStatus = normaliseStatus(rearDrums.status);
     const concerns = Array.isArray(rearDrums.concerns) ? rearDrums.concerns.map(normaliseConcern).filter(Boolean) : [];
     concerns.forEach((concern) => {
@@ -502,6 +524,7 @@ const buildBrakesSection = (brakes) => {
       items.push({
         heading: "Rear Drums",
         status: drumStatus,
+        measurement: drumConditionLabel,
         rows: [],
         concerns,
       });

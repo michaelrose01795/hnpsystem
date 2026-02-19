@@ -165,7 +165,9 @@ export const buildNormalizedVhcItems = ({ job_number, vhcData, labour_rate_gbp =
       const notes = collapseWhitespace(item?.notes || item?.measurement || "");
       const subAreaKey = resolveSubAreaForSummaryItem({ sectionName, heading, wheelKey: item?.wheelKey });
       const displayId = buildStableDisplayId(sectionName, item, index);
-      const measurement = Array.isArray(item?.rows) ? item.rows.filter(Boolean).join(" | ") : (item?.measurement || null);
+      const measurement =
+        item?.measurement ||
+        (Array.isArray(item?.rows) ? item.rows.filter(Boolean).join(" | ") : null);
 
       if (concerns.length > 0) {
         concerns.forEach((concern) => {

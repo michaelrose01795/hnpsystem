@@ -1,6 +1,7 @@
 // file location: src/lib/vhc/quoteLines.js
 import { parseVhcBuilderPayload, summariseTechnicianVhc } from "@/lib/vhc/summary";
 import { normaliseDecisionStatus, resolveSeverityKey } from "@/lib/vhc/summaryStatus";
+import { buildStableDisplayId } from "@/lib/vhc/displayId";
 
 const WORKFLOW_DISPLAY_STATUSES = new Set(["authorized", "declined", "completed", "pending", "n/a", ""]); // Workflow statuses that are not severity colours.
 
@@ -28,17 +29,6 @@ const resolveDisplaySeverity = (displayStatus) => { // Only allow display_status
   const normalized = String(displayStatus || "").toLowerCase().trim();
   const candidate = normaliseColour(normalized);
   return candidate === "red" || candidate === "amber" || candidate === "green" ? candidate : null;
-};
-
-const buildStableDisplayId = (sectionName, item, index) => {
-  const heading = item?.heading || item?.label || item?.name || "";
-  const prefix = String(sectionName || "")
-    .replace(/[^a-zA-Z0-9]/g, "_")
-    .toLowerCase();
-  const suffix = String(heading || "")
-    .replace(/[^a-zA-Z0-9]/g, "_")
-    .toLowerCase();
-  return `${prefix}-${suffix}-${index}`;
 };
 
 const resolveCategoryForItem = (sectionName) => {
