@@ -1,6 +1,7 @@
 // ✅ New Parts Tab with Drag & Drop Allocation
 // file location: src/components/PartsTab_New.js
 import React, { useState, useCallback, useEffect, useMemo, forwardRef } from "react";
+import { usePolling } from "@/hooks/usePolling";
 import CalendarField from "@/components/calendarAPI/CalendarField";
 import TimePickerField from "@/components/timePickerAPI/TimePickerField";
 import { DropdownField } from "@/components/dropdownAPI";
@@ -67,6 +68,10 @@ const PartsTabNew = forwardRef(function PartsTabNew(
   const [addJobDiagnostics, setAddJobDiagnostics] = useState(null);
   const [showBookPartPanel, setShowBookPartPanel] = useState(false);
   const [showAllocatePanel, setShowAllocatePanel] = useState(false);
+  const [showPrePickPopup, setShowPrePickPopup] = useState(false);
+  const [selectedPrePickPartId, setSelectedPrePickPartId] = useState("");
+  const [selectedPrePickLocation, setSelectedPrePickLocation] = useState("");
+  const [savingPrePick, setSavingPrePick] = useState(false);
   const [assignMode, setAssignMode] = useState(false);
   const [assignTargetRequestId, setAssignTargetRequestId] = useState(null);
 
@@ -192,6 +197,28 @@ const PartsTabNew = forwardRef(function PartsTabNew(
 
     return uniqueParts;
   }, [jobData.partsAllocations, jobData.parts_job_items]);
+
+  const prePickableParts = useMemo(
+    () =>
+      (Array.isArray(jobParts) ? jobParts : [])
+        .filter((part) => part && part.id)
+        .filter((part) => part.source !== "goods-in")
+        .filter((part) => normalizePartStatus(part.status) !== "removed"),
+    [jobParts]
+  );
+
+  const prePickPartOptions = useMemo(() => {
+    return prePickableParts.map((part) => ({
+      value: String(part.id),
+      label: `${part.partNumber || "N/A"} · ${part.name || "Part"}`,
+      description: `Qty ${part.quantity ?? 0}`,
+    }));
+  }, [prePickableParts]);
+
+  const prePickLocationOptions = useMemo(
+    () => PRE_PICK_OPTIONS.filter((option) => option.value !== "on_order"),
+    []
+  );
 
   const goodsInParts = useMemo(() => {
     const existingGoodsInPartIds = new Set(
@@ -601,20 +628,14 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     }
   }, [jobId]);
 
-  // Initial fetch and periodic background refresh
+  // Initial fetch
   useEffect(() => {
     if (!jobId) return;
-
-    // Initial background fetch
     fetchPartsOnOrderBackground();
-
-    // Set up background polling every 30 seconds
-    const intervalId = setInterval(() => {
-      fetchPartsOnOrderBackground();
-    }, 30000);
-
-    return () => clearInterval(intervalId);
   }, [jobId, fetchPartsOnOrderBackground]);
+
+  // Periodic background refresh (visibility-gated)
+  usePolling(fetchPartsOnOrderBackground, 30000, !!jobId);
 
   // Legacy alias for compatibility with existing handlers
   const fetchPartsOnOrder = fetchPartsOnOrderBackground;
@@ -960,6 +981,42 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     },
     [canEdit, onRefreshJob]
   );
+
+  useEffect(() => {
+    if (!selectedPrePickPartId) {
+      setSelectedPrePickLocation("");
+      return;
+    }
+    const selectedPart = prePickableParts.find(
+      (part) => String(part.id) === String(selectedPrePickPartId)
+    );
+    const existingLocation = selectedPart?.prePickLocation || "";
+    setSelectedPrePickLocation(existingLocation);
+  }, [selectedPrePickPartId, prePickableParts]);
+
+  const handleSubmitPrePickPopup = useCallback(async () => {
+    if (!selectedPrePickPartId || savingPrePick) return;
+    const selectedPart = prePickableParts.find(
+      (part) => String(part.id) === String(selectedPrePickPartId)
+    );
+    if (!selectedPart) return;
+
+    setSavingPrePick(true);
+    try {
+      await handleUpdatePrePickLocation(selectedPart, selectedPrePickLocation || null);
+      setShowPrePickPopup(false);
+      setSelectedPrePickPartId("");
+      setSelectedPrePickLocation("");
+    } finally {
+      setSavingPrePick(false);
+    }
+  }, [
+    selectedPrePickPartId,
+    selectedPrePickLocation,
+    savingPrePick,
+    prePickableParts,
+    handleUpdatePrePickLocation,
+  ]);
 
   const openStockCatalogue = useCallback((partNumber) => {
     if (!partNumber || partNumber === "N/A") return;
@@ -1350,6 +1407,19 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         .on-order-table td:nth-child(7) {
           width: 130px;
         }
+        .prepick-popup-dropdown .dropdown-api__control {
+          min-height: 42px;
+          border-radius: 10px;
+          border: 1px solid var(--surface-light);
+          background: var(--surface);
+        }
+        .prepick-popup-dropdown .dropdown-api__value {
+          font-size: 14px;
+          color: var(--text-primary);
+        }
+        .prepick-popup-dropdown .dropdown-api__menu {
+          border-radius: 10px;
+        }
       `}</style>
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
         {/* Search Section */}
@@ -1632,6 +1702,26 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             </div>
             {/* Tabs on same row */}
             <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+              <button
+                type="button"
+                onClick={() => setShowPrePickPopup(true)}
+                disabled={!canEdit || prePickPartOptions.length === 0}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: "6px",
+                  border: "1px solid transparent",
+                  background: "var(--info-surface)",
+                  color: "var(--info-dark)",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  cursor: !canEdit || prePickPartOptions.length === 0 ? "not-allowed" : "pointer",
+                  transition: "all 0.15s ease",
+                  whiteSpace: "nowrap",
+                  opacity: !canEdit || prePickPartOptions.length === 0 ? 0.6 : 1,
+                }}
+              >
+                Pre Picked
+              </button>
               <button
                 type="button"
                 onClick={toggleBookPartPanel}
@@ -2305,6 +2395,102 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       </div>
 
       {/* Part Removal Popup Modal */}
+      {showPrePickPopup && (
+        <ModalPortal>
+          <div
+            className="popup-backdrop"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowPrePickPopup(false);
+              }
+            }}
+            style={{ zIndex: 10000 }}
+          >
+            <div
+              className="popup-card"
+              style={{
+                borderRadius: "24px",
+                width: "100%",
+                maxWidth: "560px",
+                border: "1px solid var(--surface-light)",
+                background: "var(--surface)",
+                boxShadow: "none",
+                padding: "24px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "16px",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ fontSize: "16px", fontWeight: 700, color: "var(--primary)" }}>
+                Set Pre-Picked Location
+              </div>
+              <div style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
+                Choose a part already added to this job and assign its pre-pick location.
+              </div>
+
+              <DropdownField
+                label="Part"
+                placeholder="Select part"
+                value={selectedPrePickPartId}
+                onChange={(event) => setSelectedPrePickPartId(event.target.value)}
+                options={prePickPartOptions}
+                className="prepick-popup-dropdown"
+              />
+
+              <DropdownField
+                label="Location"
+                placeholder="Select location"
+                value={selectedPrePickLocation}
+                onChange={(event) => setSelectedPrePickLocation(event.target.value)}
+                options={prePickLocationOptions}
+                className="prepick-popup-dropdown"
+              />
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "4px" }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPrePickPopup(false);
+                    setSelectedPrePickPartId("");
+                    setSelectedPrePickLocation("");
+                  }}
+                  style={{
+                    padding: "10px 16px",
+                    borderRadius: "8px",
+                    border: "1px solid var(--surface-light)",
+                    background: "var(--surface)",
+                    color: "var(--text-primary)",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSubmitPrePickPopup}
+                  disabled={!selectedPrePickPartId || savingPrePick}
+                  style={{
+                    padding: "10px 16px",
+                    borderRadius: "8px",
+                    border: "none",
+                    background: !selectedPrePickPartId || savingPrePick ? "var(--surface-light)" : "var(--primary)",
+                    color: !selectedPrePickPartId || savingPrePick ? "var(--text-secondary)" : "var(--text-inverse)",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    cursor: !selectedPrePickPartId || savingPrePick ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {savingPrePick ? "Saving..." : "Save Location"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </ModalPortal>
+      )}
+
       {partPopup.open && partPopup.part && (
         <ModalPortal>
           <div

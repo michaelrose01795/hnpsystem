@@ -1,32 +1,13 @@
 // file location: src/lib/vhc/upsertVhcIssueRow.js
 import { supabase as sharedSupabase } from "@/lib/supabaseClient"; // Reuse the shared client used by existing VHC flows.
 import { getSlotCode, makeLineKey, resolveLineType } from "@/lib/vhc/slotIdentity"; // Central slot and line identity helpers.
-
-const DEFAULT_LABOUR_RATE_GBP = 85; // Customer-facing labour rate used by VHC quote lines.
-
-const toNumber = (value, fallback = 0) => { // Coerce unknown input into a finite numeric value.
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
-};
-
-const collapseWhitespace = (value = "") => String(value || "").trim().replace(/\s+/g, " "); // Normalize display text for stable writes.
-
-const normalizeSeverity = (value) => { // Normalize severity labels to canonical lowercase values.
-  const text = collapseWhitespace(value).toLowerCase();
-  if (!text) return "amber";
-  if (text.includes("red")) return "red";
-  if (text.includes("amber") || text.includes("yellow") || text.includes("orange")) return "amber";
-  if (text.includes("green") || text.includes("good") || text.includes("pass")) return "green";
-  return "grey";
-};
-
-const normalizeDecisionStatus = (value) => { // Normalize status/authorization values to db-compatible approval_status values.
-  const text = collapseWhitespace(value).toLowerCase();
-  if (!text) return "pending";
-  if (text === "authorised" || text === "approved") return "authorized";
-  if (["authorized", "declined", "completed", "pending"].includes(text)) return text;
-  return "pending";
-};
+import {
+  DEFAULT_LABOUR_RATE_GBP,
+  toNumber,
+  collapseWhitespace,
+  normalizeSeverity,
+  normalizeApprovalStatus as normalizeDecisionStatus,
+} from "@/lib/vhc/shared";
 
 const normalizeSourceBucket = (value = "") => { // Keep source labels stable for service concern line keys.
   const text = collapseWhitespace(value);

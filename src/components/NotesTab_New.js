@@ -409,9 +409,9 @@ export default function NotesTabNew({
                     disabled={!newNoteText.trim() || savingNewNote}
                     style={{
                       padding: "10px 18px",
-                      backgroundColor: !newNoteText.trim() || savingNewNote ? "var(--surface-light)" : "var(--info)",
+                      backgroundColor: !newNoteText.trim() || savingNewNote ? "var(--surface-light)" : "var(--primary)",
                       color: !newNoteText.trim() || savingNewNote ? "var(--text-secondary)" : "white",
-                      border: "1px solid var(--info-dark)",
+                      border: "1px solid var(--primary-dark)",
                       borderRadius: "8px",
                       cursor: !newNoteText.trim() || savingNewNote ? "not-allowed" : "pointer",
                       fontSize: "14px",

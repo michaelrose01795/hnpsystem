@@ -2,29 +2,7 @@
 import React, { useEffect, useState } from "react"; // import React and hooks for component logic
 import PropTypes from "prop-types";
 import { ACCOUNT_TYPES, ACCOUNT_STATUSES, DEFAULT_ACCOUNT_FORM_VALUES } from "@/config/accounts";
-const fieldGroupStyles = {
-  background: "var(--surface)",
-  border: "1px solid var(--surface-light)",
-  borderRadius: "16px",
-  padding: "20px",
-  display: "flex",
-  flexWrap: "wrap",
-  gap: "16px",
-};
-const inputStyles = {
-  width: "100%",
-  padding: "10px 12px",
-  borderRadius: "10px",
-  border: "1px solid var(--surface-light)",
-  background: "var(--surface-light)",
-};
-const labelStyles = {
-  fontSize: "0.85rem",
-  fontWeight: 600,
-  textTransform: "uppercase",
-  color: "var(--text-secondary)",
-  letterSpacing: "0.05em",
-};
+import { fieldGroupStyles, inputStyles, labelStyles, textareaStyles } from "@/styles/formStyles";
 const fieldDefinitions = [
   { name: "customer_id", label: "Customer ID", type: "text" },
   { name: "account_type", label: "Account Type", type: "select", options: ACCOUNT_TYPES },
@@ -43,7 +21,6 @@ const billingFields = [
   { name: "billing_postcode", label: "Postcode", type: "text" },
   { name: "billing_country", label: "Country", type: "text" },
 ];
-const textareaStyles = { ...inputStyles, minHeight: "100px" };
 export default function AccountForm({ initialValues, onSubmit, isSubmitting, readOnly, onCancel }) {
   const [formValues, setFormValues] = useState({ ...DEFAULT_ACCOUNT_FORM_VALUES, ...initialValues });
   useEffect(() => {

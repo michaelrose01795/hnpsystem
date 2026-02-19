@@ -1,6 +1,7 @@
 //  Imports converted to use absolute alias "@/"
 // file location: src/pages/profile/index.js
 import React, { useMemo, useState, useEffect, useCallback } from "react"; // React for UI and memoization
+import { usePolling } from "@/hooks/usePolling"; // visibility-gated polling
 import { createPortal } from "react-dom";
 import { useRouter } from "next/router"; // Next.js router for query params
 import { useSession } from "next-auth/react"; // NextAuth session for authentication
@@ -12,7 +13,7 @@ import { CalendarField } from "@/components/calendarAPI";
 import { TimePickerField } from "@/components/timePickerAPI";
 import { DropdownField } from "@/components/dropdownAPI";
 import StaffVehiclesCard from "@/components/HR/StaffVehiclesCard";
-import { useTheme } from "@/styles/themeProvider";
+import { ACCENT_PALETTES, useTheme } from "@/styles/themeProvider";
 import { isHrCoreRole, isManagerScopedRole } from "@/lib/auth/roles"; // Role checking utilities
 
 function formatDate(value) {
@@ -467,6 +468,43 @@ const modalSubmitBtnStyle = {
   cursor: "pointer",
 };
 
+function AccentOptionContent({ label, light, dark }) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "8px",
+        minWidth: 0,
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          width: "12px",
+          height: "12px",
+          borderRadius: "999px",
+          border: "1px solid rgba(var(--text-primary-rgb), 0.2)",
+          background: `linear-gradient(90deg, ${light} 0 50%, ${dark} 50% 100%)`,
+          flexShrink: 0,
+        }}
+      />
+      <span
+        style={{
+          fontWeight: 700,
+          background: `linear-gradient(90deg, ${light} 0 50%, ${dark} 50% 100%)`,
+          WebkitBackgroundClip: "text",
+          backgroundClip: "text",
+          color: "transparent",
+          lineHeight: 1.1,
+        }}
+      >
+        {label}
+      </span>
+    </span>
+  );
+}
+
 // Simple overtime log form - just date, start, end, and add button
 function OvertimeLogForm({ onSessionSaved = () => {}, userId = null }) {
   const [form, setForm] = useState({ date: "", start: "", end: "" });
@@ -579,7 +617,7 @@ export function ProfilePage({
   const router = useRouter(); // access query params
   const { user, dbUserId } = useUser(); // Keycloak session details + Supabase id for dev mode
   const { data: session } = useSession(); // NextAuth session for role checking
-  const { mode: themeMode, resolvedMode, isDark, toggleTheme } = useTheme();
+  const { mode: themeMode, resolvedMode, isDark, toggleTheme, accent, setAccent } = useTheme();
 
   // State for user's own profile data (non-admin users)
   const [userProfileData, setUserProfileData] = useState(null);
@@ -677,13 +715,7 @@ export function ProfilePage({
     };
   }, [reloadUserProfile, profileReloadKey]);
 
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      setProfileReloadKey((prev) => prev + 1);
-    }, 30000);
-
-    return () => clearInterval(intervalId);
-  }, []);
+  usePolling(() => setProfileReloadKey((prev) => prev + 1), 30000);
 
   // Choose data source based on whether viewing as admin or own profile
   const data = shouldUseHrData ? hrData : null;
@@ -719,6 +751,33 @@ export function ProfilePage({
     }
     return themeMode === "dark" ? "Dark mode" : "Light mode";
   }, [resolvedMode, themeMode]);
+
+  const accentOptions = useMemo(
+    () =>
+      Object.entries(ACCENT_PALETTES).map(([value, palette]) => ({
+        value,
+        label: <AccentOptionContent label={palette.label} light={palette.light} dark={palette.dark} />,
+      })),
+    []
+  );
+
+  const themeButtonStyle = useMemo(
+    () => ({
+      padding: "8px 16px",
+      borderRadius: "999px",
+      border: `1px solid ${isDark ? "var(--border)" : "var(--primary)"}`,
+      background: isDark ? "var(--surface-light)" : "var(--primary)",
+      color: isDark ? "var(--text-primary)" : "var(--text-inverse)",
+      fontWeight: 600,
+      fontSize: "0.82rem",
+      transition: "background 0.2s ease, color 0.2s ease",
+      height: "38px",
+      display: "inline-flex",
+      alignItems: "center",
+      lineHeight: 1,
+    }),
+    [isDark]
+  );
 
   const aggregatedStats = useMemo(() => {
     if (!profile) return null; // bail if profile missing
@@ -938,13 +997,13 @@ export function ProfilePage({
         display: "flex",
         flexDirection: "column",
         gap: "20px",
-        padding: isEmbedded ? "0" : "16px 14px 32px",
-        background: "var(--background)",
+        padding: isEmbedded ? "0" : "24px",
+        background: "transparent",
         color: "var(--text-primary)",
         minHeight: "100%",
       }}
     >
-      <div style={{ maxWidth: "1100px", margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: "18px" }}>
+      <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "18px" }}>
         <header style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           <div
             style={{
@@ -963,23 +1022,33 @@ export function ProfilePage({
                 Personal dashboard with employment details, attendance, overtime, and leave summary.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={toggleTheme}
-              style={{
-                padding: "8px 16px",
-                borderRadius: "999px",
-                border: `1px solid ${isDark ? "var(--border)" : "var(--primary)"}`,
-                background: isDark ? "var(--surface-light)" : "var(--primary)",
-                color: isDark ? "var(--text-primary)" : "var(--text-inverse)",
-                fontWeight: 600,
-                fontSize: "0.82rem",
-                transition: "background 0.2s ease, color 0.2s ease",
-              }}
-              aria-label="Cycle theme"
-            >
-              {themeLabel}
-            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+              <div style={{ minWidth: "195px", maxWidth: "240px", width: "100%" }}>
+                <DropdownField
+                  label="Accent colour"
+                  value={accent}
+                  onValueChange={setAccent}
+                  options={accentOptions}
+                  className="profile-accent-dropdown"
+                  controlStyle={{
+                    ...themeButtonStyle,
+                    width: "100%",
+                    justifyContent: "space-between",
+                    padding: "8px 12px",
+                  }}
+                  valueStyle={{ display: "inline-flex", alignItems: "center", minWidth: 0 }}
+                  optionStyle={{ padding: "10px 12px" }}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={toggleTheme}
+                style={themeButtonStyle}
+                aria-label="Cycle theme"
+              >
+                {themeLabel}
+              </button>
+            </div>
           </div>
           {isAdminPreview && profile && (
             <div
@@ -1433,7 +1502,7 @@ export function ProfilePage({
     </div>
   );
 
-  return isEmbedded ? content : <Layout contentBackground="var(--background)">{content}</Layout>;
+  return isEmbedded ? content : <Layout>{content}</Layout>;
 }
 
 export default function ProfilePageWrapper(props) {

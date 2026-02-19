@@ -47,8 +47,7 @@ export const getPartsOrders = async () => {
           part_number,
           part_name,
           quantity,
-          unit_price,
-          unit_cost
+          unit_price
         )
       `
     )

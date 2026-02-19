@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from "react"; // React hooks for state and effects
 import { useUser } from "@/context/UserContext"; // Get logged-in user
+import { usePolling } from "@/hooks/usePolling"; // visibility-gated polling
 import { 
   clockInToJob, 
   clockOutFromJob, 
@@ -26,18 +27,15 @@ export default function JobClockingCard() {
   const [searchTerm, setSearchTerm] = useState(""); // Search filter for jobs
   const [showAvailableJobs, setShowAvailableJobs] = useState(false); // Toggle available jobs view
 
-  // ✅ Fetch data on component mount and every 30 seconds
+  // ✅ Fetch data on component mount
   useEffect(() => {
     const workshopUserId = dbUserId ?? user?.id;
     if (!user || workshopUserId == null) return;
-    
     fetchData();
-    
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(fetchData, 30000);
-    
-    return () => clearInterval(interval); // Cleanup on unmount
   }, [user, dbUserId]);
+
+  // ✅ Auto-refresh every 30 seconds (visibility-gated)
+  usePolling(fetchData, 30000, !!(user && (dbUserId ?? user?.id) != null));
 
   // ✅ Fetch all required data
   const fetchData = async () => {

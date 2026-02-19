@@ -1,6 +1,7 @@
 // file location: src/components/companyAccounts/CompanyAccountForm.js // shared form for new/edit company accounts
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import PropTypes from "prop-types";
+import { fieldGroupStyles, inputStyles } from "@/styles/formStyles";
 
 const DEFAULT_VALUES = {
   account_number: "",
@@ -177,9 +178,8 @@ export default function CompanyAccountForm({
           disabled={computedDisabled}
           {...rest}
           style={{
+            ...inputStyles,
             padding: "10px 14px",
-            borderRadius: "10px",
-            border: "1px solid var(--surface-light)",
             background: computedDisabled ? "var(--surface-light)" : "white",
             ...customStyle,
           }}
@@ -191,15 +191,7 @@ export default function CompanyAccountForm({
   return (
     <form
       onSubmit={handleSubmit}
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "16px",
-        padding: "20px",
-        borderRadius: "16px",
-        border: "1px solid var(--surface-light)",
-        background: "var(--surface)",
-      }}
+      style={{ ...fieldGroupStyles, flexDirection: "column", flexWrap: "nowrap" }}
     >
       <label style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "0.9rem" }}>
         <span style={{ fontWeight: 600 }}>Bulk data entry</span>

@@ -153,6 +153,46 @@ body {
   scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
+/* Reusable themed scrollbar — apply via class or extend with comma selectors.
+   Provides the standard thumb, track, and hover styles for dropdowns, pickers, etc. */
+.themed-scrollbar,
+.dropdown-api__menu,
+.timepicker-api__options {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+.themed-scrollbar::-webkit-scrollbar,
+.dropdown-api__menu::-webkit-scrollbar,
+.timepicker-api__options::-webkit-scrollbar {
+  width: 8px;
+}
+
+.timepicker-api__options::-webkit-scrollbar {
+  width: 6px;
+}
+
+.themed-scrollbar::-webkit-scrollbar-track,
+.dropdown-api__menu::-webkit-scrollbar-track,
+.timepicker-api__options::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.themed-scrollbar::-webkit-scrollbar-thumb,
+.dropdown-api__menu::-webkit-scrollbar-thumb,
+.timepicker-api__options::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.themed-scrollbar::-webkit-scrollbar-thumb:hover,
+.dropdown-api__menu::-webkit-scrollbar-thumb:hover,
+.timepicker-api__options::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
 /* ========================================================= */
 /* === Custom Checkbox Styles === */
 /* ========================================================= */
@@ -1178,24 +1218,7 @@ body:has(.login-page-wrapper) {
   color: rgba(255, 255, 255, 0.7);
 }
 
-.dropdown-api__menu::-webkit-scrollbar {
-  width: 8px;
-}
-
-.dropdown-api__menu::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.dropdown-api__menu::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
-  border-radius: 999px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
-}
-
-.dropdown-api__menu::-webkit-scrollbar-thumb:hover {
-  background: var(--scrollbar-thumb-hover);
-}
+/* scrollbar styles consolidated into .themed-scrollbar block above */
 
 /* ========================================================= */
 /* === Multi-Select Dropdown API Styles === */
@@ -1938,24 +1961,7 @@ body:has(.login-page-wrapper) {
   background: rgba(var(--primary-rgb), 0.12);
 }
 
-.timepicker-api__options::-webkit-scrollbar {
-  width: 6px;
-}
-
-.timepicker-api__options::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.timepicker-api__options::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
-  border-radius: 999px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
-}
-
-.timepicker-api__options::-webkit-scrollbar-thumb:hover {
-  background: var(--scrollbar-thumb-hover);
-}
+/* scrollbar styles consolidated into .themed-scrollbar block above */
 
 /* ========================================================= */
 /* === Login Page Responsive Styles === */

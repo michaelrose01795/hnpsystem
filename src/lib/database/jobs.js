@@ -10,6 +10,7 @@ import {
   resolveSubStatusId,
 } from "@/lib/status/statusFlow";
 import { syncHealthCheckToCanonicalVhc } from "@/lib/vhc/saveVhcItem";
+import { cachedQuery, invalidateCache } from "@/lib/database/queryCache";
 import dayjs from "dayjs";
 
 const supabase = getDatabaseClient();
@@ -388,9 +389,12 @@ const syncWriteUpRectificationItems = async ({
    Gets all jobs along with linked vehicles, customers,
    technicians, appointments, VHC checks, parts, notes, write-ups, and files
 ============================================ */
-export const getAllJobs = async () => {
+export const getAllJobs = () =>
+  cachedQuery("jobs:all", _getAllJobsUncached);
+
+const _getAllJobsUncached = async () => {
   console.log("🔍 getAllJobs: Starting fetch..."); // Debug log
-  
+
   const { data, error } = await supabase
     .from("jobs")
     .select(`
@@ -841,6 +845,15 @@ export const getAuthorizedVhcItemsWithDetails = async (jobId) => {
    Retrieves complete job data by job number
 ============================================ */
 export const getJobByNumber = async (jobNumber, options = {}) => {
+  // Only cache standard (non-archive) lookups
+  if (!options?.archive) {
+    const cacheKey = `jobs:number:${jobNumber}`;
+    return cachedQuery(cacheKey, () => _getJobByNumberUncached(jobNumber, options));
+  }
+  return _getJobByNumberUncached(jobNumber, options);
+};
+
+const _getJobByNumberUncached = async (jobNumber, options = {}) => {
   if (typeof window !== "undefined") {
     try {
       const params = new URLSearchParams();
@@ -2157,7 +2170,10 @@ const formatJobData = (data) => {
     chassis: data.vehicle?.chassis || "",
     engineNumber: data.vehicle?.engine_number || "",
     engine: data.vehicle?.engine || "",
-    mileage: data.vehicle?.mileage || "",
+    mileage:
+      data.vehicle?.mileage === null || data.vehicle?.mileage === undefined
+        ? ""
+        : data.vehicle.mileage,
     fuelType: data.vehicle?.fuel_type || "",
     transmission: data.vehicle?.transmission || "",
     bodyStyle: data.vehicle?.body_style || "",
@@ -2494,12 +2510,13 @@ export const addJobToDatabase = async ({
 
     console.log("✅ Job successfully added:", jobWithNumber);
 
+    invalidateCache("jobs:");
     return { success: true, data: formatJobData(jobWithNumber) };
   } catch (error) {
     console.error("❌ Error adding job:", error);
-    return { 
-      success: false, 
-      error: { message: error.message || "Failed to create job" } 
+    return {
+      success: false,
+      error: { message: error.message || "Failed to create job" }
     };
   }
 };
@@ -2672,6 +2689,7 @@ export const updateJob = async (jobId, updates) => {
       }
     }
 
+    invalidateCache("jobs:");
     return { success: true, data: formatJobData(data) };
   } catch (error) {
     console.error("❌ Exception updating job:", error);
@@ -3173,6 +3191,7 @@ export const updateJobPosition = async (jobId, newPosition) => {
 
     if (error) throw error;
     console.log("✅ Job position updated:", data);
+    invalidateCache("jobs:");
     return data;
   } catch (err) {
     console.error("❌ Error in updateJobPosition:", err.message);
@@ -3763,6 +3782,7 @@ export const updateJobVhcCheck = async (jobNumber, checkData) => {
       data: checkData,
     });
 
+    invalidateCache("jobs:");
     return { success: true };
   } catch (error) {
     console.error("❌ updateJobVhcCheck error:", error);

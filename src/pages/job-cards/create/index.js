@@ -91,7 +91,7 @@ export default function CreateJobCardPage() {
     makeModel: "", // vehicle make and model combined
     chassis: "", // chassis/VIN number
     engine: "", // engine number
-    mileage: 0, // current mileage
+    mileage: "", // current mileage
   });
 
   const [customer, setCustomer] = useState(null); // selected customer object
@@ -326,7 +326,10 @@ export default function CreateJobCardPage() {
             makeModel: result.data.makeModel || "",
             chassis: result.data.vin || result.data.chassis || "",
             engine: result.data.engine || "",
-            mileage: result.data.mileage ?? 0,
+            mileage:
+              result.data.mileage === null || result.data.mileage === undefined
+                ? ""
+                : String(result.data.mileage),
           });
         }
 
@@ -444,7 +447,10 @@ export default function CreateJobCardPage() {
         colour: storedVehicle.colour || prev.colour,
         chassis: storedVehicle.chassis || storedVehicle.vin || prev.chassis,
         engine: storedVehicle.engine || storedVehicle.engine_number || prev.engine,
-        mileage: storedVehicle.mileage ? String(storedVehicle.mileage) : prev.mileage,
+        mileage:
+          storedVehicle.mileage === null || storedVehicle.mileage === undefined
+            ? prev.mileage
+            : String(storedVehicle.mileage),
       }));
 
       if (storedVehicle.mot_due) { // hydrate MOT date when available
@@ -995,7 +1001,10 @@ export default function CreateJobCardPage() {
             makeModel: latestVehicle.make_model || "",
             chassis: latestVehicle.vin || latestVehicle.chassis || "",
             engine: latestVehicle.engine_number || latestVehicle.engine || "",
-            mileage: latestVehicle.mileage ?? 0,
+            mileage:
+              latestVehicle.mileage === null || latestVehicle.mileage === undefined
+                ? ""
+                : String(latestVehicle.mileage),
           });
           setError("");
         }
@@ -1152,7 +1161,14 @@ export default function CreateJobCardPage() {
         vin: vehicle.chassis || null,
         engine: vehicle.engine || null,
         engine_number: vehicle.engine || null,
-        mileage: Number.isFinite(Number(vehicle.mileage)) ? parseInt(vehicle.mileage, 10) : 0,
+        mileage:
+          vehicle.mileage === "" ||
+          vehicle.mileage === null ||
+          vehicle.mileage === undefined
+            ? null
+            : Number.isFinite(Number(vehicle.mileage))
+            ? parseInt(vehicle.mileage, 10)
+            : null,
         customer_id: customer.id,
       };
 

@@ -349,6 +349,9 @@ export default function JobCardDetailPage() {
   const [customerSaving, setCustomerSaving] = useState(false);
   const [appointmentSaving, setAppointmentSaving] = useState(false);
   const [bookingFlowSaving, setBookingFlowSaving] = useState(false);
+  const [mileageSaving, setMileageSaving] = useState(false);
+  const [vehicleMileageInput, setVehicleMileageInput] = useState("");
+  const [vehicleMileageMessage, setVehicleMileageMessage] = useState("");
   const [bookingApprovalSaving, setBookingApprovalSaving] = useState(false);
   const [jobDocuments, setJobDocuments] = useState([]);
   const [creatingInvoice, setCreatingInvoice] = useState(false);
@@ -490,6 +493,11 @@ export default function JobCardDetailPage() {
     ? overallStatusId === JOB_STATUSES.BOOKED
     : typeof jobData?.status === "string" &&
       jobData.status.trim().toLowerCase() === "booked";
+  const isCheckedIn = Boolean(
+    (overallStatusId && overallStatusId === JOB_STATUSES.CHECKED_IN) ||
+      jobData?.checkedInAt ||
+      jobData?.appointment?.status === "checked_in"
+  );
 
   // Sync active tab from query parameter, default to customer-requests
   useEffect(() => {
@@ -912,6 +920,18 @@ export default function JobCardDetailPage() {
         return;
       }
 
+      setJobData((prev) =>
+        prev
+          ? {
+              ...prev,
+              checkedInAt: prev.checkedInAt || new Date().toISOString(),
+              appointment: prev.appointment
+                ? { ...prev.appointment, status: "checked_in" }
+                : prev.appointment,
+            }
+          : prev
+      );
+
       alert(
         `✅ Customer Checked In!\n\n` +
           `Job: ${jobData.jobNumber || jobData.id}\n` +
@@ -983,6 +1003,15 @@ export default function JobCardDetailPage() {
     }
     refreshCustomerVehicles(jobData.customerId);
   }, [jobData?.customerId, refreshCustomerVehicles]);
+
+  useEffect(() => {
+    const nextMileage =
+      jobData?.mileage === null || jobData?.mileage === undefined
+        ? ""
+        : String(jobData.mileage);
+    setVehicleMileageInput(nextMileage);
+    setVehicleMileageMessage("");
+  }, [jobData?.mileage, jobData?.vehicleId]);
 
   useEffect(() => {
     return () => {
@@ -1350,6 +1379,104 @@ export default function JobCardDetailPage() {
     },
     [canEdit, jobData, customerVehicles, fetchJobData, dbUserId, user]
   );
+
+  const handleMileageSave = useCallback(
+    async ({ vehicleId, mileage }) => {
+      if (!canEdit || !jobData?.id) return { success: false };
+
+      const normalizedVehicleId =
+        typeof vehicleId === "string" ? Number(vehicleId) : vehicleId;
+      const targetVehicleId = normalizedVehicleId || jobData.vehicleId || null;
+
+      if (!targetVehicleId) {
+        return {
+          success: false,
+          error: new Error("No vehicle selected for mileage update."),
+        };
+      }
+
+      setMileageSaving(true);
+
+      try {
+        const normalizedInput =
+          mileage === null || mileage === undefined
+            ? ""
+            : String(mileage).trim();
+
+        let normalizedMileage = null;
+        if (normalizedInput !== "") {
+          const parsedMileage = Number(normalizedInput);
+          if (!Number.isInteger(parsedMileage) || parsedMileage < 0) {
+            throw new Error("Mileage must be a whole number greater than or equal to 0.");
+          }
+          normalizedMileage = parsedMileage;
+        }
+
+        const { error: vehicleUpdateError } = await supabase
+          .from("vehicles")
+          .update({
+            mileage: normalizedMileage,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("vehicle_id", targetVehicleId);
+
+        if (vehicleUpdateError) {
+          throw vehicleUpdateError;
+        }
+
+        setJobData((prev) =>
+          prev ? { ...prev, mileage: normalizedMileage ?? "" } : prev
+        );
+
+        setCustomerVehicles((prev) =>
+          (Array.isArray(prev) ? prev : []).map((vehicle) =>
+            vehicle?.vehicle_id === targetVehicleId
+              ? { ...vehicle, mileage: normalizedMileage }
+              : vehicle
+          )
+        );
+
+        await fetchJobData({ silent: true, force: true });
+        return { success: true };
+      } catch (mileageError) {
+        console.error("❌ Failed to save mileage:", mileageError);
+        alert(mileageError?.message || "Failed to save mileage");
+        return { success: false, error: mileageError };
+      } finally {
+        setMileageSaving(false);
+      }
+    },
+    [canEdit, jobData?.id, jobData?.vehicleId, fetchJobData]
+  );
+
+  const handleVehicleMileageSubmit = useCallback(async () => {
+    if (!canEdit || mileageSaving) return;
+
+    const trimmed = vehicleMileageInput.trim();
+    if (trimmed !== "") {
+      const parsedMileage = Number(trimmed);
+      if (!Number.isInteger(parsedMileage) || parsedMileage < 0) {
+        setVehicleMileageMessage("Mileage must be a whole number 0 or above.");
+        return;
+      }
+    }
+
+    const result = await handleMileageSave({
+      vehicleId: jobData?.vehicleId || null,
+      mileage: trimmed,
+    });
+
+    if (result?.success) {
+      setVehicleMileageMessage("Mileage saved");
+      setTimeout(() => setVehicleMileageMessage(""), 3000);
+    }
+  }, [
+    canEdit,
+    mileageSaving,
+    vehicleMileageInput,
+    handleMileageSave,
+    jobData?.vehicleId,
+  ]);
 
   const handleBookingApproval = useCallback(
     async ({
@@ -1779,19 +1906,47 @@ export default function JobCardDetailPage() {
     jobData.completionStatus === "complete" ||
     jobData.writeUp?.completion_status === "complete";
   const vhcQualified = !jobData.vhcRequired || Boolean(jobData.vhcCompletedAt);
+  const mileageRecorded =
+    jobData.mileage !== null &&
+    jobData.mileage !== undefined &&
+    String(jobData.mileage).trim() !== "";
+  const savedMileageValue =
+    jobData.mileage === null || jobData.mileage === undefined
+      ? ""
+      : String(jobData.mileage).trim();
+  const pendingMileageValue = vehicleMileageInput.trim();
+  const pendingMileageNumber =
+    pendingMileageValue === "" ? null : Number(pendingMileageValue);
+  const vehicleMileageInputValid =
+    pendingMileageNumber === null ||
+    (Number.isInteger(pendingMileageNumber) && pendingMileageNumber >= 0);
+  const vehicleMileageDirty = pendingMileageValue !== savedMileageValue;
+  const vehicleMileageSaveDisabled =
+    !canEdit ||
+    mileageSaving ||
+    !vehicleMileageInputValid ||
+    !vehicleMileageDirty;
   const partsReady = arePartsPricedAndAssigned(jobData.partsAllocations);
   const partsAllocated = areAllPartsAllocated(jobData.partsAllocations);
   const statusReadyForInvoicing = isStatusReadyForInvoicing(
     jobData.status,
     overallStatusId
   );
-  const invoicePrerequisitesMet = writeUpComplete && vhcQualified && partsReady && partsAllocated;
+  const invoicePrerequisitesMet =
+    writeUpComplete &&
+    vhcQualified &&
+    mileageRecorded &&
+    partsReady &&
+    partsAllocated;
   const invoiceBlockingReasons = [];
   if (!writeUpComplete) {
     invoiceBlockingReasons.push("Complete and mark the write up as finished.");
   }
   if (!vhcQualified) {
     invoiceBlockingReasons.push("Complete the Vehicle Health Check or mark it as not required.");
+  }
+  if (!mileageRecorded) {
+    invoiceBlockingReasons.push("Enter current mileage in the Vehicle section.");
   }
   if (!partsAllocated) {
     invoiceBlockingReasons.push("Allocate every booked part to a request or additional request.");
@@ -2004,34 +2159,34 @@ export default function JobCardDetailPage() {
                 + Add Sub-Job
               </button>
             )}
-            {isBookedStatus && (
+            {(isBookedStatus || isCheckedIn) && (
               <button
                 onClick={handleCheckIn}
-                disabled={checkingIn || !canEdit}
+                disabled={checkingIn || !canEdit || isCheckedIn}
                 style={{
                   padding: "10px 20px",
-                  backgroundColor: "var(--success)",
-                  color: "var(--info-dark)",
+                  backgroundColor: isCheckedIn ? "var(--warning-surface)" : "var(--success)",
+                  color: isCheckedIn ? "var(--warning-dark)" : "var(--info-dark)",
                   border: "none",
                   borderRadius: "8px",
-                  cursor: checkingIn || !canEdit ? "not-allowed" : "pointer",
+                  cursor: checkingIn || !canEdit || isCheckedIn ? "not-allowed" : "pointer",
                   fontWeight: "600",
                   fontSize: "14px",
                   transition: "background-color 0.2s",
-                  opacity: checkingIn || !canEdit ? 0.7 : 1
+                  opacity: checkingIn || !canEdit || isCheckedIn ? 0.7 : 1
                 }}
                 onMouseEnter={(e) => {
-                  if (!checkingIn && canEdit) {
+                  if (!checkingIn && canEdit && !isCheckedIn) {
                     e.target.style.backgroundColor = "var(--success-dark)";
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (!checkingIn && canEdit) {
+                  if (!checkingIn && canEdit && !isCheckedIn) {
                     e.target.style.backgroundColor = "var(--success)";
                   }
                 }}
               >
-                {checkingIn ? "Checking In..." : "Check In"}
+                {checkingIn ? "Checking In..." : isCheckedIn ? "Checked in" : "Check In"}
               </button>
             )}
             {showCreateInvoiceButton && (
@@ -2194,22 +2349,113 @@ export default function JobCardDetailPage() {
             boxShadow: "none",
             border: "1px solid var(--surface-muted)"
           }}>
-            <div style={{ fontSize: "12px", color: "var(--grey-accent)", marginBottom: "4px" }}>VEHICLE</div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "8px",
+                marginBottom: "4px",
+              }}
+            >
+              <div style={{ fontSize: "12px", color: "var(--grey-accent)" }}>VEHICLE</div>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={7}
+                  value={vehicleMileageInput}
+                  onChange={(event) => {
+                    const digitsOnly = (event.target.value || "").replace(/\D/g, "").slice(0, 7);
+                    setVehicleMileageInput(digitsOnly);
+                    setVehicleMileageMessage("");
+                  }}
+                  disabled={!canEdit}
+                  placeholder="Current Mileage"
+                  className="vehicle-mileage-input"
+                  style={{
+                    width: "86px",
+                    padding: "6px 8px",
+                    borderRadius: "8px",
+                    border: "1px solid var(--surface-light)",
+                    backgroundColor: "var(--surface)",
+                    color: "var(--text-primary)",
+                    fontSize: "12px",
+                    lineHeight: 1.2,
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={handleVehicleMileageSubmit}
+                  disabled={vehicleMileageSaveDisabled}
+                  style={{
+                    padding: "6px 10px",
+                    borderRadius: "8px",
+                    border: "none",
+                    backgroundColor: vehicleMileageSaveDisabled ? "var(--surface-light)" : "var(--primary)",
+                    color: vehicleMileageSaveDisabled ? "var(--grey-accent)" : "var(--text-inverse)",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    cursor: vehicleMileageSaveDisabled ? "not-allowed" : "pointer",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {mileageSaving ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </div>
             <div style={{ fontSize: "20px", fontWeight: "700", color: "var(--primary)", marginBottom: "4px" }}>
               {jobData.reg || "N/A"}
             </div>
             <div style={{ fontSize: "14px", color: "var(--text-secondary)" }}>
               {jobData.makeModel || `${jobData.make} ${jobData.model}`}
             </div>
+            {vehicleMileageMessage ? (
+              <div
+                style={{
+                  marginTop: "6px",
+                  fontSize: "11px",
+                  color: vehicleMileageMessage.includes("saved")
+                    ? "var(--success)"
+                    : "var(--danger)",
+                  fontWeight: "600",
+                }}
+              >
+                {vehicleMileageMessage}
+              </div>
+            ) : null}
           </div>
 
-          <div style={{
-            padding: "16px 20px",
-            backgroundColor: "var(--surface)",
-            borderRadius: "12px",
-            boxShadow: "none",
-            border: "1px solid var(--surface-muted)"
-          }}>
+          <div
+            onClick={() => {
+              const fallbackNameParts = (jobData.customer || "")
+                .split(" ")
+                .map((part) => part.trim())
+                .filter(Boolean);
+              const fallbackFirst = fallbackNameParts[0] || "";
+              const fallbackLast = fallbackNameParts.slice(1).join(" ");
+              const slug =
+                createCustomerDisplaySlug(
+                  jobData.customerFirstName || fallbackFirst,
+                  jobData.customerLastName || fallbackLast
+                ) || null;
+              const target = slug || jobData.customerId || null;
+              if (target) {
+                router.push(`/customers/${target}`);
+              }
+            }}
+            style={{
+              padding: "16px 20px",
+              backgroundColor: "var(--surface)",
+              borderRadius: "12px",
+              boxShadow: "none",
+              border: "1px solid var(--surface-muted)",
+              cursor:
+                jobData.customerId || jobData.customerFirstName || jobData.customerLastName || jobData.customer
+                  ? "pointer"
+                  : "default",
+            }}
+          >
             <div style={{ fontSize: "12px", color: "var(--grey-accent)", marginBottom: "4px" }}>CUSTOMER</div>
             <div style={{ fontSize: "18px", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "4px" }}>
               {jobData.customer || "N/A"}
@@ -2413,6 +2659,49 @@ export default function JobCardDetailPage() {
           }
           .jobcard-tabs-scroll-container::-webkit-scrollbar-thumb:hover {
             background: var(--scrollbar-thumb-hover);
+          }
+          .vehicle-mileage-input::placeholder {
+            color: var(--grey-accent);
+            font-size: 10px;
+            font-weight: 500;
+          }
+          .vehicle-mileage-input::-webkit-outer-spin-button,
+          .vehicle-mileage-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+          }
+          .vehicle-mileage-input {
+            -moz-appearance: textfield;
+            appearance: textfield;
+          }
+          .edit-requests-hours-input::-webkit-outer-spin-button,
+          .edit-requests-hours-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+          }
+          .edit-requests-hours-input {
+            -moz-appearance: textfield;
+            appearance: textfield;
+          }
+          .edit-requests-payment-dropdown .dropdown-api__control {
+            min-height: 38px;
+            height: 38px;
+            border-radius: 8px;
+            border: 1px solid var(--surface-light);
+            background: var(--surface);
+            padding: 6px 10px;
+          }
+          .edit-requests-payment-dropdown .dropdown-api__value {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
+          }
+          .edit-requests-payment-dropdown .dropdown-api__menu {
+            border-radius: 8px;
+          }
+          .edit-requests-payment-dropdown.dropdown-api.is-open .dropdown-api__control,
+          .edit-requests-payment-dropdown .dropdown-api__control:focus-visible {
+            border-color: var(--primary);
           }
         `}</style>
 
@@ -2740,6 +3029,11 @@ function CustomerRequestsTab({
   const [requests, setRequests] = useState(buildEditRequests);
   const [editing, setEditing] = useState(false);
   const smallPrintStyle = { fontSize: "11px", color: "var(--info)" };
+  const indentedNoteStyle = {
+    ...smallPrintStyle,
+    marginLeft: "14px",
+    display: "block",
+  };
   const requestSubtitleStyle = {
     fontSize: "11px",
     color: "var(--grey-accent)",
@@ -2799,6 +3093,33 @@ function CustomerRequestsTab({
       .filter((row) => (row.requestSource || "customer_request") === "customer_request")
       .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
   }, [unifiedRequests]);
+
+  const linkedNotesByRequestIndex = useMemo(() => {
+    const sourceNotes = Array.isArray(notes) ? notes : [];
+    const map = new Map();
+
+    sourceNotes.forEach((note) => {
+      const noteText = (note?.noteText || "").toString().trim();
+      if (!noteText) return;
+
+      const indices = Array.isArray(note?.linkedRequestIndices)
+        ? note.linkedRequestIndices
+        : Number.isInteger(note?.linkedRequestIndex)
+        ? [note.linkedRequestIndex]
+        : [];
+
+      indices.forEach((value) => {
+        const index = Number(value);
+        if (!Number.isInteger(index) || index <= 0) return;
+        const existing = map.get(index) || [];
+        if (!existing.includes(noteText)) {
+          map.set(index, [...existing, noteText]);
+        }
+      });
+    });
+
+    return map;
+  }, [notes]);
 
   const partsByRequestId = useMemo(() => {
     const allocations = Array.isArray(jobData?.partsAllocations) ? jobData.partsAllocations : [];
@@ -3063,101 +3384,114 @@ function CustomerRequestsTab({
       {editing ? (
         <div>
           {requests.map((req, index) => (
-            <div key={index} style={{
-              padding: "14px",
-              backgroundColor: "var(--surface)",
-              borderLeft: "4px solid var(--primary)",
-              borderRadius: "6px",
-              marginBottom: "12px",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: "12px",
-              flexWrap: "wrap"
-            }}>
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px", minWidth: "260px" }}>
+            <div
+              key={index}
+              style={{
+                padding: "14px",
+                backgroundColor: "var(--surface)",
+                borderLeft: "4px solid var(--primary)",
+                borderRadius: "6px",
+                marginBottom: "12px",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                flexWrap: "nowrap",
+              }}
+            >
+              <div
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "6px",
+                  minWidth: "260px",
+                }}
+              >
                 <span style={requestSubtitleStyle}>Request {index + 1}</span>
-                <span style={smallPrintStyle}>Request Description</span>
-                  <input
-                    type="text"
-                    value={req.text}
-                    onChange={(e) => handleUpdateRequest(index, "text", e.target.value)}
-                    style={{
-                      width: "100%",
-                      padding: "6px 0",
-                      border: "none",
-                      borderBottom: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
-                      borderRadius: "0",
-                      fontSize: "14px",
-                      fontWeight: "500",
-                      color: "var(--text-secondary)",
-                      backgroundColor: "transparent"
-                    }}
-                  />
-
-              <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
-                <div style={{ width: "120px" }}>
-                  <label style={{ fontSize: "12px", color: "var(--grey-accent)", display: "block", marginBottom: "4px" }}>
-                    Est. Hours
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    value={req.time}
-                    onChange={(e) => handleUpdateRequest(index, "time", e.target.value)}
-                    style={{
-                      width: "100%",
-                      padding: "8px 12px",
-                      border: "1px solid var(--surface-light)",
-                      borderRadius: "6px",
-                      fontSize: "14px"
-                    }}
-                  />
-                </div>
-                <div style={{ width: "160px" }}>
-                  <label style={{ fontSize: "12px", color: "var(--grey-accent)", display: "block", marginBottom: "4px" }}>
-                    Payment Type
-                  </label>
-                  <select
-                    value={req.paymentType}
-                    onChange={(e) => handleUpdateRequest(index, "paymentType", e.target.value)}
-                    style={{
-                      width: "100%",
-                      padding: "8px 12px",
-                      border: "1px solid var(--surface-light)",
-                      borderRadius: "6px",
-                      fontSize: "14px",
-                      cursor: "pointer"
-                    }}
-                  >
-                    <option value="Customer">Customer</option>
-                    <option value="Warranty">Warranty</option>
-                    <option value="Sales Goodwill">Sales Goodwill</option>
-                    <option value="Service Goodwill">Service Goodwill</option>
-                    <option value="Internal">Internal</option>
-                    <option value="Insurance">Insurance</option>
-                    <option value="Lease Company">Lease Company</option>
-                    <option value="Staff">Staff</option>
-                  </select>
-                </div>
-                <button
-                  onClick={() => handleRemoveRequest(index)}
+                <input
+                  type="text"
+                  value={req.text}
+                  onChange={(e) => handleUpdateRequest(index, "text", e.target.value)}
                   style={{
-                    padding: "8px 12px",
-                    backgroundColor: "var(--danger)",
-                    color: "var(--text-inverse)",
+                    width: "100%",
+                    padding: "6px 0",
                     border: "none",
-                    borderRadius: "6px",
-                    cursor: "pointer",
-                    fontSize: "12px",
-                    fontWeight: "600",
+                    borderBottom: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
+                    borderRadius: "0",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    color: "var(--text-secondary)",
+                    backgroundColor: "transparent",
                   }}
-                >
-                  Remove
-                </button>
+                />
               </div>
-            </div>
+
+              <div style={{ width: "120px", flexShrink: 0 }}>
+                <label style={{ fontSize: "12px", color: "var(--grey-accent)", display: "block", marginBottom: "4px" }}>
+                  Est. Hours
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={req.time}
+                  onChange={(e) => handleUpdateRequest(index, "time", e.target.value)}
+                  className="edit-requests-hours-input"
+                  style={{
+                    width: "100%",
+                    height: "38px",
+                    padding: "8px 10px",
+                    border: "1px solid var(--surface-light)",
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                    backgroundColor: "var(--surface)",
+                    color: "var(--text-secondary)",
+                    appearance: "textfield",
+                    MozAppearance: "textfield",
+                  }}
+                />
+              </div>
+
+              <div style={{ width: "170px", flexShrink: 0 }}>
+                <label style={{ fontSize: "12px", color: "var(--grey-accent)", display: "block", marginBottom: "4px" }}>
+                  Payment Type
+                </label>
+                <DropdownField
+                  value={req.paymentType}
+                  onChange={(e) => handleUpdateRequest(index, "paymentType", e.target.value)}
+                  options={[
+                    { value: "Customer", label: "Customer" },
+                    { value: "Warranty", label: "Warranty" },
+                    { value: "Sales Goodwill", label: "Sales Goodwill" },
+                    { value: "Service Goodwill", label: "Service Goodwill" },
+                    { value: "Internal", label: "Internal" },
+                    { value: "Insurance", label: "Insurance" },
+                    { value: "Lease Company", label: "Lease Company" },
+                    { value: "Staff", label: "Staff" },
+                  ]}
+                  className="edit-requests-payment-dropdown"
+                />
+              </div>
+
+              <button
+                onClick={() => handleRemoveRequest(index)}
+                style={{
+                  marginLeft: "auto",
+                  height: "38px",
+                  minWidth: "86px",
+                  padding: "0 14px",
+                  backgroundColor: "var(--danger)",
+                  color: "var(--text-inverse)",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                  fontWeight: "600",
+                  alignSelf: "flex-end",
+                }}
+              >
+                Remove
+              </button>
             </div>
           ))}
           <button
@@ -3181,6 +3515,7 @@ function CustomerRequestsTab({
       {customerRequestRows && customerRequestRows.length > 0 ? (
             customerRequestRows.map((req, index) => {
               const linkedParts = req.requestId ? (partsByRequestId[String(req.requestId)] || []) : [];
+              const linkedNoteTexts = linkedNotesByRequestIndex.get(index + 1) || [];
               return (
               <div key={index} style={{
                 padding: "14px",
@@ -3209,13 +3544,18 @@ function CustomerRequestsTab({
                       }
                       if (noteText) {
                         return (
-                          <span style={smallPrintStyle}>
-                            Note: {noteText}
+                          <span style={indentedNoteStyle}>
+                            Note - {noteText}
                           </span>
                         );
                       }
                       return null;
                     })()}
+                    {linkedNoteTexts.map((linkedText, noteIndex) => (
+                      <div key={`linked-note-${index}-${noteIndex}`} style={indentedNoteStyle}>
+                        Note - {linkedText}
+                      </div>
+                    ))}
                   </div>
                   <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
                     <span style={{
@@ -4177,7 +4517,8 @@ function SchedulingTab({
         reg_number: jobData.reg,
         make_model: jobData.makeModel,
         make: jobData.make,
-        model: jobData.model
+        model: jobData.model,
+        mileage: jobData.mileage
       });
     }
 
@@ -4190,16 +4531,9 @@ function SchedulingTab({
     jobData.makeModel,
     jobData.make,
     jobData.model,
+    jobData.mileage,
     customerVehicles
   ]);
-
-  const selectedVehicle = useMemo(
-    () =>
-      vehicleOptions.find(
-        (vehicle) => vehicle.vehicle_id === selectedVehicleId
-      ) || null,
-    [vehicleOptions, selectedVehicleId]
-  );
 
   const descriptionLines = useMemo(() => {
     if (!bookingRequest?.description) return [];
@@ -4385,13 +4719,6 @@ function SchedulingTab({
     margin: "4px 0 0 0",
     color: "var(--text-secondary)",
     fontSize: "13px"
-  };
-  const fieldLabelStyle = {
-    fontSize: "12px",
-    fontWeight: "600",
-    color: "var(--grey-accent)",
-    display: "block",
-    marginBottom: "6px"
   };
   const inputStyle = {
     width: "100%",

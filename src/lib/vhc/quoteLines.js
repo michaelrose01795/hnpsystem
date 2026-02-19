@@ -2,22 +2,13 @@
 import { parseVhcBuilderPayload, summariseTechnicianVhc } from "@/lib/vhc/summary";
 import { normaliseDecisionStatus, resolveSeverityKey } from "@/lib/vhc/summaryStatus";
 import { buildStableDisplayId } from "@/lib/vhc/displayId";
+import { normaliseColour, resolveCategoryForItem, toNumber } from "@/lib/vhc/shared";
 
 const WORKFLOW_DISPLAY_STATUSES = new Set(["authorized", "declined", "completed", "pending", "n/a", ""]); // Workflow statuses that are not severity colours.
 
 const isWorkflowDisplayStatus = (value) => { // Identify workflow-only display_status values that must not be used as severity colour.
   const normalized = String(value ?? "").toLowerCase().trim();
   return WORKFLOW_DISPLAY_STATUSES.has(normalized);
-};
-
-const normaliseColour = (value) => {
-  if (!value) return null;
-  const lower = String(value).toLowerCase().trim();
-  if (lower === "red" || lower.includes("red")) return "red";
-  if (lower === "amber" || lower === "yellow" || lower === "orange" || lower.includes("amber")) return "amber";
-  if (lower === "green" || lower === "good" || lower === "pass" || lower.includes("green")) return "green";
-  if (lower === "grey" || lower === "gray" || lower === "neutral" || lower.includes("grey")) return "grey";
-  return "grey";
 };
 
 const normaliseLookupToken = (value) => String(value || "").toLowerCase().replace(/\s+/g, " ").trim(); // Create stable tokens for section/title matching.
@@ -29,22 +20,6 @@ const resolveDisplaySeverity = (displayStatus) => { // Only allow display_status
   const normalized = String(displayStatus || "").toLowerCase().trim();
   const candidate = normaliseColour(normalized);
   return candidate === "red" || candidate === "amber" || candidate === "green" ? candidate : null;
-};
-
-const resolveCategoryForItem = (sectionName) => {
-  const lower = String(sectionName || "").toLowerCase();
-  if (lower.includes("wheel") || lower.includes("tyre")) return { id: "wheels_tyres", label: "Wheels & Tyres" };
-  if (lower.includes("brake") || lower.includes("hub")) return { id: "brakes_hubs", label: "Brakes & Hubs" };
-  if (lower.includes("service") || lower.includes("bonnet") || lower.includes("oil")) return { id: "service_indicator", label: "Service Indicator & Under Bonnet" };
-  if (lower.includes("external")) return { id: "external_inspection", label: "External" };
-  if (lower.includes("internal") || lower.includes("electrics")) return { id: "internal_electrics", label: "Internal" };
-  if (lower.includes("underside")) return { id: "underside", label: "Underside" };
-  return { id: "other", label: sectionName || "Other" };
-};
-
-const toNumber = (value, fallback = 0) => {
-  const num = Number(value);
-  return Number.isFinite(num) ? num : fallback;
 };
 
 const buildRowIdLabel = (rowId) => {

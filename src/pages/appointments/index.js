@@ -5,6 +5,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react"; // Import React hooks
 import Layout from "@/components/Layout"; // Main layout wrapper
 import Popup from "@/components/popups/Popup"; // Reusable popup modal
+import { DropdownField } from "@/components/dropdownAPI";
 import { useRouter } from "next/router"; // For reading query params
 import { useUser } from "@/context/UserContext"; // Access current user for check-in attribution
 import { useNextAction } from "@/context/NextActionContext"; // Trigger follow-up actions after check-in
@@ -1328,27 +1329,30 @@ export default function Appointments() {
               onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
               onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
             />
-            <select
+            <DropdownField
               value={time}
               onChange={(e) => setTime(e.target.value)}
               disabled={isLoading}
+              placeholder="Select time"
               style={{
                 flex: 1,
-                padding: "10px 16px",
                 borderRadius: "8px",
                 border: "1px solid var(--surface-light)",
                 fontSize: "14px",
-                cursor: "pointer",
-                outline: "none",
+              }}
+              controlStyle={{
+                padding: "10px 16px",
+                minHeight: "42px",
+                cursor: isLoading ? "not-allowed" : "pointer",
+                boxShadow: "none",
               }}
             >
-              <option value="">Select time</option>
               {timeSlots.map((slot) => (
                 <option key={slot} value={slot}>
                   {slot}
                 </option>
               ))}
-            </select>
+            </DropdownField>
             <button
               onClick={() => handleAddAppointment(selectedDay.toISOString().split("T")[0])}
               disabled={isLoading}
@@ -1364,8 +1368,14 @@ export default function Appointments() {
                 fontSize: "14px",
                 transition: "background-color 0.2s",
               }}
-              onMouseEnter={(e) => !isLoading && (e.target.style.backgroundColor = "var(--danger)")}
-              onMouseLeave={(e) => !isLoading && (e.target.style.backgroundColor = "var(--primary)")}
+              onMouseEnter={(e) => {
+                if (isLoading) return;
+                const isDarkTheme = document?.documentElement?.getAttribute("data-theme") === "dark";
+                e.currentTarget.style.backgroundColor = isDarkTheme
+                  ? "var(--primary-dark)"
+                  : "var(--danger)";
+              }}
+              onMouseLeave={(e) => !isLoading && (e.currentTarget.style.backgroundColor = "var(--primary)")}
             >
               {isLoading ? "Booking..." : "Book Appointment"}
             </button>

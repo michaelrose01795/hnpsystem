@@ -3,32 +3,14 @@ import { supabase } from "@/lib/supabaseClient";
 import { summariseTechnicianVhc } from "@/lib/vhc/summary";
 import { upsertVhcIssueRow } from "@/lib/vhc/upsertVhcIssueRow";
 import { buildStableDisplayId } from "@/lib/vhc/displayId";
-
-const DEFAULT_LABOUR_RATE_GBP = 85;
-
-const collapseWhitespace = (value = "") => String(value || "").trim().replace(/\s+/g, " ");
-
-const toNumber = (value, fallback = 0) => {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
-};
-
-const normalizeSeverity = (value) => {
-  const text = collapseWhitespace(value).toLowerCase();
-  if (!text) return "amber";
-  if (text.includes("red")) return "red";
-  if (text.includes("amber") || text.includes("orange") || text.includes("yellow")) return "amber";
-  if (text.includes("green") || text.includes("good") || text.includes("pass")) return "green";
-  return "grey";
-};
-
-const normalizeApprovalStatus = (value) => {
-  const text = collapseWhitespace(value).toLowerCase();
-  if (!text) return "pending";
-  if (text === "authorised" || text === "approved") return "authorized";
-  if (["authorized", "declined", "completed", "pending"].includes(text)) return text;
-  return "pending";
-};
+import {
+  DEFAULT_LABOUR_RATE_GBP,
+  collapseWhitespace,
+  toNumber,
+  normalizeSeverity,
+  normalizeApprovalStatus,
+  resolveSectionType,
+} from "@/lib/vhc/shared";
 
 const resolveJobId = async (jobNumber) => {
   const { data: jobRow, error } = await supabase
@@ -58,16 +40,6 @@ export const buildVhcDedupeKey = ({ severity, section, category, details, issue_
   ].join("|");
 };
 
-const resolveSectionType = (sectionName) => {
-  const token = collapseWhitespace(sectionName).toLowerCase();
-  if (token.includes("wheel") || token.includes("tyre")) return "wheels";
-  if (token.includes("brake") || token.includes("hub")) return "brakes";
-  if (token.includes("service") || token.includes("bonnet") || token.includes("oil")) return "service";
-  if (token.includes("external")) return "external";
-  if (token.includes("internal")) return "internal";
-  if (token.includes("underside")) return "underside";
-  return "other";
-};
 
 const resolveSubAreaForSummaryItem = ({ sectionName, heading, wheelKey }) => {
   if (wheelKey) return String(wheelKey);

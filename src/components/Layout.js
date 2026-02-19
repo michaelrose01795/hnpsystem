@@ -6,6 +6,7 @@
 //       - All page sections optimized for vertical phone mode
 // ✅ Imports converted to use absolute alias "@/"
 import React, { useCallback, useEffect, useRef, useState } from "react"; // import React hooks
+import { usePolling } from "@/hooks/usePolling"; // visibility-gated polling
 import Link from "next/link"; // import Next.js link component
 import { useRouter } from "next/router"; // import router for navigation
 import { useUser } from "@/context/UserContext"; // import user context
@@ -260,13 +261,28 @@ export default function Layout({
     };
 
     maybeRefreshQuote();
-    const timerId = window.setInterval(maybeRefreshQuote, 30 * 1000);
 
     return () => {
       cancelled = true;
-      window.clearInterval(timerId);
     };
   }, [userIdForQuote]);
+
+  usePolling(
+    () => {
+      const nextSlotKey = getWelcomeQuoteSlotKey(new Date());
+      if (welcomeQuoteSlotKeyRef.current !== nextSlotKey) {
+        fetch(`/api/welcome-quote?userId=${encodeURIComponent(String(userIdForQuote))}`)
+          .then((r) => r.ok ? r.json() : null)
+          .then((payload) => {
+            if (payload?.quote?.trim()) setWelcomeQuote(payload.quote);
+            if (payload?.slotKey) welcomeQuoteSlotKeyRef.current = payload.slotKey;
+          })
+          .catch(() => {});
+      }
+    },
+    30000,
+    !!userIdForQuote
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;

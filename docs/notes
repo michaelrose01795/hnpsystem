@@ -8,7 +8,7 @@ what are all of the database tables used within the vhc tab section. can we use 
 so i have archiving for job numbers, this is everything links to a job is archived and saved as read only intead of full functions. 
 
 
-
+CHECK LAST CHANGES FIRST
 create a flow for create a job card, start from the /create page and then based on the code used create a story line with "bla bla bla > bla bla bla" like actions to show next page / feaute/ tap/ section. use a code to show which sections are linked to what eg showing the same infomation where else that feaute is used etc. add the databazse table used and if the table can be made better save the data add the database table name and columns withn the story line. have the story line more like bullet points created in a new folder under docs which will be named Jobcard Flow. 
 
 
@@ -16,6 +16,8 @@ create a flow for create a job card, start from the /create page and then based 
 
 
 
+
+add a colour prefence, add 7 colours like Grey blue green yellow pink orange purple to add a custopmers preference on the accent colours, have it so the 7 colours work well in light and dark mode, if needed add 14 colours 7 for light mode in Grey blue green yellow pink orange purple and 7 for dark mode in Grey blue green yellow pink orange purple. have it so this is a drop down named accent colour within the /profile page to the left of the "System (dark)" have it so the drop down follows the dropdown style api, give a small circle colour preview, have it so it shows the left side of the text as the lgiht mode colour and the right side as the dark mode colour. make sure the drop down uses the dropdown style api however override the dropdown style api so the dropdown button matches the light/dark/system button style. 
 
 
 

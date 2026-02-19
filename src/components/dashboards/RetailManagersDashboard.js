@@ -4,53 +4,13 @@ import dayjs from "dayjs";
 import { roleCategories } from "@/config/users";
 import { useRoster } from "@/context/RosterContext";
 import { supabase } from "@/lib/supabaseClient";
+import { SectionCard, MetricPill } from "@/components/dashboards/DashboardPrimitives";
 // ⚠️ Mock data found — replacing with Supabase query
 // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
 
 const retailManagerRoles = (roleCategories?.Retail || [])
   .filter((roleName) => typeof roleName === "string")
   .filter((roleName) => /manager|director/i.test(roleName));
-
-const SectionCard = ({ title, subtitle, children }) => (
-  <section
-    style={{
-      background: "var(--surface)",
-      borderRadius: "18px",
-      padding: "20px",
-      border: "1px solid var(--surface-light)",
-      boxShadow: "none",
-      display: "flex",
-      flexDirection: "column",
-      gap: "14px",
-    }}
-  >
-    <div>
-      <h2 style={{ margin: 0, fontSize: "1.1rem", color: "var(--primary-dark)" }}>{title}</h2>
-      {subtitle && (
-        <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "0.9rem" }}>{subtitle}</p>
-      )}
-    </div>
-    {children}
-  </section>
-);
-
-const MetricPill = ({ label, value, accent = "var(--primary-dark)", helper }) => (
-  <div
-    style={{
-      borderRadius: "14px",
-      padding: "14px 16px",
-      border: `1px solid ${accent}33`,
-      background: `${accent}0f`,
-      display: "flex",
-      flexDirection: "column",
-      gap: "6px",
-    }}
-  >
-    <span style={{ color: "var(--info)", fontSize: "0.8rem", letterSpacing: "0.05em" }}>{label}</span>
-    <strong style={{ fontSize: "1.4rem", color: accent }}>{value}</strong>
-    {helper && <span style={{ color: "var(--info)", fontSize: "0.85rem" }}>{helper}</span>}
-  </div>
-);
 
 const LinearTrend = ({ data, accent = "var(--primary)" }) => (
   <div style={{ display: "flex", gap: "8px", alignItems: "flex-end", width: "100%" }}>

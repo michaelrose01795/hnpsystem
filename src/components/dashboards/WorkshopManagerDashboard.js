@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { getWorkshopDashboardData } from "@/lib/database/dashboard/workshop";
 import { listConsumablesForTracker } from "@/lib/database/consumables";
 import ModalPortal from "@/components/popups/ModalPortal";
+import { SectionCard, formatCurrency } from "@/components/dashboards/DashboardPrimitives";
 
 dayjs.extend(relativeTime);
 
@@ -22,10 +23,6 @@ const defaultDashboardData = {
 const monthKey = (value) => (value ? dayjs(value).format("YYYY-MM") : "");
 const monthLabel = (key) => dayjs(`${key}-01`).format("MMMM YYYY");
 const formatTime = (value) => (value ? dayjs(value).format("HH:mm") : "—");
-const formatCurrency = (value) =>
-  typeof value === "number" && Number.isFinite(value)
-    ? `£${value.toFixed(2)}`
-    : "£0.00";
 const formatTechnicianName = (tech) =>
   `${tech?.first_name || ""} ${tech?.last_name || ""}`.trim() || "Technician";
 
@@ -414,26 +411,7 @@ export default function WorkshopManagerDashboard() {
           gap: "18px",
         }}
       >
-        <article
-          style={{
-            background: "var(--surface)",
-            borderRadius: "18px",
-            padding: "20px",
-            border: "1px solid var(--surface-light)",
-            boxShadow: "none",
-            display: "flex",
-            flexDirection: "column",
-            gap: "14px",
-          }}
-        >
-          <div>
-            <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-dark)" }}>
-              Technician Focus
-            </h2>
-            <p style={{ margin: "4px 0 0", color: "var(--info)" }}>
-              Live assignments pulled from job clocking
-            </p>
-          </div>
+        <SectionCard title="Technician Focus" subtitle="Live assignments pulled from job clocking">
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {clockingLoading ? (
               <p style={{ color: "var(--info)" }}>Loading technician activity…</p>
@@ -467,28 +445,9 @@ export default function WorkshopManagerDashboard() {
               ))
             )}
           </div>
-        </article>
+        </SectionCard>
 
-        <article
-          style={{
-            background: "var(--surface)",
-            borderRadius: "18px",
-            padding: "20px",
-            border: "1px solid var(--surface-light)",
-            boxShadow: "none",
-            display: "flex",
-            flexDirection: "column",
-            gap: "12px",
-          }}
-        >
-          <div>
-            <h2 style={{ margin: 0, fontSize: "1.1rem", color: "var(--primary-dark)" }}>
-              Bay Readiness
-            </h2>
-            <p style={{ margin: "4px 0 0", color: "var(--info)" }}>
-              Outstanding jobs that need attention
-            </p>
-          </div>
+        <SectionCard title="Bay Readiness" subtitle="Outstanding jobs that need attention" style={{ gap: "12px" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {dashboardLoading ? (
               <p style={{ color: "var(--info)" }}>Loading bay readiness…</p>
@@ -515,7 +474,7 @@ export default function WorkshopManagerDashboard() {
               ))
             )}
           </div>
-        </article>
+        </SectionCard>
       </section>
 
       <section style={{ marginBottom: "32px" }}>

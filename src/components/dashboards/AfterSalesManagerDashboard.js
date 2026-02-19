@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import dayjs from "dayjs";
 import { supabase } from "@/lib/supabaseClient";
+import { SectionCard, formatCurrencyRounded as formatCurrency } from "@/components/dashboards/DashboardPrimitives";
 
 const revenueStreams = [
   { label: "Service Retail", actual: 28600, target: 26000 },
@@ -46,9 +47,6 @@ const regionalSnapshot = [
   { site: "H&P City", doc: "Throughput", value: 128, trend: "-3 jobs" },
   { site: "H&P Coast", doc: "CSI", value: 92, trend: "+4 pts" },
 ];
-
-const formatCurrency = (value) =>
-  new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 }).format(value);
 
 const quickActions = [
   { label: "Create Job Card", href: "/job-cards/create" },
@@ -293,18 +291,7 @@ export default function AfterSalesManagerDashboard() {
           gap: "18px",
         }}
       >
-        <article
-          style={{
-            background: "var(--surface)",
-            borderRadius: "18px",
-            padding: "20px",
-            border: "1px solid var(--warning)",
-            boxShadow: "none",
-            display: "flex",
-            flexDirection: "column",
-            gap: "16px",
-          }}
-        >
+        <SectionCard borderColor="var(--warning)" style={{ gap: "16px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
             <div>
               <h2 style={{ margin: 0, color: "var(--warning-dark)", fontSize: "1.2rem" }}>Revenue Streams</h2>
@@ -346,20 +333,9 @@ export default function AfterSalesManagerDashboard() {
               );
             })}
           </div>
-        </article>
+        </SectionCard>
 
-        <article
-          style={{
-            background: "var(--surface)",
-            borderRadius: "18px",
-            padding: "20px",
-            border: "1px solid var(--warning)",
-            boxShadow: "none",
-            display: "flex",
-            flexDirection: "column",
-            gap: "16px",
-          }}
-        >
+        <SectionCard borderColor="var(--warning)" style={{ gap: "16px" }}>
           <div>
             <h2 style={{ margin: 0, color: "var(--warning-dark)", fontSize: "1.2rem" }}>Regional Pulse</h2>
             <p style={{ margin: "4px 0 0", color: "var(--warning)" }}>Sites benchmarked vs strategic KPIs</p>
@@ -390,7 +366,7 @@ export default function AfterSalesManagerDashboard() {
               </div>
             ))}
           </div>
-        </article>
+        </SectionCard>
       </section>
 
       <section
@@ -400,18 +376,7 @@ export default function AfterSalesManagerDashboard() {
           gap: "18px",
         }}
       >
-        <article
-          style={{
-            background: "var(--surface)",
-            borderRadius: "18px",
-            padding: "20px",
-            border: "1px solid var(--warning)",
-            boxShadow: "none",
-            display: "flex",
-            flexDirection: "column",
-            gap: "12px",
-          }}
-        >
+        <SectionCard borderColor="var(--warning)" style={{ gap: "12px" }}>
           <div>
             <h2 style={{ margin: 0, color: "var(--warning-dark)", fontSize: "1.2rem" }}>Strategic Risks</h2>
             <p style={{ margin: "4px 0 0", color: "var(--warning)" }}>Escalations that impact daily GP and CSI</p>
@@ -445,20 +410,9 @@ export default function AfterSalesManagerDashboard() {
               </p>
             </div>
           ))}
-        </article>
+        </SectionCard>
 
-        <article
-          style={{
-            background: "var(--surface)",
-            borderRadius: "18px",
-            padding: "20px",
-            border: "1px solid var(--warning)",
-            boxShadow: "none",
-            display: "flex",
-            flexDirection: "column",
-            gap: "14px",
-          }}
-        >
+        <SectionCard borderColor="var(--warning)">
           <div>
             <h2 style={{ margin: 0, color: "var(--warning-dark)", fontSize: "1.2rem" }}>Loyalty Engine</h2>
             <p style={{ margin: "4px 0 0", color: "var(--warning)" }}>Subscription and retention guardrails</p>
@@ -497,7 +451,7 @@ export default function AfterSalesManagerDashboard() {
           >
             Action: Launch EV loyalty bundle pilot before 4pm sign-off.
           </div>
-        </article>
+        </SectionCard>
       </section>
     </div>
   );

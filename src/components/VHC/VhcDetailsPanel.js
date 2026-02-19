@@ -444,8 +444,8 @@ const QUOTE_LABOUR_RATE = 85;
 const LABOUR_COST_DEFAULT_GBP = 150;
 const LABOUR_VAT_RATE = 0.2;
 const SEVERITY_META = {
-  red: { title: "Red Repairs", description: "", accent: "var(--danger)" },
-  amber: { title: "Amber Repairs", description: "", accent: "var(--warning)" },
+  red: { title: "Red Repairs", description: "", accent: "var(--danger-dark)" },
+  amber: { title: "Amber Repairs", description: "", accent: "var(--warning-dark)" },
 };
 
 const COLOUR_CLASS = {
@@ -456,12 +456,12 @@ const COLOUR_CLASS = {
 };
 
 const SEVERITY_THEME = {
-  red: { background: "var(--danger-surface)", border: "var(--danger-surface)", text: "var(--danger)", hover: "#ffd4d4" },
-  amber: { background: "var(--warning-surface)", border: "var(--warning-surface)", text: "var(--danger-dark)", hover: "#ffe6cc" },
+  red: { background: "var(--danger-surface)", border: "var(--danger-surface)", text: "var(--danger-dark)", hover: "#ffd4d4" },
+  amber: { background: "var(--warning-surface)", border: "var(--warning-surface)", text: "var(--warning-dark)", hover: "#ffe6cc" },
   green: { background: "var(--success-surface)", border: "var(--success)", text: "var(--info-dark)", hover: "var(--success-surface)" },
   grey: { background: "var(--info-surface)", border: "var(--accent-purple-surface)", text: "var(--info-dark)", hover: "var(--accent-purple-surface)" },
   authorized: { background: "var(--success-surface)", border: "var(--success)", text: "var(--success)", hover: "var(--success-surface)" },
-  declined: { background: "var(--danger-surface)", border: "var(--danger)", text: "var(--danger)", hover: "#ffd4d4" },
+  declined: { background: "var(--danger-surface)", border: "var(--danger)", text: "var(--danger-dark)", hover: "#ffd4d4" },
 };
 
 // Tyre wear calculation: 8mm = 0% worn (new), 0mm = 100% worn

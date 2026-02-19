@@ -10,8 +10,16 @@ import themeConfig, {
 } from "@/styles/appTheme";
 import { DropdownField } from "@/components/dropdownAPI";
 import IssueAutocomplete from "@/components/vhc/IssueAutocomplete";
-
-const palette = themeConfig.palette;
+import {
+  palette,
+  STATUS_OPTIONS,
+  fieldLabelStyle,
+  inputStyle,
+  statusSelectStyle,
+  lockedRowOverlayStyle,
+  lockedRowBadgeStyle,
+} from "@/components/VHC/vhcModalStyles";
+import { useConcernLock } from "@/components/VHC/useConcernLock";
 
 const CATEGORY_ORDER = [
   "Interior Lights",
@@ -33,129 +41,9 @@ const INTERNAL_SECTION_KEYS = {
 
 const isMiscCategory = (category = "") => category === "Miscellaneous";
 
-const STATUS_OPTIONS = ["Red", "Amber", "Green"];
-
-const fieldLabelStyle = {
-  fontSize: "12px",
-  fontWeight: 600,
-  color: palette.textMuted,
-  letterSpacing: "0.3px",
-};
-
-const inputStyle = {
-  width: "100%",
-  padding: "10px 12px",
-  borderRadius: "12px",
-  border: `1px solid ${palette.border}`,
-  backgroundColor: palette.surface,
-  fontSize: "14px",
-  color: palette.textPrimary,
-  outline: "none",
-  boxShadow: "none",
-};
-
-const statusSelectStyle = {
-  ...inputStyle,
-  width: "auto",
-};
 
 export default function InternalElectricsDetailsModal({ isOpen, onClose, onComplete, initialData, locked = false, summaryItems = [], inlineMode = false }) {
-  // Find matching summary item for a concern to get its approval status from the database
-  const findSummaryItemForConcern = (category, concern) => {
-    if (!concern || !category || !Array.isArray(summaryItems)) return null;
-    const concernText = (concern.issue || concern.text || "").toLowerCase().trim();
-    if (!concernText) return null;
-
-    return summaryItems.find((item) => {
-      // Match section name (Internal for this modal)
-      if (item.sectionName !== "Internal") return false;
-      // Match category (label in summary)
-      if (item.label !== category) return false;
-      // Match concern text
-      const itemConcerns = item.concerns || [];
-      return itemConcerns.some((c) => {
-        const cText = (c.text || c.issue || "").toLowerCase().trim();
-        return cText === concernText;
-      });
-    });
-  };
-
-  const isConcernLocked = (concern, category) => {
-    if (!concern || typeof concern !== "object") return false;
-    if (concern.locked === true) return true;
-    if (concern.authorised === true || concern.authorized === true) return true;
-    if (concern.declined === true) return true;
-    const decision =
-      concern.approvalStatus ||
-      concern.decisionStatus ||
-      concern.decisionKey ||
-      concern.statusDecision ||
-      "";
-    const normalized = String(decision).toLowerCase();
-    if (["authorized", "authorised", "declined", "completed"].includes(normalized)) return true;
-
-    // Check summary items for authorization status from database
-    const summaryItem = findSummaryItemForConcern(category, concern);
-    if (summaryItem) {
-      const approvalStatus = (summaryItem.approvalStatus || "").toLowerCase();
-      if (["authorized", "authorised", "declined", "completed"].includes(approvalStatus)) {
-        return true;
-      }
-    }
-    return false;
-  };
-
-  const getLockReason = (concern, category) => {
-    if (!concern || typeof concern !== "object") return null;
-    if (concern.declined === true) return "declined";
-    if (concern.authorised === true || concern.authorized === true) return "authorised";
-    const decision =
-      concern.approvalStatus ||
-      concern.decisionStatus ||
-      concern.decisionKey ||
-      concern.statusDecision ||
-      "";
-    const normalized = String(decision).toLowerCase();
-    if (normalized === "declined") return "declined";
-    if (["authorized", "authorised", "completed"].includes(normalized)) return "authorised";
-    if (concern.locked === true) return "authorised";
-
-    // Check summary items for authorization status from database
-    const summaryItem = findSummaryItemForConcern(category, concern);
-    if (summaryItem) {
-      const approvalStatus = (summaryItem.approvalStatus || "").toLowerCase();
-      if (approvalStatus === "declined") return "declined";
-      if (["authorized", "authorised", "completed"].includes(approvalStatus)) return "authorised";
-    }
-    return null;
-  };
-
-  const lockedRowOverlayStyle = {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(255, 255, 255, 0.75)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: "16px",
-    zIndex: 10,
-    pointerEvents: "none",
-  };
-
-  const lockedRowBadgeStyle = (isDeclined) => ({
-    padding: "8px 16px",
-    borderRadius: "8px",
-    fontSize: "13px",
-    fontWeight: 600,
-    backgroundColor: isDeclined ? "var(--danger-surface)" : "var(--success-surface)",
-    color: isDeclined ? "var(--danger)" : "var(--success)",
-    border: `1px solid ${isDeclined ? "var(--danger)" : "var(--success)"}`,
-    textTransform: "uppercase",
-    letterSpacing: "0.5px",
-  });
+  const { isConcernLocked, getLockReason } = useConcernLock(summaryItems, "Internal");
   const contentWrapperStyle = {
     ...vhcModalContentStyles.contentWrapper,
     gap: "24px",

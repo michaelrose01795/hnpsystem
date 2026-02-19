@@ -32,12 +32,12 @@ export const SeverityBadge = ({ severity, label, style = {} }) => {
     const severityColors = {
       red: {
         background: "var(--danger-surface)",
-        color: "var(--danger)",
+        color: "var(--danger-dark)",
         border: "1px solid var(--danger)",
       },
       amber: {
         background: "var(--warning-surface)",
-        color: "var(--warning)",
+        color: "var(--warning-dark)",
         border: "1px solid var(--warning)",
       },
       green: {
@@ -52,7 +52,7 @@ export const SeverityBadge = ({ severity, label, style = {} }) => {
       },
       declined: {
         background: "var(--danger-surface)",
-        color: "var(--danger)",
+        color: "var(--danger-dark)",
         border: "1px solid var(--danger)",
       },
     };

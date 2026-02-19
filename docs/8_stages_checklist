@@ -1,0 +1,295 @@
+Stage 1: Shared VHC Utilities
+These functions handle severity colours, approval statuses, and quote calculations. Test that VHC data saves and displays correctly.
+
+Test 1.1 — Create a VHC item with severity
+
+Open a job card with VHC enabled
+Go into any VHC section (e.g. External, Underside)
+Add a concern with status Red, save
+Add a concern with status Amber, save
+Add a concern with status Green, save
+Check the vhc_issues table — verify severity column shows red, amber, green (lowercase)
+Test 1.2 — Quote line calculations
+
+Open a VHC that has authorised items with prices
+Check the quote/summary panel — verify totals calculate correctly
+Check vhc_issues table — verify labour_cost, parts_cost columns have correct numbers
+Verify the default labour rate of £85 is applied where no custom rate is set
+Test 1.3 — Approval status normalisation
+
+If you have items that have been authorised or declined, open them
+Verify the status badges show "Authorised" or "Declined" correctly
+Check vhc_issues table — verify approval_status column values are one of: authorized, declined, completed, pending
+
+
+
+
+Stage 2: Double-Fetch & MutationObserver Fix
+This is the most crash-critical change. The redundant getAllJobs() call was removed and the DOM-scanning MutationObserver was replaced.
+
+Test 2.1 — Jobs load on login (single fetch)
+
+Open browser DevTools → Network tab
+Log in to the app
+Filter network requests by "jobs" or your Supabase URL
+Verify only ONE jobs query fires, not two
+Verify the jobs dashboard/list populates correctly
+Test 2.2 — Scrollbar behaviour
+
+Navigate to any page with scrollable content (e.g. a long job list)
+Scroll up and down — scrollbars should appear while scrolling
+Stop scrolling — scrollbars should fade/hide after ~3 seconds
+Hover over a scrollable area — scrollbar should appear
+Test this on multiple pages (job cards, VHC panels, dropdowns)
+Test 2.3 — Page navigation performance
+
+Navigate between several pages rapidly (dashboard → job cards → appointments → profile)
+Verify no lag, freezing, or white screens
+Check DevTools Console — no errors related to scroll listeners
+
+
+
+
+Stage 3: Visibility-Gated Polling
+Polling now pauses when the browser tab is hidden. This affects Layout (quote refresh), JobClockingCard, PartsTab, and Profile.
+
+Test 3.1 — Polling pauses when tab hidden
+
+Open a job card page
+Open DevTools → Network tab
+Watch for periodic Supabase requests (every ~30s)
+Switch to a different browser tab, wait 2+ minutes
+Verify NO network requests fire while tab is hidden
+Switch back to the app tab
+Verify a request fires immediately on return
+Test 3.2 — Job clocking card updates
+
+Open a page with the JobClockingCard visible
+Have another user (or another tab) clock in/out on a job
+Wait up to 30 seconds — the clocking card should update
+Check job_clocking table — verify clock_in, clock_out timestamps
+Test 3.3 — Parts on order refresh
+
+Open a job card with the Parts tab
+Add a part with status "On Order"
+Check parts_job_items table — verify the row exists with correct status
+The parts list should refresh automatically every 30 seconds
+Test 3.4 — Profile page refresh
+
+Go to /profile
+Verify profile data loads
+Leave the tab open — it should refresh periodically
+No errors in console
+
+
+
+
+Stage 4: VHC Modal Deduplication
+Styles and lock logic were extracted from 3 modals. Every concern add/edit/delete/lock must still work.
+
+Test 4.1 — External Details Modal
+
+Open External VHC section
+Click a category (e.g. "Bodywork")
+Add a concern — type an issue, select Red status, click "Add Concern"
+Verify it appears in the list
+Change the concern's status to Amber — verify it updates
+Edit the issue text — verify it saves
+Click "Remove" — verify it disappears
+Click "Save & Complete"
+Check vhc_issues table — verify rows match what you entered
+Test 4.2 — Underside Details Modal
+
+Repeat all steps from 4.1 but in the Underside section
+Test categories: "Exhaust system/catalyst", "Steering", "Miscellaneous"
+For Miscellaneous — verify you get a plain text input (not autocomplete)
+For non-Miscellaneous — verify you get autocomplete suggestions
+Test 4.3 — Internal Electrics Details Modal
+
+Repeat all steps from 4.1 but in the Internal section
+Test categories: "Interior Lights", "Media Systems", "Warning Lamps"
+Test 4.4 — Locked/Authorised rows
+
+Find a VHC that has authorised or declined items (check vhc_issues table for rows where approval_status = authorized or declined)
+Open that VHC section modal
+Verify locked rows show "Row Authorised" or "Row Declined" badges
+Verify you CANNOT edit the issue text on locked rows
+Verify you CANNOT change the status on locked rows
+Verify you CANNOT remove locked rows
+Verify unlocked rows still work normally
+Test 4.5 — Brakes/Wheels modals (NOT changed — regression check)
+
+Open BrakesHubs VHC section — verify severity escalation still works
+Open WheelsTyres VHC section — verify tread depth inputs work
+These were NOT modified, but check they still function
+
+
+
+
+Stage 5: Query Deduplication Cache
+getAllJobs and getJobByNumber are now cached for 5 seconds. Mutations invalidate the cache.
+
+Test 5.1 — Cached reads
+
+Open DevTools → Network tab
+Navigate to the jobs dashboard
+Quickly navigate away and back within 5 seconds
+Verify only ONE Supabase jobs query fires, not two
+Wait 6+ seconds, navigate again — a new query should fire
+Test 5.2 — Cache invalidation on job creation
+
+Create a new job card
+Check jobs table — verify the new row exists with correct job_number, description, status
+Navigate to the jobs list — the new job should appear immediately (cache was invalidated)
+Test 5.3 — Cache invalidation on job update
+
+Open an existing job card
+Change the status (e.g. "Open" → "Assigned")
+Check jobs table — verify status column updated
+Check job_status_history table — verify a history row was inserted with from_status and to_status
+Navigate to jobs list — the updated status should show immediately
+Test 5.4 — Cache invalidation on technician assignment
+
+Assign a technician to a job
+Check jobs table — verify assigned_to column has the technician's user ID
+The jobs list should reflect the assignment immediately
+Test 5.5 — getJobByNumber caching
+
+Open a specific job card (e.g. /job-cards/myjobs/12345)
+Refresh the page rapidly (within 5 seconds)
+Check Network tab — only one API call to /api/jobcards/12345 per 5-second window
+
+
+
+
+Stage 6: Shared Form Styles & Dashboard Primitives
+Form and dashboard visuals should look identical to before.
+
+Test 6.1 — Account Form
+
+Go to Accounts → Create New Account
+Verify all form fields render correctly (labels, inputs, textareas)
+Verify field groups have rounded borders, proper padding
+Fill in the form and submit
+Check accounts table — verify all fields saved correctly
+Test 6.2 — Company Account Form
+
+Go to Company Accounts → Create New
+Verify the form renders with proper styling
+Test the bulk data entry — paste tab-separated data, click "Apply data"
+Submit the form
+Check company_accounts table — verify all fields saved
+Test 6.3 — Retail Managers Dashboard
+
+Open the Retail Managers Dashboard
+Verify "Today's Workshop Pulse" section renders with MetricPill cards
+Verify all numbers load from Supabase (not showing 0 if data exists)
+Verify "Retail manager focus" panels show correctly
+Verify "Technician utilisation" progress bars render
+Verify "Red priority jobs" section shows or says "No red-priority jobs"
+Cross-reference with jobs table — counts should match
+Test 6.4 — Workshop Manager Dashboard
+
+Open Workshop Manager Dashboard
+Verify top metric cards show (Jobs On Site, Technicians, etc.)
+Verify "Technician Focus" section card renders with title/subtitle
+Verify "Bay Readiness" section card renders
+Verify "Consumables" button opens the modal
+In the modal — verify month selector works, table shows data
+Cross-reference with job_clocking table for technician counts
+Test 6.5 — After Sales Manager Dashboard
+
+Open After Sales Manager Dashboard
+Verify Revenue Streams section shows progress bars
+Verify currency values format correctly (£28,600 not £28600.00)
+Verify KPI cards show: Today's Jobs, Open Jobs, Parts Pending, VHC Sent Today
+Cross-reference with database:
+jobs table — count rows where created_at is today → should match "Today's Jobs"
+jobs table — count rows where status is NOT "Finished"/"Complete" → should match "Open Jobs"
+parts_job_items table — count rows where status in ("pending", "awaiting_stock") → should match "Parts Pending"
+vhc_send_history table — count rows where sent_at is today → should match "VHC Sent Today"
+
+
+
+
+Stage 7: CSS Scrollbar Consolidation
+Test 7.1 — Dropdown scrollbars
+
+Open any dropdown that has enough options to scroll (e.g. a long status dropdown, customer search)
+Scroll within the dropdown menu
+Verify the scrollbar appears with the theme colour (not browser default)
+Verify scrollbar has rounded corners
+Test 7.2 — Timepicker scrollbars
+
+Open a timepicker component (e.g. appointment time)
+Scroll through the time options
+Verify themed scrollbar appears (matches dropdown scrollbar styling)
+Test 7.3 — General page scrollbars
+
+On any long page, scroll up and down
+Verify scrollbar thumb appears on scroll/hover
+Verify scrollbar hides after stopping
+Test in Chrome and Firefox if possible
+
+
+
+
+Stage 8: API Route Boilerplate
+The accounts and company-accounts API routes were refactored to use createHandler. All CRUD operations must still work.
+
+Test 8.1 — Account Settings API
+
+Go to Accounts → Settings (if there's a settings page)
+Change a setting and save
+Check account_settings table — verify settings JSON column updated
+Refresh the page — verify settings load back
+Test 8.2 — Company Accounts CRUD
+
+List: Go to Company Accounts page — verify list loads
+Check company_accounts table — row count should match what's displayed
+Create: Add a new company account with all fields filled
+Check company_accounts table — verify the new row
+Edit: Open an existing company account, change the company name
+Check company_accounts table — verify company_name updated
+Delete: Delete a test company account
+Check company_accounts table — verify the row is gone
+Test 8.3 — Next Number API
+
+Go to Create Company Account page (where auto-generate is on)
+Verify an account number like "CA0123" auto-fills
+Check company_accounts table — verify this number doesn't already exist
+Create the account — verify it saves with that number
+Test 8.4 — Permission guards
+
+If you can test with a user that does NOT have "accounts" role:
+Try accessing /api/accounts — should get 403
+Try accessing /api/company-accounts — should get 403
+If you can test with an "accounts" role user:
+All operations should work normally
+Test 8.5 — Method not allowed
+
+Open DevTools Console
+Run: fetch('/api/accounts/settings', { method: 'DELETE' }).then(r => r.json()).then(console.log)
+Verify response: { success: false, message: "Method not allowed" } with status 405
+
+
+
+
+
+
+
+
+
+Table	               affect it	What to check
+jobs	               2, 3, 5	    Jobs load once on login, cache works, status updates write correctly
+job_clocking	       3	        Polling updates, clock_in/clock_out timestamps
+job_status_history	   5	        History rows created on status change
+vhc_issues             1, 4	        Severity, approval_status, labour/parts costs
+parts_job_items	       3	        Parts refresh polling, status values
+vhc_send_history	   6	        VHC sent count on After Sales dashboard
+accounts	           6, 8	        CRUD operations, balance/credit fields
+account_settings	   8	        Settings JSON save/load
+company_accounts	   8	        CRUD, auto-generated account numbers
+invoices	           8	        Overdue count on accounts summary
+appointments	       5	        Dashboard data loading
+notifications	       6	        Workshop notices on dashboard

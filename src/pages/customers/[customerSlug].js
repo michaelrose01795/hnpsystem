@@ -125,7 +125,7 @@ const detailGridStyles = {
     textTransform: "uppercase",
     letterSpacing: "0.2em",
     fontSize: "0.65rem",
-    color: "var(--grey-accent-dark)",
+    color: "var(--text-secondary)",
   },
   value: {
     fontWeight: 600,
@@ -903,7 +903,7 @@ export default function CustomerDetailWorkspace() {
                               <span
                                 style={{
                                   fontSize: "0.75rem",
-                                  color: "var(--grey-accent)",
+                                  color: "var(--text-secondary)",
                                   textTransform: "uppercase",
                                   letterSpacing: "0.2em",
                                 }}
