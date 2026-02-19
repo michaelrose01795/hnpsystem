@@ -144,6 +144,7 @@ export const saveVhcItem = async (payload = {}, context = {}) => {
     authorization_state: payload.authorization_state ?? null,
     severity: normalizeSeverity(payload.severity),
     display_id: payload.display_id || null,
+    measurement: payload.measurement || null,
   });
 
   existingRowsByDedupe.set(dedupeKey, row);
@@ -164,6 +165,7 @@ export const buildNormalizedVhcItems = ({ job_number, vhcData, labour_rate_gbp =
       const notes = collapseWhitespace(item?.notes || item?.measurement || "");
       const subAreaKey = resolveSubAreaForSummaryItem({ sectionName, heading, wheelKey: item?.wheelKey });
       const displayId = buildStableDisplayId(sectionName, item, index);
+      const measurement = Array.isArray(item?.rows) ? item.rows.filter(Boolean).join(" | ") : (item?.measurement || null);
 
       if (concerns.length > 0) {
         concerns.forEach((concern) => {
@@ -184,6 +186,7 @@ export const buildNormalizedVhcItems = ({ job_number, vhcData, labour_rate_gbp =
             status: "pending",
             source: "HEALTH_CHECK_POPUP",
             display_id: displayId,
+            measurement,
           };
           payload.dedupe_key = buildVhcDedupeKey(payload);
           if (!seen.has(payload.dedupe_key)) {
@@ -211,6 +214,7 @@ export const buildNormalizedVhcItems = ({ job_number, vhcData, labour_rate_gbp =
         status: "pending",
         source: "HEALTH_CHECK_POPUP",
         display_id: displayId,
+        measurement,
       };
       payload.dedupe_key = buildVhcDedupeKey(payload);
       if (!seen.has(payload.dedupe_key)) {

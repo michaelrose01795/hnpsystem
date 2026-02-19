@@ -5858,26 +5858,33 @@ export default function VhcDetailsPanel({
 
   // Render VHC items panel for Parts Identified (shows all VHC items regardless of status)
   const renderVhcItemsPanel = useCallback(() => {
-    const itemsById = new Map(
-      (vhcItemsWithParts || []).map((item) => [String(item.vhcId), item])
-    );
-    const orderedSourceItems = Array.isArray(summaryItems) ? summaryItems : [];
-    const filteredItems = orderedSourceItems.map((item) => {
-      const key = String(item.id);
-      const existing = itemsById.get(key);
-      if (existing) {
-        return existing;
-      }
+    // Build parts lookup by vhc_item_id for linking
+    const partsByVhcId = new Map();
+    partsIdentified.forEach((part) => {
+      if (!part?.vhc_item_id) return;
+      const key = String(part.vhc_item_id);
+      if (!partsByVhcId.has(key)) partsByVhcId.set(key, []);
+      partsByVhcId.get(key).push(part);
+    });
+
+    // Use quoteSeverityLists (same source as summary tab) for consistent items
+    const quoteItems = [
+      ...(quoteSeverityLists.red || []),
+      ...(quoteSeverityLists.amber || []),
+      ...(quoteSeverityLists.authorized || []),
+      ...(quoteSeverityLists.declined || []),
+    ];
+
+    const displayItems = quoteItems.map((item) => {
+      const canonicalId = String(item.canonicalId || item.id);
+      const linkedParts = partsByVhcId.get(canonicalId) || [];
       return {
         vhcItem: item,
-        linkedParts: [],
-        vhcId: key,
-        canonicalVhcId: resolveCanonicalVhcId(key),
+        linkedParts,
+        vhcId: String(item.id),
+        canonicalVhcId: canonicalId,
       };
     });
-    const filteredIds = new Set(filteredItems.map((item) => String(item.vhcId)));
-    const orphanItems = (vhcItemsWithParts || []).filter((item) => !filteredIds.has(String(item.vhcId)));
-    const displayItems = [...filteredItems, ...orphanItems];
 
     if (!displayItems || displayItems.length === 0) {
       return <EmptyStateMessage message="No VHC repairs have been recorded yet." />;
@@ -5983,8 +5990,11 @@ export default function VhcDetailsPanel({
                         <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
                           {vhcCategory}
                         </div>
-                        <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--accent-purple)", marginTop: "2px" }}>
-                          {vhcLabel}
+                        <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--accent-purple)", marginTop: "2px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                          <span>{vhcLabel}</span>
+                          {vhcItem?.rowIdLabel ? (
+                            <span style={{ fontSize: "11px", color: "var(--info)", fontWeight: 600 }}>{vhcItem.rowIdLabel}</span>
+                          ) : null}
                         </div>
                         {isServiceIndicatorRow && vhcRows.length > 0 ? (
                           <div style={{ marginTop: "6px", display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -6230,7 +6240,7 @@ export default function VhcDetailsPanel({
         </div>
       </div>
     );
-  }, [vhcItemsWithParts, summaryItems, resolveCanonicalVhcId, partsNotRequired, warrantyRows, partsCostByVhcItem, handlePartsNotRequiredToggle, handleVhcItemRowClick, expandedVhcItems, partDetails, handlePartDetailChange, handleRemovePart, removingPartIds, isCustomerView, openAddPartsModal, readOnly]);
+  }, [quoteSeverityLists, partsIdentified, partsNotRequired, warrantyRows, partsCostByVhcItem, handlePartsNotRequiredToggle, handleVhcItemRowClick, expandedVhcItems, partDetails, handlePartDetailChange, handleRemovePart, removingPartIds, isCustomerView, openAddPartsModal, readOnly]);
 
   // Render VHC authorized items panel (similar to Parts Identified but for authorized items)
   const renderVhcAuthorizedPanel = useCallback(() => {

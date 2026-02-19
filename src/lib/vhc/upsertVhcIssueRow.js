@@ -97,6 +97,7 @@ export const upsertVhcIssueRow = async ({
   authorization_state,
   severity,
   display_id,
+  measurement,
 } = {}) => {
   const client = supabase || sharedSupabase; // Use injected client in tests/callers, fallback to shared client in app code.
   const resolvedJobId = Number.isInteger(Number(jobId)) ? Number(jobId) : await resolveJobIdFromNumber({ supabase: client, jobNumber });
@@ -150,6 +151,7 @@ export const upsertVhcIssueRow = async ({
     slot_code: slotCode,
     line_key: lineKey,
     display_id: display_id || null,
+    measurement: measurement || null,
     updated_at: now,
   };
 
