@@ -510,7 +510,14 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
         }
       `}</style>
       {error && (
-        <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <div
+          className="mb-4 rounded-2xl px-3 py-2 text-sm"
+          style={{
+            border: "1px solid var(--danger-border)",
+            background: "var(--danger-surface)",
+            color: "var(--danger-text)",
+          }}
+        >
           {error}
         </div>
       )}
@@ -592,7 +599,7 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
                       fontWeight: 700,
                       color: vehicle.payrollDeductionEnabled ? "var(--success)" : "var(--text-secondary)",
                       background: vehicle.payrollDeductionEnabled
-                        ? "rgba(16, 185, 129, 0.12)"
+                        ? "rgba(var(--success-rgb), 0.12)"
                         : "rgba(148, 163, 184, 0.2)",
                     }}
                   >
@@ -1103,10 +1110,10 @@ const secondaryActionButton = {
 };
 
 const dangerActionButton = {
-  border: "1px solid rgba(239, 68, 68, 0.5)",
+  border: "1px solid rgba(var(--danger-rgb), 0.5)",
   borderRadius: "10px",
   padding: "8px 14px",
-  background: "rgba(239, 68, 68, 0.12)",
+  background: "rgba(var(--danger-rgb), 0.12)",
   color: "var(--danger)",
   fontWeight: 600,
   fontSize: "0.8rem",

@@ -21,9 +21,9 @@ const formatDate = (value) => {
   return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 };
 const statusStyles = {
-  active: { background: "rgba(16,185,129,0.15)", color: "#047857" },
-  frozen: { background: "rgba(245,158,11,0.18)", color: "#b45309" },
-  closed: { background: "rgba(239,68,68,0.15)", color: "#b91c1c" },
+  active: { background: "rgba(var(--success-rgb), 0.15)", color: "#047857" },
+  frozen: { background: "rgba(var(--warning-rgb), 0.18)", color: "var(--warning-text)" },
+  closed: { background: "rgba(var(--danger-rgb), 0.15)", color: "var(--danger-dark)" },
 };
 const renderStatusBadge = (status) => {
   const normalized = (status || "").toLowerCase();

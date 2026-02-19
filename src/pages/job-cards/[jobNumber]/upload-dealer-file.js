@@ -94,7 +94,7 @@ export default function UploadDealerFilePage() {
       </Head>
 
       <div className="max-w-3xl mx-auto px-4 py-10 space-y-6">
-        <div className="bg-white rounded-2xl  border border-red-100 p-8">
+        <div className="bg-white rounded-2xl p-8" style={{ border: "1px solid var(--danger-border)" }}>
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
@@ -104,13 +104,21 @@ export default function UploadDealerFilePage() {
                 Attach signed dealer forms, invoices, or supporting documents directly to the job card.
               </p>
             </div>
-            <span className="inline-flex items-center px-4 py-2 rounded-full bg-red-50 text-red-600 text-sm font-semibold">
+            <span
+              className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold"
+              style={{ backgroundColor: "var(--danger-surface)", color: "var(--danger-text)" }}
+            >
               Job #{jobNumber || "Loading..."} {/* Show the current job number for clarity */}
             </span>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="border-2 border-dashed border-red-200 rounded-xl p-6 text-center transition hover:border-red-400">
+            <div
+              className="border-2 border-dashed rounded-xl p-6 text-center transition"
+              style={{ borderColor: "var(--danger-border)" }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--danger-hover)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--danger-border)"; }}
+            >
               <input
                 id="dealer-file"
                 name="dealer-file"
@@ -124,7 +132,10 @@ export default function UploadDealerFilePage() {
                 className="cursor-pointer block"
               >
                 <div className="flex flex-col items-center space-y-3 text-gray-600">
-                  <div className="flex items-center justify-center w-16 h-16 rounded-full bg-red-50 text-red-500">
+                  <div
+                    className="flex items-center justify-center w-16 h-16 rounded-full"
+                    style={{ backgroundColor: "var(--danger-surface)", color: "var(--danger)" }}
+                  >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
@@ -157,13 +168,27 @@ export default function UploadDealerFilePage() {
             </div>
 
             {statusMessage && (
-              <div className="rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-green-700">
+              <div
+                className="rounded-lg px-4 py-3"
+                style={{
+                  backgroundColor: "var(--success-surface)",
+                  border: "1px solid var(--success-border)",
+                  color: "var(--success-text)",
+                }}
+              >
                 {statusMessage}
               </div>
             )}
 
             {errorMessage && (
-              <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-red-600">
+              <div
+                className="rounded-lg px-4 py-3"
+                style={{
+                  backgroundColor: "var(--danger-surface)",
+                  border: "1px solid var(--danger-border)",
+                  color: "var(--danger-text)",
+                }}
+              >
                 {errorMessage}
               </div>
             )}
@@ -187,7 +212,10 @@ export default function UploadDealerFilePage() {
               <button
                 type="submit"
                 disabled={isUploading}
-                className="px-6 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                className="px-6 py-2 rounded-lg text-white font-semibold transition disabled:opacity-60 disabled:cursor-not-allowed"
+                style={{ backgroundColor: "var(--danger)" }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--danger-hover)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--danger)"; }}
               >
                 {isUploading ? "Uploading..." : "Upload File"}
               </button>

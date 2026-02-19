@@ -90,7 +90,7 @@ export default function ViewAccountPage() {
                     <span style={{ padding: "4px 12px", borderRadius: "999px", background: "var(--surface-light)", fontWeight: 600 }}>ID: {account.account_id}</span>
                     <span style={{ padding: "4px 12px", borderRadius: "999px", background: "var(--surface-light)", fontWeight: 600 }}>Customer: {account.customer_id}</span>
                     <span style={{ padding: "4px 12px", borderRadius: "999px", background: "var(--surface-light)", fontWeight: 600 }}>Type: {account.account_type}</span>
-                    <span style={{ padding: "4px 12px", borderRadius: "999px", background: account.status === "Frozen" ? "rgba(245,158,11,0.18)" : "rgba(16,185,129,0.18)", color: account.status === "Frozen" ? "#92400e" : "#065f46", fontWeight: 700 }}>{account.status}</span>
+                    <span style={{ padding: "4px 12px", borderRadius: "999px", background: account.status === "Frozen" ? "rgba(var(--warning-rgb), 0.18)" : "rgba(var(--success-rgb), 0.18)", color: account.status === "Frozen" ? "var(--warning-text)" : "var(--success-text)", fontWeight: 700 }}>{account.status}</span>
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>

@@ -1577,7 +1577,7 @@ export default function NextJobsPage() {
                   transition: "background-color 0.2s",
                   boxShadow: "none"
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--danger)"}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--danger-hover)"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "var(--danger)"}
               >
                 Edit Job
@@ -1694,7 +1694,7 @@ export default function NextJobsPage() {
                       transition: "background-color 0.2s"
                     }}
                     onClick={unassignTechFromJob} // Unassign technician
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--warning)")}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--warning-hover)")}
                     onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--warning)")}
                   >
                     Unassign

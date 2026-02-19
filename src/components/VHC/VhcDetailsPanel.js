@@ -116,6 +116,35 @@ const resolveAddPartsTitleDetail = (target = {}) => {
   const rows = Array.isArray(target.rows)
     ? target.rows.map((row) => normalizeInlineText(row)).filter(Boolean)
     : [];
+  const contextText = [label, detail, section, ...rows].join(" ").toLowerCase();
+  const isTyreContext =
+    /\b(tyre|tire|wheel)\b/.test(contextText) ||
+    rows.some((row) => /^make\s*[-:]/i.test(row) || /^size\s*[-:]/i.test(row));
+
+  const extractRowValue = (sourceRows, prefix) => {
+    const row = sourceRows.find((entry) =>
+      new RegExp(`^${prefix}\\s*[-:]\\s*`, "i").test(entry)
+    );
+    if (!row) return "";
+    return row.replace(new RegExp(`^${prefix}\\s*[-:]\\s*`, "i"), "").trim();
+  };
+
+  const resolveTyreMakeSizeDetail = (sourceRows = [], sourceDetail = "") => {
+    const makeFromRows = extractRowValue(sourceRows, "make");
+    const sizeFromRows = extractRowValue(sourceRows, "size");
+    const makeFromDetailMatch = sourceDetail.match(/(?:^|\b)make\s*[-:]\s*([^-|]+(?:\s+[^-|]+)*)/i);
+    const sizeFromDetailMatch = sourceDetail.match(/(?:^|\b)size\s*[-:]\s*([^-|]+(?:\s+[^-|]+)*)/i);
+    const makeValue = makeFromRows || (makeFromDetailMatch?.[1] || "").trim();
+    const sizeValue = sizeFromRows || (sizeFromDetailMatch?.[1] || "").trim();
+    return [makeValue, sizeValue].filter(Boolean).join(" ").trim();
+  };
+
+  if (isTyreContext) {
+    const tyreTitle = resolveTyreMakeSizeDetail(rows, detail);
+    if (tyreTitle) {
+      return trimDisplayText(tyreTitle);
+    }
+  }
 
   const candidates = [detail, ...rows, label, section].filter(Boolean);
   const picked = candidates.find((candidate) => {
@@ -126,6 +155,27 @@ const resolveAddPartsTitleDetail = (target = {}) => {
   });
 
   return trimDisplayText(picked || label || section || "VHC Item");
+};
+
+const resolveTyreMakeSizeDetail = (rows = [], detail = "") => {
+  const normalizedRows = Array.isArray(rows)
+    ? rows.map((row) => normalizeInlineText(row)).filter(Boolean)
+    : [];
+  const extractRowValue = (prefix) => {
+    const row = normalizedRows.find((entry) =>
+      new RegExp(`^${prefix}\\s*[-:]\\s*`, "i").test(entry)
+    );
+    if (!row) return "";
+    return row.replace(new RegExp(`^${prefix}\\s*[-:]\\s*`, "i"), "").trim();
+  };
+  const normalizedDetail = normalizeInlineText(detail);
+  const makeFromRows = extractRowValue("make");
+  const sizeFromRows = extractRowValue("size");
+  const makeFromDetailMatch = normalizedDetail.match(/(?:^|\b)make\s*[-:]\s*([^-|]+(?:\s+[^-|]+)*)/i);
+  const sizeFromDetailMatch = normalizedDetail.match(/(?:^|\b)size\s*[-:]\s*([^-|]+(?:\s+[^-|]+)*)/i);
+  const makeValue = makeFromRows || (makeFromDetailMatch?.[1] || "").trim();
+  const sizeValue = sizeFromRows || (sizeFromDetailMatch?.[1] || "").trim();
+  return [makeValue, sizeValue].filter(Boolean).join(" ").trim();
 };
 
 const PARTS_SEARCH_STOP_WORDS = new Set([
@@ -456,12 +506,12 @@ const COLOUR_CLASS = {
 };
 
 const SEVERITY_THEME = {
-  red: { background: "var(--danger-surface)", border: "var(--danger-surface)", text: "var(--danger-dark)", hover: "#ffd4d4" },
-  amber: { background: "var(--warning-surface)", border: "var(--warning-surface)", text: "var(--warning-dark)", hover: "#ffe6cc" },
-  green: { background: "var(--success-surface)", border: "var(--success)", text: "var(--info-dark)", hover: "var(--success-surface)" },
+  red: { background: "var(--danger-surface)", border: "var(--danger-surface)", text: "var(--danger-dark)", hover: "var(--danger-surface-hover)" },
+  amber: { background: "var(--warning-surface)", border: "var(--warning-surface)", text: "var(--warning-dark)", hover: "var(--warning-surface-hover)" },
+  green: { background: "var(--success-surface)", border: "var(--success)", text: "var(--info-dark)", hover: "var(--success-surface-hover)" },
   grey: { background: "var(--info-surface)", border: "var(--accent-purple-surface)", text: "var(--info-dark)", hover: "var(--accent-purple-surface)" },
-  authorized: { background: "var(--success-surface)", border: "var(--success)", text: "var(--success)", hover: "var(--success-surface)" },
-  declined: { background: "var(--danger-surface)", border: "var(--danger)", text: "var(--danger-dark)", hover: "#ffd4d4" },
+  authorized: { background: "var(--success-surface)", border: "var(--success)", text: "var(--success)", hover: "var(--success-surface-hover)" },
+  declined: { background: "var(--danger-surface)", border: "var(--danger)", text: "var(--danger-dark)", hover: "var(--danger-surface-hover)" },
 };
 
 // Tyre wear calculation: 8mm = 0% worn (new), 0mm = 100% worn
@@ -2700,10 +2750,18 @@ export default function VhcDetailsPanel({
   const resolveLabourHoursValue = (itemId, entry) => {
     const localValue = entry?.laborHours;
     if (localValue === "") return "";
-    if (localValue !== null && localValue !== undefined) return localValue;
+    if (localValue !== null && localValue !== undefined) {
+      const localNumeric = Number(localValue);
+      if (Number.isFinite(localNumeric) && localNumeric === 0 && !entry?.labourComplete) {
+        return "";
+      }
+      return localValue;
+    }
     const canonicalId = resolveCanonicalVhcId(itemId);
     const hours = labourHoursByVhcItem.map.get(canonicalId);
-    return Number.isFinite(hours) ? String(hours) : "";
+    if (!Number.isFinite(hours)) return "";
+    if (hours === 0 && !entry?.labourComplete) return "";
+    return String(hours);
   };
 
   const resolveLabourCompleteValue = (entry, labourHoursValue) => {
@@ -3441,6 +3499,13 @@ export default function VhcDetailsPanel({
     return `£${value.toFixed(2)}`;
   };
 
+  const formatLabourHoursDisplay = (value) => {
+    if (value === null || value === undefined || value === "") return "—";
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return String(value);
+    return Number.isInteger(numeric) ? String(numeric) : String(parseFloat(numeric.toFixed(2)));
+  };
+
   const resolveVhcRowDecisionKey = (item, entry) => {
     const entryDecision = normaliseDecisionStatus(entry?.status);
     if (entryDecision) return entryDecision;
@@ -4019,9 +4084,6 @@ export default function VhcDetailsPanel({
                       </div>
                       <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--accent-purple)", marginTop: "2px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
                         <span>{detailLabel}</span>
-                        {item.rowIdLabel ? (
-                          <span style={{ fontSize: "11px", color: "var(--info)", fontWeight: 600 }}>{item.rowIdLabel}</span>
-                        ) : null}
                       </div>
                       {detailRows.length > 0 ? (
                         <div style={{ marginTop: "6px", display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -4211,6 +4273,7 @@ export default function VhcDetailsPanel({
                           type="number"
                           min="0"
                           step="0.1"
+                          placeholder="Hour"
                           value={resolvedLabourHours ?? ""}
                           onChange={(event) => {
                             // Don't allow changes in authorized/declined sections
@@ -6136,6 +6199,8 @@ export default function VhcDetailsPanel({
                 const vhcRows = Array.isArray(vhcItem?.rows)
                   ? vhcItem.rows.map((row) => (row ? String(row).trim() : "")).filter(Boolean)
                   : [];
+                const tyreMakeSizeDetail = resolveTyreMakeSizeDetail(vhcRows, vhcNotes);
+                const vhcDetailText = tyreMakeSizeDetail || vhcNotes;
                 const isServiceIndicatorRow = vhcItem?.category?.id === "service_indicator";
                 const locationLabel = vhcItem?.location
                   ? LOCATION_LABELS[vhcItem.location] || vhcItem.location.replace(/_/g, " ")
@@ -6161,10 +6226,10 @@ export default function VhcDetailsPanel({
 
                 if (entryDecision === "authorized") {
                   rowBackground = "var(--success-surface)";
-                  rowHoverBackground = "rgba(34, 197, 94, 0.15)";
+                  rowHoverBackground = "var(--success-surface-hover)";
                 } else if (entryDecision === "declined") {
                   rowBackground = "var(--danger-surface)";
-                  rowHoverBackground = "rgba(239, 68, 68, 0.15)";
+                  rowHoverBackground = "var(--danger-surface-hover)";
                 } else if (vhcSeverity) {
                   rowBackground = SEVERITY_THEME[vhcSeverity]?.background || "var(--surface)";
                   rowHoverBackground = SEVERITY_THEME[vhcSeverity]?.hover || "var(--accent-purple-surface)";
@@ -6194,9 +6259,6 @@ export default function VhcDetailsPanel({
                         </div>
                         <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--accent-purple)", marginTop: "2px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
                           <span>{vhcLabel}</span>
-                          {vhcItem?.rowIdLabel ? (
-                            <span style={{ fontSize: "11px", color: "var(--info)", fontWeight: 600 }}>{vhcItem.rowIdLabel}</span>
-                          ) : null}
                         </div>
                         {isServiceIndicatorRow && vhcRows.length > 0 ? (
                           <div style={{ marginTop: "6px", display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -6207,9 +6269,9 @@ export default function VhcDetailsPanel({
                             ))}
                           </div>
                         ) : null}
-                        {vhcNotes && (
+                        {vhcDetailText && (
                           <div style={{ fontSize: "12px", color: "var(--info-dark)", marginTop: "4px" }}>
-                            {vhcNotes}
+                            {vhcDetailText}
                           </div>
                         )}
                         {locationLabel && (
@@ -6515,10 +6577,12 @@ export default function VhcDetailsPanel({
                   vhcRows = [serviceChoiceLabel];
                   vhcNotes = "";
                 }
+                const tyreMakeSizeDetail = resolveTyreMakeSizeDetail(vhcRows, vhcNotes);
+                const vhcDetailText = tyreMakeSizeDetail || vhcNotes;
 
                 // Authorized items should have green background
                 const rowBackground = "var(--success-surface)";
-                const rowHoverBackground = "rgba(34, 197, 94, 0.15)";
+                const rowHoverBackground = "var(--success-surface-hover)";
 
                 // If no parts, show single row with VHC item
                 if (!linkedParts || linkedParts.length === 0) {
@@ -6548,9 +6612,9 @@ export default function VhcDetailsPanel({
                               ))}
                             </div>
                           ) : null}
-                          {vhcNotes && (
+                          {vhcDetailText && (
                             <div style={{ fontSize: "12px", color: "var(--info-dark)", marginTop: "4px" }}>
-                              {vhcNotes}
+                              {vhcDetailText}
                             </div>
                           )}
                           {locationLabel && (
@@ -6660,9 +6724,9 @@ export default function VhcDetailsPanel({
                               ))}
                             </div>
                           ) : null}
-                          {vhcNotes && (
+                          {vhcDetailText && (
                             <div style={{ fontSize: "12px", color: "var(--info-dark)", marginTop: "4px" }}>
-                              {vhcNotes}
+                              {vhcDetailText}
                             </div>
                           )}
                         {locationLabel && (
@@ -6947,7 +7011,7 @@ export default function VhcDetailsPanel({
                           {partItem.storage_location || "—"}
                         </td>
                         <td style={{ padding: "12px 16px", textAlign: "center", color: "var(--info-dark)" }}>
-                          {partItem.labour_hours ?? "—"}
+                          {formatLabourHoursDisplay(partItem.labour_hours)}
                         </td>
                         <td style={{ padding: "12px 16px" }}>
                           <select
@@ -8019,9 +8083,14 @@ export default function VhcDetailsPanel({
       <VHCModalShell
         isOpen={isAddPartsModalOpen}
         title={addPartsModalTitle}
-        subtitle="Search the parts catalogue and add one or more items to this VHC row."
         width="960px"
         height="720px"
+        overlayStyle={{
+          background: "rgba(0, 0, 0, 0.6)",
+          backdropFilter: "blur(8px)",
+          zIndex: 9999,
+          padding: "20px",
+        }}
         onClose={closeAddPartsModal}
         hideCloseButton
         footer={
@@ -8193,7 +8262,7 @@ export default function VhcDetailsPanel({
                     borderRadius: "12px",
                     padding: "10px 14px",
                     color: "var(--danger)",
-                    background: "var(--danger-surface, rgba(239, 68, 68, 0.08))",
+                    background: "var(--danger-surface)",
                     marginBottom: "12px",
                   }}
                 >
@@ -8766,6 +8835,11 @@ export default function VhcDetailsPanel({
         .labour-hours-input::-webkit-inner-spin-button {
           -webkit-appearance: none;
           margin: 0;
+        }
+
+        .labour-hours-input::placeholder {
+          color: var(--grey-accent);
+          opacity: 1;
         }
       `}</style>
     </div>

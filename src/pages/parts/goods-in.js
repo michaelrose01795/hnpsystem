@@ -1173,7 +1173,7 @@ function GoodsInPage() {
                 borderRadius: "12px",
                 padding: "10px 14px",
                 color: "var(--danger)",
-                background: "var(--danger-surface, rgba(239, 68, 68, 0.08))",
+                background: "var(--danger-surface)",
               }}
             >
               {partError}

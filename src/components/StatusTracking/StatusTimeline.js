@@ -91,14 +91,28 @@ export default function StatusTimeline({ currentStatus, currentStatusId = null, 
 
                 {/* Show action required message */}
                 {current && status.requiresAction && (
-                  <div className="mt-2 text-xs bg-amber-50 border border-amber-200 rounded p-2 text-amber-800">
+                  <div
+                    className="mt-2 text-xs rounded p-2"
+                    style={{
+                      backgroundColor: "var(--warning-surface)",
+                      border: "1px solid var(--warning-border)",
+                      color: "var(--warning-text)",
+                    }}
+                  >
                     {status.requiresAction}
                   </div>
                 )}
 
                 {/* Show if time is paused */}
                 {current && status.pausesTime && (
-                  <div className="mt-2 inline-flex items-center gap-1 text-xs bg-red-50 border border-red-200 rounded px-2 py-1 text-red-700">
+                  <div
+                    className="mt-2 inline-flex items-center gap-1 text-xs rounded px-2 py-1"
+                    style={{
+                      backgroundColor: "var(--danger-surface)",
+                      border: "1px solid var(--danger-border)",
+                      color: "var(--danger-text)",
+                    }}
+                  >
                     <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
                     </svg>

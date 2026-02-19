@@ -485,7 +485,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                     borderRadius: "12px",
                     border: "2px solid #fecaca",
                     backgroundColor: "#fef2f2",
-                    color: "#dc2626",
+                    color: "var(--danger)",
                     fontSize: "13px",
                     fontWeight: "600",
                   }}

@@ -80,7 +80,7 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
                   </td>
                   <td style={{ padding: "12px", display: "flex", alignItems: "center", gap: "8px" }}>
                     {invoice.due_date ? new Date(invoice.due_date).toLocaleDateString("en-GB") : "—"}
-                    {overdue && <span style={{ background: "#fcd34d", color: "#92400e", borderRadius: "999px", padding: "2px 10px", fontSize: "0.75rem", fontWeight: 700 }}>Overdue</span>}
+                    {overdue && <span style={{ background: "var(--warning-surface)", color: "var(--warning-text)", borderRadius: "999px", padding: "2px 10px", fontSize: "0.75rem", fontWeight: 700 }}>Overdue</span>}
                   </td>
                 </tr>
               );

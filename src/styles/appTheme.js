@@ -272,13 +272,13 @@ export const vhcModalStyles = {
   overlay: {
     position: "fixed",
     inset: 0,
-    background: palette.overlay,
-    backdropFilter: "blur(10px)",
+    background: "rgba(0, 0, 0, 0.6)",
+    backdropFilter: "blur(8px)",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 5000,
-    padding: "24px",
+    zIndex: 9999,
+    padding: "20px",
   },
   container: ({ width = "1080px", height = "640px" } = {}) => ({
     width,
@@ -414,13 +414,13 @@ export const vhcModalContentStyles = {
 export const popupOverlayStyles = {
   position: "fixed",
   inset: 0,
-  backgroundColor: "rgba(8, 9, 14, 0.78)",
+  backgroundColor: "rgba(0, 0, 0, 0.6)",
   backdropFilter: "blur(8px)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  padding: "24px",
-  zIndex: 5500,
+  padding: "20px",
+  zIndex: 9999,
 };
 
 export const popupCardStyles = {

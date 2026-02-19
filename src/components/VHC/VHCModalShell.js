@@ -18,6 +18,7 @@ export default function VHCModalShell({
   locked = false,
   lockedMessage = "Authorised",
   lockedOverlay = true,
+  overlayStyle = null,
 }) {
   const closeButtonColor = "var(--accent-purple)";
   const isBlockingLocked = locked && lockedOverlay;
@@ -32,7 +33,7 @@ export default function VHCModalShell({
               padding: 0,
               margin: 0,
             }
-          : vhcModalStyles.overlay
+          : { ...vhcModalStyles.overlay, ...(overlayStyle || {}) }
       }
     >
       <div

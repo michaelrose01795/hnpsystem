@@ -246,8 +246,8 @@ export default function AdminUserManagement() {
                 padding: "10px 12px",
                 borderRadius: "10px",
                 marginBottom: "12px",
-                background: companyMessage.includes("saved") ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.12)",
-                color: companyMessage.includes("saved") ? "#065f46" : "#b91c1c",
+                background: companyMessage.includes("saved") ? "rgba(var(--success-rgb), 0.15)" : "rgba(var(--danger-rgb), 0.12)",
+                color: companyMessage.includes("saved") ? "var(--success-text)" : "var(--danger-dark)",
                 fontWeight: 600,
               }}
             >

@@ -18,7 +18,10 @@ export default function ClockInButton() {
     <Link href="/workshop/Clocking">
       <button
         onClick={handleClockIn}
-        className="w-full py-2 px-4 text-white bg-red-600 hover:bg-red-700 rounded mt-2"
+        className="w-full py-2 px-4 text-white rounded mt-2 transition-colors"
+        style={{ backgroundColor: "var(--danger)" }}
+        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--danger-hover)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--danger)"; }}
       >
         {clockedIn ? "View Clocking" : "Clock In"}
       </button>

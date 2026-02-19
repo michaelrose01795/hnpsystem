@@ -88,7 +88,7 @@ export default function TransactionTable({ transactions, loading, filters, onFil
                 <td style={{ padding: "12px" }}>{txn.transaction_date ? new Date(txn.transaction_date).toLocaleDateString("en-GB") : "—"}</td>
                 <td style={{ padding: "12px", fontWeight: 600 }}>{txn.transaction_id || "—"}</td>
                 <td style={{ padding: "12px" }}>{txn.type}</td>
-                <td style={{ padding: "12px", color: txn.type === "Debit" ? "#b91c1c" : "#065f46", fontWeight: 600 }}>{currencyFormatter.format(Number(txn.amount || 0))}</td>
+                <td style={{ padding: "12px", color: txn.type === "Debit" ? "var(--danger-dark)" : "var(--success-text)", fontWeight: 600 }}>{currencyFormatter.format(Number(txn.amount || 0))}</td>
                 <td style={{ padding: "12px" }}>{txn.payment_method || "—"}</td>
                 <td style={{ padding: "12px" }}>{txn.job_number || "—"}</td>
                 <td style={{ padding: "12px" }}>{txn.created_by || "—"}</td>

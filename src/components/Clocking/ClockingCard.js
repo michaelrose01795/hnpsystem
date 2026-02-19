@@ -16,14 +16,20 @@ export default function ClockingCard() {
       {clockedIn ? (
         <button
           onClick={clockOut}
-          className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          className="px-4 py-2 text-white rounded transition-colors"
+          style={{ backgroundColor: "var(--danger)" }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--danger-hover)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--danger)"; }}
         >
           Clock Out
         </button>
       ) : (
         <button
           onClick={clockIn}
-          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          className="px-4 py-2 text-white rounded transition-colors"
+          style={{ backgroundColor: "var(--success)" }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--success-hover)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--success)"; }}
         >
           Clock In
         </button>

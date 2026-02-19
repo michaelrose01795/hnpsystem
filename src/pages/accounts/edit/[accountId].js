@@ -65,7 +65,7 @@ export default function EditAccountPage() {
             <p style={{ margin: "4px 0 0", color: "var(--text-secondary)", fontSize: "0.95rem" }}>Update billing details, limits, or status for this account.</p>
           </div>
           {message && (
-            <div style={{ padding: "12px 16px", borderRadius: "12px", background: message.includes("successfully") ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.12)", color: message.includes("successfully") ? "#065f46" : "#b91c1c", fontWeight: 600 }}>{message}</div>
+            <div style={{ padding: "12px 16px", borderRadius: "12px", background: message.includes("successfully") ? "rgba(var(--success-rgb), 0.15)" : "rgba(var(--danger-rgb), 0.12)", color: message.includes("successfully") ? "var(--success-text)" : "var(--danger-dark)", fontWeight: 600 }}>{message}</div>
           )}
           {loading && <p style={{ color: "var(--text-secondary)" }}>Loading account…</p>}
           {!loading && account && (

@@ -306,7 +306,7 @@ export default function JobClockingCard() {
               padding: "16px",
               backgroundColor: "var(--warning-surface)",
               borderRadius: "12px",
-              border: "1px solid var(--warning-surface)"
+              border: "1px solid var(--warning-border)"
             }}>
               <p style={{ fontSize: "13px", color: "var(--grey-accent)", margin: "0 0 8px 0" }}>
                 Active Jobs
@@ -318,9 +318,9 @@ export default function JobClockingCard() {
             
             <div style={{
               padding: "16px",
-              backgroundColor: "var(--success)",
+              backgroundColor: "var(--success-surface)",
               borderRadius: "12px",
-              border: "1px solid var(--success)"
+              border: "1px solid var(--success-border)"
             }}>
               <p style={{ fontSize: "13px", color: "var(--grey-accent)", margin: "0 0 8px 0" }}>
                 Completed Today
@@ -424,7 +424,7 @@ export default function JobClockingCard() {
                     fontWeight: "600",
                     transition: "background-color 0.2s"
                   }}
-                  onMouseEnter={(e) => !loading && (e.target.style.backgroundColor = "var(--danger)")}
+                  onMouseEnter={(e) => !loading && (e.target.style.backgroundColor = "var(--danger-hover)")}
                   onMouseLeave={(e) => !loading && (e.target.style.backgroundColor = "var(--danger)")}
                 >
                   ⏸️ Clock Out
@@ -649,7 +649,7 @@ export default function JobClockingCard() {
                               fontWeight: "600",
                               transition: "background-color 0.2s"
                             }}
-                            onMouseEnter={(e) => e.target.style.backgroundColor = "var(--danger)"}
+                            onMouseEnter={(e) => e.target.style.backgroundColor = "var(--danger-hover)"}
                             onMouseLeave={(e) => e.target.style.backgroundColor = "var(--danger)"}
                           >
                             Select

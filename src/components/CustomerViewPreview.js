@@ -45,7 +45,7 @@ export default function CustomerViewPreview({
     <div className="rounded-xl border border-gray-200 bg-[var(--surface)] p-5  space-y-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
-          <p className="text-sm uppercase tracking-wide text-red-600 font-semibold">
+          <p className="text-sm uppercase tracking-wide font-semibold" style={{ color: "var(--danger)" }}>
             Customer Experience Preview
           </p>
           <h4 className="text-lg font-semibold text-gray-900">
@@ -61,7 +61,10 @@ export default function CustomerViewPreview({
           href={portalUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center justify-center rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+          className="inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-semibold text-white transition-colors"
+          style={{ backgroundColor: "var(--danger)" }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--danger-hover)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--danger)"; }}
         >
           Open main website
         </a>
@@ -74,7 +77,7 @@ export default function CustomerViewPreview({
             <ul className="mt-3 space-y-2 text-sm text-gray-700">
               {group.items.map((item) => (
                 <li key={item} className="flex gap-2">
-                  <span className="text-red-500">•</span>
+                  <span style={{ color: "var(--danger)" }}>•</span>
                   <span>{item}</span>
                 </li>
               ))}

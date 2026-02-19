@@ -2165,8 +2165,8 @@ export default function JobCardDetailPage() {
                 disabled={checkingIn || !canEdit || isCheckedIn}
                 style={{
                   padding: "10px 20px",
-                  backgroundColor: isCheckedIn ? "var(--warning-surface)" : "var(--success)",
-                  color: isCheckedIn ? "var(--warning-dark)" : "var(--info-dark)",
+                  backgroundColor: isCheckedIn ? "var(--success-surface)" : "var(--success)",
+                  color: isCheckedIn ? "var(--success-dark)" : "var(--info-dark)",
                   border: "none",
                   borderRadius: "8px",
                   cursor: checkingIn || !canEdit || isCheckedIn ? "not-allowed" : "pointer",

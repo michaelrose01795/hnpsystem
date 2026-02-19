@@ -41,7 +41,7 @@ export default function CreateAccountPage() {
             <p style={{ margin: "4px 0 0", color: "var(--text-secondary)", fontSize: "0.95rem" }}>Add a new customer account with billing details, terms, and limits.</p>
           </div>
           {message && (
-            <div style={{ padding: "12px 16px", borderRadius: "12px", background: message.includes("success") ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.12)", color: message.includes("success") ? "#065f46" : "#b91c1c", fontWeight: 600 }}>{message}</div>
+            <div style={{ padding: "12px 16px", borderRadius: "12px", background: message.includes("success") ? "rgba(var(--success-rgb), 0.15)" : "rgba(var(--danger-rgb), 0.12)", color: message.includes("success") ? "var(--success-text)" : "var(--danger-dark)", fontWeight: 600 }}>{message}</div>
           )}
           <AccountForm initialValues={DEFAULT_ACCOUNT_FORM_VALUES} onSubmit={handleSubmit} isSubmitting={saving} onCancel={() => router.push("/accounts")} />
         </div>

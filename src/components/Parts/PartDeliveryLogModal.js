@@ -150,13 +150,13 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
         style={{
           position: "fixed",
           inset: 0,
-          background: "rgba(0, 0, 0, 0.7)",
-          backdropFilter: "blur(4px)",
+          background: "rgba(0, 0, 0, 0.6)",
+          backdropFilter: "blur(8px)",
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          zIndex: 1300,
-          padding: "24px",
+          zIndex: 9999,
+          padding: "20px",
         }}
         onClick={onClose}
       >

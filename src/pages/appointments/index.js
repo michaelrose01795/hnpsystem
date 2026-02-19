@@ -1180,7 +1180,7 @@ export default function Appointments() {
       case "service":
         return { ...base, background: "rgba(59,130,246,0.12)", color: "#2563eb" };
       case "mot":
-        return { ...base, background: "rgba(245,158,11,0.12)", color: "#d97706" };
+        return { ...base, background: "rgba(var(--warning-rgb), 0.12)", color: "var(--warning-text)" };
       case "diagnosis":
         return { ...base, background: "rgba(var(--accent-purple-rgb), 0.12)", color: "var(--accent-purple)" };
       default:

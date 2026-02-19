@@ -831,8 +831,8 @@ function ClockingOverviewTab({ onSummaryChange }) {
                               color: "#334155",
                               ...(tech.status === "Tea Break" && {
                                 background: "#fef3c7",
-                                border: "1px solid #fcd34d",
-                                color: "#92400e",
+                                border: "1px solid var(--warning-surface)",
+                                color: "var(--warning-text)",
                               }),
                             }}
                           >
@@ -967,12 +967,13 @@ function ClockingOverviewTab({ onSummaryChange }) {
             style={{
               position: "fixed",
               inset: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.6)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              padding: "24px",
-              zIndex: 50,
-              backdropFilter: "blur(4px)",
+              padding: "20px",
+              zIndex: 9999,
+              backdropFilter: "blur(8px)",
             }}
             role="dialog"
             aria-modal="true"

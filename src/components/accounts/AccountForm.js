@@ -65,9 +65,9 @@ export default function AccountForm({ initialValues, onSubmit, isSubmitting, rea
           <textarea name="notes" style={textareaStyles} value={formValues.notes || ""} onChange={handleChange} disabled={readOnly} placeholder="Credit control notes, reminders, or manual adjustments." />
         </label>
         {isFrozen && (
-          <div style={{ flexBasis: "100%", background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.4)", borderRadius: "12px", padding: "14px" }}>
-            <strong style={{ display: "block", color: "#92400e", marginBottom: "4px" }}>Frozen Account</strong>
-            <p style={{ margin: 0, color: "#92400e", fontSize: "0.9rem" }}>New invoices cannot be assigned to frozen accounts until status changes back to Active.</p>
+          <div style={{ flexBasis: "100%", background: "rgba(var(--warning-rgb), 0.15)", border: "1px solid rgba(var(--warning-rgb), 0.4)", borderRadius: "12px", padding: "14px" }}>
+            <strong style={{ display: "block", color: "var(--warning-text)", marginBottom: "4px" }}>Frozen Account</strong>
+            <p style={{ margin: 0, color: "var(--warning-text)", fontSize: "0.9rem" }}>New invoices cannot be assigned to frozen accounts until status changes back to Active.</p>
           </div>
         )}
       </section>

@@ -281,7 +281,7 @@ export default function CompanyAccountForm({
         />
       </label>
       {formError && (
-        <p style={{ margin: 0, color: "var(--danger, #b45309)" }}>{formError}</p>
+        <p style={{ margin: 0, color: "var(--danger-text)" }}>{formError}</p>
       )}
       <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
         <button

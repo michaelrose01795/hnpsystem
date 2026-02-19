@@ -67,7 +67,7 @@ export default function AccountsReportsPage() {
               <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
                 {metricCard("New Accounts", current.newAccounts ?? 0)}
                 {metricCard("Total Invoiced", new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(current.totalInvoiced || 0))}
-                {metricCard("Overdue Invoices", current.overdueInvoices ?? 0, "#92400e")}
+                {metricCard("Overdue Invoices", current.overdueInvoices ?? 0, "var(--warning-text)")}
                 {metricCard("Average Balance", new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(current.averageBalance || 0), "#0f766e")}
               </div>
               <section style={{ border: "1px solid var(--surface-light)", borderRadius: "16px", padding: "20px", background: "var(--surface)", display: "flex", flexDirection: "column", gap: "12px" }}>

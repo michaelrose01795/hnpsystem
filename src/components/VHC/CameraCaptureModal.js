@@ -399,7 +399,7 @@ export default function CameraCaptureModal({ isOpen, onClose, onCapture, initial
                   position: "absolute",
                   top: "16px",
                   left: "16px",
-                  background: "rgba(220, 38, 38, 0.9)",
+                  background: "rgba(var(--danger-rgb), 0.9)",
                   color: "white",
                   padding: "8px 16px",
                   borderRadius: "20px",
