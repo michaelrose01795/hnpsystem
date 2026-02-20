@@ -16,6 +16,13 @@ import StaffVehiclesCard from "@/components/HR/StaffVehiclesCard";
 import { ACCENT_PALETTES, useTheme } from "@/styles/themeProvider";
 import { isHrCoreRole, isManagerScopedRole } from "@/lib/auth/roles"; // Role checking utilities
 
+const SAFE_ACCENT_PALETTES =
+  ACCENT_PALETTES && typeof ACCENT_PALETTES === "object"
+    ? ACCENT_PALETTES
+    : {
+        red: { label: "Red", light: "#dc2626", dark: "#f87171" },
+      };
+
 function formatDate(value) {
   if (!value) return "-"; // guard empty values
   const parsed = new Date(value); // parse raw string
@@ -754,7 +761,7 @@ export function ProfilePage({
 
   const accentOptions = useMemo(
     () =>
-      Object.entries(ACCENT_PALETTES).map(([value, palette]) => ({
+      Object.entries(SAFE_ACCENT_PALETTES).map(([value, palette]) => ({
         value,
         label: <AccentOptionContent label={palette.label} light={palette.light} dark={palette.dark} />,
       })),
@@ -1027,14 +1034,9 @@ export function ProfilePage({
               justifyContent: "space-between",
             }}
           >
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <h1 style={{ fontSize: "2rem", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
-                {profile ? profile.name : activeUserName || "My Profile"}
-              </h1>
-              <p style={{ color: "var(--text-secondary)", margin: 0, fontSize: "0.95rem" }}>
-                Personal dashboard with employment details, attendance, overtime, and leave summary.
-              </p>
-            </div>
+            <h1 style={{ fontSize: "2rem", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
+              {profile ? profile.name : activeUserName || "My Profile"}
+            </h1>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
               <div style={{ minWidth: "170px", maxWidth: "170px", width: "170px", order: 1 }}>
                 <DropdownField
@@ -1586,5 +1588,3 @@ const valueStyle = {
   color: "var(--text-primary)",
   fontWeight: 600,
 };
-
-

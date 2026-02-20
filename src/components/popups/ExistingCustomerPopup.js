@@ -2,7 +2,7 @@
 // ✅ File location: src/components/popups/ExistingCustomerPopup.js
 import React, { useState, useEffect } from "react";
 import { searchCustomers } from "@/lib/database/customers"; // ✅ use shared function
-import ModalPortal from "./ModalPortal";
+import PopupModal from "@/components/popups/popupStyleApi";
 
 // ExistingCustomerPopup component
 export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }) {
@@ -66,40 +66,24 @@ export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }
      RENDER POPUP
   ============================================ */
   return (
-    <ModalPortal>
-      <div className="popup-backdrop">
-        <div
-          className="popup-card"
+    <PopupModal onClose={onClose} cardStyle={{ maxWidth: "650px" }} ariaLabel="Existing customer">
+      <div style={{ padding: "32px" }}>
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by name, email, or mobile"
           style={{
-            borderRadius: "32px",
             width: "100%",
-            maxWidth: "650px",
-            maxHeight: "90vh",
-            overflowY: "auto",
+            marginBottom: "16px",
+            padding: "10px 12px",
+            borderRadius: "10px",
             border: "1px solid var(--surface-light)",
+            backgroundColor: "var(--surface)",
+            color: "var(--text-primary)",
           }}
-        >
-          {/* Header removed to match Add New Customer */}
+        />
 
-        {/* Search input */}
-        <div style={{ padding: "32px" }}>
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name, email, or mobile"
-            style={{
-              width: "100%",
-              marginBottom: "16px",
-              padding: "10px 12px",
-              borderRadius: "10px",
-              border: "1px solid var(--surface-light)",
-              backgroundColor: "var(--surface)",
-              color: "var(--text-primary)",
-            }}
-          />
-
-        {/* List results */}
         {customerList.length > 0 && (
           <div
             style={{
@@ -132,18 +116,19 @@ export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }
           </div>
         )}
 
-        {/* Show selected customer details */}
         {selectedCustomer && (
-          <div style={{
-            marginBottom: "16px",
-            backgroundColor: "var(--surface-light)",
-            color: "var(--text-primary)",
-            padding: "16px",
-            borderRadius: "10px",
-            border: "1px solid var(--surface-light)",
-            fontSize: "14px",
-            lineHeight: 1.5,
-          }}>
+          <div
+            style={{
+              marginBottom: "16px",
+              backgroundColor: "var(--surface-light)",
+              color: "var(--text-primary)",
+              padding: "16px",
+              borderRadius: "10px",
+              border: "1px solid var(--surface-light)",
+              fontSize: "14px",
+              lineHeight: 1.5,
+            }}
+          >
             <p>
               <strong>Name:</strong> {selectedCustomer.firstname}{" "}
               {selectedCustomer.lastname}
@@ -163,7 +148,6 @@ export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }
           </div>
         )}
 
-        {/* Buttons */}
         <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
           <button
             onClick={onClose}
@@ -198,9 +182,7 @@ export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }
             {primaryButtonLabel}
           </button>
         </div>
-        </div>
-        </div>
       </div>
-    </ModalPortal>
+    </PopupModal>
   );
 }

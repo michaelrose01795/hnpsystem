@@ -947,6 +947,7 @@ export default function Layout({
                 justifyContent: "space-between",
                 overflowX: "auto",
                 overflowY: "visible",
+                position: "relative",
               }}
             >
               {/* Hide Welcome back and mode section on tablet/mobile */}
@@ -968,17 +969,6 @@ export default function Layout({
                       gap: "4px",
                     }}
                   >
-                    <p
-                      style={{
-                        margin: 0,
-                        fontSize: "0.72rem",
-                        fontWeight: 500,
-                        color: colors.mutedText,
-                        lineHeight: 1.2,
-                      }}
-                    >
-                      {welcomeQuote}
-                    </p>
                     <h1
                       style={{
                         fontSize: "1.15rem",
@@ -1040,184 +1030,174 @@ export default function Layout({
                 </div>
               )}
 
-              {isTech && (
+              {(isTech || canUseServiceActions || hasPartsAccess) && (
                 <div
                   style={{
+                    position: "absolute",
+                    left: "50%",
+                    transform: "translateX(-50%)",
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: isTablet ? "flex-end" : "center",
-                    flex: isTablet ? "1 1 auto" : "0 0 auto",
-                    marginLeft: isTablet ? "auto" : "0",
-                  }}
-                >
-                  <DropdownField
-                    value={status}
-                    onChange={(e) => handleStatusChange(e.target.value)}
-                    style={{
-                      padding: isMobile ? "4px 10px" : isTablet ? "5px 12px" : "6px 14px",
-                      borderRadius: isMobile ? "10px" : "12px",
-                      border: "none",
-                      backgroundColor: "var(--surface)",
-                      color: colors.accent,
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      boxShadow: "none",
-                      fontSize: isMobile ? "0.75rem" : "0.85rem",
-                      minWidth: "auto",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    <option>Waiting for Job</option>
-                    <option>In Progress</option>
-                    <option>Tea Break</option>
-                  </DropdownField>
-                </div>
-              )}
-
-              {isTech && (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    flex: "0 0 auto",
-                  }}
-                >
-                  <button
-                    type="button"
-                    disabled={!currentJob?.jobNumber}
-                    onClick={() =>
-                      currentJob?.jobNumber && router.push(`/job-cards/myjobs/${currentJob.jobNumber}`)
-                    }
-                    style={{
-                      padding: "6px 12px",
-                      borderRadius: "10px",
-                      border: "none",
-                      background: currentJob?.jobNumber
-                        ? "var(--primary)"
-                        : "var(--info-surface)",
-                      color: currentJob?.jobNumber ? "var(--surface)" : "var(--info)",
-                      fontWeight: 600,
-                      cursor: currentJob?.jobNumber ? "pointer" : "not-allowed",
-                      boxShadow: "none",
-                      transition: "all 0.2s ease",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {currentJob?.jobNumber ? `Open Job ${currentJob.jobNumber}` : "No Current Job"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsModalOpen(true)}
-                    style={{
-                      padding: "6px 12px",
-                      borderRadius: "10px",
-                      border: "1px solid var(--primary)",
-                      background: "var(--surface)",
-                      color: "var(--primary)",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      boxShadow: "none",
-                      transition: "all 0.2s ease",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    Start Job
-                  </button>
-                </div>
-              )}
-
-              {canUseServiceActions && (
-                <div
-                  style={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: "8px",
-                    justifyContent: isTablet ? "flex-start" : "center",
-                    alignItems: "center",
-                    flex: "1 1 260px",
-                    minWidth: isMobile ? "100%" : "260px",
-                  }}
-                >
-                  {SERVICE_ACTION_LINKS.map((action) => {
-                    const active =
-                      router.pathname === action.href ||
-                      router.pathname.startsWith(`${action.href}/`);
-                    return (
-                      <Link
-                        key={action.href}
-                        href={action.href}
-                        style={{
-                          padding: "0 14px",
-                          height: "34px",
-                          borderRadius: "999px",
-                          border: active ? "1px solid var(--primary-dark)" : "1px solid var(--surface-light)",
-                          backgroundColor: active ? "var(--primary-dark)" : "var(--surface-light)",
-                          color: active ? "var(--surface)" : "var(--primary-dark)",
-                          fontWeight: 600,
-                          fontSize: "0.85rem",
-                          lineHeight: 1,
-                          textDecoration: "none",
-                          boxShadow: "none",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          transition:
-                            "background-color 0.2s ease, color 0.2s ease",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {action.label}
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-
-              {hasPartsAccess && (
-                <div
-                  style={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: "10px",
                     justifyContent: "center",
-                    alignItems: "center",
-                    flex: isMobile ? "1 1 100%" : "0 1 auto",
-                    minWidth: isMobile ? "100%" : "260px",
-                    marginLeft: isMobile ? 0 : "auto",
-                    marginRight: isMobile ? 0 : "auto",
-                    textAlign: "center",
+                    gap: "12px",
+                    whiteSpace: "nowrap",
+                    zIndex: 2,
                   }}
                 >
-                  {PARTS_ACTION_LINKS.map((action) => {
-                    const active =
-                      router.pathname === action.href ||
-                      router.pathname.startsWith(`${action.href}/`);
-                    return (
-                      <Link
-                        key={action.href}
-                        href={action.href}
+                  {isTech && (
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <DropdownField
+                        value={status}
+                        onChange={(e) => handleStatusChange(e.target.value)}
                         style={{
-                          padding: isMobile ? "0 14px" : "0 14px",
-                          height: "34px",
-                          borderRadius: "999px",
-                          border: active ? "1px solid var(--primary-dark)" : "1px solid rgba(var(--primary-rgb),0.35)",
-                          backgroundColor: active ? "var(--primary-dark)" : "rgba(var(--primary-rgb),0.08)",
-                          color: active ? "var(--surface)" : "var(--primary-dark)",
-                          fontWeight: 700,
-                          fontSize: "0.9rem",
-                          lineHeight: 1,
-                          textDecoration: "none",
+                          padding: isMobile ? "4px 10px" : isTablet ? "5px 12px" : "6px 14px",
+                          borderRadius: isMobile ? "10px" : "12px",
+                          border: "none",
+                          backgroundColor: "var(--surface)",
+                          color: colors.accent,
+                          fontWeight: 600,
+                          cursor: "pointer",
                           boxShadow: "none",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          transition: "background-color 0.2s ease, color 0.2s ease",
+                          fontSize: isMobile ? "0.75rem" : "0.85rem",
+                          minWidth: "auto",
                           whiteSpace: "nowrap",
                         }}
                       >
-                        {action.label}
-                      </Link>
-                    );
-                  })}
+                        <option>Waiting for Job</option>
+                        <option>In Progress</option>
+                        <option>Tea Break</option>
+                      </DropdownField>
+                      <button
+                        type="button"
+                        disabled={!currentJob?.jobNumber}
+                        onClick={() =>
+                          currentJob?.jobNumber && router.push(`/job-cards/myjobs/${currentJob.jobNumber}`)
+                        }
+                        style={{
+                          padding: "6px 12px",
+                          borderRadius: "10px",
+                          border: "none",
+                          background: currentJob?.jobNumber
+                            ? "var(--primary)"
+                            : "var(--info-surface)",
+                          color: currentJob?.jobNumber ? "var(--surface)" : "var(--info)",
+                          fontWeight: 600,
+                          cursor: currentJob?.jobNumber ? "pointer" : "not-allowed",
+                          boxShadow: "none",
+                          transition: "all 0.2s ease",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {currentJob?.jobNumber ? `Open Job ${currentJob.jobNumber}` : "No Current Job"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsModalOpen(true)}
+                        style={{
+                          padding: "6px 12px",
+                          borderRadius: "10px",
+                          border: "1px solid var(--primary)",
+                          background: "var(--surface)",
+                          color: "var(--primary)",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          boxShadow: "none",
+                          transition: "all 0.2s ease",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        Start Job
+                      </button>
+                    </div>
+                  )}
+
+                  {canUseServiceActions && (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexWrap: "nowrap",
+                        gap: "12px",
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }}
+                    >
+                      {SERVICE_ACTION_LINKS.map((action) => {
+                        const active =
+                          router.pathname === action.href ||
+                          router.pathname.startsWith(`${action.href}/`);
+                        return (
+                          <Link
+                            key={action.href}
+                            href={action.href}
+                            style={{
+                              padding: "0 14px",
+                              height: "34px",
+                              borderRadius: "999px",
+                              border: active ? "1px solid var(--primary-dark)" : "1px solid var(--surface-light)",
+                              backgroundColor: active ? "var(--primary-dark)" : "var(--surface-light)",
+                              color: active ? "var(--surface)" : "var(--primary-dark)",
+                              fontWeight: 600,
+                              fontSize: "0.85rem",
+                              lineHeight: 1,
+                              textDecoration: "none",
+                              boxShadow: "none",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              transition:
+                                "background-color 0.2s ease, color 0.2s ease",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {action.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {hasPartsAccess && (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexWrap: "nowrap",
+                        gap: "12px",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        textAlign: "center",
+                      }}
+                    >
+                      {PARTS_ACTION_LINKS.map((action) => {
+                        const active =
+                          router.pathname === action.href ||
+                          router.pathname.startsWith(`${action.href}/`);
+                        return (
+                          <Link
+                            key={action.href}
+                            href={action.href}
+                            style={{
+                              padding: isMobile ? "0 14px" : "0 14px",
+                              height: "34px",
+                              borderRadius: "999px",
+                              border: active ? "1px solid var(--primary-dark)" : "1px solid rgba(var(--primary-rgb),0.35)",
+                              backgroundColor: active ? "var(--primary-dark)" : "rgba(var(--primary-rgb),0.08)",
+                              color: active ? "var(--surface)" : "var(--primary-dark)",
+                              fontWeight: 700,
+                              fontSize: "0.9rem",
+                              lineHeight: 1,
+                              textDecoration: "none",
+                              boxShadow: "none",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              transition: "background-color 0.2s ease, color 0.2s ease",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {action.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1228,17 +1208,18 @@ export default function Layout({
                     display: "flex",
                     alignItems: "center",
                     gap: "12px",
-                    flex: "1 1 0",
-                    minWidth: "320px",
+                    flex: "0 0 auto",
+                    minWidth: "auto",
                     justifyContent: "flex-end",
+                    marginLeft: "auto",
                   }}
                 >
                   <div
                     style={{
-                      flex: "1 1 auto",
-                      minWidth: "240px",
-                      width: "100%",
-                      maxWidth: "100%",
+                      flex: "0 0 auto",
+                      minWidth: "23ch",
+                      width: "23ch",
+                      maxWidth: "23ch",
                       position: "relative",
                     }}
                   >

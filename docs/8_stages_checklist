@@ -9,12 +9,16 @@ Add a concern with status Red, save
 Add a concern with status Amber, save
 Add a concern with status Green, save
 Check the vhc_issues table — verify severity column shows red, amber, green (lowercase)
+
+
 Test 1.2 — Quote line calculations
 
 Open a VHC that has authorised items with prices
 Check the quote/summary panel — verify totals calculate correctly
 Check vhc_issues table — verify labour_cost, parts_cost columns have correct numbers
 Verify the default labour rate of £85 is applied where no custom rate is set
+
+
 Test 1.3 — Approval status normalisation
 
 If you have items that have been authorised or declined, open them
@@ -34,6 +38,8 @@ Log in to the app
 Filter network requests by "jobs" or your Supabase URL
 Verify only ONE jobs query fires, not two
 Verify the jobs dashboard/list populates correctly
+
+
 Test 2.2 — Scrollbar behaviour
 
 Navigate to any page with scrollable content (e.g. a long job list)
@@ -41,6 +47,8 @@ Scroll up and down — scrollbars should appear while scrolling
 Stop scrolling — scrollbars should fade/hide after ~3 seconds
 Hover over a scrollable area — scrollbar should appear
 Test this on multiple pages (job cards, VHC panels, dropdowns)
+
+
 Test 2.3 — Page navigation performance
 
 Navigate between several pages rapidly (dashboard → job cards → appointments → profile)
@@ -62,18 +70,24 @@ Switch to a different browser tab, wait 2+ minutes
 Verify NO network requests fire while tab is hidden
 Switch back to the app tab
 Verify a request fires immediately on return
+
+
 Test 3.2 — Job clocking card updates
 
 Open a page with the JobClockingCard visible
 Have another user (or another tab) clock in/out on a job
 Wait up to 30 seconds — the clocking card should update
 Check job_clocking table — verify clock_in, clock_out timestamps
+
+
 Test 3.3 — Parts on order refresh
 
 Open a job card with the Parts tab
 Add a part with status "On Order"
 Check parts_job_items table — verify the row exists with correct status
 The parts list should refresh automatically every 30 seconds
+
+
 Test 3.4 — Profile page refresh
 
 Go to /profile
@@ -98,16 +112,22 @@ Edit the issue text — verify it saves
 Click "Remove" — verify it disappears
 Click "Save & Complete"
 Check vhc_issues table — verify rows match what you entered
+
+
 Test 4.2 — Underside Details Modal
 
 Repeat all steps from 4.1 but in the Underside section
 Test categories: "Exhaust system/catalyst", "Steering", "Miscellaneous"
 For Miscellaneous — verify you get a plain text input (not autocomplete)
 For non-Miscellaneous — verify you get autocomplete suggestions
+
+
 Test 4.3 — Internal Electrics Details Modal
 
 Repeat all steps from 4.1 but in the Internal section
 Test categories: "Interior Lights", "Media Systems", "Warning Lamps"
+
+
 Test 4.4 — Locked/Authorised rows
 
 Find a VHC that has authorised or declined items (check vhc_issues table for rows where approval_status = authorized or declined)
@@ -117,6 +137,8 @@ Verify you CANNOT edit the issue text on locked rows
 Verify you CANNOT change the status on locked rows
 Verify you CANNOT remove locked rows
 Verify unlocked rows still work normally
+
+
 Test 4.5 — Brakes/Wheels modals (NOT changed — regression check)
 
 Open BrakesHubs VHC section — verify severity escalation still works
@@ -136,11 +158,15 @@ Navigate to the jobs dashboard
 Quickly navigate away and back within 5 seconds
 Verify only ONE Supabase jobs query fires, not two
 Wait 6+ seconds, navigate again — a new query should fire
+
+
 Test 5.2 — Cache invalidation on job creation
 
 Create a new job card
 Check jobs table — verify the new row exists with correct job_number, description, status
 Navigate to the jobs list — the new job should appear immediately (cache was invalidated)
+
+
 Test 5.3 — Cache invalidation on job update
 
 Open an existing job card
@@ -148,11 +174,15 @@ Change the status (e.g. "Open" → "Assigned")
 Check jobs table — verify status column updated
 Check job_status_history table — verify a history row was inserted with from_status and to_status
 Navigate to jobs list — the updated status should show immediately
+
+
 Test 5.4 — Cache invalidation on technician assignment
 
 Assign a technician to a job
 Check jobs table — verify assigned_to column has the technician's user ID
 The jobs list should reflect the assignment immediately
+
+
 Test 5.5 — getJobByNumber caching
 
 Open a specific job card (e.g. /job-cards/myjobs/12345)
@@ -172,6 +202,8 @@ Verify all form fields render correctly (labels, inputs, textareas)
 Verify field groups have rounded borders, proper padding
 Fill in the form and submit
 Check accounts table — verify all fields saved correctly
+
+
 Test 6.2 — Company Account Form
 
 Go to Company Accounts → Create New
@@ -179,6 +211,8 @@ Verify the form renders with proper styling
 Test the bulk data entry — paste tab-separated data, click "Apply data"
 Submit the form
 Check company_accounts table — verify all fields saved
+
+
 Test 6.3 — Retail Managers Dashboard
 
 Open the Retail Managers Dashboard
@@ -188,6 +222,8 @@ Verify "Retail manager focus" panels show correctly
 Verify "Technician utilisation" progress bars render
 Verify "Red priority jobs" section shows or says "No red-priority jobs"
 Cross-reference with jobs table — counts should match
+
+
 Test 6.4 — Workshop Manager Dashboard
 
 Open Workshop Manager Dashboard
@@ -197,6 +233,8 @@ Verify "Bay Readiness" section card renders
 Verify "Consumables" button opens the modal
 In the modal — verify month selector works, table shows data
 Cross-reference with job_clocking table for technician counts
+
+
 Test 6.5 — After Sales Manager Dashboard
 
 Open After Sales Manager Dashboard
@@ -219,11 +257,15 @@ Open any dropdown that has enough options to scroll (e.g. a long status dropdown
 Scroll within the dropdown menu
 Verify the scrollbar appears with the theme colour (not browser default)
 Verify scrollbar has rounded corners
+
+
 Test 7.2 — Timepicker scrollbars
 
 Open a timepicker component (e.g. appointment time)
 Scroll through the time options
 Verify themed scrollbar appears (matches dropdown scrollbar styling)
+
+
 Test 7.3 — General page scrollbars
 
 On any long page, scroll up and down
@@ -243,6 +285,8 @@ Go to Accounts → Settings (if there's a settings page)
 Change a setting and save
 Check account_settings table — verify settings JSON column updated
 Refresh the page — verify settings load back
+
+
 Test 8.2 — Company Accounts CRUD
 
 List: Go to Company Accounts page — verify list loads
@@ -253,12 +297,16 @@ Edit: Open an existing company account, change the company name
 Check company_accounts table — verify company_name updated
 Delete: Delete a test company account
 Check company_accounts table — verify the row is gone
+
+
 Test 8.3 — Next Number API
 
 Go to Create Company Account page (where auto-generate is on)
 Verify an account number like "CA0123" auto-fills
 Check company_accounts table — verify this number doesn't already exist
 Create the account — verify it saves with that number
+
+
 Test 8.4 — Permission guards
 
 If you can test with a user that does NOT have "accounts" role:
@@ -266,6 +314,8 @@ Try accessing /api/accounts — should get 403
 Try accessing /api/company-accounts — should get 403
 If you can test with an "accounts" role user:
 All operations should work normally
+
+
 Test 8.5 — Method not allowed
 
 Open DevTools Console

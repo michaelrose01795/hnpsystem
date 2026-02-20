@@ -17,6 +17,7 @@ import InternalElectricsDetailsModal from "@/components/VHC/InternalElectricsDet
 import UndersideDetailsModal from "@/components/VHC/UndersideDetailsModal";
 import PrePickLocationModal from "@/components/VHC/PrePickLocationModal";
 import VHCModalShell from "@/components/VHC/VHCModalShell";
+import PopupModal from "@/components/popups/popupStyleApi";
 import { buildVhcRowStatusView, normaliseDecisionStatus, resolveSeverityKey } from "@/lib/vhc/summaryStatus";
 import { getSlotCode, makeLineKey, resolveLineType } from "@/lib/vhc/slotIdentity";
 import {
@@ -3870,7 +3871,25 @@ export default function VhcDetailsPanel({
   }, []);
 
   const renderSeverityTable = (severity, itemsOverride = null) => {
-    const items = itemsOverride || severityLists[severity] || [];
+    const itemsRaw = itemsOverride || severityLists[severity] || [];
+    const items =
+      severity === "authorized" || severity === "declined"
+        ? [...itemsRaw].sort((a, b) => {
+            const severityRank = (item) => {
+              const value = normaliseColour(
+                item?.vhcCheck?.severity ||
+                  item?.vhcCheck?.display_status ||
+                  item?.severityKey ||
+                  item?.rawSeverity
+              );
+              if (value === "red") return 0;
+              if (value === "amber") return 1;
+              if (value === "green") return 2;
+              return 3;
+            };
+            return severityRank(a) - severityRank(b);
+          })
+        : itemsRaw;
     if (items.length === 0) {
       return <EmptyStateMessage message={`No ${severity} items recorded.`} />;
     }
@@ -3986,9 +4005,19 @@ export default function VhcDetailsPanel({
                         partsComplete:
                           typeof item.partsComplete === "boolean" ? item.partsComplete : entry.partsComplete,
                         labourComplete:
-                          typeof item.labourComplete === "boolean" ? item.labourComplete : entry.labourComplete,
+                          severity === "authorized" || severity === "declined"
+                            ? entry.labourComplete ?? item.labourComplete
+                            : typeof item.labourComplete === "boolean"
+                              ? item.labourComplete
+                              : entry.labourComplete,
                       }
                     : entry;
+                const hasResolvedLabourHours =
+                  resolvedLabourHours !== "" && resolvedLabourHours !== null && resolvedLabourHours !== undefined;
+                const labourCheckboxChecked =
+                  severity === "authorized" || severity === "declined"
+                    ? resolveLabourCompleteValue(effectiveEntry, resolvedLabourHours) || hasResolvedLabourHours
+                    : resolveLabourCompleteValue(effectiveEntry, resolvedLabourHours);
                 const statusState = resolveVhcRowStatusView(item, effectiveEntry, resolvedPartsCost, resolvedLabourHours);
                 const locationLabel = item.location
                   ? LOCATION_LABELS[item.location] || item.location.replace(/_/g, " ")
@@ -4261,7 +4290,7 @@ export default function VhcDetailsPanel({
                       <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", position: "relative" }}>
                         <input
                           type="checkbox"
-                          checked={resolveLabourCompleteValue(effectiveEntry, resolvedLabourHours)}
+                          checked={labourCheckboxChecked}
                           onChange={(event) => event.preventDefault()}
                           onClick={(event) => {
                             event.preventDefault();
@@ -6135,7 +6164,7 @@ export default function VhcDetailsPanel({
     setSelectedPartForJob(null);
   }, []);
 
-  // Render VHC items panel for Parts Identified (shows all VHC items regardless of status)
+  // Render VHC items panel for Parts Identified (includes all decisions; red/amber priority)
   const renderVhcItemsPanel = useCallback(() => {
     // Build parts lookup by vhc_item_id for linking
     const partsByVhcId = new Map();
@@ -6146,13 +6175,27 @@ export default function VhcDetailsPanel({
       partsByVhcId.get(key).push(part);
     });
 
-    // Use quoteSeverityLists (same source as summary tab) for consistent items
+    // Parts Identified should still show rows after authorization/decline.
+    // Order by underlying severity so red appears before amber.
     const quoteItems = [
       ...(quoteSeverityLists.red || []),
       ...(quoteSeverityLists.amber || []),
       ...(quoteSeverityLists.authorized || []),
       ...(quoteSeverityLists.declined || []),
-    ];
+    ].sort((a, b) => {
+      const rank = (value) => {
+        const severity = normaliseColour(
+          value?.vhcCheck?.severity ||
+          value?.vhcCheck?.display_status ||
+          value?.severityKey ||
+          value?.rawSeverity
+        );
+        if (severity === "red") return 0;
+        if (severity === "amber") return 1;
+        return 2;
+      };
+      return rank(a) - rank(b);
+    });
 
     const displayItems = quoteItems.map((item) => {
       const canonicalId = String(item.canonicalId || item.id);
@@ -6234,19 +6277,20 @@ export default function VhcDetailsPanel({
                   authorizedViewIds.has(String(canonicalId));
                 const canAddPart = !isCustomerView && !readOnly && !isLocked;
 
-                // Determine background color based on status
+                // Determine background color from severity first so amber/red remain visually consistent
+                // across pending/authorized/declined states in both light and dark themes.
                 let rowBackground = "var(--surface)";
                 let rowHoverBackground = "var(--accent-purple-surface)";
 
-                if (entryDecision === "authorized") {
-                  rowBackground = "var(--success-surface)";
-                  rowHoverBackground = "var(--success-surface-hover)";
+                if (vhcSeverity === "red" || vhcSeverity === "amber") {
+                  rowBackground = SEVERITY_THEME[vhcSeverity]?.background || "var(--surface)";
+                  rowHoverBackground = SEVERITY_THEME[vhcSeverity]?.hover || "var(--accent-purple-surface)";
                 } else if (entryDecision === "declined") {
                   rowBackground = "var(--danger-surface)";
                   rowHoverBackground = "var(--danger-surface-hover)";
-                } else if (vhcSeverity) {
-                  rowBackground = SEVERITY_THEME[vhcSeverity]?.background || "var(--surface)";
-                  rowHoverBackground = SEVERITY_THEME[vhcSeverity]?.hover || "var(--accent-purple-surface)";
+                } else if (entryDecision === "authorized") {
+                  rowBackground = "var(--success-surface)";
+                  rowHoverBackground = "var(--success-surface-hover)";
                 }
 
                 return (
@@ -8672,26 +8716,15 @@ export default function VhcDetailsPanel({
       </VHCModalShell>
 
       {labourCostModal.open && (
-        <div
-          className="popup-backdrop"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) {
-              closeLabourCostModal();
-            }
+        <PopupModal
+          isOpen={labourCostModal.open}
+          onClose={closeLabourCostModal}
+          ariaLabel="Labour cost editor"
+          cardStyle={{
+            maxWidth: "560px",
+            maxHeight: "88vh",
           }}
         >
-          <div
-            className="popup-card"
-            style={{
-              borderRadius: "32px",
-              width: "100%",
-              maxWidth: "560px",
-              border: "1px solid var(--surface-light)",
-              maxHeight: "88vh",
-              overflowY: "auto",
-            }}
-            onClick={(event) => event.stopPropagation()}
-          >
             <div style={{ padding: "32px" }}>
               <h4
                 style={{
@@ -8807,8 +8840,7 @@ export default function VhcDetailsPanel({
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+        </PopupModal>
       )}
 
       {/* Pre-Pick Location Modal */}

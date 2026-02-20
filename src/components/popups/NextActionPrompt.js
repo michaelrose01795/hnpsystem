@@ -4,7 +4,7 @@
 import React, { useMemo, useState } from "react"; // import React helpers
 import { useNextAction } from "@/context/NextActionContext"; // import next action context hook
 import { useUser } from "@/context/UserContext"; // import user context to capture performer id
-import ModalPortal from "./ModalPortal";
+import PopupModal from "@/components/popups/popupStyleApi";
 
 const KEY_LOCATIONS = [
   "Completed Hooks – Row A",
@@ -130,20 +130,20 @@ export default function NextActionPrompt() {
       </button>
 
       {isOpen && (
-        <ModalPortal>
-          <div className="popup-backdrop" style={{ padding: "20px", zIndex: 1000 }}>
-            <div
-              className="popup-card"
-              style={{
-                width: "min(520px, 100%)",
-                borderRadius: "24px",
-                padding: "28px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "18px",
-                boxShadow: "none",
-              }}
-            >
+        <PopupModal
+          isOpen={isOpen}
+          onClose={closePrompt}
+          backdropStyle={{ zIndex: 1000 }}
+          ariaLabel="Next action prompt"
+          cardStyle={{
+            width: "min(520px, 100%)",
+            borderRadius: "24px",
+            padding: "28px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "18px",
+          }}
+        >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px" }}>
               <div>
                 <p style={{ margin: 0, fontSize: "0.75rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--danger)" }}>
@@ -312,9 +312,7 @@ export default function NextActionPrompt() {
                 </button>
               </div>
             </form>
-            </div>
-          </div>
-        </ModalPortal>
+        </PopupModal>
       )}
     </>
   );

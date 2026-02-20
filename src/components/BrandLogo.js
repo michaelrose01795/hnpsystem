@@ -2,6 +2,9 @@ import React, { useEffect, useMemo, useState } from "react";
 import { ACCENT_PALETTES, useTheme } from "@/styles/themeProvider";
 
 const LIGHT_LOGO_SRC = "/images/logo/Logo.png";
+const FALLBACK_ACCENT_PALETTES = {
+  red: { light: "#dc2626", dark: "#f87171" },
+};
 
 const DEFAULT_TARGET_RGB = {
   light: { r: 220, g: 38, b: 38 },
@@ -83,7 +86,9 @@ export default function BrandLogo({
   const baseSrc = LIGHT_LOGO_SRC;
 
   const targetRgb = useMemo(() => {
-    const palette = ACCENT_PALETTES[accent] || ACCENT_PALETTES.red;
+    const paletteMap =
+      ACCENT_PALETTES && typeof ACCENT_PALETTES === "object" ? ACCENT_PALETTES : FALLBACK_ACCENT_PALETTES;
+    const palette = paletteMap[accent] || paletteMap.red || FALLBACK_ACCENT_PALETTES.red;
     const hex = mode === "dark" ? palette?.dark : palette?.light;
     const safeHex = String(hex || "").replace("#", "");
     if (!/^[0-9a-fA-F]{6}$/.test(safeHex)) return DEFAULT_TARGET_RGB[mode];

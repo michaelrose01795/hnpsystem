@@ -2,7 +2,7 @@
 // file location: src/components/popups/NewCustomerPopup.js
 import React, { useEffect, useState } from "react"; // import React hooks
 import { addCustomerToDatabase } from "@/lib/database/customers"; // import database function
-import ModalPortal from "./ModalPortal";
+import PopupModal from "@/components/popups/popupStyleApi";
 
 export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
   // State for all form fields
@@ -153,27 +153,14 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
 
   // ✅ UI layout for popup
   return (
-    <ModalPortal>
-      <div
-        className="popup-backdrop"
-        onClick={(e) => {
-          if (e.target === e.currentTarget && typeof onClose === "function") {
-            onClose();
-          }
-        }}
-      >
-        <div
-          className="popup-card"
-          style={{
-            borderRadius: "32px",
-            width: "100%",
-            maxWidth: "650px",
-            maxHeight: "90vh",
-            overflowY: "auto",
-            border: "1px solid var(--surface-light)",
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
+    <PopupModal
+      onClose={onClose}
+      cardStyle={{
+        maxWidth: "650px",
+      }}
+      ariaLabel="New customer"
+    >
+      <>
         {/* Header removed by request */}
 
         {/* Content */}
@@ -710,8 +697,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
             {loading ? "Saving..." : "Add Customer"}
           </button>
         </div>
-        </div>
-      </div>
-    </ModalPortal>
+      </>
+    </PopupModal>
   );
 }
