@@ -117,6 +117,8 @@ export const upsertVhcIssueRow = async ({
   const labourTotal = hours * rate;
   const totalOverride = parts + labourTotal > 0 ? parts + labourTotal : null;
 
+  const isNA = normalizedApprovalStatus === "n/a";
+
   const upsertPayload = {
     job_id: resolvedJobId,
     section: normalizedSection,
@@ -127,13 +129,19 @@ export const upsertVhcIssueRow = async ({
     total_override: totalOverride,
     display_status: buildDisplayStatus({ approvalStatus: normalizedApprovalStatus, severity: normalizedSeverity, displayStatus: display_status }),
     approval_status: normalizedApprovalStatus,
-    authorization_state: authorization_state ?? null,
+    authorization_state: isNA ? "n/a" : (authorization_state ?? null),
     severity: normalizedSeverity,
     slot_code: slotCode,
     line_key: lineKey,
     display_id: display_id || null,
     measurement: measurement || null,
     updated_at: now,
+    ...(isNA && {
+      labour_complete: true,
+      parts_complete: true,
+      approved_at: null,
+      approved_by: null,
+    }),
   };
 
   try {

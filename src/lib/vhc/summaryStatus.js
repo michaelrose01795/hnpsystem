@@ -12,6 +12,7 @@ export const normaliseDecisionStatus = (value) => {
   if (!value) return null;
   const normalized = value.toString().trim().toLowerCase();
   if (!normalized) return null;
+  if (normalized === "n/a") return "n/a";
   if (normalized === "authorised") return "authorized";
   if (normalized === "approved") return "authorized";
   if (normalized === "authorized") return "authorized";
@@ -84,6 +85,18 @@ export const buildVhcRowStatusView = ({
       color: "var(--danger)",
       label: "Declined",
       showCross: true,
+    };
+  }
+
+  if (decisionKey === "n/a") {
+    return {
+      decisionKey,
+      severityKey,
+      sectionKey: severityKey,
+      dotStateKey: "approved",
+      color: "var(--success)",
+      label: "N/A",
+      showTick: true,
     };
   }
 

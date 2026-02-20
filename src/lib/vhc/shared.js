@@ -34,6 +34,7 @@ export const normaliseColour = (value) => {
 export const normalizeApprovalStatus = (value) => {
   const text = collapseWhitespace(value).toLowerCase();
   if (!text) return "pending";
+  if (text === "n/a") return "n/a";
   if (text === "authorised" || text === "approved") return "authorized";
   if (["authorized", "declined", "completed", "pending"].includes(text)) return text;
   return "pending";

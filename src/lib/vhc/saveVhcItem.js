@@ -113,7 +113,7 @@ export const saveVhcItem = async (payload = {}, context = {}) => {
     labour_rate_gbp: toNumber(payload.labour_rate_gbp, DEFAULT_LABOUR_RATE_GBP),
     display_status: null,
     approval_status: normalizeApprovalStatus(payload.status),
-    authorization_state: payload.authorization_state ?? null,
+    authorization_state: payload.authorization_state ?? (normalizeSeverity(payload.severity) === "green" ? "n/a" : null),
     severity: normalizeSeverity(payload.severity),
     display_id: payload.display_id || null,
     measurement: payload.measurement || null,
@@ -144,9 +144,10 @@ export const buildNormalizedVhcItems = ({ job_number, vhcData, labour_rate_gbp =
       if (concerns.length > 0) {
         concerns.forEach((concern) => {
           const issueText = collapseWhitespace(concern?.text || notes || heading);
+          const rawSeverity = concern?.status || item?.status || "Amber";
           const payload = {
             job_number,
-            severity: concern?.status || item?.status || "Amber",
+            severity: rawSeverity,
             section: sectionName,
             category: heading,
             details: issueText,
@@ -157,7 +158,7 @@ export const buildNormalizedVhcItems = ({ job_number, vhcData, labour_rate_gbp =
             parts_gbp: 0,
             labour_hours: 0,
             labour_rate_gbp,
-            status: "pending",
+            status: normalizeSeverity(rawSeverity) === "green" ? "n/a" : "pending",
             source: "HEALTH_CHECK_POPUP",
             display_id: displayId,
             measurement,
@@ -172,9 +173,10 @@ export const buildNormalizedVhcItems = ({ job_number, vhcData, labour_rate_gbp =
       }
 
       const issueText = notes || heading;
+      const rawItemSeverity = item?.status || "Amber";
       const payload = {
         job_number,
-        severity: item?.status || "Amber",
+        severity: rawItemSeverity,
         section: sectionName,
         category: heading,
         details: issueText,
@@ -185,7 +187,7 @@ export const buildNormalizedVhcItems = ({ job_number, vhcData, labour_rate_gbp =
         parts_gbp: 0,
         labour_hours: 0,
         labour_rate_gbp,
-        status: "pending",
+        status: normalizeSeverity(rawItemSeverity) === "green" ? "n/a" : "pending",
         source: "HEALTH_CHECK_POPUP",
         display_id: displayId,
         measurement,

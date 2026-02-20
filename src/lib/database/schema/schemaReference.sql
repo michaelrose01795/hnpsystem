@@ -1436,7 +1436,7 @@ CREATE TABLE public.vhc_checks (
   measurement text,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
-  approval_status text DEFAULT 'pending'::text CHECK (approval_status IS NULL OR (approval_status = ANY (ARRAY['pending'::text, 'authorized'::text, 'declined'::text, 'completed'::text]))),
+  approval_status text DEFAULT 'pending'::text CHECK (approval_status IS NULL OR (approval_status = ANY (ARRAY['pending'::text, 'authorized'::text, 'declined'::text, 'completed'::text, 'n/a'::text]))),
   labour_hours numeric,
   parts_cost numeric,
   total_override numeric,

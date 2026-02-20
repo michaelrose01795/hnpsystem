@@ -12,6 +12,7 @@ export const STATUSES = {
   APPROVAL_AUTHORIZED: "authorized",
   APPROVAL_DECLINED: "declined",
   APPROVAL_COMPLETED: "completed",
+  APPROVAL_NA: "n/a",
 };
 
 export const DISPLAY = {
@@ -23,6 +24,7 @@ export const DISPLAY = {
   [STATUSES.APPROVAL_AUTHORIZED]: "Authorised",
   [STATUSES.APPROVAL_DECLINED]: "Declined",
   [STATUSES.APPROVAL_COMPLETED]: "Completed",
+  [STATUSES.APPROVAL_NA]: "N/A",
 };
 
 const ALIASES = {
@@ -38,6 +40,7 @@ const ALIASES = {
   authorised: STATUSES.APPROVAL_AUTHORIZED,
   declined: STATUSES.APPROVAL_DECLINED,
   completed: STATUSES.APPROVAL_COMPLETED,
+  "n/a": STATUSES.APPROVAL_NA,
 };
 
 export const NORMALIZE = (value) => {

@@ -47,10 +47,10 @@ export default async function handler(req, res) {
 
     if (approvalStatus !== undefined) {
       const nextApprovalStatus = normaliseApproval(approvalStatus);
-      if (!["pending", "authorized", "declined", "completed"].includes(nextApprovalStatus)) {
+      if (!["pending", "authorized", "declined", "completed", "n/a"].includes(nextApprovalStatus)) {
         return res.status(400).json({
           success: false,
-          message: "approvalStatus must be 'pending', 'authorized', 'declined', or 'completed'"
+          message: "approvalStatus must be 'pending', 'authorized', 'declined', 'completed', or 'n/a'"
         });
       }
       updateData.approval_status = nextApprovalStatus;
@@ -78,6 +78,14 @@ export default async function handler(req, res) {
       } else if (nextApprovalStatus === "pending") {
         updateData.approved_at = null;
         updateData.approved_by = null;
+        if (displayStatus === undefined) {
+          updateData.display_status = null;
+        }
+      } else if (nextApprovalStatus === "n/a") {
+        updateData.approved_at = null;
+        updateData.approved_by = null;
+        updateData.labour_complete = true;
+        updateData.parts_complete = true;
         if (displayStatus === undefined) {
           updateData.display_status = null;
         }

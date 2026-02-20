@@ -1,5 +1,6 @@
 // file location: src/pages/api/jobcards/create-vhc-item.js
 import { upsertVhcIssueRow } from "@/lib/vhc/upsertVhcIssueRow";
+import { normalizeSeverity } from "@/lib/vhc/shared";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -47,8 +48,8 @@ export default async function handler(req, res) {
       labour_hours: labourHours === "" || labourHours === null || labourHours === undefined ? 0 : Number(labourHours) || 0,
       labour_rate_gbp: 85,
       display_status: null,
-      approval_status: approvalStatus || "pending",
-      authorization_state: authorizationState || null,
+      approval_status: approvalStatus || (normalizeSeverity(severity) === "green" ? "n/a" : "pending"),
+      authorization_state: authorizationState || (normalizeSeverity(severity) === "green" ? "n/a" : null),
       severity: severity || "amber",
     });
 
