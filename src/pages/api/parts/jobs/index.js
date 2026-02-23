@@ -261,8 +261,6 @@ export default async function handler(req, res) {
         unit_price: resolvedUnitPrice,
         request_notes: requestNotes || null,
         allocated_by: shouldAllocate ? auditUserId || null : null,
-        created_by: auditUserId || null,
-        updated_by: auditUserId || null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };

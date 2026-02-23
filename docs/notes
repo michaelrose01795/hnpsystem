@@ -3,6 +3,16 @@ TO DO:
 Continue flow with job number 55.
 
 
+have it so the "Complete" text folows the light/dark/colour theme within the "Rectification" section. Remove the "Edited by Darrell W" section.
+
+
+
+
+
+invoice page fix, nearly just have "Ensure all allocated parts have quantities and pricing." create more detail for this easier for users to follow within this seciton. 
+
+
+TO DO AFTER THE ONE BELOW
 so i have archiving for job numbers, this is everything links to a job is archived and saved as read only intead of full functions. how can i save all of the data within the tables 
 
 
@@ -12,7 +22,7 @@ create a flow for create a job card, start from the /create page and then based 
 
 
 
-
+jobs database table work thought as nearly all empty, do a deep dive into finding out why nearly the whole database is emplty and fix any loose ends
 
 
 
@@ -44,7 +54,3 @@ Add any database tables / columns to file location: src/lib/database/schema/addt
 
 npm i next@latest
 npm i -g vercel@latest
-
-
-
-wakatime extetnion dads pc

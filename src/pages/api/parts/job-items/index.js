@@ -97,8 +97,6 @@ export default async function handler(req, res) {
         unit_price: body.unit_price ?? body.unitPrice ?? null,
         origin: body.origin ?? null,
         allocated_by: body.allocated_by ?? body.allocatedBy ?? null,
-        picked_by: body.picked_by ?? body.pickedBy ?? null,
-        fitted_by: body.fitted_by ?? body.fittedBy ?? null,
         created_at: new Date().toISOString(),
       }
 

@@ -54,7 +54,20 @@ export default async function handler(req, res) {
         return res.status(403).json({ ok: false, error: "Insufficient permissions" })
       }
 
-      const updates = { ...(req.body || {}) }
+      const rawUpdates = { ...(req.body || {}) }
+      const updates = { ...rawUpdates }
+      if (Object.prototype.hasOwnProperty.call(rawUpdates, "quantityRequested")) {
+        updates.quantity_requested = rawUpdates.quantityRequested
+        delete updates.quantityRequested
+      }
+      if (Object.prototype.hasOwnProperty.call(rawUpdates, "quantityAllocated")) {
+        updates.quantity_allocated = rawUpdates.quantityAllocated
+        delete updates.quantityAllocated
+      }
+      if (Object.prototype.hasOwnProperty.call(rawUpdates, "quantityFitted")) {
+        updates.quantity_fitted = rawUpdates.quantityFitted
+        delete updates.quantityFitted
+      }
       if (Object.prototype.hasOwnProperty.call(updates, "status")) {
         updates.status = normaliseStatus(updates.status)
       }
@@ -62,10 +75,13 @@ export default async function handler(req, res) {
       updates.updated_at = new Date().toISOString()
 
       const needsStockReturn = updates.status === "removed"
+      const touchesQuantities =
+        Object.prototype.hasOwnProperty.call(updates, "quantity_requested") ||
+        Object.prototype.hasOwnProperty.call(updates, "quantity_allocated")
       const isUnassigningVhc = Object.prototype.hasOwnProperty.call(updates, "vhc_item_id") && updates.vhc_item_id === null
 
       let existing = null
-      if (needsStockReturn || isUnassigningVhc) {
+      if (needsStockReturn || isUnassigningVhc || touchesQuantities) {
         const { data: existingRow, error: existingError } = await supabase
           .from("parts_job_items")
           .select("id, job_id, vhc_item_id, part_id, quantity_requested, quantity_allocated, status, authorised")
@@ -77,6 +93,59 @@ export default async function handler(req, res) {
         }
 
         existing = existingRow
+      }
+
+      let quantityAllocatedDelta = 0
+      let nextRequested = Number(existing?.quantity_requested || 0)
+      let nextAllocated = Number(existing?.quantity_allocated || 0)
+
+      if (touchesQuantities && existing) {
+        if (Object.prototype.hasOwnProperty.call(updates, "quantity_requested")) {
+          const parsedRequested = Number.parseInt(updates.quantity_requested, 10)
+          nextRequested = Number.isFinite(parsedRequested) ? Math.max(0, parsedRequested) : nextRequested
+          updates.quantity_requested = nextRequested
+        }
+        if (Object.prototype.hasOwnProperty.call(updates, "quantity_allocated")) {
+          const parsedAllocated = Number.parseInt(updates.quantity_allocated, 10)
+          nextAllocated = Number.isFinite(parsedAllocated) ? Math.max(0, parsedAllocated) : nextAllocated
+          updates.quantity_allocated = nextAllocated
+        }
+        quantityAllocatedDelta = nextAllocated - Number(existing.quantity_allocated || 0)
+
+        if (quantityAllocatedDelta !== 0) {
+          const { data: partRow, error: partError } = await supabase
+            .from("parts_catalog")
+            .select("qty_in_stock, qty_reserved")
+            .eq("id", existing.part_id)
+            .single()
+
+          if (partError || !partRow) {
+            throw partError || new Error("Part not found")
+          }
+
+          const currentStock = Number(partRow.qty_in_stock || 0)
+          const currentReserved = Number(partRow.qty_reserved || 0)
+
+          if (quantityAllocatedDelta > 0 && currentStock < quantityAllocatedDelta) {
+            return res.status(409).json({ ok: false, error: `Insufficient stock. Available: ${currentStock}` })
+          }
+
+          const nextStock = currentStock - quantityAllocatedDelta
+          const nextReserved = existing.authorised
+            ? Math.max(0, currentReserved + quantityAllocatedDelta)
+            : currentReserved
+
+          const { error: invError } = await supabase
+            .from("parts_catalog")
+            .update({
+              qty_in_stock: nextStock,
+              qty_reserved: nextReserved,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", existing.part_id)
+
+          if (invError) throw invError
+        }
       }
 
       const { data: updated, error } = await supabase

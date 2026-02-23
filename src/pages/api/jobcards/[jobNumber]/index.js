@@ -35,7 +35,7 @@ const loadArchivedJob = async (jobNumber) => {
 };
 
 export default async function handler(req, res) {
-  const { jobNumber, archive } = req.query;
+  const { jobNumber, archive, force } = req.query;
 
   if (req.method !== "GET") {
     res.setHeader("Allow", ["GET"]);
@@ -69,7 +69,8 @@ export default async function handler(req, res) {
       });
     }
 
-    const { data, error } = await getJobByNumber(jobNumber);
+    const requestForce = String(force || "") === "1";
+    const { data, error } = await getJobByNumber(jobNumber, { noCache: requestForce });
 
     if (error || !data?.jobCard) {
       const archived = await loadArchivedJob(jobNumber);

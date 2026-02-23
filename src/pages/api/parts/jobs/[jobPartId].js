@@ -179,9 +179,6 @@ export default async function handler(req, res) {
       }
 
       updates.updated_at = now;
-      if (auditUserId) {
-        updates.updated_by = auditUserId;
-      }
 
       if (stockNeedsUpdate) {
         const { error: invError } = await supabase

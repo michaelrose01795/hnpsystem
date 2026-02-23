@@ -1,6 +1,6 @@
 // ✅ New Parts Tab with Drag & Drop Allocation
 // file location: src/components/PartsTab_New.js
-import React, { useState, useCallback, useEffect, useMemo, forwardRef } from "react";
+import React, { useState, useCallback, useEffect, useMemo, useRef, forwardRef } from "react";
 import { usePolling } from "@/hooks/usePolling";
 import CalendarField from "@/components/calendarAPI/CalendarField";
 import TimePickerField from "@/components/timePickerAPI/TimePickerField";
@@ -33,6 +33,91 @@ const formatMoney = (value) => {
   return moneyFormatter.format(amount);
 };
 
+const normalizePartNumberKey = (value = "") =>
+  String(value || "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
+
+const formatExpectedPartNumberDisplay = (value = "") => {
+  const raw = String(value || "").replace(/\s+/g, " ").trim();
+  if (!raw) return "";
+
+  // Convert verbose tyre-style strings into a compact display:
+  // "Bridgestone | Size: 255/45R20 | Load 105 • Speed W |"
+  // -> "Bridgestone | Size: 255/45R20 105 W"
+  const pipeTyreMatch = raw.match(
+    /^([^|]+?)\s*\|\s*size:\s*([^|]+?)\s*\|\s*load\s*([0-9]{2,3})\s*[•|]?\s*speed\s*([A-Z])\s*\|?$/i
+  );
+  if (pipeTyreMatch) {
+    const brand = pipeTyreMatch[1].trim();
+    const size = pipeTyreMatch[2].replace(/\s+/g, "").toUpperCase();
+    const load = pipeTyreMatch[3];
+    const speed = pipeTyreMatch[4].toUpperCase();
+    return `${brand} | Size: ${size} ${load} ${speed}`;
+  }
+
+  return raw.replace(/\s*\|\s*$/, "");
+};
+
+const extractExpectedPartNumberInfo = (check = {}) => {
+  const direct = check?.part_number ?? check?.partNumber ?? null;
+  if (direct) {
+    const display = formatExpectedPartNumberDisplay(direct);
+    const key = normalizePartNumberKey(display);
+    if (key) return { display, key };
+  }
+
+  const textCandidates = [
+    check?.issue_description,
+    check?.issueDescription,
+    check?.measurement,
+    check?.note_text,
+  ]
+    .filter(Boolean)
+    .map((value) => String(value));
+
+  for (const text of textCandidates) {
+    const makeLineMatch = text.match(/make:\s*(.+?)(?=\s*(run\s*flat|tread|$))/i);
+    if (makeLineMatch?.[1]) {
+      const display = formatExpectedPartNumberDisplay(makeLineMatch[1]);
+      const key = normalizePartNumberKey(display);
+      if (key.length >= 6) return { display, key };
+    }
+
+    const tyreSpecMatch = text.match(/([A-Z]+)\s+(\d{3}\/\d{2}R\d{2}\s*\d{2,3}\s*[A-Z])/i);
+    if (tyreSpecMatch) {
+      const display = `${tyreSpecMatch[1]} ${tyreSpecMatch[2]}`.replace(/\s+/g, " ").trim();
+      const key = normalizePartNumberKey(display);
+      if (key.length >= 6) return { display, key };
+    }
+
+    const flattenedTyreMatch = text.match(
+      /([A-Z]+)\s*SIZE\s*(\d{3}\s*\/\s*\d{2}\s*R\s*\d{2})\s*LOAD\s*(\d{2,3})\s*SPEED\s*([A-Z])/i
+    );
+    if (flattenedTyreMatch) {
+      const brand =
+        flattenedTyreMatch[1].charAt(0).toUpperCase() +
+        flattenedTyreMatch[1].slice(1).toLowerCase();
+      const size = flattenedTyreMatch[2].replace(/\s+/g, "").toUpperCase();
+      const load = flattenedTyreMatch[3];
+      const speed = flattenedTyreMatch[4].toUpperCase();
+      const display = `${brand} ${size} ${load} ${speed}`;
+      const key = normalizePartNumberKey(display);
+      if (key.length >= 6) return { display, key };
+    }
+  }
+
+  return { display: null, key: null };
+};
+
+const normalizeAuthorizationState = (value = "") => {
+  const normalized = String(value || "").toLowerCase().trim();
+  if (!normalized) return "";
+  if (normalized === "authorised" || normalized === "approved") return "authorized";
+  if (normalized === "rejected") return "declined";
+  return normalized;
+};
+
 const PRE_PICK_OPTIONS = [
   { value: "", label: "Not assigned" },
   { value: "service_rack_1", label: "Service Rack 1" },
@@ -61,7 +146,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [catalogError, setCatalogError] = useState("");
   const [selectedCatalogPart, setSelectedCatalogPart] = useState(null);
-  const [catalogQuantity, setCatalogQuantity] = useState(1);
+  const [catalogQuantity, setCatalogQuantity] = useState("1");
   const [catalogSubmitError, setCatalogSubmitError] = useState("");
   const [catalogSuccessMessage, setCatalogSuccessMessage] = useState("");
   const [allocatingPart, setAllocatingPart] = useState(false);
@@ -88,9 +173,11 @@ const PartsTabNew = forwardRef(function PartsTabNew(
   const [removedPartIds, setRemovedPartIds] = useState([]);
   // State for part removal popup
   const [partPopup, setPartPopup] = useState({ open: false, part: null });
+  const [partRemoveQuantity, setPartRemoveQuantity] = useState("1");
   // State for tracking parts marked as arrived (before API call completes)
   const [arrivedPartIds, setArrivedPartIds] = useState([]);
   const [removingPart, setRemovingPart] = useState(false);
+  const partNameDragRef = useRef({ active: false, startX: 0, startScrollLeft: 0 });
   const canAllocateParts = Boolean(canEdit && jobId);
   const allocationDisabledReason = !canEdit
     ? "You don't have permission to add parts."
@@ -375,80 +462,59 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         };
       });
 
-    // VHC authorized work - use canonical pre-joined data from server
-    const vhcReqsFromAuthorizedRows = (Array.isArray(jobData.authorizedVhcItems) ? jobData.authorizedVhcItems : [])
-      .map((item, index) => {
-        const vhcItemId = item.vhcItemId ?? item.vhc_item_id ?? null;
+    // VHC Requests must come only from vhc_checks rows with authorized authorization_state.
+    const vhcReqsFromVhcChecks = vhcChecksSource
+      .filter((check) => {
+        const vhcItemId = check?.vhc_id ?? check?.vhcId ?? null;
+        if (vhcItemId === null || vhcItemId === undefined || String(vhcItemId).trim() === "") return false;
+        const section = String(check?.section || "").trim();
+        if (section === "VHC_CHECKSHEET" || section === "VHC Checksheet") return false;
+        return normalizeAuthorizationState(check?.authorization_state) === "authorized";
+      })
+      .map((check, index) => {
+        const vhcItemId = check.vhc_id ?? check.vhcId ?? null;
+        const expectedPart = extractExpectedPartNumberInfo(check);
+        const sectionLabel = firstText(check.section);
+        const issueTitle = firstText(check.issue_title);
+        const issueDetail = firstText(check.issue_description, check.note_text, check.measurement);
+        const titleLooksLikeSection =
+          issueTitle &&
+          sectionLabel &&
+          normalizePartNumberKey(issueTitle) === normalizePartNumberKey(sectionLabel);
+        const displayText = titleLooksLikeSection
+          ? (issueDetail || issueTitle || sectionLabel || `VHC authorised item ${index + 1}`)
+          : (issueTitle || issueDetail || sectionLabel || `VHC authorised item ${index + 1}`);
         return {
           id: `vhc-${vhcItemId}`,
           type: "vhc",
           description: resolveVhcLabel(
             [
-              item.label,
-              item.description,
-              item.issueDescription,
-              item.issue_description,
-              item.noteText,
-              item.note_text,
-              item.issue_title,
-              item.section,
+              check.issue_title,
+              check.issue_description,
+              check.note_text,
+              check.section,
+              check.measurement,
             ],
             vhcItemId,
             index
           ),
-          section: item.section || "",
+          displayText,
+          detailText:
+            issueDetail &&
+            normalizePartNumberKey(issueDetail) !== normalizePartNumberKey(displayText)
+              ? issueDetail
+              : "",
+          section: check.section || "",
           severity: "authorized",
           vhcItemId,
-          canAllocate: vhcItemId !== null && vhcItemId !== undefined,
-        };
-      });
-
-    // Backfill from job_requests so reported VHC requests stay visible even if canonical rows lag
-    const vhcReqsFromRequests = requestsSource
-      .filter((req) => {
-        if (!req || typeof req === "string") return false;
-        const source = String(req.request_source || req.requestSource || "")
-          .toLowerCase()
-          .trim();
-        const vhcItemId = req.vhc_item_id ?? req.vhcItemId ?? null;
-        return source.startsWith("vhc") || (vhcItemId !== null && vhcItemId !== undefined);
-      })
-      .map((req, index) => {
-        const vhcItemId = req.vhc_item_id ?? req.vhcItemId ?? null;
-        const fallbackRequestId = req.request_id ?? req.requestId ?? null;
-        const id =
-          vhcItemId !== null && vhcItemId !== undefined
-            ? `vhc-${vhcItemId}`
-            : fallbackRequestId !== null && fallbackRequestId !== undefined
-            ? fallbackRequestId
-            : `vhc-request-local-${index}`;
-        return {
-          id,
-          type: "vhc",
-          description: resolveVhcLabel(
-            [
-              req.text,
-              req.description,
-              req.note_text,
-              req.noteText,
-              req.issue_title,
-              req.issue_description,
-              req.section,
-            ],
-            vhcItemId,
-            index
-          ),
-          section: req.section || "",
-          severity: "authorized",
-          vhcItemId,
-          canAllocate:
-            (vhcItemId !== null && vhcItemId !== undefined) ||
-            (fallbackRequestId !== null && fallbackRequestId !== undefined),
+          expectedPartNumber: expectedPart.key,
+          expectedPartNumberDisplay: expectedPart.display,
+          canAllocate: true,
         };
       });
 
     const vhcReqMap = new Map();
-    [...vhcReqsFromAuthorizedRows, ...vhcReqsFromRequests].forEach((row) => {
+    vhcReqsFromVhcChecks.forEach((row) => {
       if (!row?.id) return;
       vhcReqMap.set(String(row.id), row);
     });
@@ -477,26 +543,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       });
     });
 
-    // Backfill VHC requests from allocated parts so they remain visible after allocation.
-    jobParts.forEach((part, index) => {
-      const vhcItemId = part?.vhcItemId;
-      if (vhcItemId === null || vhcItemId === undefined || vhcItemId === "") return;
-      const key = `vhc-${vhcItemId}`;
-      if (vhcReqMap.has(key)) return;
-      const description =
-        firstText(part?.requestNotes, part?.description, part?.name) ||
-        `VHC authorised item ${index + 1}`;
-      vhcReqMap.set(key, {
-        id: key,
-        type: "vhc",
-        description,
-        section: "",
-        severity: "authorized",
-        vhcItemId,
-        canAllocate: true,
-      });
-    });
-
     const allReqs = [...Array.from(customerReqMap.values()), ...Array.from(vhcReqMap.values())];
     console.log("[PartsTab] All requests:", allReqs);
     console.log("[PartsTab] VHC requests:", Array.from(vhcReqMap.values()));
@@ -505,11 +551,24 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     jobData.jobRequests,
     jobData.job_requests,
     jobData.requests,
-    jobData.authorizedVhcItems,
     jobData.vhcChecks,
     jobData.vhc_checks,
     jobParts,
   ]);
+
+  const vhcAutoAllocateTargetsByPartNumber = useMemo(() => {
+    const map = new Map();
+    allRequests
+      .filter((row) => row?.type === "vhc" && row?.id)
+      .forEach((row) => {
+        const key = normalizePartNumberKey(row.expectedPartNumber || "");
+        if (!key) return;
+        const existing = map.get(key) || [];
+        existing.push(row);
+        map.set(key, existing);
+      });
+    return map;
+  }, [allRequests]);
 
   // Group parts by allocated request (including VHC items)
   useEffect(() => {
@@ -553,14 +612,14 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     return map;
   }, [jobParts]);
 
-  // Set of part numbers that exist in PARTS ADDED TO JOB (non-on_order status)
+  // Set of part numbers that exist in PARTS ADDED TO JOB and should count as "arrived"
   // Used to auto-detect "arrived" parts in the ON ORDER section
   const arrivedPartNumbers = useMemo(() => {
     const partNumbers = new Set();
     jobParts.forEach((part) => {
       const status = normalizePartStatus(part.status);
-      // If part is NOT on_order, it's considered "arrived" (booked, stock, allocated, etc.)
-      if (status !== "on_order" && part.partNumber && part.partNumber !== "N/A") {
+      // Removed parts should not keep the matching On Order row in an "Arrived" state.
+      if (status !== "on_order" && status !== "removed" && part.partNumber && part.partNumber !== "N/A") {
         partNumbers.add(part.partNumber.toLowerCase().trim());
       }
     });
@@ -715,6 +774,31 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     });
   }, []);
 
+  const handlePartNameDragStart = useCallback((event) => {
+    const target = event.currentTarget;
+    partNameDragRef.current = {
+      active: true,
+      startX: event.clientX,
+      startScrollLeft: target.scrollLeft,
+    };
+    target.style.cursor = "grabbing";
+  }, []);
+
+  const handlePartNameDragMove = useCallback((event) => {
+    const drag = partNameDragRef.current;
+    if (!drag.active) return;
+    const target = event.currentTarget;
+    const delta = event.clientX - drag.startX;
+    target.scrollLeft = drag.startScrollLeft - delta;
+  }, []);
+
+  const handlePartNameDragEnd = useCallback((event) => {
+    partNameDragRef.current.active = false;
+    if (event?.currentTarget) {
+      event.currentTarget.style.cursor = "grab";
+    }
+  }, []);
+
   // Search stock catalog
   const searchStockCatalog = useCallback(async (term) => {
     const rawTerm = (term || "").trim();
@@ -772,14 +856,14 @@ const PartsTabNew = forwardRef(function PartsTabNew(
   const handleCatalogSelect = useCallback((part) => {
     if (!part) return;
     setSelectedCatalogPart(part);
-    setCatalogQuantity(1);
+    setCatalogQuantity("1");
     setCatalogSubmitError("");
     setCatalogSuccessMessage("");
   }, []);
 
   const clearSelectedCatalogPart = useCallback(() => {
     setSelectedCatalogPart(null);
-    setCatalogQuantity(1);
+    setCatalogQuantity("1");
     setCatalogSubmitError("");
     // Note: Don't clear success message here - it's cleared when selecting a new part
   }, []);
@@ -820,7 +904,16 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       });
       return;
     }
-    if (catalogQuantity <= 0) {
+    const trimmedQuantity = String(catalogQuantity ?? "").trim();
+    const parsedQuantity = Number.parseInt(trimmedQuantity, 10);
+    const resolvedCatalogQuantity =
+      trimmedQuantity === ""
+        ? 1
+        : Number.isFinite(parsedQuantity)
+        ? parsedQuantity
+        : 0;
+
+    if (resolvedCatalogQuantity <= 0) {
       setCatalogSubmitError("Quantity must be at least 1.");
       setAddJobDiagnostics({
         startedAt: new Date().toISOString(),
@@ -840,7 +933,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       return;
     }
     const availableStock = Number(selectedCatalogPart.qty_in_stock || 0);
-    if (catalogQuantity > availableStock) {
+    if (resolvedCatalogQuantity > availableStock) {
       setCatalogSubmitError(`Only ${availableStock} in stock for this part.`);
       setAddJobDiagnostics({
         startedAt: new Date().toISOString(),
@@ -872,7 +965,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         jobNumber,
         partId: selectedCatalogPart.id,
         partNumber: selectedCatalogPart.part_number,
-        quantity: catalogQuantity,
+        quantity: resolvedCatalogQuantity,
         stage: "request",
       });
 
@@ -882,7 +975,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         body: JSON.stringify({
           jobId,
           partId: selectedCatalogPart.id,
-          quantityRequested: catalogQuantity,
+          quantityRequested: resolvedCatalogQuantity,
           allocateFromStock: true,
           storageLocation: selectedCatalogPart.storage_location || null,
           requestNotes: jobNumber ? `Added via job card ${jobNumber}` : "Added via job card",
@@ -917,6 +1010,42 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       }));
 
       const partName = selectedCatalogPart.part_number || selectedCatalogPart.name;
+      const createdJobPartId = data?.jobPart?.id || null;
+      const selectedPartNumberKey = normalizePartNumberKey(selectedCatalogPart.part_number || "");
+
+      if (createdJobPartId && selectedPartNumberKey) {
+        const matchingVhcRows = vhcAutoAllocateTargetsByPartNumber.get(selectedPartNumberKey) || [];
+        if (matchingVhcRows.length === 1) {
+          const target = matchingVhcRows[0];
+          try {
+            const response = await fetch("/api/parts/allocate-to-request", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                partAllocationId: createdJobPartId,
+                requestId: target.id,
+                jobId,
+              }),
+            });
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok || !payload?.success) {
+              console.warn("[PartsTab] Auto-allocate by part number failed", {
+                requestId: target.id,
+                partAllocationId: createdJobPartId,
+                payload,
+              });
+            }
+          } catch (autoAllocateError) {
+            console.warn("[PartsTab] Auto-allocate by part number error", autoAllocateError);
+          }
+        } else if (matchingVhcRows.length > 1) {
+          console.info("[PartsTab] Auto-allocate skipped due to ambiguous part-number match", {
+            partNumber: selectedCatalogPart.part_number,
+            matches: matchingVhcRows.map((row) => ({ id: row.id, text: row.displayText || row.description })),
+          });
+        }
+      }
+
       clearSelectedCatalogPart();
       setCatalogSuccessMessage(`${partName} added to job.`);
 
@@ -950,6 +1079,84 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     onRefreshJob,
     searchStockCatalog,
     selectedCatalogPart,
+    vhcAutoAllocateTargetsByPartNumber,
+  ]);
+
+  const handleAddPartToOrderFromStock = useCallback(async () => {
+    if (!canAllocateParts || !selectedCatalogPart || !jobId) {
+      setCatalogSubmitError("Select a part to add to order.");
+      return;
+    }
+
+    const trimmedQuantity = String(catalogQuantity ?? "").trim();
+    const parsedQuantity = Number.parseInt(trimmedQuantity, 10);
+    const resolvedCatalogQuantity =
+      trimmedQuantity === ""
+        ? 1
+        : Number.isFinite(parsedQuantity)
+        ? parsedQuantity
+        : 0;
+
+    if (resolvedCatalogQuantity <= 0) {
+      setCatalogSubmitError("Quantity must be at least 1.");
+      return;
+    }
+
+    setAllocatingPart(true);
+    setCatalogSubmitError("");
+    setCatalogSuccessMessage("");
+
+    try {
+      const response = await fetch("/api/parts/job-items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobId,
+          partId: selectedCatalogPart.id,
+          status: "on_order",
+          quantityRequested: resolvedCatalogQuantity,
+          quantityAllocated: 0,
+          unitCost: selectedCatalogPart.unit_cost ?? null,
+          unitPrice: selectedCatalogPart.unit_price ?? 0,
+          storageLocation: selectedCatalogPart.storage_location || null,
+          requestNotes: jobNumber ? `Added to order via job card ${jobNumber}` : "Added to order via job card",
+          origin: "job_card",
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data?.ok) {
+        throw new Error(data?.error || data?.message || `Failed to add part to order (HTTP ${response.status})`);
+      }
+
+      const partName = selectedCatalogPart.part_number || selectedCatalogPart.name;
+      clearSelectedCatalogPart();
+      setCatalogSuccessMessage(`${partName} added to on order.`);
+
+      if (typeof onRefreshJob === "function") {
+        onRefreshJob();
+      }
+      await fetchPartsOnOrder();
+      if ((catalogSearch || "").trim().length >= 2) {
+        searchStockCatalog(catalogSearch.trim());
+      }
+    } catch (error) {
+      console.error("Unable to add part to order", error);
+      setCatalogSubmitError(error.message || "Unable to add part to order");
+    } finally {
+      setAllocatingPart(false);
+    }
+  }, [
+    canAllocateParts,
+    selectedCatalogPart,
+    jobId,
+    catalogQuantity,
+    jobNumber,
+    clearSelectedCatalogPart,
+    onRefreshJob,
+    fetchPartsOnOrder,
+    catalogSearch,
+    searchStockCatalog,
   ]);
 
   const handleUpdatePrePickLocation = useCallback(
@@ -1034,6 +1241,10 @@ const PartsTabNew = forwardRef(function PartsTabNew(
   );
   const unallocatedParts = bookedParts.filter((part) => !part.allocatedToRequestId && !part.vhcItemId);
   const leftPanelParts = [...bookedParts, ...removedParts];
+  const partsAddedToJobIdSet = useMemo(
+    () => new Set(leftPanelParts.map((part) => String(part.id))),
+    [leftPanelParts]
+  );
 
   useEffect(() => {
     if (!jobId) return;
@@ -1210,6 +1421,69 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     [canEdit, onRefreshJob]
   );
 
+  const handleRemovePartFromPopup = useCallback(
+    async (mode = "all") => {
+      const part = partPopup?.part;
+      if (!canEdit || !part?.id) return;
+
+      const partId = part.id;
+      const currentQty = Math.max(1, Number(part.quantity || 1));
+      const requestedRemoveQtyRaw = String(partRemoveQuantity ?? "").trim();
+      const requestedRemoveQty =
+        requestedRemoveQtyRaw === ""
+          ? 1
+          : Math.max(1, Number.parseInt(requestedRemoveQtyRaw, 10) || 1);
+
+      const removeQty = mode === "all" ? currentQty : Math.min(currentQty, requestedRemoveQty);
+      const nextQty = Math.max(0, currentQty - removeQty);
+
+      setRemovedPartIds((prev) =>
+        mode === "all" || nextQty <= 0
+          ? (prev.includes(partId) ? prev : [...prev, partId])
+          : prev
+      );
+
+      try {
+        const body =
+          mode === "all" || nextQty <= 0
+            ? { status: "removed" }
+            : {
+                quantityRequested: nextQty,
+                quantityAllocated: nextQty,
+              };
+
+        const response = await fetch(`/api/parts/job-items/${partId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const data = await response.json();
+        console.info("[PartsTab] Remove response", {
+          partId,
+          mode,
+          removeQty,
+          nextQty,
+          ok: response.ok,
+          status: response.status,
+          body: data,
+        });
+        if (!response.ok || !(data?.ok || data?.success)) {
+          throw new Error(data?.error || data?.message || "Failed to remove part");
+        }
+        if (typeof onRefreshJob === "function") {
+          onRefreshJob();
+        }
+      } catch (error) {
+        console.error("Failed to remove part:", error);
+        alert(`Error: ${error.message}`);
+        setRemovedPartIds((prev) => prev.filter((id) => id !== partId));
+      } finally {
+        setPartPopup({ open: false, part: null });
+      }
+    },
+    [canEdit, onRefreshJob, partPopup, partRemoveQuantity]
+  );
+
   useEffect(() => {
     setSelectedPartIds((prev) => {
       const next = prev.filter((id) => leftPanelParts.some((part) => part.id === id));
@@ -1219,6 +1493,19 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       return next;
     });
   }, [leftPanelParts]);
+
+  useEffect(() => {
+    if (!partPopup.open || !partPopup.part) {
+      setPartRemoveQuantity("1");
+      return;
+    }
+    const qty = Number(partPopup.part.quantity);
+    if (Number.isFinite(qty) && qty > 0) {
+      setPartRemoveQuantity("1");
+    } else {
+      setPartRemoveQuantity("1");
+    }
+  }, [partPopup]);
 
   useEffect(() => {
     if (!showAllocatePanel) {
@@ -1376,6 +1663,14 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           overflow-y: hidden;
           white-space: nowrap;
           display: block;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+          cursor: grab;
+          user-select: none;
+        }
+
+        .on-order-table td:nth-child(1) .part-name-cell::-webkit-scrollbar {
+          display: none;
         }
 
         /* Part Number column */
@@ -1419,6 +1714,13 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         }
         .prepick-popup-dropdown .dropdown-api__menu {
           border-radius: 10px;
+        }
+        .catalog-qty-input::placeholder {
+          color: var(--grey-accent);
+          opacity: 0.75;
+        }
+        .catalog-qty-input {
+          color: var(--text-primary);
         }
       `}</style>
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -1549,11 +1851,18 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   Quantity
                 </label>
                 <input
-                  type="number"
-                  min="1"
-                  max={selectedCatalogPart.qty_in_stock || undefined}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  className="catalog-qty-input"
                   value={catalogQuantity}
-                  onChange={(e) => setCatalogQuantity(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    if (next === "" || /^\d+$/.test(next)) {
+                      setCatalogQuantity(next);
+                    }
+                  }}
+                  placeholder="1"
                   style={{
                     width: "100%",
                     padding: "6px",
@@ -1586,24 +1895,44 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 {catalogSuccessMessage}
               </div>
             )}
-            <button
-              type="button"
-              onClick={handleAddPartFromStock}
-              disabled={!canAllocateParts || allocatingPart}
-              style={{
-                width: "100%",
-                padding: "10px",
-                borderRadius: "8px",
-                border: "none",
-                background: !canAllocateParts ? "var(--surface-light)" : "var(--accent-purple)",
-                color: "white",
-                fontWeight: 600,
-                cursor: !canAllocateParts ? "not-allowed" : "pointer",
-                fontSize: "14px",
-              }}
-            >
-              {allocatingPart ? "Adding..." : "Add to Job"}
-            </button>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+              <button
+                type="button"
+                onClick={handleAddPartFromStock}
+                disabled={!canAllocateParts || allocatingPart}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: !canAllocateParts ? "var(--surface-light)" : "var(--accent-purple)",
+                  color: "white",
+                  fontWeight: 600,
+                  cursor: !canAllocateParts ? "not-allowed" : "pointer",
+                  fontSize: "14px",
+                }}
+              >
+                {allocatingPart ? "Adding..." : "Add to Job"}
+              </button>
+              <button
+                type="button"
+                onClick={handleAddPartToOrderFromStock}
+                disabled={!canAllocateParts || allocatingPart}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  borderRadius: "8px",
+                  border: "1px solid var(--accent-purple)",
+                  background: !canAllocateParts ? "var(--surface-light)" : "var(--surface)",
+                  color: !canAllocateParts ? "var(--text-secondary)" : "var(--accent-purple)",
+                  fontWeight: 600,
+                  cursor: !canAllocateParts ? "not-allowed" : "pointer",
+                  fontSize: "14px",
+                }}
+              >
+                {allocatingPart ? "Adding..." : "Add to Order"}
+              </button>
+            </div>
           </div>
         )}
         {/* Success/Error messages - shown outside selectedCatalogPart block so they remain visible */}
@@ -1617,41 +1946,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             {catalogSubmitError}
           </div>
         )}
-        {addJobDiagnostics && (
-          <div
-            style={{
-              marginTop: "12px",
-              padding: "10px 12px",
-              borderRadius: "8px",
-              border: "1px dashed var(--surface-light)",
-              background: "var(--surface)",
-              fontSize: "12px",
-              color: "var(--text-secondary)",
-            }}
-          >
-            <div style={{ fontWeight: 600, color: "var(--primary)", marginBottom: "6px" }}>
-              Add to Job Diagnostics
-            </div>
-            <div>Stage: {addJobDiagnostics.stage || "unknown"}</div>
-            <div>Job: {addJobDiagnostics.jobNumber || addJobDiagnostics.jobId || "—"}</div>
-            <div>Part: {addJobDiagnostics.partNumber || addJobDiagnostics.partId || "—"}</div>
-            <div>Qty: {addJobDiagnostics.quantity ?? "—"}</div>
-            {addJobDiagnostics.responseStatus && (
-              <div>HTTP: {addJobDiagnostics.responseStatus}</div>
-            )}
-            {addJobDiagnostics.jobPartId && (
-              <div>Job Part ID: {addJobDiagnostics.jobPartId}</div>
-            )}
-            {addJobDiagnostics.error && (
-              <div style={{ color: "var(--danger)" }}>Error: {addJobDiagnostics.error}</div>
-            )}
-            {addJobDiagnostics.responseBody?.message && (
-              <div style={{ color: "var(--danger)" }}>
-                Server: {addJobDiagnostics.responseBody.message}
-              </div>
-            )}
-          </div>
-        )}
           </div>
         )}
       </div>
@@ -1662,6 +1956,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           display: "grid",
           gridTemplateColumns: "2fr 3fr",
           gap: "16px",
+          marginTop: showBookPartPanel ? "16px" : "0",
         }}
       >
         {/* Left Side - Parts Added to Job */}
@@ -1865,7 +2160,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             }}>
                               <span style={{
                                 fontWeight: 600,
-                                color: "var(--accent-purple)",
+                                color: isRemoved ? "var(--text-inverse)" : "var(--accent-purple)",
                                 textDecoration: isRemoved ? "line-through" : "none",
                               }}>
                                 {part.partNumber}
@@ -1909,7 +2204,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             </div>
                             <div style={{
                               fontSize: "0.85rem",
-                              color: "var(--info-dark)",
+                              color: isRemoved ? "var(--text-inverse)" : "var(--info-dark)",
                               textDecoration: isRemoved ? "line-through" : "none",
                             }}>
                               {part.description || part.name}
@@ -1921,6 +2216,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             padding: "12px",
                             textAlign: "right",
                             verticalAlign: "top",
+                            color: isRemoved ? "var(--text-inverse)" : "var(--text-primary)",
                             textDecoration: isRemoved ? "line-through" : "none",
                             border: "1px solid var(--surface-light)",
                             borderLeft: "none",
@@ -1998,9 +2294,9 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                       ) : (
                         customerRequests.map((request) => {
                           const baseAllocated = partAllocations[request.id] || [];
-                          const allocatedParts = [...baseAllocated].filter(
-                            (part, index, arr) => arr.findIndex((entry) => entry.id === part.id) === index
-                          );
+                          const allocatedParts = [...baseAllocated]
+                            .filter((part, index, arr) => arr.findIndex((entry) => entry.id === part.id) === index)
+                            .filter((part) => partsAddedToJobIdSet.has(String(part.id)));
                           return (
                             <div
                               key={request.id}
@@ -2013,10 +2309,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             >
                               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
                                 <div>
-                                  <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--accent-purple)" }}>
-                                    Customer Request
-                                  </div>
-                                  <div style={{ fontSize: "13px", color: "var(--info-dark)", marginTop: "2px" }}>
+                                  <div style={{ fontSize: "13px", color: "var(--info-dark)" }}>
                                     {request.description}
                                   </div>
                                 </div>
@@ -2120,6 +2413,19 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 {/* VHC Requests - always shown below customer requests */}
                 {(() => {
                   const vhcRequests = allRequests.filter((r) => r.type === "vhc");
+                  const groupedVhcRequests = [];
+                  const groupedVhcRequestMap = new Map();
+
+                  vhcRequests.forEach((request) => {
+                    const sectionLabel = String(request.section || "Other VHC Items").trim() || "Other VHC Items";
+                    if (!groupedVhcRequestMap.has(sectionLabel)) {
+                      const bucket = { section: sectionLabel, rows: [] };
+                      groupedVhcRequestMap.set(sectionLabel, bucket);
+                      groupedVhcRequests.push(bucket);
+                    }
+                    groupedVhcRequestMap.get(sectionLabel).rows.push(request);
+                  });
+
                   return (
                     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                       <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
@@ -2130,126 +2436,149 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                           No VHC requests reported.
                         </div>
                       ) : (
-                        vhcRequests.map((request) => {
-                          const baseAllocated = partAllocations[request.id] || [];
-                          const vhcAllocated =
-                            request.vhcItemId
-                              ? vhcPartsByItemId.get(String(request.vhcItemId)) || []
-                              : [];
-                          const allocatedParts = [...baseAllocated, ...vhcAllocated].filter(
-                            (part, index, arr) => arr.findIndex((entry) => entry.id === part.id) === index
-                          );
-                          return (
+                        groupedVhcRequests.map((group) => (
+                          <div key={`vhc-group-${group.section}`} style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                             <div
-                              key={request.id}
                               style={{
-                                padding: "12px",
-                                borderRadius: "10px",
-                                border: "1px solid var(--surface-light)",
-                                background: "var(--surface-muted)",
+                                fontSize: "11px",
+                                fontWeight: 700,
+                                color: "var(--accent-purple)",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.05em",
+                                padding: "4px 2px 0",
                               }}
                             >
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
-                                <div>
-                                  <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--accent-purple)" }}>
-                                    VHC Request
-                                  </div>
-                                  <div style={{ fontSize: "13px", color: "var(--info-dark)", marginTop: "2px" }}>
-                                    {request.description}
-                                  </div>
-                                </div>
-                                <button
-                                  type="button"
-                                  disabled={!canEdit || !request.canAllocate}
-                                  onClick={() => handleAssignSelectedToRequest(request.id)}
-                                  style={{
-                                    padding: "6px 10px",
-                                    borderRadius: "6px",
-                                    border: !canEdit || !request.canAllocate
-                                      ? "1px solid var(--surface-light)"
-                                      : assignMode && assignTargetRequestId === request.id
-                                      ? selectedPartIds.length > 0
-                                        ? "1px solid var(--success)"
-                                        : "1px solid var(--warning)"
-                                      : "1px solid var(--accent-purple)",
-                                    background: !canEdit || !request.canAllocate
-                                      ? "var(--surface-light)"
-                                      : assignMode && assignTargetRequestId === request.id
-                                      ? selectedPartIds.length > 0
-                                        ? "var(--success)"
-                                        : "var(--warning)"
-                                      : "var(--accent-purple)",
-                                    color: !canEdit || !request.canAllocate ? "var(--text-secondary)" : "white",
-                                    fontSize: "11px",
-                                    fontWeight: 600,
-                                    cursor: !canEdit || !request.canAllocate ? "not-allowed" : "pointer",
-                                  }}
-                                >
-                                  {assignMode && assignTargetRequestId === request.id
-                                    ? selectedPartIds.length > 0
-                                      ? "Assign"
-                                      : "Select parts"
-                                    : "Assign selected"}
-                                </button>
-                              </div>
-                              {allocatedParts.length > 0 && (
-                                <div
-                                  style={{
-                                    marginTop: "10px",
-                                    marginLeft: "14px",
-                                    paddingLeft: "12px",
-                                    borderLeft: "2px solid var(--surface-light)",
-                                  }}
-                                >
-                                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                                    <thead>
-                                      <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
-                                        <th style={{ textAlign: "left", padding: "6px" }}>Part number</th>
-                                        <th style={{ textAlign: "left", padding: "6px" }}>Description</th>
-                                        <th style={{ textAlign: "right", padding: "6px" }}>Qty</th>
-                                        <th style={{ textAlign: "right", padding: "6px" }}>Retail</th>
-                                        <th style={{ textAlign: "right", padding: "6px" }}>Cost</th>
-                                        <th style={{ textAlign: "center", padding: "6px" }}>Unassign</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {allocatedParts.map((part) => (
-                                        <tr key={part.id} style={{ background: "var(--accent-purple-surface)", borderTop: "1px solid var(--surface-light)" }}>
-                                          <td style={{ padding: "6px", fontWeight: 600, color: "var(--accent-purple)" }}>
-                                            {part.partNumber}
-                                          </td>
-                                          <td style={{ padding: "6px", color: "var(--info-dark)" }}>{part.description || part.name}</td>
-                                          <td style={{ padding: "6px", textAlign: "right" }}>{part.quantity}</td>
-                                          <td style={{ padding: "6px", textAlign: "right" }}>{formatMoney(part.unitPrice)}</td>
-                                          <td style={{ padding: "6px", textAlign: "right" }}>{formatMoney(part.unitCost)}</td>
-                                          <td style={{ padding: "6px", textAlign: "center" }}>
-                                            <button
-                                              type="button"
-                                              onClick={() => handleUnassignPart(part.id)}
-                                              disabled={!canEdit}
-                                              style={{
-                                                padding: "4px 8px",
-                                                borderRadius: "6px",
-                                                border: "1px solid var(--danger)",
-                                                background: !canEdit ? "var(--surface-light)" : "var(--danger-surface)",
-                                                color: !canEdit ? "var(--text-secondary)" : "var(--danger)",
-                                                fontSize: "10px",
-                                                fontWeight: 600,
-                                                cursor: !canEdit ? "not-allowed" : "pointer",
-                                              }}
-                                            >
-                                              Unassign
-                                            </button>
-                                          </td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              )}
+                              {group.section}
                             </div>
-                          );
-                        })
+                            {group.rows.map((request) => {
+                              const baseAllocated = partAllocations[request.id] || [];
+                              const vhcAllocated =
+                                request.vhcItemId
+                                  ? vhcPartsByItemId.get(String(request.vhcItemId)) || []
+                                  : [];
+                              const allocatedParts = [...baseAllocated, ...vhcAllocated]
+                                .filter((part, index, arr) => arr.findIndex((entry) => entry.id === part.id) === index)
+                                .filter((part) => partsAddedToJobIdSet.has(String(part.id)));
+                              return (
+                                <div
+                                  key={request.id}
+                                  style={{
+                                    padding: "12px",
+                                    borderRadius: "10px",
+                                    border: "1px solid var(--surface-light)",
+                                    background: "var(--surface-muted)",
+                                  }}
+                                >
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+                                    <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "2px" }}>
+                                      <div style={{ fontSize: "13px", color: "var(--info-dark)" }}>
+                                        {request.displayText || request.description}
+                                      </div>
+                                      {(request.expectedPartNumberDisplay || request.expectedPartNumber) && (
+                                        <div style={{ fontSize: "11px", color: "var(--info)" }}>
+                                          Part No: {request.expectedPartNumberDisplay || request.expectedPartNumber}
+                                        </div>
+                                      )}
+                                      {request.detailText && (
+                                        <div style={{ fontSize: "11px", color: "var(--info)" }}>
+                                          {request.detailText}
+                                        </div>
+                                      )}
+                                    </div>
+                                    <button
+                                      type="button"
+                                      disabled={!canEdit || !request.canAllocate}
+                                      onClick={() => handleAssignSelectedToRequest(request.id)}
+                                      style={{
+                                        padding: "6px 10px",
+                                        borderRadius: "6px",
+                                        border: !canEdit || !request.canAllocate
+                                          ? "1px solid var(--surface-light)"
+                                          : assignMode && assignTargetRequestId === request.id
+                                          ? selectedPartIds.length > 0
+                                            ? "1px solid var(--success)"
+                                            : "1px solid var(--warning)"
+                                          : "1px solid var(--accent-purple)",
+                                        background: !canEdit || !request.canAllocate
+                                          ? "var(--surface-light)"
+                                          : assignMode && assignTargetRequestId === request.id
+                                          ? selectedPartIds.length > 0
+                                            ? "var(--success)"
+                                            : "var(--warning)"
+                                          : "var(--accent-purple)",
+                                        color: !canEdit || !request.canAllocate ? "var(--text-secondary)" : "white",
+                                        fontSize: "11px",
+                                        fontWeight: 600,
+                                        cursor: !canEdit || !request.canAllocate ? "not-allowed" : "pointer",
+                                      }}
+                                    >
+                                      {assignMode && assignTargetRequestId === request.id
+                                        ? selectedPartIds.length > 0
+                                          ? "Assign"
+                                          : "Select parts"
+                                        : "Assign selected"}
+                                    </button>
+                                  </div>
+                                  {allocatedParts.length > 0 && (
+                                    <div
+                                      style={{
+                                        marginTop: "10px",
+                                        marginLeft: "14px",
+                                        paddingLeft: "12px",
+                                        borderLeft: "2px solid var(--surface-light)",
+                                      }}
+                                    >
+                                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                                        <thead>
+                                          <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
+                                            <th style={{ textAlign: "left", padding: "6px" }}>Part number</th>
+                                            <th style={{ textAlign: "left", padding: "6px" }}>Description</th>
+                                            <th style={{ textAlign: "right", padding: "6px" }}>Qty</th>
+                                            <th style={{ textAlign: "right", padding: "6px" }}>Retail</th>
+                                            <th style={{ textAlign: "right", padding: "6px" }}>Cost</th>
+                                            <th style={{ textAlign: "center", padding: "6px" }}>Unassign</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {allocatedParts.map((part) => (
+                                            <tr key={part.id} style={{ background: "var(--accent-purple-surface)", borderTop: "1px solid var(--surface-light)" }}>
+                                              <td style={{ padding: "6px", fontWeight: 600, color: "var(--accent-purple)" }}>
+                                                {part.partNumber}
+                                              </td>
+                                              <td style={{ padding: "6px", color: "var(--info-dark)" }}>{part.description || part.name}</td>
+                                              <td style={{ padding: "6px", textAlign: "right" }}>{part.quantity}</td>
+                                              <td style={{ padding: "6px", textAlign: "right" }}>{formatMoney(part.unitPrice)}</td>
+                                              <td style={{ padding: "6px", textAlign: "right" }}>{formatMoney(part.unitCost)}</td>
+                                              <td style={{ padding: "6px", textAlign: "center" }}>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => handleUnassignPart(part.id)}
+                                                  disabled={!canEdit}
+                                                  style={{
+                                                    padding: "4px 8px",
+                                                    borderRadius: "6px",
+                                                    border: "1px solid var(--danger)",
+                                                    background: !canEdit ? "var(--surface-light)" : "var(--danger-surface)",
+                                                    color: !canEdit ? "var(--text-secondary)" : "var(--danger)",
+                                                    fontSize: "10px",
+                                                    fontWeight: 600,
+                                                    cursor: !canEdit ? "not-allowed" : "pointer",
+                                                  }}
+                                                >
+                                                  Unassign
+                                                </button>
+                                              </td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ))
                       )}
                     </div>
                   );
@@ -2327,7 +2656,15 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             }}
                           >
                             <td style={{ color: "var(--info-dark)" }}>
-                              <span className="part-name-cell">{part.partName}</span>
+                              <span
+                                className="part-name-cell"
+                                onMouseDown={handlePartNameDragStart}
+                                onMouseMove={handlePartNameDragMove}
+                                onMouseUp={handlePartNameDragEnd}
+                                onMouseLeave={handlePartNameDragEnd}
+                              >
+                                {part.partName}
+                              </span>
                             </td>
                             <td style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{part.partNumber}</td>
                             <td style={{ textAlign: "right" }}>{part.quantity}</td>
@@ -2548,7 +2885,44 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 </div>
               </div>
             </div>
-            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+            {Number(partPopup.part.quantity || 0) > 1 && (
+              <div style={{ marginBottom: "12px" }}>
+                <label
+                  style={{
+                    fontSize: "12px",
+                    color: "var(--info-dark)",
+                    fontWeight: 600,
+                    display: "block",
+                    marginBottom: "6px",
+                  }}
+                >
+                  Quantity to remove
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={partRemoveQuantity}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    if (next === "" || /^\d+$/.test(next)) {
+                      setPartRemoveQuantity(next);
+                    }
+                  }}
+                  placeholder="1"
+                  style={{
+                    width: "100%",
+                    padding: "8px 10px",
+                    borderRadius: "8px",
+                    border: "1px solid var(--surface-light)",
+                    fontSize: "13px",
+                    background: "var(--surface)",
+                    color: "var(--text-primary)",
+                  }}
+                />
+              </div>
+            )}
+            <div style={{ display: "flex", gap: "10px", justifyContent: "space-between", alignItems: "center" }}>
               <button
                 type="button"
                 onClick={() => setPartPopup({ open: false, part: null })}
@@ -2563,59 +2937,42 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   cursor: "pointer",
                 }}
               >
-                Cancel
+                Close
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const partId = partPopup.part.id;
-                  const removeFromJob = async () => {
-                    setRemovedPartIds((prev) =>
-                      prev.includes(partId) ? prev : [...prev, partId]
-                    );
-                    try {
-                      const response = await fetch(`/api/parts/job-items/${partId}`, {
-                        method: "PATCH",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ status: "removed" }),
-                      });
-                      const data = await response.json();
-                      console.info("[PartsTab] Remove response", {
-                        partId,
-                        ok: response.ok,
-                        status: response.status,
-                        body: data,
-                      });
-                      if (!response.ok || !data?.ok) {
-                        throw new Error(data?.error || data?.message || "Failed to remove part");
-                      }
-                      if (typeof onRefreshJob === "function") {
-                        onRefreshJob();
-                      }
-                    } catch (error) {
-                      console.error("Failed to remove part:", error);
-                      alert(`Error: ${error.message}`);
-                      setRemovedPartIds((prev) => prev.filter((id) => id !== partId));
-                    } finally {
-                      setPartPopup({ open: false, part: null });
-                    }
-                  };
-
-                  removeFromJob();
-                }}
-                style={{
-                  padding: "10px 16px",
-                  borderRadius: "8px",
-                  border: "none",
-                  background: "var(--danger)",
-                  color: "white",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
-                Remove
-              </button>
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button
+                  type="button"
+                  onClick={() => handleRemovePartFromPopup("partial")}
+                  style={{
+                    padding: "10px 16px",
+                    borderRadius: "8px",
+                    border: "1px solid var(--danger)",
+                    background: "var(--danger-surface)",
+                    color: "var(--danger)",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Remove
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleRemovePartFromPopup("all")}
+                  style={{
+                    padding: "10px 16px",
+                    borderRadius: "8px",
+                    border: "none",
+                    background: "var(--danger)",
+                    color: "white",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Remove All
+                </button>
+              </div>
             </div>
             </div>
           </div>

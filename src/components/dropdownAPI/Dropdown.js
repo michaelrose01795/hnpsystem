@@ -41,6 +41,7 @@ export default function Dropdown({
   optionStyle,
   valueStyle,
   chevronStyle,
+  usePortal = true,
   ...rest
 }) {
   const extractedControlStyle = style
@@ -383,76 +384,83 @@ export default function Dropdown({
       {helperText && <p className="dropdown-api__helper">{helperText}</p>}
 
       {isOpen &&
-        createPortal(
-          <div
-            className="dropdown-api__menu"
-            role="listbox"
-            aria-activedescendant={selectedOption ? `${controlId}-${selectedOption.key}` : undefined}
-            ref={menuRef}
-            style={menuPosition ? { ...(menuStyle || {}), ...menuPosition } : menuStyle}
-          >
-            {searchable && (
-              <div className="dropdown-api__search">
-                <input
-                  ref={searchInputRef}
-                  type="search"
-                  className="dropdown-api__search-input"
-                  placeholder={searchPlaceholder}
-                  value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-                      event.preventDefault();
-                      if (visibleOptions.length === 0) return;
-                      setActiveIndex((prev) => {
-                        const nextIndex = event.key === "ArrowDown" ? prev + 1 : prev - 1;
-                        if (nextIndex < 0) return visibleOptions.length - 1;
-                        if (nextIndex >= visibleOptions.length) return 0;
-                        return nextIndex;
-                      });
-                      menuRef.current?.querySelectorAll("[data-option-button]")[0]?.focus();
-                    } else if (event.key === "Escape") {
-                      event.preventDefault();
-                      close();
-                    }
-                  }}
-                />
-              </div>
-            )}
-            {visibleOptions.length === 0 && (
-              <div className="dropdown-api__empty">{emptyState}</div>
-            )}
-            {visibleOptions.map((option, index) => {
-              const isSelected = selectedOption?.key === option.key;
-              return (
-                <button
-                  type="button"
-                  role="option"
-                  data-option-button
-                  className={`dropdown-api__option ${isSelected ? "is-selected" : ""} ${
-                    option.disabled ? "is-disabled" : ""
-                  }`}
-                  key={option.key}
-                  id={`${controlId}-${option.key}`}
-                  aria-selected={isSelected}
-                  aria-disabled={option.disabled}
-                  disabled={option.disabled}
-                  onClick={() => handleOptionSelect(option)}
-                  onKeyDown={(event) => handleOptionKeyDown(event, option, index)}
-                  style={optionStyle}
-                >
-                  <span className="dropdown-api__option-label">{option.label}</span>
-                  {(option.description || option.meta) && (
-                    <span className="dropdown-api__option-description">
-                      {option.description || option.meta}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>,
-          document.body
-        )}
+        (() => {
+          const menuNode = (
+            <div
+              className="dropdown-api__menu"
+              role="listbox"
+              aria-activedescendant={selectedOption ? `${controlId}-${selectedOption.key}` : undefined}
+              ref={menuRef}
+              style={
+                usePortal
+                  ? (menuPosition ? { ...(menuStyle || {}), ...menuPosition } : menuStyle)
+                  : menuStyle
+              }
+            >
+              {searchable && (
+                <div className="dropdown-api__search">
+                  <input
+                    ref={searchInputRef}
+                    type="search"
+                    className="dropdown-api__search-input"
+                    placeholder={searchPlaceholder}
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+                        event.preventDefault();
+                        if (visibleOptions.length === 0) return;
+                        setActiveIndex((prev) => {
+                          const nextIndex = event.key === "ArrowDown" ? prev + 1 : prev - 1;
+                          if (nextIndex < 0) return visibleOptions.length - 1;
+                          if (nextIndex >= visibleOptions.length) return 0;
+                          return nextIndex;
+                        });
+                        menuRef.current?.querySelectorAll("[data-option-button]")[0]?.focus();
+                      } else if (event.key === "Escape") {
+                        event.preventDefault();
+                        close();
+                      }
+                    }}
+                  />
+                </div>
+              )}
+              {visibleOptions.length === 0 && (
+                <div className="dropdown-api__empty">{emptyState}</div>
+              )}
+              {visibleOptions.map((option, index) => {
+                const isSelected = selectedOption?.key === option.key;
+                return (
+                  <button
+                    type="button"
+                    role="option"
+                    data-option-button
+                    className={`dropdown-api__option ${isSelected ? "is-selected" : ""} ${
+                      option.disabled ? "is-disabled" : ""
+                    }`}
+                    key={option.key}
+                    id={`${controlId}-${option.key}`}
+                    aria-selected={isSelected}
+                    aria-disabled={option.disabled}
+                    disabled={option.disabled}
+                    onClick={() => handleOptionSelect(option)}
+                    onKeyDown={(event) => handleOptionKeyDown(event, option, index)}
+                    style={optionStyle}
+                  >
+                    <span className="dropdown-api__option-label">{option.label}</span>
+                    {(option.description || option.meta) && (
+                      <span className="dropdown-api__option-description">
+                        {option.description || option.meta}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          );
+
+          return usePortal ? createPortal(menuNode, document.body) : menuNode;
+        })()}
     </div>
   );
 }

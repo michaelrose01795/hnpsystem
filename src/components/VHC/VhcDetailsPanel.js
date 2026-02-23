@@ -18,6 +18,7 @@ import UndersideDetailsModal from "@/components/VHC/UndersideDetailsModal";
 import PrePickLocationModal from "@/components/VHC/PrePickLocationModal";
 import VHCModalShell from "@/components/VHC/VHCModalShell";
 import PopupModal from "@/components/popups/popupStyleApi";
+import DropdownField from "@/components/dropdownAPI/DropdownField";
 import { buildVhcRowStatusView, normaliseDecisionStatus, resolveSeverityKey } from "@/lib/vhc/summaryStatus";
 import { getSlotCode, makeLineKey, resolveLineType } from "@/lib/vhc/slotIdentity";
 import {
@@ -81,6 +82,31 @@ const TAB_OPTIONS = [
   { id: "parts-authorized", label: "Parts Authorized" },
   { id: "photos", label: "Photos" },
   { id: "videos", label: "Videos" },
+];
+
+const PRE_PICK_LOCATION_OPTIONS_FULL = [
+  { value: "", label: "Select Location" },
+  { value: "service_rack_1", label: "Service Rack 1" },
+  { value: "service_rack_2", label: "Service Rack 2" },
+  { value: "service_rack_3", label: "Service Rack 3" },
+  { value: "service_rack_4", label: "Service Rack 4" },
+  { value: "sales_rack_1", label: "Sales Rack 1" },
+  { value: "sales_rack_2", label: "Sales Rack 2" },
+  { value: "sales_rack_3", label: "Sales Rack 3" },
+  { value: "sales_rack_4", label: "Sales Rack 4" },
+  { value: "stairs_pre_pick", label: "Stairs Pre-Pick" },
+  { value: "no_pick", label: "No Pick" },
+  { value: "on_order", label: "On Order" },
+];
+
+const PRE_PICK_LOCATION_OPTIONS_COMPACT = [
+  { value: "", label: "Select Location" },
+  { value: "service_rack_1", label: "Service Rack 1" },
+  { value: "service_rack_2", label: "Service Rack 2" },
+  { value: "service_rack_3", label: "Service Rack 3" },
+  { value: "service_rack_4", label: "Service Rack 4" },
+  { value: "no_pick", label: "No Pick" },
+  { value: "on_order", label: "On Order" },
 ];
 
 const normalizeInlineText = (value = "") =>
@@ -1429,6 +1455,7 @@ export default function VhcDetailsPanel({
     costInput: String(LABOUR_COST_DEFAULT_GBP),
   });
   const labourOverrideDebounceRef = useRef({});
+  const labourHoursPersistDebounceRef = useRef({});
   const labourSuggestionRequestRef = useRef({});
   const labourEditSessionRef = useRef({});
   const partsLearningDebounceRef = useRef(null);
@@ -1627,7 +1654,7 @@ export default function VhcDetailsPanel({
             customer:customer_id(*),
             vehicle:vehicle_id(*),
             technician:assigned_to(user_id, first_name, last_name, email, role, phone),
-            vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at, approval_status, display_status, severity, approved_by, approved_at, labour_hours, parts_cost, total_override, labour_complete, parts_complete, display_id),
+            vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at, approval_status, authorization_state, display_status, severity, approved_by, approved_at, labour_hours, parts_cost, total_override, labour_complete, parts_complete, display_id, Complete),
             parts_job_items(
               id,
               part_id,
@@ -1728,7 +1755,7 @@ export default function VhcDetailsPanel({
 
         // Derive authorized view rows from vhc_checks (consolidated — no separate table needed)
         const authorizedRows = (vhc_checks || []).filter(
-          (check) => check.approval_status === "authorized" || check.approval_status === "completed"
+          (check) => normaliseDecisionStatus(check.authorization_state) === "authorized"
         );
         setAuthorizedViewRows(authorizedRows);
         setAuthorizedViewLoaded(true);
@@ -1799,9 +1826,11 @@ export default function VhcDetailsPanel({
               .from("vhc_checks")
               .select("*")
               .eq("job_id", job.id)
-              .in("approval_status", ["authorized", "completed"])
               .order("approved_at", { ascending: false });
-            setAuthorizedViewRows(Array.isArray(data) ? data : []);
+            const nextAuthorized = (Array.isArray(data) ? data : []).filter(
+              (check) => normaliseDecisionStatus(check?.authorization_state) === "authorized"
+            );
+            setAuthorizedViewRows(nextAuthorized);
           } catch (e) {
             console.warn("[VHC] failed to refresh authorized items via realtime", e);
           }
@@ -1987,6 +2016,7 @@ export default function VhcDetailsPanel({
       if (check.vhc_id) {
         map.set(String(check.vhc_id), {
           approvalStatus: normaliseDecisionStatus(check.approval_status) || "pending",
+          authorizationState: normaliseDecisionStatus(check.authorization_state) || null,
           displayStatus: check.display_status || null,
           approvedBy: check.approved_by,
           approvedAt: check.approved_at,
@@ -1995,6 +2025,7 @@ export default function VhcDetailsPanel({
           totalOverride: check.total_override,
           labourComplete: check.labour_complete,
           partsComplete: check.parts_complete,
+          complete: Boolean(check?.Complete ?? check?.complete),
         });
       }
     });
@@ -2013,7 +2044,7 @@ export default function VhcDetailsPanel({
           const canonicalId = String(part.vhc_item_id);
           const approvalData = vhcApprovalLookup.get(canonicalId);
           if (approvalData) {
-            return approvalData.approvalStatus === "authorized";
+            return approvalData.authorizationState === "authorized";
           }
         }
 
@@ -2038,7 +2069,7 @@ export default function VhcDetailsPanel({
         if (part.vhc_item_id) {
           const canonicalId = String(part.vhc_item_id);
           const approvalData = vhcApprovalLookup.get(canonicalId);
-          if (approvalData && approvalData.approvalStatus === "authorized") {
+          if (approvalData && approvalData.authorizationState === "authorized") {
             return true;
           }
         }
@@ -2189,7 +2220,8 @@ export default function VhcDetailsPanel({
       const wheelData = wheelKey && vhcData?.wheelsTyres ? vhcData.wheelsTyres[wheelKey] : null;
       const treadSummary = formatTreadDepthSummary(wheelData?.tread);
       if (treadSummary) {
-        item.measurement = `Tread depths: ${treadSummary}`;
+        // Avoid duplicating tread depth in Green Checks when it's already embedded in the label.
+        item.measurement = wheelKey && treadLabel ? null : `Tread depths: ${treadSummary}`;
       }
       const spec = buildTyreSpecLines(wheelData);
       if (spec.length > 0) {
@@ -2658,11 +2690,9 @@ export default function VhcDetailsPanel({
 
   // Combined VHC items with their parts for Parts Authorized section
   const vhcItemsWithPartsAuthorized = useMemo(() => {
-    const authorizedItems = severityLists.authorized || [];
-    if (authorizedItems.length === 0) return [];
-
     const items = [];
     const partsByVhcId = new Map();
+    const summaryByCanonicalId = new Map();
 
     partsAuthorized.forEach((part) => {
       if (!part?.vhc_item_id) return;
@@ -2673,13 +2703,37 @@ export default function VhcDetailsPanel({
       partsByVhcId.get(key).push(part);
     });
 
-    authorizedItems.forEach((summaryItem) => {
-      const displayVhcId = String(summaryItem.id);
+    summaryItems.forEach((summaryItem) => {
+      const displayVhcId = String(summaryItem?.id ?? "");
       const canonicalVhcId = resolveCanonicalVhcId(displayVhcId);
+      if (!canonicalVhcId) return;
+      if (!summaryByCanonicalId.has(String(canonicalVhcId))) {
+        summaryByCanonicalId.set(String(canonicalVhcId), summaryItem);
+      }
+    });
+
+    (authorizedViewRows || []).forEach((row) => {
+      const canonicalVhcId =
+        row?.vhc_id === null || row?.vhc_id === undefined ? "" : String(row.vhc_id);
+      if (!canonicalVhcId) return;
+
+      const summaryItem = summaryByCanonicalId.get(canonicalVhcId);
+      const displayVhcId = String(row?.display_id || summaryItem?.id || canonicalVhcId);
       const linkedParts = partsByVhcId.get(canonicalVhcId) || [];
 
+      const fallbackVhcItem = {
+        id: displayVhcId,
+        label: row?.issue_title || row?.section || `VHC Item ${displayVhcId}`,
+        notes: row?.issue_description || "",
+        concernText: "",
+        rows: [],
+        categoryLabel: row?.section || "Vehicle Health Check",
+        category: null,
+        location: null,
+      };
+
       items.push({
-        vhcItem: summaryItem,
+        vhcItem: summaryItem || fallbackVhcItem,
         linkedParts,
         vhcId: displayVhcId,
         canonicalVhcId,
@@ -2687,7 +2741,7 @@ export default function VhcDetailsPanel({
     });
 
     return items;
-  }, [severityLists, partsAuthorized, resolveCanonicalVhcId]);
+  }, [authorizedViewRows, summaryItems, partsAuthorized, resolveCanonicalVhcId]);
 
   const partsCostByVhcItem = useMemo(() => {
     const map = new Map();
@@ -2739,7 +2793,7 @@ export default function VhcDetailsPanel({
   }, [partsAuthorized]);
 
   const ensureEntryValue = (state, itemId) =>
-    state[itemId] || { partsCost: "", laborHours: null, totalOverride: "", status: null, labourComplete: false, partsComplete: false };
+    state[itemId] || { partsCost: "", laborHours: null, totalOverride: "", status: null, labourComplete: false, partsComplete: false, completed: false };
 
   const updateEntryValue = (itemId, field, value) => {
     setItemEntries((prev) => ({
@@ -2768,7 +2822,14 @@ export default function VhcDetailsPanel({
   };
 
   const resolveLabourCompleteValue = (entry, labourHoursValue) => {
-    return Boolean(entry?.labourComplete);
+    if (typeof entry?.labourComplete === "boolean" && entry.labourComplete) {
+      return true;
+    }
+    if (labourHoursValue === null || labourHoursValue === undefined) return false;
+    const text = String(labourHoursValue).trim();
+    if (!text) return false;
+    const numeric = Number(text);
+    return Number.isFinite(numeric) && numeric >= 0;
   };
 
   const buildSummaryItemIdentity = useCallback((summaryItem) => {
@@ -2954,7 +3015,7 @@ export default function VhcDetailsPanel({
     // Update local state immediately
     setItemEntries((prev) => ({
       ...prev,
-      [itemId]: { ...ensureEntryValue(prev, itemId), status },
+      [itemId]: { ...ensureEntryValue(prev, itemId), status, completed: normaliseDecisionStatus(status) === "completed" },
     }));
 
     // Persist to database (convert null to 'pending')
@@ -2963,6 +3024,7 @@ export default function VhcDetailsPanel({
 
     // Convert null to 'pending' for database
     const dbStatus = normaliseDecisionStatus(status) || "pending";
+    const completeFlag = dbStatus === "completed";
     const summaryItem = summaryItemLookup.get(String(itemId));
     const severityKey = resolveSeverityKey(summaryItem?.rawSeverity, summaryItem?.displayStatus);
     let newDisplayStatus = null;
@@ -2985,7 +3047,11 @@ export default function VhcDetailsPanel({
       console.error(`❌ [VHC STATUS ERROR] Invalid ID - cannot update`);
       setItemEntries((prev) => ({
         ...prev,
-        [itemId]: { ...ensureEntryValue(prev, itemId), status: previousStatus },
+        [itemId]: {
+          ...ensureEntryValue(prev, itemId),
+          status: previousStatus,
+          completed: previousEntry?.completed ?? false,
+        },
       }));
       return;
     }
@@ -2999,6 +3065,7 @@ export default function VhcDetailsPanel({
         approvalStatus: dbStatus,
         approvedBy: authUserId || dbUserId || "system",
         labourComplete: labourCompleteValue,
+        complete: completeFlag,
       };
       if (newDisplayStatus) {
         requestBody.displayStatus = newDisplayStatus;
@@ -3020,7 +3087,11 @@ export default function VhcDetailsPanel({
         // Revert optimistic update so UI matches persisted state.
         setItemEntries((prev) => ({
           ...prev,
-          [itemId]: { ...ensureEntryValue(prev, itemId), status: previousStatus },
+          [itemId]: {
+            ...ensureEntryValue(prev, itemId),
+            status: previousStatus,
+            completed: previousEntry?.completed ?? false,
+          },
         }));
         return;
       }
@@ -3033,11 +3104,13 @@ export default function VhcDetailsPanel({
             const updatedCheck = {
               ...check,
               approval_status: dbStatus,
+              authorization_state: dbStatus === "pending" ? "n/a" : dbStatus,
               display_status: newDisplayStatus || check.display_status,
               approved_by: authUserId || dbUserId || "system",
               approved_at: dbStatus === 'pending' ? null : new Date().toISOString(),
               labour_hours: resolvedLabourHours !== "" ? Number(resolvedLabourHours) : check.labour_hours,
               labour_complete: labourCompleteValue,
+              Complete: completeFlag,
             };
             return updatedCheck;
           }
@@ -3048,7 +3121,7 @@ export default function VhcDetailsPanel({
 
       // Refresh parent job data when authorization status changes
       // This ensures Customer Requests and Parts tabs see the updated data
-      if (dbStatus === "authorized" || dbStatus === "declined" || dbStatus === "pending") {
+      if (dbStatus === "authorized" || dbStatus === "declined" || dbStatus === "pending" || dbStatus === "completed") {
         refreshJobData();
       }
 
@@ -3285,6 +3358,7 @@ export default function VhcDetailsPanel({
           const updatedEntry = {
             ...entry,
             status: approvalData.approvalStatus || entry.status || null,
+            completed: approvalData.complete ?? entry.completed ?? false,
           };
 
           // Update labour hours if present in database
@@ -3489,13 +3563,26 @@ export default function VhcDetailsPanel({
 
   // Notify parent component when financial totals change
   useEffect(() => {
+    if (loading) return;
     if (onFinancialTotalsChange && typeof onFinancialTotalsChange === 'function') {
       onFinancialTotalsChange({
-        authorized: customerTotals.authorized,
-        declined: customerTotals.declined
+        // Match the Summary tab headline totals shown in the VHC UI.
+        authorized: Number.isFinite(Number(quoteTotals.authorized))
+          ? Number(quoteTotals.authorized)
+          : customerTotals.authorized,
+        declined: Number.isFinite(Number(quoteTotals.declined))
+          ? Number(quoteTotals.declined)
+          : customerTotals.declined
       });
     }
-  }, [customerTotals.authorized, customerTotals.declined, onFinancialTotalsChange]);
+  }, [
+    quoteTotals.authorized,
+    quoteTotals.declined,
+    customerTotals.authorized,
+    customerTotals.declined,
+    onFinancialTotalsChange,
+    loading,
+  ]);
 
   const formatCurrency = (value) => {
     if (!Number.isFinite(value)) return "—";
@@ -3555,7 +3642,9 @@ export default function VhcDetailsPanel({
     async (severity, status) => {
 
       const selectedIds = severitySelections[severity] || [];
-      const dbStatus = normaliseDecisionStatus(status) || "pending";
+      const isUncompleteAction = status === "uncomplete";
+      const dbStatus = isUncompleteAction ? "authorized" : (normaliseDecisionStatus(status) || "pending");
+      const completeFlag = dbStatus === "completed";
 
       if (selectedIds.length === 0) {
         return;
@@ -3570,7 +3659,7 @@ export default function VhcDetailsPanel({
         const next = { ...prev };
         selectedIds.forEach((id) => {
           const current = ensureEntryValue(next, id);
-          next[id] = { ...current, status };
+          next[id] = { ...current, status: dbStatus, completed: completeFlag };
         });
         return next;
       });
@@ -3614,7 +3703,8 @@ export default function VhcDetailsPanel({
             vhcItemId: parsedId,
             approvalStatus: dbStatus,
             displayStatus: displayStatus,
-            approvedBy: authUserId || dbUserId || "system"
+            approvedBy: authUserId || dbUserId || "system",
+            complete: completeFlag,
           };
           if (resolvedLabourHours !== "" && resolvedLabourHours !== null && resolvedLabourHours !== undefined) {
             requestBody.labourHours = resolvedLabourHours;
@@ -3638,6 +3728,7 @@ export default function VhcDetailsPanel({
             item,
             labourHours: resolvedLabourHours,
             labourComplete: requestBody.labourComplete,
+            complete: completeFlag,
           };
         } catch (error) {
           console.error(`❌ [VHC BULK ERROR] Exception for item ${itemId}:`, error);
@@ -3658,11 +3749,13 @@ export default function VhcDetailsPanel({
               return {
                 ...check,
                 approval_status: dbStatus,
+                authorization_state: dbStatus === "pending" ? "n/a" : dbStatus,
                 display_status: matchingUpdate.displayStatus || check.display_status,
                 approved_by: authUserId || dbUserId || "system",
                 approved_at: dbStatus === "pending" ? null : new Date().toISOString(),
                 labour_hours: matchingUpdate.labourHours !== "" ? Number(matchingUpdate.labourHours) : check.labour_hours,
                 labour_complete: matchingUpdate.labourComplete,
+                Complete: matchingUpdate.complete,
               };
             }
             return check;
@@ -3687,7 +3780,7 @@ export default function VhcDetailsPanel({
       // Update local state immediately
       setItemEntries((prev) => {
         const current = ensureEntryValue(prev, itemId);
-        return { ...prev, [itemId]: { ...current, status: newStatus } };
+        return { ...prev, [itemId]: { ...current, status: newStatus, completed: false } };
       });
 
       // Persist to database
@@ -3709,6 +3802,7 @@ export default function VhcDetailsPanel({
           approvalStatus: dbStatus,
           approvedBy: authUserId || dbUserId || "system",
           labourComplete: resolveLabourCompleteValue(entry, resolvedLabourHours),
+          complete: false,
         };
         if (resolvedLabourHours !== "" && resolvedLabourHours !== null && resolvedLabourHours !== undefined) {
           requestBody.labourHours = resolvedLabourHours;
@@ -3735,11 +3829,13 @@ export default function VhcDetailsPanel({
               return {
                 ...check,
                 approval_status: newStatus,
+                authorization_state: newStatus === "pending" ? "n/a" : newStatus,
                 display_status: newDisplayStatus,
                 approved_by: authUserId || dbUserId || "system",
                 approved_at: new Date().toISOString(),
                 labour_hours: resolvedLabourHours !== "" ? Number(resolvedLabourHours) : check.labour_hours,
                 labour_complete: requestBody.labourComplete,
+                Complete: false,
               };
             }
             return check;
@@ -3862,6 +3958,10 @@ export default function VhcDetailsPanel({
 
   useEffect(() => {
     return () => {
+      Object.values(labourHoursPersistDebounceRef.current).forEach((timeoutHandle) => {
+        clearTimeout(timeoutHandle);
+      });
+      labourHoursPersistDebounceRef.current = {};
       Object.values(labourOverrideDebounceRef.current).forEach((timeoutHandle) => {
         clearTimeout(timeoutHandle);
       });
@@ -3872,7 +3972,7 @@ export default function VhcDetailsPanel({
 
   const renderSeverityTable = (severity, itemsOverride = null) => {
     const itemsRaw = itemsOverride || severityLists[severity] || [];
-    const items =
+    let items =
       severity === "authorized" || severity === "declined"
         ? [...itemsRaw].sort((a, b) => {
             const severityRank = (item) => {
@@ -3890,6 +3990,28 @@ export default function VhcDetailsPanel({
             return severityRank(a) - severityRank(b);
           })
         : itemsRaw;
+
+    // Keep rows grouped by reported category inside each summary section
+    // (Red / Amber / Authorised / Declined) without adding visible separators.
+    if (items.length > 1) {
+      const indexedItems = items.map((item, index) => ({ item, index }));
+      const categoryOrder = new Map();
+      indexedItems.forEach(({ item }) => {
+        const key = String(item?.categoryLabel || item?.sectionName || "Recorded Section");
+        if (!categoryOrder.has(key)) {
+          categoryOrder.set(key, categoryOrder.size);
+        }
+      });
+      indexedItems.sort((a, b) => {
+        const aCategory = String(a.item?.categoryLabel || a.item?.sectionName || "Recorded Section");
+        const bCategory = String(b.item?.categoryLabel || b.item?.sectionName || "Recorded Section");
+        const categoryDiff = (categoryOrder.get(aCategory) ?? 999) - (categoryOrder.get(bCategory) ?? 999);
+        if (categoryDiff !== 0) return categoryDiff;
+        return a.index - b.index;
+      });
+      items = indexedItems.map((entry) => entry.item);
+    }
+
     if (items.length === 0) {
       return <EmptyStateMessage message={`No ${severity} items recorded.`} />;
     }
@@ -3918,6 +4040,12 @@ export default function VhcDetailsPanel({
     const selectableIds = new Set(items.filter((item) => isRowSelectionEligible(item)).map((item) => item.id));
     const selectedIds = (severitySelections[severity] || []).filter((itemId) => selectableIds.has(itemId));
     const selectedSet = new Set(selectedIds);
+    const selectedItems = items.filter((item) => selectedSet.has(item.id));
+    const selectedCompletedCount = selectedItems.filter((item) => {
+      const entry = getEntryForItem(item.id);
+      return Boolean(entry?.completed || vhcApprovalLookup.get(String(resolveCanonicalVhcId(item.id)))?.complete);
+    }).length;
+    const selectedAllCompleted = selectedItems.length > 0 && selectedCompletedCount === selectedItems.length;
     const selectableCount = selectableIds.size;
     const allChecked = selectableCount > 0 && selectedSet.size === selectableCount;
     const theme = SEVERITY_THEME[severity] || { border: "var(--info-surface)" };
@@ -4316,7 +4444,6 @@ export default function VhcDetailsPanel({
                           type="number"
                           min="0"
                           step="0.1"
-                          placeholder="Hour"
                           value={resolvedLabourHours ?? ""}
                           onChange={(event) => {
                             // Don't allow changes in authorized/declined sections
@@ -4342,6 +4469,7 @@ export default function VhcDetailsPanel({
                               initialValue: existingSession.initialValue ?? String(resolvedLabourHours ?? ""),
                               latestValue: value,
                             };
+                            queuePersistLabourHours(item.id, value);
                           }}
                           onBlur={(event) => {
                             // Don't persist in authorized/declined sections
@@ -4359,6 +4487,7 @@ export default function VhcDetailsPanel({
                               value !== "" &&
                               Number.isFinite(parsedValue) &&
                               (initialRaw === "" || !Number.isFinite(initialParsedValue) || Math.abs(initialParsedValue - parsedValue) > 0.0001);
+                            flushQueuedLabourPersist(item.id);
                             persistLabourHours(item.id, value);
                             if (hasChangedValue) {
                               saveLabourOverride({
@@ -4386,7 +4515,7 @@ export default function VhcDetailsPanel({
                               description: labourSuggestionDescription,
                             });
                           }}
-                          placeholder="0.0"
+                          placeholder="h"
                           style={{
                             width: "50px",
                             padding: "4px 6px",
@@ -4696,26 +4825,28 @@ export default function VhcDetailsPanel({
           >
             {(severity === "authorized" || severity === "declined") ? (
               <>
-                <button
-                  type="button"
-                  onClick={() => handleBulkStatus(severity, "pending")}
-                  disabled={selectedSet.size === 0}
-                  style={{
-                    padding: "10px 16px",
-                    borderRadius: "10px",
-                    border: "1px solid var(--accent-purple)",
-                    backgroundColor: selectedSet.size === 0 ? "var(--accent-purple-surface)" : "var(--surface)",
-                    color: "var(--accent-purple)",
-                    fontWeight: 600,
-                    cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
-                  }}
-                >
-                  Reset
-                </button>
+                {!(severity === "authorized" && selectedAllCompleted) && (
+                  <button
+                    type="button"
+                    onClick={() => handleBulkStatus(severity, "pending")}
+                    disabled={selectedSet.size === 0}
+                    style={{
+                      padding: "10px 16px",
+                      borderRadius: "10px",
+                      border: "1px solid var(--accent-purple)",
+                      backgroundColor: selectedSet.size === 0 ? "var(--accent-purple-surface)" : "var(--surface)",
+                      color: "var(--accent-purple)",
+                      fontWeight: 600,
+                      cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    Reset
+                  </button>
+                )}
                 {severity === "authorized" && (
                   <button
                     type="button"
-                    onClick={() => handleBulkStatus(severity, "completed")}
+                    onClick={() => handleBulkStatus(severity, selectedAllCompleted ? "uncomplete" : "completed")}
                     disabled={selectedSet.size === 0}
                     style={{
                       padding: "10px 16px",
@@ -4727,7 +4858,7 @@ export default function VhcDetailsPanel({
                       cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
                     }}
                   >
-                    Complete
+                    {selectedAllCompleted ? "Uncomplete" : "Complete"}
                   </button>
                 )}
               </>
@@ -4991,6 +5122,40 @@ export default function VhcDetailsPanel({
       }
     }
 
+    // Group rows by reported category (contiguous ordering) without rendering
+    // extra category section headers.
+    if (displayItems.length > 1) {
+      const indexedItems = displayItems.map((item, index) => ({ item, index }));
+      const categoryOrder = new Map();
+
+      indexedItems.forEach(({ item }) => {
+        const key = String(item.categoryLabel || item.sectionName || "Recorded Section");
+        if (!categoryOrder.has(key)) {
+          categoryOrder.set(key, categoryOrder.size);
+        }
+      });
+
+      const severityRank = (s) => (s === "red" ? 0 : s === "amber" ? 1 : s === "green" ? 2 : 3);
+      indexedItems.sort((a, b) => {
+        const aCategoryKey = String(a.item.categoryLabel || a.item.sectionName || "Recorded Section");
+        const bCategoryKey = String(b.item.categoryLabel || b.item.sectionName || "Recorded Section");
+        const categoryDiff =
+          (categoryOrder.get(aCategoryKey) ?? 999) - (categoryOrder.get(bCategoryKey) ?? 999);
+        if (categoryDiff !== 0) return categoryDiff;
+
+        if (severity === "authorized" || severity === "declined") {
+          const rankDiff =
+            severityRank(a.item.severityKey || a.item.rawSeverity) -
+            severityRank(b.item.severityKey || b.item.rawSeverity);
+          if (rankDiff !== 0) return rankDiff;
+        }
+
+        return a.index - b.index;
+      });
+
+      displayItems = indexedItems.map((entry) => entry.item);
+    }
+
     return (
       <div
         style={{
@@ -5144,7 +5309,7 @@ export default function VhcDetailsPanel({
               customer:customer_id(*),
               vehicle:vehicle_id(*),
               technician:assigned_to(user_id, first_name, last_name, email, role, phone),
-              vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at, approval_status, display_status, severity, approved_by, approved_at, labour_hours, parts_cost, total_override, labour_complete, parts_complete, display_id),
+              vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at, approval_status, authorization_state, display_status, severity, approved_by, approved_at, labour_hours, parts_cost, total_override, labour_complete, parts_complete, display_id, Complete),
               parts_job_items(
                 id,
                 part_id,
@@ -5219,7 +5384,8 @@ export default function VhcDetailsPanel({
   }, [job, resolvedJobNumber, setJob, setVhcChecksData, refreshJobData]);
 
   const persistLabourHours = useCallback(
-    async (displayVhcId, hoursValue) => {
+    async (displayVhcId, hoursValue, options = {}) => {
+      const { suppressRefresh = false } = options;
       if (!job?.id) return;
       const canonicalId = resolveCanonicalVhcId(displayVhcId);
       const parsedId = Number(canonicalId);
@@ -5289,7 +5455,7 @@ export default function VhcDetailsPanel({
           }
 
           // Refresh vhcChecksData to include the new/updated record
-          if (resolvedJobNumber) {
+          if (resolvedJobNumber && !suppressRefresh) {
             const { data: updatedVhcChecks } = await supabase
               .from("vhc_checks")
               .select("*")
@@ -5300,13 +5466,40 @@ export default function VhcDetailsPanel({
           }
 
           // Refresh parent job data so other tabs see the updated labour hours
-          refreshJobData();
+          if (!suppressRefresh) {
+            refreshJobData();
+          }
         }
       } catch (error) {
         console.error("Failed to persist labour hours", error);
       }
     },
     [authUserId, dbUserId, job?.id, resolveCanonicalVhcId, createVhcCheckForDisplayId, refreshJobData]
+  );
+
+  const queuePersistLabourHours = useCallback(
+    (displayVhcId, hoursValue) => {
+      const key = String(displayVhcId);
+      if (labourHoursPersistDebounceRef.current[key]) {
+        clearTimeout(labourHoursPersistDebounceRef.current[key]);
+      }
+      labourHoursPersistDebounceRef.current[key] = setTimeout(() => {
+        persistLabourHours(displayVhcId, hoursValue, { suppressRefresh: true });
+        delete labourHoursPersistDebounceRef.current[key];
+      }, 300);
+    },
+    [persistLabourHours]
+  );
+
+  const flushQueuedLabourPersist = useCallback(
+    (displayVhcId) => {
+      const key = String(displayVhcId);
+      if (labourHoursPersistDebounceRef.current[key]) {
+        clearTimeout(labourHoursPersistDebounceRef.current[key]);
+        delete labourHoursPersistDebounceRef.current[key];
+      }
+    },
+    []
   );
 
   // Handler for Pre-Pick Location dropdown change
@@ -6577,6 +6770,22 @@ export default function VhcDetailsPanel({
       SERVICE_CHOICE_LABELS[serviceChoiceKey] || serviceChoiceKey || "";
     const normaliseServiceText = (value = "") =>
       value.toString().toLowerCase().replace(/\s+/g, " ").trim();
+    const groupedItems = [];
+    const groupedMap = new Map();
+
+    filteredItems.forEach((item) => {
+      const categoryLabel =
+        item?.vhcItem?.categoryLabel ||
+        item?.vhcItem?.category?.label ||
+        "Other Reported Items";
+      const key = String(categoryLabel || "Other Reported Items");
+      if (!groupedMap.has(key)) {
+        const bucket = { categoryLabel: key, items: [] };
+        groupedMap.set(key, bucket);
+        groupedItems.push(bucket);
+      }
+      groupedMap.get(key).items.push(item);
+    });
 
     return (
       <div
@@ -6608,7 +6817,30 @@ export default function VhcDetailsPanel({
               </tr>
             </thead>
             <tbody>
-              {filteredItems.map((item) => {
+              {groupedItems.flatMap((group) => {
+                const groupRows = [];
+                groupRows.push(
+                  <tr key={`vhc-authorized-group-${group.categoryLabel}`}>
+                    <td
+                      colSpan={6}
+                      style={{
+                        padding: "10px 16px",
+                        background: "var(--surface-light)",
+                        borderTop: "1px solid var(--success-surface)",
+                        borderBottom: "1px solid var(--success-surface)",
+                        color: "var(--success-dark)",
+                        fontWeight: 700,
+                        fontSize: "12px",
+                        letterSpacing: "0.04em",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {group.categoryLabel}
+                    </td>
+                  </tr>
+                );
+
+                group.items.forEach((item) => {
                 const { vhcItem, linkedParts, vhcId, canonicalVhcId } = item;
                 const isWarranty = warrantyRows.has(vhcId);
 
@@ -6644,7 +6876,7 @@ export default function VhcDetailsPanel({
 
                 // If no parts, show single row with VHC item
                 if (!linkedParts || linkedParts.length === 0) {
-                  return (
+                  groupRows.push(
                     <tr
                       key={vhcId}
                       style={{
@@ -6655,9 +6887,6 @@ export default function VhcDetailsPanel({
                     >
                       <td style={{ padding: "12px 16px", whiteSpace: "normal", wordBreak: "break-word" }}>
                         <div>
-                          <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
-                            {vhcCategory}
-                          </div>
                           <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--success)", marginTop: "2px" }}>
                             {vhcLabel}
                           </div>
@@ -6735,6 +6964,7 @@ export default function VhcDetailsPanel({
                       </td>
                     </tr>
                   );
+                  return;
                 }
 
                 // Show a single row per VHC item, with parts stacked inside cells.
@@ -6750,7 +6980,7 @@ export default function VhcDetailsPanel({
 
                 const totalPartsCost = partLines.reduce((sum, entry) => sum + (entry.partTotal || 0), 0);
 
-                return (
+                groupRows.push(
                   <tr
                     key={vhcId}
                     style={{
@@ -6767,9 +6997,6 @@ export default function VhcDetailsPanel({
                   >
                       <td style={{ padding: "12px 16px", whiteSpace: "normal", wordBreak: "break-word" }}>
                         <div>
-                          <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
-                            {vhcCategory}
-                          </div>
                           <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--success)", marginTop: "2px" }}>
                             {vhcLabel}
                           </div>
@@ -6892,7 +7119,7 @@ export default function VhcDetailsPanel({
                     <td style={{ padding: "12px 16px", whiteSpace: "normal", wordBreak: "break-word" }}>
                       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                         {partLines.map(({ part }) => (
-                          <select
+                          <DropdownField
                             key={`prepick-${part.id}`}
                             value={part.pre_pick_location || ""}
                             onChange={async (e) => {
@@ -6912,39 +7139,20 @@ export default function VhcDetailsPanel({
                               } catch (error) {
                                 console.error(`[VHC] Failed to update part ${part.id}:`, error);
                                 alert(`Failed to update part location: ${error.message}`);
-                                e.target.value = part.pre_pick_location || "";
                               }
                             }}
-                            style={{
-                              padding: "8px 12px",
-                              borderRadius: "8px",
-                              border: "1px solid var(--accent-purple-surface)",
-                              background: "var(--surface)",
-                              color: "var(--accent-purple)",
-                              fontWeight: 500,
-                              cursor: "pointer",
-                              width: "100%",
-                              fontSize: "12px",
-                            }}
-                          >
-                            <option value="">Select Location</option>
-                            <option value="service_rack_1">Service Rack 1</option>
-                            <option value="service_rack_2">Service Rack 2</option>
-                            <option value="service_rack_3">Service Rack 3</option>
-                            <option value="service_rack_4">Service Rack 4</option>
-                            <option value="sales_rack_1">Sales Rack 1</option>
-                            <option value="sales_rack_2">Sales Rack 2</option>
-                            <option value="sales_rack_3">Sales Rack 3</option>
-                            <option value="sales_rack_4">Sales Rack 4</option>
-                            <option value="stairs_pre_pick">Stairs Pre-Pick</option>
-                            <option value="no_pick">No Pick</option>
-                            <option value="on_order">On Order</option>
-                          </select>
+                            options={PRE_PICK_LOCATION_OPTIONS_FULL}
+                            placeholder="Select Location"
+                            size="sm"
+                          />
                         ))}
                       </div>
                     </td>
                   </tr>
                 );
+                });
+
+                return groupRows;
               }).flat()}
             </tbody>
           </table>
@@ -7072,28 +7280,13 @@ export default function VhcDetailsPanel({
                           {formatLabourHoursDisplay(partItem.labour_hours)}
                         </td>
                         <td style={{ padding: "12px 16px" }}>
-                          <select
+                          <DropdownField
                             value={prePickLocation}
                             onChange={(e) => handlePrePickLocationChange(partItem.id, e.target.value)}
-                            style={{
-                              padding: "8px 12px",
-                              borderRadius: "8px",
-                              border: "1px solid var(--accent-purple-surface)",
-                              background: "var(--surface)",
-                              color: "var(--accent-purple)",
-                              fontWeight: 500,
-                              cursor: "pointer",
-                              width: "100%",
-                            }}
-                          >
-                            <option value="">Select Location</option>
-                            <option value="service_rack_1">Service Rack 1</option>
-                            <option value="service_rack_2">Service Rack 2</option>
-                            <option value="service_rack_3">Service Rack 3</option>
-                            <option value="service_rack_4">Service Rack 4</option>
-                            <option value="no_pick">No Pick</option>
-                            <option value="on_order">On Order</option>
-                          </select>
+                            options={PRE_PICK_LOCATION_OPTIONS_COMPACT}
+                            placeholder="Select Location"
+                            size="sm"
+                          />
                         </td>
                         <td style={{ padding: "12px 16px", textAlign: "center" }}>
                           <button

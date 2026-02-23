@@ -703,6 +703,8 @@ CREATE TABLE public.jobs (
   prime_job_id integer,
   is_prime_job boolean DEFAULT false,
   sub_job_sequence integer,
+  vhc_authorized_total numeric DEFAULT 0,
+  vhc_declined_total numeric DEFAULT 0,
   CONSTRAINT jobs_pkey PRIMARY KEY (id),
   CONSTRAINT jobs_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES public.users(user_id),
   CONSTRAINT jobs_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.vehicles(vehicle_id),
@@ -1110,10 +1112,6 @@ CREATE TABLE public.parts_job_items (
   unit_price numeric,
   request_notes text,
   allocated_by uuid,
-  picked_by uuid,
-  fitted_by uuid,
-  created_by uuid,
-  updated_by uuid,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   vhc_item_id integer,
@@ -1124,11 +1122,14 @@ CREATE TABLE public.parts_job_items (
   supplier_reference text,
   labour_hours numeric DEFAULT 0,
   allocated_to_request_id bigint,
+  part_number_snapshot text,
+  part_name_snapshot text,
   CONSTRAINT parts_job_items_pkey PRIMARY KEY (id),
   CONSTRAINT parts_job_items_vhc_item_id_fkey FOREIGN KEY (vhc_item_id) REFERENCES public.vhc_checks(vhc_id),
   CONSTRAINT parts_job_items_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT parts_job_items_part_id_fkey FOREIGN KEY (part_id) REFERENCES public.parts_catalog(id),
-  CONSTRAINT parts_job_items_allocated_to_request_id_fkey FOREIGN KEY (allocated_to_request_id) REFERENCES public.job_requests(request_id)
+  CONSTRAINT parts_job_items_allocated_to_request_id_fkey FOREIGN KEY (allocated_to_request_id) REFERENCES public.job_requests(request_id),
+  CONSTRAINT parts_job_items_allocated_by_auth_users_fkey FOREIGN KEY (allocated_by) REFERENCES auth.users(id)
 );
 CREATE TABLE public.parts_requests (
   request_id integer NOT NULL DEFAULT nextval('parts_requests_request_id_seq'::regclass),
@@ -1453,6 +1454,9 @@ CREATE TABLE public.vhc_checks (
   pre_pick_location text,
   request_id bigint,
   display_id text,
+  authorized_total_gbp numeric DEFAULT 0,
+  declined_total_gbp numeric DEFAULT 0,
+  Complete boolean NOT NULL DEFAULT false,
   CONSTRAINT vhc_checks_pkey PRIMARY KEY (vhc_id),
   CONSTRAINT vhc_checks_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
 );

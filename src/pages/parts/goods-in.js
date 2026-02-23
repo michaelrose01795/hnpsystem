@@ -908,7 +908,7 @@ function GoodsInPage() {
           background: var(--layer-section-level-2);
           border-radius: 14px;
           padding: 12px;
-          overflow: hidden;
+          overflow: visible;
         }
         .add-part-fields-grid {
           display: grid;
@@ -918,6 +918,15 @@ function GoodsInPage() {
         .add-part-fields-row-span-3 {
           grid-template-columns: repeat(3, minmax(160px, 1fr));
           margin-top: 10px;
+        }
+        .no-spinner-number {
+          appearance: textfield;
+          -moz-appearance: textfield;
+        }
+        .no-spinner-number::-webkit-outer-spin-button,
+        .no-spinner-number::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
         }
         .add-part-actions {
           display: flex;
@@ -1199,6 +1208,7 @@ function GoodsInPage() {
               <div style={addPartFieldStyle}>
                 <label style={labelStyle}>Quantity</label>
                 <input
+                  className="no-spinner-number"
                   type="number"
                   style={addPartInputStyle}
                   min="0"
@@ -1229,7 +1239,7 @@ function GoodsInPage() {
               </div>
             </div>
             <div className="add-part-fields-grid add-part-fields-row-span-3">
-              <div style={{ ...addPartFieldStyle, position: "relative" }}>
+              <div style={{ ...addPartFieldStyle, position: "relative", zIndex: showBinSuggestions ? 20 : "auto" }}>
                 <label style={labelStyle}>Bin location</label>
                 <input
                   type="text"
@@ -1255,7 +1265,7 @@ function GoodsInPage() {
                       maxHeight: "200px",
                       overflowY: "auto",
                       borderRadius: "12px",
-                      zIndex: 10,
+                      zIndex: 1000,
                     }}
                     onMouseDown={(event) => event.preventDefault()}
                   >
@@ -1813,13 +1823,126 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
     const trimmed = initialQuery.trim();
     setQuery(initialQuery);
     if (!trimmed) {
-      setResults([]);
-      setError("");
-      setLoading(false);
+      searchSuppliers("");
       return;
     }
     searchSuppliers(trimmed);
   }, [initialQuery, searchSuppliers]);
+
+  const renderSupplierResults = () =>
+    results.map((result, index) => {
+      const missingLinkedAccount = !result.linked_account_id;
+      const displayName = result.company_name || result.trading_name || result.account_number;
+      const city = result.billing_city || "Unknown city";
+      const phone = result.phone || result.telephone || result.mobile || "";
+      const restingBorder = missingLinkedAccount
+        ? "1px solid color-mix(in srgb, var(--danger) 30%, var(--surface-light))"
+        : "1px solid var(--surface-light)";
+      const restingBackground =
+        "linear-gradient(180deg, var(--surface) 0%, color-mix(in srgb, var(--surface) 88%, var(--surface-light)) 100%)";
+
+      return (
+        <button
+          key={result.account_number}
+          style={{
+            width: "100%",
+            minHeight: "92px",
+            textAlign: "left",
+            padding: "14px",
+            border: restingBorder,
+            borderRadius: "14px",
+            marginBottom: index === results.length - 1 ? 0 : "10px",
+            cursor: "pointer",
+            background: restingBackground,
+            color: "var(--text-primary)",
+            boxShadow: "0 1px 0 rgba(0,0,0,0.02)",
+            transition: "background 0.15s ease, border-color 0.15s ease, transform 0.15s ease",
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+          }}
+          onMouseEnter={(event) => {
+            event.currentTarget.style.background = "var(--surface)";
+            event.currentTarget.style.borderColor = missingLinkedAccount ? "var(--danger)" : "var(--primary)";
+            event.currentTarget.style.transform = "translateY(-1px)";
+          }}
+          onMouseLeave={(event) => {
+            event.currentTarget.style.background = restingBackground;
+            event.currentTarget.style.border = restingBorder;
+            event.currentTarget.style.transform = "translateY(0)";
+          }}
+          onClick={() => {
+            if (missingLinkedAccount) {
+              setError(
+                "Supplier account has no linked ledger account. Open the supplier and set a linked account."
+              );
+              return;
+            }
+            onSelect(result);
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center" }}>
+            <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--text-primary)" }}>{displayName}</div>
+            <div
+              style={{
+                fontSize: "0.75rem",
+                fontWeight: 700,
+                color: "var(--primary)",
+                background: "color-mix(in srgb, var(--primary) 12%, transparent)",
+                border: "1px solid color-mix(in srgb, var(--primary) 28%, var(--surface-light))",
+                borderRadius: "999px",
+                padding: "3px 8px",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {result.account_number}
+            </div>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 8px", fontSize: "0.8rem" }}>
+            <span
+              style={{
+                color: "var(--text-secondary)",
+                background: "var(--layer-section-level-1)",
+                border: "1px solid var(--surface-light)",
+                borderRadius: "999px",
+                padding: "2px 8px",
+              }}
+            >
+              {city}
+            </span>
+            {phone ? (
+              <span
+                style={{
+                  color: "var(--text-secondary)",
+                  background: "var(--layer-section-level-1)",
+                  border: "1px solid var(--surface-light)",
+                  borderRadius: "999px",
+                  padding: "2px 8px",
+                }}
+              >
+                {phone}
+              </span>
+            ) : null}
+            <span
+              style={{
+                color: missingLinkedAccount ? "var(--danger)" : "var(--success)",
+                background: missingLinkedAccount
+                  ? "color-mix(in srgb, var(--danger) 10%, transparent)"
+                  : "color-mix(in srgb, var(--success) 10%, transparent)",
+                border: missingLinkedAccount
+                  ? "1px solid color-mix(in srgb, var(--danger) 28%, var(--surface-light))"
+                  : "1px solid color-mix(in srgb, var(--success) 28%, var(--surface-light))",
+                borderRadius: "999px",
+                padding: "2px 8px",
+                fontWeight: 600,
+              }}
+            >
+              {missingLinkedAccount ? "No linked ledger" : "Linked ledger"}
+            </span>
+          </div>
+        </button>
+      );
+    });
 
   return (
     <div style={popupOverlayStyles}>
@@ -1848,15 +1971,14 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
         </div>
         <div>
           <input
-            style={inputStyle}
+            style={{ ...inputStyle, width: "100%", boxSizing: "border-box" }}
             placeholder="Search name, account number, phone, or city"
             value={query}
             onChange={(event) => {
               const nextValue = event.target.value;
               setQuery(nextValue);
               if (!nextValue.trim()) {
-                setResults([]);
-                setError("");
+                searchSuppliers("");
                 return;
               }
               searchSuppliers(nextValue);
@@ -1875,64 +1997,23 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
           }}
         >
           {!query.trim() ? (
-            <div style={{ padding: "16px", color: "var(--text-secondary)" }}>
-              Enter a supplier name, account number, phone, or city to see results.
-            </div>
+            loading ? (
+              <div style={{ padding: "24px", textAlign: "center" }}>Loading suppliers...</div>
+            ) : error ? (
+              <div style={{ padding: "12px", color: "var(--danger)" }}>{error}</div>
+            ) : results.length ? (
+              renderSupplierResults()
+            ) : (
+              <div style={{ padding: "12px", color: "var(--text-secondary)" }}>
+                No supplier accounts available.
+              </div>
+            )
           ) : loading ? (
             <div style={{ padding: "24px", textAlign: "center" }}>Searching...</div>
           ) : error ? (
             <div style={{ padding: "12px", color: "var(--danger)" }}>{error}</div>
           ) : (
-            results.map((result, index) => {
-              const missingLinkedAccount = !result.linked_account_id;
-              return (
-                <button
-                  key={result.account_number}
-                  style={{
-                    width: "100%",
-                    minHeight: "88px",
-                    textAlign: "left",
-                    padding: "12px",
-                    border: "1px solid var(--surface-light)",
-                    borderRadius: "12px",
-                    marginBottom: index === results.length - 1 ? 0 : "8px",
-                    cursor: "pointer",
-                    background: "var(--surface)",
-                    color: "var(--text-primary)",
-                    transition: "background 0.15s ease, border-color 0.15s ease",
-                  }}
-                  onMouseEnter={(event) => {
-                    event.currentTarget.style.background = "var(--surface-light)";
-                    event.currentTarget.style.borderColor = "var(--primary)";
-                  }}
-                  onMouseLeave={(event) => {
-                    event.currentTarget.style.background = "var(--surface)";
-                    event.currentTarget.style.borderColor = "var(--surface-light)";
-                  }}
-                  onClick={() => {
-                    if (missingLinkedAccount) {
-                      setError(
-                        "Supplier account has no linked ledger account. Open the supplier and set a linked account."
-                      );
-                      return;
-                    }
-                    onSelect(result);
-                  }}
-                >
-                  <div style={{ fontWeight: 600 }}>
-                    {result.company_name || result.trading_name || result.account_number}
-                  </div>
-                  <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-                    Account {result.account_number} · {result.billing_city || "Unknown city"}
-                  </div>
-                  {missingLinkedAccount && (
-                    <div style={{ fontSize: "0.8rem", color: "var(--danger)", marginTop: "4px" }}>
-                      No linked ledger account
-                    </div>
-                  )}
-                </button>
-              );
-            })
+            renderSupplierResults()
           )}
         </div>
       </div>

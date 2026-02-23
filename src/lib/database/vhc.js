@@ -43,6 +43,7 @@ const CHECK_COLUMNS = [ // Canonical column list for vhc_checks.
   "total_override", // Manual total override.
   "labour_complete", // Whether labour is complete.
   "parts_complete", // Whether parts work is complete.
+  "Complete", // Dedicated completion toggle for authorised VHC rows.
   "approved_at", // Timestamp when item was approved.
   "approved_by", // Who approved the item.
   "authorization_state", // State of authorization.
@@ -113,6 +114,7 @@ const mapCheckRow = (row = {}) => { // Convert snake_case database row into came
     totalOverride: row.total_override, // Manual total override.
     labourComplete: row.labour_complete, // Whether labour is complete.
     partsComplete: row.parts_complete, // Whether parts work is complete.
+    complete: row.Complete, // Dedicated completion toggle for authorised VHC rows.
     approvedAt: row.approved_at, // Approval timestamp.
     approvedBy: row.approved_by, // Who approved the item.
     authorizationState: row.authorization_state, // Authorization state.

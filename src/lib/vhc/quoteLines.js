@@ -22,6 +22,14 @@ const resolveDisplaySeverity = (displayStatus) => { // Only allow display_status
   return candidate === "red" || candidate === "amber" || candidate === "green" ? candidate : null;
 };
 
+const resolveDecisionStatus = (check = {}, fallback = null) => {
+  const authState = normaliseDecisionStatus(check?.authorization_state);
+  if (authState) return authState;
+  const approval = normaliseDecisionStatus(check?.approval_status);
+  if (approval) return approval;
+  return normaliseDecisionStatus(fallback) || "pending";
+};
+
 const buildRowIdLabel = (rowId) => {
   if (rowId === null || rowId === undefined) return "";
   const value = String(rowId).trim();
@@ -199,7 +207,7 @@ export const buildVhcQuoteLinesModel = ({
           rows: Array.isArray(item?.rows) ? item.rows : [],
           rawSeverity: severity,
           severityKey: severity,
-          approvalStatus: normaliseDecisionStatus(check?.approval_status) || "pending",
+          approvalStatus: resolveDecisionStatus(check),
           vhcCheck: check || null,
           rowId: check?.vhc_id ? String(check.vhc_id) : null,
           slotCode: check?.slot_code ?? null,
@@ -239,7 +247,7 @@ export const buildVhcQuoteLinesModel = ({
       rows: [],
       rawSeverity: severity,
       severityKey: severity,
-      approvalStatus: normaliseDecisionStatus(check.approval_status) || "pending",
+      approvalStatus: resolveDecisionStatus(check),
       vhcCheck: check,
       rowId: id,
       slotCode: check?.slot_code ?? null,
@@ -252,7 +260,7 @@ export const buildVhcQuoteLinesModel = ({
     const canonicalId = String(item.canonicalId || item.id);
     const itemId = String(item.id);
 
-    let decisionKey = normaliseDecisionStatus(check.approval_status) || normaliseDecisionStatus(item.approvalStatus) || "pending";
+    let decisionKey = resolveDecisionStatus(check, item.approvalStatus);
     if (decisionKey === "authorized" || decisionKey === "completed") {
       if (authorizedViewIds.size > 0 && !authorizedViewIds.has(canonicalId) && !authorizedViewIds.has(itemId)) {
         decisionKey = "pending";

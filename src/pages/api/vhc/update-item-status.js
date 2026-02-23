@@ -17,6 +17,7 @@ export default async function handler(req, res) {
       totalOverride,
       labourComplete,
       partsComplete,
+      complete,
       approvedBy
     } = req.body;
 
@@ -90,6 +91,12 @@ export default async function handler(req, res) {
           updateData.display_status = null;
         }
       }
+
+      // Keep the dedicated completion flag aligned with approval status for
+      // backwards compatibility when older callers do not send `complete`.
+      if (complete === undefined) {
+        updateData["Complete"] = nextApprovalStatus === "completed";
+      }
     }
 
     if (labourHours !== undefined) {
@@ -114,6 +121,10 @@ export default async function handler(req, res) {
 
     if (partsComplete !== undefined) {
       updateData.parts_complete = Boolean(partsComplete);
+    }
+
+    if (complete !== undefined) {
+      updateData["Complete"] = Boolean(complete);
     }
 
     updateData.updated_at = new Date().toISOString();

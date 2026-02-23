@@ -170,6 +170,8 @@ const ensureAuthorizedTasks = (tasks = [], authorizedItems = []) => {
     const existingKey = normaliseLabel(existingLabel);
     const nextKey = normaliseLabel(nextLabel);
     if (existingKey === nextKey) return false;
+    // Upgrade older short labels (e.g. "NSF Wheel") to richer canonical labels when available.
+    if (nextKey.length > existingKey.length && nextKey.includes(existingKey)) return true;
     if (existingKey.includes("service reminder") && existingKey.includes("oil")) return true;
     if (existingKey.includes("service reminder oil level")) return true;
     if (existingKey.includes("service reminder/oil")) return true;
@@ -1066,7 +1068,7 @@ export default function WriteUpForm({
             ? jobPayload.jobCard.authorizedVhcItems
             : [];
           const canonicalEntries = canonicalAuthorised.map((item, index) => {
-            const description = (item?.description || item?.label || "").toString().trim();
+            const description = (item?.label || item?.description || item?.issueDescription || item?.issue_description || "").toString().trim();
             return {
               ...item,
               source: "vhc",

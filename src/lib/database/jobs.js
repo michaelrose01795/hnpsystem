@@ -477,7 +477,7 @@ const _getAllJobsUncached = async () => {
       ),
       technician:assigned_to(user_id, first_name, last_name, email, role),
       appointments(appointment_id, scheduled_time, status, notes, created_at, updated_at),
-      vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at, approval_status, display_status, severity, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by, note_text, pre_pick_location, request_id, display_id),
+      vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at, approval_status, authorization_state, display_status, severity, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by, note_text, pre_pick_location, request_id, display_id),
       parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, pre_pick_location, created_at, updated_at),
       parts_job_items!parts_job_items_job_id_fkey(
         id,
@@ -497,8 +497,6 @@ const _getAllJobsUncached = async () => {
         request_notes,
         labour_hours,
         allocated_by,
-        picked_by,
-        fitted_by,
         created_at,
         updated_at,
         parts_catalog:part_id(
@@ -798,12 +796,20 @@ export const getAuthorizedAdditionalWorkByJob = async (jobId) => {
 ============================================ */
 export const getAuthorizedVhcItemsWithDetails = async (jobId) => {
   try {
+    const normaliseAuthorizationState = (value) => {
+      const lower = String(value || "").toLowerCase().trim();
+      if (!lower) return "";
+      if (lower === "authorised" || lower === "approved") return "authorized";
+      if (lower === "complete") return "completed";
+      if (lower === "rejected") return "declined";
+      return lower;
+    };
+
     // Query vhc_checks directly — authorized items data is now consolidated here
     const { data: rows, error } = await supabase
       .from("vhc_checks")
       .select("*")
       .eq("job_id", jobId)
-      .in("approval_status", ["authorized", "completed"])
       .order("approved_at", { ascending: false });
 
     if (error) {
@@ -811,7 +817,17 @@ export const getAuthorizedVhcItemsWithDetails = async (jobId) => {
       return [];
     }
 
-    return (rows || []).map((row) => {
+    return (rows || [])
+      .filter((row) => {
+        const section = String(row?.section || "").trim();
+        if (section === "VHC_CHECKSHEET" || section === "VHC Checksheet") return false;
+
+        const decision =
+          normaliseAuthorizationState(row?.authorization_state) ||
+          normaliseAuthorizationState(row?.approval_status);
+        return decision === "authorized" || decision === "completed" || row?.Complete === true || row?.complete === true;
+      })
+      .map((row) => {
       const base = row.issue_title || row.section || "Authorised item";
       const detail =
         row.issue_description || row.note_text || null;
@@ -846,7 +862,7 @@ export const getAuthorizedVhcItemsWithDetails = async (jobId) => {
 ============================================ */
 export const getJobByNumber = async (jobNumber, options = {}) => {
   // Only cache standard (non-archive) lookups
-  if (!options?.archive) {
+  if (!options?.archive && !options?.noCache && !options?.force) {
     const cacheKey = `jobs:number:${jobNumber}`;
     return cachedQuery(cacheKey, () => _getJobByNumberUncached(jobNumber, options));
   }
@@ -859,6 +875,9 @@ const _getJobByNumberUncached = async (jobNumber, options = {}) => {
       const params = new URLSearchParams();
       if (options?.archive) {
         params.set("archive", "1");
+      }
+      if (options?.force || options?.noCache) {
+        params.set("force", "1");
       }
       const query = params.toString();
       const response = await fetch(
@@ -990,7 +1009,7 @@ const _getJobByNumberUncached = async (jobNumber, options = {}) => {
         created_at,
         updated_at
       ),
-      vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at, approval_status, display_status, severity, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by, note_text, pre_pick_location, request_id, display_id),
+      vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at, approval_status, authorization_state, display_status, severity, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by, note_text, pre_pick_location, request_id, display_id),
       parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, pre_pick_location, created_at, updated_at),
       parts_job_items!parts_job_items_job_id_fkey(
         id,
@@ -1010,8 +1029,6 @@ const _getJobByNumberUncached = async (jobNumber, options = {}) => {
         request_notes,
         labour_hours,
         allocated_by,
-        picked_by,
-        fitted_by,
         created_at,
         updated_at,
         parts_catalog:part_id(
@@ -1118,7 +1135,7 @@ const _getJobByNumberUncached = async (jobNumber, options = {}) => {
           created_at,
           updated_at
         ),
-        vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at, approval_status, display_status, severity, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by, note_text, pre_pick_location, request_id, display_id),
+        vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at, approval_status, authorization_state, display_status, severity, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by, note_text, pre_pick_location, request_id, display_id),
         parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, pre_pick_location, created_at, updated_at),
         parts_job_items!parts_job_items_job_id_fkey(
           id,
@@ -1136,8 +1153,6 @@ const _getJobByNumberUncached = async (jobNumber, options = {}) => {
           unit_price,
           request_notes,
           allocated_by,
-          picked_by,
-          fitted_by,
           created_at,
           updated_at,
           part:part_id(
@@ -1324,8 +1339,6 @@ export const getJobByNumberOrReg = async (searchTerm) => {
         unit_price,
         request_notes,
         allocated_by,
-        picked_by,
-        fitted_by,
         created_at,
         updated_at,
         parts_catalog:part_id(
@@ -1443,8 +1456,6 @@ export const getJobByNumberOrReg = async (searchTerm) => {
           unit_price,
           request_notes,
           allocated_by,
-          picked_by,
-          fitted_by,
           created_at,
           updated_at,
           part:part_id(
@@ -2085,8 +2096,6 @@ const formatJobData = (data) => {
       unitPrice: item.unit_price ?? partData?.unit_price ?? 0,
       requestNotes: item.request_notes || "",
       allocatedBy: item.allocated_by || null,
-      pickedBy: item.picked_by || null,
-      fittedBy: item.fitted_by || null,
       createdAt: item.created_at || null,
       updatedAt: item.updated_at || null,
       part: partData
@@ -2721,6 +2730,11 @@ export const upsertJobRequestsForJob = async (jobId, requestEntries = []) => {
         const jobType = (entry.paymentType ?? entry.jobType ?? "Customer").toString().trim() || "Customer";
         const requestId = entry.requestId ?? entry.request_id ?? null;
         const noteText = entry.noteText ?? entry.note_text ?? null;
+        const rawPrePickLocation = entry.prePickLocation ?? entry.pre_pick_location ?? null;
+        const prePickLocation =
+          rawPrePickLocation === null || rawPrePickLocation === undefined
+            ? null
+            : String(rawPrePickLocation).trim() || null;
 
         return {
           requestId,
@@ -2729,6 +2743,7 @@ export const upsertJobRequestsForJob = async (jobId, requestEntries = []) => {
           jobType,
           sortOrder: index + 1,
           noteText: noteText ? noteText.toString().trim() : null,
+          prePickLocation,
         };
       })
       .filter(Boolean);
@@ -2775,6 +2790,7 @@ export const upsertJobRequestsForJob = async (jobId, requestEntries = []) => {
             job_type: row.jobType,
             sort_order: row.sortOrder,
             note_text: row.noteText,
+            pre_pick_location: row.prePickLocation,
             request_source: "customer_request",
             updated_at: timestamp,
           })
@@ -2793,6 +2809,7 @@ export const upsertJobRequestsForJob = async (jobId, requestEntries = []) => {
               status: "inprogress",
               request_source: "customer_request",
               note_text: row.noteText,
+              pre_pick_location: row.prePickLocation,
               created_at: timestamp,
               updated_at: timestamp,
             },
@@ -3272,7 +3289,7 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
         item?.vhcItemId !== null && item?.vhcItemId !== undefined
           ? String(item.vhcItemId)
           : `idx-${index + 1}`;
-      const labelBase = (item?.description || "").toString().trim() || `Authorised item ${index + 1}`;
+      const labelBase = (item?.label || item?.description || item?.issueDescription || "").toString().trim() || `Authorised item ${index + 1}`;
       return {
         source: "vhc",
         sourceKey: `vhc-${job.id}-${vhcId}`,

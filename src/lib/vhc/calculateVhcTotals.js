@@ -22,6 +22,16 @@ function normaliseColour(value) {
   return null;
 }
 
+function normaliseDecisionStatus(value) {
+  if (!value || typeof value !== "string") return null;
+  const lower = value.toLowerCase().trim();
+  if (!lower) return null;
+  if (lower === "authorised" || lower === "approved") return "authorized";
+  if (lower === "rejected") return "declined";
+  if (lower === "complete") return "completed";
+  return lower;
+}
+
 /**
  * Parse JSON safely
  */
@@ -63,6 +73,23 @@ export function calculateVhcFinancialTotals(vhcChecks = [], partsJobItems = []) 
       return totals;
     }
 
+    // Prefer persisted totals on the VHC_CHECKSHEET row when available.
+    // This keeps the job-card header in sync after refreshes without requiring
+    // the full VHC Summary model to be rebuilt client-side first.
+    const storedAuthorized = Number(builderRecord.authorized_total_gbp);
+    const storedDeclined = Number(builderRecord.declined_total_gbp);
+    const hasStoredAuthorized = Number.isFinite(storedAuthorized) && storedAuthorized >= 0;
+    const hasStoredDeclined = Number.isFinite(storedDeclined) && storedDeclined >= 0;
+    const shouldUseStoredTotals =
+      (hasStoredAuthorized && storedAuthorized > 0) ||
+      (hasStoredDeclined && storedDeclined > 0);
+    if (shouldUseStoredTotals) {
+      return {
+        authorized: hasStoredAuthorized ? storedAuthorized : 0,
+        declined: hasStoredDeclined ? storedDeclined : 0,
+      };
+    }
+
     const parsedPayload = safeJsonParse(builderRecord.issue_description || builderRecord.data);
     if (!parsedPayload) {
       return totals;
@@ -77,7 +104,8 @@ export function calculateVhcFinancialTotals(vhcChecks = [], partsJobItems = []) 
     vhcChecks.forEach((check) => {
       if (check.vhc_id) {
         approvalLookup.set(String(check.vhc_id), {
-          approvalStatus: check.approval_status || 'pending',
+          approvalStatus: normaliseDecisionStatus(check.approval_status) || 'pending',
+          authorizationState: normaliseDecisionStatus(check.authorization_state) || null,
           displayStatus: check.display_status || null,
           labourHours: check.labour_hours,
           partsCost: check.parts_cost,
@@ -137,6 +165,7 @@ export function calculateVhcFinancialTotals(vhcChecks = [], partsJobItems = []) 
           rawSeverity: severity,
           displayStatus: approvalData.displayStatus,
           approvalStatus: approvalData.approvalStatus || 'pending',
+          authorizationState: approvalData.authorizationState || null,
         });
       });
     });
@@ -174,9 +203,12 @@ export function calculateVhcFinancialTotals(vhcChecks = [], partsJobItems = []) 
         }
 
         // Also check approval status for red/amber items
-        if ((severity === 'red' || severity === 'amber') && item.approvalStatus === 'authorized') {
+        const decision =
+          item.authorizationState ||
+          item.approvalStatus;
+        if ((severity === 'red' || severity === 'amber') && decision === 'authorized') {
           totals.authorized += rowTotal;
-        } else if ((severity === 'red' || severity === 'amber') && item.approvalStatus === 'declined') {
+        } else if ((severity === 'red' || severity === 'amber') && decision === 'declined') {
           totals.declined += rowTotal;
         }
       });
