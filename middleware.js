@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import {
+  canAccessHrManagerDashboard,
   HR_CORE_ROLES,
   HR_MANAGER_ROLES,
   MANAGER_SCOPED_ROLES,
@@ -57,16 +58,18 @@ export async function middleware(req) {
   const hasHrCoreAccess = HR_CORE_ROLES.some((role) => roles.includes(role));
   const hasManagerAccess = MANAGER_SCOPED_ROLES.some((role) => roles.includes(role));
   const hasAdminManagerAccess = HR_MANAGER_ROLES.some((role) => roles.includes(role));
-  const hasOwnerAccess = roles.includes("owner");
+  const hasHrManagerDashboardAccess = canAccessHrManagerDashboard(roles);
 
   if (pathname.startsWith("/admin/users") && !hasAdminManagerAccess) {
     return NextResponse.redirect(new URL("/unauthorized", req.url));
   }
 
   if (isHrRoute) {
-    // Allow Owner to access /hr/manager
-    if (pathname.startsWith("/hr/manager") && hasOwnerAccess) {
-      return NextResponse.next();
+    if (pathname.startsWith("/hr/manager")) {
+      if (hasHrManagerDashboardAccess) {
+        return NextResponse.next();
+      }
+      return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
     const managerFriendly = HR_ALLOWED_PATHS_FOR_MANAGERS.some((route) =>

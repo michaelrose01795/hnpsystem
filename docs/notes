@@ -3,8 +3,105 @@ TO DO:
 Continue flow with job number 55.
 
 
-have it so the "Complete" text folows the light/dark/colour theme within the "Rectification" section. Remove the "Edited by Darrell W" section.
 
+only make this change nothing else
+
+
+
+
+
+Fix “Ensure all allocated parts have quantities and pricing.” To give a better explanation and to fix it so when within the parts tab if the parts tab background is set to green eg if the “PARTS ADDED TO JOB” section all of the rows except the removed rows are set as allocated. 
+
+Fix within the service history tab the mileage within the row make sure it’s set to the database so it doesn’t say not recorded when it has actually been recorded. 
+
+Within the “Customer Requests Contact Scheduling Service History Parts Notes Write Up VHC Warranty Clocking Messages Documents Invoice” section move the notes tab button before the parts tab button. 
+Fix it so the parts authorised tab shows the authorised items within the vhc_checks database table to show the rows, make sure this saves and whenever the parts authorised tab is opened.
+
+Have it so the “Job Card #00056 In Progress Retail Created: 19/02/2026, 20:37:17 | Last Updated: 23/02/2026, 23:10:36 Checked in Back“ background colour is the same as the “VEHICLE 56231 Save WN69HSU FORD CUSTOMER Zoe Harrington 07851 002991 DECLINED £320.00 VHC Total AUTHORISED £505.99 VHC Total Key location Service showroom Car location Service” sections sit within. 
+
+Have it so the rows within the job-card/view page uses the light and dark colour themed background colour eg level 2 etc. 
+
+have it sow thin the next job page the outstanding jobs row cards don’t use an accent colour eg for light mode white and for dark mode grey for example. Do the same with the user techs cards. 
+Go thought the whole app to make sure everything is spelt the uk English way
+Fix within the sidebar when the HR manager button is pressed it opens the hr/manager page, atm is just flicking back to the news feed page
+
+Within the news feed page make sure there is a bigger gap in between the first row and the add update button so when the hover is used it doesn’t overlap the button. 
+
+STOCK CHECK PAGE
+Have it so that all pop ups lock the background scroll or buttons from being clicked so only the items within the popup are active. 
+
+Within the stock check popup remove the “Select consumables to request and submit them to the workshop manager”, “Create a consumable that everyone in the workshop can see and request. “, “Select items below to include them in a stock check request.”, “Only checked consumables are included in the submission. Only checked consumables are included in the submission. “ text. Have it so the popup fits within the middle of the screen and the popup its self doesn’t go off of the screen view. 
+
+Have it so the “Consumable stock” section only shows the list view after being searched for or if the show list view button is clicked, add the “Show list” button on the same row as the search bar consumables section, have it so the button then shows all of the items but until that is clicked it hides the list view unless the consumable is searched for. 
+
+Have it so the Stock Check popup within the “0 items selected” so next to the “Submit Stock Check Request” button it has an email button which puts all of the selected items into a email list to the email address “darrell@humphriesandpark.co.uk” set the subject to “Stock Take” 
+
+Have it so when the show list button is clicked and it shows all of the rows it then shows the selected rows at the top of the list view. If they are then unselected then move them back to the original location which follows the alphabetical order starting with numbers. 
+
+Remove the “Add New Consumable” section from within the workshop/consumables-tracker page, keep it within the stock check popup. 
+
+Have it so the text within the workshop/consumables-tracker page follows more of the light and dark colour theme.
+Move the “Adjust Consumables Budget for February 2026” section onto the same row as the “← PreviousFebruary 2026Next →” section have it so this section is removed as it will be shown within the “Budget for February 2026 £0.00” section. Remove the “← PreviousFebruary 2026Next →” section from within the “Monthly Logs” section. 
+Remove the “Monitor consumable spend, reorder schedules, and supplier summaries.” Text and make the “Workshop Consumables Tracker” section height smaller. 
+
+Within the “Scheduled Consumables” section have it so it will show the “Overdue M gloves 12 Dec 2025 15 Dec 2025 10 Euro £2.39 28.00 Order
+” rows and then this section “ITEM QTY UNIT TOTAL SUPPLIER DATE M gloves 10 £2.80 £28.00 Euro 12 Dec 2025 M gloves 10 £2.39 £28.00 Euro 12 Dec 2025 M gloves 4 £2.39 £9.56 Euro 09 Dec 2025 M gloves 1 £2.39 £2.39 Euro 09 Dec 2025” is shown within a popup from clicking the row within the Scheduled consumable. 
+
+HR MANAGER 
+Fix this “Failed to load profile data Failed to load profile data (status 401) If you continue to see this error, please contact HR to ensure your employee profile has been created.”
+
+Make sure the clocking button then works. And check the scheme.sql file that the database is correct. 
+
+TECH DASHBOARD
+within the tech/dashboard page remove the clock in button. Have it so the cards follow light and dark colour theme within this he as well and uses more of the accent colours instead of black buttons. Have it so the text within the page follows more of the light and dark theme and is more visible. 
+
+Remove the “Welcome back, Cheryl T Tuesday, 24 February 2026” from within the page. Inside the “My Assigned Jobs” section don’t show the total amount in () only show a max of 3 jobs and then add a section saying more jobs available which then the user can click the View all button which takes the user to the job-cards/Myjobs page remove the “View All →” button from the “My Assigned Jobs (4)” section but keep the “View All jobs” button at the bottom of the page. 
+
+Remove the icons and emojis from the whole page. 
+
+Have it so the view all jobs goes to the job-cards/Myjobs page. Have it so when the time tracking button is clicked it takes the user to the “/tech/efficiency” page and change the “Request Parts” button to “Request Consumables which will take the user to “/tech/consumables-request” page. 
+
+Have it so when any user who has access to the “/tech/consumables-request” page requests a consumable all of the requests wills show within the “Requests” section. 
+
+Remove the archive jobs from the sidebar for tech users. Remove the job decision section from the sidebar as well. Remove the Workshop dashboard button from within the General section, but keep it within the My dashboard section. 
+
+Remove the “WORKSHOP WORKSPACE · TUESDAY 24 FEBRUARY Hi Cheryl T, workshop view Live view of technician assignments, queue, and VHC throughput.” Section from the “dashboard/workshop dashboard/workshop” page. Have it so the progress and checking trends are in a 50/50 Split View side by side on one row, have it so both sections are the same width and height. Have it so the next jobs queue shows 3 rows and then scroll, and the same with outstanding VHCs. Remove the status updates section. Have it so the next jobs queue queue and outstanding VHCs are in a 50/50 Split View, they are the same width and height and both have a scroll when there are more than 3 rows, have it so the seizes of the sections are always the same size and they only add a scroll if needed. 
+Tracking page
+
+within the key/parking section have it so each card connected to the job number shows the make model and customer name, this can be found for the database table from when creating the job card.
+Have it so under the key location it will just say “service showroom” instead of “keys updated - service showroom” 
+
+Have it so the customer name is on the same row as the job number and reg. and keep the make/model/colour in small print below the job number, reg and customer names. On the make/model/colour row move the lasted moved text to this row but have it to the right side of the card and the make/model/colour to the left section of the card. 
+If only the key/parking tab is visible example for the tech view then hide the tab section completely. 
+
+MESSAGES
+ Redesign only the thread sidebar and the main message area to feel modern and cleaner, without changing the top bar or any global layout. In the thread section, make the selected thread visually strong with a soft brand-tinted background, a 4px solid brand accent bar on the left, bolder sender name, improved padding, and a small unread badge; refine each thread card with better spacing, lighter preview text, and a subtle hover effect, and upgrade the search bar with a rounded background and icon. In the message section, convert messages into rounded chat bubbles with clear left and right alignment, use a light neutral bubble for other users and a soft brand-tinted bubble for the current user, increase vertical spacing between messages, lighten and reduce timestamp size, add subtle shadows instead of heavy borders, and restyle job numbers as clickable pill badges like “JOB 00056” rather than plain text links, keeping the overall structure intact but improving hierarchy, spacing, and visual clarity.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+have it so the "Complete" text folows the light/dark/colour theme within the "Rectification" section. Remove the "Edited by Darrell W" section.
 
 
 

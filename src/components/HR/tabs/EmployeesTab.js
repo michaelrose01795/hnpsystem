@@ -60,6 +60,28 @@ const SAMPLE_PAYLOAD_FIELD_MAP = {
   "emergency contact": "emergencyContact",
 };
 
+const DB_COLUMN_TO_FORM_FIELD = {
+  email: "email",
+  first_name: "firstName",
+  last_name: "lastName",
+  phone: "phone",
+  role: "role",
+  job_title: "jobTitle",
+  department: "department",
+  employment_type: "employmentType",
+  employment_status: "status",
+  start_date: "startDate",
+  contracted_hours: "contractedHours",
+  hourly_rate: "hourlyRate",
+  overtime_rate: "overtimeRate",
+  annual_salary: "annualSalary",
+  payroll_reference: "payrollNumber",
+  national_insurance_number: "nationalInsurance",
+  keycloak_user_id: "keycloakId",
+  home_address: "address",
+  emergency_contact: "emergencyContact",
+};
+
 function DirectoryFilters({ filters, setFilters, departments, employmentTypes }) {
   const departmentOptions = departments.map((dept) => ({
     value: dept,
@@ -144,6 +166,7 @@ export default function EmployeesTab() {
   const [editEmployee, setEditEmployee] = useState(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [editError, setEditError] = useState(null);
+  const [editFieldErrors, setEditFieldErrors] = useState({});
   const [editingEmployeeName, setEditingEmployeeName] = useState("");
   const directorySectionRef = useRef(null);
   const detailPanelRef = useRef(null);
@@ -259,6 +282,12 @@ export default function EmployeesTab() {
 
   const updateEditEmployeeField = (field, value) => {
     setEditEmployee((prev) => ({ ...prev, [field]: value }));
+    setEditFieldErrors((prev) => {
+      if (!prev || !prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
   };
 
   const mapEmployeeToForm = (employee) => {
@@ -326,8 +355,8 @@ export default function EmployeesTab() {
       });
 
       if (!response.ok) {
-        const message = await extractError(response);
-        throw new Error(message);
+        const parsedError = await extractError(response);
+        throw new Error(parsedError.message);
       }
 
       const payload = await response.json();
@@ -357,6 +386,7 @@ export default function EmployeesTab() {
     setEditEmployee(mapped);
     setEditingEmployeeName(selectedEmployee.name || "Employee");
     setEditError(null);
+    setEditFieldErrors({});
     setIsAddingEmployee(false);
     setIsEditingEmployee(true);
   };
@@ -365,13 +395,21 @@ export default function EmployeesTab() {
     setIsEditingEmployee(false);
     setEditEmployee(null);
     setEditError(null);
+    setEditFieldErrors({});
     setEditingEmployeeName("");
   };
 
   const handleSaveEditEmployee = async () => {
     if (!editEmployee) return;
+    const validationErrors = validateEmployeeForm(editEmployee);
+    if (Object.keys(validationErrors).length > 0) {
+      setEditFieldErrors(validationErrors);
+      setEditError("Cannot save changes. Fix the highlighted fields and try again.");
+      return;
+    }
     setIsSavingEdit(true);
     setEditError(null);
+    setEditFieldErrors({});
     try {
       const response = await fetch("/api/hr/employees", {
         method: "POST",
@@ -380,8 +418,10 @@ export default function EmployeesTab() {
       });
 
       if (!response.ok) {
-        const message = await extractError(response);
-        throw new Error(message);
+        const parsedError = await extractError(response);
+        const failure = new Error(parsedError.message);
+        failure.fieldErrors = parsedError.fieldErrors || {};
+        throw failure;
       }
 
       const payload = await response.json();
@@ -396,8 +436,10 @@ export default function EmployeesTab() {
 
       setIsEditingEmployee(false);
       setEditEmployee(null);
+      setEditFieldErrors({});
       setEditingEmployeeName("");
     } catch (err) {
+      setEditFieldErrors(err.fieldErrors || {});
       setEditError(err.message || "Failed to save employee");
     } finally {
       setIsSavingEdit(false);
@@ -407,9 +449,36 @@ export default function EmployeesTab() {
   const extractError = async (response) => {
     try {
       const data = await response.json();
-      return data?.message || `Request failed (${response.status})`;
+      const fieldErrors = {};
+      const serverMessage = typeof data?.message === "string" ? data.message : "";
+      const serverError = typeof data?.error === "string" ? data.error : "";
+
+      const missingFieldMatch = serverMessage.match(/Missing required field\s+([a-zA-Z0-9_]+)/i);
+      if (missingFieldMatch) {
+        const missingField = missingFieldMatch[1];
+        fieldErrors[missingField] = `${humanizeFieldLabel(missingField)} is required.`;
+      }
+
+      const columnMatch = (serverError || serverMessage).match(/column\s+"([^"]+)"/i);
+      if (columnMatch) {
+        const mappedField = DB_COLUMN_TO_FORM_FIELD[columnMatch[1]];
+        if (mappedField && !fieldErrors[mappedField]) {
+          fieldErrors[mappedField] = `${humanizeFieldLabel(mappedField)} is invalid or missing.`;
+        }
+      }
+
+      if (/email/i.test(serverError) && !fieldErrors.email) {
+        fieldErrors.email = "Enter a valid email address.";
+      }
+
+      return {
+        message:
+          formatEmployeeSaveError(serverMessage, serverError, fieldErrors) ||
+          `Request failed (${response.status})`,
+        fieldErrors,
+      };
     } catch {
-      return `Request failed (${response.status})`;
+      return { message: `Request failed (${response.status})`, fieldErrors: {} };
     }
   };
 
@@ -694,6 +763,7 @@ export default function EmployeesTab() {
         isSaving={isSavingEdit}
         saveLabel={isSavingEdit ? "Saving…" : "Save changes"}
         errorMessage={editError}
+        fieldErrors={editFieldErrors}
         availableRoles={availableRoles}
         availableJobTitles={availableJobTitles}
       />
@@ -802,6 +872,7 @@ function EmployeeForm({
   isSaving,
   saveLabel,
   errorMessage,
+  fieldErrors = {},
   footerContent = null,
   availableRoles,
   availableJobTitles,
@@ -857,6 +928,7 @@ function EmployeeForm({
           <EmployeeDetailsFields
             values={values}
             onFieldChange={onFieldChange}
+            fieldErrors={fieldErrors}
             availableRoles={availableRoles}
             availableJobTitles={availableJobTitles}
           />
@@ -874,6 +946,7 @@ function SearchableListDropdown({
   placeholder,
   emptyLabel,
   allowCustom = false,
+  hasError = false,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -929,7 +1002,8 @@ function SearchableListDropdown({
         style={{
           padding: "10px",
           borderRadius: "8px",
-          border: "1px solid var(--surface-light)",
+          border: hasError ? "1px solid var(--danger)" : "1px solid var(--surface-light)",
+          boxShadow: hasError ? "0 0 0 2px rgba(var(--danger-rgb), 0.12)" : "none",
           width: "100%",
           cursor: "pointer",
         }}
@@ -1007,11 +1081,20 @@ function SectionHeading({ title }) {
 function EmployeeDetailsFields({
   values,
   onFieldChange,
+  fieldErrors = {},
   availableRoles,
   availableJobTitles,
 }) {
   const update = (field) => (event) => onFieldChange(field, event.target.value);
   const inputStyle = { padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" };
+  const applyFieldErrorStyle = (field, baseStyle = inputStyle) =>
+    fieldErrors[field]
+      ? {
+          ...baseStyle,
+          border: "1px solid var(--danger)",
+          boxShadow: "0 0 0 2px rgba(var(--danger-rgb), 0.12)",
+        }
+      : baseStyle;
   const gridStyle = {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
@@ -1023,27 +1106,27 @@ function EmployeeDetailsFields({
       {/* ── Personal Details ── */}
       <SectionHeading title="Personal Details" />
       <div style={gridStyle}>
-        <FormField label="First Name">
-          <input type="text" value={values.firstName} onChange={update("firstName")} style={inputStyle} placeholder="Jordan" />
+        <FormField label="First Name" errorMessage={fieldErrors.firstName}>
+          <input type="text" value={values.firstName} onChange={update("firstName")} style={applyFieldErrorStyle("firstName")} placeholder="Jordan" />
         </FormField>
-        <FormField label="Last Name">
-          <input type="text" value={values.lastName} onChange={update("lastName")} style={inputStyle} placeholder="Reyes" />
+        <FormField label="Last Name" errorMessage={fieldErrors.lastName}>
+          <input type="text" value={values.lastName} onChange={update("lastName")} style={applyFieldErrorStyle("lastName")} placeholder="Reyes" />
         </FormField>
-        <FormField label="Email">
-          <input type="email" value={values.email} onChange={update("email")} style={inputStyle} placeholder="jordan.reyes@example.com" />
+        <FormField label="Email" errorMessage={fieldErrors.email}>
+          <input type="email" value={values.email} onChange={update("email")} style={applyFieldErrorStyle("email")} placeholder="jordan.reyes@example.com" />
         </FormField>
-        <FormField label="Phone">
-          <input type="tel" value={values.phone} onChange={update("phone")} style={inputStyle} placeholder="+44 7000 000000" />
+        <FormField label="Phone" errorMessage={fieldErrors.phone}>
+          <input type="tel" value={values.phone} onChange={update("phone")} style={applyFieldErrorStyle("phone")} placeholder="+44 7000 000000" />
         </FormField>
       </div>
 
       {/* ── Employment Details ── */}
       <SectionHeading title="Employment Details" />
       <div style={gridStyle}>
-        <FormField label="Department">
-          <input type="text" value={values.department} onChange={update("department")} style={inputStyle} placeholder="Operations" />
+        <FormField label="Department" errorMessage={fieldErrors.department}>
+          <input type="text" value={values.department} onChange={update("department")} style={applyFieldErrorStyle("department")} placeholder="Operations" />
         </FormField>
-        <FormField label="Job Title">
+        <FormField label="Job Title" errorMessage={fieldErrors.jobTitle}>
           <SearchableListDropdown
             value={values.jobTitle}
             onChange={update("jobTitle")}
@@ -1051,68 +1134,74 @@ function EmployeeDetailsFields({
             placeholder="Select or search job title..."
             emptyLabel="No job titles found"
             allowCustom
+            hasError={Boolean(fieldErrors.jobTitle)}
           />
         </FormField>
-        <FormField label="Role">
+        <FormField label="Role" errorMessage={fieldErrors.role}>
           <SearchableListDropdown
             value={values.role}
             onChange={update("role")}
             items={availableRoles}
             placeholder="Select or search role..."
             emptyLabel="No roles found"
+            hasError={Boolean(fieldErrors.role)}
           />
         </FormField>
-        <FormField label="Employment Type">
-          <select value={values.employmentType} onChange={update("employmentType")} style={inputStyle}>
+        <FormField label="Employment Type" errorMessage={fieldErrors.employmentType}>
+          <select value={values.employmentType} onChange={update("employmentType")} style={applyFieldErrorStyle("employmentType")}>
             <option value="Full-time">Full-time</option>
             <option value="Part-time">Part-time</option>
             <option value="Contract">Contract</option>
             <option value="Temporary">Temporary</option>
           </select>
         </FormField>
-        <FormField label="Employment Status">
-          <select value={values.status} onChange={update("status")} style={inputStyle}>
+        <FormField label="Employment Status" errorMessage={fieldErrors.status}>
+          <select value={values.status} onChange={update("status")} style={applyFieldErrorStyle("status")}>
             <option value="Active">Active</option>
             <option value="Inactive">Inactive</option>
             <option value="On Leave">On Leave</option>
           </select>
         </FormField>
-        <FormField label="Start Date">
-          <CalendarField name="startDate" id="startDate" value={values.startDate} onChange={update("startDate")} />
+        <FormField label="Start Date" errorMessage={fieldErrors.startDate}>
+          <div style={applyFieldErrorStyle("startDate", { borderRadius: "8px" })}>
+            <CalendarField name="startDate" id="startDate" value={values.startDate} onChange={update("startDate")} />
+          </div>
         </FormField>
-        <FormField label="Probation Ends">
-          <CalendarField name="probationEnd" id="probationEnd" value={values.probationEnd} onChange={update("probationEnd")} />
+        <FormField label="Probation Ends" errorMessage={fieldErrors.probationEnd}>
+          <div style={applyFieldErrorStyle("probationEnd", { borderRadius: "8px" })}>
+            <CalendarField name="probationEnd" id="probationEnd" value={values.probationEnd} onChange={update("probationEnd")} />
+          </div>
         </FormField>
-        <FormField label="Contracted Hours / Week">
-          <input type="number" min="0" value={values.contractedHours} onChange={update("contractedHours")} style={inputStyle} />
+        <FormField label="Contracted Hours / Week" errorMessage={fieldErrors.contractedHours}>
+          <input type="number" min="0" value={values.contractedHours} onChange={update("contractedHours")} style={applyFieldErrorStyle("contractedHours")} />
         </FormField>
       </div>
 
       {/* ── Pay & Compensation ── */}
       <SectionHeading title="Pay &amp; Compensation" />
       <div style={gridStyle}>
-        <FormField label="Hourly Rate (£)">
-          <input type="number" min="0" step="0.01" value={values.hourlyRate} onChange={update("hourlyRate")} style={inputStyle} placeholder="15.50" />
+        <FormField label="Hourly Rate (£)" errorMessage={fieldErrors.hourlyRate}>
+          <input type="number" min="0" step="0.01" value={values.hourlyRate} onChange={update("hourlyRate")} style={applyFieldErrorStyle("hourlyRate")} placeholder="15.50" />
         </FormField>
-        <FormField label="Overtime Rate (£)">
-          <input type="number" min="0" step="0.01" value={values.overtimeRate} onChange={update("overtimeRate")} style={inputStyle} placeholder="23.25" />
+        <FormField label="Overtime Rate (£)" errorMessage={fieldErrors.overtimeRate}>
+          <input type="number" min="0" step="0.01" value={values.overtimeRate} onChange={update("overtimeRate")} style={applyFieldErrorStyle("overtimeRate")} placeholder="23.25" />
         </FormField>
-        <FormField label="Annual Salary (£)">
-          <input type="number" min="0" step="100" value={values.annualSalary} onChange={update("annualSalary")} style={inputStyle} placeholder="32000" />
+        <FormField label="Annual Salary (£)" errorMessage={fieldErrors.annualSalary}>
+          <input type="number" min="0" step="100" value={values.annualSalary} onChange={update("annualSalary")} style={applyFieldErrorStyle("annualSalary")} placeholder="32000" />
         </FormField>
-        <FormField label="Payroll Reference">
-          <input type="text" value={values.payrollNumber} onChange={update("payrollNumber")} style={inputStyle} placeholder="PAY-001" />
+        <FormField label="Payroll Reference" errorMessage={fieldErrors.payrollNumber}>
+          <input type="text" value={values.payrollNumber} onChange={update("payrollNumber")} style={applyFieldErrorStyle("payrollNumber")} placeholder="PAY-001" />
         </FormField>
-        <FormField label="National Insurance No.">
-          <input type="text" value={values.nationalInsurance} onChange={update("nationalInsurance")} style={inputStyle} placeholder="QQ123456C" />
+        <FormField label="National Insurance No." errorMessage={fieldErrors.nationalInsurance}>
+          <input type="text" value={values.nationalInsurance} onChange={update("nationalInsurance")} style={applyFieldErrorStyle("nationalInsurance")} placeholder="QQ123456C" />
         </FormField>
       </div>
 
       {/* ── System / Auth ── */}
       <SectionHeading title="System" />
       <div style={gridStyle}>
-        <FormField label="Keycloak User ID">
-          <input type="text" value={values.keycloakId} onChange={update("keycloakId")} style={inputStyle} placeholder="kc-jreyes" />
+        <FormField label="Keycloak User ID" errorMessage={fieldErrors.keycloakId}>
+          <input type="text" value={values.keycloakId} onChange={update("keycloakId")} style={applyFieldErrorStyle("keycloakId")} placeholder="kc-jreyes" />
         </FormField>
       </div>
 
@@ -1446,11 +1535,107 @@ function SampleAutofillBlock({ value, onChange, onApply, onClear }) {
   );
 }
 
-function FormField({ label, children }) {
+function FormField({ label, children, errorMessage = null }) {
   return (
     <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-      <span style={{ fontSize: "0.85rem", color: "var(--info)" }}>{label}</span>
+      <span style={{ fontSize: "0.85rem", color: errorMessage ? "var(--danger)" : "var(--info)" }}>
+        {label}
+      </span>
       {children}
+      {errorMessage && (
+        <span style={{ fontSize: "0.78rem", color: "var(--danger)", lineHeight: 1.35 }}>
+          {errorMessage}
+        </span>
+      )}
     </label>
   );
+}
+
+function validateEmployeeForm(values = {}) {
+  const errors = {};
+
+  ["firstName", "lastName", "email"].forEach((field) => {
+    if (!String(values[field] ?? "").trim()) {
+      errors[field] = `${humanizeFieldLabel(field)} is required.`;
+    }
+  });
+
+  const email = String(values.email ?? "").trim();
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errors.email = "Enter a valid email address (for example: name@example.com).";
+  }
+
+  ["contractedHours", "hourlyRate", "overtimeRate", "annualSalary"].forEach((field) => {
+    const value = values[field];
+    if (value === "" || value === null || value === undefined) return;
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) {
+      errors[field] = `${humanizeFieldLabel(field)} must be a number.`;
+      return;
+    }
+    if (numeric < 0) {
+      errors[field] = `${humanizeFieldLabel(field)} cannot be negative.`;
+    }
+  });
+
+  ["startDate", "probationEnd"].forEach((field) => {
+    const value = String(values[field] ?? "").trim();
+    if (!value) return;
+    if (Number.isNaN(new Date(value).getTime())) {
+      errors[field] = `${humanizeFieldLabel(field)} must be a valid date.`;
+    }
+  });
+
+  return errors;
+}
+
+function humanizeFieldLabel(field) {
+  const labels = {
+    firstName: "First name",
+    lastName: "Last name",
+    email: "Email",
+    phone: "Phone",
+    department: "Department",
+    jobTitle: "Job title",
+    role: "Role",
+    employmentType: "Employment type",
+    status: "Employment status",
+    startDate: "Start date",
+    probationEnd: "Probation end date",
+    contractedHours: "Contracted hours",
+    hourlyRate: "Hourly rate",
+    overtimeRate: "Overtime rate",
+    annualSalary: "Annual salary",
+    payrollNumber: "Payroll reference",
+    nationalInsurance: "National Insurance number",
+    keycloakId: "Keycloak User ID",
+    address: "Address",
+    emergencyContact: "Emergency contact",
+  };
+  if (labels[field]) return labels[field];
+  return String(field || "")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/[_-]/g, " ")
+    .trim()
+    .replace(/^./, (ch) => ch.toUpperCase());
+}
+
+function formatEmployeeSaveError(serverMessage, serverError, fieldErrors = {}) {
+  const invalidFields = Object.keys(fieldErrors || {});
+  if (invalidFields.length > 0) {
+    return `Cannot save changes. Fix the highlighted field${invalidFields.length > 1 ? "s" : ""} and try again.`;
+  }
+  if (serverError) {
+    if (/duplicate key/i.test(serverError)) {
+      return "Cannot save changes because a duplicate value already exists.";
+    }
+    if (/invalid input syntax/i.test(serverError)) {
+      return "Cannot save changes because one or more values are in the wrong format.";
+    }
+    return `Cannot save changes: ${serverError}`;
+  }
+  if (serverMessage) {
+    return `Cannot save changes: ${serverMessage}`;
+  }
+  return null;
 }

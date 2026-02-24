@@ -7,6 +7,7 @@ import React, { useState } from "react";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { useSession } from "next-auth/react";
+import { canAccessHrManagerDashboard, normalizeRoles } from "@/lib/auth/roles";
 
 // Import individual HR sections as separate components
 import HRDashboardTab from "@/components/HR/tabs/HRDashboardTab";
@@ -39,25 +40,41 @@ const HR_TABS = [
 export default function HRManagerDashboard() {
   console.log("🎯 HR Manager Dashboard component is RENDERING");
 
-  const { user } = useUser();
-  const { data: session } = useSession();
+  const { user, loading: userLoading } = useUser();
+  const { data: session, status: sessionStatus } = useSession();
   const [activeTab, setActiveTab] = useState("dashboard");
   const safeModeEnabled = process.env.NEXT_PUBLIC_HR_MANAGER_SAFE_MODE === "true";
 
-  // Check if user has Owner access
-  const userRoles = session?.user?.roles || user?.roles || [];
+  const userRoles = normalizeRoles(session?.user?.roles || user?.roles || []);
+  const authIsLoading = sessionStatus === "loading" || userLoading;
 
   // Debug logging
   console.log("🔍 HR Manager Dashboard - User Roles:", userRoles);
   console.log("🔍 HR Manager Dashboard - User:", user);
   console.log("🔍 HR Manager Dashboard - Session:", session);
 
-  // Only Owner has access to HR Manager dashboard
-  const hasHRAccess = userRoles.some(role =>
-    role.toLowerCase() === 'owner'
-  );
+  // Shared with middleware so client-side and server-side checks stay aligned
+  const hasHRAccess = canAccessHrManagerDashboard(userRoles);
 
   console.log("🔍 HR Manager Dashboard - Has Access:", hasHRAccess);
+
+  if (authIsLoading) {
+    return (
+      <Layout>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: "50vh",
+            color: "var(--text-secondary)",
+          }}
+        >
+          Checking access…
+        </div>
+      </Layout>
+    );
+  }
 
   // Access denied for unauthorized users
   if (!hasHRAccess) {
@@ -79,7 +96,7 @@ export default function HRManagerDashboard() {
             Access Denied
           </h1>
           <p style={{ color: "var(--text-secondary)", maxWidth: "500px" }}>
-            You don't have permission to access the HR Manager dashboard. This area is restricted to Owners only.
+            You don't have permission to access the HR Manager dashboard. This area is restricted to Owners and Admin Managers.
           </p>
         </div>
       </Layout>

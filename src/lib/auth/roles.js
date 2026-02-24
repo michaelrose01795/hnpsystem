@@ -3,6 +3,7 @@
 export const HR_CORE_ROLES = ["hr manager", "admin manager", "owner", "admin"];
 export const HR_MANAGER_ROLES = ["admin manager", "owner", "admin"];
 export const MANAGER_SCOPED_ROLES = ["manager", "service manager", "workshop manager", "general manager"];
+export const HR_MANAGER_DASHBOARD_ROLES = ["owner", "admin manager"];
 
 export function normalizeRoles(roles = []) {
   return roles.map((role) => role?.toString().toLowerCase().trim()).filter(Boolean);
@@ -23,4 +24,8 @@ export function isAdminManagerRole(userRoles) {
 
 export function isManagerScopedRole(userRoles) {
   return hasAnyRole(userRoles, MANAGER_SCOPED_ROLES);
+}
+
+export function canAccessHrManagerDashboard(userRoles) {
+  return hasAnyRole(userRoles, HR_MANAGER_DASHBOARD_ROLES);
 }

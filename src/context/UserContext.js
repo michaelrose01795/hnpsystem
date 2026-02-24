@@ -7,6 +7,9 @@ import { getUserById } from "@/lib/database/users";
 
 const DEV_ROLE_COOKIE = "hnp-dev-roles";
 const DEV_COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
+const DEV_AUTH_BYPASS_ENABLED = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === "true";
+const CAN_USE_DEV_AUTH =
+  process.env.NODE_ENV !== "production" || DEV_AUTH_BYPASS_ENABLED;
 const isBrowser = () => typeof document !== "undefined";
 const clearDevRoleCookie = () => {
   if (!isBrowser()) return;
@@ -39,6 +42,12 @@ export function UserProvider({ children }) {
 
   // Load dev user from localStorage
   useEffect(() => {
+    if (!CAN_USE_DEV_AUTH) {
+      localStorage.removeItem("devUser");
+      clearDevRoleCookie();
+      setLoading(false);
+      return;
+    }
     const stored = localStorage.getItem("devUser");
     if (stored && !session?.user) {
       try {
@@ -65,7 +74,9 @@ export function UserProvider({ children }) {
         authUuid: resolvedSessionId || null,
       };
       setUser(keycloakUser);
-      localStorage.removeItem("devUser");
+      if (CAN_USE_DEV_AUTH) {
+        localStorage.removeItem("devUser");
+      }
       clearDevRoleCookie();
     }
   }, [session]);
@@ -168,8 +179,10 @@ export function UserProvider({ children }) {
           };
 
       setUser(finalUser);
-      localStorage.setItem("devUser", JSON.stringify(finalUser));
-      setDevRoleCookie(finalUser.roles || []);
+      if (CAN_USE_DEV_AUTH) {
+        localStorage.setItem("devUser", JSON.stringify(finalUser));
+        setDevRoleCookie(finalUser.roles || []);
+      }
       return { success: true };
     } catch (err) {
       console.error("Dev login failed", err);
@@ -183,7 +196,9 @@ export function UserProvider({ children }) {
     setStatus("Waiting for Job"); // reset status
     setDbUserId(null);
     setCurrentJob(null);
-    localStorage.removeItem("devUser");
+    if (CAN_USE_DEV_AUTH) {
+      localStorage.removeItem("devUser");
+    }
     clearDevRoleCookie();
   };
 
