@@ -11,6 +11,7 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { CalendarField } from "@/components/calendarAPI";
 import { DropdownField } from "@/components/dropdownAPI";
+import useBodyModalLock from "@/hooks/useBodyModalLock";
 import { addMonths } from "date-fns";
 
 const CAR_LOCATIONS = [
@@ -413,11 +414,16 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick }) => {
 };
 
 const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
+  useBodyModalLock(true);
+
   const [query, setQuery] = useState("");
   const filtered = options.filter((option) => option.label.toLowerCase().includes(query.toLowerCase()));
 
   return (
     <div
+      className="popup-backdrop"
+      role="dialog"
+      aria-modal="true"
       style={{
         ...popupOverlayStyles,
         zIndex: 200,
@@ -557,6 +563,8 @@ const buildOilFormState = (data = null) => {
 };
 
 const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) => {
+  useBodyModalLock(true);
+
   const [form, setForm] = useState(() => buildEquipmentFormState(initialData));
 
   useEffect(() => {
@@ -615,7 +623,7 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
   };
 
   return (
-    <div style={{ ...popupOverlayStyles, zIndex: 220 }}>
+    <div className="popup-backdrop" role="dialog" aria-modal="true" style={{ ...popupOverlayStyles, zIndex: 220 }}>
       <form
         onSubmit={handleSubmit}
         style={{
@@ -767,6 +775,8 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
 };
 
 const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
+  useBodyModalLock(true);
+
   const [form, setForm] = useState(() => buildOilFormState(initialData));
 
   useEffect(() => {
@@ -830,7 +840,7 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
   };
 
   return (
-    <div style={{ ...popupOverlayStyles, zIndex: 220 }}>
+    <div className="popup-backdrop" role="dialog" aria-modal="true" style={{ ...popupOverlayStyles, zIndex: 220 }}>
       <form
         onSubmit={handleSubmit}
         style={{
@@ -999,6 +1009,8 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
 };
 
 const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
+  useBodyModalLock(true);
+
   const [form, setForm] = useState(() => ({
     jobNumber: initialData?.jobNumber || "",
     reg: initialData?.reg || "",
@@ -1079,7 +1091,7 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
   };
 
   return (
-    <div className="popup-backdrop">
+    <div className="popup-backdrop" role="dialog" aria-modal="true">
       <div
         style={{
           ...popupCardStyles,
@@ -1308,6 +1320,8 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
 };
 
 const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
+  useBodyModalLock(true);
+
   const [form, setForm] = useState(() => ({
     ...emptyForm,
     ...entry,
@@ -1346,7 +1360,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
   };
 
   return (
-    <div className="popup-backdrop">
+    <div className="popup-backdrop" role="dialog" aria-modal="true">
       <form
         onSubmit={handleSubmit}
         className="popup-card"
@@ -2629,4 +2643,3 @@ export default function TrackingDashboard() {
     </Layout>
   );
 }
-

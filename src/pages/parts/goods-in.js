@@ -8,6 +8,7 @@ import { format, formatDistanceToNow } from "date-fns";
 import { DropdownField } from "@/components/dropdownAPI";
 import { CalendarField } from "@/components/calendarAPI";
 import { ScrollArea } from "@/components/scrollAPI";
+import useBodyModalLock from "@/hooks/useBodyModalLock";
 
 const PRICE_LEVEL_OPTIONS = [
   { value: "stock_order_rate", label: "Stock order rate" },
@@ -1778,6 +1779,8 @@ function GoodsInPage() {
 }
 
 function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
+  useBodyModalLock(true);
+
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -1945,7 +1948,7 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
     });
 
   return (
-    <div style={popupOverlayStyles}>
+    <div className="popup-backdrop" role="dialog" aria-modal="true" style={popupOverlayStyles}>
       <div
         className="popup-card"
         style={{
@@ -2022,6 +2025,8 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
 }
 
 function GoodsInPartSearchModal({ onClose, onSelect, initialQuery = "" }) {
+  useBodyModalLock(true);
+
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -2078,7 +2083,7 @@ function GoodsInPartSearchModal({ onClose, onSelect, initialQuery = "" }) {
   }, [query, searchParts]);
 
   return (
-    <div style={popupOverlayStyles}>
+    <div className="popup-backdrop" role="dialog" aria-modal="true" style={popupOverlayStyles}>
       <div style={{ ...popupCardStyles, padding: "24px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
           <h3 style={{ margin: 0 }}>Search parts catalogue</h3>
@@ -2127,6 +2132,8 @@ function GoodsInPartSearchModal({ onClose, onSelect, initialQuery = "" }) {
 }
 
 function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUuid, actingUserNumeric }) {
+  useBodyModalLock(true);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [jobResults, setJobResults] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
@@ -2466,7 +2473,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
   };
 
   return (
-    <div style={popupOverlayStyles}>
+    <div className="popup-backdrop" role="dialog" aria-modal="true" style={popupOverlayStyles}>
       <div
         style={{
           ...popupCardStyles,
@@ -2689,8 +2696,10 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
 }
 
 function CompletionPrompt({ goodsInNumber, onAddToJob, onClose }) {
+  useBodyModalLock(true);
+
   return (
-    <div style={popupOverlayStyles}>
+    <div className="popup-backdrop" role="dialog" aria-modal="true" style={popupOverlayStyles}>
       <div style={{ ...popupCardStyles, padding: "24px", maxWidth: "480px" }}>
         <h3>Goods in complete</h3>
         <p>

@@ -16,11 +16,13 @@ function setLockCount(nextCount) {
 
 function applyLockClass() {
   if (typeof document === "undefined") return;
+  document.documentElement.classList.add(MODAL_LOCK_CLASS);
   document.body.classList.add(MODAL_LOCK_CLASS);
 }
 
 function removeLockClass() {
   if (typeof document === "undefined") return;
+  document.documentElement.classList.remove(MODAL_LOCK_CLASS);
   document.body.classList.remove(MODAL_LOCK_CLASS);
 }
 

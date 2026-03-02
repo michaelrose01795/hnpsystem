@@ -54,6 +54,41 @@ function AppWrapper({ Component, pageProps }) {
     };
   }, []);
 
+  // Enforce global modal lock for any popup implementation pattern in the app.
+  useEffect(() => {
+    const MODAL_CLASS = "modal-open";
+    const MODAL_SELECTOR = ".popup-backdrop, [aria-modal='true'], [data-modal-portal='true']";
+    if (typeof document === "undefined") return undefined;
+
+    const updateModalLock = () => {
+      const hasModal = Boolean(document.querySelector(MODAL_SELECTOR));
+      document.documentElement.classList.toggle(MODAL_CLASS, hasModal);
+      document.body.classList.toggle(MODAL_CLASS, hasModal);
+    };
+
+    const preventBackgroundScroll = (event) => {
+      if (!document.body.classList.contains(MODAL_CLASS)) return;
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      if (target.closest(MODAL_SELECTOR)) return;
+      event.preventDefault();
+    };
+
+    updateModalLock();
+    const observer = new MutationObserver(updateModalLock);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "aria-modal"] });
+    document.addEventListener("wheel", preventBackgroundScroll, { capture: true, passive: false });
+    document.addEventListener("touchmove", preventBackgroundScroll, { capture: true, passive: false });
+
+    return () => {
+      observer.disconnect();
+      document.removeEventListener("wheel", preventBackgroundScroll, true);
+      document.removeEventListener("touchmove", preventBackgroundScroll, true);
+      document.documentElement.classList.remove(MODAL_CLASS);
+      document.body.classList.remove(MODAL_CLASS);
+    };
+  }, []);
+
   return <Component {...pageProps} />; // render the requested page
 }
 

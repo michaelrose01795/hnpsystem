@@ -1,17 +1,19 @@
 // file location: src/components/Consumables/StockCheckPopup.js
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import ModalPortal from "@/components/popups/ModalPortal";
 
 const modalStyle = {
   borderRadius: "32px",
   width: "100%",
   maxWidth: "960px",
-  maxHeight: "90vh",
-  overflowY: "auto",
+  maxHeight: "calc(100dvh - clamp(10px, 2.5vw, 20px) * 2)",
+  overflow: "hidden",
   border: "1px solid var(--surface-light)",
-  padding: "32px",
+  padding: "clamp(16px, 3vw, 32px)",
   display: "flex",
   flexDirection: "column",
   gap: "16px",
+  minHeight: 0,
 };
 
 const sectionCardStyle = {
@@ -493,8 +495,9 @@ function StockCheckPopup({
   };
 
   return (
-    <div className="popup-backdrop" style={{ zIndex: 1400 }}>
-      <div className="popup-card" style={modalStyle} role="dialog" aria-modal="true">
+    <ModalPortal>
+      <div className="popup-backdrop" style={{ zIndex: 1400 }} role="dialog" aria-modal="true">
+        <div className="popup-card" style={modalStyle}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px" }}>
           <div>
             <h2 style={{ margin: 0, color: "var(--primary-dark)" }}>Stock Check</h2>
@@ -518,100 +521,111 @@ function StockCheckPopup({
           </button>
         </div>
 
-        {error && (
-          <div style={{ ...sectionCardStyle, borderColor: "rgba(var(--primary-rgb),0.35)", background: "rgba(var(--primary-rgb),0.08)" }}>
-            <strong style={{ color: "var(--primary-dark)" }}>{error}</strong>
-          </div>
-        )}
-        {statusMessage && (
-          <div style={{ ...sectionCardStyle, borderColor: "rgba(var(--success-rgb),0.4)", background: "rgba(var(--success-rgb),0.12)" }}>
-            <strong style={{ color: "var(--success-dark)" }}>{statusMessage}</strong>
-          </div>
-        )}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
+              overflowY: "auto",
+              overscrollBehavior: "contain",
+              minHeight: 0,
+              paddingRight: "4px",
+            }}
+          >
+            {error && (
+              <div style={{ ...sectionCardStyle, borderColor: "rgba(var(--primary-rgb),0.35)", background: "rgba(var(--primary-rgb),0.08)" }}>
+                <strong style={{ color: "var(--primary-dark)" }}>{error}</strong>
+              </div>
+            )}
+            {statusMessage && (
+              <div style={{ ...sectionCardStyle, borderColor: "rgba(var(--success-rgb),0.4)", background: "rgba(var(--success-rgb),0.12)" }}>
+                <strong style={{ color: "var(--success-dark)" }}>{statusMessage}</strong>
+              </div>
+            )}
 
-        {isManager && (
-          <div style={{ ...sectionCardStyle, display: "flex", flexDirection: "column", gap: "12px" }}>
-            <h3 style={{ margin: 0, color: "var(--primary-dark)" }}>Add new consumable</h3>
-            <p style={{ margin: 0, color: "var(--grey-accent-dark)", fontSize: "0.9rem" }}>
-              Create a consumable that everyone in the workshop can see and request.
-            </p>
-            <form
-              onSubmit={handleNewConsumableSubmit}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                gap: "12px",
-                width: "100%",
-              }}
-            >
-              <label style={{ fontWeight: 600, color: "var(--primary-dark)", display: "flex", flexDirection: "column", gap: "6px" }}>
-                Item name
-                <input
-                  type="text"
-                  value={newConsumableForm.name}
-                  onChange={handleNewConsumableChange("name")}
-                  placeholder="e.g. nitrile gloves"
+            {isManager && (
+              <div style={{ ...sectionCardStyle, display: "flex", flexDirection: "column", gap: "12px" }}>
+                <h3 style={{ margin: 0, color: "var(--primary-dark)" }}>Add new consumable</h3>
+                <p style={{ margin: 0, color: "var(--grey-accent-dark)", fontSize: "0.9rem" }}>
+                  Create a consumable that everyone in the workshop can see and request.
+                </p>
+                <form
+                  onSubmit={handleNewConsumableSubmit}
                   style={{
-                    padding: "8px 10px",
-                    borderRadius: "10px",
-                    border: "1px solid var(--surface-light)",
-                  }}
-                  required
-                />
-              </label>
-              <label style={{ fontWeight: 600, color: "var(--primary-dark)", display: "flex", flexDirection: "column", gap: "6px" }}>
-                Default supplier
-                <input
-                  type="text"
-                  value={newConsumableForm.supplier}
-                  onChange={handleNewConsumableChange("supplier")}
-                  placeholder="Optional supplier"
-                  style={{
-                    padding: "8px 10px",
-                    borderRadius: "10px",
-                    border: "1px solid var(--surface-light)",
-                  }}
-                />
-              </label>
-              <label style={{ fontWeight: 600, color: "var(--primary-dark)", display: "flex", flexDirection: "column", gap: "6px" }}>
-                Default unit cost (£)
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={newConsumableForm.unitCost}
-                  onChange={handleNewConsumableChange("unitCost")}
-                  placeholder="0.00"
-                  style={{
-                    padding: "8px 10px",
-                    borderRadius: "10px",
-                    border: "1px solid var(--surface-light)",
-                  }}
-                />
-              </label>
-              <div style={{ gridColumn: "1 / -1", textAlign: "right" }}>
-                <button
-                  type="submit"
-                  disabled={newConsumableLoading}
-                  style={{
-                    ...buttonPrimaryStyle,
-                    padding: "10px 20px",
-                    background: newConsumableLoading ? "rgba(var(--primary-rgb),0.45)" : buttonPrimaryStyle.background,
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                    gap: "12px",
+                    width: "100%",
                   }}
                 >
-                  {newConsumableLoading ? "Adding…" : "Add Consumable"}
-                </button>
+                  <label style={{ fontWeight: 600, color: "var(--primary-dark)", display: "flex", flexDirection: "column", gap: "6px" }}>
+                    Item name
+                    <input
+                      type="text"
+                      value={newConsumableForm.name}
+                      onChange={handleNewConsumableChange("name")}
+                      placeholder="e.g. nitrile gloves"
+                      style={{
+                        padding: "8px 10px",
+                        borderRadius: "10px",
+                        border: "1px solid var(--surface-light)",
+                      }}
+                      required
+                    />
+                  </label>
+                  <label style={{ fontWeight: 600, color: "var(--primary-dark)", display: "flex", flexDirection: "column", gap: "6px" }}>
+                    Default supplier
+                    <input
+                      type="text"
+                      value={newConsumableForm.supplier}
+                      onChange={handleNewConsumableChange("supplier")}
+                      placeholder="Optional supplier"
+                      style={{
+                        padding: "8px 10px",
+                        borderRadius: "10px",
+                        border: "1px solid var(--surface-light)",
+                      }}
+                    />
+                  </label>
+                  <label style={{ fontWeight: 600, color: "var(--primary-dark)", display: "flex", flexDirection: "column", gap: "6px" }}>
+                    Default unit cost (£)
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={newConsumableForm.unitCost}
+                      onChange={handleNewConsumableChange("unitCost")}
+                      placeholder="0.00"
+                      style={{
+                        padding: "8px 10px",
+                        borderRadius: "10px",
+                        border: "1px solid var(--surface-light)",
+                      }}
+                    />
+                  </label>
+                  <div style={{ gridColumn: "1 / -1", textAlign: "right" }}>
+                    <button
+                      type="submit"
+                      disabled={newConsumableLoading}
+                      style={{
+                        ...buttonPrimaryStyle,
+                        padding: "10px 20px",
+                        background: newConsumableLoading ? "rgba(var(--primary-rgb),0.45)" : buttonPrimaryStyle.background,
+                      }}
+                    >
+                      {newConsumableLoading ? "Adding…" : "Add Consumable"}
+                    </button>
+                  </div>
+                </form>
               </div>
-            </form>
-          </div>
-        )}
+            )}
 
-        {isManager && (
-          <div style={{ ...sectionCardStyle, display: "flex", flexDirection: "column", gap: "12px" }}>
-            <h3 style={{ margin: 0, color: "var(--primary-dark)" }}>Recent stock check requests</h3>
-            {data.stockChecks && data.stockChecks.length > 0 ? (
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 8px" }}>
+            {isManager && (
+              <div style={{ ...sectionCardStyle, display: "flex", flexDirection: "column", gap: "12px" }}>
+                <h3 style={{ margin: 0, color: "var(--primary-dark)" }}>Recent stock check requests</h3>
+                {data.stockChecks && data.stockChecks.length > 0 ? (
+                  <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 8px" }}>
                   <thead>
                     <tr style={{ textAlign: "left", color: "var(--grey-accent-dark)", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
                       <th style={{ padding: "8px" }}>Consumable</th>
@@ -687,52 +701,53 @@ function StockCheckPopup({
                       );
                     })}
                   </tbody>
-                </table>
+                    </table>
+                  </div>
+                ) : (
+                  <p style={{ margin: 0, color: "var(--grey-accent-dark)" }}>No stock check submissions yet.</p>
+                )}
               </div>
-            ) : (
-              <p style={{ margin: 0, color: "var(--grey-accent-dark)" }}>No stock check submissions yet.</p>
             )}
-          </div>
-        )}
 
-        <div style={{ ...sectionCardStyle, display: "flex", flexDirection: "column", gap: "12px" }}>
-          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: "12px", alignItems: "center" }}>
-            <div>
-              <h3 style={{ margin: 0, color: "var(--primary-dark)" }}>Consumable stock</h3>
-              <p style={{ margin: "4px 0 0", color: "var(--grey-accent-dark)", fontSize: "0.9rem" }}>
-                Select items below to include them in a stock check request.
-              </p>
+            <div style={{ ...sectionCardStyle, display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: "12px", alignItems: "center" }}>
+                <div>
+                  <h3 style={{ margin: 0, color: "var(--primary-dark)" }}>Consumable stock</h3>
+                  <p style={{ margin: "4px 0 0", color: "var(--grey-accent-dark)", fontSize: "0.9rem" }}>
+                    Select items below to include them in a stock check request.
+                  </p>
+                </div>
+                <span style={{ color: "var(--grey-accent-dark)", fontSize: "0.9rem" }}>
+                  {loading ? "Loading…" : `${visibleItems} of ${totalItems} items`}
+                </span>
+              </div>
+              <input
+                type="search"
+                value={stockSearch}
+                onChange={(event) => setStockSearch(event.target.value)}
+                placeholder="Search consumables"
+                style={{
+                  width: "100%",
+                  padding: "10px 14px",
+                  borderRadius: "12px",
+                  border: "1px solid var(--surface-light)",
+                  background: "var(--search-surface, var(--surface))",
+                  color: "var(--primary-dark)",
+                }}
+              />
+              {loading ? (
+                <p style={{ margin: 0, color: "var(--info)" }}>Loading stock…</p>
+              ) : visibleItems === 0 ? (
+                <p style={{ margin: 0, color: "var(--grey-accent-dark)" }}>
+                  {totalItems === 0 ? "No consumables recorded yet." : "No consumables match your search."}
+                </p>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "10px", maxHeight: "420px", overflowY: "auto", paddingRight: "4px" }}>
+                  {filteredConsumables.map((item) => renderConsumableRow(item))}
+                </div>
+              )}
             </div>
-            <span style={{ color: "var(--grey-accent-dark)", fontSize: "0.9rem" }}>
-              {loading ? "Loading…" : `${visibleItems} of ${totalItems} items`}
-            </span>
           </div>
-          <input
-            type="search"
-            value={stockSearch}
-            onChange={(event) => setStockSearch(event.target.value)}
-            placeholder="Search consumables"
-            style={{
-              width: "100%",
-              padding: "10px 14px",
-              borderRadius: "12px",
-              border: "1px solid var(--surface-light)",
-              background: "var(--search-surface, var(--surface))",
-              color: "var(--primary-dark)",
-            }}
-          />
-          {loading ? (
-            <p style={{ margin: 0, color: "var(--info)" }}>Loading stock…</p>
-          ) : visibleItems === 0 ? (
-            <p style={{ margin: 0, color: "var(--grey-accent-dark)" }}>
-              {totalItems === 0 ? "No consumables recorded yet." : "No consumables match your search."}
-            </p>
-          ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "10px", maxHeight: "420px", overflowY: "auto", paddingRight: "4px" }}>
-              {filteredConsumables.map((item) => renderConsumableRow(item))}
-            </div>
-          )}
-        </div>
 
         <div style={{ ...sectionCardStyle, display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
           <div>
@@ -761,8 +776,9 @@ function StockCheckPopup({
             </button>
           </div>
         </div>
+        </div>
       </div>
-    </div>
+    </ModalPortal>
   );
 }
 

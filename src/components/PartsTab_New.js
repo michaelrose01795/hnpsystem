@@ -6,6 +6,7 @@ import CalendarField from "@/components/calendarAPI/CalendarField";
 import TimePickerField from "@/components/timePickerAPI/TimePickerField";
 import { DropdownField } from "@/components/dropdownAPI";
 import ModalPortal from "@/components/popups/ModalPortal";
+import useBodyModalLock from "@/hooks/useBodyModalLock";
 
 // Helper functions (keep existing)
 const normalizePartStatus = (status = "") => {
@@ -178,6 +179,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
   const [arrivedPartIds, setArrivedPartIds] = useState([]);
   const [removingPart, setRemovingPart] = useState(false);
   const partNameDragRef = useRef({ active: false, startX: 0, startScrollLeft: 0 });
+  useBodyModalLock(showPrePickPopup);
   const canAllocateParts = Boolean(canEdit && jobId);
   const allocationDisabledReason = !canEdit
     ? "You don't have permission to add parts."
@@ -2736,6 +2738,8 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         <ModalPortal>
           <div
             className="popup-backdrop"
+            role="dialog"
+            aria-modal="true"
             onClick={(e) => {
               if (e.target === e.currentTarget) {
                 setShowPrePickPopup(false);

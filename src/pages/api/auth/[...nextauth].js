@@ -7,6 +7,13 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import jwtDecode from "jwt-decode";
 import { supabase } from "@/lib/supabaseClient";
 
+// Auto-correct NEXTAUTH_URL for Vercel deployments
+// NextAuth uses NEXTAUTH_URL to determine cookie naming (secure vs non-secure prefix)
+// If set to localhost on a production Vercel deployment, session cookies break
+if (process.env.VERCEL_URL && (!process.env.NEXTAUTH_URL || process.env.NEXTAUTH_URL.includes("localhost"))) {
+  process.env.NEXTAUTH_URL = `https://${process.env.VERCEL_URL}`;
+}
+
 export const authOptions = {
   providers: [
     // Keycloak OIDC provider (used when Keycloak is configured)
