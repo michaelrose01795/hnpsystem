@@ -20,6 +20,8 @@ export default function TechsDashboard() {
   const techsList = usersByRole?.["Techs"] || [];
   const motList = usersByRole?.["MOT Tester"] || [];
   const allowedNames = new Set([...techsList, ...motList]);
+  const username =
+    typeof user?.username === "string" ? user.username.trim() : "";
   const hasTechRole =
     user?.roles?.some((role) => role?.toLowerCase().includes("tech")) || false;
   const isTech = allowedNames.has(username) || hasTechRole;
