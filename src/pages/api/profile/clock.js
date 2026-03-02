@@ -5,6 +5,7 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import { supabase } from "@/lib/supabaseClient";
+import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver";
 
 async function resolveUserId(req, res) {
   const queryUserId = req.query.userId || req.body?.userId;
@@ -30,49 +31,7 @@ async function resolveUserId(req, res) {
   }
 
   const session = await getServerSession(req, res, authOptions);
-  if (!session?.user) throw new Error("Authentication required");
-
-  const email = String(session.user.email || "").trim().toLowerCase();
-  if (email) {
-    const { data, error } = await supabase
-      .from("users")
-      .select("user_id")
-      .ilike("email", email)
-      .limit(1)
-      .maybeSingle();
-    if (error) throw error;
-    if (data?.user_id) return data.user_id;
-  }
-
-  const fullName = String(session.user.name || "").trim();
-  if (fullName) {
-    const { data: byFullName, error: byFullNameError } = await supabase
-      .from("users")
-      .select("user_id")
-      .ilike("name", fullName)
-      .limit(1)
-      .maybeSingle();
-    if (byFullNameError) throw byFullNameError;
-    if (byFullName?.user_id) return byFullName.user_id;
-
-    const [firstNamePart, ...rest] = fullName.split(/\s+/).filter(Boolean);
-    const lastNamePart = rest.join(" ");
-    if (firstNamePart) {
-      let fallbackQuery = supabase
-        .from("users")
-        .select("user_id")
-        .ilike("first_name", firstNamePart)
-        .limit(1);
-      if (lastNamePart) {
-        fallbackQuery = fallbackQuery.ilike("last_name", lastNamePart);
-      }
-      const { data: byParts, error: byPartsError } = await fallbackQuery.maybeSingle();
-      if (byPartsError) throw byPartsError;
-      if (byParts?.user_id) return byParts.user_id;
-    }
-  }
-
-  throw new Error("User profile not found");
+  return resolveSessionUserId(session);
 }
 
 // Auto-close a stale record from a previous day at midnight of that day

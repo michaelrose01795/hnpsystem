@@ -679,10 +679,15 @@ export function ProfilePage({
         });
 
         if (!response.ok) {
+          const errPayload = await response.json().catch(() => null);
           if (response.status === 404) {
-            throw new Error("Profile not found. Please contact HR to create your employee profile.");
+            throw new Error(
+              errPayload?.message || "Profile not found. Please contact HR to create your employee profile."
+            );
           }
-          throw new Error(`Failed to load profile data (status ${response.status})`);
+          throw new Error(
+            errPayload?.message || `Failed to load profile data (status ${response.status})`
+          );
         }
 
         const payload = await response.json();

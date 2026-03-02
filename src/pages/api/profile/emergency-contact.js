@@ -3,6 +3,7 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import { supabase } from "@/lib/supabaseClient";
+import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver";
 
 async function resolveUserId(req, res) {
   const devBypassEnv = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === "true";
@@ -25,21 +26,7 @@ async function resolveUserId(req, res) {
   }
 
   const session = await getServerSession(req, res, authOptions);
-  if (!session?.user) throw new Error("Authentication required");
-
-  const identifier = session.user.email || session.user.name;
-  if (!identifier) throw new Error("Unable to resolve user identity");
-
-  let query = supabase.from("users").select("user_id").limit(1);
-  if (session.user.email) {
-    query = query.eq("email", session.user.email);
-  } else {
-    query = query.or(`first_name.ilike.${session.user.name},last_name.ilike.${session.user.name}`);
-  }
-
-  const { data, error } = await query.maybeSingle();
-  if (error || !data) throw new Error("User profile not found");
-  return data.user_id;
+  return resolveSessionUserId(session);
 }
 
 export default async function handler(req, res) {

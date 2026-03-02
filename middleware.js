@@ -43,7 +43,11 @@ export async function middleware(req) {
     return NextResponse.next();
   }
 
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  const token = await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET,
+    secureCookie: req.nextUrl.protocol === "https:",
+  });
 
   if (!token && !hasDevCookieAuth) {
     const loginUrl = new URL("/login", req.url);

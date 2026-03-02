@@ -7,6 +7,7 @@ import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import { supabase } from "@/lib/supabaseClient";
 import { getDatabaseClient } from "@/lib/database/client";
 import { getDisplayName } from "@/lib/users/displayName";
+import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver";
 import dayjs from "dayjs";
 
 const adminDb = getDatabaseClient();
@@ -403,8 +404,6 @@ export default async function handler(req, res) {
       devBypassEnv || (process.env.NODE_ENV !== "production" && Boolean(devRolesCookie));
 
     let userId = null;
-    let sessionEmail = null;
-    let sessionName = null;
 
     if (allowDevBypass) {
       // In dev mode, accept userId from query params (for testing)
@@ -440,39 +439,7 @@ export default async function handler(req, res) {
         return res.status(401).json({ success: false, message: "Authentication required" });
       }
 
-      // Get the user's ID from session
-      sessionEmail = session.user.email;
-      sessionName = session.user.name;
-
-      if (!sessionEmail && !sessionName) {
-        return res.status(400).json({ success: false, message: "Unable to identify user from session" });
-      }
-
-      // Find user in database
-      let userQuery = supabase.from("users").select("user_id, first_name, last_name, email, role");
-
-      if (sessionEmail) {
-        userQuery = userQuery.eq("email", sessionEmail);
-      } else if (sessionName) {
-        // Try to match by name if email not available
-        userQuery = userQuery.or(`first_name.ilike.${sessionName},last_name.ilike.${sessionName}`);
-      }
-
-      const { data: userData, error: userError } = await userQuery.maybeSingle();
-
-      if (userError) {
-        console.error("❌ Error finding user:", userError);
-        return res.status(500).json({ success: false, message: "Error finding user in database" });
-      }
-
-      if (!userData) {
-        return res.status(404).json({
-          success: false,
-          message: "User profile not found. Please contact HR to create your employee profile."
-        });
-      }
-
-      userId = userData.user_id;
+      userId = await resolveSessionUserId(session);
     }
 
     // Fetch all user-specific data in parallel
@@ -504,7 +471,8 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error("❌ /api/profile/me error", error);
-    return res.status(500).json({
+    const statusCode = error?.message === "Authentication required" ? 401 : 500;
+    return res.status(statusCode).json({
       success: false,
       message: "Failed to load profile data",
       error: error.message,

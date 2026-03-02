@@ -15,7 +15,7 @@ if (!supabaseAnonKey) {
 
 const createServiceRoleClient = () => {
   if (!supabaseServiceKey) {
-    throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY environment variable");
+    return null;
   }
 
   return createClient(supabaseUrl, supabaseServiceKey, {
@@ -29,6 +29,12 @@ const createServiceRoleClient = () => {
 
 const supabaseServiceRole =
   typeof window === "undefined" ? createServiceRoleClient() : null;
+
+if (typeof window === "undefined" && !supabaseServiceRole) {
+  console.warn(
+    "[supabase] SUPABASE_SERVICE_ROLE_KEY is missing; using anon key on server. Check Vercel environment variables."
+  );
+}
 
 export const supabaseService = supabaseServiceRole;
 

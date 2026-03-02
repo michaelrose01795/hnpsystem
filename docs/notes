@@ -65,8 +65,8 @@ CHECKKK
 Fix this “Failed to load profile data Failed to load profile data (status 401) If you continue to see this error, please contact HR to ensure your employee profile has been created.” this problem only happens when using vercel app website, not vercel dev within the terminal, deep dive into fixing this so the vercel release will work the same as the vercel dev. 
 CHECK
 Make sure the clocking button then works. And check the scheme.sql file that the database is correct. 
-CHECKKKK
-Fix within the sidebar when the HR manager button is pressed it opens the hr/manager page, atm is just flicking back to the news feed page
+ATM
+Fix within the sidebar when the HR manager button is pressed it opens the hr/manager page, atm is just flicking back to the news feed pagewhich is the default page when the HR manager button is pressed home page. when inside the /profile page with vercel dev from the terminal it works fine but when using the vercel app website it doesn’t work and says error like the vercel app cant connect to the database. do a deep dive into fixing this and make sure all access works fine, maybe as test set it so the user Owner role has full access to the hr/manager page as well as all /profile pages loads with each user. 
 
 
 

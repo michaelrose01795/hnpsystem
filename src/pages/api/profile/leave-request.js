@@ -5,6 +5,7 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import { supabase } from "@/lib/supabaseClient";
+import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -42,30 +43,7 @@ export default async function handler(req, res) {
       }
     } else {
       const session = await getServerSession(req, res, authOptions);
-      if (!session?.user) {
-        return res.status(401).json({ success: false, message: "Authentication required" });
-      }
-
-      const sessionEmail = session.user.email;
-      const sessionName = session.user.name;
-
-      if (!sessionEmail && !sessionName) {
-        return res.status(400).json({ success: false, message: "Unable to identify user from session" });
-      }
-
-      let userQuery = supabase.from("users").select("user_id");
-      if (sessionEmail) {
-        userQuery = userQuery.eq("email", sessionEmail);
-      } else if (sessionName) {
-        userQuery = userQuery.or(`first_name.ilike.${sessionName},last_name.ilike.${sessionName}`);
-      }
-
-      const { data: userData, error: userError } = await userQuery.maybeSingle();
-      if (userError || !userData) {
-        return res.status(404).json({ success: false, message: "User not found in database" });
-      }
-
-      userId = userData.user_id;
+      userId = await resolveSessionUserId(session);
     }
 
     // Validate request body
@@ -131,7 +109,8 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error("❌ /api/profile/leave-request error:", error);
-    return res.status(500).json({
+    const statusCode = error?.message === "Authentication required" ? 401 : 500;
+    return res.status(statusCode).json({
       success: false,
       message: "Failed to process leave request.",
       error: error.message,

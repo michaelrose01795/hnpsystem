@@ -3511,6 +3511,56 @@ function CustomerRequestsTab({
     return lower;
   }, []);
 
+  const getRequestStatusPresentation = useCallback((statusValue, fallbackStatus = "inprogress") => {
+    const normalizedStatus = String(statusValue || fallbackStatus || "inprogress")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "_");
+
+    const statusLabel =
+      normalizedStatus === "inprogress"
+        ? "In Progress"
+        : normalizedStatus
+            .split("_")
+            .filter(Boolean)
+            .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+            .join(" ") || "In Progress";
+
+    const statusBadgeStyle = {
+      padding: "4px 10px",
+      borderRadius: "12px",
+      fontSize: "12px",
+      fontWeight: "600",
+      whiteSpace: "nowrap",
+      backgroundColor:
+        normalizedStatus === "completed" || normalizedStatus === "done"
+          ? "var(--success-surface)"
+          : normalizedStatus === "on_hold" || normalizedStatus === "hold"
+          ? "var(--warning-surface)"
+          : normalizedStatus === "cancelled" || normalizedStatus === "canceled"
+          ? "var(--danger-surface)"
+          : normalizedStatus === "inprogress"
+          ? "var(--info-surface)"
+          : normalizedStatus === "authorized" || normalizedStatus === "authorised"
+          ? "var(--success-surface)"
+          : "var(--surface-light)",
+      color:
+        normalizedStatus === "completed" || normalizedStatus === "done"
+          ? "var(--success-dark)"
+          : normalizedStatus === "on_hold" || normalizedStatus === "hold"
+          ? "var(--warning-dark)"
+          : normalizedStatus === "cancelled" || normalizedStatus === "canceled"
+          ? "var(--danger-dark)"
+          : normalizedStatus === "inprogress"
+          ? "var(--info-dark)"
+          : normalizedStatus === "authorized" || normalizedStatus === "authorised"
+          ? "var(--success-dark)"
+          : "var(--text-secondary)",
+    };
+
+    return { normalizedStatus, statusLabel, statusBadgeStyle };
+  }, []);
+
   // Authorised VHC items (source: vhc_checks where approval_status is authorized/completed)
   const authorisedRows = useMemo(() => {
     const authorisedRequestRows = unifiedRequests.filter((row) => {
@@ -3698,6 +3748,9 @@ function CustomerRequestsTab({
         partsJobItemId: row.partsJobItemId ?? row.parts_job_item_id ?? null,
         labourHours: row.labourHours ?? row.labour_hours ?? null,
         partsCost: row.partsCost ?? row.parts_cost ?? null,
+        complete: Boolean(row.complete ?? row.Complete ?? false),
+        approvalStatus: row.approvalStatus ?? row.approval_status ?? null,
+        authorizationState: row.authorizationState ?? row.authorization_state ?? null,
         approvedAt: row.approvedAt ?? row.approved_at ?? null,
         approvedBy: row.approvedBy ?? row.approved_by ?? null,
         _groupKey: deriveAuthorisedGroupKey(row, computedLabel, baseLabel),
@@ -4166,45 +4219,10 @@ function CustomerRequestsTab({
             <>
             {customerRequestRows.map((req, index) => {
               const linkedNoteTexts = linkedNotesByRequestIndex.get(index + 1) || [];
-              const normalizedStatus = String(req.status || "inprogress")
-                .trim()
-                .toLowerCase()
-                .replace(/\s+/g, "_");
-              const statusLabel =
-                normalizedStatus === "inprogress"
-                  ? "In Progress"
-                  : normalizedStatus
-                      .split("_")
-                      .filter(Boolean)
-                      .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
-                      .join(" ") || "In Progress";
-              const statusBadgeStyle = {
-                padding: "4px 10px",
-                borderRadius: "12px",
-                fontSize: "12px",
-                fontWeight: "600",
-                whiteSpace: "nowrap",
-                backgroundColor:
-                  normalizedStatus === "completed" || normalizedStatus === "done"
-                    ? "var(--success-surface)"
-                    : normalizedStatus === "on_hold" || normalizedStatus === "hold"
-                    ? "var(--warning-surface)"
-                    : normalizedStatus === "cancelled" || normalizedStatus === "canceled"
-                    ? "var(--danger-surface)"
-                    : normalizedStatus === "inprogress"
-                    ? "var(--info-surface)"
-                    : "var(--surface-light)",
-                color:
-                  normalizedStatus === "completed" || normalizedStatus === "done"
-                    ? "var(--success-dark)"
-                    : normalizedStatus === "on_hold" || normalizedStatus === "hold"
-                    ? "var(--warning-dark)"
-                    : normalizedStatus === "cancelled" || normalizedStatus === "canceled"
-                    ? "var(--danger-dark)"
-                    : normalizedStatus === "inprogress"
-                    ? "var(--info-dark)"
-                    : "var(--text-secondary)",
-              };
+              const { statusLabel, statusBadgeStyle } = getRequestStatusPresentation(
+                req.status,
+                "inprogress"
+              );
               return (
               <div key={index} style={{
                 padding: "14px",
@@ -4311,6 +4329,13 @@ function CustomerRequestsTab({
             {authorisedRows.map((row, index) => {
               const rowKey = row.requestId || row.vhcItemId || `authorized-row-${index}`;
               const linkedParts = row.requestId ? (partsByRequestId[String(row.requestId)] || []) : [];
+              const authorisedStatusSource =
+                row.status ||
+                (row.complete ? "completed" : null) ||
+                normaliseAuthorizationState(row.approvalStatus || row.authorizationState) ||
+                "authorized";
+              const { statusLabel: authorisedStatusLabel, statusBadgeStyle: authorisedStatusBadgeStyle } =
+                getRequestStatusPresentation(authorisedStatusSource, "authorized");
               const linkedPartDescriptions = linkedParts
                 .map((item) => item?.part?.name || item?.part?.description || "")
                 .map((value) => String(value || "").trim())
@@ -4421,17 +4446,7 @@ function CustomerRequestsTab({
                       )}
                     </div>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start" }}>
-                      <span style={{
-                        padding: "4px 10px",
-                        borderRadius: "12px",
-                        fontSize: "12px",
-                        fontWeight: "600",
-                        whiteSpace: "nowrap",
-                        backgroundColor: "var(--success-surface)",
-                        color: "var(--success-dark)",
-                      }}>
-                        Authorised
-                      </span>
+                      <span style={authorisedStatusBadgeStyle}>{authorisedStatusLabel}</span>
                     </div>
                   </div>
                   {linkedParts.length > 0 && (

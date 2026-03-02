@@ -33,7 +33,7 @@ const setDevRoleCookie = (roles = []) => {
 const UserContext = createContext();
 
 export function UserProvider({ children }) {
-  const { data: session } = useSession(); // NextAuth session
+  const { data: session, status: sessionStatus } = useSession(); // NextAuth session
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState("Waiting for Job"); // default tech status
@@ -42,13 +42,28 @@ export function UserProvider({ children }) {
 
   // Load dev user from localStorage
   useEffect(() => {
+    if (sessionStatus === "loading") {
+      return;
+    }
+
     if (!CAN_USE_DEV_AUTH) {
-      localStorage.removeItem("devUser");
+      if (typeof localStorage !== "undefined") {
+        localStorage.removeItem("devUser");
+      }
       clearDevRoleCookie();
       setLoading(false);
       return;
     }
-    const stored = localStorage.getItem("devUser");
+
+    if (session?.user) {
+      if (typeof localStorage !== "undefined") {
+        localStorage.removeItem("devUser");
+      }
+      clearDevRoleCookie();
+      return;
+    }
+
+    const stored = typeof localStorage !== "undefined" ? localStorage.getItem("devUser") : null;
     if (stored && !session?.user) {
       try {
         const parsed = JSON.parse(stored);
@@ -59,8 +74,11 @@ export function UserProvider({ children }) {
         console.error("Failed to parse dev user from localStorage", err);
       }
     }
+    if (!stored) {
+      setUser(null);
+    }
     setLoading(false);
-  }, [session]);
+  }, [session, sessionStatus]);
 
   // Set user from NextAuth session (works for both Keycloak and Credentials providers)
   useEffect(() => {
@@ -80,8 +98,14 @@ export function UserProvider({ children }) {
         localStorage.removeItem("devUser");
       }
       clearDevRoleCookie();
+      return;
     }
-  }, [session]);
+
+    if (sessionStatus === "unauthenticated" && !CAN_USE_DEV_AUTH) {
+      setUser(null);
+      setLoading(false);
+    }
+  }, [session, sessionStatus]);
 
   // Resolve Supabase users.user_id when a user is set
   useEffect(() => {
