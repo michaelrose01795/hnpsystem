@@ -89,7 +89,9 @@ export function UserProvider({ children }) {
         id: resolvedSessionId || Date.now(),
         username: session.user.name || "User",
         email: session.user.email || null,
-        roles: (session.user.roles || []).map((r) => r.toUpperCase()),
+        roles: (session.user.roles || [])
+          .map((r) => String(r || "").trim().toUpperCase())
+          .filter(Boolean),
         authUuid: resolvedSessionId || null,
       };
       setUser(sessionUser);
@@ -167,6 +169,10 @@ export function UserProvider({ children }) {
 
   // Developer login
   const devLogin = async (userChoice = {}, role = "WORKSHOP") => {
+    if (!CAN_USE_DEV_AUTH) {
+      return { success: false, error: new Error("Developer login is disabled in production.") };
+    }
+
     try {
       let resolved = null;
       const candidateId =

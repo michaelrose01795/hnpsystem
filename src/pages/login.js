@@ -81,10 +81,11 @@ const LoginCard = ({
 export default function LoginPage() {
   const CUSTOMER_PORTAL_URL =
     process.env.NEXT_PUBLIC_CUSTOMER_PORTAL_URL || "https://www.hpautomotive.co.uk";
+  const allowDevUserSelection =
+    process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === "true";
   const { data: session } = useSession();
   // Safe destructuring from context
   const userContext = useUser();
-  const devLogin = userContext?.devLogin;
   const user = userContext?.user;
   const dbUserId = userContext?.dbUserId;
   const { usersByRole, usersByRoleDetailed, isLoading: rosterLoading, refreshRoster } = useRoster();
@@ -136,6 +137,11 @@ export default function LoginPage() {
 
   // Developer login handler — routes through NextAuth CredentialsProvider
   const handleDevLogin = async () => {
+    if (!allowDevUserSelection) {
+      setErrorMessage("Developer login is disabled in this environment.");
+      return;
+    }
+
     if (!selectedCategory || !selectedDepartment || !selectedUser) {
       alert("Please select an area, department, and user.");
       return;
@@ -145,16 +151,9 @@ export default function LoginPage() {
       userId: String(userId),
       redirect: false,
     });
+
     if (result?.error) {
-      // Fallback to legacy dev login if NextAuth credentials fails (e.g. in dev mode)
-      if (devLogin) {
-        const fallback = await devLogin(selectedUser, selectedDepartment);
-        if (fallback?.success === false) {
-          alert("Dev login failed. Please try again.");
-        }
-      } else {
-        alert("Dev login failed. Please try again.");
-      }
+      setErrorMessage("Developer login failed. Session was not created.");
     }
   };
 
@@ -291,44 +290,46 @@ export default function LoginPage() {
               </form>
             </LoginCard>
 
-            <LoginCard
-              className="login-card--dev"
-              title="Developer Login"
-            >
-              <div className="login-dev-content">
-                <LoginDropdown
-                  selectedCategory={selectedCategory}
-                  setSelectedCategory={setSelectedCategory}
-                  selectedDepartment={selectedDepartment}
-                  setSelectedDepartment={setSelectedDepartment}
-                  selectedUser={selectedUser}
-                  setSelectedUser={setSelectedUser}
-                  usersByRole={usersByRole}
-                  usersByRoleDetailed={usersByRoleDetailed}
-                  roleCategories={loginRoleCategories}
-                />
+            {allowDevUserSelection && (
+              <LoginCard
+                className="login-card--dev"
+                title="Developer Login"
+              >
+                <div className="login-dev-content">
+                  <LoginDropdown
+                    selectedCategory={selectedCategory}
+                    setSelectedCategory={setSelectedCategory}
+                    selectedDepartment={selectedDepartment}
+                    setSelectedDepartment={setSelectedDepartment}
+                    selectedUser={selectedUser}
+                    setSelectedUser={setSelectedUser}
+                    usersByRole={usersByRole}
+                    usersByRoleDetailed={usersByRoleDetailed}
+                    roleCategories={loginRoleCategories}
+                  />
 
-                <p
-                  className={[
-                    "login-loading-text",
-                    !(loadingDevUsers || rosterLoading) ? "is-hidden" : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
-                >
-                  Loading database users for dev login...
-                </p>
+                  <p
+                    className={[
+                      "login-loading-text",
+                      !(loadingDevUsers || rosterLoading) ? "is-hidden" : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                  >
+                    Loading database users for dev login...
+                  </p>
 
 
-                <button
-                  onClick={handleDevLogin}
-                  className="login-button"
-                  style={{ background: "var(--primary)" }}
-                >
-                  Dev Login
-                </button>
-              </div>
-            </LoginCard>
+                  <button
+                    onClick={handleDevLogin}
+                    className="login-button"
+                    style={{ background: "var(--primary)" }}
+                  >
+                    Dev Login
+                  </button>
+                </div>
+              </LoginCard>
+            )}
           </div>
         </div>
       </div>
