@@ -60,12 +60,81 @@ const mapJobRecord = (job) => ({
   customer: job.customer,
 });
 
+const resolveCanonicalVhcItemId = async ({ jobId, rawVhcItemId }) => {
+  if (rawVhcItemId === null || rawVhcItemId === undefined) return null;
+  const token = String(rawVhcItemId).trim();
+  if (!token) return null;
+
+  // Prefer display_id lookup first so alias/display values always resolve to canonical vhc_id.
+  const { data: displayRow, error: displayError } = await supabase
+    .from("vhc_checks")
+    .select("vhc_id")
+    .eq("job_id", jobId)
+    .eq("display_id", token)
+    .maybeSingle();
+
+  if (displayError) {
+    throw new Error(`Failed to resolve VHC display id ${token}: ${displayError.message}`);
+  }
+  if (displayRow?.vhc_id) {
+    return Number(displayRow.vhc_id);
+  }
+
+  const parsed = Number.parseInt(token, 10);
+  if (!Number.isInteger(parsed)) {
+    return null;
+  }
+
+  // Ensure the numeric id belongs to this job.
+  const { data: directRow, error: directError } = await supabase
+    .from("vhc_checks")
+    .select("vhc_id")
+    .eq("job_id", jobId)
+    .eq("vhc_id", parsed)
+    .maybeSingle();
+
+  if (directError) {
+    throw new Error(`Failed to validate VHC item id ${parsed}: ${directError.message}`);
+  }
+
+  return directRow?.vhc_id ? Number(directRow.vhc_id) : null;
+};
+
+const buildVhcRowDescription = async ({ jobId, vhcItemId }) => {
+  if (!jobId || !Number.isInteger(vhcItemId)) return null;
+
+  const { data: checkRow, error } = await supabase
+    .from("vhc_checks")
+    .select("section, issue_title, issue_description, measurement, note_text")
+    .eq("job_id", jobId)
+    .eq("vhc_id", vhcItemId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to fetch VHC row ${vhcItemId}: ${error.message}`);
+  }
+  if (!checkRow) return null;
+
+  const raw = [
+    checkRow.section,
+    checkRow.issue_title,
+    checkRow.issue_description,
+    checkRow.measurement,
+    checkRow.note_text,
+  ]
+    .filter((value) => value !== null && value !== undefined && String(value).trim() !== "")
+    .join(" ");
+
+  const compact = raw.replace(/\s+/g, " ").trim();
+  return compact || null;
+};
+
 const fetchJobParts = async (jobId) => {
   const { data, error } = await supabase
     .from("parts_job_items")
     .select(
       `id, job_id, part_id, quantity_requested, quantity_allocated, quantity_fitted, status, origin,
-       vhc_item_id, pre_pick_location, storage_location, unit_cost, unit_price, request_notes, created_at, updated_at,
+       vhc_item_id, row_description, pre_pick_location, storage_location, unit_cost, unit_price, request_notes, created_at, updated_at,
        part:parts_catalog(${PART_COLUMNS})`
     )
     .eq("job_id", jobId)
@@ -201,6 +270,21 @@ export default async function handler(req, res) {
 
     try {
       const { uuid: auditUserId } = resolveAuditIds(userId, userNumericId);
+      const requestedVhcItemId =
+        req.body?.vhcItemId ?? req.body?.vhc_item_id ?? vhcItemId ?? null;
+      const resolvedVhcItemId = await resolveCanonicalVhcItemId({
+        jobId,
+        rawVhcItemId: requestedVhcItemId,
+      });
+      if (requestedVhcItemId !== null && requestedVhcItemId !== undefined && requestedVhcItemId !== "" && !Number.isInteger(resolvedVhcItemId)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid VHC item id for this job",
+        });
+      }
+      const rowDescription = Number.isInteger(resolvedVhcItemId)
+        ? await buildVhcRowDescription({ jobId, vhcItemId: resolvedVhcItemId })
+        : null;
 
       const resolvedQuantity = Math.max(
         1,
@@ -254,7 +338,8 @@ export default async function handler(req, res) {
         quantity_fitted: 0,
         status: resolvedStatus,
         origin: resolvedOrigin,
-        vhc_item_id: vhcItemId || null,
+        vhc_item_id: Number.isInteger(resolvedVhcItemId) ? resolvedVhcItemId : null,
+        row_description: rowDescription,
         pre_pick_location: sanitizedPrePick,
         storage_location: resolvedStorage,
         unit_cost: resolvedUnitCost,
@@ -280,6 +365,8 @@ export default async function handler(req, res) {
         status: newJobPart?.status,
         origin: newJobPart?.origin,
         vhc_item_id: newJobPart?.vhc_item_id,
+        requestedVhcItemId,
+        resolvedVhcItemId,
         hasPartData: !!newJobPart?.part,
       });
 

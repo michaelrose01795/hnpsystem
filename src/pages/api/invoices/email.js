@@ -1,5 +1,6 @@
 // file location: src/pages/api/invoices/email.js
-import { createSmtpTransport, isSmtpConfigured, SMTP_FROM } from "@/lib/email/smtp";
+import { isSmtpConfigured } from "@/lib/email/smtp";
+import { sendDmsEmail } from "@/lib/email/emailApi";
 import { escapeHtml, getEmailBranding, renderEmailShell } from "@/lib/email/template";
 
 const formatCurrency = (value) => {
@@ -208,19 +209,18 @@ export default async function handler(req, res) {
   }
 
   try {
-    const transporter = createSmtpTransport();
     const fallbackName = process.env.SMTP_COMPANY_NAME || "HP Automotive";
     const companyName = invoiceData?.company?.name || fallbackName;
     const branding = getEmailBranding(req, companyName);
     const invoiceNumber = invoiceData?.invoice?.invoice_number || jobNumber || "Draft";
     const html = buildInvoiceEmailHtml(invoiceData, branding);
 
-    await transporter.sendMail({
-      from: `"${companyName}" <${SMTP_FROM}>`,
+    await sendDmsEmail({
+      req,
       to: customerEmail,
       subject: `Invoice ${invoiceNumber} from ${companyName}`,
       html,
-      attachments: branding.attachments,
+      companyName,
     });
 
     return res.status(200).json({ success: true, message: `Invoice sent to ${customerEmail}` });
@@ -229,4 +229,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ success: false, error: error.message || "Failed to send email" });
   }
 }
-

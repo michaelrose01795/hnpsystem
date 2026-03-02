@@ -115,6 +115,7 @@ const normalizeAuthorizationState = (value = "") => {
   const normalized = String(value || "").toLowerCase().trim();
   if (!normalized) return "";
   if (normalized === "authorised" || normalized === "approved") return "authorized";
+  if (normalized === "complete") return "completed";
   if (normalized === "rejected") return "declined";
   return normalized;
 };
@@ -464,14 +465,59 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         };
       });
 
-    // VHC Requests must come only from vhc_checks rows with authorized authorization_state.
+    const isAuthorizedVhcCheck = (check) => {
+      const section = String(check?.section || "").trim();
+      if (section === "VHC_CHECKSHEET" || section === "VHC Checksheet") return false;
+      const decision =
+        normalizeAuthorizationState(check?.authorization_state) ||
+        normalizeAuthorizationState(check?.approval_status);
+      return (
+        decision === "authorized" ||
+        decision === "completed" ||
+        check?.Complete === true ||
+        check?.complete === true
+      );
+    };
+
+    const vhcReqsFromCanonicalAuthorized = (Array.isArray(jobData?.authorizedVhcItems) ? jobData.authorizedVhcItems : [])
+      .map((row, index) => {
+        const vhcItemId = row?.vhcItemId ?? row?.vhc_item_id ?? null;
+        if (vhcItemId === null || vhcItemId === undefined || String(vhcItemId).trim() === "") return null;
+        const expectedPart = extractExpectedPartNumberInfo(row);
+        const displayText =
+          firstText(row?.label, row?.description, row?.text, row?.issue_title, row?.section) ||
+          `VHC authorised item ${index + 1}`;
+        const detailText = firstText(row?.issueDescription, row?.issue_description, row?.noteText, row?.note_text);
+        return {
+          id: `vhc-${vhcItemId}`,
+          type: "vhc",
+          description: resolveVhcLabel(
+            [row?.label, row?.description, row?.text, row?.issue_title, row?.issue_description, row?.section],
+            vhcItemId,
+            index
+          ),
+          displayText,
+          detailText:
+            detailText &&
+            normalizePartNumberKey(detailText) !== normalizePartNumberKey(displayText)
+              ? detailText
+              : "",
+          section: row?.section || "",
+          severity: "authorized",
+          vhcItemId,
+          expectedPartNumber: expectedPart.key,
+          expectedPartNumberDisplay: expectedPart.display,
+          canAllocate: true,
+        };
+      })
+      .filter(Boolean);
+
+    // VHC requests sourced from vhc_checks rows with authorized/completed decisions.
     const vhcReqsFromVhcChecks = vhcChecksSource
       .filter((check) => {
         const vhcItemId = check?.vhc_id ?? check?.vhcId ?? null;
         if (vhcItemId === null || vhcItemId === undefined || String(vhcItemId).trim() === "") return false;
-        const section = String(check?.section || "").trim();
-        if (section === "VHC_CHECKSHEET" || section === "VHC Checksheet") return false;
-        return normalizeAuthorizationState(check?.authorization_state) === "authorized";
+        return isAuthorizedVhcCheck(check);
       })
       .map((check, index) => {
         const vhcItemId = check.vhc_id ?? check.vhcId ?? null;
@@ -516,7 +562,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       });
 
     const vhcReqMap = new Map();
-    vhcReqsFromVhcChecks.forEach((row) => {
+    [...vhcReqsFromCanonicalAuthorized, ...vhcReqsFromVhcChecks].forEach((row) => {
       if (!row?.id) return;
       vhcReqMap.set(String(row.id), row);
     });
@@ -555,6 +601,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     jobData.requests,
     jobData.vhcChecks,
     jobData.vhc_checks,
+    jobData.authorizedVhcItems,
     jobParts,
   ]);
 

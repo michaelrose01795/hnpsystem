@@ -33,6 +33,73 @@ const normaliseStatus = (status) => {
   return lower
 }
 
+const resolveCanonicalVhcItemId = async ({ jobId, rawVhcItemId }) => {
+  if (rawVhcItemId === null || rawVhcItemId === undefined) return null
+  const token = String(rawVhcItemId).trim()
+  if (!token) return null
+
+  const { data: displayRow, error: displayError } = await supabase
+    .from("vhc_checks")
+    .select("vhc_id")
+    .eq("job_id", jobId)
+    .eq("display_id", token)
+    .maybeSingle()
+
+  if (displayError) {
+    throw new Error(`Failed to resolve VHC display id ${token}: ${displayError.message}`)
+  }
+  if (displayRow?.vhc_id) {
+    return Number(displayRow.vhc_id)
+  }
+
+  const parsed = Number.parseInt(token, 10)
+  if (!Number.isInteger(parsed)) {
+    return null
+  }
+
+  const { data: directRow, error: directError } = await supabase
+    .from("vhc_checks")
+    .select("vhc_id")
+    .eq("job_id", jobId)
+    .eq("vhc_id", parsed)
+    .maybeSingle()
+
+  if (directError) {
+    throw new Error(`Failed to validate VHC item id ${parsed}: ${directError.message}`)
+  }
+
+  return directRow?.vhc_id ? Number(directRow.vhc_id) : null
+}
+
+const buildVhcRowDescription = async ({ jobId, vhcItemId }) => {
+  if (!jobId || !Number.isInteger(vhcItemId)) return null
+
+  const { data: checkRow, error } = await supabase
+    .from("vhc_checks")
+    .select("section, issue_title, issue_description, measurement, note_text")
+    .eq("job_id", jobId)
+    .eq("vhc_id", vhcItemId)
+    .maybeSingle()
+
+  if (error) {
+    throw new Error(`Failed to fetch VHC row ${vhcItemId}: ${error.message}`)
+  }
+  if (!checkRow) return null
+
+  const raw = [
+    checkRow.section,
+    checkRow.issue_title,
+    checkRow.issue_description,
+    checkRow.measurement,
+    checkRow.note_text,
+  ]
+    .filter((value) => value !== null && value !== undefined && String(value).trim() !== "")
+    .join(" ")
+
+  const compact = raw.replace(/\s+/g, " ").trim()
+  return compact || null
+}
+
 // Get user from request - simplified
 const getUserFromRequest = async (req) => {
   // TODO: Replace with actual auth implementation
@@ -68,6 +135,10 @@ export default async function handler(req, res) {
         updates.quantity_fitted = rawUpdates.quantityFitted
         delete updates.quantityFitted
       }
+      if (Object.prototype.hasOwnProperty.call(rawUpdates, "vhcItemId")) {
+        updates.vhc_item_id = rawUpdates.vhcItemId
+        delete updates.vhcItemId
+      }
       if (Object.prototype.hasOwnProperty.call(updates, "status")) {
         updates.status = normaliseStatus(updates.status)
       }
@@ -78,10 +149,11 @@ export default async function handler(req, res) {
       const touchesQuantities =
         Object.prototype.hasOwnProperty.call(updates, "quantity_requested") ||
         Object.prototype.hasOwnProperty.call(updates, "quantity_allocated")
+      const touchesVhcLink = Object.prototype.hasOwnProperty.call(updates, "vhc_item_id")
       const isUnassigningVhc = Object.prototype.hasOwnProperty.call(updates, "vhc_item_id") && updates.vhc_item_id === null
 
       let existing = null
-      if (needsStockReturn || isUnassigningVhc || touchesQuantities) {
+      if (needsStockReturn || isUnassigningVhc || touchesQuantities || touchesVhcLink) {
         const { data: existingRow, error: existingError } = await supabase
           .from("parts_job_items")
           .select("id, job_id, vhc_item_id, part_id, quantity_requested, quantity_allocated, status, authorised")
@@ -93,6 +165,24 @@ export default async function handler(req, res) {
         }
 
         existing = existingRow
+      }
+
+      if (touchesVhcLink && updates.vhc_item_id !== null) {
+        const resolvedVhcItemId = await resolveCanonicalVhcItemId({
+          jobId: existing?.job_id,
+          rawVhcItemId: updates.vhc_item_id,
+        })
+        if (!Number.isInteger(resolvedVhcItemId)) {
+          return res.status(400).json({ ok: false, error: "Invalid VHC item id for this job" })
+        }
+        updates.vhc_item_id = resolvedVhcItemId
+        updates.row_description = await buildVhcRowDescription({
+          jobId: existing?.job_id,
+          vhcItemId: resolvedVhcItemId,
+        })
+      }
+      if (touchesVhcLink && updates.vhc_item_id === null) {
+        updates.row_description = null
       }
 
       let quantityAllocatedDelta = 0

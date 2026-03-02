@@ -1,7 +1,8 @@
 import crypto from "crypto";
 import { supabaseService } from "@/lib/supabaseClient";
 import { markVHCAsSent } from "@/lib/services/vhcStatusService";
-import { createSmtpTransport, isSmtpConfigured, SMTP_FROM } from "@/lib/email/smtp";
+import { isSmtpConfigured } from "@/lib/email/smtp";
+import { sendDmsEmail } from "@/lib/email/emailApi";
 import { getEmailBranding, renderEmailShell, resolveEmailBaseUrl } from "@/lib/email/template";
 
 const COMPANY_NAME = process.env.SMTP_COMPANY_NAME || "Service Department";
@@ -114,15 +115,13 @@ export default async function handler(req, res) {
     const customerName = `${jobRow.customer?.firstname || ""} ${jobRow.customer?.lastname || ""}`.trim() || "Customer";
     const branding = getEmailBranding(req, COMPANY_NAME);
 
-    const transporter = createSmtpTransport();
-
-    await transporter.sendMail({
-      from: `"${COMPANY_NAME}" <${SMTP_FROM}>`,
+    await sendDmsEmail({
+      req,
       to: customerEmail,
       subject: `Vehicle Health Check for Job #${jobNumber}`,
       html: buildHtml({ customerName, jobNumber, shareUrl, branding }),
-      attachments: branding.attachments,
       text: `Hello ${customerName},\n\nYour Vehicle Health Check for job #${jobNumber} is ready.\nOpen it here: ${shareUrl}\n\nThis link expires in 24 hours.\n\nRegards,\n${COMPANY_NAME}`,
+      companyName: COMPANY_NAME,
     });
 
     if (!jobRow.vhc_completed_at) {

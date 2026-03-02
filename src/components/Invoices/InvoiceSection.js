@@ -19,6 +19,7 @@ export default function InvoiceSection({ jobData }) {
       jobNumber={jobNumber}
       customerEmail={jobData?.customerEmail}
       jobId={jobData?.id}
+      jobData={jobData}
     />
   );
 }

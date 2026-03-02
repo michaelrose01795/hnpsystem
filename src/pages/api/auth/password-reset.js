@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { supabaseService } from "@/lib/supabaseClient";
-import { createSmtpTransport, isSmtpConfigured, SMTP_FROM } from "@/lib/email/smtp";
+import { isSmtpConfigured } from "@/lib/email/smtp";
+import { sendDmsEmail } from "@/lib/email/emailApi";
 import { getEmailBranding, renderEmailShell } from "@/lib/email/template";
 
 const TEST_RESET_EMAIL = "michaelrose01795@icloud.com";
@@ -93,17 +94,16 @@ async function sendPasswordResetEmail({ req, displayName, subject, revertLink })
     };
   }
 
-  const transporter = createSmtpTransport();
   const branding = getEmailBranding(req, "HP Automotive");
   const html = buildPasswordResetEmailHtml({ displayName, revertLink, branding });
 
-  await transporter.sendMail({
-    from: `"HP Automotive" <${SMTP_FROM}>`,
+  await sendDmsEmail({
+    req,
     to: TEST_RESET_EMAIL,
     // TODO: replace TEST_RESET_EMAIL with the user's real email after testing.
     subject: subject || `${displayName} you have reset your password`,
     html,
-    attachments: branding.attachments,
+    companyName: "HP Automotive",
   });
 
   return { sent: true, skipped: false };

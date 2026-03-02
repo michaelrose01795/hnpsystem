@@ -111,17 +111,21 @@
   flex-wrap: wrap; /* // allow wrap on small screens */
   justify-content: space-between; /* // push content apart */
   gap: 10px; /* // spacing */
+  min-height: 98px; /* // keep table start position consistent across sections */
+  align-items: flex-start; /* // pin content to top edge */
 } /* // end requestHeader */
 
 .partsTableWrapper { /* // enable horizontal scroll on small screens */
   width: 100%; /* // full width */
   overflow-x: auto; /* // allow horizontal scroll */
+  margin-top: 2px; /* // stable offset below header */
 } /* // end partsTableWrapper */
 
 .partsTable { /* // table for parts list */
   width: 100%; /* // fill container */
   border-collapse: collapse; /* // clean borders */
   min-width: 640px; /* // ensure horizontal scroll on very small screens */
+  table-layout: fixed; /* // enforce identical column sizing across all sections */
 } /* // end partsTable */
 
 .partsTable th { /* // header cells */
@@ -141,7 +145,60 @@
   padding: 8px; /* // consistent spacing */
   border-bottom: 1px solid var(--surface-light); /* // row divider */
   font-size: 0.9rem; /* // text size */
+  vertical-align: top; /* // keep multi-line cells aligned from top */
 } /* // end partsTable td */
+
+.partsTable th:nth-child(1),
+.partsTable td:nth-child(1) {
+  width: 16%;
+}
+
+.partsTable th:nth-child(2),
+.partsTable td:nth-child(2) {
+  width: 34%;
+  white-space: normal; /* // allow long descriptions to wrap */
+  word-break: break-word; /* // wrap long terms/part names */
+  overflow-wrap: anywhere; /* // keep text inside column */
+  line-height: 1.35;
+}
+
+.partsTable th:nth-child(3),
+.partsTable td:nth-child(3) {
+  width: 12%;
+}
+
+.partsTable th:nth-child(4),
+.partsTable td:nth-child(4) {
+  width: 8%;
+}
+
+.partsTable th:nth-child(5),
+.partsTable td:nth-child(5) {
+  width: 11%;
+}
+
+.partsTable th:nth-child(6),
+.partsTable td:nth-child(6) {
+  width: 10%;
+}
+
+.partsTable th:nth-child(7),
+.partsTable td:nth-child(7) {
+  width: 9%;
+}
+
+.partsTable th:nth-child(3),
+.partsTable th:nth-child(4),
+.partsTable th:nth-child(5),
+.partsTable th:nth-child(6),
+.partsTable th:nth-child(7),
+.partsTable td:nth-child(3),
+.partsTable td:nth-child(4),
+.partsTable td:nth-child(5),
+.partsTable td:nth-child(6),
+.partsTable td:nth-child(7) {
+  white-space: nowrap; /* // keep numeric columns single-line */
+}
 
 .totalsFooter { /* // footer totals row */
   display: grid; /* // use grid for columns */

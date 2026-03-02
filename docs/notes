@@ -1,6 +1,6 @@
 TO DO:
 
-Continue flow with job number 55.
+Continue flow with job number 56.
 
 
 paul@humphriesandparks.co.uk
@@ -15,8 +15,21 @@ CHECK
 make sure that the unread line is hiden after 30 seconds from thwn the line is in view on the screen, or after the user clicks back off of the chat section/page relaods etc. 
 CHECK
 Do a deep dive into the problem where users roles are being removed or swapped with other role names. This is linked to the user database table, where example use 19 role is set to service adviser but this has been changed by code to Service manager instead. Make it so the only way anything within the user database table is changed is within the hr/manager page within the employee tab. Have it so password_hash can be changed using within the login page add a button in small print underneath the login button within that section to reset the password. Have it so when that text button is clicked it opens a popup. This popup auto enters the email address if it’s entered within the login section. The user is then asked to enter a new password. Make sure there are no restrictions on the passwords for example it can be “1” or it can be “iwjfbiri^}+]+!,u74829” for example. Have it so an email it automatically sent to the users email after resetting the password. Add in the email if the email was reset by you then click this link, that link will open up login page to the app which will then give a prompt saying are you sure this wasn’t you as it will revert the password. If the user clicks yes “it wasn’t me” then it reverts the password back to the password used before if “it wasn’t me” clicked then it doesn’t change the entered password. Give me sql code to reset all passwords to “1”. Make sure all emails are sent to “michaelrose01795@icloud.com” instead of the user emails for testing, add a todo which is to make sure it sends to the users email after testing is complete. Have it so within the email it says “[usersname] you have reset your password” as a heading/subject etc.
-DOOOO
+CHECK
 Make all emails sent use a user friendly detailed logoed style. Create an api file which is called email api so all emails use the same style and design when sent from the dms. 
+CHECK
+have it so if the row is set to decline that it can be edited within the "Parts Identified" tab not just the authorised rows. 
+CHECK
+if a row gets reset within the summart tab make sure the display_status goes vbabck to amber or red etc. and te hover status front end doesnt say N/A but it hosuld say waiting for customers selection or what ever we have called it
+CHECK
+make sure the "Part No	Description	Retail	Qty	Price	VAT	Rate %" tables for each section within the inovice page are always in the same posisition and the same size within each section for example request 1,2,3 etc and VHC request section thoughtout the whole page. if a descritpion is longer then put it onto  a second line within the column.
+
+TO DO!!
+parts_job_card_items database table should actaully be parts_order_card_items instead i think. check that it is iused within the parts order numbers cards, if it the case also change the job_id to order_id and make sure this is changed within the code as well. this oculd also be the same with the parts_job_card which should be changed to parts_order_number or along those lines
+
+
+
+
 
 
 CHECK
@@ -115,8 +128,12 @@ Redesign only the thread sidebar and the main message area to feel modern and cl
 
 
 INVOICE PAGE
-
+CHECK
 invoice page fix, nearly just have "Ensure all allocated parts have quantities and pricing." create more detail for this easier for users to follow within this seciton. 
+CHECK
+Have it so within the inovice tab, within the Request 1,2,3 etc rows have it so when the row has a part assigned to it wihti the parts tab it only shows the parts insdie the table which are assigned to that request row or "VHC request" row. If the row doesnt have any parts allocated to it then dont show the "Part No	Description	Retail	Qty	Price	VAT	Rate %" table
+
+make sure that change is for the acutal invocie and proforma invoice.remove "Proforma totals generated from live job data until all invoice prerequisites are complete. " text and section after everything is ready for the inovice to be created, it will show the inovice but this doesnt mean the actual invoice is created until the Create invoice button is pressed. basically the inovice tab will always show "Proforma " section so change the "Proforma totals generated from live job data until all invoice prerequisites are complete. " section text dont remove but change to "Proforma complete ", once the "Create Invoice" button is pressed then that ""Proforma complete " section is hiden. make sure that the "Create Invoice" button isnt visible until the  "Proforma complete " section is shown
 
 
 TO DO AFTER THE ONE BELOW
@@ -128,7 +145,7 @@ create a flow for create a job card, start from the /create page and then based 
 
 
 
-
+TO DO 
 jobs database table work thought as nearly all empty, do a deep dive into finding out why nearly the whole database is emplty and fix any loose ends
 
 

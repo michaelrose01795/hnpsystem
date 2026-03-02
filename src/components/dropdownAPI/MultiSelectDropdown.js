@@ -34,11 +34,15 @@ export default function MultiSelectDropdown({
   emptyState = "No options available",
   id,
   maxHeight = "280px",
+  searchPlaceholder = "Search options",
+  noSearchResultsText = "No options match your search",
   ...rest
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef(null);
   const menuRef = useRef(null);
+  const controlInputRef = useRef(null);
 
   const normalizedOptions = useMemo(
     () =>
@@ -101,6 +105,16 @@ export default function MultiSelectDropdown({
     );
   }, [value, normalizedOptions]);
 
+  const visibleOptions = useMemo(() => {
+    if (!searchTerm.trim()) return normalizedOptions;
+    const needle = searchTerm.trim().toLowerCase();
+    return normalizedOptions.filter((option) => {
+      const label = String(option.label || "").toLowerCase();
+      const valueText = String(option.value ?? "").toLowerCase();
+      return label.includes(needle) || valueText.includes(needle);
+    });
+  }, [normalizedOptions, searchTerm]);
+
   const toggle = () => {
     if (disabled) return;
     setIsOpen((prev) => !prev);
@@ -135,26 +149,9 @@ export default function MultiSelectDropdown({
     handleOptionToggle(option);
   };
 
-  const handleControlKeyDown = (event) => {
+  const open = () => {
     if (disabled) return;
-    switch (event.key) {
-      case "Enter":
-      case " ":
-        event.preventDefault();
-        toggle();
-        break;
-      case "Escape":
-        if (isOpen) {
-          event.preventDefault();
-          close();
-        }
-        break;
-      case "Tab":
-        setIsOpen(false);
-        break;
-      default:
-        break;
-    }
+    setIsOpen(true);
   };
 
   // Close when clicking outside
@@ -169,6 +166,19 @@ export default function MultiSelectDropdown({
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setSearchTerm("");
+      return;
+    }
+    setTimeout(() => controlInputRef.current?.focus(), 0);
+  }, [isOpen]);
+
+  const controlPlaceholder =
+    selectedOptions.length > 0 && !isOpen
+      ? `${selectedOptions.length} selected`
+      : searchPlaceholder || placeholder;
 
   const wrapperClasses = [
     "dropdown-api",
@@ -214,25 +224,67 @@ export default function MultiSelectDropdown({
         </div>
       )}
 
-      {/* Control button */}
-      <button
-        id={controlId}
-        type="button"
+      {/* Searchable control */}
+      <div
         className="dropdown-api__control"
-        aria-haspopup="listbox"
-        aria-expanded={isOpen}
-        onClick={toggle}
-        onKeyDown={handleControlKeyDown}
-        disabled={disabled}
+        onClick={() => controlInputRef.current?.focus()}
       >
-        <span className={`dropdown-api__value ${selectedOptions.length === 0 ? "is-placeholder" : ""}`}>
-          {isOpen
-            ? "Select departments to add"
-            : selectedOptions.length > 0
-            ? `${selectedOptions.length} selected`
-            : placeholder}
-        </span>
-        <span className="dropdown-api__chevron" aria-hidden="true">
+        <input
+          id={controlId}
+          ref={controlInputRef}
+          type="search"
+          className="dropdown-api__search-input"
+          style={{
+            border: "none",
+            background: "transparent",
+            padding: 0,
+            boxShadow: "none",
+            flex: 1,
+          }}
+          placeholder={controlPlaceholder}
+          value={searchTerm}
+          disabled={disabled}
+          aria-haspopup="listbox"
+          aria-expanded={isOpen}
+          onFocus={open}
+          onClick={(event) => {
+            event.stopPropagation();
+            open();
+          }}
+          onChange={(event) => {
+            setSearchTerm(event.target.value);
+            if (!isOpen) open();
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              close();
+              return;
+            }
+            if (event.key === "Tab") {
+              close();
+            }
+            if (event.key === "Enter" || event.key === "ArrowDown") {
+              open();
+            }
+          }}
+        />
+        <button
+          type="button"
+          className="dropdown-api__chevron"
+          style={{
+            border: "none",
+            background: "transparent",
+            padding: 0,
+            cursor: disabled ? "not-allowed" : "pointer",
+          }}
+          aria-label={isOpen ? "Close options" : "Open options"}
+          onClick={(event) => {
+            event.stopPropagation();
+            toggle();
+            setTimeout(() => controlInputRef.current?.focus(), 0);
+          }}
+          disabled={disabled}
+        >
           <svg width="16" height="16" viewBox="0 0 16 16" role="presentation">
             <path
               d="M4.5 6l3.5 3.5L11.5 6"
@@ -243,8 +295,8 @@ export default function MultiSelectDropdown({
               strokeLinejoin="round"
             />
           </svg>
-        </span>
-      </button>
+        </button>
+      </div>
       {helperText && <p className="dropdown-api__helper">{helperText}</p>}
 
       {/* Dropdown menu */}
@@ -259,7 +311,10 @@ export default function MultiSelectDropdown({
         {normalizedOptions.length === 0 && (
           <div className="dropdown-api__empty">{emptyState}</div>
         )}
-        {normalizedOptions.map((option) => {
+        {normalizedOptions.length > 0 && visibleOptions.length === 0 && (
+          <div className="dropdown-api__empty">{noSearchResultsText}</div>
+        )}
+        {visibleOptions.map((option) => {
           const isSelected = selectedOptions.some((opt) => opt.key === option.key);
           return (
             <button

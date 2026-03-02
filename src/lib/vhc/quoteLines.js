@@ -24,8 +24,10 @@ const resolveDisplaySeverity = (displayStatus) => { // Only allow display_status
 
 const resolveDecisionStatus = (check = {}, fallback = null) => {
   const authState = normaliseDecisionStatus(check?.authorization_state);
-  if (authState) return authState;
   const approval = normaliseDecisionStatus(check?.approval_status);
+  // Prefer explicit approval_status when auth_state is only the legacy "n/a" placeholder.
+  if (authState === "n/a" && approval && approval !== "n/a") return approval;
+  if (authState) return authState;
   if (approval) return approval;
   return normaliseDecisionStatus(fallback) || "pending";
 };
@@ -62,6 +64,37 @@ const buildDedupeKey = (line) => {
   ]
     .map((value) => String(value || "").toLowerCase().replace(/\s+/g, " ").trim());
   return parts.join("|");
+};
+
+const normaliseMatchText = (value = "") =>
+  String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const extractWheelPositionToken = (value = "") => {
+  const text = normaliseMatchText(value);
+  if (!text) return "";
+  if (/\bnsf\b/.test(text) || text.includes("near side front")) return "nsf";
+  if (/\bosf\b/.test(text) || text.includes("off side front")) return "osf";
+  if (/\bnsr\b/.test(text) || text.includes("near side rear")) return "nsr";
+  if (/\bosr\b/.test(text) || text.includes("off side rear")) return "osr";
+  return "";
+};
+
+const extractTyreSizeKey = (value = "") => {
+  const raw = String(value || "").toUpperCase();
+  const match = raw.match(/(\d{3}\s*\/\s*\d{2}\s*R\s*\d{2})/);
+  if (!match?.[1]) return "";
+  return match[1].replace(/\s+/g, "");
+};
+
+const stripMetaSuffix = (value = "") => {
+  const text = String(value || "");
+  const markerIndex = text.indexOf("VHC_META:");
+  if (markerIndex === -1) return text.trim();
+  return text.slice(0, markerIndex).trim();
 };
 
 const isChargeable = (line) => {
@@ -253,6 +286,165 @@ export const buildVhcQuoteLinesModel = ({
       slotCode: check?.slot_code ?? null,
       lineKey: check?.line_key ?? null,
     });
+  });
+
+  // Legacy fallback: infer VHC row for historical parts with null vhc_item_id so Summary totals stay accurate.
+  const searchableRows = baseItems.map((item) => {
+    const canonicalId = String(item.canonicalId || item.id);
+    const haystack = normaliseMatchText(
+      [
+        item?.measurement,
+        item?.label,
+        item?.notes,
+        item?.concernText,
+        item?.sectionName,
+        item?.categoryLabel,
+        ...(Array.isArray(item?.rows) ? item.rows : []),
+      ]
+        .filter(Boolean)
+        .join(" ")
+    );
+    return { canonicalId, haystack };
+  });
+
+  const legacyTieAllocationCount = new Map();
+  const wheelTokenRank = { nsf: 0, osf: 1, nsr: 2, osr: 3 };
+
+  const resolveLegacyPartVhcId = (part) => {
+    const partPositionToken = extractWheelPositionToken(
+      [
+        part?.part?.name,
+        part?.part_name_snapshot,
+        part?.row_description,
+        part?.request_notes,
+        part?.requestNotes,
+      ]
+        .filter(Boolean)
+        .join(" ")
+    );
+    const partTyreSizeKey = extractTyreSizeKey(
+      [
+        part?.part?.name,
+        part?.part_name_snapshot,
+        part?.part?.description,
+        part?.row_description,
+        part?.request_notes,
+        part?.requestNotes,
+      ]
+        .filter(Boolean)
+        .join(" ")
+    );
+
+    const hints = [
+      part?.row_description,
+      part?.part?.name,
+      part?.part_name_snapshot,
+      part?.part?.description,
+      part?.part?.part_number,
+      part?.part_number_snapshot,
+      stripMetaSuffix(part?.request_notes || part?.requestNotes || ""),
+    ]
+      .map((value) => normaliseMatchText(value))
+      .filter((value) => value && value.length >= 4);
+
+    if (hints.length === 0) return null;
+
+    const ranked = searchableRows
+      .map((row) => {
+        let score = 0;
+        const rowPositionToken = extractWheelPositionToken(row.haystack);
+        const rowTyreSizeKey = extractTyreSizeKey(row.haystack);
+
+        if (partPositionToken && rowPositionToken) {
+          score += partPositionToken === rowPositionToken ? 60 : -35;
+        }
+        if (partTyreSizeKey && rowTyreSizeKey) {
+          score += partTyreSizeKey === rowTyreSizeKey ? 24 : -12;
+        }
+
+        hints.forEach((hint) => {
+          if (row.haystack.includes(hint)) {
+            score += Math.min(50, hint.length * 3);
+            return;
+          }
+          const tokens = hint.split(" ").filter((token) => token.length >= 4);
+          const tokenHits = tokens.filter((token) => row.haystack.includes(token)).length;
+          score += tokenHits * 4;
+        });
+        return { row, score };
+      })
+      .filter((entry) => entry.score > 0)
+      .sort((a, b) => b.score - a.score);
+
+    if (ranked.length === 0) return null;
+    if (ranked.length === 1) return ranked[0].row.canonicalId;
+    if (ranked[0].score > ranked[1].score) return ranked[0].row.canonicalId;
+
+    const topScore = ranked[0].score;
+    const tied = ranked.filter((entry) => entry.score === topScore);
+    if (tied.length === 0) return null;
+
+    const tyreContextText = normaliseMatchText(
+      [
+        part?.part?.name,
+        part?.part_name_snapshot,
+        part?.part?.description,
+        part?.part?.part_number,
+        part?.part_number_snapshot,
+        part?.row_description,
+        stripMetaSuffix(part?.request_notes || part?.requestNotes || ""),
+      ]
+        .filter(Boolean)
+        .join(" ")
+    );
+    const isTyreContext = Boolean(partTyreSizeKey) || /\b(tyre|tire|wheel)\b/.test(tyreContextText);
+    if (!isTyreContext) return null;
+
+    const sizeMatchedPool = tied.filter((entry) => {
+      if (!partTyreSizeKey) return true;
+      const rowTyreSizeKey = extractTyreSizeKey(entry.row.haystack);
+      return Boolean(rowTyreSizeKey) && rowTyreSizeKey === partTyreSizeKey;
+    });
+    const pool = (sizeMatchedPool.length > 0 ? sizeMatchedPool : tied).sort((a, b) => {
+      const aToken = extractWheelPositionToken(a.row.haystack);
+      const bToken = extractWheelPositionToken(b.row.haystack);
+      const aRank = Object.prototype.hasOwnProperty.call(wheelTokenRank, aToken) ? wheelTokenRank[aToken] : 99;
+      const bRank = Object.prototype.hasOwnProperty.call(wheelTokenRank, bToken) ? wheelTokenRank[bToken] : 99;
+      if (aRank !== bRank) return aRank - bRank;
+      return a.row.canonicalId.localeCompare(b.row.canonicalId);
+    });
+    if (pool.length === 0) return null;
+
+    const allocationSignature = normaliseMatchText(
+      [
+        partTyreSizeKey,
+        part?.part?.part_number,
+        part?.part_number_snapshot,
+        part?.part?.name,
+        part?.part_name_snapshot,
+      ]
+        .filter(Boolean)
+        .join(" ")
+    );
+    const signatureKey = allocationSignature || "legacy-tyre";
+    const currentIndex = legacyTieAllocationCount.get(signatureKey) || 0;
+    legacyTieAllocationCount.set(signatureKey, currentIndex + 1);
+    return pool[currentIndex % pool.length].row.canonicalId;
+  };
+
+  (partsJobItems || []).forEach((part) => {
+    const linkedId = part?.vhc_item_id;
+    if (linkedId !== null && linkedId !== undefined && String(linkedId).trim() !== "") return;
+    const origin = String(part?.origin || "").toLowerCase();
+    if (!origin.includes("vhc")) return;
+    const inferredCanonicalId = resolveLegacyPartVhcId(part);
+    if (!inferredCanonicalId) return;
+    const qty = toNumber(part.quantity_requested, 1) || 1;
+    const unitPrice = toNumber(part.unit_price ?? part?.part?.unit_price, 0);
+    partsCostMap.set(
+      String(inferredCanonicalId),
+      (partsCostMap.get(String(inferredCanonicalId)) || 0) + qty * unitPrice
+    );
   });
 
   const lines = baseItems.map((item) => {

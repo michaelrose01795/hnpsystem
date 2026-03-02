@@ -1124,6 +1124,7 @@ CREATE TABLE public.parts_job_items (
   allocated_to_request_id bigint,
   part_number_snapshot text,
   part_name_snapshot text,
+  row_description text,
   CONSTRAINT parts_job_items_pkey PRIMARY KEY (id),
   CONSTRAINT parts_job_items_vhc_item_id_fkey FOREIGN KEY (vhc_item_id) REFERENCES public.vhc_checks(vhc_id),
   CONSTRAINT parts_job_items_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
@@ -1358,6 +1359,7 @@ CREATE TABLE public.users (
   is_active boolean NOT NULL DEFAULT true,
   accent_color text DEFAULT 'red'::text,
   probation_end date,
+  name text,
   CONSTRAINT users_pkey PRIMARY KEY (user_id),
   CONSTRAINT users_manager_id_fkey FOREIGN KEY (manager_id) REFERENCES public.users(user_id)
 );

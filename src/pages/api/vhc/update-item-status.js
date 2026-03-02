@@ -25,6 +25,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: "vhcItemId is required" });
     }
 
+    const isSeverityDisplay = (value) => {
+      const normalized = String(value || "").trim().toLowerCase();
+      return normalized === "red" || normalized === "amber" || normalized === "green" || normalized === "grey";
+    };
+
     const normaliseApproval = (value) => {
       if (value === null || value === undefined) return value;
       const normalised = String(value).trim().toLowerCase();
@@ -43,6 +48,20 @@ export default async function handler(req, res) {
       return normalised;
     };
 
+    const { data: existingCheck, error: existingCheckError } = await supabase
+      .from("vhc_checks")
+      .select("vhc_id, severity, display_status")
+      .eq("vhc_id", vhcItemId)
+      .maybeSingle();
+
+    if (existingCheckError) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load VHC item before update",
+        error: existingCheckError.message,
+      });
+    }
+
     // Build update object with only provided fields
     const updateData = {};
 
@@ -56,7 +75,7 @@ export default async function handler(req, res) {
       }
       updateData.approval_status = nextApprovalStatus;
       updateData.authorization_state =
-        nextApprovalStatus === "pending" ? "n/a" : nextApprovalStatus;
+        nextApprovalStatus === "pending" ? "pending" : nextApprovalStatus;
 
       // Use displayStatus from request if provided, otherwise set based on approvalStatus
       if (displayStatus !== undefined) {
@@ -80,7 +99,13 @@ export default async function handler(req, res) {
         updateData.approved_at = null;
         updateData.approved_by = null;
         if (displayStatus === undefined) {
-          updateData.display_status = null;
+          const fallbackPendingDisplay = normaliseDisplay(existingCheck?.severity);
+          const existingDisplay = normaliseDisplay(existingCheck?.display_status);
+          updateData.display_status = isSeverityDisplay(fallbackPendingDisplay)
+            ? fallbackPendingDisplay
+            : isSeverityDisplay(existingDisplay)
+            ? existingDisplay
+            : null;
         }
       } else if (nextApprovalStatus === "n/a") {
         updateData.approved_at = null;

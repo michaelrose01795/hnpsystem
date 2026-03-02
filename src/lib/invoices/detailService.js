@@ -139,6 +139,26 @@ async function fetchJobRequests(jobId) { // fetch job requests fallback
   return data || []; // return rows or empty list
 } // end fetchJobRequests
 
+async function fetchAuthorizedVhcRequests(jobId) { // fetch authorised VHC rows linked to job requests
+  const { data, error } = await supabase
+    .from("vhc_checks")
+    .select("request_id, issue_title, issue_description, labour_hours, parts_cost, approval_status, authorization_state, section")
+    .eq("job_id", jobId);
+  if (error && error.code !== "PGRST116") {
+    throw error;
+  }
+  return (data || []).filter((row) => {
+    const section = String(row?.section || "").trim();
+    if (section === "VHC_CHECKSHEET" || section === "VHC Checksheet") return false;
+    const decision = String(row?.authorization_state || row?.approval_status || "").trim().toLowerCase();
+    return (
+      decision === "authorized" ||
+      decision === "authorised" ||
+      decision === "completed"
+    );
+  });
+} // end fetchAuthorizedVhcRequests
+
 async function fetchJobPartAllocations(jobId) { // fetch parts allocated to job for grouping
   const { data, error } = await supabase // query parts_job_items joined with catalog
     .from("parts_job_items") // table name
@@ -199,7 +219,7 @@ function buildVehicleDetails(invoice, job, vehicle) { // build vehicle row snaps
   }; // return detail object
 } // end buildVehicleDetails
 
-function enrichRequestsFromJob(jobRequests, partAllocations, vatRate, labourRate) { // fallback builder for request payload
+function enrichRequestsFromJob(jobRequests, partAllocations, vatRate, labourRate, authorizedVhcRows = []) { // fallback builder for request payload
   const groupedParts = {}; // map request_id -> part items
   partAllocations.forEach((allocation) => { // iterate all part allocations
     const key =
@@ -212,6 +232,47 @@ function enrichRequestsFromJob(jobRequests, partAllocations, vatRate, labourRate
     }
     groupedParts[key].push(allocation); // push allocation
   }); // done grouping
+  const authorisedByRequestId = {};
+  (authorizedVhcRows || []).forEach((row) => {
+    const requestId = row?.request_id ?? null;
+    if (requestId === null || requestId === undefined) return;
+    const key = String(requestId);
+    const issueTitle = String(row?.issue_title || "").trim();
+    const issueDescription = String(row?.issue_description || "").trim();
+    const label = issueDescription ? `${issueTitle} - ${issueDescription}` : issueTitle;
+    const labourHoursRaw = row?.labour_hours;
+    const labourHours =
+      labourHoursRaw !== null && labourHoursRaw !== undefined && labourHoursRaw !== ""
+        ? Number(labourHoursRaw)
+        : null;
+    const partsCostRaw = row?.parts_cost;
+    const partsCost =
+      partsCostRaw !== null && partsCostRaw !== undefined && partsCostRaw !== ""
+        ? Number(partsCostRaw)
+        : null;
+    const existing = authorisedByRequestId[key];
+    const candidate = {
+      label,
+      issueTitle,
+      issueDescription,
+      labourHours: Number.isFinite(labourHours) ? labourHours : null,
+      partsCost: Number.isFinite(partsCost) ? partsCost : null,
+    };
+    if (!existing) {
+      authorisedByRequestId[key] = candidate;
+      return;
+    }
+    const existingScore =
+      (existing.label ? 1 : 0) +
+      (existing.labourHours !== null ? 1 : 0) +
+      (existing.partsCost !== null ? 1 : 0);
+    const candidateScore =
+      (candidate.label ? 1 : 0) +
+      (candidate.labourHours !== null ? 1 : 0) +
+      (candidate.partsCost !== null ? 1 : 0);
+    if (candidateScore >= existingScore) authorisedByRequestId[key] = candidate;
+  });
+
   const fallbackRequests = jobRequests.length > 0 ? jobRequests : [{ // ensure at least one request exists
     request_id: 0, // pseudo id
     description: "Customer Request", // fallback description
@@ -219,48 +280,78 @@ function enrichRequestsFromJob(jobRequests, partAllocations, vatRate, labourRate
     job_type: "Customer" // default type
   }]; // end fallback
   const sorted = [...fallbackRequests].sort((a, b) => { // sort customer requests first, authorised last
-    const aIsAuthorised = (a.job_type || "").toLowerCase() === "authorised";
-    const bIsAuthorised = (b.job_type || "").toLowerCase() === "authorised";
+    const aMeta =
+      a?.request_id !== null && a?.request_id !== undefined
+        ? authorisedByRequestId[String(a.request_id)] || null
+        : null;
+    const bMeta =
+      b?.request_id !== null && b?.request_id !== undefined
+        ? authorisedByRequestId[String(b.request_id)] || null
+        : null;
+    const aType = String(a?.job_type || "").toLowerCase();
+    const bType = String(b?.job_type || "").toLowerCase();
+    const aIsAuthorised = Boolean(aMeta) || aType === "authorised" || aType === "authorized";
+    const bIsAuthorised = Boolean(bMeta) || bType === "authorised" || bType === "authorized";
     if (aIsAuthorised === bIsAuthorised) return 0;
     return aIsAuthorised ? 1 : -1;
   }); // end sort
   let customerCount = 0; // counter for customer request labels
   let authorisedCount = 0; // counter for authorised request labels
   return sorted.map((request, index) => { // transform each request to invoice-friendly shape
-    const labourHours = Number(request.hours) || 0; // parse hours
+    const vhcMeta =
+      request?.request_id !== null && request?.request_id !== undefined
+        ? authorisedByRequestId[String(request.request_id)] || null
+        : null;
+    const labourHours = (vhcMeta?.labourHours ?? Number(request.hours)) || 0; // parse hours
     const labourNet = labourHours * labourRate; // compute net labour
     const labourVat = labourNet * (vatRate / 100); // compute VAT value
     const bucketKey =
       request.request_id !== null && request.request_id !== undefined
         ? request.request_id
         : "unassigned"; // choose parts bucket key
-    const requestParts = groupedParts[bucketKey] || groupedParts.unassigned || []; // fallback to unassigned bucket
-    const parts = requestParts.map((item) => { // map part allocations
+    const requestParts = groupedParts[bucketKey] || []; // keep strictly linked parts for this request
+    const parts = requestParts
+      .map((item) => { // map part allocations
       const qty = Number(item.quantity_allocated || 0); // parse quantity
-      const net = (Number(item.unit_price) || 0) * qty; // compute net amount
-      const vat = net * (vatRate / 100); // compute VAT amount
+      const unitGross = Number(item.unit_price) || 0; // stored unit price includes VAT
+      const vatFactor = 1 + vatRate / 100;
+      const unitNet = vatFactor > 0 ? unitGross / vatFactor : unitGross; // back-calc net from VAT-inclusive price
+      const net = unitNet * qty; // compute net amount
+      const gross = unitGross * qty;
+      const vat = gross - net; // VAT extracted from VAT-inclusive amount
       return { // return simplified part entry
         id: item.id, // part link id
         part_number: item.part?.part_number || "", // part number
         description: item.part?.name || item.part?.description || "Part", // description fallback
         retail: item.part?.unit_price || null, // optional retail price
         qty, // quantity sold
-        price: Number(item.unit_price) || 0, // unit price stored on allocation
+        price: unitNet, // net unit price
         vat, // VAT amount
         rate: vatRate, // VAT rate percent
         net_price: net // net amount
       }; // end part entry
-    }); // finish mapping
+      })
+      .filter((part) => part.qty > 0); // suppress zero-qty rows on invoice/proforma
     const partsNet = parts.reduce((sum, part) => sum + part.net_price, 0); // sum net parts
     const partsVat = parts.reduce((sum, part) => sum + part.vat, 0); // sum VAT parts
-    const isAuthorised = (request.job_type || "").toLowerCase() === "authorised"; // check request type
+    const requestTypeLower = String(request.job_type || "").toLowerCase();
+    const isAuthorised =
+      Boolean(vhcMeta) ||
+      requestTypeLower === "authorised" ||
+      requestTypeLower === "authorized"; // check request type
     if (isAuthorised) { authorisedCount++; } else { customerCount++; } // increment appropriate counter
-    const requestLabel = isAuthorised ? `Authorised Request ${authorisedCount}` : `Request ${customerCount}`; // build label
+    const requestLabel = isAuthorised ? `Authorised ${authorisedCount}` : `Request ${customerCount}`; // build label
+    const summaryBits = [];
+    if (isAuthorised && labourHours > 0) summaryBits.push(`Labour: ${labourHours}h`);
+    if (isAuthorised && vhcMeta?.partsCost && vhcMeta.partsCost > 0) summaryBits.push(`Authorised parts: £${Number(vhcMeta.partsCost).toFixed(2)}`);
     return { // return normalized request block
+      request_id: request.request_id ?? null, // retain original job request id for stable UI linking
+      request_kind: isAuthorised ? "authorised" : "request", // explicit row type for frontend ordering/labels
       request_number: index + 1, // sequential request number
       request_label: requestLabel, // typed request label (e.g. "Customer Request 1")
-      title: request.description || requestLabel, // display title with full description
-      summary: request.job_type || "Customer", // summary label
+      title: vhcMeta?.label || request.description || requestLabel, // display title with full description
+      summary: isAuthorised ? summaryBits.join(" | ") : request.job_type || "Customer", // summary label
+      job_type: request.job_type || "Customer",
       labour: { // labour summary object
         hours: labourHours, // labour hours
         net: labourNet, // net amount
@@ -314,12 +405,15 @@ function normalizeInvoiceRequests(structuredRequests) { // convert invoice_reque
     const partsVat = parts.reduce((sum, part) => sum + part.vat, 0); // compute VAT
     const isAuthorised = (request.job_type || request.notes || "").toLowerCase().includes("authorised"); // check type
     if (isAuthorised) { authorisedCount++; } else { customerCount++; } // increment counter
-    const requestLabel = isAuthorised ? `Authorised Request ${authorisedCount}` : `Request ${customerCount}`; // build label
+    const requestLabel = isAuthorised ? `Authorised ${authorisedCount}` : `Request ${customerCount}`; // build label
     return { // return normalized request object
+      request_id: request.request_id ?? null, // available when schema includes it
+      request_kind: isAuthorised ? "authorised" : "request", // explicit row type for frontend
       request_number: request.request_number || index + 1, // preserve stored request number
       request_label: requestLabel, // typed request label
       title: request.title || requestLabel, // title fallback with full description
       summary: request.notes || "", // summary derived from notes
+      job_type: request.job_type || "",
       labour, // labour block
       parts, // parts array
       totals: { // aggregated totals
@@ -373,11 +467,12 @@ async function buildJobInvoiceFallback({ jobNumber, vatRate, labourRate, company
   if (!job) { // job missing => cannot build proforma
     return null;
   }
-  const [jobRequests, partAllocations] = await Promise.all([
+  const [jobRequests, partAllocations, authorizedVhcRows] = await Promise.all([
     fetchJobRequests(job.id),
-    fetchJobPartAllocations(job.id)
+    fetchJobPartAllocations(job.id),
+    fetchAuthorizedVhcRequests(job.id)
   ]); // collect request + parts info
-  const requests = enrichRequestsFromJob(jobRequests, partAllocations, vatRate, labourRate); // derive request blocks
+  const requests = enrichRequestsFromJob(jobRequests, partAllocations, vatRate, labourRate, authorizedVhcRows); // derive request blocks
   const totals = aggregateRequestTotals(requests); // compute totals
   const invoiceTo = formatAddress(customer); // build customer address
   const companyBlock = buildCompanyBlock(companyProfile); // company snapshot
@@ -552,11 +647,12 @@ export async function getInvoiceDetailPayload({ jobNumber, orderNumber }) { // m
   if (invoiceRequests.length > 0) { // use stored requests when available
     requests = normalizeInvoiceRequests(invoiceRequests); // convert to API shape
   } else if (job?.id) { // fallback to job data
-    const [jobRequests, partAllocations] = await Promise.all([ // fetch job requests + parts
+    const [jobRequests, partAllocations, authorizedVhcRows] = await Promise.all([ // fetch job requests + parts
       fetchJobRequests(job.id), // job requests
-      fetchJobPartAllocations(job.id) // part allocations
+      fetchJobPartAllocations(job.id), // part allocations
+      fetchAuthorizedVhcRequests(job.id)
     ]); // finish fetching
-    requests = enrichRequestsFromJob(jobRequests, partAllocations, vatRate, labourRate); // build from job data
+    requests = enrichRequestsFromJob(jobRequests, partAllocations, vatRate, labourRate, authorizedVhcRows); // build from job data
   } else { // fallback when no job at all
     requests = []; // keep empty list
   }

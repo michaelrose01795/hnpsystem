@@ -517,7 +517,7 @@ export default function JobCardDetailPage() {
       return decision === "authorized" || decision === "declined";
     });
   }, [jobData?.vhcChecks]);
-  const vhcAuthorizedWorkCompleted = useMemo(() => {
+  const vhcRowsMarkedCompleted = useMemo(() => {
     const checks = Array.isArray(jobData?.vhcChecks) ? jobData.vhcChecks : [];
     const redAmberChecks = checks.filter((check) => {
       const section = (check?.section || "").toString().trim();
@@ -529,7 +529,6 @@ export default function JobCardDetailPage() {
     if (redAmberChecks.length === 0) return false;
 
     return redAmberChecks.every((check) => {
-      const completeFlag = Boolean(check?.Complete ?? check?.complete);
       const decision = normaliseDecisionStatus(
         check?.authorization_state ??
           check?.authorizationState ??
@@ -538,13 +537,11 @@ export default function JobCardDetailPage() {
           check?.display_status ??
           check?.status
       );
-      if (decision === "declined") return true;
-      if (decision === "completed") return true; // backward compatibility
-      if (decision === "authorized") return completeFlag;
-      return false;
+      return decision === "completed";
     });
   }, [jobData?.vhcChecks]);
-  const vhcTabComplete = Boolean(jobData?.vhcCompletedAt || vhcAuthorizedWorkCompleted);
+  const vhcAuthorizedWorkCompleted = vhcRowsMarkedCompleted;
+  const vhcTabComplete = vhcRowsMarkedCompleted;
   const vhcTabAmberReady = vhcTabReadyByRedAmberDecisions && !vhcTabComplete;
 
   // Invoice tab is visible for anyone who can open this page to make review easier
@@ -2250,11 +2247,11 @@ export default function JobCardDetailPage() {
     const partsIssues = getPartsValidationIssues(jobData.partsAllocations);
     if (partsIssues.length > 0) {
       invoiceBlockingReasons.push(
-        `Parts tab – the following parts need attention: ${partsIssues.join("; ")}.`
+        `Parts tab – review each allocated part in 'Parts Added to Job' (ignore removed rows), then make sure Quantity Allocated meets Quantity Requested and Unit Price is entered before invoicing. Items needing updates: ${partsIssues.join("; ")}.`
       );
     } else {
       invoiceBlockingReasons.push(
-        "Parts tab – ensure all parts in 'Parts Added to Job' (excluding removed) are allocated."
+        "Parts tab – in 'Parts Added to Job' (excluding removed rows), allocate every part to a request, confirm Quantity Allocated is set correctly, and enter a Unit Price for each allocated part."
       );
     }
   }
@@ -4141,7 +4138,7 @@ function CustomerRequestsTab({
                       minWidth: "260px",
                     }}
                   >
-                    <span style={requestSubtitleStyle}>Authorised VHC</span>
+                    <span style={requestSubtitleStyle}>{`Authorised ${index + 1}`}</span>
                     <input
                       type="text"
                       value={req.text}
@@ -4376,7 +4373,7 @@ function CustomerRequestsTab({
                     }}
                   >
                     <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "6px", alignSelf: "start" }}>
-                      <span style={requestSubtitleStyle}>Authorised VHC</span>
+                      <span style={requestSubtitleStyle}>{`Authorised ${index + 1}`}</span>
                       <span style={{ fontSize: "14px", color: "var(--text-secondary)" }}>
                         {rowLabel}
                       </span>

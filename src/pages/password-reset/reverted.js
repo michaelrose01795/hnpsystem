@@ -101,12 +101,15 @@ export default function PasswordRevertedPage() {
           <div
             style={{
               margin: "0 auto",
-              textAlign: "left",
+              textAlign: "center",
               maxWidth: "420px",
               background: "#111827",
               border: "1px solid #374151",
               borderRadius: "12px",
               padding: "14px",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
             }}
           >
             <p style={{ margin: "0 0 8px", fontSize: "0.82rem", color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em" }}>
@@ -115,6 +118,7 @@ export default function PasswordRevertedPage() {
             <div
               style={{
                 width: "100%",
+                maxWidth: "360px",
                 border: "1px solid #4b5563",
                 borderRadius: "8px",
                 background: "#030712",
@@ -150,4 +154,3 @@ export default function PasswordRevertedPage() {
     </main>
   );
 }
-

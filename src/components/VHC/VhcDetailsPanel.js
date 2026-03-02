@@ -79,7 +79,7 @@ const TAB_OPTIONS = [
   { id: "summary", label: "Summary" },
   { id: "health-check", label: "Health Check" },
   { id: "parts-identified", label: "Parts Identified" },
-  { id: "parts-authorized", label: "Parts Authorized" },
+  { id: "parts-authorized", label: "Parts Authorised" },
   { id: "photos", label: "Photos" },
   { id: "videos", label: "Videos" },
 ];
@@ -1664,6 +1664,7 @@ export default function VhcDetailsPanel({
               status,
               origin,
               vhc_item_id,
+              row_description,
               unit_cost,
               unit_price,
               request_notes,
@@ -1753,10 +1754,20 @@ export default function VhcDetailsPanel({
         // Store all VHC checks data for approval status lookup
         setVhcChecksData(vhc_checks || []);
 
-        // Derive authorized view rows from vhc_checks (consolidated — no separate table needed)
-        const authorizedRows = (vhc_checks || []).filter(
-          (check) => normaliseDecisionStatus(check.authorization_state) === "authorized"
-        );
+        // Derive authorised view rows from vhc_checks (consolidated — no separate table needed)
+        const authorizedRows = (vhc_checks || []).filter((check) => {
+          const section = String(check?.section || "").trim();
+          if (section === "VHC_CHECKSHEET" || section === "VHC Checksheet") return false;
+          const decision =
+            normaliseDecisionStatus(check?.authorization_state) ||
+            normaliseDecisionStatus(check?.approval_status);
+          return (
+            decision === "authorized" ||
+            decision === "completed" ||
+            check?.Complete === true ||
+            check?.complete === true
+          );
+        });
         setAuthorizedViewRows(authorizedRows);
         setAuthorizedViewLoaded(true);
 
@@ -1827,12 +1838,46 @@ export default function VhcDetailsPanel({
               .select("*")
               .eq("job_id", job.id)
               .order("approved_at", { ascending: false });
-            const nextAuthorized = (Array.isArray(data) ? data : []).filter(
-              (check) => normaliseDecisionStatus(check?.authorization_state) === "authorized"
-            );
+            const nextAuthorized = (Array.isArray(data) ? data : []).filter((check) => {
+              const section = String(check?.section || "").trim();
+              if (section === "VHC_CHECKSHEET" || section === "VHC Checksheet") return false;
+              const decision =
+                normaliseDecisionStatus(check?.authorization_state) ||
+                normaliseDecisionStatus(check?.approval_status);
+              return (
+                decision === "authorized" ||
+                decision === "completed" ||
+                check?.Complete === true ||
+                check?.complete === true
+              );
+            });
             setAuthorizedViewRows(nextAuthorized);
           } catch (e) {
             console.warn("[VHC] failed to refresh authorized items via realtime", e);
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "parts_job_items",
+          filter: `job_id=eq.${job.id}`,
+        },
+        async () => {
+          try {
+            const latestParts = await fetchJobPartsViaApi(job.id);
+            if (!Array.isArray(latestParts)) return;
+            setJob((prev) => {
+              if (!prev) return prev;
+              return {
+                ...prev,
+                parts_job_items: latestParts,
+              };
+            });
+          } catch (e) {
+            console.warn("[VHC] failed to refresh parts_job_items via realtime", e);
           }
         }
       )
@@ -1841,7 +1886,7 @@ export default function VhcDetailsPanel({
     return () => {
       supabase.removeChannel(checksChannel);
     };
-  }, [job?.id]);
+  }, [job?.id, fetchJobPartsViaApi]);
 
   // Initialize part details for existing parts
   useEffect(() => {
@@ -1901,9 +1946,13 @@ export default function VhcDetailsPanel({
     value.toString().toLowerCase();
   const partsIdentified = useMemo(
     () =>
-      jobParts.filter((part) =>
-        normalisePartStatus(part.origin).includes("vhc")
-      ),
+      jobParts.filter((part) => {
+        const linkedVhcId = part?.vhc_item_id ?? part?.vhcItemId ?? null;
+        if (linkedVhcId !== null && linkedVhcId !== undefined && String(linkedVhcId).trim() !== "") {
+          return true;
+        }
+        return normalisePartStatus(part.origin).includes("vhc");
+      }),
     [jobParts]
   );
   const jobFiles = useMemo(
@@ -2044,7 +2093,10 @@ export default function VhcDetailsPanel({
           const canonicalId = String(part.vhc_item_id);
           const approvalData = vhcApprovalLookup.get(canonicalId);
           if (approvalData) {
-            return approvalData.authorizationState === "authorized";
+            const decision =
+              normaliseDecisionStatus(approvalData.authorizationState) ||
+              normaliseDecisionStatus(approvalData.approvalStatus);
+            return decision === "authorized" || decision === "completed";
           }
         }
 
@@ -2069,7 +2121,10 @@ export default function VhcDetailsPanel({
         if (part.vhc_item_id) {
           const canonicalId = String(part.vhc_item_id);
           const approvalData = vhcApprovalLookup.get(canonicalId);
-          if (approvalData && approvalData.authorizationState === "authorized") {
+          const decision =
+            normaliseDecisionStatus(approvalData?.authorizationState) ||
+            normaliseDecisionStatus(approvalData?.approvalStatus);
+          if (decision === "authorized" || decision === "completed") {
             return true;
           }
         }
@@ -2753,21 +2808,13 @@ export default function VhcDetailsPanel({
       canonicalNotRequired.add(alias ? String(alias) : key);
     });
 
-    partsIdentified.forEach((part) => {
-      if (!part?.vhc_item_id) return;
-      const key = String(part.vhc_item_id);
-
-      if (canonicalNotRequired.has(key)) {
-        map.set(key, 0);
-        return;
-      }
-
-      const qtyValue = Number(part.quantity_requested);
-      const resolvedQty = Number.isFinite(qtyValue) && qtyValue > 0 ? qtyValue : 1;
-      const unitPriceValue = Number(part.unit_price ?? part.part?.unit_price ?? 0);
-      if (!Number.isFinite(unitPriceValue)) return;
-      const subtotal = resolvedQty * unitPriceValue;
-      map.set(key, (map.get(key) || 0) + subtotal);
+    const summaryLines = summaryQuoteModel?.items || [];
+    summaryLines.forEach((line) => {
+      const canonicalId = String(line?.canonicalId || line?.id || "");
+      if (!canonicalId) return;
+      const partsValue = Number(line?.parts_gbp);
+      if (!Number.isFinite(partsValue)) return;
+      map.set(canonicalId, (map.get(canonicalId) || 0) + partsValue);
     });
 
     summaryItems.forEach((item) => {
@@ -2780,7 +2827,7 @@ export default function VhcDetailsPanel({
     });
 
     return map;
-  }, [partsIdentified, partsNotRequired, summaryItems, vhcIdAliases]);
+  }, [partsNotRequired, summaryItems, summaryQuoteModel, vhcIdAliases]);
 
   const partsAuthorizedByVhcItemId = useMemo(() => {
     const map = new Map();
@@ -3104,7 +3151,7 @@ export default function VhcDetailsPanel({
             const updatedCheck = {
               ...check,
               approval_status: dbStatus,
-              authorization_state: dbStatus === "pending" ? "n/a" : dbStatus,
+              authorization_state: dbStatus === "pending" ? "pending" : dbStatus,
               display_status: newDisplayStatus || check.display_status,
               approved_by: authUserId || dbUserId || "system",
               approved_at: dbStatus === 'pending' ? null : new Date().toISOString(),
@@ -3749,7 +3796,7 @@ export default function VhcDetailsPanel({
               return {
                 ...check,
                 approval_status: dbStatus,
-                authorization_state: dbStatus === "pending" ? "n/a" : dbStatus,
+                authorization_state: dbStatus === "pending" ? "pending" : dbStatus,
                 display_status: matchingUpdate.displayStatus || check.display_status,
                 approved_by: authUserId || dbUserId || "system",
                 approved_at: dbStatus === "pending" ? null : new Date().toISOString(),
@@ -3822,17 +3869,32 @@ export default function VhcDetailsPanel({
 
 
         // Update vhcChecksData to reflect the change
-        const newDisplayStatus = newStatus === 'authorized' ? 'authorized' : newStatus === 'declined' ? 'declined' : null;
+        const sourceItem = [
+          ...(severityLists.red || []),
+          ...(severityLists.amber || []),
+          ...(severityLists.authorized || []),
+          ...(severityLists.declined || []),
+        ].find((row) => String(row?.id) === String(itemId));
+        const restoredPendingSeverity =
+          sourceItem?.severityKey || resolveSeverityKey(sourceItem?.rawSeverity, sourceItem?.displayStatus);
+        const newDisplayStatus =
+          newStatus === 'authorized'
+            ? 'authorized'
+            : newStatus === 'declined'
+            ? 'declined'
+            : newStatus === 'pending'
+            ? restoredPendingSeverity || null
+            : null;
         setVhcChecksData((prev) => {
           return prev.map((check) => {
             if (check.vhc_id === parsedId) {
               return {
                 ...check,
                 approval_status: newStatus,
-                authorization_state: newStatus === "pending" ? "n/a" : newStatus,
+                authorization_state: newStatus === "pending" ? "pending" : newStatus,
                 display_status: newDisplayStatus,
                 approved_by: authUserId || dbUserId || "system",
-                approved_at: new Date().toISOString(),
+                approved_at: newStatus === "pending" ? null : new Date().toISOString(),
                 labour_hours: resolvedLabourHours !== "" ? Number(resolvedLabourHours) : check.labour_hours,
                 labour_complete: requestBody.labourComplete,
                 Complete: false,
@@ -5319,6 +5381,7 @@ export default function VhcDetailsPanel({
                 status,
                 origin,
                 vhc_item_id,
+                row_description,
                 unit_cost,
                 unit_price,
                 request_notes,
@@ -5970,6 +6033,7 @@ export default function VhcDetailsPanel({
             status,
             origin,
             vhc_item_id,
+            row_description,
             unit_cost,
             unit_price,
             request_notes,
@@ -6323,7 +6387,7 @@ export default function VhcDetailsPanel({
           storageLocation: selectedPartForJob.storage_location || part.storage_location || null,
           unitCost: selectedPartForJob.unit_cost || part.unit_cost || 0,
           unitPrice: selectedPartForJob.unit_price || part.unit_price || 0,
-          requestNotes: `Added from VHC Parts Authorized - Job #${resolvedJobNumber}`,
+          requestNotes: `Added from VHC Parts Authorised - Job #${resolvedJobNumber}`,
           origin: "vhc",
           vhcItemId: selectedPartForJob.vhc_item_id || null,
         }),
@@ -6359,15 +6423,6 @@ export default function VhcDetailsPanel({
 
   // Render VHC items panel for Parts Identified (includes all decisions; red/amber priority)
   const renderVhcItemsPanel = useCallback(() => {
-    // Build parts lookup by vhc_item_id for linking
-    const partsByVhcId = new Map();
-    partsIdentified.forEach((part) => {
-      if (!part?.vhc_item_id) return;
-      const key = String(part.vhc_item_id);
-      if (!partsByVhcId.has(key)) partsByVhcId.set(key, []);
-      partsByVhcId.get(key).push(part);
-    });
-
     // Parts Identified should still show rows after authorization/decline.
     // Order by underlying severity so red appears before amber.
     const quoteItems = [
@@ -6390,8 +6445,211 @@ export default function VhcDetailsPanel({
       return rank(a) - rank(b);
     });
 
+    const normaliseMatchText = (value = "") =>
+      String(value || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    const extractWheelPositionToken = (value = "") => {
+      const text = normaliseMatchText(value);
+      if (!text) return "";
+      if (/\bnsf\b/.test(text) || text.includes("near side front")) return "nsf";
+      if (/\bosf\b/.test(text) || text.includes("off side front")) return "osf";
+      if (/\bnsr\b/.test(text) || text.includes("near side rear")) return "nsr";
+      if (/\bosr\b/.test(text) || text.includes("off side rear")) return "osr";
+      return "";
+    };
+
+    const extractTyreSizeKey = (value = "") => {
+      const raw = String(value || "").toUpperCase();
+      const match = raw.match(/(\d{3}\s*\/\s*\d{2}\s*R\s*\d{2})/);
+      if (!match?.[1]) return "";
+      return match[1].replace(/\s+/g, "");
+    };
+
+    const stripMetaSuffix = (value = "") => {
+      const text = String(value || "");
+      const markerIndex = text.indexOf(PART_META_PREFIX);
+      if (markerIndex === -1) return text.trim();
+      return text.slice(0, markerIndex).trim();
+    };
+
+    const searchableRows = quoteItems.map((item) => {
+      const canonicalId = String(resolveCanonicalVhcId(item.canonicalId || item.id));
+      const haystack = normaliseMatchText(
+        [
+          item?.measurement,
+          item?.label,
+          item?.notes,
+          item?.concernText,
+          item?.sectionName,
+          item?.categoryLabel,
+          ...(Array.isArray(item?.rows) ? item.rows : []),
+        ]
+          .filter(Boolean)
+          .join(" ")
+      );
+      return { canonicalId, haystack };
+    });
+    const legacyTieAllocationCount = new Map();
+    const wheelTokenRank = { nsf: 0, osf: 1, nsr: 2, osr: 3 };
+
+    const resolveLegacyPartVhcId = (part) => {
+      const partPositionToken = extractWheelPositionToken(
+        [
+          part?.part?.name,
+          part?.part_name_snapshot,
+          part?.row_description,
+          part?.request_notes,
+          part?.requestNotes,
+        ]
+          .filter(Boolean)
+          .join(" ")
+      );
+      const partTyreSizeKey = extractTyreSizeKey(
+        [
+          part?.part?.name,
+          part?.part_name_snapshot,
+          part?.part?.description,
+          part?.row_description,
+          part?.request_notes,
+          part?.requestNotes,
+        ]
+          .filter(Boolean)
+          .join(" ")
+      );
+
+      const hints = [
+        part?.row_description,
+        part?.part?.name,
+        part?.part_name_snapshot,
+        part?.part?.description,
+        part?.part?.part_number,
+        part?.part_number_snapshot,
+        stripMetaSuffix(part?.request_notes || part?.requestNotes || ""),
+      ]
+        .map((value) => normaliseMatchText(value))
+        .filter((value) => value && value.length >= 4);
+
+      if (hints.length === 0) return null;
+
+      const ranked = searchableRows
+        .map((row) => {
+          let score = 0;
+          const rowPositionToken = extractWheelPositionToken(row.haystack);
+          const rowTyreSizeKey = extractTyreSizeKey(row.haystack);
+
+          if (partPositionToken && rowPositionToken) {
+            score += partPositionToken === rowPositionToken ? 60 : -35;
+          }
+          if (partTyreSizeKey && rowTyreSizeKey) {
+            score += partTyreSizeKey === rowTyreSizeKey ? 24 : -12;
+          }
+
+          hints.forEach((hint) => {
+            if (row.haystack.includes(hint)) {
+              score += Math.min(50, hint.length * 3);
+              return;
+            }
+            const tokens = hint.split(" ").filter((token) => token.length >= 4);
+            const tokenHits = tokens.filter((token) => row.haystack.includes(token)).length;
+            score += tokenHits * 4;
+          });
+          return { row, score };
+        })
+        .filter((entry) => entry.score > 0)
+        .sort((a, b) => b.score - a.score);
+
+      if (ranked.length === 0) return null;
+      if (ranked.length === 1) return ranked[0].row.canonicalId;
+      if (ranked[0].score > ranked[1].score) return ranked[0].row.canonicalId;
+
+      // Ambiguous tie fallback for legacy tyre parts (vhc_item_id missing):
+      // distribute repeated matching parts across tied wheel rows deterministically.
+      const topScore = ranked[0].score;
+      const tied = ranked.filter((entry) => entry.score === topScore);
+      if (tied.length === 0) return null;
+
+      const tyreContextText = normaliseMatchText(
+        [
+          part?.part?.name,
+          part?.part_name_snapshot,
+          part?.part?.description,
+          part?.part?.part_number,
+          part?.part_number_snapshot,
+          part?.row_description,
+          stripMetaSuffix(part?.request_notes || part?.requestNotes || ""),
+        ]
+          .filter(Boolean)
+          .join(" ")
+      );
+      const isTyreContext = Boolean(partTyreSizeKey) || /\b(tyre|tire|wheel)\b/.test(tyreContextText);
+      if (!isTyreContext) return null;
+
+      const sizeMatchedPool = tied.filter((entry) => {
+        if (!partTyreSizeKey) return true;
+        const rowTyreSizeKey = extractTyreSizeKey(entry.row.haystack);
+        return Boolean(rowTyreSizeKey) && rowTyreSizeKey === partTyreSizeKey;
+      });
+      const pool = (sizeMatchedPool.length > 0 ? sizeMatchedPool : tied).sort((a, b) => {
+        const aToken = extractWheelPositionToken(a.row.haystack);
+        const bToken = extractWheelPositionToken(b.row.haystack);
+        const aRank = Object.prototype.hasOwnProperty.call(wheelTokenRank, aToken)
+          ? wheelTokenRank[aToken]
+          : 99;
+        const bRank = Object.prototype.hasOwnProperty.call(wheelTokenRank, bToken)
+          ? wheelTokenRank[bToken]
+          : 99;
+        if (aRank !== bRank) return aRank - bRank;
+        return a.row.canonicalId.localeCompare(b.row.canonicalId);
+      });
+      if (pool.length === 0) return null;
+
+      const allocationSignature = normaliseMatchText(
+        [
+          partTyreSizeKey,
+          part?.part?.part_number,
+          part?.part_number_snapshot,
+          part?.part?.name,
+          part?.part_name_snapshot,
+        ]
+          .filter(Boolean)
+          .join(" ")
+      );
+      const signatureKey = allocationSignature || "legacy-tyre";
+      const currentIndex = legacyTieAllocationCount.get(signatureKey) || 0;
+      legacyTieAllocationCount.set(signatureKey, currentIndex + 1);
+      return pool[currentIndex % pool.length].row.canonicalId;
+    };
+
+    // Build parts lookup by canonical vhc id for linking.
+    const partsByVhcId = new Map();
+    const addPartToLookup = (canonicalId, part) => {
+      if (!canonicalId) return;
+      if (!partsByVhcId.has(canonicalId)) partsByVhcId.set(canonicalId, []);
+      partsByVhcId.get(canonicalId).push(part);
+    };
+
+    partsIdentified.forEach((part) => {
+      const rawVhcId = part?.vhc_item_id ?? part?.vhcItemId ?? null;
+      if (rawVhcId !== null && rawVhcId !== undefined && String(rawVhcId).trim() !== "") {
+        addPartToLookup(String(resolveCanonicalVhcId(rawVhcId)), part);
+        return;
+      }
+
+      // Legacy fallback: some historical VHC-origin parts were created without vhc_item_id.
+      // Infer the row using part text signals so they still surface in Parts Identified.
+      const origin = normalisePartStatus(part?.origin);
+      if (!origin.includes("vhc")) return;
+      const inferredCanonicalId = resolveLegacyPartVhcId(part);
+      if (!inferredCanonicalId) return;
+      addPartToLookup(String(inferredCanonicalId), part);
+    });
+
     const displayItems = quoteItems.map((item) => {
-      const canonicalId = String(item.canonicalId || item.id);
+      const canonicalId = String(resolveCanonicalVhcId(item.canonicalId || item.id));
       const linkedParts = partsByVhcId.get(canonicalId) || [];
       return {
         vhcItem: item,
@@ -6438,8 +6696,20 @@ export default function VhcDetailsPanel({
                 const { vhcItem, linkedParts, vhcId, canonicalVhcId } = item;
                 const isPartsNotRequired = partsNotRequired.has(vhcId);
                 const isWarranty = warrantyRows.has(vhcId);
-                const partsCost = partsCostByVhcItem.get(canonicalVhcId || vhcId) || 0;
                 const hasParts = linkedParts.length > 0;
+                const mappedPartsCost = Number(partsCostByVhcItem.get(canonicalVhcId || vhcId) || 0);
+                const linkedPartsCost = linkedParts.reduce((total, part) => {
+                  const qtyValue = Number(part?.quantity_requested);
+                  const qty = Number.isFinite(qtyValue) && qtyValue > 0 ? qtyValue : 1;
+                  const unitPrice = Number(part?.unit_price ?? part?.part?.unit_price ?? 0);
+                  if (!Number.isFinite(unitPrice)) return total;
+                  return total + qty * unitPrice;
+                }, 0);
+                const partsCost = isPartsNotRequired
+                  ? 0
+                  : mappedPartsCost > 0
+                  ? mappedPartsCost
+                  : linkedPartsCost;
 
                 // VHC item details
                 const vhcLabel = vhcItem?.label || "VHC Item";
@@ -6466,7 +6736,7 @@ export default function VhcDetailsPanel({
                 const canonicalId = resolveCanonicalVhcId(vhcId);
                 const isLocked =
                   entryDecision === "authorized" ||
-                  entryDecision === "declined" ||
+                  entryDecision === "completed" ||
                   authorizedViewIds.has(String(canonicalId));
                 const canAddPart = !isCustomerView && !readOnly && !isLocked;
 
@@ -6481,7 +6751,7 @@ export default function VhcDetailsPanel({
                 } else if (entryDecision === "declined") {
                   rowBackground = "var(--danger-surface)";
                   rowHoverBackground = "var(--danger-surface-hover)";
-                } else if (entryDecision === "authorized") {
+                } else if (entryDecision === "completed") {
                   rowBackground = "var(--success-surface)";
                   rowHoverBackground = "var(--success-surface-hover)";
                 }
@@ -6615,7 +6885,7 @@ export default function VhcDetailsPanel({
                           transition: "all 0.2s ease",
                           opacity: isLocked ? 0.5 : 1,
                         }}
-                        title={isLocked ? "Cannot modify authorized or declined items" : ""}
+                        title={isLocked ? "Cannot modify authorised or completed items" : ""}
                       >
                         {isPartsNotRequired ? "✓ Not Required" : "Mark Not Required"}
                       </button>
@@ -6654,7 +6924,7 @@ export default function VhcDetailsPanel({
                                   fontSize: "12px",
                                   opacity: canAddPart ? 1 : 0.6,
                                 }}
-                                title={isLocked ? "Cannot add parts to authorized or declined items" : ""}
+                                title={isLocked ? "Cannot add parts to authorised or completed items" : ""}
                               >
                                 Add Part
                               </button>
@@ -6755,14 +7025,14 @@ export default function VhcDetailsPanel({
         </div>
       </div>
     );
-  }, [quoteSeverityLists, partsIdentified, partsNotRequired, warrantyRows, partsCostByVhcItem, handlePartsNotRequiredToggle, handleVhcItemRowClick, expandedVhcItems, partDetails, handlePartDetailChange, handleRemovePart, removingPartIds, isCustomerView, openAddPartsModal, readOnly]);
+  }, [quoteSeverityLists, partsIdentified, partsNotRequired, warrantyRows, partsCostByVhcItem, handlePartsNotRequiredToggle, handleVhcItemRowClick, expandedVhcItems, partDetails, handlePartDetailChange, handleRemovePart, removingPartIds, isCustomerView, openAddPartsModal, readOnly, resolveCanonicalVhcId]);
 
   // Render VHC authorized items panel (similar to Parts Identified but for authorized items)
   const renderVhcAuthorizedPanel = useCallback(() => {
     const filteredItems = vhcItemsWithPartsAuthorized || [];
 
     if (!filteredItems || filteredItems.length === 0) {
-      return <EmptyStateMessage message="No authorized VHC items with parts yet." />;
+      return <EmptyStateMessage message="No authorised VHC items with parts yet." />;
     }
 
     const serviceChoiceKey = vhcData?.serviceIndicator?.serviceChoice || "";
@@ -7167,7 +7437,7 @@ export default function VhcDetailsPanel({
       return <EmptyStateMessage message={emptyMessage} />;
     }
 
-    const isAuthorisedSection = title === "Parts Authorized";
+    const isAuthorisedSection = title === "Parts Authorised";
     const isOnOrderSection = title === "Parts On Order";
 
     return (

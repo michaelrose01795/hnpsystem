@@ -4,6 +4,35 @@
 import { supabase } from "@/lib/supabaseClient";
 import { syncVhcPartsAuthorisation } from "@/lib/database/vhcPartsSync";
 
+const buildVhcRowDescription = async ({ jobId, vhcItemId }) => {
+  if (!jobId || !Number.isInteger(vhcItemId)) return null;
+
+  const { data: checkRow, error } = await supabase
+    .from("vhc_checks")
+    .select("section, issue_title, issue_description, measurement, note_text")
+    .eq("job_id", jobId)
+    .eq("vhc_id", vhcItemId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to fetch VHC row ${vhcItemId}: ${error.message}`);
+  }
+  if (!checkRow) return null;
+
+  const raw = [
+    checkRow.section,
+    checkRow.issue_title,
+    checkRow.issue_description,
+    checkRow.measurement,
+    checkRow.note_text,
+  ]
+    .filter((value) => value !== null && value !== undefined && String(value).trim() !== "")
+    .join(" ");
+
+  const compact = raw.replace(/\s+/g, " ").trim();
+  return compact || null;
+};
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ success: false, message: "Method not allowed" });
@@ -38,9 +67,11 @@ export default async function handler(req, res) {
           message: "Invalid VHC item ID format",
         });
       }
+      const rowDescription = await buildVhcRowDescription({ jobId, vhcItemId });
       vhcItemIdForSync = vhcItemId;
       updateData = {
         vhc_item_id: vhcItemId,
+        row_description: rowDescription,
         allocated_to_request_id: null, // Clear customer request allocation
         updated_at: new Date().toISOString(),
       };
@@ -50,6 +81,7 @@ export default async function handler(req, res) {
       updateData = {
         allocated_to_request_id: requestId,
         vhc_item_id: null, // Clear VHC allocation
+        row_description: null,
         updated_at: new Date().toISOString(),
       };
       console.log("[ALLOCATE API] Customer request update data:", updateData);

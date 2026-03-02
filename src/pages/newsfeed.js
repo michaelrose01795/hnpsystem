@@ -6,6 +6,7 @@ import ModalPortal from "@/components/popups/ModalPortal";
 import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@/context/UserContext";
 import { MultiSelectDropdown } from "@/components/dropdownAPI";
+import { roleCategories } from "@/config/users";
 
 const FALLBACK_UPDATES = [
   {
@@ -37,7 +38,7 @@ const FALLBACK_UPDATES = [
   },
 ];
 
-const AVAILABLE_DEPARTMENTS = [
+const BASE_DEPARTMENTS = [
   "General",
   "Service",
   "Workshop",
@@ -48,16 +49,16 @@ const AVAILABLE_DEPARTMENTS = [
   "HR",
 ];
 
-const SECTION_ORDER = [
-  "General",
-  "Service",
-  "Workshop",
-  "Parts",
-  "Sales",
-  "Valeting",
-  "Admin",
-  "HR",
+const SALES_RETAIL_DEPARTMENTS = [
+  ...(roleCategories?.Retail || []),
+  ...(roleCategories?.Sales || []),
 ];
+
+const AVAILABLE_DEPARTMENTS = Array.from(
+  new Set([...BASE_DEPARTMENTS, ...SALES_RETAIL_DEPARTMENTS].filter(Boolean))
+);
+
+const SECTION_ORDER = AVAILABLE_DEPARTMENTS;
 
 const normalizeDepartment = (value) => {
   if (!value) return null;
@@ -76,6 +77,9 @@ const normalizeDepartments = (input) => {
 };
 
 const deriveDepartmentsFromRoles = (roles = []) => {
+  const canonicalDepartments = new Map(
+    AVAILABLE_DEPARTMENTS.map((department) => [department.toLowerCase(), department])
+  );
   const sanitized = (role) =>
     String(role || "")
       .toLowerCase()
@@ -83,6 +87,12 @@ const deriveDepartmentsFromRoles = (roles = []) => {
       .trim();
   const mapped = new Set();
   roles.forEach((role) => {
+    const exactRole = String(role || "").trim();
+    const exactMatch = canonicalDepartments.get(exactRole.toLowerCase());
+    if (exactMatch) {
+      mapped.add(exactMatch);
+    }
+
     const normalized = sanitized(role);
     if (!normalized) return;
     if (normalized.includes("service") || normalized.includes("after sales") || normalized.includes("aftersales")) {
@@ -261,7 +271,10 @@ export default function NewsFeed() {
     <Layout>
       <div className="max-w-3xl mx-auto px-6 py-8">
         {canManageUpdates && (
-          <div className="flex justify-end items-center mb-16">
+          <div
+            className="flex justify-end items-center"
+            style={{ paddingBottom: "48px" }}
+          >
             <button
               onClick={() => {
                 resetModal();
@@ -413,6 +426,23 @@ export default function NewsFeed() {
               >
                 Share an Update
               </h3>
+              {/* Departments Field */}
+              <div style={{ marginBottom: "24px" }}>
+                <MultiSelectDropdown
+                  label="Visible to Departments"
+                  placeholder="Add departments"
+                  options={AVAILABLE_DEPARTMENTS}
+                  value={formState.departments}
+                  onChange={(selectedDepartments) => {
+                    setFormState((prev) => ({
+                      ...prev,
+                      departments: selectedDepartments,
+                    }));
+                  }}
+                  emptyState="No departments available"
+                />
+              </div>
+
               {/* Title Field */}
               <div style={{ marginBottom: "24px" }}>
                 <label
@@ -487,23 +517,6 @@ export default function NewsFeed() {
                   }}
                   onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
                   onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
-                />
-              </div>
-
-              {/* Departments Field */}
-              <div style={{ marginBottom: "24px" }}>
-                <MultiSelectDropdown
-                  label="Visible to Departments"
-                  placeholder="Add departments"
-                  options={AVAILABLE_DEPARTMENTS}
-                  value={formState.departments}
-                  onChange={(selectedDepartments) => {
-                    setFormState((prev) => ({
-                      ...prev,
-                      departments: selectedDepartments,
-                    }));
-                  }}
-                  emptyState="No departments available"
                 />
               </div>
 

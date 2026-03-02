@@ -14,6 +14,30 @@ const formatDate = (value) => {
   return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 };
 
+const isAuthorisedRequest = (request = {}) => {
+  const explicitKind = String(request?.request_kind || "").toLowerCase().trim();
+  if (explicitKind === "authorised" || explicitKind === "authorized") return true;
+  if (explicitKind === "request") return false;
+  const explicitJobType = String(request?.job_type || "").toLowerCase().trim();
+  if (explicitJobType === "authorised" || explicitJobType === "authorized") return true;
+  const label = String(request?.request_label || "").toLowerCase();
+  const title = String(request?.title || "").toLowerCase();
+  const summary = String(request?.summary || "").toLowerCase();
+  return (
+    label.includes("authorised") ||
+    label.includes("authorized") ||
+    title.includes("authorised") ||
+    title.includes("authorized") ||
+    summary.includes("authorised") ||
+    summary.includes("authorized")
+  );
+};
+
+const isAuthorizedVhcDecision = (value) => {
+  const normalized = String(value || "").trim().toLowerCase();
+  return normalized === "authorized" || normalized === "authorised" || normalized === "completed";
+};
+
 const AddressBlock = ({ title, address }) => {
   return (
     <div className={styles.headerBox}>
@@ -67,7 +91,8 @@ const VehicleRow = ({ vehicle }) => {
   );
 };
 
-const RequestBlock = ({ request }) => {
+const RequestBlock = ({ request, linkedParts }) => {
+  const displayParts = Array.isArray(linkedParts) ? linkedParts : request.parts;
   const partsNet = (request.totals?.request_total_net || 0) - (request.labour?.net || 0);
   return (
     <section className={styles.requestBlock}>
@@ -97,22 +122,22 @@ const RequestBlock = ({ request }) => {
         </div>
       </div>
 
-      <div className={styles.partsTableWrapper}>
-        <table className={styles.partsTable}>
-          <thead>
-            <tr>
-              <th>Part No</th>
-              <th>Description</th>
-              <th>Retail</th>
-              <th>Qty</th>
-              <th>Price</th>
-              <th>VAT</th>
-              <th>Rate %</th>
-            </tr>
-          </thead>
-          <tbody>
-            {request.parts && request.parts.length > 0 ? (
-              request.parts.map((item, index) => (
+      {Array.isArray(displayParts) && displayParts.length > 0 && (
+        <div className={styles.partsTableWrapper}>
+          <table className={styles.partsTable}>
+            <thead>
+              <tr>
+                <th>Part No</th>
+                <th>Description</th>
+                <th>Retail</th>
+                <th>Qty</th>
+                <th>Price</th>
+                <th>VAT</th>
+                <th>Rate %</th>
+              </tr>
+            </thead>
+            <tbody>
+              {displayParts.map((item, index) => (
                 <tr key={`${item.part_number}-${index}`}>
                   <td>{item.part_number || "—"}</td>
                   <td>{item.description || "—"}</td>
@@ -122,17 +147,11 @@ const RequestBlock = ({ request }) => {
                   <td>{formatCurrency(item.vat || 0)}</td>
                   <td>{item.rate ?? 0}%</td>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={7} style={{ textAlign: "center", color: "var(--text-secondary)" }}>
-                  No parts recorded for this request.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </section>
   );
 };
@@ -182,11 +201,164 @@ const PaymentBlock = ({ payment }) => {
   );
 };
 
-export default function InvoiceDetail({ data, onPrint, onEmail, emailStatus, customerEmail }) {
+export default function InvoiceDetail({ data, onPrint, onEmail, emailStatus, customerEmail, jobData = null }) {
   if (!data) {
     return null;
   }
   const { company, invoice, requests = [], payment } = data;
+  const requestRowsSource = Array.isArray(jobData?.jobRequests)
+    ? jobData.jobRequests
+    : Array.isArray(jobData?.job_requests)
+    ? jobData.job_requests
+    : [];
+  const customerRequestIds = [];
+  const authorisedRequestIds = [];
+  requestRowsSource.forEach((row) => {
+    const requestId = row?.requestId ?? row?.request_id ?? null;
+    if (requestId === null || requestId === undefined) return;
+    const source = String(row?.requestSource ?? row?.request_source ?? "").toLowerCase().trim();
+    const jobType = String(row?.jobType ?? row?.job_type ?? "").toLowerCase().trim();
+    const isAuthorisedRow =
+      source === "vhc_authorised" ||
+      source === "vhc_authorized" ||
+      jobType === "authorised" ||
+      jobType === "authorized";
+    if (isAuthorisedRow) {
+      authorisedRequestIds.push(String(requestId));
+    } else {
+      customerRequestIds.push(String(requestId));
+    }
+  });
+  const hasRequestLinking = customerRequestIds.length > 0 || authorisedRequestIds.length > 0;
+  const partsByRequestId = {};
+  const allocations = Array.isArray(jobData?.partsAllocations) ? jobData.partsAllocations : [];
+  allocations.forEach((item) => {
+    const status = String(item?.status || "").toLowerCase().trim();
+    if (status === "removed" || status === "cancelled") return;
+    const requestId = item?.allocatedToRequestId ?? item?.allocated_to_request_id ?? null;
+    if (requestId === null || requestId === undefined) return;
+    const key = String(requestId);
+    if (!partsByRequestId[key]) {
+      partsByRequestId[key] = [];
+    }
+    const qty = Number(
+      item?.quantityAllocated ??
+        item?.quantity_allocated ??
+        item?.qty ??
+        item?.quantityRequested ??
+        item?.quantity_requested ??
+        0
+    ) || 0;
+    const priceGross = Number(
+      item?.unitPrice ??
+        item?.unit_price ??
+        item?.price ??
+        item?.part?.unitPrice ??
+        item?.part?.unit_price ??
+        0
+    ) || 0;
+    const rateValue = Number(item?.rate ?? item?.vatRate ?? item?.vat_rate ?? 20);
+    const rate = Number.isFinite(rateValue) ? rateValue : 20;
+    const vatFactor = 1 + rate / 100;
+    const price = vatFactor > 0 ? priceGross / vatFactor : priceGross; // net unit price
+    const net = qty * price;
+    const gross = qty * priceGross;
+    const vat = gross - net; // VAT extracted from VAT-inclusive amount
+    partsByRequestId[key].push({
+      part_number: item?.part?.partNumber || item?.part?.part_number || item?.part_number || "",
+      description: item?.part?.name || item?.part?.description || item?.description || "Part",
+      retail: item?.retail ?? item?.part?.retail ?? item?.part?.unitPrice ?? item?.part?.unit_price ?? null,
+      qty,
+      price,
+      vat,
+      rate,
+    });
+  });
+
+  const authorisedMetaByRequestId = {};
+  const pushAuthorisedMeta = (row) => {
+    if (!row) return;
+    const requestId = row?.request_id ?? row?.requestId ?? null;
+    if (requestId === null || requestId === undefined) return;
+    const key = String(requestId);
+    const issueTitle =
+      row?.issue_title ??
+      row?.issueTitle ??
+      row?.label ??
+      row?.description ??
+      row?.text ??
+      "";
+    const label = row?.label ?? "";
+    const issueDescription =
+      row?.issue_description ??
+      row?.issueDescription ??
+      row?.detail ??
+      "";
+    const labourHoursRaw = row?.labour_hours ?? row?.labourHours ?? row?.hours ?? null;
+    const labourHours =
+      labourHoursRaw !== null && labourHoursRaw !== undefined && labourHoursRaw !== ""
+        ? Number(labourHoursRaw)
+        : null;
+    const partsCostRaw = row?.parts_cost ?? row?.partsCost ?? null;
+    const partsCost =
+      partsCostRaw !== null && partsCostRaw !== undefined && partsCostRaw !== ""
+        ? Number(partsCostRaw)
+        : null;
+
+    const existing = authorisedMetaByRequestId[key];
+    const next = {
+      label: String(label || "").trim(),
+      issueTitle: String(issueTitle || "").trim(),
+      issueDescription: String(issueDescription || "").trim(),
+      labourHours: Number.isFinite(labourHours) ? labourHours : null,
+      partsCost: Number.isFinite(partsCost) ? partsCost : null,
+    };
+
+    if (!existing) {
+      authorisedMetaByRequestId[key] = next;
+      return;
+    }
+
+    const existingScore =
+      (existing.label ? 1 : 0) +
+      (existing.issueTitle ? 1 : 0) +
+      (existing.issueDescription ? 1 : 0) +
+      (existing.labourHours !== null ? 1 : 0) +
+      (existing.partsCost !== null ? 1 : 0);
+    const nextScore =
+      (next.label ? 1 : 0) +
+      (next.issueTitle ? 1 : 0) +
+      (next.issueDescription ? 1 : 0) +
+      (next.labourHours !== null ? 1 : 0) +
+      (next.partsCost !== null ? 1 : 0);
+    if (nextScore >= existingScore) {
+      authorisedMetaByRequestId[key] = next;
+    }
+  };
+
+  const authorizedVhcRows = Array.isArray(jobData?.authorizedVhcItems) ? jobData.authorizedVhcItems : [];
+  authorizedVhcRows.forEach(pushAuthorisedMeta);
+
+  const vhcChecks = Array.isArray(jobData?.vhcChecks) ? jobData.vhcChecks : [];
+  vhcChecks
+    .filter((row) => {
+      const section = String(row?.section || "").trim();
+      if (section === "VHC_CHECKSHEET" || section === "VHC Checksheet") return false;
+      const state = row?.authorization_state ?? row?.approval_status ?? row?.status ?? null;
+      return isAuthorizedVhcDecision(state) || row?.Complete === true || row?.complete === true;
+    })
+    .forEach(pushAuthorisedMeta);
+
+  let customerRowIndex = 0;
+  let authorisedRowIndex = 0;
+  const orderedRequests = [...requests].sort((a, b) => {
+    const aAuthorised = isAuthorisedRequest(a);
+    const bAuthorised = isAuthorisedRequest(b);
+    if (aAuthorised === bAuthorised) {
+      return (a.request_number || 0) - (b.request_number || 0);
+    }
+    return aAuthorised ? 1 : -1;
+  });
   return (
     <article className={styles.invoiceShell}>
       <header className={styles.companyHeader}>
@@ -262,7 +434,55 @@ export default function InvoiceDetail({ data, onPrint, onEmail, emailStatus, cus
           No detailed requests recorded for this invoice yet.
         </div>
       ) : (
-        requests.map((request) => <RequestBlock key={request.request_number} request={request} />)
+        orderedRequests.map((request) => {
+          const isAuthorised = isAuthorisedRequest(request);
+          const currentAuthorisedNumber = authorisedRowIndex + 1;
+          const currentCustomerNumber = customerRowIndex + 1;
+          const explicitRequestId = request?.request_id ?? null;
+          const linkedRequestId = explicitRequestId
+            ? String(explicitRequestId)
+            : isAuthorised
+            ? authorisedRequestIds[authorisedRowIndex]
+            : customerRequestIds[customerRowIndex];
+          if (isAuthorised) {
+            authorisedRowIndex += 1;
+          } else {
+            customerRowIndex += 1;
+          }
+          const linkedParts =
+            hasRequestLinking && linkedRequestId
+              ? partsByRequestId[String(linkedRequestId)] || []
+              : undefined;
+          const authorisedMeta = linkedRequestId ? authorisedMetaByRequestId[String(linkedRequestId)] : null;
+
+          let requestForDisplay = request;
+          if (isAuthorised) {
+            const issueTitle = authorisedMeta?.issueTitle || request.title;
+            const issueDescription = authorisedMeta?.issueDescription || "";
+            const displayTitle =
+              authorisedMeta?.label ||
+              (issueDescription ? `${issueTitle} - ${issueDescription}` : issueTitle);
+            requestForDisplay = {
+              ...request,
+              request_label: `Authorised ${currentAuthorisedNumber}`,
+              title: displayTitle || request.title,
+              summary: "",
+            };
+          } else if (!request.request_label) {
+            requestForDisplay = {
+              ...request,
+              request_label: `Request ${currentCustomerNumber}`,
+            };
+          }
+
+          return (
+            <RequestBlock
+              key={`${request.request_number}-${linkedRequestId || "no-link"}`}
+              request={requestForDisplay}
+              linkedParts={linkedParts}
+            />
+          );
+        })
       )}
 
       <TotalsFooter totals={invoice.totals} />

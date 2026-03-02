@@ -41,7 +41,12 @@ const isAccentPixel = (r, g, b) => {
   return inRedRange || inPurpleRange;
 };
 
-const recolorLogo = (img, targetRgb) => {
+const isDarkNeutralPixel = (r, g, b) => {
+  const { s, v } = rgbToHsv(r, g, b);
+  return s < 0.18 && v <= 0.55;
+};
+
+const recolorLogo = (img, targetRgb, mode) => {
   const canvas = document.createElement("canvas");
   canvas.width = img.naturalWidth || img.width;
   canvas.height = img.naturalHeight || img.height;
@@ -58,13 +63,21 @@ const recolorLogo = (img, targetRgb) => {
     const r = data[i];
     const g = data[i + 1];
     const b = data[i + 2];
-    if (!isAccentPixel(r, g, b)) continue;
+    if (isAccentPixel(r, g, b)) {
+      const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+      const shade = 0.45 + luminance * 0.9;
+      data[i] = clamp(targetRgb.r * shade);
+      data[i + 1] = clamp(targetRgb.g * shade);
+      data[i + 2] = clamp(targetRgb.b * shade);
+      continue;
+    }
 
-    const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-    const shade = 0.45 + luminance * 0.9;
-    data[i] = clamp(targetRgb.r * shade);
-    data[i + 1] = clamp(targetRgb.g * shade);
-    data[i + 2] = clamp(targetRgb.b * shade);
+    // In dark mode, shift dark neutral logo text to white for contrast.
+    if (mode === "dark" && isDarkNeutralPixel(r, g, b)) {
+      data[i] = 255;
+      data[i + 1] = 255;
+      data[i + 2] = 255;
+    }
   }
 
   ctx.putImageData(imageData, 0, 0);
@@ -107,14 +120,14 @@ export default function BrandLogo({
 
     const img = new window.Image();
     img.onload = () => {
-      const recolored = recolorLogo(img, targetRgb);
+      const recolored = recolorLogo(img, targetRgb, mode);
       setSrc(recolored || baseSrc);
     };
     img.onerror = () => {
       setSrc(baseSrc);
     };
     img.src = baseSrc;
-  }, [baseSrc, targetRgb]);
+  }, [baseSrc, targetRgb, mode]);
 
   return <img src={src} alt={alt} className={className} style={style} width={width} height={height} {...rest} />;
 }

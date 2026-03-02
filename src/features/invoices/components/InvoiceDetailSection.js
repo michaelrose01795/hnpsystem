@@ -13,7 +13,7 @@ const InvoiceSkeleton = () => {
   );
 };
 
-export default function InvoiceDetailSection({ jobNumber, orderNumber, customerEmail, jobId }) {
+export default function InvoiceDetailSection({ jobNumber, orderNumber, customerEmail, jobId, jobData = null }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [data, setData] = useState(null);
@@ -37,7 +37,7 @@ export default function InvoiceDetailSection({ jobNumber, orderNumber, customerE
       const endpoint = jobNumber
         ? `/api/invoices/by-job/${encodeURIComponent(jobNumber)}`
         : `/api/invoices/by-order/${encodeURIComponent(orderNumber)}`;
-      const response = await fetch(endpoint, { credentials: "include" });
+      const response = await fetch(endpoint, { credentials: "include", cache: "no-store" });
       const payload = await response.json();
       if (response.status === 401) {
         throw new Error("Authentication required to view invoices. Please sign in again.");
@@ -146,6 +146,7 @@ export default function InvoiceDetailSection({ jobNumber, orderNumber, customerE
         onEmail={handleEmail}
         emailStatus={emailStatus}
         customerEmail={customerEmail}
+        jobData={jobData}
       />
     </>
   );
