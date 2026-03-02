@@ -213,12 +213,24 @@ export const updateTrackingLocations = async ({
 
 const normaliseJobJoin = (join) => {
   if (!join) return {};
+  const customerJoin = join.customer_ref || null;
+  const vehicleJoin = join.vehicle_ref || null;
+  const customerFromJoin =
+    customerJoin?.name ||
+    [customerJoin?.firstname, customerJoin?.lastname].filter(Boolean).join(" ").trim() ||
+    "";
+  const makeModelFromJoin =
+    vehicleJoin?.make_model ||
+    [vehicleJoin?.make, vehicleJoin?.model].filter(Boolean).join(" ").trim() ||
+    "";
+  const colourFromJoin = vehicleJoin?.colour || "";
   return {
     jobNumber: join.job_number || "",
     vehicleReg: join.vehicle_reg || "",
-    customer: join.customer || "",
+    customer: join.customer || customerFromJoin,
     serviceType: join.type || "",
-    makeModel: join.vehicle_make_model || "",
+    makeModel: join.vehicle_make_model || makeModelFromJoin,
+    colour: colourFromJoin,
   };
 };
 
@@ -232,6 +244,7 @@ const mergeEntry = (entryMap, baseKey, incoming) => {
       customer: incoming.customer,
       serviceType: incoming.serviceType,
       makeModel: incoming.makeModel,
+      colour: incoming.colour || "",
       status: incoming.status,
       vehicleLocation: incoming.vehicleLocation || null,
       keyLocation: incoming.keyLocation || null,
@@ -251,6 +264,7 @@ const mergeEntry = (entryMap, baseKey, incoming) => {
     customer: existing.customer || incoming.customer,
     serviceType: existing.serviceType || incoming.serviceType,
     makeModel: existing.makeModel || incoming.makeModel,
+    colour: existing.colour || incoming.colour || "",
     status: incoming.status || existing.status,
     vehicleLocation: incoming.vehicleLocation || existing.vehicleLocation,
     keyLocation: incoming.keyLocation || existing.keyLocation,
@@ -265,14 +279,14 @@ export const fetchTrackingSnapshot = async () => {
     supabase
       .from("key_tracking_events")
       .select(
-        "key_event_id, job_id, vehicle_id, action, notes, occurred_at, jobs:job_id(job_number, vehicle_reg, customer, type, vehicle_make_model)"
+        "key_event_id, job_id, vehicle_id, action, notes, occurred_at, jobs:job_id(job_number, vehicle_reg, customer, type, vehicle_make_model, customer_ref:customer_id(name, firstname, lastname), vehicle_ref:vehicle_id(make_model, make, model, colour)), vehicle:vehicle_id(make_model, make, model, colour)"
       )
       .order("occurred_at", { ascending: false })
       .limit(50),
     supabase
       .from("vehicle_tracking_events")
       .select(
-        "event_id, job_id, vehicle_id, status, location, notes, occurred_at, jobs:job_id(job_number, vehicle_reg, customer, type, vehicle_make_model)"
+        "event_id, job_id, vehicle_id, status, location, notes, occurred_at, jobs:job_id(job_number, vehicle_reg, customer, type, vehicle_make_model, customer_ref:customer_id(name, firstname, lastname), vehicle_ref:vehicle_id(make_model, make, model, colour)), vehicle:vehicle_id(make_model, make, model, colour)"
       )
       .order("occurred_at", { ascending: false })
       .limit(50),
@@ -287,13 +301,18 @@ export const fetchTrackingSnapshot = async () => {
 
   (vehicleEvents || []).forEach((event) => {
     const join = normaliseJobJoin(event.jobs);
+    const fallbackMakeModel =
+      event.vehicle?.make_model ||
+      [event.vehicle?.make, event.vehicle?.model].filter(Boolean).join(" ").trim() ||
+      "";
     mergeEntry(entryMap, event.job_id || `vehicle-${event.event_id}`, {
       jobId: event.job_id || null,
       jobNumber: join.jobNumber,
       vehicleReg: join.vehicleReg,
       customer: join.customer,
       serviceType: join.serviceType,
-      makeModel: join.makeModel,
+      makeModel: join.makeModel || fallbackMakeModel,
+      colour: join.colour || event.vehicle?.colour || "",
       status: event.status || join.serviceType || "In Progress",
       vehicleLocation: event.location || null,
       keyLocation: null,
@@ -305,13 +324,18 @@ export const fetchTrackingSnapshot = async () => {
 
   (keyEvents || []).forEach((event) => {
     const join = normaliseJobJoin(event.jobs);
+    const fallbackMakeModel =
+      event.vehicle?.make_model ||
+      [event.vehicle?.make, event.vehicle?.model].filter(Boolean).join(" ").trim() ||
+      "";
     mergeEntry(entryMap, event.job_id || `key-${event.key_event_id}`, {
       jobId: event.job_id || null,
       jobNumber: join.jobNumber,
       vehicleReg: join.vehicleReg,
       customer: join.customer,
       serviceType: join.serviceType,
-      makeModel: join.makeModel,
+      makeModel: join.makeModel || fallbackMakeModel,
+      colour: join.colour || event.vehicle?.colour || "",
       status: statusLabelForAction("job_complete"),
       vehicleLocation: null,
       keyLocation: event.action || null,

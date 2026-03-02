@@ -176,16 +176,13 @@ const TechConsumableRequestPage = () => {
 
   const filteredRequests = useMemo(() => {
     const needle = searchTerm.trim().toLowerCase(); // Normalise search term
-    const filtered = requests.filter((request) =>
-      request.requestedById === dbUserId
-    );
-    if (!needle) return filtered; // Return relevant requests when search is empty
-    return filtered.filter((request) =>
+    if (!needle) return requests; // Return all requests when search is empty
+    return requests.filter((request) =>
       [request.itemName, request.status, request.requestedByName]
         .filter(Boolean)
         .some((field) => field.toLowerCase().includes(needle))
     ); // Perform case-insensitive search across key fields
-  }, [requests, searchTerm, dbUserId]);
+  }, [requests, searchTerm]);
 
   const stockMatches = useMemo(() => {
     const query = normalizeName(requestForm.partName);

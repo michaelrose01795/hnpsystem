@@ -473,6 +473,16 @@ const computeTaskSignature = (tasks = [], completionStatus = "") => {
   return JSON.stringify({ tasks: payload, completionStatus });
 };
 
+const MANUAL_FAULT_SOURCE = "manual_fault";
+const MANUAL_RECTIFICATION_SOURCE = "manual_rectification";
+
+const isFaultTaskSource = (source = "") => source === "request" || source === MANUAL_FAULT_SOURCE;
+const isManualAddedTaskSource = (source = "") =>
+  source === MANUAL_FAULT_SOURCE || source === MANUAL_RECTIFICATION_SOURCE;
+
+const buildManualTaskSourceKey = (prefix) =>
+  `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
 const modernInputStyle = {
   width: "100%",
   borderRadius: "10px",
@@ -546,12 +556,32 @@ const statusBadgeStyle = {
   fontWeight: 600,
 };
 
-const completionBadgeStyle = {
+const addSectionButtonStyle = {
+  width: "30px",
+  height: "30px",
   borderRadius: "999px",
-  color: "white",
+  border: "1px solid var(--accent-purple)",
+  backgroundColor: "var(--surface)",
+  color: "var(--accent-purple)",
+  fontSize: "20px",
+  lineHeight: 1,
+  fontWeight: 700,
+  cursor: "pointer",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: 0,
+};
+
+const deleteAddedRowButtonStyle = {
+  border: "1px solid var(--danger)",
+  backgroundColor: "var(--danger-surface)",
+  color: "var(--danger)",
+  borderRadius: "8px",
   fontSize: "12px",
   fontWeight: 600,
-  padding: "6px 14px",
+  padding: "4px 10px",
+  cursor: "pointer",
 };
 
 const cardRowStyle = (completed) => ({
@@ -936,14 +966,13 @@ export default function WriteUpForm({
   }, [jobNumber, jobCardData, jobData?.jobCard?.authorizedVhcItems, jobData?.jobCard?.id, writeUpMeta.jobId]);
 
   const requestTasks = useMemo(
-    () => writeUpData.tasks.filter((task) => task && task.source === "request"),
+    () => writeUpData.tasks.filter((task) => task && isFaultTaskSource(task.source)),
     [writeUpData.tasks]
   );
   const rectificationTasks = useMemo(
-    () => writeUpData.tasks.filter((task) => task && task.source !== "request"),
+    () => writeUpData.tasks.filter((task) => task && !isFaultTaskSource(task.source)),
     [writeUpData.tasks]
   );
-  const showRectificationStatus = rectificationTasks.length > 0;
   const totalTasks = writeUpData.tasks.length;
   const completedTasks = writeUpData.tasks.filter((task) => task.status === "complete").length;
 
@@ -1313,6 +1342,50 @@ export default function WriteUpForm({
     }
   };
 
+  const addFaultSection = () => {
+    setWriteUpData((prev) => {
+      const existingFaultItems = prev.tasks.filter(
+        (task) => task?.source === MANUAL_FAULT_SOURCE
+      ).length;
+      return {
+        ...prev,
+        tasks: [
+          ...prev.tasks,
+          {
+            taskId: null,
+            source: MANUAL_FAULT_SOURCE,
+            sourceKey: buildManualTaskSourceKey("fault-item"),
+            label: `Added item ${existingFaultItems + 1}`,
+            status: "additional_work",
+          },
+        ],
+      };
+    });
+    recordSectionEditor("fault");
+  };
+
+  const addRectificationSection = () => {
+    setWriteUpData((prev) => {
+      const existingRectificationItems = prev.tasks.filter(
+        (task) => task?.source === MANUAL_RECTIFICATION_SOURCE
+      ).length;
+      return {
+        ...prev,
+        tasks: [
+          ...prev.tasks,
+          {
+            taskId: null,
+            source: MANUAL_RECTIFICATION_SOURCE,
+            sourceKey: buildManualTaskSourceKey("rectification-item"),
+            label: `Added item ${existingRectificationItems + 1}`,
+            status: "additional_work",
+          },
+        ],
+      };
+    });
+    recordSectionEditor("rectification");
+  };
+
   const handleTaskLabelChange = (taskKey) => (event) => {
     const value = event.target.value;
     let updated = false;
@@ -1327,6 +1400,33 @@ export default function WriteUpForm({
       }),
     }));
     if (updated) {
+      recordSectionEditor("rectification");
+    }
+  };
+
+  const removeAddedTaskRow = (taskKey) => {
+    let removedSource = "";
+    setWriteUpData((prev) => {
+      const nextTasks = prev.tasks.filter((task) => {
+        const matches = composeTaskKey(task) === taskKey;
+        if (!matches) return true;
+        if (!isManualAddedTaskSource(task?.source)) {
+          return true;
+        }
+        removedSource = task.source;
+        return false;
+      });
+
+      if (nextTasks.length === prev.tasks.length) {
+        return prev;
+      }
+
+      return { ...prev, tasks: nextTasks };
+    });
+
+    if (removedSource === MANUAL_FAULT_SOURCE) {
+      recordSectionEditor("fault");
+    } else if (removedSource === MANUAL_RECTIFICATION_SOURCE) {
       recordSectionEditor("rectification");
     }
   };
@@ -1491,14 +1591,14 @@ export default function WriteUpForm({
         const currentKey = composeTaskKey(task);
         if (currentKey !== taskKey) return task;
         if (!toggledSection) {
-          toggledSection = task?.source === "request" ? "fault" : "rectification";
+          toggledSection = isFaultTaskSource(task?.source) ? "fault" : "rectification";
         }
         const nextStatus = task.status === "complete" ? "inprogress" : "complete";
-        if (task?.source !== "request") {
+        if (!isFaultTaskSource(task?.source)) {
           return { ...task, status: task.status === "complete" ? "additional_work" : "complete" };
         }
 
-        if (nextStatus === "complete") {
+        if (task?.source === "request" && nextStatus === "complete") {
           const originalLabel = task.originalLabel || task.label || "";
           const nextLabel = toPastTenseRequest(originalLabel);
           return { ...task, status: nextStatus, label: nextLabel, originalLabel };
@@ -1512,7 +1612,11 @@ export default function WriteUpForm({
       });
 
       const requestList = updatedTasks.filter((task) => task && task.source === "request");
-      const authorisedList = updatedTasks.filter((task) => task && task.source !== "request");
+      const manualFaultList = updatedTasks.filter((task) => task && task.source === MANUAL_FAULT_SOURCE);
+      const manualRectificationList = updatedTasks.filter(
+        (task) => task && task.source === MANUAL_RECTIFICATION_SOURCE
+      );
+      const authorisedList = updatedTasks.filter((task) => task && task.source === "vhc");
       const toggledTask = updatedTasks.find((task) => composeTaskKey(task) === taskKey);
       if (toggledTask) {
         const isComplete = toggledTask.status === "complete";
@@ -1520,6 +1624,14 @@ export default function WriteUpForm({
           const requestIndex =
             requestList.findIndex((task) => composeTaskKey(task) === taskKey) + 1;
           timelineEventLabel = `Request ${requestIndex || 1} ${isComplete ? "Complete" : "Uncompleted"}`;
+        } else if (toggledTask.source === MANUAL_FAULT_SOURCE) {
+          const faultIndex =
+            manualFaultList.findIndex((task) => composeTaskKey(task) === taskKey) + 1;
+          timelineEventLabel = `Fault Item ${faultIndex || 1} ${isComplete ? "Complete" : "Uncompleted"}`;
+        } else if (toggledTask.source === MANUAL_RECTIFICATION_SOURCE) {
+          const rectificationIndex =
+            manualRectificationList.findIndex((task) => composeTaskKey(task) === taskKey) + 1;
+          timelineEventLabel = `Rectification Item ${rectificationIndex || 1} ${isComplete ? "Complete" : "Uncompleted"}`;
         } else {
           const authorisedIndex =
             authorisedList.findIndex((task) => composeTaskKey(task) === taskKey) + 1;
@@ -1528,7 +1640,7 @@ export default function WriteUpForm({
       }
 
       // Check if there are any rectification tasks (additional work authorized)
-      const hasAdditionalWork = updatedTasks.some((task) => task && task.source !== "request");
+      const hasAdditionalWork = updatedTasks.some((task) => task && !isFaultTaskSource(task.source));
 
       // Check if all checkboxes are complete
       const allCheckboxesComplete = updatedTasks.every((task) => task.status === "complete");
@@ -1861,6 +1973,40 @@ export default function WriteUpForm({
   const completionStatusLabel = getCompletionStatusLabel();
   const completionStatusColor = getCompletionStatusColor();
   const requestSlots = requestTasks;
+  const requestOrderByKey = useMemo(() => {
+    const map = new Map();
+    let requestIndex = 0;
+    let addedItemIndex = 0;
+
+    requestSlots.forEach((task) => {
+      const key = composeTaskKey(task);
+      if (task?.source === "request") {
+        requestIndex += 1;
+        map.set(key, { kind: "request", index: requestIndex });
+      } else {
+        addedItemIndex += 1;
+        map.set(key, { kind: "added", index: addedItemIndex });
+      }
+    });
+
+    return map;
+  }, [requestSlots]);
+  const rectificationOrderByKey = useMemo(() => {
+    const map = new Map();
+    let addedItemIndex = 0;
+
+    rectificationTasks.forEach((task) => {
+      const key = composeTaskKey(task);
+      if (task?.source === MANUAL_RECTIFICATION_SOURCE) {
+        addedItemIndex += 1;
+        map.set(key, { kind: "added", index: addedItemIndex });
+      } else {
+        map.set(key, { kind: "standard", index: null });
+      }
+    });
+
+    return map;
+  }, [rectificationTasks]);
   const getProgressLabel = (total, completed) => {
     if (total <= 0) return "0 complete";
     if (completed === 0) return `${total} not started`;
@@ -2140,8 +2286,16 @@ export default function WriteUpForm({
                         {faultProgressLabel}
                       </span>
                     </div>
-                    {renderSectionEditorMeta("fault")}
                   </div>
+                  <button
+                    type="button"
+                    onClick={addFaultSection}
+                    style={addSectionButtonStyle}
+                    aria-label="Add fault item"
+                    title="Add fault item"
+                  >
+                    +
+                  </button>
                 </div>
                 <div
                   style={{
@@ -2153,18 +2307,35 @@ export default function WriteUpForm({
                   {requestSlots.map((task, index) => {
                     const slotKey = composeTaskKey(task);
                     const isComplete = task?.status === "complete";
+                    const slotMeta = requestOrderByKey.get(slotKey);
+                    const isAddedRow = task?.source === MANUAL_FAULT_SOURCE;
                     return (
                       <div key={slotKey} style={cardRowStyle(isComplete)}>
-                        <label style={checkboxLabelStyle(isComplete)}>
-                          <input
-                            type="checkbox"
-                            checked={isComplete}
-                            onChange={() => toggleTaskStatus(slotKey)}
-                            style={checkboxStyle}
-                          />
-                          {isComplete ? "Completed" : "Mark complete"}
-                        </label>
-                        <div style={{ fontSize: "12px", color: "var(--info)" }}>Request {index + 1}</div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px" }}>
+                          <label style={checkboxLabelStyle(isComplete)}>
+                            <input
+                              type="checkbox"
+                              checked={isComplete}
+                              onChange={() => toggleTaskStatus(slotKey)}
+                              style={checkboxStyle}
+                            />
+                            {isComplete ? "Completed" : "Mark complete"}
+                          </label>
+                          {isAddedRow && (
+                            <button
+                              type="button"
+                              onClick={() => removeAddedTaskRow(slotKey)}
+                              style={deleteAddedRowButtonStyle}
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </div>
+                        <div style={{ fontSize: "12px", color: "var(--info)" }}>
+                          {slotMeta?.kind === "request"
+                            ? `Request ${slotMeta.index}`
+                            : `Added item ${slotMeta?.index || index + 1}`}
+                        </div>
                         <textarea
                           value={stripRequestPrefix(task?.label || "")}
                           onChange={handleRequestLabelChange(slotKey)}
@@ -2255,13 +2426,18 @@ export default function WriteUpForm({
                         {rectificationProgressLabel}
                       </span>
                     </div>
-                    {renderSectionEditorMeta("rectification")}
                   </div>
-                  {showRectificationStatus && (
-                    <span style={{ ...completionBadgeStyle, backgroundColor: completionStatusColor }}>
-                      {completionStatusLabel}
-                    </span>
-                  )}
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <button
+                      type="button"
+                      onClick={addRectificationSection}
+                      style={addSectionButtonStyle}
+                      aria-label="Add rectification item"
+                      title="Add rectification item"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
                 <div
                   style={{
@@ -2278,18 +2454,33 @@ export default function WriteUpForm({
                     rectificationTasks.map((task, index) => {
                       const taskKey = composeTaskKey(task);
                       const isComplete = task.status === "complete";
+                      const rowMeta = rectificationOrderByKey.get(taskKey);
+                      const isAddedRow = task?.source === MANUAL_RECTIFICATION_SOURCE;
                       return (
                         <div key={taskKey} style={cardRowStyle(isComplete)}>
-                          <label style={checkboxLabelStyle(isComplete)}>
-                            <input
-                              type="checkbox"
-                              checked={isComplete}
-                              onChange={() => toggleTaskStatus(taskKey)}
-                              style={checkboxStyle}
-                            />
-                            {isComplete ? "Completed" : "Mark complete"}
-                          </label>
-                          <div style={{ fontSize: "12px", color: "var(--info)" }}>Item {index + 1}</div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px" }}>
+                            <label style={checkboxLabelStyle(isComplete)}>
+                              <input
+                                type="checkbox"
+                                checked={isComplete}
+                                onChange={() => toggleTaskStatus(taskKey)}
+                                style={checkboxStyle}
+                              />
+                              {isComplete ? "Completed" : "Mark complete"}
+                            </label>
+                            {isAddedRow && (
+                              <button
+                                type="button"
+                                onClick={() => removeAddedTaskRow(taskKey)}
+                                style={deleteAddedRowButtonStyle}
+                              >
+                                Delete
+                              </button>
+                            )}
+                          </div>
+                          <div style={{ fontSize: "12px", color: "var(--info)" }}>
+                            {rowMeta?.kind === "added" ? `Added item ${rowMeta.index}` : `Item ${index + 1}`}
+                          </div>
                           <textarea
                             value={stripAuthorizedPrefix(task.label)}
                             onChange={handleTaskLabelChange(taskKey)}

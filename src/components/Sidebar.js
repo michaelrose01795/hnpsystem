@@ -76,14 +76,21 @@ export default function Sidebar({
 
     return access;
   };
+  const hasTechSidebarRole = userRoles.some((role) => role === "techs" || role === "mot tester");
 
   const filterAccessibleSections = (sections = []) =>
     sections
       .map((section) => ({
         ...section,
-        items: (section.items || []).filter(
-          (item) => hasAccess(item) && (!item.href || !hiddenHrRoutes.has(item.href))
-        ),
+        items:
+          hasTechSidebarRole && section.label === "Job Divisions"
+            ? []
+            : (section.items || []).filter(
+                (item) =>
+                  hasAccess(item) &&
+                  (!item.href || !hiddenHrRoutes.has(item.href)) &&
+                  !(hasTechSidebarRole && item.href === "/job-cards/archive")
+              ),
       }))
       .filter((section) => section.items.length > 0);
 

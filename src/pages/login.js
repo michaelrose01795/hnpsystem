@@ -228,109 +228,107 @@ export default function LoginPage() {
   return (
     <Layout>
       <div className="login-page-wrapper">
-        <div className="login-stack">
+        <div className="login-center-stage">
           <div className="login-brand">
             <BrandLogo alt="HP Automotive" className="login-logo" />
           </div>
+          <LoginCard
+            className="login-card--auth"
+            title="Login"
+          >
+            <form onSubmit={handleDbLogin} className="login-form">
+              <div className="login-field">
+                <label htmlFor="email" className="login-label">
+                  Email
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="username"
+                  placeholder="email@humphriesandpark.co.uk"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="login-input"
+                  required
+                />
+              </div>
 
-          <div className="login-card-stack">
+              <div className="login-field">
+                <label htmlFor="password" className="login-label">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="login-input"
+                  required
+                />
+              </div>
+
+              {errorMessage && (
+                <p className="login-error" role="alert">
+                  {errorMessage}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                className="login-button"
+                style={{ background: "var(--primary)" }}
+              >
+                Login
+              </button>
+            </form>
+          </LoginCard>
+        </div>
+        {allowDevUserSelection && (
+          <div className="login-dev-panel">
             <LoginCard
-              className="login-card--auth"
-              title="Login"
+              className="login-card--dev"
+              title="Developer Login"
             >
-              <form onSubmit={handleDbLogin} className="login-form">
-                <div className="login-field">
-                  <label htmlFor="email" className="login-label">
-                    Email
-                  </label>
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="username"
-                    placeholder="email@humphriesandpark.co.uk"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="login-input"
-                    required
-                  />
-                </div>
+              <div className="login-dev-content">
+                <LoginDropdown
+                  selectedCategory={selectedCategory}
+                  setSelectedCategory={setSelectedCategory}
+                  selectedDepartment={selectedDepartment}
+                  setSelectedDepartment={setSelectedDepartment}
+                  selectedUser={selectedUser}
+                  setSelectedUser={setSelectedUser}
+                  usersByRole={usersByRole}
+                  usersByRoleDetailed={usersByRoleDetailed}
+                  roleCategories={loginRoleCategories}
+                />
 
-                <div className="login-field">
-                  <label htmlFor="password" className="login-label">
-                    Password
-                  </label>
-                  <input
-                    id="password"
-                    name="password"
-                    type="password"
-                    autoComplete="current-password"
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="login-input"
-                    required
-                  />
-                </div>
+                <p
+                  className={[
+                    "login-loading-text",
+                    !(loadingDevUsers || rosterLoading) ? "is-hidden" : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                >
+                  Loading database users for dev login...
+                </p>
 
-                {errorMessage && (
-                  <p className="login-error" role="alert">
-                    {errorMessage}
-                  </p>
-                )}
 
                 <button
-                  type="submit"
+                  onClick={handleDevLogin}
                   className="login-button"
                   style={{ background: "var(--primary)" }}
                 >
-                  Login
+                  Dev Login
                 </button>
-              </form>
+              </div>
             </LoginCard>
-
-            {allowDevUserSelection && (
-              <LoginCard
-                className="login-card--dev"
-                title="Developer Login"
-              >
-                <div className="login-dev-content">
-                  <LoginDropdown
-                    selectedCategory={selectedCategory}
-                    setSelectedCategory={setSelectedCategory}
-                    selectedDepartment={selectedDepartment}
-                    setSelectedDepartment={setSelectedDepartment}
-                    selectedUser={selectedUser}
-                    setSelectedUser={setSelectedUser}
-                    usersByRole={usersByRole}
-                    usersByRoleDetailed={usersByRoleDetailed}
-                    roleCategories={loginRoleCategories}
-                  />
-
-                  <p
-                    className={[
-                      "login-loading-text",
-                      !(loadingDevUsers || rosterLoading) ? "is-hidden" : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" ")}
-                  >
-                    Loading database users for dev login...
-                  </p>
-
-
-                  <button
-                    onClick={handleDevLogin}
-                    className="login-button"
-                    style={{ background: "var(--primary)" }}
-                  >
-                    Dev Login
-                  </button>
-                </div>
-              </LoginCard>
-            )}
           </div>
-        </div>
+        )}
       </div>
     </Layout>
   );

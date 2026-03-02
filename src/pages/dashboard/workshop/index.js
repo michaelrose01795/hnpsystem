@@ -1,10 +1,8 @@
 "use client";
-// Edit: Responsive improvements - mobile/tablet optimized layout with better stacking and spacing
 
 import React, { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import Layout from "@/components/Layout";
-import { useUser } from "@/context/UserContext";
 import { getWorkshopDashboardData } from "@/lib/database/dashboard/workshop";
 
 const MetricCard = ({ label, value, helper }) => (
@@ -19,13 +17,15 @@ const MetricCard = ({ label, value, helper }) => (
       flex: "1 1 140px",
     }}
   >
-    <p style={{ margin: 0, textTransform: "uppercase", fontSize: "0.75rem", color: "var(--primary-dark)" }}>{label}</p>
+    <p style={{ margin: 0, textTransform: "uppercase", fontSize: "0.75rem", color: "var(--primary-dark)" }}>
+      {label}
+    </p>
     <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600 }}>{value}</p>
     {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info)" }}>{helper}</p>}
   </div>
 );
 
-const Section = ({ title, subtitle, children }) => (
+const Section = ({ title, subtitle, children, style }) => (
   <section
     style={{
       background: "var(--surface)",
@@ -36,6 +36,7 @@ const Section = ({ title, subtitle, children }) => (
       display: "flex",
       flexDirection: "column",
       gap: "12px",
+      ...style,
     }}
   >
     <div>
@@ -58,6 +59,7 @@ const TrendBlock = ({ title, data }) => {
         display: "flex",
         flexDirection: "column",
         gap: "10px",
+        flex: 1,
       }}
     >
       <p style={{ margin: 0, textTransform: "uppercase", color: "var(--primary-dark)", fontSize: "0.75rem" }}>{title}</p>
@@ -91,7 +93,8 @@ const TrendBlock = ({ title, data }) => {
 };
 
 const ProgressBar = ({ completed, target }) => {
-  const percentage = Math.min(100, Math.round((completed / target) * 100));
+  const safeTarget = target > 0 ? target : 1;
+  const percentage = Math.min(100, Math.round((completed / safeTarget) * 100));
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: "var(--info)" }}>
@@ -112,34 +115,7 @@ const ProgressBar = ({ completed, target }) => {
   );
 };
 
-const StatusList = ({ title, titleSuffix, items }) => (
-  <div
-    style={{
-      background: "var(--surface)",
-      borderRadius: "12px",
-      border: "1px solid var(--surface-light)",
-      padding: "12px",
-      display: "flex",
-      flexDirection: "column",
-      gap: "10px",
-    }}
-  >
-    <p style={{ margin: 0, fontWeight: 600, color: "var(--primary-dark)" }}>
-      {title} <span style={{ fontSize: "0.85rem", fontWeight: 400, color: "var(--info)" }}>{titleSuffix}</span>
-    </p>
-    {(items || []).length === 0 ? (
-      <p style={{ margin: 0, color: "var(--info)" }}>No updates yet.</p>
-    ) : (
-      items.map((item) => (
-        <div key={item.id || item.job_id} style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>
-          <strong style={{ color: "var(--primary-dark)" }}>{item.job?.job_number || item.job_number || "Job"}</strong> – {item.to_status || item.status}
-        </div>
-      ))
-    )}
-  </div>
-);
-
-const formatTime = (value) => (value ? dayjs(value).format("HH:mm") : "—");
+const formatTime = (value) => (value ? dayjs(value).format("HH:mm") : "-");
 
 const defaultData = {
   dailySummary: { inProgress: 0, checkedInToday: 0, completedToday: 0 },
@@ -148,12 +124,25 @@ const defaultData = {
   queue: [],
   outstandingVhc: [],
   trends: { checkInsLast7: [] },
-  latestStatusUpdates: [],
+};
+
+const twoColSplitStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+  gap: "16px",
+  alignItems: "stretch",
+};
+
+const listViewportStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "12px",
+  maxHeight: "276px",
+  overflowY: "auto",
+  paddingRight: "2px",
 };
 
 export default function WorkshopDashboard() {
-  const todayLabel = dayjs().format("dddd D MMMM");
-  const { user } = useUser();
   const [dashboardData, setDashboardData] = useState(defaultData);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -184,29 +173,9 @@ export default function WorkshopDashboard() {
   return (
     <Layout>
       <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "20px" }}>
-        <header
-          style={{
-            background: "var(--surface-light)",
-            borderRadius: "18px",
-            padding: "20px",
-            border: "1px solid var(--surface-light)",
-            boxShadow: "none",
-          }}
-        >
-          <p style={{ margin: 0, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--primary-dark)", fontSize: "0.7rem" }}>
-            Workshop workspace · {todayLabel}
-          </p>
-          <h1 style={{ margin: "6px 0 0", color: "var(--primary-dark)", fontSize: "1.4rem" }}>
-            {user?.username ? `Hi ${user.username}, workshop view` : "Workshop workspace"}
-          </h1>
-          <p style={{ margin: "6px 0 0", color: "var(--info)", fontSize: "0.9rem" }}>
-            Live view of technician assignments, queue, and VHC throughput.
-          </p>
-        </header>
-
         <Section title="Daily checkpoints">
           {loading ? (
-            <p style={{ color: "var(--info)" }}>Loading today&apos;s metrics…</p>
+            <p style={{ color: "var(--info)" }}>Loading today's metrics...</p>
           ) : error ? (
             <p style={{ color: "var(--primary)" }}>{error}</p>
           ) : (
@@ -231,94 +200,96 @@ export default function WorkshopDashboard() {
           )}
         </Section>
 
-        <Section title="Progress" subtitle="Completed vs scheduled">
-          <ProgressBar
-            completed={dashboardData.progress.completed}
-            target={dashboardData.progress.scheduled}
-          />
-        </Section>
+        <div style={twoColSplitStyle}>
+          <Section title="Progress" subtitle="Completed vs scheduled" style={{ height: "100%", minHeight: "250px" }}>
+            <ProgressBar
+              completed={dashboardData.progress.completed}
+              target={dashboardData.progress.scheduled}
+            />
+          </Section>
 
-        <Section title="Check-in trends" subtitle="Last 7 days">
-          <TrendBlock title="Daily check-ins" data={dashboardData.trends.checkInsLast7} />
-        </Section>
+          <Section title="Check-in trends" subtitle="Last 7 days" style={{ height: "100%", minHeight: "250px" }}>
+            <TrendBlock title="Daily check-ins" data={dashboardData.trends.checkInsLast7} />
+          </Section>
+        </div>
 
-        <Section title="Next jobs queue">
-          {loading ? (
-            <p style={{ color: "var(--info)" }}>Loading queue…</p>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {dashboardData.queue.length === 0 ? (
-                <p style={{ margin: 0, color: "var(--info)" }}>No outstanding jobs in the queue.</p>
-              ) : (
-                dashboardData.queue.map((job) => (
+        <div style={twoColSplitStyle}>
+          <Section title="Next jobs queue" style={{ height: "100%", minHeight: "360px" }}>
+            {loading ? (
+              <p style={{ color: "var(--info)" }}>Loading queue...</p>
+            ) : (
+              <div style={listViewportStyle}>
+                {dashboardData.queue.length === 0 ? (
+                  <p style={{ margin: 0, color: "var(--info)" }}>No outstanding jobs in the queue.</p>
+                ) : (
+                  dashboardData.queue.map((job) => (
+                    <div
+                      key={job.job_number}
+                      style={{
+                        padding: "12px",
+                        borderRadius: "10px",
+                        background: "var(--danger-surface)",
+                        border: "1px solid var(--surface-light)",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "8px",
+                        minHeight: "84px",
+                      }}
+                    >
+                      <div>
+                        <strong style={{ color: "var(--primary-dark)", fontSize: "0.95rem" }}>
+                          {job.job_number || "-"} - {job.vehicle_reg || "TBC"}
+                        </strong>
+                        <div style={{ fontSize: "0.85rem", color: "var(--info)", marginTop: "4px" }}>
+                          {job.status || "Status unknown"}
+                        </div>
+                      </div>
+                      <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>
+                        Checked in {formatTime(job.checked_in_at)}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </Section>
+
+          <Section title="Outstanding VHCs" subtitle="Jobs requiring follow-up" style={{ height: "100%", minHeight: "360px" }}>
+            {loading ? (
+              <p style={{ color: "var(--info)" }}>Loading VHC backlog...</p>
+            ) : dashboardData.outstandingVhc.length === 0 ? (
+              <p style={{ margin: 0, color: "var(--info)" }}>No VHCs awaiting completion.</p>
+            ) : (
+              <div style={listViewportStyle}>
+                {dashboardData.outstandingVhc.map((job) => (
                   <div
                     key={job.job_number}
                     style={{
-                      padding: "12px",
-                      borderRadius: "10px",
-                      background: "var(--danger-surface)",
-                      border: "1px solid var(--surface-light)",
                       display: "flex",
                       flexDirection: "column",
                       gap: "8px",
+                      background: "var(--surface)",
+                      borderRadius: "10px",
+                      border: "1px solid var(--surface-light)",
+                      padding: "12px",
+                      minHeight: "84px",
                     }}
                   >
                     <div>
-                      <strong style={{ color: "var(--primary-dark)", fontSize: "0.95rem" }}>
-                        {job.job_number || "—"} · {job.vehicle_reg || "TBC"}
-                      </strong>
-                      <div style={{ fontSize: "0.85rem", color: "var(--info)", marginTop: "4px" }}>{job.status || "Status unknown"}</div>
+                      <strong style={{ fontSize: "0.95rem" }}>{job.job_number || "-"}</strong>
+                      <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "0.85rem" }}>
+                        {job.vehicle_reg || "Registration missing"}
+                      </p>
                     </div>
                     <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>
                       Checked in {formatTime(job.checked_in_at)}
                     </span>
                   </div>
-                ))
-              )}
-            </div>
-          )}
-        </Section>
-
-        <Section title="Outstanding VHCs" subtitle="Jobs requiring follow-up">
-          {loading ? (
-            <p style={{ color: "var(--info)" }}>Loading VHC backlog…</p>
-          ) : dashboardData.outstandingVhc.length === 0 ? (
-            <p style={{ margin: 0, color: "var(--info)" }}>No VHCs awaiting completion.</p>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {dashboardData.outstandingVhc.map((job) => (
-                <div
-                  key={job.job_number}
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "8px",
-                    background: "var(--surface)",
-                    borderRadius: "10px",
-                    border: "1px solid var(--surface-light)",
-                    padding: "12px",
-                  }}
-                >
-                  <div>
-                    <strong style={{ fontSize: "0.95rem" }}>{job.job_number || "—"}</strong>
-                    <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "0.85rem" }}>
-                      {job.vehicle_reg || "Registration missing"}
-                    </p>
-                  </div>
-                  <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>
-                    Checked in {formatTime(job.checked_in_at)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </Section>
-
-        <StatusList
-          title="Status updates"
-          titleSuffix="Latest changes"
-          items={dashboardData.latestStatusUpdates}
-        />
+                ))}
+              </div>
+            )}
+          </Section>
+        </div>
       </div>
     </Layout>
   );

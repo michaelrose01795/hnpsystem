@@ -357,6 +357,8 @@ const formatRelativeTime = (timestamp) => {
 };
 
 const CombinedTrackerCard = ({ entry, isHighlighted, onClick }) => {
+  const vehicleMeta = [entry.makeModel, entry.colour].filter(Boolean).join(" • ");
+
   return (
     <div
       onClick={onClick}
@@ -383,11 +385,24 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick }) => {
     >
       <div>
         <strong style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text)" }}>
-          {entry.jobNumber || "Unknown job"} • {entry.reg || "Unknown reg"}
+          {entry.jobNumber || "Unknown job"} • {entry.reg || "Unknown reg"} • {entry.customer || "Customer pending"}
         </strong>
-        <p style={{ margin: "4px 0 0", fontSize: "0.9rem", color: "var(--info-dark)" }}>
-          {entry.customer || "Customer pending"} • {entry.makeModel || "Make/Model pending"}
-        </p>
+        <div
+          style={{
+            marginTop: "4px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "10px",
+          }}
+        >
+          <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--info-dark)" }}>
+            {vehicleMeta || "Make/Model/Colour pending"}
+          </p>
+          <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--info)", whiteSpace: "nowrap" }}>
+            Last moved {formatRelativeTime(entry.updatedAt)}
+          </p>
+        </div>
       </div>
 
       <div
@@ -400,19 +415,18 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick }) => {
       >
         <div>
           <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--info)" }}>Key location</p>
-          <strong style={{ fontSize: "0.95rem", color: "var(--accent-purple)" }}>{entry.keyLocation || "Pending"}</strong>
+          <strong style={{ fontSize: "0.95rem", color: "var(--accent-purple)" }}>
+            {normalizeKeyLocationLabel(entry.keyLocation) || "Pending"}
+          </strong>
         </div>
         <div>
           <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--info)" }}>Car location</p>
           <strong style={{ fontSize: "0.95rem", color: "var(--success-dark)" }}>{entry.vehicleLocation || "Unallocated"}</strong>
         </div>
       </div>
-
-      <p style={{ margin: "8px 0 0", fontSize: "0.75rem", color: "var(--info)" }}>Last moved {formatRelativeTime(entry.updatedAt)}</p>
     </div>
   );
 };
-
 const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
   useBodyModalLock(true);
 
@@ -2112,6 +2126,7 @@ export default function TrackingDashboard() {
                 jobNumber: entry.jobNumber,
                 reg: entry.reg,
                 customer: entry.customer,
+                colour: entry.colour,
                 serviceType: entry.serviceType,
                 vehicleLocation: entry.vehicleLocation,
                 keyLocation: entry.keyLocation,
@@ -2533,52 +2548,54 @@ export default function TrackingDashboard() {
             gap: "18px",
           }}
         >
-          <div
-            style={{
-              borderRadius: "999px",
-              border: "1px solid var(--surface-light)",
-              background: "var(--surface)",
-              padding: "6px",
-              display: "flex",
-              gap: "6px",
-              width: "100%",
-              overflowX: "auto",
-              flexShrink: 0,
-              scrollbarWidth: "thin",
-              scrollbarColor: "var(--scrollbar-thumb) transparent",
-              scrollBehavior: "smooth",
-              WebkitOverflowScrolling: "touch",
-            }}
-          >
-            {tabs.map((tab) => {
-              const isActive = tab.id === activeTab;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  style={{
-                    flex: "0 0 auto",
-                    borderRadius: "999px",
-                    border: "1px solid transparent",
-                    padding: "10px 20px",
-                    fontSize: "0.9rem",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    background: isActive ? "var(--primary)" : "transparent",
-                    color: isActive ? "var(--text-inverse)" : "var(--text-primary)",
-                    transition: "all 0.15s ease",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
+          {tabs.length > 1 && (
+            <div
+              style={{
+                borderRadius: "999px",
+                border: "1px solid var(--surface-light)",
+                background: "var(--surface)",
+                padding: "6px",
+                display: "flex",
+                gap: "6px",
+                width: "100%",
+                overflowX: "auto",
+                flexShrink: 0,
+                scrollbarWidth: "thin",
+                scrollbarColor: "var(--scrollbar-thumb) transparent",
+                scrollBehavior: "smooth",
+                WebkitOverflowScrolling: "touch",
+              }}
+            >
+              {tabs.map((tab) => {
+                const isActive = tab.id === activeTab;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveTab(tab.id)}
+                    style={{
+                      flex: "0 0 auto",
+                      borderRadius: "999px",
+                      border: "1px solid transparent",
+                      padding: "10px 20px",
+                      fontSize: "0.9rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      background: isActive ? "var(--primary)" : "transparent",
+                      color: isActive ? "var(--text-inverse)" : "var(--text-primary)",
+                      transition: "all 0.15s ease",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
           {error && (
             <div
               style={{

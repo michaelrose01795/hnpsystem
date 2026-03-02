@@ -32,6 +32,8 @@ const cardStyle = {
   gap: "14px",
 };
 
+const UNREAD_MARKER_STORAGE_KEY = "messagesUnreadMarkerDismissals";
+
 const SectionTitle = ({ title, subtitle, action }) => (
   <div
     style={{
@@ -714,6 +716,11 @@ function MessagesPage() {
   const [systemError, setSystemError] = useState("");
   const [activeSystemView, setActiveSystemView] = useState(false);
   const [lastSystemViewedAt, setLastSystemViewedAt] = useState(null);
+  const [systemUnreadCutoff, setSystemUnreadCutoff] = useState(null);
+  const [activeThreadUnreadCutoff, setActiveThreadUnreadCutoff] = useState(false);
+  const [dismissedUnreadMarkers, setDismissedUnreadMarkers] = useState({});
+  const [threadUnreadMarkerEl, setThreadUnreadMarkerEl] = useState(null);
+  const [systemUnreadMarkerEl, setSystemUnreadMarkerEl] = useState(null);
 
   const [composeMode, setComposeMode] = useState("direct");
   const [selectedRecipients, setSelectedRecipients] = useState([]);
@@ -742,6 +749,8 @@ function MessagesPage() {
   const [commandSuggestions, setCommandSuggestions] = useState([]);
 
   const scrollerRef = useRef(null);
+  const unreadMarkerTimersRef = useRef(new Map());
+  const activeUnreadMarkerKeyRef = useRef(null);
   const {
     listThreads,
     listThreadMessages,
@@ -797,19 +806,93 @@ function MessagesPage() {
 
   const directoryHasSearch = Boolean(directorySearch.trim());
 
-  const latestSystemNotification = systemNotifications?.[0];
-  const latestSystemMessage = latestSystemNotification?.message || "No system updates yet.";
+  const orderedSystemNotifications = useMemo(
+    () =>
+      [...(systemNotifications || [])].sort(
+        (a, b) => new Date(a?.created_at || 0).getTime() - new Date(b?.created_at || 0).getTime()
+      ),
+    [systemNotifications]
+  );
+  const latestSystemNotification =
+    orderedSystemNotifications?.[orderedSystemNotifications.length - 1];
   const latestSystemTimestamp = latestSystemNotification?.created_at || null;
   const latestSystemTime = latestSystemTimestamp ? new Date(latestSystemTimestamp).getTime() : 0;
   const lastSystemTime = lastSystemViewedAt ? new Date(lastSystemViewedAt).getTime() : 0;
   const hasSystemUnread =
     Boolean(systemNotifications.length) && latestSystemTime > lastSystemTime;
-  const systemPreview =
-    latestSystemMessage.length > 80 ? `${latestSystemMessage.slice(0, 80)}…` : latestSystemMessage;
   const systemTimestampLabel = latestSystemTimestamp
     ? formatNotificationTimestamp(latestSystemTimestamp)
     : "No updates yet";
   const isSystemThreadActive = activeSystemView;
+  const activeThreadUnreadMarkerIndex = useMemo(() => {
+    if (!messages.length) return -1;
+    if (activeThreadUnreadCutoff === false) return -1;
+    if (!activeThreadUnreadCutoff) return 0;
+    const cutoffTime = new Date(activeThreadUnreadCutoff).getTime();
+    if (Number.isNaN(cutoffTime)) return -1;
+    return messages.findIndex(
+      (message) => new Date(message?.createdAt || 0).getTime() > cutoffTime
+    );
+  }, [messages, activeThreadUnreadCutoff]);
+  const systemUnreadMarkerIndex = useMemo(() => {
+    if (!orderedSystemNotifications.length) return -1;
+    if (!systemUnreadCutoff) return 0;
+    const cutoffTime = new Date(systemUnreadCutoff).getTime();
+    if (Number.isNaN(cutoffTime)) return -1;
+    return orderedSystemNotifications.findIndex(
+      (note) => new Date(note?.created_at || 0).getTime() > cutoffTime
+    );
+  }, [orderedSystemNotifications, systemUnreadCutoff]);
+  const activeThreadUnreadMarkerKey = useMemo(() => {
+    if (!activeThread || activeThreadUnreadMarkerIndex < 0) return null;
+    const cutoff = activeThreadUnreadCutoff === null ? "none" : String(activeThreadUnreadCutoff);
+    return `thread:${activeThread.id}:${cutoff}`;
+  }, [activeThread, activeThreadUnreadCutoff, activeThreadUnreadMarkerIndex]);
+  const systemUnreadMarkerKey = useMemo(() => {
+    if (!activeSystemView || systemUnreadMarkerIndex < 0) return null;
+    const cutoff = systemUnreadCutoff === null ? "none" : String(systemUnreadCutoff);
+    return `system:${cutoff}`;
+  }, [activeSystemView, systemUnreadCutoff, systemUnreadMarkerIndex]);
+  const showThreadUnreadMarker = Boolean(
+    activeThreadUnreadMarkerKey && !dismissedUnreadMarkers[activeThreadUnreadMarkerKey]
+  );
+  const showSystemUnreadMarker = Boolean(
+    systemUnreadMarkerKey && !dismissedUnreadMarkers[systemUnreadMarkerKey]
+  );
+  const currentUnreadMarkerKey = activeSystemView
+    ? (showSystemUnreadMarker ? systemUnreadMarkerKey : null)
+    : (showThreadUnreadMarker ? activeThreadUnreadMarkerKey : null);
+
+  const dismissUnreadMarker = useCallback((markerKey) => {
+    if (!markerKey) return;
+    setDismissedUnreadMarkers((prev) => {
+      if (prev[markerKey]) return prev;
+      const next = { ...prev, [markerKey]: true };
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(UNREAD_MARKER_STORAGE_KEY, JSON.stringify(next));
+      }
+      return next;
+    });
+    const timerId = unreadMarkerTimersRef.current.get(markerKey);
+    if (timerId) {
+      window.clearTimeout(timerId);
+      unreadMarkerTimersRef.current.delete(markerKey);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const saved = window.localStorage.getItem(UNREAD_MARKER_STORAGE_KEY);
+      if (!saved) return;
+      const parsed = JSON.parse(saved);
+      if (parsed && typeof parsed === "object") {
+        setDismissedUnreadMarkers(parsed);
+      }
+    } catch {
+      // Ignore malformed storage data and start fresh.
+    }
+  }, []);
 
   const mergeThread = useCallback((nextThread) => {
     if (!nextThread) return;
@@ -866,8 +949,16 @@ function MessagesPage() {
   );
 
   const openThread = useCallback(
-    async (threadId) => {
+    async (threadId, threadSnapshot = null) => {
       if (!threadId || !dbUserId) return;
+      const referenceThread =
+        threadSnapshot || threads.find((thread) => thread.id === threadId) || null;
+      const currentMember = (referenceThread?.members || []).find(
+        (member) => member.userId === dbUserId
+      );
+      setActiveThreadUnreadCutoff(
+        referenceThread?.hasUnread ? currentMember?.lastReadAt || null : false
+      );
       setActiveSystemView(false);
       setActiveThreadId(threadId);
       setLoadingMessages(true);
@@ -890,17 +981,18 @@ function MessagesPage() {
         setLoadingMessages(false);
       }
     },
-    [dbUserId, listThreadMessages, setThreads]
+    [dbUserId, listThreadMessages, setThreads, threads]
   );
 
   const openSystemNotificationsThread = useCallback(() => {
+    setSystemUnreadCutoff(lastSystemViewedAt || null);
     setActiveSystemView(true);
     setActiveThreadId(null);
     setMessages([]);
     setLoadingMessages(false);
     setConversationError("");
     setLastSystemViewedAt(new Date().toISOString());
-  }, []);
+  }, [lastSystemViewedAt]);
 
   const connectCustomerToConversation = useCallback(
     async ({ threadId, customerQuery }) => {
@@ -1317,7 +1409,7 @@ function MessagesPage() {
               }
               return [...prev, formatted];
             });
-            openThread(activeThread.id);
+            openThread(activeThread.id, { ...activeThread, hasUnread: false });
           }
         }
       );
@@ -1349,16 +1441,95 @@ function MessagesPage() {
       setMessages([]);
       return;
     }
-    if (!activeThreadId) {
-      openThread(threads[0].id);
+    if (activeSystemView) {
+      return;
     }
-  }, [threads, activeThreadId, openThread]);
+    if (!activeThreadId) {
+      openThread(threads[0].id, threads[0]);
+    }
+  }, [threads, activeThreadId, activeSystemView, openThread]);
 
   useEffect(() => {
     if (scrollerRef.current) {
       scrollerRef.current.scrollTop = scrollerRef.current.scrollHeight;
     }
   }, [messages]);
+
+  useEffect(() => {
+    const previousKey = activeUnreadMarkerKeyRef.current;
+    if (previousKey && previousKey !== currentUnreadMarkerKey) {
+      dismissUnreadMarker(previousKey);
+    }
+    activeUnreadMarkerKeyRef.current = currentUnreadMarkerKey;
+  }, [currentUnreadMarkerKey, dismissUnreadMarker]);
+
+  useEffect(() => {
+    if (!showThreadUnreadMarker || !activeThreadUnreadMarkerKey || !threadUnreadMarkerEl) return;
+    if (dismissedUnreadMarkers[activeThreadUnreadMarkerKey]) return;
+    let observer = null;
+    observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry?.isIntersecting) return;
+        if (unreadMarkerTimersRef.current.has(activeThreadUnreadMarkerKey)) return;
+        const timeoutId = window.setTimeout(() => {
+          dismissUnreadMarker(activeThreadUnreadMarkerKey);
+        }, 30000);
+        unreadMarkerTimersRef.current.set(activeThreadUnreadMarkerKey, timeoutId);
+      },
+      { threshold: 0.25 }
+    );
+    observer.observe(threadUnreadMarkerEl);
+    return () => {
+      if (observer) observer.disconnect();
+    };
+  }, [
+    showThreadUnreadMarker,
+    activeThreadUnreadMarkerKey,
+    threadUnreadMarkerEl,
+    dismissUnreadMarker,
+    dismissedUnreadMarkers,
+  ]);
+
+  useEffect(() => {
+    if (!showSystemUnreadMarker || !systemUnreadMarkerKey || !systemUnreadMarkerEl) return;
+    if (dismissedUnreadMarkers[systemUnreadMarkerKey]) return;
+    let observer = null;
+    observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry?.isIntersecting) return;
+        if (unreadMarkerTimersRef.current.has(systemUnreadMarkerKey)) return;
+        const timeoutId = window.setTimeout(() => {
+          dismissUnreadMarker(systemUnreadMarkerKey);
+        }, 30000);
+        unreadMarkerTimersRef.current.set(systemUnreadMarkerKey, timeoutId);
+      },
+      { threshold: 0.25 }
+    );
+    observer.observe(systemUnreadMarkerEl);
+    return () => {
+      if (observer) observer.disconnect();
+    };
+  }, [
+    showSystemUnreadMarker,
+    systemUnreadMarkerKey,
+    systemUnreadMarkerEl,
+    dismissUnreadMarker,
+    dismissedUnreadMarkers,
+  ]);
+
+  useEffect(
+    () => () => {
+      const activeKey = activeUnreadMarkerKeyRef.current;
+      if (activeKey) dismissUnreadMarker(activeKey);
+      unreadMarkerTimersRef.current.forEach((timerId) => {
+        window.clearTimeout(timerId);
+      });
+      unreadMarkerTimersRef.current.clear();
+    },
+    [dismissUnreadMarker]
+  );
 
   useEffect(() => {
     setGroupSearchTerm("");
@@ -1877,7 +2048,9 @@ function MessagesPage() {
                             )}
                             <button
                               type="button"
-                              onClick={() => (threadSelectionMode ? null : openThread(thread.id))}
+                              onClick={() =>
+                                threadSelectionMode ? null : openThread(thread.id, thread)
+                              }
                               disabled={threadSelectionMode}
                               style={{
                                 flex: 1,
@@ -1996,7 +2169,9 @@ function MessagesPage() {
                   <div>
                     <h3 style={{ margin: 0, color: systemTitleColor }}>System notifications</h3>
                     <p style={{ margin: "4px 0 0", color: palette.textMuted }}>
-                      {systemLoading ? "Loading updates…" : systemPreview}
+                      {systemLoading
+                        ? "Loading updates…"
+                        : `Read-only alerts feed. Latest ${systemTimestampLabel}.`}
                     </p>
                   </div>
                   <span
@@ -2014,10 +2189,12 @@ function MessagesPage() {
                 </div>
                 <div
                   style={{
+                    marginTop: "16px",
+                    flex: 1,
+                    minHeight: 0,
                     display: "flex",
                     flexDirection: "column",
                     gap: "12px",
-                    maxHeight: "360px",
                     overflowY: "auto",
                     paddingRight: "4px",
                   }}
@@ -2028,34 +2205,49 @@ function MessagesPage() {
                   {!systemLoading && systemError && (
                     <p style={{ color: "var(--danger)", margin: 0 }}>{systemError}</p>
                   )}
-                  {!systemLoading && !systemError && systemNotifications.length === 0 && (
+                  {!systemLoading && !systemError && orderedSystemNotifications.length === 0 && (
                     <p style={{ color: palette.textMuted, margin: 0 }}>No system notifications yet.</p>
                   )}
-                  {!systemLoading && !systemError && systemNotifications.length > 0 && (
+                  {!systemLoading && !systemError && orderedSystemNotifications.length > 0 && (
                     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                      {systemNotifications.map((note) => (
-                        <article
-                          key={`system-${note.notification_id}`}
-                          style={{
-                            borderRadius: "14px",
-                            border: `1px solid ${palette.border}`,
-                            padding: "12px",
-                            backgroundColor: "var(--surface)",
-                            boxShadow: "none",
-                          }}
-                        >
-                          <p style={{ margin: 0, color: palette.textPrimary }}>{note.message || "System update"}</p>
-                          <p style={{ margin: "6px 0 0", fontSize: "0.75rem", color: palette.textMuted }}>
-                            {formatNotificationTimestamp(note.created_at)}
-                          </p>
-                        </article>
+                      {orderedSystemNotifications.map((note, index) => (
+                        <React.Fragment key={`system-${note.notification_id}`}>
+                          {showSystemUnreadMarker && systemUnreadMarkerIndex === index && (
+                            <div
+                              ref={setSystemUnreadMarkerEl}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "10px",
+                                width: "100%",
+                              }}
+                            >
+                              <div style={{ flex: 1, height: "1px", backgroundColor: palette.border }} />
+                              <span style={{ fontSize: "0.75rem", fontWeight: 700, color: systemTitleColor }}>
+                                Unread
+                              </span>
+                              <div style={{ flex: 1, height: "1px", backgroundColor: palette.border }} />
+                            </div>
+                          )}
+                          <article
+                            style={{
+                              borderRadius: "14px",
+                              border: `1px solid ${palette.border}`,
+                              padding: "12px",
+                              backgroundColor: "var(--surface)",
+                              boxShadow: "none",
+                            }}
+                          >
+                            <p style={{ margin: 0, color: palette.textPrimary }}>{note.message || "System update"}</p>
+                            <p style={{ margin: "6px 0 0", fontSize: "0.75rem", color: palette.textMuted }}>
+                              {formatNotificationTimestamp(note.created_at)}
+                            </p>
+                          </article>
+                        </React.Fragment>
                       ))}
                     </div>
                   )}
                 </div>
-                <p style={{ fontSize: "0.75rem", color: palette.textMuted, margin: 0 }}>
-                  Only the system posts here; this thread cannot be deleted or renamed.
-                </p>
               </>
             ) : activeThread ? (
               <>
@@ -2138,14 +2330,32 @@ function MessagesPage() {
                   {!loadingMessages && messages.length === 0 && (
                     <p style={{ color: palette.textMuted }}>No messages yet.</p>
                   )}
-                  {messages.map((message) => (
-                    <MessageBubble
-                      key={message.id}
-                      message={message}
-                      isMine={message.senderId === dbUserId}
-                      nameColor={userNameColor}
-                      userRoles={user?.roles || []}
-                    />
+                  {messages.map((message, index) => (
+                    <React.Fragment key={message.id}>
+                      {showThreadUnreadMarker && activeThreadUnreadMarkerIndex === index && (
+                        <div
+                          ref={setThreadUnreadMarkerEl}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "10px",
+                            width: "100%",
+                          }}
+                        >
+                          <div style={{ flex: 1, height: "1px", backgroundColor: palette.border }} />
+                          <span style={{ fontSize: "0.75rem", fontWeight: 700, color: systemTitleColor }}>
+                            Unread
+                          </span>
+                          <div style={{ flex: 1, height: "1px", backgroundColor: palette.border }} />
+                        </div>
+                      )}
+                      <MessageBubble
+                        message={message}
+                        isMine={message.senderId === dbUserId}
+                        nameColor={userNameColor}
+                        userRoles={user?.roles || []}
+                      />
+                    </React.Fragment>
                   ))}
                 </div>
 

@@ -2,11 +2,16 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import ModalPortal from "@/components/popups/ModalPortal";
 
+const consumableNameCollator = new Intl.Collator(undefined, {
+  numeric: true,
+  sensitivity: "base",
+});
+
 const modalStyle = {
   borderRadius: "32px",
-  width: "100%",
+  width: "min(960px, calc(100vw - 32px))",
   maxWidth: "960px",
-  maxHeight: "calc(100dvh - clamp(10px, 2.5vw, 20px) * 2)",
+  maxHeight: "calc(100vh - 32px)",
   overflow: "hidden",
   border: "1px solid var(--surface-light)",
   padding: "clamp(16px, 3vw, 32px)",
@@ -91,6 +96,7 @@ function StockCheckPopup({
   const [managerActionLoading, setManagerActionLoading] = useState(false);
   const [requestUpdateId, setRequestUpdateId] = useState(null);
   const [stockSearch, setStockSearch] = useState("");
+  const [showStockList, setShowStockList] = useState(false);
   const [newConsumableForm, setNewConsumableForm] = useState({
     name: "",
     supplier: "",
@@ -103,16 +109,46 @@ function StockCheckPopup({
     return locatedItems.concat(data.unassigned || []);
   }, [data.locations, data.unassigned]);
 
+  const sortedConsumables = useMemo(() => {
+    return [...allConsumables].sort((a, b) =>
+      consumableNameCollator.compare(
+        (a?.name || "").toString(),
+        (b?.name || "").toString()
+      )
+    );
+  }, [allConsumables]);
+
   const filteredConsumables = useMemo(() => {
     const query = stockSearch.trim().toLowerCase();
     if (!query) {
-      return allConsumables;
+      return sortedConsumables;
     }
-    return allConsumables.filter((item) => (item.name || "").toLowerCase().includes(query));
-  }, [allConsumables, stockSearch]);
+    return sortedConsumables.filter((item) =>
+      (item.name || "").toLowerCase().includes(query)
+    );
+  }, [sortedConsumables, stockSearch]);
 
   const totalItems = allConsumables.length;
   const visibleItems = filteredConsumables.length;
+  const hasSearchQuery = stockSearch.trim().length > 0;
+  const shouldShowStockList = hasSearchQuery || showStockList;
+
+  const displayConsumables = useMemo(() => {
+    if (!showStockList) {
+      return filteredConsumables;
+    }
+
+    const selected = [];
+    const unselected = [];
+    filteredConsumables.forEach((item) => {
+      if (selectedItems.has(item.id)) {
+        selected.push(item);
+      } else {
+        unselected.push(item);
+      }
+    });
+    return [...selected, ...unselected];
+  }, [filteredConsumables, selectedItems, showStockList]);
 
   const selectedCount = selectedItems.size;
 
@@ -181,6 +217,7 @@ function StockCheckPopup({
       setError("");
       setRenameItemState({ id: null, value: "" });
       setStockSearch("");
+      setShowStockList(false);
       setNewConsumableForm({ name: "", supplier: "", unitCost: "" });
       setNewConsumableLoading(false);
       return () => {};
@@ -297,6 +334,38 @@ function StockCheckPopup({
       setError(submitError.message || "Unable to submit stock check.");
     } finally {
       setSubmitLoading(false);
+    }
+  };
+
+  const handleEmailSelectedItems = () => {
+    if (!selectedCount) {
+      setError("Select at least one consumable to email.");
+      return;
+    }
+
+    const selectedList = allConsumables.filter((item) => selectedItems.has(item.id));
+    const itemLines = selectedList.map((item, index) => {
+      const itemName = (item?.name || "Unnamed consumable").toString().trim();
+      return `${index + 1}. ${itemName}`;
+    });
+
+    const body = [
+      "Hi,",
+      "",
+      "Please stock take the following consumables:",
+      "",
+      ...itemLines,
+      "",
+      "Thanks,",
+    ].join("\n");
+
+    const mailtoUrl =
+      `mailto:darrell@humphriesandpark.co.uk` +
+      `?subject=${encodeURIComponent("Stock Take")}` +
+      `&body=${encodeURIComponent(body)}`;
+
+    if (typeof window !== "undefined") {
+      window.location.href = mailtoUrl;
     }
   };
 
@@ -496,14 +565,23 @@ function StockCheckPopup({
 
   return (
     <ModalPortal>
-      <div className="popup-backdrop" style={{ zIndex: 1400 }} role="dialog" aria-modal="true">
+      <div
+        className="popup-backdrop"
+        style={{
+          zIndex: 1400,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "16px",
+          overflowY: "auto",
+        }}
+        role="dialog"
+        aria-modal="true"
+      >
         <div className="popup-card" style={modalStyle}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px" }}>
           <div>
             <h2 style={{ margin: 0, color: "var(--primary-dark)" }}>Stock Check</h2>
-            <p style={{ margin: "4px 0 0", color: "var(--grey-accent-dark)" }}>
-              Select consumables to request and submit them to the workshop manager.
-            </p>
           </div>
           <button
             type="button"
@@ -546,9 +624,6 @@ function StockCheckPopup({
             {isManager && (
               <div style={{ ...sectionCardStyle, display: "flex", flexDirection: "column", gap: "12px" }}>
                 <h3 style={{ margin: 0, color: "var(--primary-dark)" }}>Add new consumable</h3>
-                <p style={{ margin: 0, color: "var(--grey-accent-dark)", fontSize: "0.9rem" }}>
-                  Create a consumable that everyone in the workshop can see and request.
-                </p>
                 <form
                   onSubmit={handleNewConsumableSubmit}
                   style={{
@@ -713,37 +788,49 @@ function StockCheckPopup({
               <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: "12px", alignItems: "center" }}>
                 <div>
                   <h3 style={{ margin: 0, color: "var(--primary-dark)" }}>Consumable stock</h3>
-                  <p style={{ margin: "4px 0 0", color: "var(--grey-accent-dark)", fontSize: "0.9rem" }}>
-                    Select items below to include them in a stock check request.
-                  </p>
                 </div>
                 <span style={{ color: "var(--grey-accent-dark)", fontSize: "0.9rem" }}>
                   {loading ? "Loading…" : `${visibleItems} of ${totalItems} items`}
                 </span>
               </div>
-              <input
-                type="search"
-                value={stockSearch}
-                onChange={(event) => setStockSearch(event.target.value)}
-                placeholder="Search consumables"
-                style={{
-                  width: "100%",
-                  padding: "10px 14px",
-                  borderRadius: "12px",
-                  border: "1px solid var(--surface-light)",
-                  background: "var(--search-surface, var(--surface))",
-                  color: "var(--primary-dark)",
-                }}
-              />
-              {loading ? (
-                <p style={{ margin: 0, color: "var(--info)" }}>Loading stock…</p>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+                <input
+                  type="search"
+                  value={stockSearch}
+                  onChange={(event) => setStockSearch(event.target.value)}
+                  placeholder="Search consumables"
+                  style={{
+                    flex: "1 1 260px",
+                    minWidth: "240px",
+                    padding: "10px 14px",
+                    borderRadius: "12px",
+                    border: "1px solid var(--surface-light)",
+                    background: "var(--search-surface, var(--surface))",
+                    color: "var(--primary-dark)",
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowStockList((previous) => !previous)}
+                  style={{ ...buttonSecondaryStyle, padding: "10px 14px" }}
+                  disabled={totalItems === 0}
+                >
+                  {shouldShowStockList && !hasSearchQuery ? "Hide list" : "Show list"}
+                </button>
+              </div>
+              {!shouldShowStockList ? (
+                <p style={{ margin: 0, color: "var(--grey-accent-dark)" }}>
+                  Search for a consumable or click Show list.
+                </p>
+              ) : loading ? (
+                <p style={{ margin: 0, color: "var(--info)" }}>Loading stock...</p>
               ) : visibleItems === 0 ? (
                 <p style={{ margin: 0, color: "var(--grey-accent-dark)" }}>
                   {totalItems === 0 ? "No consumables recorded yet." : "No consumables match your search."}
                 </p>
               ) : (
                 <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "10px", maxHeight: "420px", overflowY: "auto", paddingRight: "4px" }}>
-                  {filteredConsumables.map((item) => renderConsumableRow(item))}
+                  {displayConsumables.map((item) => renderConsumableRow(item))}
                 </div>
               )}
             </div>
@@ -754,9 +841,6 @@ function StockCheckPopup({
             <strong style={{ color: "var(--primary-dark)", fontSize: "1rem" }}>
               {selectedCount} item{selectedCount === 1 ? "" : "s"} selected
             </strong>
-            <p style={{ margin: "4px 0 0", color: "var(--grey-accent-dark)", fontSize: "0.9rem" }}>
-              Only checked consumables are included in the submission.
-            </p>
           </div>
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
             <button
@@ -765,6 +849,14 @@ function StockCheckPopup({
               style={{ ...buttonSecondaryStyle, padding: "10px 16px" }}
             >
               Clear Selection
+            </button>
+            <button
+              type="button"
+              onClick={handleEmailSelectedItems}
+              style={{ ...buttonSecondaryStyle, padding: "12px 18px", opacity: selectedCount ? 1 : 0.7 }}
+              disabled={!selectedCount}
+            >
+              Email
             </button>
             <button
               type="button"
