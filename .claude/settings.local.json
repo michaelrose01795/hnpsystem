@@ -41,7 +41,9 @@
       "Bash(lsof:*)",
       "Bash(curl:*)",
       "Bash(wc:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(where:*)",
+      "Bash(powershell.exe -Command:*)"
     ],
     "deny": [],
     "ask": []
