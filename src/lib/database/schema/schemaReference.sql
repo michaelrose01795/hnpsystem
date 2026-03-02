@@ -1340,6 +1340,7 @@ CREATE TABLE public.users (
   department text,
   employment_type text,
   start_date date,
+  probation_end date,
   manager_id integer,
   photo_url text,
   emergency_contact jsonb,

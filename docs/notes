@@ -9,7 +9,6 @@ only make this change nothing else
 
 
 
-
 Fix “Ensure all allocated parts have quantities and pricing.” To give a better explanation and to fix it so when within the parts tab if the parts tab background is set to green eg if the “PARTS ADDED TO JOB” section all of the rows except the removed rows are set as allocated. 
 
 Fix within the service history tab the mileage within the row make sure it’s set to the database so it doesn’t say not recorded when it has actually been recorded. 
@@ -26,6 +25,7 @@ Go thought the whole app to make sure everything is spelt the uk English way
 Fix within the sidebar when the HR manager button is pressed it opens the hr/manager page, atm is just flicking back to the news feed page
 
 Within the news feed page make sure there is a bigger gap in between the first row and the add update button so when the hover is used it doesn’t overlap the button. 
+
 
 STOCK CHECK PAGE
 Have it so that all pop ups lock the background scroll or buttons from being clicked so only the items within the popup are active. 
@@ -47,8 +47,10 @@ Remove the “Monitor consumable spend, reorder schedules, and supplier summarie
 Within the “Scheduled Consumables” section have it so it will show the “Overdue M gloves 12 Dec 2025 15 Dec 2025 10 Euro £2.39 28.00 Order
 ” rows and then this section “ITEM QTY UNIT TOTAL SUPPLIER DATE M gloves 10 £2.80 £28.00 Euro 12 Dec 2025 M gloves 10 £2.39 £28.00 Euro 12 Dec 2025 M gloves 4 £2.39 £9.56 Euro 09 Dec 2025 M gloves 1 £2.39 £2.39 Euro 09 Dec 2025” is shown within a popup from clicking the row within the Scheduled consumable. 
 
+
 HR MANAGER 
-Fix this “Failed to load profile data Failed to load profile data (status 401) If you continue to see this error, please contact HR to ensure your employee profile has been created.”
+CHECKKK
+Fix this “Failed to load profile data Failed to load profile data (status 401) If you continue to see this error, please contact HR to ensure your employee profile has been created.” this problem only happens when using vercel app website, not vercel dev within the terminal, deep dive into fixing this so the vercel release will work the same as the vercel dev. 
 
 Make sure the clocking button then works. And check the scheme.sql file that the database is correct. 
 

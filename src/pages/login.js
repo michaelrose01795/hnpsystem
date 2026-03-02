@@ -2,6 +2,7 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: /src/pages/login.js
 import React, { useState, useEffect } from "react";
+import { signIn, useSession } from "next-auth/react";
 import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
 import { useRouter } from "next/router";
@@ -9,7 +10,6 @@ import Layout from "@/components/Layout";
 import LoginDropdown from "@/components/LoginDropdown";
 import CustomerViewPreview from "@/components/CustomerViewPreview";
 import BrandLogo from "@/components/BrandLogo";
-import { supabase } from "@/lib/supabaseClient"; // Database connection
 import { roleCategories } from "@/config/users"; // Dev users config
 
 const FIELD_MAX_WIDTH = 380;
@@ -81,11 +81,11 @@ const LoginCard = ({
 export default function LoginPage() {
   const CUSTOMER_PORTAL_URL =
     process.env.NEXT_PUBLIC_CUSTOMER_PORTAL_URL || "https://www.hpautomotive.co.uk";
+  const { data: session } = useSession();
   // Safe destructuring from context
   const userContext = useUser();
   const devLogin = userContext?.devLogin;
   const user = userContext?.user;
-  const setUser = userContext?.setUser;
   const dbUserId = userContext?.dbUserId;
   const { usersByRole, usersByRoleDetailed, isLoading: rosterLoading, refreshRoster } = useRoster();
 
@@ -134,96 +134,90 @@ export default function LoginPage() {
     return normalizedCategory;
   }, [usersByRole, usersByRoleDetailed]);
 
-  // Developer login handler
+  // Developer login handler — routes through NextAuth CredentialsProvider
   const handleDevLogin = async () => {
-    if (!devLogin) {
-      alert("Developer login is not available. User context is missing.");
-      return;
-    }
     if (!selectedCategory || !selectedDepartment || !selectedUser) {
       alert("Please select an area, department, and user.");
       return;
     }
-    const result = await devLogin(selectedUser, selectedDepartment);
-    if (result?.success === false) {
-      alert("Dev login failed. Please try again.");
+    const userId = selectedUser?.user_id || selectedUser?.id || selectedUser?.identifier;
+    const result = await signIn("credentials", {
+      userId: String(userId),
+      redirect: false,
+    });
+    if (result?.error) {
+      // Fallback to legacy dev login if NextAuth credentials fails (e.g. in dev mode)
+      if (devLogin) {
+        const fallback = await devLogin(selectedUser, selectedDepartment);
+        if (fallback?.success === false) {
+          alert("Dev login failed. Please try again.");
+        }
+      } else {
+        alert("Dev login failed. Please try again.");
+      }
     }
   };
 
-  // Supabase email/password login
+  // Email/password login — routes through NextAuth CredentialsProvider
   const handleDbLogin = async (e) => {
     e.preventDefault();
     setErrorMessage("");
     try {
-      const response = await supabase
-        .from("users")
-        .select("*")
-        .eq("email", email)
-        .single();
-
-      const data = response?.data;
-      const error = response?.error;
-
-      if (error || !data) {
-        setErrorMessage("User not found.");
-        return;
-      }
-
-      if (data.password !== password) {
-        setErrorMessage("Incorrect password.");
-        return;
-      }
-
-      setUser?.({
-        id: data.id,
-        name: `${data.first_name} ${data.last_name}`,
-        email: data.email,
-        role: data.role,
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
       });
+
+      if (result?.error) {
+        setErrorMessage("User not found or incorrect password.");
+        return;
+      }
     } catch (err) {
-      console.error("❌ Login error:", err);
+      console.error("Login error:", err);
       setErrorMessage("Login failed, please try again.");
     }
   };
 
-  // Redirect once user is logged in + auto clock-in
+  // Redirect once user is logged in (via NextAuth session or UserContext) + auto clock-in
   useEffect(() => {
-    if (user) {
-      // Auto clock-in on login (fire-and-forget, don't block redirect)
-      const roles = []
-        .concat(user.roles || [])
-        .concat(user.role ? [user.role] : [])
-        .map((role) => String(role).toLowerCase());
-      const isCustomer = roles.some((role) => role.includes("customer"));
+    const activeUser = user || session?.user;
+    if (!activeUser) return;
 
-      if (!isCustomer) {
-        const clockIn = async () => {
-          try {
-            const userId = dbUserId || user.id;
-            const url = userId ? `/api/profile/clock?userId=${userId}` : "/api/profile/clock";
-            const statusRes = await fetch(url, { credentials: "include" });
-            if (statusRes.ok) {
-              const statusData = await statusRes.json();
-              if (!statusData?.data?.isClockedIn) {
-                await fetch(url, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  credentials: "include",
-                  body: JSON.stringify({ action: "clock-in" }),
-                });
-              }
+    // Auto clock-in on login (fire-and-forget, don't block redirect)
+    const roles = []
+      .concat(activeUser.roles || [])
+      .concat(activeUser.role ? [activeUser.role] : [])
+      .map((role) => String(role).toLowerCase());
+    const isCustomer = roles.some((role) => role.includes("customer"));
+
+    if (!isCustomer) {
+      const clockIn = async () => {
+        try {
+          const userId = dbUserId || activeUser.id;
+          const url = userId ? `/api/profile/clock?userId=${userId}` : "/api/profile/clock";
+          const statusRes = await fetch(url, { credentials: "include" });
+          if (statusRes.ok) {
+            const statusData = await statusRes.json();
+            if (!statusData?.data?.isClockedIn) {
+              await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ action: "clock-in" }),
+              });
             }
-          } catch (err) {
-            console.error("Auto clock-in failed:", err);
           }
-        };
-        clockIn();
-      }
-
-      const target = isCustomer ? "/customer" : "/newsfeed";
-      router.push(target);
+        } catch (err) {
+          console.error("Auto clock-in failed:", err);
+        }
+      };
+      clockIn();
     }
-  }, [user, router, dbUserId]);
+
+    const target = isCustomer ? "/customer" : "/newsfeed";
+    router.push(target);
+  }, [user, session, router, dbUserId]);
 
   useEffect(() => {
     // ⚠️ Mock data found — replacing with Supabase query

@@ -81,6 +81,14 @@ async function handleCreateOrUpdate(req, res) {
   }
 
   const payload = sanitizePayload(req.body);
+  const isEditOperation = payload._operation === "edit";
+
+  if (isEditOperation && !payload.userId) {
+    return res.status(400).json({
+      success: false,
+      message: "Cannot save employee changes because the user link is missing.",
+    });
+  }
 
   for (const field of REQUIRED_FIELDS) {
     if (!payload[field]) {
@@ -97,6 +105,7 @@ async function handleCreateOrUpdate(req, res) {
 
   try {
     const userRecord = await upsertUser({
+      userId: payload.userId || null,
       email,
       firstName,
       lastName,
@@ -104,6 +113,7 @@ async function handleCreateOrUpdate(req, res) {
       role,
       jobTitle: payload.jobTitle,
       payload,
+      isEditOperation,
     });
 
     const directory = await getEmployeeDirectory();
@@ -122,6 +132,7 @@ async function handleCreateOrUpdate(req, res) {
       employmentType: payload.employmentType || "Full-time",
       status: payload.status || "Active",
       startDate: payload.startDate || null,
+      probationEnd: payload.probationEnd || null,
       email,
       phone: payload.phone || "",
       keycloakId: payload.keycloakId || null,
@@ -141,14 +152,36 @@ async function handleCreateOrUpdate(req, res) {
   }
 }
 
-async function upsertUser({ email, firstName, lastName, phone, role, jobTitle, payload }) {
-  const { data: existingUser, error: lookupError } = await supabaseService
-    .from("users")
-    .select("user_id, email")
-    .eq("email", email)
-    .maybeSingle();
+async function upsertUser({ email, firstName, lastName, phone, role, jobTitle, payload, isEditOperation = false }) {
+  const hasLegacyNameTriggerError = (error) =>
+    /record\s+"new"\s+has\s+no\s+field\s+"name"/i.test(error?.message || "");
 
-  if (lookupError) throw lookupError;
+  let existingUser = null;
+
+  if (payload?.userId) {
+    const { data, error } = await supabaseService
+      .from("users")
+      .select("user_id, email")
+      .eq("user_id", payload.userId)
+      .maybeSingle();
+    if (error) throw error;
+    existingUser = data || null;
+  }
+
+  if (!existingUser) {
+    // Fallback to case-insensitive email lookup so existing users are updated instead of inserted.
+    const { data, error } = await supabaseService
+      .from("users")
+      .select("user_id, email")
+      .ilike("email", email)
+      .maybeSingle();
+    if (error) throw error;
+    existingUser = data || null;
+  }
+
+  if (isEditOperation && !existingUser) {
+    throw new Error("Unable to find the linked user record for this employee.");
+  }
 
   // Build the combined user + employee fields payload
   const buildEmployeeFields = () => {
@@ -170,6 +203,7 @@ async function upsertUser({ email, firstName, lastName, phone, role, jobTitle, p
       employment_type: payload.employmentType || null,
       employment_status: payload.status || null,
       start_date: toIsoDate(payload.startDate),
+      probation_end: toIsoDate(payload.probationEnd),
       manager_id: payload.managerId || null,
       emergency_contact: emergencyContact,
       contracted_hours: toNumberOrNull(payload.contractedHours),
@@ -199,7 +233,20 @@ async function upsertUser({ email, firstName, lastName, phone, role, jobTitle, p
       .eq("user_id", existingUser.user_id)
       .select("user_id, first_name, last_name, email, role, job_title")
       .maybeSingle();
-    if (error) throw error;
+    if (error) {
+      if (hasLegacyNameTriggerError(error)) {
+        // Ensure access-control role changes still persist on users.role when the legacy trigger blocks broader updates.
+        const { data: roleData, error: roleError } = await supabaseService
+          .from("users")
+          .update({ role })
+          .eq("user_id", existingUser.user_id)
+          .select("user_id, first_name, last_name, email, role, job_title")
+          .maybeSingle();
+        if (roleError) throw roleError;
+        return roleData || existingUser;
+      }
+      throw error;
+    }
     return data || existingUser;
   }
 
