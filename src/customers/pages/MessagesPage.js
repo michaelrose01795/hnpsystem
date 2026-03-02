@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import CustomerLayout from "@/customers/components/CustomerLayout";
 import AppointmentTimeline from "@/customers/components/AppointmentTimeline";
 import { useCustomerPortalData } from "@/customers/hooks/useCustomerPortalData";
@@ -276,6 +276,12 @@ export default function CustomerMessagesPage() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [savingMessageId, setSavingMessageId] = useState(null);
 
+  // Unread divider state
+  const [unreadAfterTimestamp, setUnreadAfterTimestamp] = useState(null);
+  const [showUnreadDivider, setShowUnreadDivider] = useState(false);
+  const unreadDividerRef = useRef(null);
+  const unreadTimerRef = useRef(null);
+
   // Helper function to check if a role matches allowlist
   const matchesAllowedRole = (role) => {
     if (!role) return false;
@@ -329,6 +335,23 @@ export default function CustomerMessagesPage() {
       setActiveThread(thread);
       setMessagesLoading(true);
       setMessagesError("");
+      // Capture lastReadAt BEFORE marking read so we know where the divider goes
+      if (thread.hasUnread && thread.lastReadAt) {
+        setUnreadAfterTimestamp(thread.lastReadAt);
+        setShowUnreadDivider(true);
+      } else if (thread.hasUnread && !thread.lastReadAt) {
+        // Never read before — all messages are unread, use epoch
+        setUnreadAfterTimestamp("1970-01-01T00:00:00.000Z");
+        setShowUnreadDivider(true);
+      } else {
+        setUnreadAfterTimestamp(null);
+        setShowUnreadDivider(false);
+      }
+      // Clear any existing hide timer
+      if (unreadTimerRef.current) {
+        clearTimeout(unreadTimerRef.current);
+        unreadTimerRef.current = null;
+      }
       try {
         const response = await fetch(
           `/api/messages/threads/${thread.id}/messages${buildQuery({ userId: dbUserId })}`
@@ -358,6 +381,13 @@ export default function CustomerMessagesPage() {
     setMessagesLoading(false);
     setMessagesError("");
     setLastSystemViewedAt(new Date().toISOString());
+    // Hide unread divider when switching away from a chat thread
+    setShowUnreadDivider(false);
+    setUnreadAfterTimestamp(null);
+    if (unreadTimerRef.current) {
+      clearTimeout(unreadTimerRef.current);
+      unreadTimerRef.current = null;
+    }
   }, []);
 
   // Toggle composer user selection
@@ -713,6 +743,63 @@ export default function CustomerMessagesPage() {
     };
   }, [dbUserId, fetchThreads, activeThread, openThread]);
 
+  // Effect: Auto-hide unread divider after 30s of being visible on screen
+  useEffect(() => {
+    if (!showUnreadDivider) return;
+    const node = unreadDividerRef.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          // Start 30-second timer when divider scrolls into view
+          if (!unreadTimerRef.current) {
+            unreadTimerRef.current = setTimeout(() => {
+              setShowUnreadDivider(false);
+              setUnreadAfterTimestamp(null);
+              unreadTimerRef.current = null;
+            }, 30000);
+          }
+        } else {
+          // If it scrolls out of view, cancel the timer
+          if (unreadTimerRef.current) {
+            clearTimeout(unreadTimerRef.current);
+            unreadTimerRef.current = null;
+          }
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(node);
+
+    return () => {
+      observer.disconnect();
+      if (unreadTimerRef.current) {
+        clearTimeout(unreadTimerRef.current);
+        unreadTimerRef.current = null;
+      }
+    };
+  }, [showUnreadDivider, threadMessages]);
+
+  // Effect: Hide unread divider when user navigates away / tab loses focus
+  useEffect(() => {
+    if (!showUnreadDivider) return;
+
+    const handleHide = () => {
+      if (document.visibilityState === "hidden") {
+        setShowUnreadDivider(false);
+        setUnreadAfterTimestamp(null);
+        if (unreadTimerRef.current) {
+          clearTimeout(unreadTimerRef.current);
+          unreadTimerRef.current = null;
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleHide);
+    return () => document.removeEventListener("visibilitychange", handleHide);
+  }, [showUnreadDivider]);
+
   const latestSystemNotification = systemNotifications?.[0];
   const latestSystemMessage = latestSystemNotification?.message || "No system updates yet.";
   const latestSystemTimestamp = latestSystemNotification?.created_at || null;
@@ -925,13 +1012,31 @@ export default function CustomerMessagesPage() {
                   )}
                   {!messagesLoading && !messagesError && (
                     <div className="space-y-3">
-                      {threadMessages.map((message) => {
+                      {threadMessages.map((message, index) => {
                         const senderName =
                           message.sender?.name || (message.senderId === dbUserId ? "You" : "Team member");
                         const isMine = message.senderId === dbUserId;
+                        // Check if the unread divider should appear before this message
+                        const isFirstUnread =
+                          showUnreadDivider &&
+                          unreadAfterTimestamp &&
+                          new Date(message.createdAt) > new Date(unreadAfterTimestamp) &&
+                          (index === 0 || new Date(threadMessages[index - 1].createdAt) <= new Date(unreadAfterTimestamp));
                         return (
+                          <React.Fragment key={message.id || `${message.senderId}-${message.createdAt}`}>
+                            {isFirstUnread && (
+                              <div
+                                ref={unreadDividerRef}
+                                className="flex items-center gap-3 py-1"
+                              >
+                                <div className="h-px flex-1 bg-[var(--primary)]" />
+                                <span className="shrink-0 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-[var(--primary)]">
+                                  New messages
+                                </span>
+                                <div className="h-px flex-1 bg-[var(--primary)]" />
+                              </div>
+                            )}
                           <div
-                            key={message.id || `${message.senderId}-${message.createdAt}`}
                             className={`space-y-1 rounded-2xl border px-4 py-3 text-sm ${
                               isMine ? "border-[var(--surface-light)] bg-[var(--surface-light)]" : "border-[var(--surface-light)] bg-[var(--background)]"
                             }`}
@@ -975,6 +1080,7 @@ export default function CustomerMessagesPage() {
                               )}
                             </div>
                           </div>
+                          </React.Fragment>
                         );
                       })}
                     </div>

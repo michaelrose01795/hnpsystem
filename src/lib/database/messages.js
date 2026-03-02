@@ -103,6 +103,7 @@ const formatThreadRow = (row, currentUserId, membershipMap = {}) => {
     members,
     lastMessage,
     hasUnread,
+    lastReadAt,
   };
 };
 

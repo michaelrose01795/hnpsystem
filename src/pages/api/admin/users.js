@@ -3,8 +3,6 @@
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 import {
   listAdminUsers,
-  createAdminUser,
-  deleteAdminUser,
 } from "@/lib/database/adminUsers";
 
 const allowedRoles = ["admin manager", "admin", "owner"];
@@ -18,35 +16,20 @@ async function handler(req, res, session) {
     }
 
     if (req.method === "POST") {
-      const { firstName, lastName, email, role, phone } = req.body || {};
-
-      if (!firstName || !lastName || !email || !role) {
-        res.status(400).json({ success: false, message: "firstName, lastName, email, and role are required" });
-        return;
-      }
-
-      const created = await createAdminUser({
-        firstName,
-        lastName,
-        email,
-        role,
-        phone,
-        actorId: session?.user?.id || null,
+      res.status(403).json({
+        success: false,
+        message:
+          "Direct user table writes are disabled here. Use HR Manager > Employees to create or edit users.",
       });
-
-      res.status(201).json({ success: true, data: created });
       return;
     }
 
     if (req.method === "DELETE") {
-      const { userId } = req.query;
-      if (!userId) {
-        res.status(400).json({ success: false, message: "userId query param is required" });
-        return;
-      }
-
-      await deleteAdminUser(Number(userId), session?.user?.id || null);
-      res.status(200).json({ success: true });
+      res.status(403).json({
+        success: false,
+        message:
+          "Direct user table writes are disabled here. Use HR Manager > Employees to manage users.",
+      });
       return;
     }
 

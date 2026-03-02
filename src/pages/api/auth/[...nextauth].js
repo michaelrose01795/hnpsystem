@@ -57,12 +57,12 @@ export const authOptions = {
 
           const { data, error } = await supabase
             .from("users")
-            .select("user_id, first_name, last_name, email, password, role")
-            .eq("email", credentials.email)
+            .select("user_id, first_name, last_name, email, password_hash, role")
+            .ilike("email", credentials.email)
             .single();
 
           if (error || !data) return null;
-          if (data.password !== credentials.password) return null;
+          if (data.password_hash !== credentials.password) return null;
 
           return {
             id: String(data.user_id),

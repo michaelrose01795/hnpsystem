@@ -118,34 +118,10 @@ const ensureCustomerUser = async (customerRow) => {
   if (existingUser?.user_id) {
     return existingUser.user_id;
   }
-
-  const fallbackFirst =
-    customerRow.firstname ||
-    (customerRow.name ? customerRow.name.split(" ")[0] : null) ||
-    (email.includes("@") ? email.split("@")[0] : null) ||
-    "Customer";
-  const fallbackLast =
-    customerRow.lastname ||
-    (customerRow.name ? customerRow.name.split(" ").slice(1).join(" ") : null) ||
-    "Portal";
-
-  const { data: inserted, error: insertError } = await supabase
-    .from("users")
-    .insert({
-      first_name: fallbackFirst || "Customer",
-      last_name: fallbackLast || "Portal",
-      email,
-      password_hash: "customer_portal",
-      role: "Customer Portal",
-      phone: customerRow.mobile || customerRow.telephone || null,
-      name: `${fallbackFirst || ""} ${fallbackLast || ""}`.trim() || email,
-    })
-    .select("user_id")
-    .single();
-
-  if (insertError) throw insertError;
-
-  return inserted.user_id;
+  throw createHttpError(
+    409,
+    "No users-table account exists for this customer email. User table writes are restricted to HR Manager > Employees."
+  );
 };
 
 const fetchThreadMembers = async (threadId) => {

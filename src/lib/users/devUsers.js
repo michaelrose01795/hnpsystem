@@ -128,7 +128,6 @@ const findUserByName = async (displayName) => {
 // Ensure a users row exists for the supplied display name and return user_id
 export const ensureUserIdForDisplayName = async (displayName) => {
   const trimmedName = String(displayName || "").trim();
-  const role = await inferRoleFromRoster(trimmedName);
 
   if (!trimmedName) return null;
 
@@ -156,26 +155,8 @@ export const ensureUserIdForDisplayName = async (displayName) => {
   if (existingByEmail?.user_id) {
     return existingByEmail.user_id;
   }
-
-  const { first, last } = splitName(trimmedName);
-
-  const { data: inserted, error: insertErr } = await supabase
-    .from("users")
-    .insert([
-      {
-        first_name: first,
-        last_name: last,
-        email: fakeEmail,
-        password_hash: "external_auth",
-        role,
-        phone: null,
-      },
-    ])
-    .select("user_id")
-    .single();
-
-  if (insertErr) throw insertErr;
-  return inserted.user_id;
+  // Users table writes are restricted to HR Manager > Employees and password reset flow.
+  return null;
 };
 
 // Convenience helper mirroring the previous ensureDevDbUserAndGetId signature

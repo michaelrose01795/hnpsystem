@@ -843,22 +843,13 @@ export default function CreateJobCardPage() {
 
       const publicUrl = supabase.storage.from("user-signatures").getPublicUrl(objectPath).data.publicUrl;
 
-      const { data, error } = await supabase
-        .from("users")
-        .update({
-          signature_storage_path: objectPath,
-          signature_file_url: publicUrl,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", dbUserId)
-        .select("user_id, signature_file_url, signature_storage_path")
-        .single();
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      setUserSignature(data);
+      // Users table writes are restricted to HR Manager > Employees and password reset flow.
+      // Keep uploaded signature available in current UI state for this session only.
+      setUserSignature({
+        user_id: dbUserId,
+        signature_storage_path: objectPath,
+        signature_file_url: publicUrl,
+      });
     } catch (err) {
       console.error("Signature upload failed", err);
       alert(err.message || "Failed to upload signature");

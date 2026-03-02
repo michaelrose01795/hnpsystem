@@ -1531,6 +1531,18 @@ function MessagesPage() {
     [dismissUnreadMarker]
   );
 
+  // Dismiss the unread marker when the user switches away (tab hidden / page reload)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        const activeKey = activeUnreadMarkerKeyRef.current;
+        if (activeKey) dismissUnreadMarker(activeKey);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [dismissUnreadMarker]);
+
   useEffect(() => {
     setGroupSearchTerm("");
     setGroupSearchResults([]);

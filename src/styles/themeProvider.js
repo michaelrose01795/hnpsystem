@@ -351,31 +351,18 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
 
   const persistPreference = useCallback(
     async (nextMode) => {
-      if (!dbUserId) return;
-      try {
-        const normalized = normalizeMode(nextMode);
-        await supabaseClient
-          .from("users")
-          .update({ dark_mode: normalized === "system" ? null : normalized === "dark" })
-          .eq("user_id", dbUserId);
-      } catch (err) {
-        console.error("Failed to persist theme preference", err.message || err);
-      }
+      void nextMode;
+      void dbUserId;
+      // Users table writes are restricted to HR Manager > Employees and password reset flow.
     },
     [dbUserId]
   );
 
   const persistAccentPreference = useCallback(
     async (nextAccent) => {
-      if (!dbUserId) return;
-      try {
-        await supabaseClient
-          .from("users")
-          .update({ accent_color: normalizeAccent(nextAccent) })
-          .eq("user_id", dbUserId);
-      } catch (err) {
-        console.warn("Failed to persist accent preference", err.message || err);
-      }
+      void nextAccent;
+      void dbUserId;
+      // Users table writes are restricted to HR Manager > Employees and password reset flow.
     },
     [dbUserId]
   );

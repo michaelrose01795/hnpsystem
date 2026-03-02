@@ -75,6 +75,16 @@ const mapUserRow = (row = {}) => ({
   signatureFileUrl: row.signature_file_url,
 });
 
+const USER_WRITE_ALLOWED_SOURCES = new Set(["hr-manager-employees", "password-reset"]);
+
+const assertUserWriteAllowed = (source) => {
+  if (!USER_WRITE_ALLOWED_SOURCES.has(source)) {
+    throw new Error(
+      "Users table writes are restricted to HR Manager > Employees and the password reset flow."
+    );
+  }
+};
+
 const ensureUserPayload = (payload = {}) => {
   const requiredFields = ["first_name", "last_name", "email", "password_hash", "role"];
   const missing = requiredFields.filter((field) => !payload[field]);
@@ -166,7 +176,8 @@ export const getUserById = async (userId, { includeInactive = false } = {}) => {
   return data ? mapUserRow(data) : null;
 };
 
-export const createUser = async (payload) => {
+export const createUser = async (payload, { source } = {}) => {
+  assertUserWriteAllowed(source);
   ensureUserPayload(payload);
   const { data, error } = await db
     .from(USERS_TABLE)
@@ -179,7 +190,8 @@ export const createUser = async (payload) => {
   return mapUserRow(data);
 };
 
-export const updateUser = async (userId, updates = {}) => {
+export const updateUser = async (userId, updates = {}, { source } = {}) => {
+  assertUserWriteAllowed(source);
   if (typeof userId !== "number") {
     throw new Error("updateUser requires a numeric userId.");
   }
@@ -198,7 +210,8 @@ export const updateUser = async (userId, updates = {}) => {
   return mapUserRow(data);
 };
 
-export const deleteUser = async (userId) => {
+export const deleteUser = async (userId, { source } = {}) => {
+  assertUserWriteAllowed(source);
   if (typeof userId !== "number") {
     throw new Error("deleteUser requires a numeric userId.");
   }

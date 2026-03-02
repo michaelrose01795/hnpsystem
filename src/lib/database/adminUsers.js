@@ -47,56 +47,15 @@ export async function listAdminUsers() {
 }
 
 export async function createAdminUser(payload) {
-  if (!isServiceClient) {
-    throw new Error("Server missing SUPABASE_SERVICE_ROLE_KEY; cannot create users.");
-  }
+  throw new Error("Direct user table writes are disabled. Use HR Manager > Employees.");
 
-  const insertPayload = {
-    first_name: payload.firstName,
-    last_name: payload.lastName,
-    email: payload.email,
-    password_hash: payload.password || "external_auth",
-    role: payload.role,
-    phone: payload.phone || null,
-  };
-
-  const { data, error } = await adminClient
-    .from(USERS_TABLE)
-    .insert(insertPayload)
-    .select(baseSelectColumns.join(","))
-    .single();
-
-  if (error) throw error;
-
-  await logActivity({
-    action: "create",
-    tableName: USERS_TABLE,
-    recordId: data.user_id,
-    userId: payload.actorId || null,
-  });
-
-  return mapRow(data);
+  void payload;
 }
 
 export async function deleteAdminUser(userId, actorId) {
-  if (!isServiceClient) {
-    throw new Error("Server missing SUPABASE_SERVICE_ROLE_KEY; cannot deactivate users.");
-  }
-
-  const { error } = await adminClient
-    .from(USERS_TABLE)
-    .update({ is_active: false, updated_at: new Date().toISOString() })
-    .eq("user_id", userId);
-  if (error) throw error;
-
-  await logActivity({
-    action: "deactivate",
-    tableName: USERS_TABLE,
-    recordId: userId,
-    userId: actorId || null,
-  });
-
-  return { success: true };
+  void userId;
+  void actorId;
+  throw new Error("Direct user table writes are disabled. Use HR Manager > Employees.");
 }
 
 async function logActivity({ action, tableName, recordId, userId }) {

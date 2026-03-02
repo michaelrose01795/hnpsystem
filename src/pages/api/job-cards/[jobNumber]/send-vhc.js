@@ -1,13 +1,9 @@
 import crypto from "crypto";
-import nodemailer from "nodemailer";
 import { supabaseService } from "@/lib/supabaseClient";
 import { markVHCAsSent } from "@/lib/services/vhcStatusService";
+import { createSmtpTransport, isSmtpConfigured, SMTP_FROM } from "@/lib/email/smtp";
+import { getEmailBranding, renderEmailShell, resolveEmailBaseUrl } from "@/lib/email/template";
 
-const SMTP_HOST = process.env.SMTP_HOST;
-const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
-const SMTP_USER = process.env.SMTP_USER;
-const SMTP_PASS = process.env.SMTP_PASS;
-const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER;
 const COMPANY_NAME = process.env.SMTP_COMPANY_NAME || "Service Department";
 
 const generateLinkCode = () => crypto.randomBytes(9).toString("base64url").slice(0, 12);
@@ -18,26 +14,37 @@ const isLinkExpired = (createdAt) => {
   return Date.now() - created > 24 * 60 * 60 * 1000;
 };
 
-const resolveBaseUrl = (req) => {
-  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
-  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL;
-  const proto = req.headers["x-forwarded-proto"] || "http";
-  const host = req.headers["x-forwarded-host"] || req.headers.host;
-  return host ? `${proto}://${host}` : "http://localhost:3000";
-};
-
-const buildHtml = ({ customerName, jobNumber, shareUrl }) => `
-  <div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;line-height:1.5;">
-    <p>Hello ${customerName || "Customer"},</p>
-    <p>Your Vehicle Health Check for job <strong>#${jobNumber}</strong> is ready.</p>
-    <p>
-      Open your interactive VHC here:<br />
-      <a href="${shareUrl}" target="_blank" rel="noopener noreferrer">${shareUrl}</a>
-    </p>
-    <p>This link expires in 24 hours.</p>
-    <p>Regards,<br />${COMPANY_NAME}</p>
-  </div>
-`;
+const buildHtml = ({ customerName, jobNumber, shareUrl, branding }) =>
+  renderEmailShell({
+    title: `Vehicle Health Check for Job #${jobNumber}`,
+    previewText: `Your Vehicle Health Check for job #${jobNumber} is ready to view.`,
+    companyName: branding.companyName,
+    logoSrc: branding.logoSrc,
+    eyebrow: "Vehicle Health Check",
+    headline: `Job #${jobNumber} report is ready`,
+    intro: `Hello ${customerName || "Customer"}, your interactive Vehicle Health Check is now available.`,
+    bodyHtml: `
+      <div style="border:1px solid #dbe4ee;border-radius:10px;padding:14px;background:#ffffff;">
+        <table style="width:100%;border-collapse:collapse;">
+          <tr>
+            <td style="font-size:12px;color:#6b7280;width:130px;padding:4px 0;">Job Number</td>
+            <td style="font-size:13px;color:#111827;font-weight:700;padding:4px 0;">#${jobNumber}</td>
+          </tr>
+          <tr>
+            <td style="font-size:12px;color:#6b7280;padding:4px 0;">Link Expiry</td>
+            <td style="font-size:13px;color:#111827;font-weight:700;padding:4px 0;">24 hours</td>
+          </tr>
+        </table>
+      </div>
+      <div style="margin-top:10px;font-size:12px;color:#4b5563;line-height:1.6;">
+        If you cannot open the button, copy and paste this link into your browser:<br />
+        <a href="${shareUrl}" target="_blank" rel="noopener noreferrer">${shareUrl}</a>
+      </div>
+    `,
+    ctaLabel: "Open Vehicle Health Check",
+    ctaUrl: shareUrl,
+    footerText: `This secure link expires after 24 hours. Contact ${branding.companyName} if you need a new one.`,
+  });
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -71,7 +78,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, error: "Customer email is required to send VHC" });
     }
 
-    if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
+    if (!isSmtpConfigured()) {
       return res.status(500).json({
         success: false,
         error: "Email service not configured. Add SMTP_HOST, SMTP_USER, and SMTP_PASS.",
@@ -102,22 +109,19 @@ export default async function handler(req, res) {
       if (insertError) throw insertError;
     }
 
-    const baseUrl = resolveBaseUrl(req);
+    const baseUrl = resolveEmailBaseUrl(req);
     const shareUrl = `${baseUrl}/vhc/share/${jobNumber}/${linkCode}`;
     const customerName = `${jobRow.customer?.firstname || ""} ${jobRow.customer?.lastname || ""}`.trim() || "Customer";
+    const branding = getEmailBranding(req, COMPANY_NAME);
 
-    const transporter = nodemailer.createTransport({
-      host: SMTP_HOST,
-      port: SMTP_PORT,
-      secure: SMTP_PORT === 465,
-      auth: { user: SMTP_USER, pass: SMTP_PASS },
-    });
+    const transporter = createSmtpTransport();
 
     await transporter.sendMail({
       from: `"${COMPANY_NAME}" <${SMTP_FROM}>`,
       to: customerEmail,
       subject: `Vehicle Health Check for Job #${jobNumber}`,
-      html: buildHtml({ customerName, jobNumber, shareUrl }),
+      html: buildHtml({ customerName, jobNumber, shareUrl, branding }),
+      attachments: branding.attachments,
       text: `Hello ${customerName},\n\nYour Vehicle Health Check for job #${jobNumber} is ready.\nOpen it here: ${shareUrl}\n\nThis link expires in 24 hours.\n\nRegards,\n${COMPANY_NAME}`,
     });
 

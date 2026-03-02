@@ -97,6 +97,18 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [loadingDevUsers, setLoadingDevUsers] = useState(true);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetStatus, setResetStatus] = useState("");
+  const [resetStatusType, setResetStatusType] = useState("info");
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [revertToken, setRevertToken] = useState("");
+  const [showRevertPrompt, setShowRevertPrompt] = useState(false);
+  const [isRevertingPassword, setIsRevertingPassword] = useState(false);
+  const [showRevertResult, setShowRevertResult] = useState(false);
+  const [revertResultType, setRevertResultType] = useState("success");
+  const [revertResultMessage, setRevertResultMessage] = useState("");
 
   const loginRoleCategories = React.useMemo(() => {
     const rosterRoles = Object.keys(usersByRoleDetailed || usersByRole || {}).filter(Boolean);
@@ -177,6 +189,120 @@ export default function LoginPage() {
     }
   };
 
+  const removeRevertTokenFromUrl = React.useCallback(() => {
+    const { passwordResetToken, ...rest } = router.query || {};
+    void passwordResetToken;
+    router.replace({ pathname: "/login", query: rest }, undefined, { shallow: true });
+  }, [router]);
+
+  const openResetModal = () => {
+    setResetEmail(email.trim());
+    setResetPassword("");
+    setResetStatus("");
+    setResetStatusType("info");
+    setShowResetModal(true);
+  };
+
+  const closeResetModal = () => {
+    setShowResetModal(false);
+    setResetPassword("");
+    setResetStatus("");
+    setResetStatusType("info");
+  };
+
+  const handlePasswordReset = async (event) => {
+    event.preventDefault();
+    setResetStatus("");
+    setResetStatusType("info");
+    setIsResettingPassword(true);
+    try {
+      const response = await fetch("/api/auth/password-reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "reset",
+          email: (resetEmail || email || "").trim(),
+          newPassword: resetPassword,
+        }),
+      });
+      let payload = null;
+      try {
+        payload = await response.json();
+      } catch {
+        payload = { success: false, message: `Request failed (${response.status}).` };
+      }
+      if (!response.ok || !payload?.success) {
+        setResetStatus(payload?.message || "Password reset failed.");
+        setResetStatusType("error");
+        return;
+      }
+      setResetStatus(payload?.message || "Password reset complete.");
+      setResetStatusType(payload?.emailSent === false ? "error" : "success");
+      setPassword("");
+    } catch (error) {
+      setResetStatus(error?.message || "Password reset failed.");
+      setResetStatusType("error");
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
+  const handlePasswordRevertDecision = async (wasNotYou) => {
+    if (!wasNotYou) {
+      setShowRevertPrompt(false);
+      removeRevertTokenFromUrl();
+      return;
+    }
+
+    if (!revertToken) {
+      setRevertResultType("error");
+      setRevertResultMessage("The reset link is missing or invalid.");
+      setShowRevertResult(true);
+      setShowRevertPrompt(false);
+      removeRevertTokenFromUrl();
+      return;
+    }
+
+    setIsRevertingPassword(true);
+    try {
+      const response = await fetch("/api/auth/password-reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "revert",
+          token: revertToken,
+        }),
+      });
+      let payload = null;
+      try {
+        payload = await response.json();
+      } catch {
+        payload = { success: false, message: `Request failed (${response.status}).` };
+      }
+      if (!response.ok || !payload?.success) {
+        setErrorMessage(payload?.message || "Unable to revert password.");
+        setRevertResultType("error");
+        setRevertResultMessage(payload?.message || "Unable to revert password.");
+        setShowRevertResult(true);
+      } else {
+        setErrorMessage("Password reverted to the previous password.");
+        setRevertResultType("success");
+        setRevertResultMessage("Password reverted successfully.");
+        setShowRevertResult(true);
+      }
+    } catch (error) {
+      setErrorMessage(error?.message || "Unable to revert password.");
+      setRevertResultType("error");
+      setRevertResultMessage(error?.message || "Unable to revert password.");
+      setShowRevertResult(true);
+    } finally {
+      setIsRevertingPassword(false);
+      setShowRevertPrompt(false);
+      setRevertToken("");
+      removeRevertTokenFromUrl();
+    }
+  };
+
   // Redirect once user is logged in (via NextAuth session or UserContext) + auto clock-in
   useEffect(() => {
     const activeUser = user || session?.user;
@@ -224,6 +350,14 @@ export default function LoginPage() {
       setLoadingDevUsers(false);
     }
   }, [rosterLoading]);
+
+  useEffect(() => {
+    if (!router.isReady) return;
+    const token = router.query?.passwordResetToken;
+    if (!token || typeof token !== "string") return;
+    setRevertToken(token);
+    setShowRevertPrompt(true);
+  }, [router.isReady, router.query]);
 
   return (
     <Layout>
@@ -284,6 +418,21 @@ export default function LoginPage() {
               >
                 Login
               </button>
+              <button
+                type="button"
+                onClick={openResetModal}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  color: "var(--text-secondary)",
+                  fontSize: "0.75rem",
+                  textDecoration: "underline",
+                  marginTop: "8px",
+                  cursor: "pointer",
+                }}
+              >
+                Reset password
+              </button>
             </form>
           </LoginCard>
         </div>
@@ -330,6 +479,230 @@ export default function LoginPage() {
           </div>
         )}
       </div>
+      {showResetModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.35)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1400,
+            padding: "16px",
+          }}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: "420px",
+              background: "var(--surface)",
+              borderRadius: "16px",
+              border: "1px solid var(--surface-light)",
+              padding: "18px",
+              boxShadow: "0 16px 36px rgba(15, 23, 42, 0.22)",
+            }}
+          >
+            <h3 style={{ margin: 0, fontSize: "1.1rem", color: "var(--text-primary)" }}>
+              Reset Password
+            </h3>
+            <p style={{ margin: "8px 0 14px", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+              Enter your email and your new password.
+            </p>
+            <form onSubmit={handlePasswordReset} style={{ display: "grid", gap: "10px" }}>
+              <input
+                type="email"
+                value={resetEmail}
+                onChange={(event) => setResetEmail(event.target.value)}
+                placeholder="Email"
+                required
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid var(--surface-light)",
+                }}
+              />
+              <input
+                type="password"
+                value={resetPassword}
+                onChange={(event) => setResetPassword(event.target.value)}
+                placeholder="New password"
+                required
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid var(--surface-light)",
+                }}
+              />
+              {resetStatus && (
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: "0.8rem",
+                    color:
+                      resetStatusType === "error"
+                        ? "var(--danger)"
+                        : resetStatusType === "success"
+                        ? "var(--success)"
+                        : "var(--text-secondary)",
+                  }}
+                >
+                  {resetStatus}
+                </p>
+              )}
+              <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "4px" }}>
+                <button
+                  type="button"
+                  onClick={closeResetModal}
+                  style={{
+                    border: "1px solid var(--border)",
+                    background: "var(--surface-light)",
+                    color: "var(--text-primary)",
+                    borderRadius: "8px",
+                    padding: "8px 12px",
+                    cursor: "pointer",
+                  }}
+                >
+                  Close
+                </button>
+                <button
+                  type="submit"
+                  disabled={isResettingPassword}
+                  style={{
+                    border: "none",
+                    background: "var(--primary)",
+                    color: "var(--text-inverse)",
+                    borderRadius: "8px",
+                    padding: "8px 12px",
+                    cursor: isResettingPassword ? "not-allowed" : "pointer",
+                    opacity: isResettingPassword ? 0.6 : 1,
+                  }}
+                >
+                  {isResettingPassword ? "Resetting..." : "Reset Password"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {showRevertPrompt && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.45)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1450,
+            padding: "16px",
+          }}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: "460px",
+              background: "var(--surface)",
+              borderRadius: "16px",
+              border: "1px solid var(--surface-light)",
+              padding: "18px",
+              boxShadow: "0 16px 36px rgba(15, 23, 42, 0.22)",
+            }}
+          >
+            <h3 style={{ margin: 0, fontSize: "1.05rem", color: "var(--text-primary)" }}>
+              Are you sure this wasn't you?
+            </h3>
+            <p style={{ margin: "8px 0 14px", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+              If you click "Yes, it wasn't me", your previous password will be restored.
+            </p>
+            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                onClick={() => handlePasswordRevertDecision(false)}
+                disabled={isRevertingPassword}
+                style={{
+                  border: "1px solid var(--border)",
+                  background: "var(--surface-light)",
+                  color: "var(--text-primary)",
+                  borderRadius: "8px",
+                  padding: "8px 12px",
+                  cursor: "pointer",
+                }}
+              >
+                No, this was me
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePasswordRevertDecision(true)}
+                disabled={isRevertingPassword}
+                style={{
+                  border: "none",
+                  background: "var(--danger)",
+                  color: "var(--text-inverse)",
+                  borderRadius: "8px",
+                  padding: "8px 12px",
+                  cursor: isRevertingPassword ? "not-allowed" : "pointer",
+                  opacity: isRevertingPassword ? 0.6 : 1,
+                }}
+              >
+                {isRevertingPassword ? "Reverting..." : "Yes, it wasn't me"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showRevertResult && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.45)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1460,
+            padding: "16px",
+          }}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: "520px",
+              background: "var(--surface)",
+              borderRadius: "16px",
+              border: "1px solid var(--surface-light)",
+              borderTop: "4px solid #b91c1c",
+              padding: "22px",
+              boxShadow: "0 16px 36px rgba(15, 23, 42, 0.22)",
+              textAlign: "center",
+            }}
+          >
+            <h3 style={{ margin: 0, fontSize: "1.15rem", color: "var(--text-primary)" }}>
+              {revertResultType === "success" ? "Password Reverted" : "Password Revert Failed"}
+            </h3>
+            <p style={{ margin: "10px 0 18px", fontSize: "0.9rem", color: "var(--text-secondary)" }}>
+              {revertResultMessage}
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowRevertResult(false)}
+              style={{
+                border: "none",
+                background: "#b91c1c",
+                color: "#ffffff",
+                borderRadius: "8px",
+                padding: "9px 14px",
+                cursor: "pointer",
+                fontWeight: 600,
+              }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }

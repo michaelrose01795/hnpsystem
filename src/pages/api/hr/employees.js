@@ -2,8 +2,11 @@
 // file location: src/pages/api/hr/employees.js
 import { getEmployeeDirectory } from "@/lib/database/hr";
 import { supabaseService } from "@/lib/supabaseClient";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
-export default async function handler(req, res) {
+const HR_MANAGER_EMPLOYEE_EDITOR_ROLES = ["owner", "admin manager"];
+
+async function handler(req, res) {
   if (req.method === "GET") {
     return handleDirectoryRequest(res);
   }
@@ -101,7 +104,7 @@ async function handleCreateOrUpdate(req, res) {
   const email = payload.email.toLowerCase();
   const firstName = payload.firstName;
   const lastName = payload.lastName;
-  const role = payload.role || "EMPLOYEE";
+  const role = typeof payload.role === "string" && payload.role.trim() ? payload.role.trim() : null;
 
   try {
     const userRecord = await upsertUser({
@@ -257,7 +260,7 @@ async function upsertUser({ email, firstName, lastName, phone, role, jobTitle, p
     job_title: jobTitle || null,
     ...buildEmployeeFields(),
   };
-  if ((existingUser?.role || null) !== role) {
+  if (role && (existingUser?.role || null) !== role) {
     userPayload.role = role;
   }
 
@@ -297,6 +300,7 @@ async function upsertUser({ email, firstName, lastName, phone, role, jobTitle, p
     ...userPayload,
     email,
     password_hash: "external_auth",
+    role: role || "Employee",
   };
 
   const { data, error } = await supabaseService
@@ -308,3 +312,5 @@ async function upsertUser({ email, firstName, lastName, phone, role, jobTitle, p
   if (error) throw error;
   return data;
 }
+
+export default withRoleGuard(handler, { allow: HR_MANAGER_EMPLOYEE_EDITOR_ROLES });
