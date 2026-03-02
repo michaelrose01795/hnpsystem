@@ -22,7 +22,7 @@ export const initialTrackingEntries = [
     reg: "AB70 RFT",
     customer: "Caleb Howard",
     serviceType: "Warranty Repair",
-    status: "Awaiting Authorization",
+    status: "Awaiting Authorisation",
     parkedBy: "Maya Patel",
     parkedAt: "10:12",
     updatedAt: "2024-05-06T10:12:00.000Z",

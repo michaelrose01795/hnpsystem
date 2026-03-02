@@ -144,11 +144,11 @@ Source: `src/lib/partsPipeline.js`
 Sources: `src/components/VHC/*`, `src/pages/api/vhc/update-item-status.js`
 - Approval status values: `pending`, `authorized`, `declined`, `completed`.
 - Display severity values used in UI: `red`, `amber`, `green`, `grey` (also capitalized variants in some modals).
-- UI labels shown: "Authorised", "Declined", "Red Items", "Amber Items", "Green Items", "Authorized" (US spelling used in data/fields).
+- UI labels shown: "Authorised", "Declined", "Red Items", "Amber Items", "Green Items". Data/field values use US spelling (`authorized`) internally.
 
 ### Tracking
 Sources: `src/lib/database/tracking.js`, `src/pages/tracking/index.js`
-- Vehicle status labels (tracking page options): "Awaiting Authorization", "Waiting For Collection", "Ready For Collection", "Complete", "Valet Hold", "In Transit".
+- Vehicle status labels (tracking page options): "Awaiting Authorisation", "Waiting For Collection", "Ready For Collection", "Complete", "Valet Hold", "In Transit".
 - Next-action derived labels: "Awaiting Workshop", "Awaiting Advisor", "Ready For Collection".
 - Key tracking action labels: "Keys received – {location}", "Keys updated – {location}", "Keys hung – {location}".
 

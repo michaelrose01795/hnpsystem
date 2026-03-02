@@ -1340,7 +1340,6 @@ CREATE TABLE public.users (
   department text,
   employment_type text,
   start_date date,
-  probation_end date,
   manager_id integer,
   photo_url text,
   emergency_contact jsonb,
@@ -1358,6 +1357,7 @@ CREATE TABLE public.users (
   signature_file_url text,
   is_active boolean NOT NULL DEFAULT true,
   accent_color text DEFAULT 'red'::text,
+  probation_end date,
   CONSTRAINT users_pkey PRIMARY KEY (user_id),
   CONSTRAINT users_manager_id_fkey FOREIGN KEY (manager_id) REFERENCES public.users(user_id)
 );

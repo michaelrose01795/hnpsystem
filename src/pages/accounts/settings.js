@@ -132,7 +132,7 @@ export default function AccountsSettingsPage() {
         <div style={{ maxWidth: "900px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "20px" }}>
           <div>
             <h1 style={{ margin: 0, color: "var(--primary)", fontSize: "2rem" }}>Account Settings</h1>
-            <p style={{ margin: "4px 0 0", color: "var(--text-secondary)", fontSize: "0.95rem" }}>Control access, overdue notifications, and default account behaviors.</p>
+            <p style={{ margin: "4px 0 0", color: "var(--text-secondary)", fontSize: "0.95rem" }}>Control access, overdue notifications, and default account behaviours.</p>
           </div>
           {message && (
             <div style={{ padding: "12px 16px", borderRadius: "12px", background: message.includes("successfully") ? "rgba(var(--success-rgb), 0.15)" : "rgba(var(--danger-rgb), 0.12)", color: message.includes("successfully") ? "var(--success-text)" : "var(--danger-dark)", fontWeight: 600 }}>{message}</div>

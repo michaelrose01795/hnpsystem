@@ -122,8 +122,8 @@ const STATUS_COLORS = {
   "Complete": "var(--success)",
   "Outstanding": "var(--info)",
   "Accepted": "var(--primary)",
-  "Awaiting Authorization": "var(--warning)",
-  "Authorized": "var(--accent-purple)",
+  "Awaiting Authorisation": "var(--warning)",
+  "Authorised": "var(--accent-purple)",
   "Ready": "var(--info)",
   "Carry Over": "var(--danger)",
   "Complete": "var(--info)",
@@ -324,6 +324,8 @@ export default function TechJobDetailPage() {
   const [partsRequestsLoading, setPartsRequestsLoading] = useState(false);
   const [authorizedParts, setAuthorizedParts] = useState([]);
   const [authorizedPartsLoading, setAuthorizedPartsLoading] = useState(false);
+  const [authorizedVhcRows, setAuthorizedVhcRows] = useState([]);
+  const [authorizedVhcRowsLoading, setAuthorizedVhcRowsLoading] = useState(false);
   const formatPrePickLabel = useCallback((value = "") => {
     const trimmed = String(value || "").trim();
     if (!trimmed) return "";
@@ -416,6 +418,25 @@ export default function TechJobDetailPage() {
       setActiveTab("overview");
     }
   }, [activeTab, visibleTabs]);
+
+  useEffect(() => {
+    if (activeTab === "parts" && jobCardId) {
+      setAuthorizedVhcRowsLoading(true);
+      supabase
+        .from("vhc_checks")
+        .select("vhc_id, job_id, section, issue_title, issue_description, approval_status, authorization_state, labour_hours, parts_cost, pre_pick_location, note_text, severity, approved_at, approved_by, Complete, request_id")
+        .eq("job_id", jobCardId)
+        .eq("approval_status", "authorized")
+        .then(({ data, error }) => {
+          if (error) {
+            console.error("Failed to refresh authorised VHC rows:", error);
+          } else {
+            setAuthorizedVhcRows(data || []);
+          }
+          setAuthorizedVhcRowsLoading(false);
+        });
+    }
+  }, [activeTab, jobCardId]);
 
   const jobNumberForStatusFlow =
     jobNumber ||
@@ -534,13 +555,15 @@ export default function TechJobDetailPage() {
 
         const { data: vhcChecksData, error: vhcChecksError } = await supabase
           .from("vhc_checks")
-          .select("vhc_id, approval_status")
+          .select("vhc_id, job_id, section, issue_title, issue_description, approval_status, authorization_state, labour_hours, parts_cost, pre_pick_location, note_text, severity, approved_at, approved_by, Complete, request_id")
           .eq("job_id", targetJobId)
           .eq("approval_status", "authorized");
 
         if (vhcChecksError) {
           throw vhcChecksError;
         }
+
+        setAuthorizedVhcRows(vhcChecksData || []);
 
         const approvedVhcIds = new Set(
           (vhcChecksData || []).map((check) => String(check.vhc_id))
@@ -555,6 +578,7 @@ export default function TechJobDetailPage() {
       } catch (loadError) {
         console.error("Failed to load authorised parts:", loadError);
         setAuthorizedParts([]);
+        setAuthorizedVhcRows([]);
       } finally {
         setAuthorizedPartsLoading(false);
       }
@@ -3560,6 +3584,127 @@ export default function TechJobDetailPage() {
                             color: "var(--info)"
                           }}>
                             <span>Qty: {quantity}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Parts Authorised Section */}
+              <div style={{
+                backgroundColor: "var(--layer-section-level-3)",
+                borderRadius: "12px",
+                border: "1px solid var(--success)",
+                padding: "20px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px"
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "10px" }}>
+                  <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700", color: "var(--success)" }}>
+                    Parts Authorised
+                  </h3>
+                  <span style={{ fontSize: "12px", color: "var(--info)" }}>
+                    {authorizedVhcRows.length} item{authorizedVhcRows.length === 1 ? "" : "s"}
+                  </span>
+                </div>
+                <p style={{ margin: 0, fontSize: "13px", color: "var(--info)" }}>
+                  VHC items that have been authorised by the customer.
+                </p>
+                {authorizedVhcRowsLoading ? (
+                  <p style={{ margin: 0, fontSize: "14px", color: "var(--info)" }}>Loading authorised items…</p>
+                ) : authorizedVhcRows.length === 0 ? (
+                  <p style={{ margin: 0, fontSize: "14px", color: "var(--info)" }}>
+                    No authorised VHC items yet.
+                  </p>
+                ) : (
+                  <div style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "10px",
+                    maxHeight: "400px",
+                    overflowY: "auto",
+                    paddingRight: "4px"
+                  }}>
+                    {authorizedVhcRows.map((row) => {
+                      const title = row.issue_title || row.section || "Authorised item";
+                      const description = row.issue_description || "";
+                      const section = row.section || "";
+                      const hours = row.labour_hours;
+                      const partsCost = row.parts_cost;
+                      const prePick = row.pre_pick_location || "";
+                      const noteText = row.note_text || "";
+                      const isComplete = row.Complete === true;
+
+                      return (
+                        <div
+                          key={row.vhc_id}
+                          style={{
+                            padding: "14px 16px",
+                            border: "1px solid var(--success)",
+                            borderLeft: "4px solid var(--success)",
+                            borderRadius: "10px",
+                            backgroundColor: "var(--success-surface)",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "6px"
+                          }}
+                        >
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: "15px", fontWeight: "600", color: "var(--success-dark)" }}>
+                                {title}
+                              </div>
+                              {description && description.toLowerCase() !== title.toLowerCase() && (
+                                <div style={{ fontSize: "13px", color: "var(--info-dark)", marginTop: "2px" }}>
+                                  {description}
+                                </div>
+                              )}
+                              {section && section !== title && (
+                                <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "2px" }}>
+                                  Section: {section}
+                                </div>
+                              )}
+                              {noteText && (
+                                <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>
+                                  Note: {noteText}
+                                </div>
+                              )}
+                              {prePick && (
+                                <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>
+                                  Pre-pick: {formatPrePickLabel(prePick)}
+                                </div>
+                              )}
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px" }}>
+                              <span style={{
+                                padding: "3px 10px",
+                                borderRadius: "999px",
+                                fontSize: "11px",
+                                fontWeight: "600",
+                                backgroundColor: isComplete ? "var(--info-surface)" : "var(--success-surface)",
+                                color: isComplete ? "var(--info)" : "var(--success-dark)",
+                                border: `1px solid ${isComplete ? "var(--info)" : "var(--success)"}`,
+                              }}>
+                                {isComplete ? "Complete" : "Authorised"}
+                              </span>
+                            </div>
+                          </div>
+                          <div style={{
+                            display: "flex",
+                            gap: "16px",
+                            fontSize: "12px",
+                            color: "var(--info)",
+                            marginTop: "4px"
+                          }}>
+                            {hours != null && hours !== "" && (
+                              <span>Labour: {hours}h</span>
+                            )}
+                            {partsCost != null && partsCost !== "" && Number(partsCost) > 0 && (
+                              <span>Parts: £{Number(partsCost).toFixed(2)}</span>
+                            )}
                           </div>
                         </div>
                       );

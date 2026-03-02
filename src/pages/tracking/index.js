@@ -117,7 +117,7 @@ const getAutoMovementRule = (status) => {
 };
 
 const STATUS_COLORS = {
-  "Awaiting Authorization": "var(--danger)",
+  "Awaiting Authorisation": "var(--danger)",
   "Waiting For Collection": "var(--info)",
   "Ready For Collection": "var(--info)",
   "Complete": "var(--info)",

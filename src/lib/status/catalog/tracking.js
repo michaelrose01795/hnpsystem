@@ -4,7 +4,7 @@ import { normalizeStatusId } from "./utils";
 export const DOMAIN = "tracking";
 
 export const STATUSES = {
-  AWAITING_AUTHORIZATION: "Awaiting Authorization",
+  AWAITING_AUTHORIZATION: "Awaiting Authorisation",
   WAITING_FOR_COLLECTION: "Waiting For Collection",
   READY_FOR_COLLECTION: "Ready For Collection",
   COMPLETE: "Complete",
@@ -15,7 +15,7 @@ export const STATUSES = {
 };
 
 export const DISPLAY = {
-  [STATUSES.AWAITING_AUTHORIZATION]: "Awaiting Authorization",
+  [STATUSES.AWAITING_AUTHORIZATION]: "Awaiting Authorisation",
   [STATUSES.WAITING_FOR_COLLECTION]: "Waiting For Collection",
   [STATUSES.READY_FOR_COLLECTION]: "Ready For Collection",
   [STATUSES.COMPLETE]: "Complete",

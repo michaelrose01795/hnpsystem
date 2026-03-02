@@ -160,6 +160,29 @@ const arePartsPricedAndAssigned = (allocations = []) => {
   });
 };
 
+const getPartsValidationIssues = (allocations = []) => {
+  const parts = Array.isArray(allocations) ? allocations : [];
+  const issues = [];
+  parts.forEach((item) => {
+    if (!item) return;
+    const requestedQty = Number(item.quantityRequested ?? 0);
+    const allocatedQty = Number(item.quantityAllocated ?? 0);
+    const hasAllocated =
+      requestedQty > 0 ? allocatedQty >= requestedQty : allocatedQty > 0;
+    const unitPrice =
+      Number(item.unitPrice ?? 0) || Number(item.part?.unitPrice ?? 0);
+    const partLabel = item.part?.partNumber || item.partNumber || `Part #${item.partId || "unknown"}`;
+    if (!hasAllocated && unitPrice <= 0) {
+      issues.push(`${partLabel}: missing quantity and pricing`);
+    } else if (!hasAllocated) {
+      issues.push(`${partLabel}: allocated qty (${allocatedQty}) is less than requested (${requestedQty})`);
+    } else if (unitPrice <= 0) {
+      issues.push(`${partLabel}: no unit price set`);
+    }
+  });
+  return issues;
+};
+
 const areAllPartsAllocated = (allocations = []) => {
   const parts = Array.isArray(allocations) ? allocations : [];
   if (parts.length === 0) {
@@ -1491,8 +1514,19 @@ export default function JobCardDetailPage() {
           throw vehicleUpdateError;
         }
 
+        const { error: jobMileageError } = await supabase
+          .from("jobs")
+          .update({ mileage_at_service: normalizedMileage })
+          .eq("id", jobData.id);
+
+        if (jobMileageError) {
+          console.error("Failed to update mileage_at_service on job:", jobMileageError);
+        }
+
         setJobData((prev) =>
-          prev ? { ...prev, mileage: normalizedMileage ?? "" } : prev
+          prev
+            ? { ...prev, mileage: normalizedMileage ?? "", mileageAtService: normalizedMileage }
+            : prev
         );
 
         setCustomerVehicles((prev) =>
@@ -2180,7 +2214,7 @@ export default function JobCardDetailPage() {
     mileageSaving ||
     !vehicleMileageInputValid ||
     !vehicleMileageDirty;
-  const partsReady = arePartsPricedAndAssigned(jobData.partsAllocations);
+  const partsReadyBase = arePartsPricedAndAssigned(jobData.partsAllocations);
   const partsAllocatedBase = areAllPartsAllocated(jobData.partsAllocations);
   const partsAddedRowsForTab = Array.isArray(jobData.parts_job_items) ? jobData.parts_job_items : [];
   const visiblePartsAddedRows = partsAddedRowsForTab.filter((item) => isBookedPartsRow(item) || isRemovedPartsRow(item));
@@ -2188,6 +2222,7 @@ export default function JobCardDetailPage() {
   const partsTabComplete =
     activePartsAddedRows.length > 0 && activePartsAddedRows.every((item) => isPartsRowAllocated(item));
   const partsAllocated = partsTabComplete || partsAllocatedBase;
+  const partsReady = partsTabComplete || partsReadyBase;
   const statusReadyForInvoicing = isStatusReadyForInvoicing(
     jobData.status,
     overallStatusId
@@ -2212,7 +2247,16 @@ export default function JobCardDetailPage() {
     invoiceBlockingReasons.push("Allocate every booked part to a request or additional request.");
   }
   if (!partsReady) {
-    invoiceBlockingReasons.push("Ensure all allocated parts have quantities and pricing.");
+    const partsIssues = getPartsValidationIssues(jobData.partsAllocations);
+    if (partsIssues.length > 0) {
+      invoiceBlockingReasons.push(
+        `Parts tab – the following parts need attention: ${partsIssues.join("; ")}.`
+      );
+    } else {
+      invoiceBlockingReasons.push(
+        "Parts tab – ensure all parts in 'Parts Added to Job' (excluding removed) are allocated."
+      );
+    }
   }
   const showCreateInvoiceButton =
     canEdit && invoicePrerequisitesMet && statusReadyForInvoicing;
@@ -2247,8 +2291,8 @@ export default function JobCardDetailPage() {
     { id: "contact", label: "Contact"},
     { id: "scheduling", label: "Scheduling"},
     { id: "service-history", label: "Service History"},
-    ...(canViewPartsTab ? [{ id: "parts", label: "Parts"}] : []),
     { id: "notes", label: "Notes", badge: notesTabBadge},
+    ...(canViewPartsTab ? [{ id: "parts", label: "Parts"}] : []),
     { id: "write-up", label: "Write Up"},
     ...(canViewVhcTab ? [{ id: "vhc", label: "VHC", badge: vhcTabBadge}] : []),
     { id: "warranty", label: "Warranty"},
@@ -2291,10 +2335,10 @@ export default function JobCardDetailPage() {
           justifyContent: "space-between",
           alignItems: "center",
           padding: "20px",
-          backgroundColor: "var(--layer-section-level-1)",
+          backgroundColor: "var(--surface)",
           borderRadius: "12px",
           boxShadow: "none",
-          border: "1px solid var(--surface-light)",
+          border: "1px solid var(--surface-muted)",
           flexShrink: 0
         }}>
           <div>

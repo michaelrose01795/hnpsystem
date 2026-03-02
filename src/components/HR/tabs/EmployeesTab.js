@@ -439,12 +439,6 @@ export default function EmployeesTab() {
       setEditError("Cannot save changes because this profile is not linked to a user record.");
       return;
     }
-    const validationErrors = validateEmployeeForm(editEmployee);
-    if (Object.keys(validationErrors).length > 0) {
-      setEditFieldErrors(validationErrors);
-      setEditError(formatEmployeeSaveError("", "", validationErrors));
-      return;
-    }
     setIsSavingEdit(true);
     setEditError(null);
     setEditFieldErrors({});
@@ -506,8 +500,13 @@ export default function EmployeesTab() {
         }
       }
 
-      if (/email/i.test(serverError) && !fieldErrors.email) {
+      const emailFormatError = /(invalid email|email format|malformed email|not a valid email address)/i;
+      if (emailFormatError.test(serverError) && !fieldErrors.email) {
         fieldErrors.email = "Enter a valid email address.";
+      }
+
+      if (/users_email_key/i.test(serverError) && !fieldErrors.email) {
+        fieldErrors.email = "That email address is already in use by another user.";
       }
 
       if (/record\s+"new"\s+has\s+no\s+field\s+"name"/i.test(combinedServerText)) {
@@ -1796,7 +1795,7 @@ function formatEmployeeSaveError(serverMessage, serverError, fieldErrors = {}) {
   }
   const combinedServerText = [serverMessage, serverError].filter(Boolean).join(" ");
   if (/record\s+"new"\s+has\s+no\s+field\s+"name"/i.test(combinedServerText)) {
-    return "Unable to save this role change right now due to a server validation issue. Your selected role has been kept in the form.";
+    return "Unable to save employee changes right now due to a server validation issue on the users table.";
   }
   if (serverError) {
     if (/duplicate key/i.test(serverError)) {

@@ -8,22 +8,25 @@ only make this change nothing else
 
 
 
-
+CHECK
 Fix “Ensure all allocated parts have quantities and pricing.” To give a better explanation and to fix it so when within the parts tab if the parts tab background is set to green eg if the “PARTS ADDED TO JOB” section all of the rows except the removed rows are set as allocated. 
-
+CHEKK
 Fix within the service history tab the mileage within the row make sure it’s set to the database so it doesn’t say not recorded when it has actually been recorded. 
-
+CHECK
 Within the “Customer Requests Contact Scheduling Service History Parts Notes Write Up VHC Warranty Clocking Messages Documents Invoice” section move the notes tab button before the parts tab button. 
+CHECK
 Fix it so the parts authorised tab shows the authorised items within the vhc_checks database table to show the rows, make sure this saves and whenever the parts authorised tab is opened.
-
+CHECK
 Have it so the “Job Card #00056 In Progress Retail Created: 19/02/2026, 20:37:17 | Last Updated: 23/02/2026, 23:10:36 Checked in Back“ background colour is the same as the “VEHICLE 56231 Save WN69HSU FORD CUSTOMER Zoe Harrington 07851 002991 DECLINED £320.00 VHC Total AUTHORISED £505.99 VHC Total Key location Service showroom Car location Service” sections sit within. 
-
+CHECK
 Have it so the rows within the job-card/view page uses the light and dark colour themed background colour eg level 2 etc. 
-
+CHECK
 have it sow thin the next job page the outstanding jobs row cards don’t use an accent colour eg for light mode white and for dark mode grey for example. Do the same with the user techs cards. 
+CHECK
 Go thought the whole app to make sure everything is spelt the uk English way
-Fix within the sidebar when the HR manager button is pressed it opens the hr/manager page, atm is just flicking back to the news feed page
-
+CHECK
+have it so the "Outstanding Jobs" backgroubd colour is the same colour as the card where the techs cards sit inside, have it so the search bar within the /nextjobs page has a accent boarder colour around it not a full accent colour fill. 
+CEHCK
 Within the news feed page make sure there is a bigger gap in between the first row and the add update button so when the hover is used it doesn’t overlap the button. 
 
 
@@ -48,13 +51,20 @@ Within the “Scheduled Consumables” section have it so it will show the “Ov
 ” rows and then this section “ITEM QTY UNIT TOTAL SUPPLIER DATE M gloves 10 £2.80 £28.00 Euro 12 Dec 2025 M gloves 10 £2.39 £28.00 Euro 12 Dec 2025 M gloves 4 £2.39 £9.56 Euro 09 Dec 2025 M gloves 1 £2.39 £2.39 Euro 09 Dec 2025” is shown within a popup from clicking the row within the Scheduled consumable. 
 
 
+
 HR MANAGER 
 CHECKKK
 Fix this “Failed to load profile data Failed to load profile data (status 401) If you continue to see this error, please contact HR to ensure your employee profile has been created.” this problem only happens when using vercel app website, not vercel dev within the terminal, deep dive into fixing this so the vercel release will work the same as the vercel dev. 
-
+CHECK
 Make sure the clocking button then works. And check the scheme.sql file that the database is correct. 
+CHECKKKK
+Fix within the sidebar when the HR manager button is pressed it opens the hr/manager page, atm is just flicking back to the news feed page
+
+
+
 
 TECH DASHBOARD
+
 within the tech/dashboard page remove the clock in button. Have it so the cards follow light and dark colour theme within this he as well and uses more of the accent colours instead of black buttons. Have it so the text within the page follows more of the light and dark theme and is more visible. 
 
 Remove the “Welcome back, Cheryl T Tuesday, 24 February 2026” from within the page. Inside the “My Assigned Jobs” section don’t show the total amount in () only show a max of 3 jobs and then add a section saying more jobs available which then the user can click the View all button which takes the user to the job-cards/Myjobs page remove the “View All →” button from the “My Assigned Jobs (4)” section but keep the “View All jobs” button at the bottom of the page. 
@@ -77,36 +87,14 @@ Have it so the customer name is on the same row as the job number and reg. and k
 If only the key/parking tab is visible example for the tech view then hide the tab section completely. 
 
 MESSAGES
- Redesign only the thread sidebar and the main message area to feel modern and cleaner, without changing the top bar or any global layout. In the thread section, make the selected thread visually strong with a soft brand-tinted background, a 4px solid brand accent bar on the left, bolder sender name, improved padding, and a small unread badge; refine each thread card with better spacing, lighter preview text, and a subtle hover effect, and upgrade the search bar with a rounded background and icon. In the message section, convert messages into rounded chat bubbles with clear left and right alignment, use a light neutral bubble for other users and a soft brand-tinted bubble for the current user, increase vertical spacing between messages, lighten and reduce timestamp size, add subtle shadows instead of heavy borders, and restyle job numbers as clickable pill badges like “JOB 00056” rather than plain text links, keeping the overall structure intact but improving hierarchy, spacing, and visual clarity.
+CHECK
+Redesign only the thread sidebar and the main message area to feel modern and cleaner, without changing the top bar or any global layout. In the thread section, make the selected thread visually strong with a soft brand-tinted background, a 4px solid brand accent bar on the left, bolder sender name, improved padding, and a small unread badge; refine each thread card with better spacing, lighter preview text, and a subtle hover effect, and upgrade the search bar with a rounded background and icon. In the message section, convert messages into rounded chat bubbles with clear left and right alignment, use a light neutral bubble for other users and a soft brand-tinted bubble for the current user, increase vertical spacing between messages, lighten and reduce timestamp size, add subtle shadows instead of heavy borders, and restyle job numbers as clickable pill badges like “JOB 00056” rather than plain text links, keeping the overall structure intact but improving hierarchy, spacing, and visual clarity.
+
+have it so the "Complete" text follows the light/dark/colour theme within the "Rectification" section. Remove the "Edited by Darrell W" section.
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-have it so the "Complete" text folows the light/dark/colour theme within the "Rectification" section. Remove the "Edited by Darrell W" section.
-
-
-
+INVOICE PAGE
 
 invoice page fix, nearly just have "Ensure all allocated parts have quantities and pricing." create more detail for this easier for users to follow within this seciton. 
 

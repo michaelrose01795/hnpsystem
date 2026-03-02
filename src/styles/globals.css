@@ -247,6 +247,14 @@ input[type="checkbox"]:disabled:checked {
   border-color: var(--grey-accent);
 }
 
+/* Keep phone inputs visually consistent with other form fields across the app. */
+input[type="tel"] {
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+}
+
 /* Responsive density tuning */
 @media (max-width: 1024px) {
   body {

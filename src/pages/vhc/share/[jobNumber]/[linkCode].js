@@ -766,7 +766,7 @@ export default function PublicSharePreviewPage() {
     const gridItems = [
       { label: "Red Work", value: customerTotals.red, color: "var(--danger)" },
       { label: "Amber Work", value: customerTotals.amber, color: "var(--warning)" },
-      { label: "Authorized", value: customerTotals.authorized, color: "var(--success)" },
+      { label: "Authorised", value: customerTotals.authorized, color: "var(--success)" },
       { label: "Declined", value: customerTotals.declined, color: "var(--info)" },
     ];
 
