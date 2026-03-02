@@ -81,8 +81,7 @@ const LoginCard = ({
 export default function LoginPage() {
   const CUSTOMER_PORTAL_URL =
     process.env.NEXT_PUBLIC_CUSTOMER_PORTAL_URL || "https://www.hpautomotive.co.uk";
-  const allowDevUserSelection =
-    process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === "true";
+  const allowDevUserSelection = true;
   const { data: session } = useSession();
   // Safe destructuring from context
   const userContext = useUser();

@@ -36,9 +36,6 @@ export const authOptions = {
         try {
           // Dev login by user ID (only in non-production)
           if (credentials?.userId) {
-            if (process.env.NODE_ENV === "production" && process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS !== "true") {
-              return null;
-            }
             const { data, error } = await supabase
               .from("users")
               .select("user_id, first_name, last_name, email, role")
