@@ -2,6 +2,7 @@
 import React from "react";
 import { createPortal } from "react-dom";
 import { vhcModalStyles, createVhcButtonStyle } from "@/styles/appTheme";
+import useBodyModalLock from "@/hooks/useBodyModalLock";
 
 export default function VHCModalShell({
   isOpen,
@@ -20,6 +21,8 @@ export default function VHCModalShell({
   lockedOverlay = true,
   overlayStyle = null,
 }) {
+  useBodyModalLock(isOpen && !inlineMode);
+
   const closeButtonColor = "var(--accent-purple)";
   const isBlockingLocked = locked && lockedOverlay;
   if (!isOpen) return null;

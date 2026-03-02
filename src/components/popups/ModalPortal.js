@@ -2,8 +2,11 @@
 
 import { useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
+import useBodyModalLock from "@/hooks/useBodyModalLock";
 
 export default function ModalPortal({ children }) {
+  useBodyModalLock(true);
+
   const mountNode = useMemo(() => {
     if (typeof document === "undefined") return null;
     const node = document.createElement("div");

@@ -44,6 +44,20 @@ body {
   transition: background-color 0.3s, color 0.3s;
 }
 
+body.modal-open,
+body:has(.popup-backdrop),
+body:has([aria-modal="true"]) {
+  overflow: hidden;
+}
+
+body.modal-open #__next {
+  pointer-events: none;
+}
+
+body.modal-open [data-modal-portal="true"] {
+  pointer-events: auto;
+}
+
 /* ========================================================= */
 /* === Modern Floating Scrollbar Styles === */
 /* ========================================================= */

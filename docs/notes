@@ -29,6 +29,7 @@ have it so the "Outstanding Jobs" backgroubd colour is the same colour as the ca
 CEHCK
 Within the news feed page make sure there is a bigger gap in between the first row and the add update button so when the hover is used it doesn’t overlap the button. 
 
+Have it so wihtin the jobcards/[jobnuber] page withinthe customer conern tab, have it so the "AUTHORISED VHC" rows at the end where atm it shows "Authorised" change so it matches the "REQUEST 1,2,3 etc" rows example when ticked withn the write up it changes to complete etc, when clocked on to that job line specifically it shows clocked on etc. 
 
 STOCK CHECK PAGE
 Have it so that all pop ups lock the background scroll or buttons from being clicked so only the items within the popup are active. 
