@@ -155,7 +155,7 @@ async function handlePasswordReset(req, res) {
     iat: Date.now(),
   });
   const baseUrl = String(PASSWORD_RESET_PUBLIC_BASE_URL).replace(/\/+$/, "");
-  const revertLink = `${baseUrl}/login?passwordResetToken=${encodeURIComponent(token)}`;
+  const revertLink = `${baseUrl}/password-reset/reverted?token=${encodeURIComponent(token)}`;
   const displayName = [user.first_name, user.last_name].filter(Boolean).join(" ").trim() || user.email;
   const subject = `${displayName} you have reset your password`;
 
