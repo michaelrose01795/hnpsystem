@@ -7,15 +7,18 @@ import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import { supabase } from "@/lib/supabaseClient";
 
 async function resolveUserId(req, res) {
+  const queryUserId = req.query.userId || req.body?.userId;
+  const parsedQueryUserId = Number.parseInt(queryUserId, 10);
+  if (Number.isInteger(parsedQueryUserId) && parsedQueryUserId > 0) {
+    return parsedQueryUserId;
+  }
+
   const devBypassEnv = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === "true";
   const devRolesCookie = req.cookies?.["hnp-dev-roles"] || null;
   const allowDevBypass =
     devBypassEnv || (process.env.NODE_ENV !== "production" && Boolean(devRolesCookie));
 
   if (allowDevBypass) {
-    const queryUserId = req.query.userId || req.body?.userId;
-    if (queryUserId) return parseInt(queryUserId, 10);
-
     const { data: firstUser, error: firstUserError } = await supabase
       .from("users")
       .select("user_id")
@@ -29,19 +32,47 @@ async function resolveUserId(req, res) {
   const session = await getServerSession(req, res, authOptions);
   if (!session?.user) throw new Error("Authentication required");
 
-  const identifier = session.user.email || session.user.name;
-  if (!identifier) throw new Error("Unable to resolve user identity");
-
-  let query = supabase.from("users").select("user_id").limit(1);
-  if (session.user.email) {
-    query = query.eq("email", session.user.email);
-  } else {
-    query = query.or(`first_name.ilike.${session.user.name},last_name.ilike.${session.user.name}`);
+  const email = String(session.user.email || "").trim().toLowerCase();
+  if (email) {
+    const { data, error } = await supabase
+      .from("users")
+      .select("user_id")
+      .ilike("email", email)
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    if (data?.user_id) return data.user_id;
   }
 
-  const { data, error } = await query.maybeSingle();
-  if (error || !data) throw new Error("User profile not found");
-  return data.user_id;
+  const fullName = String(session.user.name || "").trim();
+  if (fullName) {
+    const { data: byFullName, error: byFullNameError } = await supabase
+      .from("users")
+      .select("user_id")
+      .ilike("name", fullName)
+      .limit(1)
+      .maybeSingle();
+    if (byFullNameError) throw byFullNameError;
+    if (byFullName?.user_id) return byFullName.user_id;
+
+    const [firstNamePart, ...rest] = fullName.split(/\s+/).filter(Boolean);
+    const lastNamePart = rest.join(" ");
+    if (firstNamePart) {
+      let fallbackQuery = supabase
+        .from("users")
+        .select("user_id")
+        .ilike("first_name", firstNamePart)
+        .limit(1);
+      if (lastNamePart) {
+        fallbackQuery = fallbackQuery.ilike("last_name", lastNamePart);
+      }
+      const { data: byParts, error: byPartsError } = await fallbackQuery.maybeSingle();
+      if (byPartsError) throw byPartsError;
+      if (byParts?.user_id) return byParts.user_id;
+    }
+  }
+
+  throw new Error("User profile not found");
 }
 
 // Auto-close a stale record from a previous day at midnight of that day

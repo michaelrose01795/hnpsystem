@@ -261,7 +261,7 @@ export default function NewsFeed() {
     <Layout>
       <div className="max-w-3xl mx-auto px-6 py-8">
         {canManageUpdates && (
-          <div className="flex justify-end items-center mb-12">
+          <div className="flex justify-end items-center mb-16">
             <button
               onClick={() => {
                 resetModal();

@@ -170,7 +170,7 @@ export const FinancialTotalsGrid = ({ totals }) => {
   const gridItems = [
     { label: "Red Work", value: totals.red, color: "var(--danger)" },
     { label: "Amber Work", value: totals.amber, color: "var(--warning)" },
-    { label: "Authorized", value: totals.authorized, color: "var(--success)" },
+    { label: "Authorised", value: totals.authorized, color: "var(--success)" },
     { label: "Declined", value: totals.declined, color: "var(--info)" },
   ];
 

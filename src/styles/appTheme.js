@@ -278,13 +278,15 @@ export const vhcModalStyles = {
     justifyContent: "center",
     alignItems: "center",
     zIndex: 9999,
-    padding: "20px",
+    padding: "clamp(10px, 2.5vw, 20px)",
+    overflowY: "auto",
+    overscrollBehavior: "contain",
   },
   container: ({ width = "1080px", height = "640px" } = {}) => ({
     width,
-    maxWidth: "96vw",
+    maxWidth: "calc(100vw - clamp(10px, 2.5vw, 20px) * 2)",
     height,
-    maxHeight: "92vh",
+    maxHeight: "calc(100dvh - clamp(10px, 2.5vw, 20px) * 2)",
     background: palette.modalGradient,
     borderRadius: radii.xl,
     border: `1px solid ${palette.border}`,
@@ -419,19 +421,23 @@ export const popupOverlayStyles = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  padding: "20px",
+  padding: "clamp(10px, 2.5vw, 20px)",
   zIndex: 9999,
+  overflowY: "auto",
+  overscrollBehavior: "contain",
 };
 
 export const popupCardStyles = {
   width: "min(640px, 100%)",
-  maxHeight: "90vh",
+  maxWidth: "calc(100vw - clamp(10px, 2.5vw, 20px) * 2)",
+  maxHeight: "calc(100dvh - clamp(10px, 2.5vw, 20px) * 2)",
   background: palette.modalGradient,
   borderRadius: radii.xl,
   border: `1px solid ${palette.border}`,
   boxShadow: "none",
   color: palette.textPrimary,
   overflowY: "auto",
+  overscrollBehavior: "contain",
 };
 
 export const appShellTheme = {

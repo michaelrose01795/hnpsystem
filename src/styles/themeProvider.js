@@ -63,6 +63,51 @@ const normalizeAccent = (value) => {
   return ACCENT_PALETTES[normalized] ? normalized : DEFAULT_ACCENT;
 };
 
+const getErrorPalette = (accentName, resolvedMode) => {
+  // Keep error colors independent from accent: red accents use amber errors; all other accents use red errors.
+  if (accentName === "red") {
+    return resolvedMode === "dark"
+      ? {
+          base: "#fbbf24",
+          dark: "#f59e0b",
+          text: "#fde68a",
+          surface: "rgba(251, 191, 36, 0.24)",
+          hover: "#fcd34d",
+          borderAlpha: 0.55,
+          surfaceHoverAlpha: 0.34,
+        }
+      : {
+          base: "#f59e0b",
+          dark: "#b45309",
+          text: "#92400e",
+          surface: "#fef3c7",
+          hover: "#d97706",
+          borderAlpha: 0.4,
+          surfaceHoverAlpha: 0.2,
+        };
+  }
+
+  return resolvedMode === "dark"
+    ? {
+        base: "#ff7a7a",
+        dark: "#f87171",
+        text: "#ffc0c0",
+        surface: "rgba(255, 122, 122, 0.5)",
+        hover: "#ff9696",
+        borderAlpha: 0.55,
+        surfaceHoverAlpha: 0.32,
+      }
+    : {
+        base: "#ef4444",
+        dark: "#b91c1c",
+        text: "#b91c1c",
+        surface: "#fee2e2",
+        hover: "#dc2626",
+        borderAlpha: 0.4,
+        surfaceHoverAlpha: 0.2,
+      };
+};
+
 const normalizeMode = (value) => {
   if (value === "system" || value === "dark") return value;
   return "light";
@@ -115,6 +160,8 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
     const borderTone = resolved === "dark" ? blend(baseAccentRgb, white, 0.45) : blend(baseAccentRgb, black, 0.22);
     const accentReadable = resolved === "dark" ? blend(baseAccentRgb, white, 0.24) : blend(baseAccentRgb, black, 0.12);
     const accentPanelTone = resolved === "dark" ? blend(baseAccentRgb, black, 0.72) : blend(baseAccentRgb, white, 0.9);
+    const errorPalette = getErrorPalette(normalizedAccent, resolved);
+    const errorRgb = hexToRgb(errorPalette.base);
     if (typeof document !== "undefined") {
       document.documentElement.style.setProperty("--primary", resolvedAccent);
       document.documentElement.style.setProperty("--primary-light", resolvedAccent);
@@ -165,6 +212,28 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
         "--scrollbar-thumb-hover",
         resolved === "dark" ? rgbToHex(blend(baseAccentRgb, white, 0.2)) : rgbToHex(blend(baseAccentRgb, black, 0.18))
       );
+      document.documentElement.style.setProperty("--danger", errorPalette.base);
+      document.documentElement.style.setProperty("--danger-dark", errorPalette.dark);
+      document.documentElement.style.setProperty("--danger-surface", errorPalette.surface);
+      document.documentElement.style.setProperty("--danger-rgb", errorRgb);
+      document.documentElement.style.setProperty("--danger-text", errorPalette.text);
+      document.documentElement.style.setProperty(
+        "--danger-border",
+        `rgba(${errorRgb}, ${errorPalette.borderAlpha})`
+      );
+      document.documentElement.style.setProperty("--danger-hover", errorPalette.hover);
+      document.documentElement.style.setProperty(
+        "--danger-surface-hover",
+        `rgba(${errorRgb}, ${errorPalette.surfaceHoverAlpha})`
+      );
+      document.documentElement.style.setProperty("--error", "var(--danger)");
+      document.documentElement.style.setProperty("--error-dark", "var(--danger-dark)");
+      document.documentElement.style.setProperty("--error-surface", "var(--danger-surface)");
+      document.documentElement.style.setProperty("--error-rgb", "var(--danger-rgb)");
+      document.documentElement.style.setProperty("--error-text", "var(--danger-text)");
+      document.documentElement.style.setProperty("--error-border", "var(--danger-border)");
+      document.documentElement.style.setProperty("--error-hover", "var(--danger-hover)");
+      document.documentElement.style.setProperty("--error-surface-hover", "var(--danger-surface-hover)");
     }
     setAccent(normalizedAccent);
     return normalizedAccent;

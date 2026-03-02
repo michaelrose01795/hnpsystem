@@ -11,6 +11,7 @@ import {
 import { supabase } from "@/lib/supabaseClient";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { isValidUuid, sanitizeNumericId } from "@/lib/utils/ids";
+import useBodyModalLock from "@/hooks/useBodyModalLock";
 
 const PRE_PICK_OPTIONS = [
   { value: "", label: "Not assigned" },
@@ -206,6 +207,7 @@ function StockCataloguePage() {
   const [inventorySearch, setInventorySearch] = useState("");
   const [selectedPart, setSelectedPart] = useState(null);
   const [isPartModalOpen, setIsPartModalOpen] = useState(false);
+  useBodyModalLock(isPartModalOpen);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedPart, setEditedPart] = useState(null);
   const [isSavingPart, setIsSavingPart] = useState(false);
@@ -2732,7 +2734,13 @@ useEffect(() => {
 
         {/* Part Details Modal */}
         {isPartModalOpen && selectedPart && (
-          <div style={popupOverlayStyles} onClick={() => setIsPartModalOpen(false)}>
+          <div
+            className="popup-backdrop"
+            role="dialog"
+            aria-modal="true"
+            style={popupOverlayStyles}
+            onClick={() => setIsPartModalOpen(false)}
+          >
             <div
               style={{
                 ...popupCardStyles,

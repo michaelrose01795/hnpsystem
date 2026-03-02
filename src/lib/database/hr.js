@@ -797,41 +797,39 @@ const formatEmergencyContact = (value) => {
 
 // Get complete employee directory with profile details
 export async function getEmployeeDirectory() {
-  const [usersResult, activeAbsenceMap] = await Promise.all([
-    supabase
-      .from("users")
-      .select(
-        `
-          user_id,
-          first_name,
-          last_name,
-          email,
-          job_title,
-          phone,
-          role,
-          department,
-          employment_type,
-          employment_status,
-          start_date,
-          manager_id,
-          photo_url,
-          emergency_contact,
-          documents,
-          contracted_hours,
-          hourly_rate,
-          overtime_rate,
-          annual_salary,
-          payroll_reference,
-          national_insurance_number,
-          keycloak_user_id,
-          home_address,
-          created_at
-        `
-      )
-      .eq("is_active", true)
-      .order("created_at", { ascending: true }),
-    getActiveAbsenceMap(),
-  ]);
+  const usersResult = await supabase
+    .from("users")
+    .select(
+      `
+        user_id,
+        first_name,
+        last_name,
+        email,
+        job_title,
+        phone,
+        role,
+        department,
+        employment_type,
+        employment_status,
+        start_date,
+        probation_end,
+        manager_id,
+        photo_url,
+        emergency_contact,
+        documents,
+        contracted_hours,
+        hourly_rate,
+        overtime_rate,
+        annual_salary,
+        payroll_reference,
+        national_insurance_number,
+        keycloak_user_id,
+        home_address,
+        created_at
+      `
+    )
+    .eq("is_active", true)
+    .order("created_at", { ascending: true });
 
   const { data, error } = usersResult;
 
@@ -842,8 +840,7 @@ export async function getEmployeeDirectory() {
 
   return (data || []).map((user) => {
     const userId = user.user_id;
-    const storedEmploymentStatus = user.employment_status || "Active";
-    const status = activeAbsenceMap.get(userId) || storedEmploymentStatus;
+    const status = user.employment_status || "Active";
     const name = getDisplayName(user);
     const emergencyDetails = formatEmergencyContact(user.emergency_contact);
     const contractedHours = user.contracted_hours ?? null;
@@ -865,7 +862,7 @@ export async function getEmployeeDirectory() {
       employmentType: user.employment_type || "Full-time",
       status,
       startDate: user.start_date,
-      probationEnd: deriveProbationEnd(user.start_date),
+      probationEnd: user.probation_end || deriveProbationEnd(user.start_date),
       contractedHours: contractedHours !== null ? Number(contractedHours) : 40,
       hourlyRate: hourlyRate !== null && hourlyRate !== undefined ? Number(hourlyRate) : 0,
       overtimeRate: overtimeRate !== null && overtimeRate !== undefined ? Number(overtimeRate) : null,

@@ -138,6 +138,15 @@ const AvatarBadge = ({ name }) => {
   );
 };
 
+const formatJobBadgeNumber = (value) => {
+  const cleaned = String(value || "").trim();
+  if (!cleaned) return "JOB";
+  if (/^\d+$/.test(cleaned)) {
+    return `JOB ${cleaned.padStart(5, "0")}`;
+  }
+  return `JOB ${cleaned.toUpperCase()}`;
+};
+
 const renderMessageContent = (content, userRoles = []) => {
   if (!content) return null;
 
@@ -162,15 +171,18 @@ const renderMessageContent = (content, userRoles = []) => {
 
     let href = null;
     let title = fullMatch;
+    let jobBadgeLabel = null;
 
     // Determine the link based on the command
     if (numberOnly) {
       // /12345 - job number shorthand
       href = getJobLink(numberOnly, userRoles);
       title = `Job #${numberOnly}`;
+      jobBadgeLabel = formatJobBadgeNumber(numberOnly);
     } else if (prefix === 'job' && value) {
       href = getJobLink(value, userRoles);
       title = `Job #${value}`;
+      jobBadgeLabel = formatJobBadgeNumber(value);
     } else if (prefix === 'vhc' && value) {
       href = `/job-cards/${value}?tab=vhc`;
       title = `VHC for Job #${value}`;
@@ -222,16 +234,26 @@ const renderMessageContent = (content, userRoles = []) => {
           key={match.index}
           href={href}
           style={{
-            color: "inherit",
-            textDecoration: "underline",
-            fontWeight: 600,
+            color: jobBadgeLabel ? palette.accent : "inherit",
+            textDecoration: "none",
+            fontWeight: jobBadgeLabel ? 700 : 600,
+            display: jobBadgeLabel ? "inline-flex" : "inline",
+            alignItems: "center",
+            border: jobBadgeLabel ? `1px solid rgba(var(--accent-purple-rgb), 0.32)` : "none",
+            borderRadius: jobBadgeLabel ? radii.pill : 0,
+            padding: jobBadgeLabel ? "2px 10px" : 0,
+            margin: jobBadgeLabel ? "0 3px" : 0,
+            backgroundColor: jobBadgeLabel ? "rgba(var(--accent-purple-rgb), 0.12)" : "transparent",
+            fontSize: jobBadgeLabel ? "0.76rem" : "inherit",
+            letterSpacing: jobBadgeLabel ? "0.04em" : "normal",
+            textTransform: jobBadgeLabel ? "uppercase" : "none",
           }}
           title={title}
           onClick={(e) => {
             e.stopPropagation();
           }}
         >
-          {fullMatch}
+          {jobBadgeLabel || fullMatch}
         </a>
       );
     } else {
@@ -268,15 +290,15 @@ const MessageBubble = ({ message, isMine, nameColor = palette.accent, userRoles 
   });
 
   const bubbleStyles = {
-    padding: "14px 18px",
+    padding: "12px 16px",
     borderRadius: isMine
-      ? `${radii.lg} ${radii.sm} ${radii.lg} ${radii.lg}`
-      : `${radii.sm} ${radii.lg} ${radii.lg} ${radii.lg}`,
-    backgroundColor: isMine ? palette.accent : "var(--surface)",
-    color: isMine ? "var(--surface)" : palette.textPrimary,
-    maxWidth: "480px",
-    boxShadow: isMine ? "0 2px 8px rgba(0, 0, 0, 0.08)" : "none",
-    lineHeight: 1.45,
+      ? "18px 18px 6px 18px"
+      : "18px 18px 18px 6px",
+    backgroundColor: isMine ? "rgba(var(--accent-purple-rgb), 0.14)" : "var(--search-surface)",
+    color: palette.textPrimary,
+    maxWidth: "540px",
+    boxShadow: "0 4px 12px rgba(15, 23, 42, 0.06)",
+    lineHeight: 1.5,
   };
 
   return (
@@ -290,7 +312,7 @@ const MessageBubble = ({ message, isMine, nameColor = palette.accent, userRoles 
       <div
         style={{
           display: "flex",
-          flexDirection: "row",
+          flexDirection: isMine ? "row-reverse" : "row",
           gap: "12px",
           alignItems: "flex-start",
         }}
@@ -306,14 +328,14 @@ const MessageBubble = ({ message, isMine, nameColor = palette.accent, userRoles 
         >
           <span
             style={{
-              fontSize: "0.8rem",
+              fontSize: "0.78rem",
               fontWeight: 700,
               color: nameColor,
             }}
           >
             {senderName}
           </span>
-          <span style={{ fontSize: "0.75rem", color: palette.textMuted }}>{timestamp}</span>
+          <span style={{ fontSize: "0.68rem", color: "rgba(71, 85, 105, 0.85)" }}>{timestamp}</span>
           <div style={bubbleStyles}>{renderMessageContent(message.content, userRoles)}</div>
         </div>
       </div>
@@ -1663,16 +1685,14 @@ function MessagesPage() {
                       </button>
                     </div>
                   ) : (
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", paddingTop: "4px", paddingBottom: "2px" }}>
                       <button
                         type="button"
                         onClick={openSystemNotificationsThread}
                         style={{
                           borderRadius: radii.pill,
                           padding: "8px 14px",
-                          border: `1px solid ${
-                            activeSystemView ? palette.accent : palette.border
-                          }`,
+                          border: `1px solid ${activeSystemView ? "transparent" : palette.border}`,
                           backgroundColor: activeSystemView ? palette.accentSurface : "var(--surface)",
                           color: systemTitleColor,
                           fontWeight: 600,
@@ -1680,6 +1700,28 @@ function MessagesPage() {
                           display: "inline-flex",
                           alignItems: "center",
                           gap: "6px",
+                          boxShadow: activeSystemView
+                            ? `inset 0 0 0 1px ${palette.accent}`
+                            : "none",
+                          transition: "background-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease",
+                        }}
+                        onMouseEnter={(event) => {
+                          event.currentTarget.style.backgroundColor = activeSystemView
+                            ? "rgba(var(--accent-purple-rgb), 0.18)"
+                            : "rgba(var(--accent-purple-rgb), 0.08)";
+                          event.currentTarget.style.boxShadow = activeSystemView
+                            ? `inset 0 0 0 1px ${palette.accent}, 0 2px 8px rgba(30, 64, 175, 0.12)`
+                            : `inset 0 0 0 1px ${palette.border}, 0 2px 8px rgba(15, 23, 42, 0.08)`;
+                          event.currentTarget.style.transform = "translateY(-1px)";
+                        }}
+                        onMouseLeave={(event) => {
+                          event.currentTarget.style.backgroundColor = activeSystemView
+                            ? palette.accentSurface
+                            : "var(--surface)";
+                          event.currentTarget.style.boxShadow = activeSystemView
+                            ? `inset 0 0 0 1px ${palette.accent}`
+                            : "none";
+                          event.currentTarget.style.transform = "translateY(0)";
                         }}
                       >
                         System
@@ -1711,6 +1753,19 @@ function MessagesPage() {
                           color: palette.accent,
                           fontWeight: 600,
                           cursor: threads.length ? "pointer" : "not-allowed",
+                          transition: "background-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease",
+                        }}
+                        onMouseEnter={(event) => {
+                          if (!threads.length) return;
+                          event.currentTarget.style.backgroundColor = "rgba(var(--accent-purple-rgb), 0.08)";
+                          event.currentTarget.style.boxShadow = `inset 0 0 0 1px ${palette.border}, 0 2px 8px rgba(15, 23, 42, 0.08)`;
+                          event.currentTarget.style.transform = "translateY(-1px)";
+                        }}
+                        onMouseLeave={(event) => {
+                          if (!threads.length) return;
+                          event.currentTarget.style.backgroundColor = "var(--surface)";
+                          event.currentTarget.style.boxShadow = "none";
+                          event.currentTarget.style.transform = "translateY(0)";
                         }}
                       >
                         Select
@@ -1728,6 +1783,17 @@ function MessagesPage() {
                           fontSize: "1.2rem",
                           fontWeight: 700,
                           cursor: "pointer",
+                          transition: "background-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease",
+                        }}
+                        onMouseEnter={(event) => {
+                          event.currentTarget.style.backgroundColor = "rgba(var(--accent-purple-rgb), 0.08)";
+                          event.currentTarget.style.boxShadow = `inset 0 0 0 1px ${palette.border}, 0 2px 8px rgba(15, 23, 42, 0.08)`;
+                          event.currentTarget.style.transform = "translateY(-1px)";
+                        }}
+                        onMouseLeave={(event) => {
+                          event.currentTarget.style.backgroundColor = "var(--surface)";
+                          event.currentTarget.style.boxShadow = "none";
+                          event.currentTarget.style.transform = "translateY(0)";
                         }}
                       >
                         +
@@ -1750,11 +1816,18 @@ function MessagesPage() {
                 onChange={(event) => setThreadSearchTerm(event.target.value)}
                 style={{
                   width: "100%",
-                  padding: "10px 14px",
-                  borderRadius: radii.lg,
+                  marginTop: "10px",
+                  marginBottom: "10px",
+                  padding: "12px 14px 12px 40px",
+                  borderRadius: radii.pill,
                   border: "1px solid var(--search-surface-muted)",
                   backgroundColor: "var(--search-surface)",
                   color: "var(--search-text)",
+                  backgroundImage:
+                    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E\")",
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: "14px center",
+                  backgroundSize: "16px 16px",
                 }}
               />
 
@@ -1768,6 +1841,9 @@ function MessagesPage() {
                   display: "flex",
                   flexDirection: "column",
                   gap: "10px",
+                  paddingTop: "6px",
+                  paddingBottom: "6px",
+                  paddingRight: "2px",
                 }}
               >
                 {loadingThreads && (
@@ -1783,7 +1859,7 @@ function MessagesPage() {
                             style={{
                               display: "flex",
                               alignItems: "flex-start",
-                              gap: "10px",
+                              gap: "12px",
                             }}
                           >
                             {threadSelectionMode && (
@@ -1805,25 +1881,44 @@ function MessagesPage() {
                               disabled={threadSelectionMode}
                               style={{
                                 flex: 1,
-                                borderRadius: "18px",
-                                border: `1px solid ${
-                                  activeThreadId === thread.id ? palette.accent : palette.border
-                                }`,
+                                borderRadius: "16px",
+                                border: activeThreadId === thread.id
+                                  ? `1px solid rgba(var(--accent-purple-rgb), 0.26)`
+                                  : `1px solid ${palette.border}`,
                                 backgroundColor:
                                   activeThreadId === thread.id
-                                    ? palette.accentSurface
+                                    ? "rgba(var(--accent-purple-rgb), 0.12)"
                                     : thread.hasUnread
                                     ? unreadBackgroundColor
                                     : "var(--surface)",
-                                padding: "14px 16px",
+                                padding: "16px",
                                 textAlign: "left",
                                 cursor: threadSelectionMode ? "default" : "pointer",
+                                boxShadow: activeThreadId === thread.id
+                                  ? `inset 4px 0 0 ${palette.accent}, 0 8px 20px rgba(30, 64, 175, 0.1)`
+                                  : "0 4px 12px rgba(15, 23, 42, 0.04)",
+                                transition: "transform 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease",
+                              }}
+                              onMouseEnter={(event) => {
+                                if (threadSelectionMode || activeThreadId === thread.id) return;
+                                event.currentTarget.style.backgroundColor = "rgba(var(--accent-purple-rgb), 0.08)";
+                                event.currentTarget.style.transform = "translateY(-1px)";
+                                event.currentTarget.style.boxShadow = "0 8px 18px rgba(15, 23, 42, 0.08)";
+                              }}
+                              onMouseLeave={(event) => {
+                                if (threadSelectionMode || activeThreadId === thread.id) return;
+                                event.currentTarget.style.backgroundColor = thread.hasUnread
+                                  ? unreadBackgroundColor
+                                  : "var(--surface)";
+                                event.currentTarget.style.transform = "translateY(0)";
+                                event.currentTarget.style.boxShadow = "0 4px 12px rgba(15, 23, 42, 0.04)";
                               }}
                             >
                               <strong
                                 style={{
                                   display: "block",
                                   fontSize: "0.95rem",
+                                  fontWeight: activeThreadId === thread.id ? 800 : 700,
                                   color: systemTitleColor,
                                 }}
                               >
@@ -1833,12 +1928,13 @@ function MessagesPage() {
                                 <span
                                   style={{
                                     display: "block",
-                                    marginTop: "4px",
-                                    fontSize: "0.85rem",
-                                    color: palette.textMuted,
+                                    marginTop: "6px",
+                                    fontSize: "0.82rem",
+                                    color: "rgba(71, 85, 105, 0.86)",
+                                    lineHeight: 1.45,
                                   }}
                                 >
-                                  <span style={{ color: systemTitleColor, fontWeight: 600 }}>
+                                  <span style={{ color: systemTitleColor, fontWeight: activeThreadId === thread.id ? 700 : 600 }}>
                                     {thread.lastMessage.sender?.name || "Someone"}
                                   </span>
                                   {": "}
@@ -1854,14 +1950,16 @@ function MessagesPage() {
                               {thread.hasUnread && (
                                 <span
                                   style={{
-                                    marginTop: "6px",
+                                    marginTop: "8px",
                                     display: "inline-flex",
-                                    padding: "4px 10px",
+                                    padding: "3px 8px",
                                     borderRadius: radii.pill,
                                     backgroundColor: palette.accent,
                                     color: "var(--surface)",
-                                    fontSize: "0.75rem",
-                                    fontWeight: 600,
+                                    fontSize: "0.68rem",
+                                    fontWeight: 700,
+                                    letterSpacing: "0.03em",
+                                    textTransform: "uppercase",
                                   }}
                                 >
                                   Unread
@@ -2030,7 +2128,7 @@ function MessagesPage() {
                     overflowY: "auto",
                     display: "flex",
                     flexDirection: "column",
-                    gap: "14px",
+                    gap: "18px",
                     paddingRight: "6px",
                   }}
                 >

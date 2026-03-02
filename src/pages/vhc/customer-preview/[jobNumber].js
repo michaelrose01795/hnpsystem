@@ -1134,7 +1134,7 @@ export default function CustomerPreviewPage() {
     const gridItems = [
       { label: "Red Work", value: displayTotals.red, color: "var(--danger)" },
       { label: "Amber Work", value: displayTotals.amber, color: "var(--warning)" },
-      { label: "Authorized", value: displayTotals.authorized, color: "var(--success)" },
+      { label: "Authorised", value: displayTotals.authorized, color: "var(--success)" },
       { label: "Declined", value: displayTotals.declined, color: "var(--info)" },
     ];
 

@@ -7,6 +7,7 @@ import { useRouter } from "next/router"; // Next.js router for query params
 import { useSession } from "next-auth/react"; // NextAuth session for authentication
 import Layout from "@/components/Layout"; // shared layout wrapper
 import { useUser } from "@/context/UserContext"; // Keycloak user context
+import useBodyModalLock from "@/hooks/useBodyModalLock";
 import { useHrOperationsData } from "@/hooks/useHrData"; // Supabase-backed HR aggregation hook (admin only)
 import { StatusTag } from "@/components/HR/MetricCard"; // HR UI components
 import { CalendarField } from "@/components/calendarAPI";
@@ -198,6 +199,7 @@ function LeaveRequestModal({ isOpen, onClose, onSubmit, isSubmitting }) {
     notes: "",
   });
   const [error, setError] = useState(null);
+  useBodyModalLock(isOpen);
 
   if (!isOpen) return null;
 

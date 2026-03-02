@@ -44,6 +44,36 @@ body {
   transition: background-color 0.3s, color 0.3s;
 }
 
+html.modal-open,
+html:has(.popup-backdrop),
+html:has([aria-modal="true"]) {
+  overflow: hidden;
+}
+
+body.modal-open,
+body:has(.popup-backdrop),
+body:has([aria-modal="true"]) {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body.modal-open #__next,
+body:has(.popup-backdrop) #__next,
+body:has([aria-modal="true"]) #__next {
+  pointer-events: none;
+}
+
+body.modal-open [data-modal-portal="true"] {
+  pointer-events: auto;
+}
+
+body:has(.popup-backdrop) .popup-backdrop,
+body:has(.popup-backdrop) .popup-backdrop *,
+body:has([aria-modal="true"]) [aria-modal="true"],
+body:has([aria-modal="true"]) [aria-modal="true"] * {
+  pointer-events: auto;
+}
+
 /* ========================================================= */
 /* === Modern Floating Scrollbar Styles === */
 /* ========================================================= */
@@ -245,6 +275,14 @@ input[type="checkbox"]:disabled {
 input[type="checkbox"]:disabled:checked {
   background: var(--grey-accent);
   border-color: var(--grey-accent);
+}
+
+/* Keep phone inputs visually consistent with other form fields across the app. */
+input[type="tel"] {
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
 }
 
 /* Responsive density tuning */
@@ -2217,13 +2255,15 @@ body:has(.login-page-wrapper) {
 /* === Popup Dialog Styles === */
 /* ========================================================= */
 .popup-backdrop {
+  --popup-viewport-gap: clamp(10px, 2.5vw, 20px);
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
   width: 100vw;
-  height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
   background-color: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(8px);
   display: flex;
@@ -2231,7 +2271,8 @@ body:has(.login-page-wrapper) {
   justify-content: center;
   z-index: 9999;
   overflow-y: auto;
-  padding: 20px;
+  overscroll-behavior: contain;
+  padding: var(--popup-viewport-gap);
 }
 
 .popup-card {
@@ -2239,10 +2280,26 @@ body:has(.login-page-wrapper) {
   border: 1px solid var(--border);
   border-radius: 20px;
   position: relative;
-  max-width: 90vw;
-  max-height: 90vh;
+  width: min(100%, 960px);
+  max-width: calc(100vw - (var(--popup-viewport-gap) * 2));
+  max-height: calc(100dvh - (var(--popup-viewport-gap) * 2));
   overflow-y: auto;
+  overscroll-behavior: contain;
   margin: auto;
+}
+
+.popup-backdrop > * {
+  max-width: calc(100vw - (var(--popup-viewport-gap) * 2));
+  max-height: calc(100dvh - (var(--popup-viewport-gap) * 2));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  min-height: 0;
+}
+
+@media (max-width: 768px) {
+  .popup-backdrop {
+    align-items: flex-start;
+  }
 }
 
 /* ========================================================= */

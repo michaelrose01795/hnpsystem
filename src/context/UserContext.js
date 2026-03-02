@@ -1,6 +1,6 @@
 // ✅ Imports converted to use absolute alias "@/"
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signOut as nextAuthSignOut } from "next-auth/react";
 import { ensureDevDbUserAndGetId } from "@/lib/users/devUsers";
 import { getUserActiveJobs } from "@/lib/database/jobClocking";
 import { getUserById } from "@/lib/database/users";
@@ -62,18 +62,20 @@ export function UserProvider({ children }) {
     setLoading(false);
   }, [session]);
 
-  // Set Keycloak session user
+  // Set user from NextAuth session (works for both Keycloak and Credentials providers)
   useEffect(() => {
     if (session?.user) {
       const resolvedSessionId =
         session.user.id || session.user.sub || session.user.user_id || null;
-      const keycloakUser = {
+      const sessionUser = {
         id: resolvedSessionId || Date.now(),
-        username: session.user.name || "KeycloakUser",
+        username: session.user.name || "User",
+        email: session.user.email || null,
         roles: (session.user.roles || []).map((r) => r.toUpperCase()),
         authUuid: resolvedSessionId || null,
       };
-      setUser(keycloakUser);
+      setUser(sessionUser);
+      setLoading(false);
       if (CAN_USE_DEV_AUTH) {
         localStorage.removeItem("devUser");
       }
@@ -190,8 +192,8 @@ export function UserProvider({ children }) {
     }
   };
 
-  // Logout
-  const logout = () => {
+  // Logout — clears both local state and NextAuth session
+  const logout = async () => {
     setUser(null);
     setStatus("Waiting for Job"); // reset status
     setDbUserId(null);
@@ -200,6 +202,12 @@ export function UserProvider({ children }) {
       localStorage.removeItem("devUser");
     }
     clearDevRoleCookie();
+    // Clear NextAuth session cookie (no-op if no session exists)
+    try {
+      await nextAuthSignOut({ redirect: false });
+    } catch (_) {
+      // Ignore errors — session might not exist
+    }
   };
 
   const contextValue = {

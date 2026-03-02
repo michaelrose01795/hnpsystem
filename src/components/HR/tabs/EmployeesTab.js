@@ -82,6 +82,40 @@ const DB_COLUMN_TO_FORM_FIELD = {
   emergency_contact: "emergencyContact",
 };
 
+const FIELD_SECTION_MAP = {
+  firstName: "personal",
+  lastName: "personal",
+  email: "personal",
+  phone: "personal",
+  department: "employment",
+  jobTitle: "employment",
+  role: "employment",
+  employmentType: "employment",
+  status: "employment",
+  startDate: "employment",
+  probationEnd: "employment",
+  contractedHours: "employment",
+  hourlyRate: "compensation",
+  overtimeRate: "compensation",
+  annualSalary: "compensation",
+  payrollNumber: "compensation",
+  nationalInsurance: "compensation",
+  keycloakId: "system",
+  address: "address",
+  emergencyContact: "emergency",
+};
+
+const SECTION_LABELS = {
+  personal: "Personal details",
+  employment: "Employment details",
+  compensation: "Pay & compensation",
+  system: "System",
+  address: "Home address",
+  emergency: "Emergency contact",
+};
+
+const SECTION_ORDER = ["personal", "employment", "compensation", "system", "address", "emergency"];
+
 function DirectoryFilters({ filters, setFilters, departments, employmentTypes }) {
   const departmentOptions = departments.map((dept) => ({
     value: dept,
@@ -355,7 +389,7 @@ export default function EmployeesTab() {
       });
 
       if (!response.ok) {
-        const parsedError = await extractError(response);
+        const parsedError = await extractError(response, newEmployee);
         throw new Error(parsedError.message);
       }
 
@@ -401,10 +435,8 @@ export default function EmployeesTab() {
 
   const handleSaveEditEmployee = async () => {
     if (!editEmployee) return;
-    const validationErrors = validateEmployeeForm(editEmployee);
-    if (Object.keys(validationErrors).length > 0) {
-      setEditFieldErrors(validationErrors);
-      setEditError("Cannot save changes. Fix the highlighted fields and try again.");
+    if (!editEmployee.userId) {
+      setEditError("Cannot save changes because this profile is not linked to a user record.");
       return;
     }
     setIsSavingEdit(true);
@@ -414,11 +446,11 @@ export default function EmployeesTab() {
       const response = await fetch("/api/hr/employees", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editEmployee),
+        body: JSON.stringify({ ...editEmployee, _operation: "edit" }),
       });
 
       if (!response.ok) {
-        const parsedError = await extractError(response);
+        const parsedError = await extractError(response, editEmployee);
         const failure = new Error(parsedError.message);
         failure.fieldErrors = parsedError.fieldErrors || {};
         throw failure;
@@ -446,12 +478,13 @@ export default function EmployeesTab() {
     }
   };
 
-  const extractError = async (response) => {
+  const extractError = async (response, submittedValues = {}) => {
     try {
       const data = await response.json();
       const fieldErrors = {};
       const serverMessage = typeof data?.message === "string" ? data.message : "";
       const serverError = typeof data?.error === "string" ? data.error : "";
+      const combinedServerText = [serverMessage, serverError].filter(Boolean).join(" ");
 
       const missingFieldMatch = serverMessage.match(/Missing required field\s+([a-zA-Z0-9_]+)/i);
       if (missingFieldMatch) {
@@ -467,8 +500,21 @@ export default function EmployeesTab() {
         }
       }
 
-      if (/email/i.test(serverError) && !fieldErrors.email) {
+      const emailFormatError = /(invalid email|email format|malformed email|not a valid email address)/i;
+      if (emailFormatError.test(serverError) && !fieldErrors.email) {
         fieldErrors.email = "Enter a valid email address.";
+      }
+
+      if (/users_email_key/i.test(serverError) && !fieldErrors.email) {
+        fieldErrors.email = "That email address is already in use by another user.";
+      }
+
+      if (/record\s+"new"\s+has\s+no\s+field\s+"name"/i.test(combinedServerText)) {
+        // Only highlight role when it is actually missing; this backend error can occur even when UI values are valid.
+        const roleValue = String(submittedValues?.role ?? "").trim();
+        if (!roleValue && !fieldErrors.role) {
+          fieldErrors.role = "Select a role before saving.";
+        }
       }
 
       return {
@@ -923,7 +969,20 @@ function EmployeeForm({
       >
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
           {errorMessage && (
-            <div style={{ color: "var(--danger)", fontWeight: 600 }}>{errorMessage}</div>
+            <div
+              role="alert"
+              style={{
+                color: "var(--danger-dark)",
+                background: "var(--danger-surface)",
+                border: "1px solid var(--danger-border)",
+                borderRadius: "10px",
+                padding: "10px 12px",
+                fontWeight: 600,
+                lineHeight: 1.4,
+              }}
+            >
+              {errorMessage}
+            </div>
           )}
           <EmployeeDetailsFields
             values={values}
@@ -1062,18 +1121,43 @@ function SearchableListDropdown({
   );
 }
 
-function SectionHeading({ title }) {
+function SectionHeading({ title, hasError = false, errorCount = 0 }) {
   return (
-    <div style={{
-      fontSize: "0.82rem",
-      fontWeight: 700,
-      color: "var(--accent-purple)",
-      textTransform: "uppercase",
-      letterSpacing: "0.04em",
-      paddingBottom: "6px",
-      borderBottom: "2px solid rgba(var(--accent-purple-rgb), 0.15)",
-    }}>
-      {title}
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "10px",
+        fontSize: "0.82rem",
+        fontWeight: 700,
+        color: hasError ? "var(--danger-dark)" : "var(--accent-purple)",
+        textTransform: "uppercase",
+        letterSpacing: "0.04em",
+        paddingBottom: "6px",
+        borderBottom: hasError
+          ? "2px solid rgba(var(--danger-rgb), 0.35)"
+          : "2px solid rgba(var(--accent-purple-rgb), 0.15)",
+      }}
+    >
+      <span>{title}</span>
+      {hasError && (
+        <span
+          style={{
+            fontSize: "0.7rem",
+            fontWeight: 700,
+            color: "var(--danger-dark)",
+            background: "rgba(var(--danger-rgb), 0.15)",
+            border: "1px solid var(--danger-border)",
+            borderRadius: "999px",
+            padding: "2px 8px",
+            textTransform: "none",
+            letterSpacing: "normal",
+          }}
+        >
+          {errorCount > 1 ? `${errorCount} fields need attention` : "Needs attention"}
+        </span>
+      )}
     </div>
   );
 }
@@ -1095,6 +1179,26 @@ function EmployeeDetailsFields({
           boxShadow: "0 0 0 2px rgba(var(--danger-rgb), 0.12)",
         }
       : baseStyle;
+  const sectionErrors = useMemo(() => {
+    const grouped = {};
+    Object.keys(fieldErrors || {}).forEach((field) => {
+      const section = FIELD_SECTION_MAP[field];
+      if (!section) return;
+      grouped[section] = grouped[section] || [];
+      grouped[section].push(field);
+    });
+    return grouped;
+  }, [fieldErrors]);
+  const getSectionShellStyle = (section) => {
+    const hasError = Boolean(sectionErrors[section]?.length);
+    return {
+      border: hasError ? "1px solid var(--danger-border)" : "1px solid transparent",
+      borderRadius: "12px",
+      padding: "12px",
+      background: hasError ? "rgba(var(--danger-rgb), 0.08)" : "transparent",
+      boxShadow: hasError ? "0 0 0 2px rgba(var(--danger-rgb), 0.08)" : "none",
+    };
+  };
   const gridStyle = {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
@@ -1104,121 +1208,157 @@ function EmployeeDetailsFields({
   return (
     <>
       {/* ── Personal Details ── */}
-      <SectionHeading title="Personal Details" />
-      <div style={gridStyle}>
-        <FormField label="First Name" errorMessage={fieldErrors.firstName}>
-          <input type="text" value={values.firstName} onChange={update("firstName")} style={applyFieldErrorStyle("firstName")} placeholder="Jordan" />
-        </FormField>
-        <FormField label="Last Name" errorMessage={fieldErrors.lastName}>
-          <input type="text" value={values.lastName} onChange={update("lastName")} style={applyFieldErrorStyle("lastName")} placeholder="Reyes" />
-        </FormField>
-        <FormField label="Email" errorMessage={fieldErrors.email}>
-          <input type="email" value={values.email} onChange={update("email")} style={applyFieldErrorStyle("email")} placeholder="jordan.reyes@example.com" />
-        </FormField>
-        <FormField label="Phone" errorMessage={fieldErrors.phone}>
-          <input type="tel" value={values.phone} onChange={update("phone")} style={applyFieldErrorStyle("phone")} placeholder="+44 7000 000000" />
-        </FormField>
+      <div style={getSectionShellStyle("personal")}>
+        <SectionHeading
+          title="Personal Details"
+          hasError={Boolean(sectionErrors.personal?.length)}
+          errorCount={sectionErrors.personal?.length || 0}
+        />
+        <div style={gridStyle}>
+          <FormField label="First Name" errorMessage={fieldErrors.firstName}>
+            <input type="text" value={values.firstName} onChange={update("firstName")} style={applyFieldErrorStyle("firstName")} placeholder="Jordan" />
+          </FormField>
+          <FormField label="Last Name" errorMessage={fieldErrors.lastName}>
+            <input type="text" value={values.lastName} onChange={update("lastName")} style={applyFieldErrorStyle("lastName")} placeholder="Reyes" />
+          </FormField>
+          <FormField label="Email" errorMessage={fieldErrors.email}>
+            <input type="email" value={values.email} onChange={update("email")} style={applyFieldErrorStyle("email")} placeholder="jordan.reyes@example.com" />
+          </FormField>
+          <FormField label="Phone" errorMessage={fieldErrors.phone}>
+            <input type="tel" value={values.phone} onChange={update("phone")} style={applyFieldErrorStyle("phone")} placeholder="+44 7000 000000" />
+          </FormField>
+        </div>
       </div>
 
       {/* ── Employment Details ── */}
-      <SectionHeading title="Employment Details" />
-      <div style={gridStyle}>
-        <FormField label="Department" errorMessage={fieldErrors.department}>
-          <input type="text" value={values.department} onChange={update("department")} style={applyFieldErrorStyle("department")} placeholder="Operations" />
-        </FormField>
-        <FormField label="Job Title" errorMessage={fieldErrors.jobTitle}>
-          <SearchableListDropdown
-            value={values.jobTitle}
-            onChange={update("jobTitle")}
-            items={availableJobTitles}
-            placeholder="Select or search job title..."
-            emptyLabel="No job titles found"
-            allowCustom
-            hasError={Boolean(fieldErrors.jobTitle)}
-          />
-        </FormField>
-        <FormField label="Role" errorMessage={fieldErrors.role}>
-          <SearchableListDropdown
-            value={values.role}
-            onChange={update("role")}
-            items={availableRoles}
-            placeholder="Select or search role..."
-            emptyLabel="No roles found"
-            hasError={Boolean(fieldErrors.role)}
-          />
-        </FormField>
-        <FormField label="Employment Type" errorMessage={fieldErrors.employmentType}>
-          <select value={values.employmentType} onChange={update("employmentType")} style={applyFieldErrorStyle("employmentType")}>
-            <option value="Full-time">Full-time</option>
-            <option value="Part-time">Part-time</option>
-            <option value="Contract">Contract</option>
-            <option value="Temporary">Temporary</option>
-          </select>
-        </FormField>
-        <FormField label="Employment Status" errorMessage={fieldErrors.status}>
-          <select value={values.status} onChange={update("status")} style={applyFieldErrorStyle("status")}>
-            <option value="Active">Active</option>
-            <option value="Inactive">Inactive</option>
-            <option value="On Leave">On Leave</option>
-          </select>
-        </FormField>
-        <FormField label="Start Date" errorMessage={fieldErrors.startDate}>
-          <div style={applyFieldErrorStyle("startDate", { borderRadius: "8px" })}>
-            <CalendarField name="startDate" id="startDate" value={values.startDate} onChange={update("startDate")} />
-          </div>
-        </FormField>
-        <FormField label="Probation Ends" errorMessage={fieldErrors.probationEnd}>
-          <div style={applyFieldErrorStyle("probationEnd", { borderRadius: "8px" })}>
-            <CalendarField name="probationEnd" id="probationEnd" value={values.probationEnd} onChange={update("probationEnd")} />
-          </div>
-        </FormField>
-        <FormField label="Contracted Hours / Week" errorMessage={fieldErrors.contractedHours}>
-          <input type="number" min="0" value={values.contractedHours} onChange={update("contractedHours")} style={applyFieldErrorStyle("contractedHours")} />
-        </FormField>
+      <div style={getSectionShellStyle("employment")}>
+        <SectionHeading
+          title="Employment Details"
+          hasError={Boolean(sectionErrors.employment?.length)}
+          errorCount={sectionErrors.employment?.length || 0}
+        />
+        <div style={gridStyle}>
+          <FormField label="Department" errorMessage={fieldErrors.department}>
+            <input type="text" value={values.department} onChange={update("department")} style={applyFieldErrorStyle("department")} placeholder="Operations" />
+          </FormField>
+          <FormField label="Job Title" errorMessage={fieldErrors.jobTitle}>
+            <SearchableListDropdown
+              value={values.jobTitle}
+              onChange={update("jobTitle")}
+              items={availableJobTitles}
+              placeholder="Select or search job title..."
+              emptyLabel="No job titles found"
+              allowCustom
+              hasError={Boolean(fieldErrors.jobTitle)}
+            />
+          </FormField>
+          <FormField label="Role" errorMessage={fieldErrors.role}>
+            <SearchableListDropdown
+              value={values.role}
+              onChange={update("role")}
+              items={availableRoles}
+              placeholder="Select or search role..."
+              emptyLabel="No roles found"
+              hasError={Boolean(fieldErrors.role)}
+            />
+          </FormField>
+          <FormField label="Employment Type" errorMessage={fieldErrors.employmentType}>
+            <select value={values.employmentType} onChange={update("employmentType")} style={applyFieldErrorStyle("employmentType")}>
+              <option value="Full-time">Full-time</option>
+              <option value="Part-time">Part-time</option>
+              <option value="Contract">Contract</option>
+              <option value="Temporary">Temporary</option>
+            </select>
+          </FormField>
+          <FormField label="Employment Status" errorMessage={fieldErrors.status}>
+            <select value={values.status} onChange={update("status")} style={applyFieldErrorStyle("status")}>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+              <option value="On Leave">On Leave</option>
+            </select>
+          </FormField>
+          <FormField label="Start Date" errorMessage={fieldErrors.startDate}>
+            <div style={applyFieldErrorStyle("startDate", { borderRadius: "8px" })}>
+              <CalendarField name="startDate" id="startDate" value={values.startDate} onChange={update("startDate")} />
+            </div>
+          </FormField>
+          <FormField label="Probation Ends" errorMessage={fieldErrors.probationEnd}>
+            <div style={applyFieldErrorStyle("probationEnd", { borderRadius: "8px" })}>
+              <CalendarField name="probationEnd" id="probationEnd" value={values.probationEnd} onChange={update("probationEnd")} />
+            </div>
+          </FormField>
+          <FormField label="Contracted Hours / Week" errorMessage={fieldErrors.contractedHours}>
+            <input type="number" min="0" value={values.contractedHours} onChange={update("contractedHours")} style={applyFieldErrorStyle("contractedHours")} />
+          </FormField>
+        </div>
       </div>
 
       {/* ── Pay & Compensation ── */}
-      <SectionHeading title="Pay &amp; Compensation" />
-      <div style={gridStyle}>
-        <FormField label="Hourly Rate (£)" errorMessage={fieldErrors.hourlyRate}>
-          <input type="number" min="0" step="0.01" value={values.hourlyRate} onChange={update("hourlyRate")} style={applyFieldErrorStyle("hourlyRate")} placeholder="15.50" />
-        </FormField>
-        <FormField label="Overtime Rate (£)" errorMessage={fieldErrors.overtimeRate}>
-          <input type="number" min="0" step="0.01" value={values.overtimeRate} onChange={update("overtimeRate")} style={applyFieldErrorStyle("overtimeRate")} placeholder="23.25" />
-        </FormField>
-        <FormField label="Annual Salary (£)" errorMessage={fieldErrors.annualSalary}>
-          <input type="number" min="0" step="100" value={values.annualSalary} onChange={update("annualSalary")} style={applyFieldErrorStyle("annualSalary")} placeholder="32000" />
-        </FormField>
-        <FormField label="Payroll Reference" errorMessage={fieldErrors.payrollNumber}>
-          <input type="text" value={values.payrollNumber} onChange={update("payrollNumber")} style={applyFieldErrorStyle("payrollNumber")} placeholder="PAY-001" />
-        </FormField>
-        <FormField label="National Insurance No." errorMessage={fieldErrors.nationalInsurance}>
-          <input type="text" value={values.nationalInsurance} onChange={update("nationalInsurance")} style={applyFieldErrorStyle("nationalInsurance")} placeholder="QQ123456C" />
-        </FormField>
+      <div style={getSectionShellStyle("compensation")}>
+        <SectionHeading
+          title="Pay &amp; Compensation"
+          hasError={Boolean(sectionErrors.compensation?.length)}
+          errorCount={sectionErrors.compensation?.length || 0}
+        />
+        <div style={gridStyle}>
+          <FormField label="Hourly Rate (£)" errorMessage={fieldErrors.hourlyRate}>
+            <input type="number" min="0" step="0.01" value={values.hourlyRate} onChange={update("hourlyRate")} style={applyFieldErrorStyle("hourlyRate")} placeholder="15.50" />
+          </FormField>
+          <FormField label="Overtime Rate (£)" errorMessage={fieldErrors.overtimeRate}>
+            <input type="number" min="0" step="0.01" value={values.overtimeRate} onChange={update("overtimeRate")} style={applyFieldErrorStyle("overtimeRate")} placeholder="23.25" />
+          </FormField>
+          <FormField label="Annual Salary (£)" errorMessage={fieldErrors.annualSalary}>
+            <input type="number" min="0" step="100" value={values.annualSalary} onChange={update("annualSalary")} style={applyFieldErrorStyle("annualSalary")} placeholder="32000" />
+          </FormField>
+          <FormField label="Payroll Reference" errorMessage={fieldErrors.payrollNumber}>
+            <input type="text" value={values.payrollNumber} onChange={update("payrollNumber")} style={applyFieldErrorStyle("payrollNumber")} placeholder="PAY-001" />
+          </FormField>
+          <FormField label="National Insurance No." errorMessage={fieldErrors.nationalInsurance}>
+            <input type="text" value={values.nationalInsurance} onChange={update("nationalInsurance")} style={applyFieldErrorStyle("nationalInsurance")} placeholder="QQ123456C" />
+          </FormField>
+        </div>
       </div>
 
       {/* ── System / Auth ── */}
-      <SectionHeading title="System" />
-      <div style={gridStyle}>
-        <FormField label="Keycloak User ID" errorMessage={fieldErrors.keycloakId}>
-          <input type="text" value={values.keycloakId} onChange={update("keycloakId")} style={applyFieldErrorStyle("keycloakId")} placeholder="kc-jreyes" />
-        </FormField>
+      <div style={getSectionShellStyle("system")}>
+        <SectionHeading
+          title="System"
+          hasError={Boolean(sectionErrors.system?.length)}
+          errorCount={sectionErrors.system?.length || 0}
+        />
+        <div style={gridStyle}>
+          <FormField label="Keycloak User ID" errorMessage={fieldErrors.keycloakId}>
+            <input type="text" value={values.keycloakId} onChange={update("keycloakId")} style={applyFieldErrorStyle("keycloakId")} placeholder="kc-jreyes" />
+          </FormField>
+        </div>
       </div>
 
       {/* ── Address ── */}
-      <SectionHeading title="Home Address" />
-      <AddressSearchField
-        value={values.address}
-        onChange={(val) => onFieldChange("address", val)}
-      />
+      <div style={getSectionShellStyle("address")}>
+        <SectionHeading
+          title="Home Address"
+          hasError={Boolean(sectionErrors.address?.length)}
+          errorCount={sectionErrors.address?.length || 0}
+        />
+        <AddressSearchField
+          value={values.address}
+          onChange={(val) => onFieldChange("address", val)}
+        />
+      </div>
 
       {/* ── Emergency Contact ── */}
-      <SectionHeading title="Emergency Contact" />
-      <EmergencyContactSection
-        value={values.emergencyContact}
-        onChange={(val) => onFieldChange("emergencyContact", val)}
-        userId={values.userId}
-      />
+      <div style={getSectionShellStyle("emergency")}>
+        <SectionHeading
+          title="Emergency Contact"
+          hasError={Boolean(sectionErrors.emergency?.length)}
+          errorCount={sectionErrors.emergency?.length || 0}
+        />
+        <EmergencyContactSection
+          value={values.emergencyContact}
+          onChange={(val) => onFieldChange("emergencyContact", val)}
+          userId={values.userId}
+        />
+      </div>
     </>
   );
 }
@@ -1620,10 +1760,42 @@ function humanizeFieldLabel(field) {
     .replace(/^./, (ch) => ch.toUpperCase());
 }
 
+function formatList(labels = []) {
+  const safe = labels.filter(Boolean);
+  if (safe.length === 0) return "";
+  if (safe.length === 1) return safe[0];
+  if (safe.length === 2) return `${safe[0]} and ${safe[1]}`;
+  return `${safe.slice(0, -1).join(", ")}, and ${safe[safe.length - 1]}`;
+}
+
+function getErrorSections(fieldErrors = {}) {
+  const grouped = {};
+  Object.keys(fieldErrors || {}).forEach((field) => {
+    const section = FIELD_SECTION_MAP[field];
+    if (!section) return;
+    grouped[section] = grouped[section] || [];
+    grouped[section].push(field);
+  });
+
+  return SECTION_ORDER.filter((section) => grouped[section]?.length).map((section) => ({
+    key: section,
+    label: SECTION_LABELS[section],
+    fields: grouped[section],
+  }));
+}
+
 function formatEmployeeSaveError(serverMessage, serverError, fieldErrors = {}) {
   const invalidFields = Object.keys(fieldErrors || {});
   if (invalidFields.length > 0) {
-    return `Cannot save changes. Fix the highlighted field${invalidFields.length > 1 ? "s" : ""} and try again.`;
+    const sections = getErrorSections(fieldErrors);
+    if (sections.length > 0) {
+      return `Cannot save changes yet. Check ${formatList(sections.map((section) => section.label))} and update the highlighted field${invalidFields.length > 1 ? "s" : ""}.`;
+    }
+    return `Cannot save changes yet. Update the highlighted field${invalidFields.length > 1 ? "s" : ""} and try again.`;
+  }
+  const combinedServerText = [serverMessage, serverError].filter(Boolean).join(" ");
+  if (/record\s+"new"\s+has\s+no\s+field\s+"name"/i.test(combinedServerText)) {
+    return "Unable to save employee changes right now due to a server validation issue on the users table.";
   }
   if (serverError) {
     if (/duplicate key/i.test(serverError)) {
@@ -1632,10 +1804,10 @@ function formatEmployeeSaveError(serverMessage, serverError, fieldErrors = {}) {
     if (/invalid input syntax/i.test(serverError)) {
       return "Cannot save changes because one or more values are in the wrong format.";
     }
-    return `Cannot save changes: ${serverError}`;
+    return "Unable to save changes right now. Please review the form and try again.";
   }
   if (serverMessage) {
-    return `Cannot save changes: ${serverMessage}`;
+    return `Unable to save changes right now: ${serverMessage}`;
   }
   return null;
 }

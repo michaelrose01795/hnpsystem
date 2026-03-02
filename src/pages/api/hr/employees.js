@@ -81,6 +81,14 @@ async function handleCreateOrUpdate(req, res) {
   }
 
   const payload = sanitizePayload(req.body);
+  const isEditOperation = payload._operation === "edit";
+
+  if (isEditOperation && !payload.userId) {
+    return res.status(400).json({
+      success: false,
+      message: "Cannot save employee changes because the user link is missing.",
+    });
+  }
 
   for (const field of REQUIRED_FIELDS) {
     if (!payload[field]) {
@@ -97,6 +105,7 @@ async function handleCreateOrUpdate(req, res) {
 
   try {
     const userRecord = await upsertUser({
+      userId: payload.userId || null,
       email,
       firstName,
       lastName,
@@ -104,6 +113,7 @@ async function handleCreateOrUpdate(req, res) {
       role,
       jobTitle: payload.jobTitle,
       payload,
+      isEditOperation,
     });
 
     const directory = await getEmployeeDirectory();
@@ -122,6 +132,7 @@ async function handleCreateOrUpdate(req, res) {
       employmentType: payload.employmentType || "Full-time",
       status: payload.status || "Active",
       startDate: payload.startDate || null,
+      probationEnd: payload.probationEnd || null,
       email,
       phone: payload.phone || "",
       keycloakId: payload.keycloakId || null,
@@ -141,14 +152,67 @@ async function handleCreateOrUpdate(req, res) {
   }
 }
 
-async function upsertUser({ email, firstName, lastName, phone, role, jobTitle, payload }) {
-  const { data: existingUser, error: lookupError } = await supabaseService
-    .from("users")
-    .select("user_id, email")
-    .eq("email", email)
-    .maybeSingle();
+async function upsertUser({ email, firstName, lastName, phone, role, jobTitle, payload, isEditOperation = false }) {
+  const hasLegacyNameTriggerError = (error) =>
+    /record\s+"new"\s+has\s+no\s+field\s+"name"/i.test(error?.message || "");
+  const applySingleFieldFallback = async (userId, updatePayload) => {
+    const entries = Object.entries(updatePayload || {});
+    const failedColumns = [];
+    let latestRow = null;
 
-  if (lookupError) throw lookupError;
+    for (const [column, value] of entries) {
+      const { data, error } = await supabaseService
+        .from("users")
+        .update({ [column]: value })
+        .eq("user_id", userId)
+        .select("user_id, first_name, last_name, email, role, job_title")
+        .maybeSingle();
+
+      if (error) {
+        failedColumns.push({ column, message: error.message });
+        continue;
+      }
+      latestRow = data || latestRow;
+    }
+
+    if (failedColumns.length > 0) {
+      const details = failedColumns
+        .map((item) => `${item.column}: ${item.message}`)
+        .join("; ");
+      throw new Error(`Some fields could not be saved. ${details}`);
+    }
+
+    return latestRow;
+  };
+
+  let existingUser = null;
+  const existingUserSelect =
+    "user_id, name, email, first_name, last_name, role, phone, job_title, department, employment_type, employment_status, start_date, probation_end, manager_id, emergency_contact, contracted_hours, hourly_rate, overtime_rate, annual_salary, payroll_reference, national_insurance_number, keycloak_user_id, home_address";
+
+  if (payload?.userId) {
+    const { data, error } = await supabaseService
+      .from("users")
+      .select(existingUserSelect)
+      .eq("user_id", payload.userId)
+      .maybeSingle();
+    if (error) throw error;
+    existingUser = data || null;
+  }
+
+  if (!existingUser) {
+    // Fallback to case-insensitive email lookup so existing users are updated instead of inserted.
+    const { data, error } = await supabaseService
+      .from("users")
+      .select(existingUserSelect)
+      .ilike("email", email)
+      .maybeSingle();
+    if (error) throw error;
+    existingUser = data || null;
+  }
+
+  if (isEditOperation && !existingUser) {
+    throw new Error("Unable to find the linked user record for this employee.");
+  }
 
   // Build the combined user + employee fields payload
   const buildEmployeeFields = () => {
@@ -170,6 +234,7 @@ async function upsertUser({ email, firstName, lastName, phone, role, jobTitle, p
       employment_type: payload.employmentType || null,
       employment_status: payload.status || null,
       start_date: toIsoDate(payload.startDate),
+      probation_end: toIsoDate(payload.probationEnd),
       manager_id: payload.managerId || null,
       emergency_contact: emergencyContact,
       contracted_hours: toNumberOrNull(payload.contractedHours),
@@ -184,22 +249,47 @@ async function upsertUser({ email, firstName, lastName, phone, role, jobTitle, p
   };
 
   const userPayload = {
+    name: `${firstName || ""} ${lastName || ""}`.trim(),
     first_name: firstName,
     last_name: lastName,
+    email,
     phone: phone || null,
     job_title: jobTitle || null,
-    role,
     ...buildEmployeeFields(),
   };
+  if ((existingUser?.role || null) !== role) {
+    userPayload.role = role;
+  }
 
   if (existingUser) {
+    const changedUserPayload = {};
+    Object.entries(userPayload).forEach(([column, nextValue]) => {
+      const currentValue = existingUser[column];
+      const normalizedCurrent =
+        currentValue === undefined || currentValue === "" ? null : currentValue;
+      const normalizedNext = nextValue === undefined || nextValue === "" ? null : nextValue;
+      if (JSON.stringify(normalizedCurrent) !== JSON.stringify(normalizedNext)) {
+        changedUserPayload[column] = nextValue;
+      }
+    });
+
+    if (Object.keys(changedUserPayload).length === 0) {
+      return existingUser;
+    }
+
     const { data, error } = await supabaseService
       .from("users")
-      .update(userPayload)
+      .update(changedUserPayload)
       .eq("user_id", existingUser.user_id)
       .select("user_id, first_name, last_name, email, role, job_title")
       .maybeSingle();
-    if (error) throw error;
+    if (error) {
+      if (hasLegacyNameTriggerError(error)) {
+        const fallbackRow = await applySingleFieldFallback(existingUser.user_id, changedUserPayload);
+        return fallbackRow || existingUser;
+      }
+      throw error;
+    }
     return data || existingUser;
   }
 

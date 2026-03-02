@@ -835,17 +835,19 @@ export default function ViewJobCards() {
                     {emptyStateMessage}
                   </div>
                 ) : (
-                  sortedJobs.map((job) =>
+                  sortedJobs.map((job, index) =>
                     isOrdersTab ? (
                       <OrderListCard
                         key={job.id || job.orderNumber}
                         order={job}
+                        index={index}
                         onNavigate={() => router.push(`/parts/create-order/${job.orderNumber}`)}
                       />
                     ) : (
                       <JobListCard
                         key={job.jobNumber}
                         job={job}
+                        index={index}
                         onNavigate={() => handleCardNavigation(job.jobNumber)}
                       />
                     )
@@ -1233,8 +1235,9 @@ export default function ViewJobCards() {
   );
 }
 
-const JobListCard = ({ job, onNavigate, onQuickView }) => {
+const JobListCard = ({ job, onNavigate, onQuickView, index = 0 }) => {
   // top-layer
+  const rowBackground = index % 2 === 0 ? "var(--surface)" : "var(--layer-section-level-2)";
   const jobType = deriveJobType(job);
   const appointmentLabel = getAppointmentDisplay(job);
   const jobDate = getJobDate(job);
@@ -1271,7 +1274,7 @@ const JobListCard = ({ job, onNavigate, onQuickView }) => {
         border: "1px solid var(--surface-light)",
         padding: "14px 16px",
         borderRadius: "12px",
-        backgroundColor: "var(--surface)",
+        backgroundColor: rowBackground,
         boxShadow: "none",
         display: "flex",
         flexDirection: "column",
@@ -1415,8 +1418,9 @@ const JobListCard = ({ job, onNavigate, onQuickView }) => {
   );
 };
 
-const OrderListCard = ({ order, onNavigate }) => {
+const OrderListCard = ({ order, onNavigate, index = 0 }) => {
   // top-layer
+  const rowBackground = index % 2 === 0 ? "var(--surface)" : "var(--layer-section-level-2)";
   const items = order.requests || order.items || [];
   const totalItems = items.length;
   const deliveryLabel = order.delivery_type === "collection" ? "Collection" : "Delivery";
@@ -1435,7 +1439,7 @@ const OrderListCard = ({ order, onNavigate }) => {
         border: "1px solid var(--surface-light)",
         padding: "14px 16px",
         borderRadius: "12px",
-        backgroundColor: "var(--surface)",
+        backgroundColor: rowBackground,
         boxShadow: "none",
         display: "flex",
         flexDirection: "column",
