@@ -23,11 +23,12 @@ CHECK
 if a row gets reset within the summart tab make sure the display_status goes vbabck to amber or red etc. and te hover status front end doesnt say N/A but it hosuld say waiting for customers selection or what ever we have called it
 CHECK
 make sure the "Part No	Description	Retail	Qty	Price	VAT	Rate %" tables for each section within the inovice page are always in the same posisition and the same size within each section for example request 1,2,3 etc and VHC request section thoughtout the whole page. if a descritpion is longer then put it onto  a second line within the column.
-
-TO DO!!
+CHECK
 parts_job_card_items database table should actaully be parts_order_card_items instead i think. check that it is iused within the parts order numbers cards, if it the case also change the job_id to order_id and make sure this is changed within the code as well. this oculd also be the same with the parts_job_card which should be changed to parts_order_number or along those lines
 
+Increate the text size within the "New note" section. have it so the whole section uses the same font type, and the title section will use bigger text size as the destipion etc
 
+Hover button colour theme N text is the same colour as the background colour hen the button is hover or clicked. 
 
 
 

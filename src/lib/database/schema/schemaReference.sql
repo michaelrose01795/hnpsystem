@@ -245,6 +245,17 @@ CREATE TABLE public.delivery_stops (
   CONSTRAINT delivery_stops_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
   CONSTRAINT delivery_stops_delivery_id_fkey FOREIGN KEY (delivery_id) REFERENCES public.deliveries(id)
 );
+CREATE TABLE public.floating_notes (
+  note_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  user_id integer NOT NULL,
+  title text NOT NULL DEFAULT 'New note'::text CHECK (char_length(title) <= 200),
+  description text NOT NULL DEFAULT ''::text,
+  shared_all_users boolean NOT NULL DEFAULT false,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT floating_notes_pkey PRIMARY KEY (note_id),
+  CONSTRAINT floating_notes_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
+);
 CREATE TABLE public.hr_absences (
   absence_id bigint NOT NULL DEFAULT nextval('hr_absences_absence_id_seq'::regclass),
   user_id integer NOT NULL,

@@ -77,7 +77,7 @@ export default async function handler(req, res) {
         .order("created_at", { ascending: false })
         .limit(15),
       supabase
-        .from("parts_job_cards")
+        .from("parts_order_cards")
         .select(`
           id,
           order_number,

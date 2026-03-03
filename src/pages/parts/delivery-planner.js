@@ -344,10 +344,10 @@ export default function PartsDeliveryPlannerPage() {
     setCollectionError("");
     try {
       const { data, error: fetchError } = await supabaseClient
-        .from("parts_job_cards")
+        .from("parts_order_cards")
         .select(
           `id, order_number, customer_name, invoice_reference, delivery_type, delivery_eta, delivery_window, created_at,
-           items:parts_job_card_items(quantity)`
+           items:parts_order_card_items(quantity)`
         )
         .eq("delivery_type", "collection")
         .order("delivery_eta", { ascending: true })

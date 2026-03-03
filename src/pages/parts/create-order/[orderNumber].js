@@ -145,8 +145,8 @@ export default function PartsOrderDetail() {
       setError("");
       try {
         const { data, error: fetchError } = await supabase
-          .from("parts_job_cards")
-          .select("*, items:parts_job_card_items(*)")
+          .from("parts_order_cards")
+          .select("*, items:parts_order_card_items(*)")
           .eq("order_number", resolvedOrderNumber)
           .maybeSingle();
         if (fetchError) throw fetchError;
@@ -168,10 +168,10 @@ export default function PartsOrderDetail() {
       setStatusSaving(true);
       try {
         const { data, error: updateError } = await supabase
-          .from("parts_job_cards")
+          .from("parts_order_cards")
           .update({ ...updates, updated_at: new Date().toISOString() })
           .eq("id", orderId)
-          .select("*, items:parts_job_card_items(*)")
+          .select("*, items:parts_order_card_items(*)")
           .maybeSingle();
         if (updateError) throw updateError;
         let nextOrder = data || null;
@@ -189,10 +189,10 @@ export default function PartsOrderDetail() {
             completionPayload.archived_at = new Date().toISOString();
           }
           const { data: completedOrder, error: completionError } = await supabase
-            .from("parts_job_cards")
+            .from("parts_order_cards")
             .update(completionPayload)
             .eq("id", nextOrder.id)
-            .select("*, items:parts_job_card_items(*)")
+            .select("*, items:parts_order_card_items(*)")
             .maybeSingle();
           if (!completionError && completedOrder) {
             nextOrder = completedOrder;

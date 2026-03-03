@@ -14,6 +14,7 @@ import { RosterProvider } from "@/context/RosterContext"; // import roster conte
 import { AlertProvider } from "@/context/AlertContext";
 import { ThemeProvider } from "@/styles/themeProvider";
 import { ConfirmationProvider } from "@/context/ConfirmationContext";
+import GlobalNotesWidget from "@/components/GlobalNotesWidget";
 
 function AppWrapper({ Component, pageProps }) {
   // Auto-hide scrollbar after 3 seconds of inactivity using delegated event listeners.
@@ -89,7 +90,12 @@ function AppWrapper({ Component, pageProps }) {
     };
   }, []);
 
-  return <Component {...pageProps} />; // render the requested page
+  return (
+    <>
+      <Component {...pageProps} />
+      <GlobalNotesWidget />
+    </>
+  ); // render the requested page
 }
 
 // Main app entry with all providers composed

@@ -519,11 +519,11 @@ async function buildOrderInvoiceFallback({ orderNumber, vatRate, companyProfile 
     return null;
   }
   const { data: order, error } = await supabase
-    .from("parts_job_cards")
+    .from("parts_order_cards")
     .select(
       `
         *,
-        items:parts_job_card_items(
+        items:parts_order_card_items(
           id,
           part_number,
           part_name,

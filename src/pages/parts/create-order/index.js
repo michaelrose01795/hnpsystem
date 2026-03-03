@@ -520,14 +520,14 @@ export default function PartsJobCardPage() {
       };
 
       const { data: orderRecord, error: insertError } = await supabaseClient
-        .from("parts_job_cards")
+        .from("parts_order_cards")
         .insert([payload])
-        .select("*, items:parts_job_card_items(*)")
+        .select("*, items:parts_order_card_items(*)")
         .maybeSingle();
       if (insertError) throw insertError;
 
       const partPayload = validParts.map((line) => ({
-        job_id: orderRecord.id,
+        order_id: orderRecord.id,
         part_catalog_id: line.part_catalog_id || null,
         part_number: line.part_number.trim() || null,
         part_name: line.part_name.trim() || null,
@@ -538,7 +538,7 @@ export default function PartsJobCardPage() {
 
       if (partPayload.length > 0) {
         const { error: itemsError, data: itemsData } = await supabaseClient
-          .from("parts_job_card_items")
+          .from("parts_order_card_items")
           .insert(partPayload)
           .select("*");
         if (itemsError) throw itemsError;

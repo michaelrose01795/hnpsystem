@@ -5,12 +5,12 @@ import { getDatabaseClient } from "@/lib/database/client";
 const supabase = getDatabaseClient();
 
 /**
- * Fetches all parts job cards ("parts orders") with their basic line items.
+ * Fetches all parts order cards ("parts orders") with their basic line items.
  * Used by the job-cards Orders tab to show recent activity.
  */
 export const getPartsOrders = async () => {
   const { data, error } = await supabase
-    .from("parts_job_cards")
+    .from("parts_order_cards")
     .select(
       `
         id,
@@ -42,7 +42,7 @@ export const getPartsOrders = async () => {
         created_by,
         created_at,
         updated_at,
-        items:parts_job_card_items(
+        items:parts_order_card_items(
           id,
           part_number,
           part_name,
