@@ -25,14 +25,10 @@ CHECK
 make sure the "Part No	Description	Retail	Qty	Price	VAT	Rate %" tables for each section within the inovice page are always in the same posisition and the same size within each section for example request 1,2,3 etc and VHC request section thoughtout the whole page. if a descritpion is longer then put it onto  a second line within the column.
 CHECK
 parts_job_card_items database table should actaully be parts_order_card_items instead i think. check that it is iused within the parts order numbers cards, if it the case also change the job_id to order_id and make sure this is changed within the code as well. this oculd also be the same with the parts_job_card which should be changed to parts_order_number or along those lines
-
+CHECK
 Increate the text size within the "New note" section. have it so the whole section uses the same font type, and the title section will use bigger text size as the destipion etc
-
-Hover button colour theme N text is the same colour as the background colour hen the button is hover or clicked. 
-
-
-
-
+CHECK
+Hover button colour theme "N" text is the same colour as the background colour when the button is hover or clicked. have it so the text wihtin the buttons are not the same colour as accent colours when background coloiur changes. 
 CHECK
 Fix “Ensure all allocated parts have quantities and pricing.” To give a better explanation and to fix it so when within the parts tab if the parts tab background is set to green eg if the “PARTS ADDED TO JOB” section all of the rows except the removed rows are set as allocated. 
 CHEKK

@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useUser } from "@/context/UserContext";
-import { useConfirmation } from "@/context/ConfirmationContext";
 import { normalizeRoles } from "@/lib/auth/roles";
 import {
   createFloatingNote,
@@ -15,8 +14,36 @@ const PANEL_DEFAULT = { x: 120, y: 90, width: 460, height: 360 };
 const PANEL_CLOSE_ANIMATION_MS = 150;
 const SAVE_DEBOUNCE_MS = 520;
 const DRAG_START_THRESHOLD = 4;
+const NOTE_SLASH_COMMANDS = [
+  { command: "/job[number]", autocomplete: "/job", pattern: "job" },
+  { command: "/[number]", autocomplete: "/", pattern: "" },
+  { command: "/cust[name]", autocomplete: "/cust", pattern: "cust" },
+  { command: "/customer", autocomplete: "/customer", pattern: "customer" },
+  { command: "/addcust[name or email]", autocomplete: "/addcust[]", pattern: "addcust" },
+  { command: "/vehicle", autocomplete: "/vehicle", pattern: "vehicle" },
+  { command: "/vhc[jobnumber]", autocomplete: "/vhc", pattern: "vhc" },
+  { command: "/part[partnumber]", autocomplete: "/part", pattern: "part" },
+  { command: "/parts", autocomplete: "/parts", pattern: "parts" },
+  { command: "/order[ordernumber]", autocomplete: "/order", pattern: "order" },
+  { command: "/invoice[number]", autocomplete: "/invoice", pattern: "invoice" },
+  { command: "/account[id]", autocomplete: "/account", pattern: "account" },
+  { command: "/tracking", autocomplete: "/tracking", pattern: "tracking" },
+  { command: "/valet", autocomplete: "/valet", pattern: "valet" },
+  { command: "/hr", autocomplete: "/hr", pattern: "hr" },
+  { command: "/user[name]", autocomplete: "/user", pattern: "user" },
+  { command: "/clocking", autocomplete: "/clocking", pattern: "clocking" },
+  { command: "/archive", autocomplete: "/archive", pattern: "archive" },
+  { command: "/myjobs", autocomplete: "/myjobs", pattern: "myjobs" },
+  { command: "/appointments", autocomplete: "/appointments", pattern: "appointments" },
+];
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+const escapeHtml = (value) =>
+  String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+const isLikelyHtml = (value) => /<\/?[a-z][\s\S]*>/i.test(String(value || ""));
 
 const getPanelMinWidth = () => (typeof window !== "undefined" && window.innerWidth <= 480 ? 260 : 320);
 const getPanelMinHeight = () => (typeof window !== "undefined" && window.innerWidth <= 480 ? 220 : 260);
@@ -107,7 +134,6 @@ const hasOpenModal = () => {
 
 export default function GlobalNotesWidget() {
   const { dbUserId, user } = useUser() || {};
-  const { confirm } = useConfirmation();
   const [bubblePosition, setBubblePosition] = useState(getDefaultBubblePosition);
   const [panelRect, setPanelRect] = useState(getDefaultPanelRect);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -118,9 +144,13 @@ export default function GlobalNotesWidget() {
   const [isLoading, setIsLoading] = useState(false);
   const [saveStatus, setSaveStatus] = useState("idle");
   const [error, setError] = useState("");
+  const [commandSuggestions, setCommandSuggestions] = useState([]);
+  const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
+  const [commandMenuPosition, setCommandMenuPosition] = useState({ top: 0, left: 0 });
 
   const notesRef = useRef([]);
   const panelRectRef = useRef(panelRect);
+  const descriptionInputRef = useRef(null);
   const bubbleDragRef = useRef(null);
   const panelDragRef = useRef(null);
   const panelResizeRef = useRef(null);
@@ -151,6 +181,8 @@ export default function GlobalNotesWidget() {
 
   const bubbleStorageKey = `hnp-floating-notes-bubble-${storageSuffix}`;
   const panelStorageKey = `hnp-floating-notes-panel-${storageSuffix}`;
+  const panelOpenStorageKey = `hnp-floating-notes-panel-open-${storageSuffix}`;
+  const activeNoteStorageKey = `hnp-floating-notes-active-${storageSuffix}`;
 
   const activeNote = useMemo(
     () => notes.find((note) => note.noteId === activeNoteId) || null,
@@ -168,6 +200,28 @@ export default function GlobalNotesWidget() {
     panelRectRef.current = panelRect;
   }, [panelRect]);
 
+
+  useEffect(() => {
+    const editor = descriptionInputRef.current;
+    if (!editor || !isPanelMounted) return;
+    const description = activeNote?.description || "";
+    const nextHtml = isLikelyHtml(description)
+      ? description
+      : escapeHtml(description).replace(/\n/g, "<br>");
+    if (editor.innerHTML !== nextHtml) {
+      editor.innerHTML = nextHtml;
+    }
+  }, [activeNoteId, activeNote?.description, isPanelMounted, isPanelVisible]);
+
+  useEffect(() => {
+    setCommandSuggestions([]);
+    setSelectedCommandIndex(0);
+  }, [activeNoteId, isPanelVisible]);
+
+  useEffect(() => {
+    persistActiveNoteId(activeNoteId);
+  }, [activeNoteId]);
+
   const persistBubblePosition = (position) => {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(bubbleStorageKey, JSON.stringify(position));
@@ -176,6 +230,20 @@ export default function GlobalNotesWidget() {
   const persistPanelRect = (rect) => {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(panelStorageKey, JSON.stringify(rect));
+  };
+
+  const persistPanelOpen = (isOpen) => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(panelOpenStorageKey, isOpen ? "1" : "0");
+  };
+
+  const persistActiveNoteId = (noteId) => {
+    if (typeof window === "undefined") return;
+    if (!noteId) {
+      window.localStorage.removeItem(activeNoteStorageKey);
+      return;
+    }
+    window.localStorage.setItem(activeNoteStorageKey, String(noteId));
   };
 
   const loadNotes = async () => {
@@ -190,9 +258,14 @@ export default function GlobalNotesWidget() {
     setError("");
     try {
       const rows = await getFloatingNotesForUser(numericUserId);
+      const storedActiveNoteId =
+        typeof window !== "undefined" ? Number(window.localStorage.getItem(activeNoteStorageKey)) : null;
       setNotes(rows);
       setActiveNoteId((current) => {
         if (rows.length === 0) return null;
+        if (Number.isInteger(storedActiveNoteId) && rows.some((row) => row.noteId === storedActiveNoteId)) {
+          return storedActiveNoteId;
+        }
         if (current && rows.some((row) => row.noteId === current)) return current;
         return rows[0].noteId;
       });
@@ -249,10 +322,12 @@ export default function GlobalNotesWidget() {
     }
     setIsPanelMounted(true);
     requestAnimationFrame(() => setIsPanelVisible(true));
+    persistPanelOpen(true);
   };
 
   const closePanel = () => {
     setIsPanelVisible(false);
+    persistPanelOpen(false);
     closePanelTimerRef.current = setTimeout(() => {
       setIsPanelMounted(false);
       closePanelTimerRef.current = null;
@@ -287,7 +362,12 @@ export default function GlobalNotesWidget() {
     } else {
       setPanelRect(getDefaultPanelRect());
     }
-  }, [bubbleStorageKey, panelStorageKey]);
+
+    if (window.localStorage.getItem(panelOpenStorageKey) === "1") {
+      setIsPanelMounted(true);
+      requestAnimationFrame(() => setIsPanelVisible(true));
+    }
+  }, [bubbleStorageKey, panelStorageKey, panelOpenStorageKey]);
 
   useEffect(() => {
     loadNotes();
@@ -485,7 +565,7 @@ export default function GlobalNotesWidget() {
     setError("");
     const result = await createFloatingNote({
       userId: Number(dbUserId),
-      title: "New note",
+      title: "",
       description: "",
       isGlobal: false,
     });
@@ -497,20 +577,13 @@ export default function GlobalNotesWidget() {
 
     setNotes((prev) => [...prev, result.data]);
     setActiveNoteId(result.data.noteId);
+    persistActiveNoteId(result.data.noteId);
     openPanel();
   };
 
   const deleteTab = async (noteId) => {
     const target = notesRef.current.find((note) => note.noteId === noteId);
     if (!target) return;
-    const shouldDelete = await confirm({
-      title: "Delete note tab",
-      message: "Delete this note tab?",
-      description: "This will permanently remove the note from the database.",
-      confirmLabel: "Delete",
-      cancelLabel: "Cancel",
-    });
-    if (!shouldDelete) return;
 
     if (Number(target.userId) !== Number(dbUserId)) {
       setError("You can only delete notes you created");
@@ -527,7 +600,9 @@ export default function GlobalNotesWidget() {
       const remaining = prev.filter((note) => note.noteId !== noteId);
       setActiveNoteId((current) => {
         if (current !== noteId) return current;
-        return remaining[0]?.noteId || null;
+        const next = remaining[0]?.noteId || null;
+        persistActiveNoteId(next);
+        return next;
       });
       return remaining;
     });
@@ -535,6 +610,195 @@ export default function GlobalNotesWidget() {
 
   const updateLocalNote = (noteId, updater) => {
     setNotes((prev) => prev.map((note) => (note.noteId === noteId ? updater(note) : note)));
+  };
+
+  const detectSlashSuggestions = (textBeforeCursor) => {
+    const lastSlashIndex = textBeforeCursor.lastIndexOf("/");
+    if (lastSlashIndex === -1) return [];
+
+    const snippet = textBeforeCursor.slice(lastSlashIndex + 1);
+    if (snippet.includes(" ") || snippet.includes("\n")) return [];
+
+    const searchTerm = snippet.toLowerCase();
+    return NOTE_SLASH_COMMANDS.filter(
+      (cmd) =>
+        cmd.pattern.startsWith(searchTerm) ||
+        (searchTerm === "" && cmd.pattern === "")
+    ).slice(0, 8);
+  };
+
+  const getCaretRect = (editor) => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return null;
+    const range = selection.getRangeAt(0);
+    if (!editor.contains(range.endContainer)) return null;
+    const collapsed = range.cloneRange();
+    collapsed.collapse(true);
+    const rect = collapsed.getClientRects()[0];
+    if (rect) return rect;
+
+    const marker = document.createElement("span");
+    marker.textContent = "\u200b";
+    collapsed.insertNode(marker);
+    const markerRect = marker.getBoundingClientRect();
+    marker.parentNode?.removeChild(marker);
+    return markerRect;
+  };
+
+  const updateCommandMenuPosition = () => {
+    const editor = descriptionInputRef.current;
+    if (!editor) return;
+    const fieldContainer = editor.parentElement;
+    const editorOffsetTop = editor.offsetTop || 0;
+    const editorOffsetLeft = editor.offsetLeft || 0;
+    const caretRect = getCaretRect(editor);
+    const editorRect = editor.getBoundingClientRect();
+    if (!caretRect) {
+      setCommandMenuPosition({ top: editorOffsetTop + 52, left: editorOffsetLeft + 10 });
+      return;
+    }
+
+    const containerWidth = fieldContainer?.clientWidth || editorRect.width;
+    const lineOffset = 40; // roughly two rows under caret
+    const relativeTop = caretRect.top - editorRect.top;
+    const relativeLeft = caretRect.left - editorRect.left;
+    const nextTop = Math.max(12, editorOffsetTop + relativeTop + lineOffset);
+    const nextLeft = Math.max(
+      editorOffsetLeft + 10,
+      Math.min(editorOffsetLeft + relativeLeft, containerWidth - 200)
+    );
+    setCommandMenuPosition({ top: nextTop, left: nextLeft });
+  };
+
+  const getTextBeforeCaret = (editor) => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return "";
+    const range = selection.getRangeAt(0);
+    if (!editor.contains(range.endContainer)) return "";
+    const preRange = range.cloneRange();
+    preRange.selectNodeContents(editor);
+    preRange.setEnd(range.endContainer, range.endOffset);
+    return preRange.toString();
+  };
+
+  const syncFromEditor = () => {
+    const editor = descriptionInputRef.current;
+    if (!editor || !activeNote || activeNoteReadOnly) return;
+    const nextValue = editor.innerHTML === "<br>" ? "" : editor.innerHTML;
+    onChangeDescription(nextValue);
+    const textBeforeCaret = getTextBeforeCaret(editor);
+    const suggestions = detectSlashSuggestions(textBeforeCaret);
+    setCommandSuggestions(suggestions);
+    setSelectedCommandIndex(0);
+    if (suggestions.length > 0) {
+      updateCommandMenuPosition();
+    }
+  };
+
+  const applySlashCommand = (command) => {
+    const editor = descriptionInputRef.current;
+    if (!editor || !activeNote || activeNoteReadOnly) return;
+
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+    const range = selection.getRangeAt(0);
+
+    if (range.endContainer.nodeType === 3) {
+      const node = range.endContainer;
+      const original = node.textContent || "";
+      const caretOffset = range.endOffset;
+      const slashOffset = original.lastIndexOf("/", caretOffset - 1);
+      if (slashOffset >= 0) {
+        const nextText =
+          `${original.slice(0, slashOffset)}${command.autocomplete} ${original.slice(caretOffset)}`;
+        node.textContent = nextText;
+        const nextOffset = slashOffset + command.autocomplete.length + 1;
+        const nextRange = document.createRange();
+        nextRange.setStart(node, Math.min(nextOffset, nextText.length));
+        nextRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(nextRange);
+      } else {
+        document.execCommand("insertText", false, `${command.autocomplete} `);
+      }
+    } else {
+      document.execCommand("insertText", false, `${command.autocomplete} `);
+    }
+
+    syncFromEditor();
+    setCommandSuggestions([]);
+    setSelectedCommandIndex(0);
+  };
+
+  const handleDescriptionKeyDown = (event) => {
+    if (!activeNote || activeNoteReadOnly) return;
+
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "b") {
+      event.preventDefault();
+      document.execCommand("bold", false);
+      syncFromEditor();
+      return;
+    }
+
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "i") {
+      event.preventDefault();
+      document.execCommand("italic", false);
+      syncFromEditor();
+      return;
+    }
+
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "u") {
+      event.preventDefault();
+      document.execCommand("underline", false);
+      syncFromEditor();
+      return;
+    }
+
+    if (commandSuggestions.length > 0) {
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        setSelectedCommandIndex((prev) => (prev + 1) % commandSuggestions.length);
+        updateCommandMenuPosition();
+        return;
+      }
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        setSelectedCommandIndex((prev) => (prev - 1 + commandSuggestions.length) % commandSuggestions.length);
+        updateCommandMenuPosition();
+        return;
+      }
+      if (event.key === "Tab" || event.key === "Enter") {
+        event.preventDefault();
+        applySlashCommand(commandSuggestions[selectedCommandIndex]);
+        return;
+      }
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setCommandSuggestions([]);
+        return;
+      }
+    }
+
+    if (event.key === " " || event.code === "Space") {
+      const editor = descriptionInputRef.current;
+      if (!editor) return;
+      const line = (getTextBeforeCaret(editor).split("\n").pop() || "").trim();
+      if (line === "-") {
+        event.preventDefault();
+        document.execCommand("insertUnorderedList", false);
+        requestAnimationFrame(() => {
+          const selection = window.getSelection();
+          const anchorNode = selection?.anchorNode;
+          const liElement = anchorNode && anchorNode.nodeType === 3
+            ? anchorNode.parentElement?.closest("li")
+            : anchorNode?.closest?.("li");
+          if (liElement && liElement.textContent?.trim() === "-") {
+            liElement.textContent = "";
+          }
+          syncFromEditor();
+        });
+      }
+    }
   };
 
   const onChangeTitle = (value) => {
@@ -554,6 +818,17 @@ export default function GlobalNotesWidget() {
       scheduleSave(note.noteId, { title: next.title, description: next.description });
       return next;
     });
+  };
+
+  const handleDescriptionInput = () => syncFromEditor();
+
+  const handleDescriptionPaste = (event) => {
+    if (!activeNote || activeNoteReadOnly) return;
+    event.preventDefault();
+    const plainText = event.clipboardData?.getData("text/plain") || "";
+    if (!plainText) return;
+    document.execCommand("insertText", false, plainText);
+    syncFromEditor();
   };
 
   const onBlurSave = async (noteId) => {
@@ -605,65 +880,56 @@ export default function GlobalNotesWidget() {
           }}
         >
           <header className={styles.header} onPointerDown={startPanelDrag}>
-            <strong className={styles.heading}>Notes</strong>
-            <div className={styles.headerRight} onPointerDown={(event) => event.stopPropagation()}>
-              {canManageGlobalNotes && activeNote && (
-                <label className={styles.toggle}>
-                  <input
-                    type="checkbox"
-                    checked={Boolean(activeNote.isGlobal)}
-                    disabled={!activeNoteOwnedByUser}
-                    onChange={(event) => onToggleGlobal(event.target.checked)}
-                  />
-                  Show this note to all users
-                </label>
-              )}
-              <button type="button" className={styles.headerButton} onClick={createTab}>
-                + Tab
-              </button>
-              <button type="button" className={styles.headerButton} onClick={closePanel}>
-                Close
-              </button>
+            <div className={styles.headerRow}>
+              <div className={styles.tabBarScroller} onPointerDown={(event) => event.stopPropagation()}>
+                <div className={styles.tabBar}>
+                  {notes.map((note) => {
+                    const editable = Number(note.userId) === Number(dbUserId);
+                    return (
+                      <button
+                        key={note.noteId}
+                        type="button"
+                        className={`${styles.tab} ${note.noteId === activeNoteId ? styles.tabActive : ""}`}
+                        onClick={() => setActiveNoteId(note.noteId)}
+                        title={note.title || "Untitled"}
+                      >
+                        <span className={styles.tabTitle}>{note.title || "Untitled"}</span>
+                        {note.isGlobal && <span className={styles.tabBadge}>Global</span>}
+                        {editable && (
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            className={styles.tabClose}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              deleteTab(note.noteId);
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                deleteTab(note.noteId);
+                              }
+                            }}
+                            aria-label="Close tab"
+                          >
+                            ×
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className={styles.headerRight} onPointerDown={(event) => event.stopPropagation()}>
+                <button type="button" className={styles.headerButton} onClick={createTab}>
+                  + Tab
+                </button>
+                <button type="button" className={styles.headerButton} onClick={closePanel} aria-label="Close notes panel">
+                  X
+                </button>
+              </div>
             </div>
           </header>
-
-          <div className={styles.tabBar}>
-            {notes.map((note) => {
-              const editable = Number(note.userId) === Number(dbUserId);
-              return (
-                <button
-                  key={note.noteId}
-                  type="button"
-                  className={`${styles.tab} ${note.noteId === activeNoteId ? styles.tabActive : ""}`}
-                  onClick={() => setActiveNoteId(note.noteId)}
-                  title={note.title || "Untitled"}
-                >
-                  <span className={styles.tabTitle}>{note.title || "Untitled"}</span>
-                  {note.isGlobal && <span className={styles.tabBadge}>Global</span>}
-                  {editable && (
-                    <span
-                      role="button"
-                      tabIndex={0}
-                      className={styles.tabClose}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        deleteTab(note.noteId);
-                      }}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          deleteTab(note.noteId);
-                        }
-                      }}
-                      aria-label="Close tab"
-                    >
-                      ×
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
 
           <div className={styles.body}>
             {isLoading && <div className={styles.empty}>Loading your notes...</div>}
@@ -681,45 +947,94 @@ export default function GlobalNotesWidget() {
             {!isLoading && activeNote && (
               <>
                 <div className={styles.field}>
-                  <label className={styles.label} htmlFor="floating-note-title">
+                  <label className={`${styles.label} ${styles.titleLabel}`} htmlFor="floating-note-title">
                     Title
                   </label>
-                  <input
-                    id="floating-note-title"
-                    className={styles.input}
-                    value={activeNote.title || ""}
-                    onChange={(event) => onChangeTitle(event.target.value)}
-                    onBlur={() => onBlurSave(activeNote.noteId)}
-                    placeholder="Note title"
-                    disabled={activeNoteReadOnly}
-                  />
+                <input
+                  id="floating-note-title"
+                  className={`${styles.input} ${styles.titleInput}`}
+                  value={activeNote.title || ""}
+                  onChange={(event) => onChangeTitle(event.target.value)}
+                  onBlur={() => onBlurSave(activeNote.noteId)}
+                  placeholder="Title"
+                  disabled={activeNoteReadOnly}
+                />
                 </div>
 
                 <div className={styles.fieldGrow}>
-                  <label className={styles.label} htmlFor="floating-note-description">
+                  <label className={`${styles.label} ${styles.descriptionLabel}`} htmlFor="floating-note-description">
                     Description
                   </label>
-                  <textarea
+                  <div
                     id="floating-note-description"
-                    className={styles.textarea}
-                    value={activeNote.description || ""}
-                    onChange={(event) => onChangeDescription(event.target.value)}
-                    onBlur={() => onBlurSave(activeNote.noteId)}
-                    placeholder="Type your note"
-                    disabled={activeNoteReadOnly}
+                    ref={descriptionInputRef}
+                    className={`${styles.richEditor} ${activeNoteReadOnly ? styles.richEditorReadOnly : ""}`}
+                    contentEditable={!activeNoteReadOnly}
+                    suppressContentEditableWarning
+                    onInput={handleDescriptionInput}
+                    onPaste={handleDescriptionPaste}
+                    onKeyDown={handleDescriptionKeyDown}
+                    onBlur={() => {
+                      setCommandSuggestions([]);
+                      onBlurSave(activeNote.noteId);
+                    }}
+                    data-placeholder="Type your notes... Keyboard: Ctrl+B, Ctrl+I, Ctrl+U, '-' bullets, '/' commands"
+                    role="textbox"
+                    aria-multiline="true"
                   />
+                  {commandSuggestions.length > 0 && (
+                    <div
+                      className={styles.commandSuggestions}
+                      style={{ top: `${commandMenuPosition.top}px`, left: `${commandMenuPosition.left}px` }}
+                    >
+                      {commandSuggestions.map((cmd, index) => (
+                        <div
+                          key={`${cmd.command}-${index}`}
+                          className={`${styles.commandSuggestionItem} ${
+                            index === selectedCommandIndex ? styles.commandSuggestionItemActive : ""
+                          }`}
+                          role="button"
+                          tabIndex={0}
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => applySlashCommand(cmd)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              applySlashCommand(cmd);
+                            }
+                          }}
+                        >
+                          <span className={styles.commandSuggestionCmd}>{cmd.command}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                <div className={styles.meta}>
-                  <span>
-                    {saveStatus === "saving" && "Saving..."}
-                    {saveStatus === "saved" && "Saved"}
-                    {saveStatus === "error" && "Save failed"}
-                    {saveStatus === "idle" && "Ready"}
-                  </span>
-                  {activeNoteReadOnly && <span className={styles.readOnly}>Read-only note</span>}
-                  {!activeNoteReadOnly && activeNote.isGlobal && <span>Visible to all users</span>}
-                </div>
+                {canManageGlobalNotes && activeNoteOwnedByUser && (
+                  <div className={styles.visibilityPanel}>
+                    <p className={styles.visibilityTitle}>Visibility</p>
+                    <label className={styles.visibilityOption}>
+                      <input
+                        type="radio"
+                        name={`note-visibility-${activeNote.noteId}`}
+                        checked={!activeNote.isGlobal}
+                        onChange={() => onToggleGlobal(false)}
+                      />
+                      Independent note (only me)
+                    </label>
+                    <label className={styles.visibilityOption}>
+                      <input
+                        type="radio"
+                        name={`note-visibility-${activeNote.noteId}`}
+                        checked={Boolean(activeNote.isGlobal)}
+                        onChange={() => onToggleGlobal(true)}
+                      />
+                      Show this note to all users (dev)
+                    </label>
+                  </div>
+                )}
+
               </>
             )}
 

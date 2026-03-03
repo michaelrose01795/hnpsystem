@@ -85,8 +85,8 @@ export const createFloatingNote = async ({ userId, title, description, isGlobal 
   const globalColumn = await resolveGlobalColumn();
   const payload = {
     user_id: numericUserId,
-    title: String(title || "New note").slice(0, 200),
-    description: String(description || ""),
+    title: String(title ?? "").slice(0, 200),
+    description: String(description ?? ""),
     [globalColumn]: Boolean(isGlobal),
   };
 

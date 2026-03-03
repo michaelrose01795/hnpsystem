@@ -10,9 +10,9 @@
   width: 56px;
   height: 56px;
   border-radius: 999px;
-  border: 1px solid rgba(var(--primary-rgb), 0.45);
-  background: linear-gradient(150deg, var(--surface), var(--surface-light));
-  color: var(--primary);
+  border: 1px solid var(--primary-dark);
+  background: var(--primary);
+  color: var(--text-inverse);
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
   font-weight: 700;
   cursor: grab;
@@ -37,11 +37,13 @@
 .bubbleLabel {
   font-size: 18px;
   line-height: 1;
+  color: currentColor;
 }
 
 .bubbleOpen {
   background: var(--primary);
   border-color: var(--primary-dark);
+  color: var(--text-inverse);
 }
 
 .bubbleOpen .bubbleLabel,
@@ -61,6 +63,9 @@
   min-width: 260px;
   min-height: 220px;
   transform-origin: top right;
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
 }
 
 .panelEnter {
@@ -97,6 +102,7 @@
 
 .header {
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -108,8 +114,17 @@
   touch-action: none;
 }
 
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
 .heading {
-  font-size: 14px;
+  font-size: 13px;
   letter-spacing: 0.01em;
 }
 
@@ -119,6 +134,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
+  flex: 0 0 auto;
 }
 
 .toggle {
@@ -146,13 +162,21 @@
   border-color: rgba(var(--primary-rgb), 0.5);
 }
 
-.tabBar {
+.tabBarScroller {
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
-  gap: 8px;
-  padding: 10px;
-  border-bottom: 1px solid var(--border);
+  align-items: center;
   overflow-x: auto;
-  background: rgba(var(--primary-rgb), 0.03);
+  overflow-y: hidden;
+  padding: 2px 0;
+}
+
+.tabBar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: max-content;
 }
 
 .tab {
@@ -204,7 +228,9 @@
   flex-direction: column;
   gap: 10px;
   padding: 12px;
-  height: calc(100% - 106px);
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .field {
@@ -220,11 +246,23 @@
   gap: 6px;
   flex: 1 1 auto;
   min-height: 0;
+  position: relative;
 }
 
 .label {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-secondary);
+  font-family: inherit;
+}
+
+.titleLabel {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.descriptionLabel {
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .input,
@@ -236,6 +274,7 @@
   color: var(--text-primary);
   padding: 9px 11px;
   outline: none;
+  font-family: inherit;
 }
 
 .input:focus,
@@ -249,6 +288,119 @@
   min-height: 120px;
   height: 100%;
   flex: 1 1 auto;
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.richEditor {
+  width: 100%;
+  min-height: 120px;
+  height: 100%;
+  flex: 1 1 auto;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-primary);
+  padding: 9px 11px;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.45;
+  outline: none;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.richEditor:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.18);
+}
+
+.richEditor:empty::before {
+  content: attr(data-placeholder);
+  color: var(--grey-accent);
+  pointer-events: none;
+}
+
+.richEditor ul,
+.richEditor ol {
+  margin: 0 0 0 18px;
+  padding: 0;
+}
+
+.richEditorReadOnly {
+  background: var(--surface-light);
+}
+
+.titleInput {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.titleInput::placeholder {
+  color: var(--grey-accent);
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  color: var(--grey-accent);
+}
+
+.commandSuggestions {
+  position: absolute;
+  z-index: 6;
+  min-width: 220px;
+  max-width: min(320px, calc(100% - 20px));
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 12px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+  max-height: 170px;
+  overflow-y: auto;
+}
+
+.commandSuggestionItem {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(var(--primary-rgb), 0.12);
+  cursor: pointer;
+}
+
+.commandSuggestionItem:last-child {
+  border-bottom: 0;
+}
+
+.commandSuggestionItemActive {
+  background: rgba(var(--primary-rgb), 0.14);
+}
+
+.commandSuggestionCmd {
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.visibilityPanel {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.visibilityTitle {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.visibilityOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-primary);
 }
 
 .meta {
@@ -318,7 +470,12 @@
 
   .header {
     align-items: flex-start;
+  }
+
+  .headerRow {
+    width: 100%;
     flex-wrap: wrap;
+    align-items: flex-start;
   }
 
   .headerRight {
