@@ -13,11 +13,17 @@ const InvoiceSkeleton = () => {
   );
 };
 
-export default function InvoiceDetailSection({ jobNumber, orderNumber, customerEmail, jobId, jobData = null }) {
+export default function InvoiceDetailSection({
+  jobNumber,
+  orderNumber,
+  customerEmail,
+  jobId,
+  jobData = null,
+  invoiceReady = false,
+}) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [data, setData] = useState(null);
-  const [notice, setNotice] = useState("");
   const [emailStatus, setEmailStatus] = useState("");
 
   const identifier = jobNumber || orderNumber || "";
@@ -27,12 +33,10 @@ export default function InvoiceDetailSection({ jobNumber, orderNumber, customerE
       setError("Provide a job number or order number to view invoice.");
       setData(null);
       setLoading(false);
-      setNotice("");
       return;
     }
     setLoading(true);
     setError("");
-    setNotice("");
     try {
       const endpoint = jobNumber
         ? `/api/invoices/by-job/${encodeURIComponent(jobNumber)}`
@@ -46,12 +50,10 @@ export default function InvoiceDetailSection({ jobNumber, orderNumber, customerE
         throw new Error(payload?.message || "Unable to load invoice");
       }
       setData(payload.data);
-      setNotice(payload.data?.meta?.notice || "");
     } catch (err) {
       console.error("Invoice fetch failed", err);
       setError(err.message || "Unable to load invoice");
       setData(null);
-      setNotice("");
     } finally {
       setLoading(false);
     }
@@ -133,11 +135,18 @@ export default function InvoiceDetailSection({ jobNumber, orderNumber, customerE
     );
   }
 
+  const isProforma = Boolean(data?.meta?.isProforma);
+  const proformaNotice = isProforma
+    ? invoiceReady
+      ? "Proforma complete"
+      : "Proforma"
+    : "";
+
   return (
     <>
-      {notice && (
+      {proformaNotice && (
         <div className={`${styles.statusMessage} ${styles.info}`}>
-          {notice}
+          {proformaNotice}
         </div>
       )}
       <InvoiceDetail

@@ -2255,8 +2255,11 @@ export default function JobCardDetailPage() {
       );
     }
   }
+  const showProformaCompleteSection = invoicePrerequisitesMet && statusReadyForInvoicing;
   const showCreateInvoiceButton =
-    canEdit && invoicePrerequisitesMet && statusReadyForInvoicing;
+    canEdit &&
+    activeTab === "invoice" &&
+    showProformaCompleteSection;
 
   const jobVhcChecks = Array.isArray(jobData.vhcChecks) ? jobData.vhcChecks : [];
   const redIssues = jobVhcChecks.filter((check) => resolveVhcSeverity(check) === "red");
@@ -3175,7 +3178,10 @@ export default function JobCardDetailPage() {
                 </ul>
               </div>
             )}
-            <InvoiceSection jobData={jobData} />
+            <InvoiceSection
+              jobData={jobData}
+              invoiceReady={showProformaCompleteSection}
+            />
           </div>
         </section>
         <InvoiceBuilderPopup
@@ -8485,4 +8491,3 @@ function DocumentsTab({
     </div>
   );
 }
-

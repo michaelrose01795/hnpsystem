@@ -6,6 +6,7 @@ import "@/styles/theme.css"; // register CSS variables before globals
 import "../styles/globals.css"; // import global base styles
 import React, { useEffect } from "react"; // import React helpers
 import { SessionProvider } from "next-auth/react"; // import NextAuth session provider
+import { useRouter } from "next/router";
 import { UserProvider } from "@/context/UserContext"; // import user context
 import { NextActionProvider } from "@/context/NextActionContext"; // import next action context provider
 import { JobsProvider } from "@/context/JobsContext"; // import jobs context
@@ -17,6 +18,10 @@ import { ConfirmationProvider } from "@/context/ConfirmationContext";
 import GlobalNotesWidget from "@/components/GlobalNotesWidget";
 
 function AppWrapper({ Component, pageProps }) {
+  const router = useRouter();
+  const pathname = router?.pathname || "";
+  const hideNotesWidget = pathname === "/login" || pathname.toLowerCase().includes("redirect");
+
   // Auto-hide scrollbar after 3 seconds of inactivity using delegated event listeners.
   // Uses event delegation on document (capturing phase) so we don't need to attach per-element.
   useEffect(() => {
@@ -93,7 +98,7 @@ function AppWrapper({ Component, pageProps }) {
   return (
     <>
       <Component {...pageProps} />
-      <GlobalNotesWidget />
+      {!hideNotesWidget && <GlobalNotesWidget />}
     </>
   ); // render the requested page
 }

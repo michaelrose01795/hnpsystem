@@ -3,7 +3,7 @@
 import React from "react";
 import InvoiceDetailSection from "@/features/invoices/components/InvoiceDetailSection";
 
-export default function InvoiceSection({ jobData }) {
+export default function InvoiceSection({ jobData, invoiceReady = false }) {
   const jobNumber = jobData?.jobNumber || jobData?.job_number || "";
 
   if (!jobNumber) {
@@ -20,6 +20,7 @@ export default function InvoiceSection({ jobData }) {
       customerEmail={jobData?.customerEmail}
       jobId={jobData?.id}
       jobData={jobData}
+      invoiceReady={invoiceReady}
     />
   );
 }

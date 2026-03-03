@@ -10,7 +10,7 @@ only make this change nothing else
 
 ADDITIONS 
 CHECK
-have it so when inside writeup tab additional tabs can we written 
+have it so when inside writeup tab additional tabs can we written, check these are added to the database. 
 CHECK
 make sure that the unread line is hiden after 30 seconds from thwn the line is in view on the screen, or after the user clicks back off of the chat section/page relaods etc. 
 CHECK
@@ -129,8 +129,9 @@ CHECK
 invoice page fix, nearly just have "Ensure all allocated parts have quantities and pricing." create more detail for this easier for users to follow within this seciton. 
 CHECK
 Have it so within the inovice tab, within the Request 1,2,3 etc rows have it so when the row has a part assigned to it wihti the parts tab it only shows the parts insdie the table which are assigned to that request row or "VHC request" row. If the row doesnt have any parts allocated to it then dont show the "Part No	Description	Retail	Qty	Price	VAT	Rate %" table
+CHECK
+make sure that change is for the acutal invocie and proforma invoice.remove "Proforma totals generated from live job data until all invoice prerequisites are complete. " text and section after everything is ready for the inovice to be created, it will show the inovice but this doesnt mean the actual invoice is created until the Create invoice button is pressed. basically the inovice tab will always show "Proforma " section so change the "Proforma totals generated from live job data until all invoice prerequisites are complete. " section text dont remove but change to "Proforma complete ", once the "Create Invoice" button is pressed then that ""Proforma complete " section is hiden. make sure that the "Create Invoice" button isnt visible until the  "Proforma complete"" section is shown
 
-make sure that change is for the acutal invocie and proforma invoice.remove "Proforma totals generated from live job data until all invoice prerequisites are complete. " text and section after everything is ready for the inovice to be created, it will show the inovice but this doesnt mean the actual invoice is created until the Create invoice button is pressed. basically the inovice tab will always show "Proforma " section so change the "Proforma totals generated from live job data until all invoice prerequisites are complete. " section text dont remove but change to "Proforma complete ", once the "Create Invoice" button is pressed then that ""Proforma complete " section is hiden. make sure that the "Create Invoice" button isnt visible until the  "Proforma complete " section is shown
 
 
 TO DO AFTER THE ONE BELOW

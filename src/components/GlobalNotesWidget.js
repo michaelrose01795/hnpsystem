@@ -132,6 +132,13 @@ const hasOpenModal = () => {
   );
 };
 
+const setDragSelectionLock = (isLocked) => {
+  if (typeof document === "undefined") return;
+  document.body.style.userSelect = isLocked ? "none" : "";
+  document.body.style.webkitUserSelect = isLocked ? "none" : "";
+  document.body.style.cursor = isLocked ? "grabbing" : "";
+};
+
 export default function GlobalNotesWidget() {
   const { dbUserId, user } = useUser() || {};
   const [bubblePosition, setBubblePosition] = useState(getDefaultBubblePosition);
@@ -488,12 +495,17 @@ export default function GlobalNotesWidget() {
         panelResizeRef.current = null;
         persistPanelRect(panelRectRef.current);
       }
+
+      if (!bubbleDragRef.current && !panelDragRef.current && !panelResizeRef.current) {
+        setDragSelectionLock(false);
+      }
     };
 
     window.addEventListener("pointermove", onPointerMove, { passive: false });
     window.addEventListener("pointerup", onPointerUp);
 
     return () => {
+      setDragSelectionLock(false);
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerup", onPointerUp);
       if (closePanelTimerRef.current) clearTimeout(closePanelTimerRef.current);
@@ -503,6 +515,7 @@ export default function GlobalNotesWidget() {
 
   const startBubbleDrag = (event) => {
     event.preventDefault();
+    setDragSelectionLock(true);
     pointerMovedRef.current = false;
     bubbleDragRef.current = {
       pointerId: event.pointerId,
@@ -522,6 +535,7 @@ export default function GlobalNotesWidget() {
 
   const startPanelDrag = (event) => {
     event.preventDefault();
+    setDragSelectionLock(true);
     panelDragRef.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
@@ -543,6 +557,7 @@ export default function GlobalNotesWidget() {
   const startResize = (event) => {
     event.preventDefault();
     event.stopPropagation();
+    setDragSelectionLock(true);
     panelResizeRef.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
@@ -879,7 +894,11 @@ export default function GlobalNotesWidget() {
             height: panelRect.height,
           }}
         >
-          <header className={styles.header} onPointerDown={startPanelDrag}>
+          <div className={styles.dragHandle} onPointerDown={startPanelDrag}>
+            <span className={styles.dragHandleGrip} aria-hidden="true" />
+          </div>
+
+          <header className={styles.header}>
             <div className={styles.headerRow}>
               <div className={styles.tabBarScroller} onPointerDown={(event) => event.stopPropagation()}>
                 <div className={styles.tabBar}>
@@ -918,15 +937,16 @@ export default function GlobalNotesWidget() {
                       </button>
                     );
                   })}
+                  <button
+                    type="button"
+                    className={`${styles.tab} ${styles.tabAdd}`}
+                    onClick={createTab}
+                    aria-label="Add tab"
+                    title="Add tab"
+                  >
+                    +
+                  </button>
                 </div>
-              </div>
-              <div className={styles.headerRight} onPointerDown={(event) => event.stopPropagation()}>
-                <button type="button" className={styles.headerButton} onClick={createTab}>
-                  + Tab
-                </button>
-                <button type="button" className={styles.headerButton} onClick={closePanel} aria-label="Close notes panel">
-                  X
-                </button>
               </div>
             </div>
           </header>
