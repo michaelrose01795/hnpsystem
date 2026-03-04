@@ -3367,6 +3367,8 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
 ============================================ */
 export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
   console.log("💾 saveWriteUpToDatabase:", jobNumber);
+  const MANUAL_FAULT_SOURCE = "manual_fault";
+  const MANUAL_RECTIFICATION_SOURCE = "manual_rectification";
 
   const sanitizeCauseEntriesForUpload = (entries = []) =>
     (Array.isArray(entries) ? entries : [])
@@ -3442,6 +3444,18 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
     const formattedCaused = ensureBulletFormat(writeUpData?.caused || "");
     const formattedRectification = ensureBulletFormat(writeUpData?.rectification || "");
     const rectificationSummary = formattedRectification || buildRectificationSummary(rectificationItems);
+    const addedFault = ensureBulletFormat(
+      filteredTasks
+        .filter((task) => task?.source === MANUAL_FAULT_SOURCE)
+        .map((task) => task?.label || "")
+        .join("\n")
+    );
+    const addedRectification = ensureBulletFormat(
+      filteredTasks
+        .filter((task) => task?.source === MANUAL_RECTIFICATION_SOURCE)
+        .map((task) => task?.label || "")
+        .join("\n")
+    );
     const formattedAdditionalParts = ensureBulletFormat(writeUpData?.additionalParts || "");
     const formattedBulletins = ensureBulletFormat(writeUpData?.technicalBulletins || "");
     const formattedJobDescription = ensureBulletFormat(
@@ -3549,6 +3563,8 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
       job_id: job.id,
       fault: formattedFault || null,
       rectification: rectificationSummary || null,
+      added_fault: addedFault || null,
+      added_rectification: addedRectification || null,
       cause_entries: sanitizeCauseEntriesForUpload(writeUpData?.causeEntries),
       warranty_claim: writeUpData?.warrantyClaim || null,
       tsr_number: writeUpData?.tsrNumber || null,

@@ -378,6 +378,13 @@ const buildTaskChecklistSnapshot = (tasks = []) =>
     status: task?.status === "complete" ? "complete" : "additional_work",
   }));
 
+const buildAddedSectionText = (tasks = [], source = "") =>
+  (Array.isArray(tasks) ? tasks : [])
+    .filter((task) => task?.source === source)
+    .map((task) => (task?.label || "").toString().trim())
+    .filter(Boolean)
+    .join("\n");
+
 const buildTaskSignature = (tasks = [], completionStatus = "", sectionEditors = createSectionEditorsState()) => {
   const list = (Array.isArray(tasks) ? tasks : []).map((task) =>
     `${task?.source || "request"}:${task?.sourceKey || composeTaskKey(task)}:${task?.status || "additional_work"}:${task?.label || ""}`
@@ -1545,9 +1552,13 @@ export default function WriteUpForm({
       );
       const normalizedEditors = sanitizeSectionEditors(sectionEditors);
       const checklistTasks = buildTaskChecklistSnapshot(tasks);
+      const addedFault = buildAddedSectionText(tasks, MANUAL_FAULT_SOURCE);
+      const addedRectification = buildAddedSectionText(tasks, MANUAL_RECTIFICATION_SOURCE);
       const payload = {
         fault: sanitizedFields.fault || null,
         rectification: sanitizedFields.rectification || null,
+        added_fault: addedFault || null,
+        added_rectification: addedRectification || null,
         cause_entries: normalizedCauseEntries,
         updated_at: new Date().toISOString(),
         task_checklist: {

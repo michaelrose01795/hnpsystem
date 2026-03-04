@@ -651,6 +651,8 @@ CREATE TABLE public.job_writeups (
   cause_entries jsonb DEFAULT '[]'::jsonb,
   completion_status text DEFAULT 'additional_work'::text,
   task_checklist jsonb DEFAULT jsonb_build_object('version', 2, 'tasks', '[]'::jsonb, 'meta', jsonb_build_object('sectionEditors', jsonb_build_object('fault', '[]'::jsonb, 'cause', '[]'::jsonb, 'rectification', '[]'::jsonb))),
+  added_fault text,
+  added_rectification text,
   CONSTRAINT job_writeups_pkey PRIMARY KEY (writeup_id),
   CONSTRAINT job_writeups_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT job_writeups_technician_id_fkey FOREIGN KEY (technician_id) REFERENCES public.users(user_id)
