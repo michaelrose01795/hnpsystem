@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useUser } from "@/context/UserContext";
-import { normalizeRoles } from "@/lib/auth/roles";
 import {
   createFloatingNote,
   deleteFloatingNote,
   getFloatingNotesForUser,
+  getNoteSharedUserIds,
+  getShareableUsers,
+  setNoteSharedUsers,
   updateFloatingNote,
 } from "@/lib/database/floatingNotes";
 import styles from "@/components/GlobalNotesWidget.module.css";
@@ -154,6 +156,13 @@ export default function GlobalNotesWidget() {
   const [commandSuggestions, setCommandSuggestions] = useState([]);
   const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
   const [commandMenuPosition, setCommandMenuPosition] = useState({ top: 0, left: 0 });
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [shareSearch, setShareSearch] = useState("");
+  const [shareUsers, setShareUsers] = useState([]);
+  const [totalShareUserCount, setTotalShareUserCount] = useState(0);
+  const [selectedShareUserIds, setSelectedShareUserIds] = useState([]);
+  const [isShareLoading, setIsShareLoading] = useState(false);
+  const [isShareSaving, setIsShareSaving] = useState(false);
 
   const notesRef = useRef([]);
   const panelRectRef = useRef(panelRect);
@@ -165,20 +174,6 @@ export default function GlobalNotesWidget() {
   const closePanelTimerRef = useRef(null);
   const saveTimersRef = useRef(new Map());
   const resizeTimerRef = useRef(null);
-
-  const roleNames = useMemo(() => normalizeRoles(user?.roles || []), [user?.roles]);
-  const isDevSession = useMemo(() => {
-    if (typeof window === "undefined") return false;
-    return Boolean(window.localStorage.getItem("devUser"));
-  }, [user?.id]);
-
-  const canManageGlobalNotes =
-    isDevSession ||
-    roleNames.includes("admin") ||
-    roleNames.includes("admin manager") ||
-    roleNames.includes("owner") ||
-    roleNames.includes("developer") ||
-    roleNames.includes("dev");
 
   const storageSuffix = useMemo(() => {
     const numericUserId = Number(dbUserId);
@@ -195,6 +190,15 @@ export default function GlobalNotesWidget() {
     () => notes.find((note) => note.noteId === activeNoteId) || null,
     [notes, activeNoteId]
   );
+  const filteredShareUsers = useMemo(() => {
+    const query = shareSearch.trim().toLowerCase();
+    if (!query) return shareUsers;
+    return shareUsers.filter((userRow) => {
+      const fullName = `${userRow.firstName || ""} ${userRow.lastName || ""}`.trim().toLowerCase();
+      const email = String(userRow.email || "").toLowerCase();
+      return fullName.includes(query) || email.includes(query);
+    });
+  }, [shareUsers, shareSearch]);
 
   const activeNoteOwnedByUser = Boolean(activeNote && Number(activeNote.userId) === Number(dbUserId));
   const activeNoteReadOnly = !activeNoteOwnedByUser;
@@ -226,6 +230,11 @@ export default function GlobalNotesWidget() {
   }, [activeNoteId, isPanelVisible]);
 
   useEffect(() => {
+    setIsShareModalOpen(false);
+    setShareSearch("");
+  }, [activeNoteId, isPanelVisible]);
+
+  useEffect(() => {
     persistActiveNoteId(activeNoteId);
   }, [activeNoteId]);
 
@@ -251,6 +260,11 @@ export default function GlobalNotesWidget() {
       return;
     }
     window.localStorage.setItem(activeNoteStorageKey, String(noteId));
+  };
+
+  const getUserDisplayName = (userRow) => {
+    const fullName = `${userRow.firstName || ""} ${userRow.lastName || ""}`.replace(/\s+/g, " ").trim();
+    return fullName || userRow.email || `User ${userRow.userId}`;
   };
 
   const loadNotes = async () => {
@@ -868,6 +882,51 @@ export default function GlobalNotesWidget() {
     setSaveStatus("saved");
   };
 
+  const openShareModal = async () => {
+    if (!activeNote || !activeNoteOwnedByUser) return;
+    setIsShareModalOpen(true);
+    setShareSearch("");
+    setIsShareLoading(true);
+    setError("");
+    try {
+      const [allUsers, sharedUserIds] = await Promise.all([
+        getShareableUsers(),
+        getNoteSharedUserIds(activeNote.noteId),
+      ]);
+      const ownerId = Number(activeNote.userId);
+      setTotalShareUserCount(allUsers.length);
+      setShareUsers(allUsers.filter((userRow) => Number(userRow.userId) !== ownerId));
+      setSelectedShareUserIds(sharedUserIds);
+    } catch (loadShareError) {
+      setError(loadShareError?.message || "Failed to load share users");
+    } finally {
+      setIsShareLoading(false);
+    }
+  };
+
+  const closeShareModal = () => {
+    setIsShareModalOpen(false);
+    setShareSearch("");
+  };
+
+  const toggleSharedUser = async (userId) => {
+    if (!activeNote || !activeNoteOwnedByUser || isShareSaving) return;
+    const nextIds = selectedShareUserIds.includes(userId)
+      ? selectedShareUserIds.filter((id) => id !== userId)
+      : [...selectedShareUserIds, userId];
+    setSelectedShareUserIds(nextIds);
+    setIsShareSaving(true);
+    const result = await setNoteSharedUsers({
+      noteId: activeNote.noteId,
+      sharedByUserId: Number(dbUserId),
+      userIds: nextIds,
+    });
+    setIsShareSaving(false);
+    if (!result.success) {
+      setError(result.error?.message || "Failed to save shared users");
+    }
+  };
+
   if (!Number.isInteger(Number(dbUserId)) || isModalOpen) {
     return null;
   }
@@ -1034,12 +1093,19 @@ export default function GlobalNotesWidget() {
                 {activeNote && (
                   <div className={styles.visibilityPanel}>
                     <div className={styles.visibilityToggleRow}>
-                      <p className={styles.visibilityTitle}>Show this note across all users</p>
+                      <button
+                        type="button"
+                        className={styles.shareButton}
+                        onClick={openShareModal}
+                        disabled={!activeNoteOwnedByUser}
+                      >
+                        Share
+                      </button>
                       <button
                         type="button"
                         role="switch"
                         aria-checked={Boolean(activeNote.isGlobal)}
-                        aria-label="Toggle note visibility across all users"
+                        aria-label="Toggle global note visibility"
                         className={`${styles.visibilitySwitch} ${activeNote.isGlobal ? styles.visibilitySwitchOn : ""}`}
                         onClick={() => onToggleGlobal(!activeNote.isGlobal)}
                         disabled={!activeNoteOwnedByUser}
@@ -1047,12 +1113,6 @@ export default function GlobalNotesWidget() {
                         <span className={styles.visibilityThumb} />
                       </button>
                     </div>
-                    <p className={styles.visibilityHint}>
-                      {activeNote.isGlobal ? "Visible to all users" : "Visible only to your login"}
-                    </p>
-                    {!activeNoteOwnedByUser && (
-                      <p className={styles.readOnly}>Only the note creator can change this toggle.</p>
-                    )}
                   </div>
                 )}
 
@@ -1064,6 +1124,58 @@ export default function GlobalNotesWidget() {
 
           <div className={styles.resizeHandle} onPointerDown={startResize} />
         </section>
+      )}
+
+      {isShareModalOpen && (
+        <div className={styles.shareOverlay} onClick={closeShareModal}>
+          <section
+            className={styles.shareModal}
+            role="dialog"
+            aria-label="Share note"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className={styles.shareModalHeader}>
+              <div className={styles.shareSearchWrap}>
+                <input
+                  type="text"
+                  className={styles.shareSearch}
+                  placeholder="Search users"
+                  value={shareSearch}
+                  onChange={(event) => setShareSearch(event.target.value)}
+                />
+                <span className={styles.shareSelectedCount}>
+                  {selectedShareUserIds.length} out of {totalShareUserCount} selected
+                </span>
+              </div>
+              <button type="button" className={styles.shareCloseButton} onClick={closeShareModal}>
+                Close
+              </button>
+            </div>
+
+            <div className={styles.shareUserList} aria-busy={isShareLoading ? "true" : "false"}>
+              {isShareLoading && <div className={styles.shareEmpty}>Loading users...</div>}
+              {!isShareLoading && filteredShareUsers.length === 0 && (
+                <div className={styles.shareEmpty}>No users found</div>
+              )}
+              {!isShareLoading &&
+                filteredShareUsers.map((userRow) => {
+                  const isSelected = selectedShareUserIds.includes(userRow.userId);
+                  return (
+                    <label key={userRow.userId} className={styles.shareUserRow}>
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSharedUser(userRow.userId)}
+                        disabled={isShareSaving}
+                      />
+                      <span className={styles.shareUserName}>{getUserDisplayName(userRow)}</span>
+                      <span className={styles.shareUserEmail}>{userRow.email || ""}</span>
+                    </label>
+                  );
+                })}
+            </div>
+          </section>
+        </div>
       )}
     </div>
   );

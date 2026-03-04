@@ -687,6 +687,8 @@ body:has(.login-page-wrapper) {
 }
 
 .login-page-wrapper {
+  --login-dev-panel-width: 320px;
+  --login-dev-panel-gap: 28px;
   height: 100dvh;
   min-height: 100dvh;
   width: 100vw;
@@ -694,6 +696,7 @@ body:has(.login-page-wrapper) {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: var(--login-dev-panel-gap);
   padding: 0 16px;
   background: transparent;
   overflow-y: hidden;
@@ -854,20 +857,21 @@ body:has(.login-page-wrapper) {
 .login-dev-content {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  min-height: 340px;
+  gap: 14px;
+  min-height: 0;
+  height: 100%;
 }
 
-/* Keep the primary Login card centered regardless of Dev Login panel position. */
+/* Keep login logo/card centered and place dev login beside it on larger screens. */
 .login-center-stage {
-  min-height: 100%;
-  width: 100%;
+  min-height: 0;
+  width: min(520px, 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 1.4rem;
-  padding: 24px 16px;
+  padding: 0;
 }
 
 .login-center-stage .login-brand {
@@ -880,11 +884,13 @@ body:has(.login-page-wrapper) {
 }
 
 .login-dev-panel {
-  position: fixed;
-  right: 28px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: min(460px, calc(100vw - 40px));
+  position: static;
+  right: auto;
+  top: auto;
+  transform: none;
+  width: var(--login-dev-panel-width);
+  max-width: calc(100vw - 24px);
+  height: 432px;
   max-height: calc(100dvh - 24px);
   overflow-y: auto;
   z-index: 260;
@@ -892,6 +898,12 @@ body:has(.login-page-wrapper) {
 
 .login-dev-panel .login-card--dev {
   width: 100%;
+  height: 100%;
+}
+
+.login-dev-panel .login-card--dev > div {
+  height: 100%;
+  box-shadow: none !important;
 }
 
 @media (max-width: 1100px) {
@@ -904,21 +916,27 @@ body:has(.login-page-wrapper) {
     min-height: 100dvh;
     overflow-y: auto;
     padding: 24px 16px;
+    gap: 20px;
+    flex-direction: column;
   }
 
   .login-center-stage {
     justify-content: center;
     min-height: auto;
+    width: 100%;
+    max-width: 520px;
     padding-top: 0;
-    padding-bottom: 16px;
+    padding-bottom: 0;
   }
 
   .login-dev-panel {
     position: static;
     transform: none;
     width: 100%;
-    max-width: 520px;
-    margin: 0 auto 24px;
+    max-width: var(--login-dev-panel-width);
+    height: auto;
+    max-height: none;
+    margin: 0 auto;
   }
 }
 

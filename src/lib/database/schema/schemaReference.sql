@@ -245,6 +245,14 @@ CREATE TABLE public.delivery_stops (
   CONSTRAINT delivery_stops_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
   CONSTRAINT delivery_stops_delivery_id_fkey FOREIGN KEY (delivery_id) REFERENCES public.deliveries(id)
 );
+CREATE TABLE public.floating_note_shares (
+  share_id bigint NOT NULL DEFAULT nextval('floating_note_shares_share_id_seq'::regclass),
+  note_id bigint NOT NULL,
+  user_id bigint NOT NULL,
+  shared_by bigint,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT floating_note_shares_pkey PRIMARY KEY (share_id)
+);
 CREATE TABLE public.floating_notes (
   note_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
   user_id integer NOT NULL,

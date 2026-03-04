@@ -7,10 +7,26 @@ import { getUserById } from "@/lib/database/users";
 
 const DEV_ROLE_COOKIE = "hnp-dev-roles";
 const DEV_COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
+const LOGOUT_BARRIER_STORAGE_KEY = "hnp-logout-barrier-until";
+const LOGOUT_BARRIER_MS = 8000;
 const DEV_AUTH_BYPASS_ENABLED = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === "true";
 const CAN_USE_DEV_AUTH =
   process.env.NODE_ENV !== "production" || DEV_AUTH_BYPASS_ENABLED;
 const isBrowser = () => typeof document !== "undefined";
+const readLogoutBarrierUntil = () => {
+  if (typeof window === "undefined") return 0;
+  const raw = window.sessionStorage.getItem(LOGOUT_BARRIER_STORAGE_KEY);
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+};
+const setLogoutBarrier = (untilTs) => {
+  if (typeof window === "undefined") return;
+  if (untilTs > 0) {
+    window.sessionStorage.setItem(LOGOUT_BARRIER_STORAGE_KEY, String(untilTs));
+    return;
+  }
+  window.sessionStorage.removeItem(LOGOUT_BARRIER_STORAGE_KEY);
+};
 const clearDevRoleCookie = () => {
   if (!isBrowser()) return;
   document.cookie = `${DEV_ROLE_COOKIE}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
@@ -37,13 +53,47 @@ export function UserProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [logoutBarrierUntil, setLogoutBarrierUntil] = useState(0);
   const [status, setStatus] = useState("Waiting for Job"); // default tech status
   const [dbUserId, setDbUserId] = useState(null);
   const [currentJob, setCurrentJob] = useState(null);
+  const hasLogoutBarrier = logoutBarrierUntil > Date.now();
+  const authSyncBlocked = isLoggingOut || hasLogoutBarrier;
+
+  useEffect(() => {
+    const nextBarrierUntil = readLogoutBarrierUntil();
+    if (nextBarrierUntil > Date.now()) {
+      setLogoutBarrierUntil(nextBarrierUntil);
+    } else {
+      setLogoutBarrierUntil(0);
+      setLogoutBarrier(0);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!logoutBarrierUntil) {
+      setLogoutBarrier(0);
+      return;
+    }
+    setLogoutBarrier(logoutBarrierUntil);
+    const remainingMs = logoutBarrierUntil - Date.now();
+    if (remainingMs <= 0) {
+      setLogoutBarrierUntil(0);
+      return;
+    }
+    const timer = setTimeout(() => setLogoutBarrierUntil(0), remainingMs);
+    return () => clearTimeout(timer);
+  }, [logoutBarrierUntil]);
+
+  useEffect(() => {
+    if (sessionStatus === "unauthenticated" && logoutBarrierUntil) {
+      setLogoutBarrierUntil(0);
+    }
+  }, [sessionStatus, logoutBarrierUntil]);
 
   // Load dev user from localStorage
   useEffect(() => {
-    if (isLoggingOut) {
+    if (authSyncBlocked) {
       return;
     }
 
@@ -83,11 +133,11 @@ export function UserProvider({ children }) {
       setUser(null);
     }
     setLoading(false);
-  }, [session, sessionStatus, isLoggingOut]);
+  }, [session, sessionStatus, authSyncBlocked]);
 
   // Set user from NextAuth session (works for both Keycloak and Credentials providers)
   useEffect(() => {
-    if (isLoggingOut) {
+    if (authSyncBlocked) {
       return;
     }
 
@@ -116,7 +166,7 @@ export function UserProvider({ children }) {
       setUser(null);
       setLoading(false);
     }
-  }, [session, sessionStatus, isLoggingOut]);
+  }, [session, sessionStatus, authSyncBlocked]);
 
   // Resolve Supabase users.user_id when a user is set
   useEffect(() => {
@@ -234,6 +284,9 @@ export function UserProvider({ children }) {
   // Logout — clears both local state and NextAuth session
   const logout = async () => {
     setIsLoggingOut(true);
+    const barrierUntil = Date.now() + LOGOUT_BARRIER_MS;
+    setLogoutBarrierUntil(barrierUntil);
+    setLogoutBarrier(barrierUntil);
     setUser(null);
     setStatus("Waiting for Job"); // reset status
     setDbUserId(null);
@@ -264,6 +317,7 @@ export function UserProvider({ children }) {
     setCurrentJob,
     refreshCurrentJob,
     authUserId: user?.authUuid || (typeof user?.id === "string" ? user.id : null),
+    logoutInProgress: authSyncBlocked,
   };
 
   return <UserContext.Provider value={contextValue}>{children}</UserContext.Provider>;

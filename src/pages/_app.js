@@ -20,7 +20,14 @@ import GlobalNotesWidget from "@/components/GlobalNotesWidget";
 function AppWrapper({ Component, pageProps }) {
   const router = useRouter();
   const pathname = router?.pathname || "";
-  const hideNotesWidget = pathname === "/login" || pathname.toLowerCase().includes("redirect");
+  const asPath = router?.asPath || "";
+  const asPathWithoutQuery = asPath.split("?")[0] || "";
+  const routeForVisibility = `${pathname} ${asPath}`.toLowerCase();
+  const notesHiddenRoutes = new Set(["/", "/login"]);
+  const hideNotesWidget =
+    notesHiddenRoutes.has(pathname) ||
+    notesHiddenRoutes.has(asPathWithoutQuery) ||
+    routeForVisibility.includes("redirect");
 
   // Auto-hide scrollbar after 3 seconds of inactivity using delegated event listeners.
   // Uses event delegation on document (capturing phase) so we don't need to attach per-element.

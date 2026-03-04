@@ -13,6 +13,7 @@ import BrandLogo from "@/components/BrandLogo";
 import { roleCategories } from "@/config/users"; // Dev users config
 
 const FIELD_MAX_WIDTH = 380;
+const LOGOUT_BARRIER_STORAGE_KEY = "hnp-logout-barrier-until";
 
 const LoginCard = ({
   title,
@@ -87,6 +88,7 @@ export default function LoginPage() {
   const userContext = useUser();
   const user = userContext?.user;
   const dbUserId = userContext?.dbUserId;
+  const logoutInProgress = userContext?.logoutInProgress;
   const { usersByRole, usersByRoleDetailed, isLoading: rosterLoading, refreshRoster } = useRoster();
 
   const router = useRouter();
@@ -157,6 +159,9 @@ export default function LoginPage() {
       alert("Please select an area, department, and user.");
       return;
     }
+    if (typeof window !== "undefined") {
+      window.sessionStorage.removeItem(LOGOUT_BARRIER_STORAGE_KEY);
+    }
     const userId = selectedUser?.user_id || selectedUser?.id || selectedUser?.identifier;
     const result = await signIn("credentials", {
       userId: String(userId),
@@ -172,6 +177,9 @@ export default function LoginPage() {
   const handleDbLogin = async (e) => {
     e.preventDefault();
     setErrorMessage("");
+    if (typeof window !== "undefined") {
+      window.sessionStorage.removeItem(LOGOUT_BARRIER_STORAGE_KEY);
+    }
     try {
       const result = await signIn("credentials", {
         email,
@@ -305,6 +313,7 @@ export default function LoginPage() {
 
   // Redirect once user is logged in (via NextAuth session or UserContext) + auto clock-in
   useEffect(() => {
+    if (logoutInProgress) return;
     const activeUser =
       user || (sessionStatus === "authenticated" && session?.user ? session.user : null);
     if (!activeUser) return;
@@ -342,7 +351,7 @@ export default function LoginPage() {
 
     const target = isCustomer ? "/customer" : "/newsfeed";
     router.push(target);
-  }, [user, session, sessionStatus, router, dbUserId]);
+  }, [user, session, sessionStatus, router, dbUserId, logoutInProgress]);
 
   useEffect(() => {
     // ⚠️ Mock data found — replacing with Supabase query

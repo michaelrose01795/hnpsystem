@@ -4,6 +4,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useRouter } from "next/router";
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { useUser } from "@/context/UserContext";
 import { useMessagesBadge } from "@/hooks/useMessagesBadge";
@@ -33,6 +34,7 @@ export default function Sidebar({
   modeLabel: _modeLabel = null, // keep legacy prop available without rendering the old text block
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, logout, dbUserId } = useUser();
   const { unreadCount } = useMessagesBadge(dbUserId);
   const derivedRoles = user?.roles?.map((role) => role.toLowerCase()) || [];
@@ -118,9 +120,7 @@ export default function Sidebar({
       console.error("Auto clock-out on logout failed:", err);
     }
     await logout?.();
-    if (typeof window !== "undefined") {
-      window.location.assign("/login");
-    }
+    router.replace("/login");
   };
 
   // Clock in/out state for sidebar button
