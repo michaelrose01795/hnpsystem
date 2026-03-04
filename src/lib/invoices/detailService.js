@@ -512,8 +512,18 @@ function enrichRequestsFromJob(jobRequests, partAllocations, vatRate, labourRate
       }; // end part entry
       })
       .filter((part) => part.qty > 0); // suppress zero-qty rows on invoice/proforma
-    const partsNet = parts.reduce((sum, part) => sum + part.net_price, 0); // sum net parts
-    const partsVat = parts.reduce((sum, part) => sum + part.vat, 0); // sum VAT parts
+    const partsFromAllocationsNet = parts.reduce((sum, part) => sum + part.net_price, 0); // sum net parts from allocated rows
+    const vhcPartsCostRaw = vhcMeta?.partsCost;
+    const vhcPartsCost =
+      vhcPartsCostRaw !== null && vhcPartsCostRaw !== undefined && vhcPartsCostRaw !== ""
+        ? Number(vhcPartsCostRaw)
+        : null;
+    const fallbackPartsNet = Number.isFinite(vhcPartsCost) ? vhcPartsCost : 0;
+    const partsNet = partsFromAllocationsNet > 0 ? partsFromAllocationsNet : fallbackPartsNet; // fallback to vhc_checks.parts_cost when allocations are missing
+    const partsVat =
+      partsFromAllocationsNet > 0
+        ? parts.reduce((sum, part) => sum + part.vat, 0)
+        : partsNet * (vatRate / 100); // derive VAT from fallback parts net
     const requestTypeLower = String(request.job_type || "").toLowerCase();
     const requestSourceLower = String(request.request_source || request.requestSource || "").toLowerCase();
     const isAuthorised =
@@ -526,7 +536,7 @@ function enrichRequestsFromJob(jobRequests, partAllocations, vatRate, labourRate
     const requestLabel = isAuthorised ? `Authorised ${authorisedCount}` : `Request ${customerCount}`; // build label
     const summaryBits = [];
     if (isAuthorised && labourHours > 0) summaryBits.push(`Labour: ${labourHours}h`);
-    if (isAuthorised && vhcMeta?.partsCost && vhcMeta.partsCost > 0) summaryBits.push(`Authorised parts: £${Number(vhcMeta.partsCost).toFixed(2)}`);
+    if (isAuthorised && partsNet > 0) summaryBits.push(`Authorised parts: £${Number(partsNet).toFixed(2)}`);
     return { // return normalized request block
       request_id: request.request_id ?? null, // retain original job request id for stable UI linking
       request_sort_order: request.sort_order ?? request.sortOrder ?? null,
@@ -837,6 +847,12 @@ function applyProformaOverrides(requests = [], overrides = []) {
       return { ...request, proforma_key: key, proforma_override: null };
     }
 
+    const isAuthorisedRequest =
+      String(request?.request_kind || "").trim().toLowerCase() === "authorised" ||
+      String(request?.job_type || "").trim().toLowerCase() === "authorised" ||
+      String(request?.request_source || "").trim().toLowerCase() === "vhc_authorised" ||
+      String(request?.request_source || "").trim().toLowerCase() === "vhc_authorized";
+
     const labourHours =
       row.labour_hours_override !== null && row.labour_hours_override !== undefined
         ? Number(row.labour_hours_override) || 0
@@ -846,17 +862,28 @@ function applyProformaOverrides(requests = [], overrides = []) {
         ? Number(row.labour_total_override) || 0
         : Number(request?.labour?.net || 0);
     const partsNetCurrent = Number(request?.totals?.request_total_net || 0) - Number(request?.labour?.net || 0);
-    const partsNet =
-      row.parts_total_override !== null && row.parts_total_override !== undefined
-        ? Number(row.parts_total_override) || 0
-        : partsNetCurrent;
+    const hasPartsOverride =
+      row.parts_total_override !== null && row.parts_total_override !== undefined;
+    const overriddenPartsNet = hasPartsOverride ? Number(row.parts_total_override) || 0 : partsNetCurrent;
+    // Historical proforma rows can persist stale 0.00 parts override values for authorised VHC items.
+    // If live data now has a positive parts total, prefer the live total so proforma stays in sync.
+    const hasStaleAuthorisedZeroPartsOverride =
+      isAuthorisedRequest &&
+      hasPartsOverride &&
+      overriddenPartsNet === 0 &&
+      partsNetCurrent > 0;
+    const partsNet = hasStaleAuthorisedZeroPartsOverride ? partsNetCurrent : overriddenPartsNet;
     const vatValue =
       row.tax_total_override !== null && row.tax_total_override !== undefined
-        ? Number(row.tax_total_override) || 0
+        ? hasStaleAuthorisedZeroPartsOverride
+          ? Number(request?.totals?.request_total_vat || 0)
+          : Number(row.tax_total_override) || 0
         : Number(request?.totals?.request_total_vat || 0);
     const grossValue =
       row.total_override !== null && row.total_override !== undefined
-        ? Number(row.total_override) || 0
+        ? hasStaleAuthorisedZeroPartsOverride
+          ? labourNet + partsNet + vatValue
+          : Number(row.total_override) || 0
         : labourNet + partsNet + vatValue;
 
     return {

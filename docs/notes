@@ -9,19 +9,6 @@ message database table
 
 
 
-CHECK
-within the "Proforma" section wihtin the invoice, make sure that the "Proforma complete" is not ready for complete until within the VCH tab all of the row status wihtin the summary tab are set to complete, if its set to anything else then make sure that the Proforma is not complete and shows the front end information. 
-
-
-CHECK
-When a vch authrorised it updates instantly within the customer request and write up tab and parts tab, but not within the invoice tab for the proforma section or invoice section fix this 
-
-
-
-
-
-
-
 
 
 

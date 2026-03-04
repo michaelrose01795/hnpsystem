@@ -12,13 +12,34 @@ export const normaliseDecisionStatus = (value) => {
   if (!value) return null;
   const normalized = value.toString().trim().toLowerCase();
   if (!normalized) return null;
-  if (normalized === "n/a") return "n/a";
-  if (normalized === "authorised") return "authorized";
-  if (normalized === "approved") return "authorized";
-  if (normalized === "authorized") return "authorized";
-  if (normalized === "declined") return "declined";
-  if (normalized === "completed") return "completed";
-  if (normalized === "pending") return "pending";
+  if (normalized === "n/a" || normalized === "na" || normalized === "not applicable") {
+    return "n/a";
+  }
+  if (
+    normalized === "authorised" ||
+    normalized === "authorized" ||
+    normalized === "approved" ||
+    normalized.includes("authorised") ||
+    normalized.includes("authorized")
+  ) {
+    return "authorized";
+  }
+  if (
+    normalized === "declined" ||
+    normalized === "decline" ||
+    normalized === "declinded" ||
+    normalized.includes("declin")
+  ) {
+    return "declined";
+  }
+  if (
+    normalized === "completed" ||
+    normalized === "complete" ||
+    normalized.includes("complet")
+  ) {
+    return "completed";
+  }
+  if (normalized === "pending" || normalized.includes("pending")) return "pending";
   return normalized;
 };
 

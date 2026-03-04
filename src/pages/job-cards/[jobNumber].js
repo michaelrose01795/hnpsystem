@@ -562,10 +562,18 @@ export default function JobCardDetailPage() {
         .map((value) => normaliseDecisionStatus(value))
         .filter(Boolean);
 
-      const isCompletedByFlag = check?.Complete === true || check?.complete === true;
+      const completeFlagRaw = check?.Complete ?? check?.complete;
+      const isCompletedByFlag =
+        completeFlagRaw === true ||
+        completeFlagRaw === 1 ||
+        (typeof completeFlagRaw === "string" &&
+          ["true", "1", "yes", "y", "completed", "complete"].includes(
+            completeFlagRaw.trim().toLowerCase()
+          ));
       const hasCompleted = decisions.includes("completed") || isCompletedByFlag;
       const hasDeclined = decisions.includes("declined");
-      return hasCompleted || hasDeclined;
+      const hasNotApplicable = decisions.includes("n/a");
+      return hasCompleted || hasDeclined || hasNotApplicable;
     });
   }, [jobData?.vhcChecks]);
   const hasRedAmberRepairRows = useMemo(() => {
