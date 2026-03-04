@@ -58,6 +58,13 @@ const buildRequestList = (rawRequests) => {
 
   return requestArray
     .map((entry, index) => {
+      const source =
+        typeof entry === "object" && entry !== null
+          ? String(entry.requestSource ?? entry.request_source ?? "").toLowerCase().trim()
+          : "";
+      if (source && source !== "customer_request") {
+        return null;
+      }
       const rawText =
         typeof entry === "string"
           ? entry
@@ -66,9 +73,23 @@ const buildRequestList = (rawRequests) => {
             : "";
       const cleaned = (rawText || "").toString().trim();
       if (!cleaned) return null;
+      const requestId =
+        typeof entry === "object" && entry !== null
+          ? entry.requestId ?? entry.request_id ?? null
+          : null;
+      const sortOrderRaw =
+        typeof entry === "object" && entry !== null
+          ? entry.sortOrder ?? entry.sort_order ?? null
+          : null;
+      const sortOrder = Number(sortOrderRaw);
       return {
         source: "request",
-        sourceKey: `req-${index + 1}`,
+        sourceKey:
+          requestId !== null && requestId !== undefined
+            ? `reqid-${String(requestId)}`
+            : Number.isFinite(sortOrder) && sortOrder > 0
+            ? `req-${sortOrder}`
+            : `req-${index + 1}`,
         label: `Request ${index + 1}: ${cleaned}`,
       };
     })
@@ -1094,7 +1115,9 @@ export default function WriteUpForm({
         }
 
         const writeUpResponse = await getWriteUpByJobNumber(jobNumber);
-        const fallbackRequests = buildRequestList(jobPayload?.jobCard?.requests);
+        const fallbackRequests = buildRequestList(
+          jobPayload?.jobCard?.jobRequests || jobPayload?.jobCard?.requests
+        );
 
         if (writeUpResponse) {
           const incomingCauseEntries = hydrateCauseEntries(writeUpResponse.causeEntries || []);

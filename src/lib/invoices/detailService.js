@@ -130,7 +130,7 @@ async function fetchInvoiceRequests(invoiceId) { // fetch invoice_requests + ite
 async function fetchJobRequests(jobId) { // fetch job requests fallback
   const { data, error } = await supabase // query job_requests table
     .from("job_requests") // table name
-    .select("request_id, description, hours, job_type") // fetch relevant columns
+    .select("request_id, description, hours, job_type, request_source, sort_order") // fetch relevant columns
     .eq("job_id", jobId) // filter by job id
     .order("sort_order", { ascending: true }); // keep same order as job
   if (error && error.code !== "PGRST116") { // handle real errors
@@ -181,6 +181,131 @@ async function fetchJobPartAllocations(jobId) { // fetch parts allocated to job 
   }
   return (data || []).filter((item) => item.status !== "cancelled"); // return non-cancelled allocations
 } // end fetchJobPartAllocations
+
+async function fetchJobWriteUp(jobId) {
+  if (!jobId) return null;
+  const { data, error } = await supabase
+    .from("job_writeups")
+    .select("fault, rectification, cause_entries, task_checklist, updated_at")
+    .eq("job_id", jobId)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error && error.code !== "PGRST116") {
+    throw error;
+  }
+  return data || null;
+}
+
+function parseChecklistPayload(raw = null) {
+  if (!raw) return null;
+  if (typeof raw === "object") return raw;
+  if (typeof raw !== "string") return null;
+  try {
+    return JSON.parse(raw);
+  } catch (_error) {
+    return null;
+  }
+}
+
+function compactWriteUpText(value = "") {
+  return String(value || "")
+    .split(/\r?\n/)
+    .map((line) => line.replace(/^-+\s*/, "").trim())
+    .filter(Boolean)
+    .join("; ");
+}
+
+function decodeRequestSourceKey(rawKey) {
+  const key = String(rawKey || "").trim().toLowerCase();
+  if (!key) return { requestId: null, sortOrder: null };
+  const reqIdMatch = key.match(/^reqid-(\d+)$/);
+  if (reqIdMatch) {
+    return { requestId: Number(reqIdMatch[1]), sortOrder: null };
+  }
+  const sortMatch = key.match(/^req-(\d+)$/);
+  if (sortMatch) {
+    return { requestId: null, sortOrder: Number(sortMatch[1]) };
+  }
+  const numeric = Number(key);
+  if (Number.isFinite(numeric)) {
+    return { requestId: numeric, sortOrder: null };
+  }
+  return { requestId: null, sortOrder: null };
+}
+
+function attachWriteUpDetailsToRequests(requests = [], writeUp = null) {
+  if (!writeUp || !Array.isArray(requests) || requests.length === 0) return requests;
+
+  const faultByRequestId = {};
+  const faultBySortOrder = {};
+  const rectificationByRequestId = {};
+  const rectificationBySortOrder = {};
+
+  (Array.isArray(writeUp.cause_entries) ? writeUp.cause_entries : []).forEach((entry) => {
+    const text = compactWriteUpText(entry?.cause_text || entry?.text || "");
+    if (!text) return;
+    const { requestId, sortOrder } = decodeRequestSourceKey(
+      entry?.request_id ?? entry?.requestKey ?? entry?.requestId
+    );
+    if (requestId !== null && requestId !== undefined) {
+      faultByRequestId[String(requestId)] = text;
+      return;
+    }
+    if (sortOrder !== null && sortOrder !== undefined) {
+      faultBySortOrder[String(sortOrder)] = text;
+    }
+  });
+
+  const checklist = parseChecklistPayload(writeUp.task_checklist);
+  const checklistTasks = Array.isArray(checklist?.tasks) ? checklist.tasks : [];
+  checklistTasks
+    .filter((task) => String(task?.source || "").toLowerCase() === "request")
+    .forEach((task) => {
+      const cleanedLabel = compactWriteUpText(
+        String(task?.label || "").replace(/^request\s*\d+\s*:\s*/i, "")
+      );
+      if (!cleanedLabel) return;
+      const { requestId, sortOrder } = decodeRequestSourceKey(task?.sourceKey || task?.source_key);
+      if (requestId !== null && requestId !== undefined) {
+        rectificationByRequestId[String(requestId)] = cleanedLabel;
+        return;
+      }
+      if (sortOrder !== null && sortOrder !== undefined) {
+        rectificationBySortOrder[String(sortOrder)] = cleanedLabel;
+      }
+    });
+
+  const globalFault = compactWriteUpText(writeUp.fault || "");
+  const globalRectification = compactWriteUpText(writeUp.rectification || "");
+
+  return requests.map((request) => {
+    const requestId = request?.request_id ?? null;
+    const sortOrder = request?.request_sort_order ?? request?.request_number ?? null;
+    const keyById =
+      requestId !== null && requestId !== undefined ? String(requestId) : null;
+    const keyBySort =
+      sortOrder !== null && sortOrder !== undefined ? String(sortOrder) : null;
+
+    const fault =
+      (keyById ? faultByRequestId[keyById] : "") ||
+      (keyBySort ? faultBySortOrder[keyBySort] : "") ||
+      globalFault;
+    const rectification =
+      (keyById ? rectificationByRequestId[keyById] : "") ||
+      (keyBySort ? rectificationBySortOrder[keyBySort] : "") ||
+      globalRectification;
+
+    if (!fault && !rectification) return request;
+    return {
+      ...request,
+      writeup: {
+        fault,
+        rectification,
+      },
+    };
+  });
+}
 
 function formatAddress(customer) { // build address lines for invoice header
   if (!customer) { // handle missing data
@@ -272,13 +397,32 @@ function enrichRequestsFromJob(jobRequests, partAllocations, vatRate, labourRate
       (candidate.partsCost !== null ? 1 : 0);
     if (candidateScore >= existingScore) authorisedByRequestId[key] = candidate;
   });
+  const authorisedRequestIdSet = new Set(Object.keys(authorisedByRequestId));
 
-  const fallbackRequests = jobRequests.length > 0 ? jobRequests : [{ // ensure at least one request exists
+  const sourceRequests = jobRequests.length > 0 ? jobRequests : [{ // ensure at least one request exists
     request_id: 0, // pseudo id
     description: "Customer Request", // fallback description
     hours: 0, // no labour info
     job_type: "Customer" // default type
   }]; // end fallback
+  const fallbackRequests = sourceRequests.filter((request) => {
+    const source = String(request?.request_source || request?.requestSource || "").toLowerCase().trim();
+    const requestId = request?.request_id ?? request?.requestId ?? null;
+    if (source !== "vhc_authorised" && source !== "vhc_authorized") {
+      const sortOrderRaw = request?.sort_order ?? request?.sortOrder ?? null;
+      const sortOrder = Number(sortOrderRaw);
+      const isLikelyLegacyVhcRequest =
+        !source &&
+        Number.isFinite(sortOrder) &&
+        sortOrder === 0 &&
+        requestId !== null &&
+        requestId !== undefined &&
+        !authorisedRequestIdSet.has(String(requestId));
+      return !isLikelyLegacyVhcRequest;
+    }
+    if (requestId === null || requestId === undefined) return false;
+    return authorisedRequestIdSet.has(String(requestId));
+  });
   const sorted = [...fallbackRequests].sort((a, b) => { // sort customer requests first, authorised last
     const aMeta =
       a?.request_id !== null && a?.request_id !== undefined
@@ -290,8 +434,20 @@ function enrichRequestsFromJob(jobRequests, partAllocations, vatRate, labourRate
         : null;
     const aType = String(a?.job_type || "").toLowerCase();
     const bType = String(b?.job_type || "").toLowerCase();
-    const aIsAuthorised = Boolean(aMeta) || aType === "authorised" || aType === "authorized";
-    const bIsAuthorised = Boolean(bMeta) || bType === "authorised" || bType === "authorized";
+    const aSource = String(a?.request_source || a?.requestSource || "").toLowerCase();
+    const bSource = String(b?.request_source || b?.requestSource || "").toLowerCase();
+    const aIsAuthorised =
+      Boolean(aMeta) ||
+      aType === "authorised" ||
+      aType === "authorized" ||
+      aSource === "vhc_authorised" ||
+      aSource === "vhc_authorized";
+    const bIsAuthorised =
+      Boolean(bMeta) ||
+      bType === "authorised" ||
+      bType === "authorized" ||
+      bSource === "vhc_authorised" ||
+      bSource === "vhc_authorized";
     if (aIsAuthorised === bIsAuthorised) return 0;
     return aIsAuthorised ? 1 : -1;
   }); // end sort
@@ -335,10 +491,13 @@ function enrichRequestsFromJob(jobRequests, partAllocations, vatRate, labourRate
     const partsNet = parts.reduce((sum, part) => sum + part.net_price, 0); // sum net parts
     const partsVat = parts.reduce((sum, part) => sum + part.vat, 0); // sum VAT parts
     const requestTypeLower = String(request.job_type || "").toLowerCase();
+    const requestSourceLower = String(request.request_source || request.requestSource || "").toLowerCase();
     const isAuthorised =
       Boolean(vhcMeta) ||
       requestTypeLower === "authorised" ||
-      requestTypeLower === "authorized"; // check request type
+      requestTypeLower === "authorized" ||
+      requestSourceLower === "vhc_authorised" ||
+      requestSourceLower === "vhc_authorized"; // check request type/source
     if (isAuthorised) { authorisedCount++; } else { customerCount++; } // increment appropriate counter
     const requestLabel = isAuthorised ? `Authorised ${authorisedCount}` : `Request ${customerCount}`; // build label
     const summaryBits = [];
@@ -346,6 +505,7 @@ function enrichRequestsFromJob(jobRequests, partAllocations, vatRate, labourRate
     if (isAuthorised && vhcMeta?.partsCost && vhcMeta.partsCost > 0) summaryBits.push(`Authorised parts: £${Number(vhcMeta.partsCost).toFixed(2)}`);
     return { // return normalized request block
       request_id: request.request_id ?? null, // retain original job request id for stable UI linking
+      request_sort_order: request.sort_order ?? request.sortOrder ?? null,
       request_kind: isAuthorised ? "authorised" : "request", // explicit row type for frontend ordering/labels
       request_number: index + 1, // sequential request number
       request_label: requestLabel, // typed request label (e.g. "Customer Request 1")
@@ -376,10 +536,32 @@ function enrichRequestsFromJob(jobRequests, partAllocations, vatRate, labourRate
   }); // finish fallback mapping
 } // end enrichRequestsFromJob
 
-function normalizeInvoiceRequests(structuredRequests) { // convert invoice_requests rows into API shape
+function normalizeInvoiceRequests(structuredRequests, options = {}) { // convert invoice_requests rows into API shape
+  const authorisedRequestIdSet = new Set(
+    (Array.isArray(options.authorisedRequestIds) ? options.authorisedRequestIds : [])
+      .filter((value) => value !== null && value !== undefined)
+      .map((value) => String(value))
+  );
+  const isAuthorisedStructuredRequest = (request = {}) => {
+    const explicitKind = String(request?.request_kind || "").trim().toLowerCase();
+    if (explicitKind === "authorised" || explicitKind === "authorized") return true;
+    if (explicitKind === "request") return false;
+
+    const requestId = request?.request_id;
+    if (requestId !== null && requestId !== undefined && authorisedRequestIdSet.has(String(requestId))) {
+      return true;
+    }
+
+    const jobType = String(request?.job_type || "").trim().toLowerCase();
+    if (jobType === "authorised" || jobType === "authorized") return true;
+
+    const notes = String(request?.notes || "").toLowerCase();
+    return notes.includes("authorised") || notes.includes("authorized");
+  };
+
   const sorted = [...structuredRequests].sort((a, b) => { // sort customer requests first, authorised last
-    const aIsAuthorised = (a.job_type || a.notes || "").toLowerCase().includes("authorised");
-    const bIsAuthorised = (b.job_type || b.notes || "").toLowerCase().includes("authorised");
+    const aIsAuthorised = isAuthorisedStructuredRequest(a);
+    const bIsAuthorised = isAuthorisedStructuredRequest(b);
     if (aIsAuthorised === bIsAuthorised) return 0;
     return aIsAuthorised ? 1 : -1;
   }); // end sort
@@ -403,7 +585,7 @@ function normalizeInvoiceRequests(structuredRequests) { // convert invoice_reque
     })); // end parts map
     const partsNet = parts.reduce((sum, part) => sum + part.price * part.qty, 0); // compute net
     const partsVat = parts.reduce((sum, part) => sum + part.vat, 0); // compute VAT
-    const isAuthorised = (request.job_type || request.notes || "").toLowerCase().includes("authorised"); // check type
+    const isAuthorised = isAuthorisedStructuredRequest(request); // check type
     if (isAuthorised) { authorisedCount++; } else { customerCount++; } // increment counter
     const requestLabel = isAuthorised ? `Authorised ${authorisedCount}` : `Request ${customerCount}`; // build label
     return { // return normalized request object
@@ -645,7 +827,31 @@ export async function getInvoiceDetailPayload({ jobNumber, orderNumber }) { // m
   const invoiceRequests = await fetchInvoiceRequests(invoice.id); // try fetching stored invoice requests
   let requests = []; // prepare array
   if (invoiceRequests.length > 0) { // use stored requests when available
-    requests = normalizeInvoiceRequests(invoiceRequests); // convert to API shape
+    let authorisedRequestIds = [];
+    if (job?.id) {
+      const [jobRequests, authorizedVhcRows] = await Promise.all([
+        fetchJobRequests(job.id),
+        fetchAuthorizedVhcRequests(job.id)
+      ]);
+      const fromJobRequests = (Array.isArray(jobRequests) ? jobRequests : [])
+        .filter((row) => {
+          const source = String(row?.request_source || row?.requestSource || "").trim().toLowerCase();
+          const type = String(row?.job_type || row?.jobType || "").trim().toLowerCase();
+          return (
+            source === "vhc_authorised" ||
+            source === "vhc_authorized" ||
+            type === "authorised" ||
+            type === "authorized"
+          );
+        })
+        .map((row) => row?.request_id ?? row?.requestId)
+        .filter((value) => value !== null && value !== undefined);
+      const fromVhcChecks = (Array.isArray(authorizedVhcRows) ? authorizedVhcRows : [])
+        .map((row) => row?.request_id ?? row?.requestId)
+        .filter((value) => value !== null && value !== undefined);
+      authorisedRequestIds = [...new Set([...fromJobRequests, ...fromVhcChecks].map((value) => String(value)))];
+    }
+    requests = normalizeInvoiceRequests(invoiceRequests, { authorisedRequestIds }); // convert to API shape
   } else if (job?.id) { // fallback to job data
     const [jobRequests, partAllocations, authorizedVhcRows] = await Promise.all([ // fetch job requests + parts
       fetchJobRequests(job.id), // job requests
@@ -655,6 +861,10 @@ export async function getInvoiceDetailPayload({ jobNumber, orderNumber }) { // m
     requests = enrichRequestsFromJob(jobRequests, partAllocations, vatRate, labourRate, authorizedVhcRows); // build from job data
   } else { // fallback when no job at all
     requests = []; // keep empty list
+  }
+  if (job?.id && requests.length > 0) {
+    const writeUp = await fetchJobWriteUp(job.id);
+    requests = attachWriteUpDetailsToRequests(requests, writeUp);
   }
   const totals = aggregateRequestTotals(requests); // compute aggregated totals
   const invoiceTo = invoice.invoice_to && Object.keys(invoice.invoice_to).length > 0 // check stored invoice_to snapshot

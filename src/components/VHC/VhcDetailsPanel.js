@@ -4095,9 +4095,17 @@ export default function VhcDetailsPanel({
         labourComplete:
           typeof item?.labourComplete === "boolean" ? item.labourComplete : entry.labourComplete,
       };
-      const resolvedLabourHours = resolveLabourHoursValue(item.id, entry);
-      const labourComplete = resolveLabourCompleteValue(effectiveEntry, resolvedLabourHours);
-      return Boolean(effectiveEntry.partsComplete && labourComplete);
+      const quoteParts = Number.isFinite(Number(item.parts_gbp)) ? Number(item.parts_gbp) : null;
+      const resolvedPartsCost = quoteParts !== null ? quoteParts : resolvePartsCost(item.id, entry);
+      const quoteLabourHours = Number.isFinite(Number(item.labour_hours)) ? Number(item.labour_hours) : null;
+      const hasLocalLabourHoursValue = entry?.laborHours !== null && entry?.laborHours !== undefined;
+      const resolvedLabourHours = hasLocalLabourHoursValue
+        ? String(entry.laborHours)
+        : quoteLabourHours !== null
+          ? String(quoteLabourHours)
+          : resolveLabourHoursValue(item.id, entry);
+      const rowStatus = resolveVhcRowStatusView(item, effectiveEntry, resolvedPartsCost, resolvedLabourHours);
+      return rowStatus.dotStateKey === "awaiting";
     };
     const selectableIds = new Set(items.filter((item) => isRowSelectionEligible(item)).map((item) => item.id));
     const selectedIds = (severitySelections[severity] || []).filter((itemId) => selectableIds.has(itemId));
@@ -4137,7 +4145,7 @@ export default function VhcDetailsPanel({
                 <th style={{ textAlign: "left", padding: "12px 8px", width: "15%" }}>Parts</th>
                 <th style={{ textAlign: "left", padding: "12px 8px", width: "18%" }}>Labour</th>
                 <th style={{ textAlign: "left", padding: "12px 8px", width: "15%" }}>Total</th>
-                <th style={{ textAlign: "left", padding: "12px 8px", width: "10%" }}>Status</th>
+                <th style={{ textAlign: "center", padding: "12px 8px", width: "10%" }}>Status</th>
                 {selectionEnabled && (
                   <th style={{ textAlign: "center", padding: "12px 8px", width: "7%" }}>
                     <input
@@ -4771,7 +4779,7 @@ export default function VhcDetailsPanel({
                         )}
                       </div>
                     </td>
-                    <td style={{ padding: "12px 8px" }}>
+                    <td style={{ padding: "12px 8px", textAlign: "center" }}>
                       <div
                         onMouseEnter={() => setHoveredStatusId(statusKey)}
                         onMouseLeave={() => setHoveredStatusId(null)}
@@ -4862,7 +4870,7 @@ export default function VhcDetailsPanel({
                           disabled={!isSelectionEligible}
                           title={
                             !isSelectionEligible
-                              ? "Complete both Parts and Labour before selecting this row."
+                              ? "Row must be awaiting customer decision before it can be selected."
                               : ""
                           }
                           onChange={() => toggleRowSelection(severity, item.id)}

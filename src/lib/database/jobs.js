@@ -1588,27 +1588,58 @@ const ensureBulletFormat = (value = "") => {
     .replace(/\n{3,}/g, "\n\n");
 };
 
-// ✅ Convert stored requests (array/object/string) into numbered checklist items
-const normaliseRequestsForWriteUp = (requests) => {
-  if (!requests) return [];
+// ✅ Convert stored requests into numbered checklist items with stable keys.
+// Prefer job_requests rows (has request_id + request_source), fallback to legacy jobs.requests text.
+const normaliseRequestsForWriteUp = ({ jobRequests = [], legacyRequests = null } = {}) => {
+  const rows = Array.isArray(jobRequests) ? jobRequests.filter(Boolean) : [];
+  const customerRows = rows
+    .filter((row) => {
+      const source = String(row?.request_source || row?.requestSource || "").toLowerCase().trim();
+      return source === "" || source === "customer_request";
+    })
+    .sort((a, b) => {
+      const aSort = Number(a?.sort_order ?? a?.sortOrder ?? 0);
+      const bSort = Number(b?.sort_order ?? b?.sortOrder ?? 0);
+      return aSort - bSort;
+    });
+
+  if (customerRows.length > 0) {
+    return customerRows
+      .map((entry, index) => {
+        const cleaned = (entry?.description || entry?.text || entry?.note || "").toString().trim();
+        if (!cleaned) return null;
+        const requestId = entry?.request_id ?? entry?.requestId ?? null;
+        const fallbackOrder = Number(entry?.sort_order ?? entry?.sortOrder ?? index + 1) || index + 1;
+        return {
+          source: "request",
+          sourceKey:
+            requestId !== null && requestId !== undefined ? `reqid-${String(requestId)}` : `req-${fallbackOrder}`,
+          label: `Request ${index + 1}: ${cleaned}`,
+          raw: cleaned,
+          requestId,
+          sortOrder: fallbackOrder,
+        };
+      })
+      .filter(Boolean);
+  }
+
+  if (!legacyRequests) return [];
 
   let requestArray = [];
-
-  if (Array.isArray(requests)) {
-    requestArray = requests;
-  } else if (typeof requests === "string") {
+  if (Array.isArray(legacyRequests)) {
+    requestArray = legacyRequests;
+  } else if (typeof legacyRequests === "string") {
     try {
-      const parsed = JSON.parse(requests);
+      const parsed = JSON.parse(legacyRequests);
       if (Array.isArray(parsed)) {
         requestArray = parsed;
-      } else if (requests.includes("\n")) {
-        requestArray = requests.split(/\r?\n/);
-      } else if (requests.trim()) {
-        requestArray = [requests];
+      } else if (legacyRequests.includes("\n")) {
+        requestArray = legacyRequests.split(/\r?\n/);
+      } else if (legacyRequests.trim()) {
+        requestArray = [legacyRequests];
       }
-    } catch (error) {
-      const segments = requests.split(/\r?\n/).map((segment) => segment.trim()).filter(Boolean);
-      requestArray = segments;
+    } catch (_error) {
+      requestArray = legacyRequests.split(/\r?\n/).map((segment) => segment.trim()).filter(Boolean);
     }
   }
 
@@ -1627,6 +1658,8 @@ const normaliseRequestsForWriteUp = (requests) => {
         sourceKey: `req-${index + 1}`,
         label: `Request ${index + 1}: ${cleaned}`,
         raw: cleaned,
+        requestId: null,
+        sortOrder: index + 1,
       };
     })
     .filter(Boolean);
@@ -1703,13 +1736,24 @@ const buildWriteUpTaskList = ({ storedTasks = [], requestItems = [], authorisedI
 
   const merged = [];
 
-  requestItems.forEach((item) => {
+  requestItems.forEach((item, index) => {
     const key = `${item.source}:${item.sourceKey}`;
     const existing = registry.get(key);
     if (existing) {
       merged.push({ ...existing, label: existing.label || item.label });
       registry.delete(key);
     } else {
+      const legacyKey = `${item.source}:req-${index + 1}`;
+      const legacyExisting = registry.get(legacyKey);
+      if (legacyExisting) {
+        merged.push({
+          ...legacyExisting,
+          sourceKey: item.sourceKey,
+          label: legacyExisting.label || item.label,
+        });
+        registry.delete(legacyKey);
+        return;
+      }
       merged.push({
         taskId: null,
         source: item.source,
@@ -3174,7 +3218,19 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
   try {
     const { data: job, error: jobError } = await supabase
       .from("jobs")
-      .select("id, description, requests")
+      .select(`
+        id,
+        description,
+        requests,
+        job_requests(
+          request_id,
+          description,
+          sort_order,
+          request_source,
+          job_type,
+          status
+        )
+      `)
       .eq("job_number", jobNumber)
       .single();
 
@@ -3210,7 +3266,10 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
       console.error("⚠️ Error fetching VHC authorizations:", authorizationError);
     }
 
-    const requestItems = normaliseRequestsForWriteUp(job.requests);
+    const requestItems = normaliseRequestsForWriteUp({
+      jobRequests: job.job_requests || [],
+      legacyRequests: job.requests,
+    });
 
     // Keep the write-up Rectification list aligned with the Job Card "Authorised VHC Items" section.
     const canonicalAuthorisedVhcItems = Array.isArray(authorisedVhcItems) ? authorisedVhcItems : [];
@@ -3421,9 +3480,19 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
     const requestStatusUpdates = filteredTasks
       .filter((task) => task.source === "request")
       .map((task) => {
-        const match = String(task.sourceKey || "").match(/^req-(\d+)$/i);
+        const sourceKey = String(task.sourceKey || "");
+        const requestIdMatch = sourceKey.match(/^reqid-(\d+)$/i);
+        if (requestIdMatch) {
+          return {
+            requestId: Number(requestIdMatch[1]),
+            sortOrder: null,
+            status: task.status === "complete" ? "complete" : "inprogress",
+          };
+        }
+        const match = sourceKey.match(/^req-(\d+)$/i);
         if (!match) return null;
         return {
+          requestId: null,
           sortOrder: Number(match[1]),
           status: task.status === "complete" ? "complete" : "inprogress",
         };
@@ -3433,11 +3502,18 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
     if (requestStatusUpdates.length > 0) {
       const timestamp = new Date().toISOString();
       for (const update of requestStatusUpdates) {
-        const { error: requestUpdateError } = await supabase
+        let requestUpdateQuery = supabase
           .from("job_requests")
           .update({ status: update.status, updated_at: timestamp })
-          .eq("job_id", job.id)
-          .eq("sort_order", update.sortOrder);
+          .eq("job_id", job.id);
+        if (update.requestId) {
+          requestUpdateQuery = requestUpdateQuery.eq("request_id", update.requestId);
+        } else if (update.sortOrder) {
+          requestUpdateQuery = requestUpdateQuery.eq("sort_order", update.sortOrder);
+        } else {
+          continue;
+        }
+        const { error: requestUpdateError } = await requestUpdateQuery;
 
         if (requestUpdateError) {
           console.error("⚠️ Error updating job request status:", requestUpdateError);

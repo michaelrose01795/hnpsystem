@@ -8,10 +8,12 @@ CONTINUE
 Write up database table
 
 
+TO,do 
+within the job_writeups database table add another database column for when an addintional section is added using the "+" button, have the two column names "added_fault" and "added_rectification", so the "added_fault" will link to the description box which is added within the "Fault" section and the "added_rectification" table will link to the added boc wihtin the "Rectification" seciton
+TO,do 
+deep dive into finding out if the job card database tables can be simplifed, all link wihtin one another, or combined into one table for the whole job card and another table for the whole VHC tab (only the vhc_checks table as its a large part of the job card) 
 
 
-CHECK 
-addjust the Developer login section, so its smaller, like smallest it can be whilst keep all of the text within the section/drop downs and keeping the section a fix size. also make sure it doesnt overlapp the login setion, if this is the case for smaller screen devices then have it so it moves the login section over a bit so the dev login section can fit wihtin the page correctly. reomve the background shadow from the dev login section only. 
 
 
 

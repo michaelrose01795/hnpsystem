@@ -33,6 +33,11 @@ const isAuthorisedRequest = (request = {}) => {
   );
 };
 
+const isAuthorisedSource = (value) => {
+  const normalized = String(value || "").trim().toLowerCase();
+  return normalized === "vhc_authorised" || normalized === "vhc_authorized";
+};
+
 const isAuthorizedVhcDecision = (value) => {
   const normalized = String(value || "").trim().toLowerCase();
   return normalized === "authorized" || normalized === "authorised" || normalized === "completed";
@@ -100,6 +105,20 @@ const RequestBlock = ({ request, linkedParts }) => {
         <div style={{ flex: 1, minWidth: 0 }}>
           <h3 style={{ margin: 0 }}>{`${request.request_label || `Request ${request.request_number}`}: ${request.title}`}</h3>
           {request.summary && <p style={{ margin: "4px 0 0", color: "var(--text-secondary)" }}>{request.summary}</p>}
+          {(request?.writeup?.fault || request?.writeup?.rectification) && (
+            <div style={{ marginTop: "8px", display: "grid", gap: "4px" }}>
+              {request?.writeup?.fault && (
+                <p style={{ margin: 0, color: "var(--text-primary)" }}>
+                  <strong>Fault:</strong> {request.writeup.fault}
+                </p>
+              )}
+              {request?.writeup?.rectification && (
+                <p style={{ margin: 0, color: "var(--text-primary)" }}>
+                  <strong>Rectification:</strong> {request.writeup.rectification}
+                </p>
+              )}
+            </div>
+          )}
         </div>
         <div style={{ display: "flex", gap: "20px", textAlign: "right", flexShrink: 0 }}>
           <div>
@@ -213,10 +232,12 @@ export default function InvoiceDetail({ data, onPrint, onEmail, emailStatus, cus
     : [];
   const customerRequestIds = [];
   const authorisedRequestIds = [];
+  const requestSourceById = {};
   requestRowsSource.forEach((row) => {
     const requestId = row?.requestId ?? row?.request_id ?? null;
     if (requestId === null || requestId === undefined) return;
     const source = String(row?.requestSource ?? row?.request_source ?? "").toLowerCase().trim();
+    requestSourceById[String(requestId)] = source;
     const jobType = String(row?.jobType ?? row?.job_type ?? "").toLowerCase().trim();
     const isAuthorisedRow =
       source === "vhc_authorised" ||
@@ -230,6 +251,25 @@ export default function InvoiceDetail({ data, onPrint, onEmail, emailStatus, cus
     }
   });
   const hasRequestLinking = customerRequestIds.length > 0 || authorisedRequestIds.length > 0;
+  const authorisedRequestIdSet = new Set(authorisedRequestIds);
+  const customerRequestIdSet = new Set(customerRequestIds);
+  const resolveIsAuthorised = (request = {}) => {
+    const explicitKind = String(request?.request_kind || "").trim().toLowerCase();
+    if (explicitKind === "authorised" || explicitKind === "authorized") return true;
+    if (explicitKind === "request") return false;
+
+    const requestId = request?.request_id;
+    if (requestId !== null && requestId !== undefined) {
+      const key = String(requestId);
+      if (authorisedRequestIdSet.has(key)) return true;
+      if (customerRequestIdSet.has(key)) return false;
+    }
+
+    const source = String(request?.request_source || request?.requestSource || "").trim().toLowerCase();
+    if (isAuthorisedSource(source)) return true;
+
+    return isAuthorisedRequest(request);
+  };
   const partsByRequestId = {};
   const allocations = Array.isArray(jobData?.partsAllocations) ? jobData.partsAllocations : [];
   allocations.forEach((item) => {
@@ -349,11 +389,20 @@ export default function InvoiceDetail({ data, onPrint, onEmail, emailStatus, cus
     })
     .forEach(pushAuthorisedMeta);
 
+  const activeAuthorisedRequestIdSet = new Set(Object.keys(authorisedMetaByRequestId));
+  const visibleRequests = requests.filter((request) => {
+    const requestId = request?.request_id ?? null;
+    if (requestId === null || requestId === undefined) return true;
+    const source = requestSourceById[String(requestId)] || "";
+    if (!isAuthorisedSource(source)) return true;
+    return activeAuthorisedRequestIdSet.has(String(requestId));
+  });
+
   let customerRowIndex = 0;
   let authorisedRowIndex = 0;
-  const orderedRequests = [...requests].sort((a, b) => {
-    const aAuthorised = isAuthorisedRequest(a);
-    const bAuthorised = isAuthorisedRequest(b);
+  const orderedRequests = [...visibleRequests].sort((a, b) => {
+    const aAuthorised = resolveIsAuthorised(a);
+    const bAuthorised = resolveIsAuthorised(b);
     if (aAuthorised === bAuthorised) {
       return (a.request_number || 0) - (b.request_number || 0);
     }
@@ -429,13 +478,13 @@ export default function InvoiceDetail({ data, onPrint, onEmail, emailStatus, cus
 
       <VehicleRow vehicle={invoice.vehicle_details} />
 
-      {requests.length === 0 ? (
+      {orderedRequests.length === 0 ? (
         <div className={`${styles.statusMessage}`}>
           No detailed requests recorded for this invoice yet.
         </div>
       ) : (
         orderedRequests.map((request) => {
-          const isAuthorised = isAuthorisedRequest(request);
+          const isAuthorised = resolveIsAuthorised(request);
           const currentAuthorisedNumber = authorisedRowIndex + 1;
           const currentCustomerNumber = customerRowIndex + 1;
           const explicitRequestId = request?.request_id ?? null;
