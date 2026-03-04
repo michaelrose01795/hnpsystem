@@ -82,7 +82,7 @@ export default function LoginPage() {
   const CUSTOMER_PORTAL_URL =
     process.env.NEXT_PUBLIC_CUSTOMER_PORTAL_URL || "https://www.hpautomotive.co.uk";
   const allowDevUserSelection = true;
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   // Safe destructuring from context
   const userContext = useUser();
   const user = userContext?.user;
@@ -305,7 +305,8 @@ export default function LoginPage() {
 
   // Redirect once user is logged in (via NextAuth session or UserContext) + auto clock-in
   useEffect(() => {
-    const activeUser = user || session?.user;
+    const activeUser =
+      user || (sessionStatus === "authenticated" && session?.user ? session.user : null);
     if (!activeUser) return;
 
     // Auto clock-in on login (fire-and-forget, don't block redirect)
@@ -341,7 +342,7 @@ export default function LoginPage() {
 
     const target = isCustomer ? "/customer" : "/newsfeed";
     router.push(target);
-  }, [user, session, router, dbUserId]);
+  }, [user, session, sessionStatus, router, dbUserId]);
 
   useEffect(() => {
     // ⚠️ Mock data found — replacing with Supabase query

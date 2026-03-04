@@ -36,12 +36,17 @@ export function UserProvider({ children }) {
   const { data: session, status: sessionStatus } = useSession(); // NextAuth session
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [status, setStatus] = useState("Waiting for Job"); // default tech status
   const [dbUserId, setDbUserId] = useState(null);
   const [currentJob, setCurrentJob] = useState(null);
 
   // Load dev user from localStorage
   useEffect(() => {
+    if (isLoggingOut) {
+      return;
+    }
+
     if (sessionStatus === "loading") {
       return;
     }
@@ -55,7 +60,7 @@ export function UserProvider({ children }) {
       return;
     }
 
-    if (session?.user) {
+    if (sessionStatus === "authenticated" && session?.user) {
       if (typeof localStorage !== "undefined") {
         localStorage.removeItem("devUser");
       }
@@ -64,7 +69,7 @@ export function UserProvider({ children }) {
     }
 
     const stored = typeof localStorage !== "undefined" ? localStorage.getItem("devUser") : null;
-    if (stored && !session?.user) {
+    if (stored && !(sessionStatus === "authenticated" && session?.user)) {
       try {
         const parsed = JSON.parse(stored);
         const finalDevUser = { ...parsed, id: parsed.id || Date.now() };
@@ -78,11 +83,15 @@ export function UserProvider({ children }) {
       setUser(null);
     }
     setLoading(false);
-  }, [session, sessionStatus]);
+  }, [session, sessionStatus, isLoggingOut]);
 
   // Set user from NextAuth session (works for both Keycloak and Credentials providers)
   useEffect(() => {
-    if (session?.user) {
+    if (isLoggingOut) {
+      return;
+    }
+
+    if (sessionStatus === "authenticated" && session?.user) {
       const resolvedSessionId =
         session.user.id || session.user.sub || session.user.user_id || null;
       const sessionUser = {
@@ -107,7 +116,7 @@ export function UserProvider({ children }) {
       setUser(null);
       setLoading(false);
     }
-  }, [session, sessionStatus]);
+  }, [session, sessionStatus, isLoggingOut]);
 
   // Resolve Supabase users.user_id when a user is set
   useEffect(() => {
@@ -224,6 +233,7 @@ export function UserProvider({ children }) {
 
   // Logout — clears both local state and NextAuth session
   const logout = async () => {
+    setIsLoggingOut(true);
     setUser(null);
     setStatus("Waiting for Job"); // reset status
     setDbUserId(null);
@@ -237,6 +247,8 @@ export function UserProvider({ children }) {
       await nextAuthSignOut({ redirect: false });
     } catch (_) {
       // Ignore errors — session might not exist
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 

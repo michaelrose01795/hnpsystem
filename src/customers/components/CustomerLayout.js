@@ -64,9 +64,9 @@ export default function CustomerLayout({ children }) {
   const portalUrl =
     process.env.NEXT_PUBLIC_CUSTOMER_PORTAL_URL || "https://www.hpautomotive.co.uk";
 
-  const handleLogout = () => {
-    logout?.();
-    router.push("/login");
+  const handleLogout = async () => {
+    await logout?.();
+    router.replace("/login");
   };
 
   return (

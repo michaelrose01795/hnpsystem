@@ -853,7 +853,7 @@ export default function GlobalNotesWidget() {
   };
 
   const onToggleGlobal = async (checked) => {
-    if (!activeNote || !activeNoteOwnedByUser || !canManageGlobalNotes) return;
+    if (!activeNote || !activeNoteOwnedByUser) return;
 
     updateLocalNote(activeNote.noteId, (note) => ({ ...note, isGlobal: checked }));
     setSaveStatus("saving");
@@ -1031,27 +1031,28 @@ export default function GlobalNotesWidget() {
                   )}
                 </div>
 
-                {canManageGlobalNotes && activeNoteOwnedByUser && (
+                {activeNote && (
                   <div className={styles.visibilityPanel}>
-                    <p className={styles.visibilityTitle}>Visibility</p>
-                    <label className={styles.visibilityOption}>
-                      <input
-                        type="radio"
-                        name={`note-visibility-${activeNote.noteId}`}
-                        checked={!activeNote.isGlobal}
-                        onChange={() => onToggleGlobal(false)}
-                      />
-                      Independent note (only me)
-                    </label>
-                    <label className={styles.visibilityOption}>
-                      <input
-                        type="radio"
-                        name={`note-visibility-${activeNote.noteId}`}
-                        checked={Boolean(activeNote.isGlobal)}
-                        onChange={() => onToggleGlobal(true)}
-                      />
-                      Show this note to all users (dev)
-                    </label>
+                    <div className={styles.visibilityToggleRow}>
+                      <p className={styles.visibilityTitle}>Show this note across all users</p>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={Boolean(activeNote.isGlobal)}
+                        aria-label="Toggle note visibility across all users"
+                        className={`${styles.visibilitySwitch} ${activeNote.isGlobal ? styles.visibilitySwitchOn : ""}`}
+                        onClick={() => onToggleGlobal(!activeNote.isGlobal)}
+                        disabled={!activeNoteOwnedByUser}
+                      >
+                        <span className={styles.visibilityThumb} />
+                      </button>
+                    </div>
+                    <p className={styles.visibilityHint}>
+                      {activeNote.isGlobal ? "Visible to all users" : "Visible only to your login"}
+                    </p>
+                    {!activeNoteOwnedByUser && (
+                      <p className={styles.readOnly}>Only the note creator can change this toggle.</p>
+                    )}
                   </div>
                 )}
 
