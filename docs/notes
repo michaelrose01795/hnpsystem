@@ -4,6 +4,11 @@ TO DO:
 
 Continue flow with job number 56.
 
+CONTINUE
+Write up database table
+
+
+
 
 CHECK 
 addjust the Developer login section, so its smaller, like smallest it can be whilst keep all of the text within the section/drop downs and keeping the section a fix size. also make sure it doesnt overlapp the login setion, if this is the case for smaller screen devices then have it so it moves the login section over a bit so the dev login section can fit wihtin the page correctly. reomve the background shadow from the dev login section only. 

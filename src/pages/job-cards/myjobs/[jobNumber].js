@@ -2154,20 +2154,15 @@ export default function TechJobDetailPage() {
   const additionalAvailable = hasAdditionalContents();
   const writeUp = jobCard?.writeUp || {};
   const faultText =
-    writeUp.fault ||
-    writeUp.work_performed ||
-    writeUp.job_description_snapshot ||
-    "";
+    writeUp.fault || "";
   const causeText =
     writeUp.caused ||
     writeUp.cause ||
-    writeUp.recommendations ||
+    writeUp.task_checklist?.meta?.caused ||
     writeUp.recommendation ||
     "";
   const rectificationText =
     writeUp.rectification ||
-    writeUp.rectification_notes ||
-    writeUp.ratification ||
     "";
 
   const isVhcCompleteForTech = !jobRequiresVhc || isVhcCompleted;

@@ -136,17 +136,6 @@ export default async function handler(req, res) {
       supabaseService.from("job_writeups").select("*").eq("job_id", jobId),
       "job_writeups"
     );
-    snapshotTables.job_writeup_tasks = await fetchRows(
-      supabaseService.from("job_writeup_tasks").select("*").eq("job_id", jobId),
-      "job_writeup_tasks"
-    );
-    snapshotTables.writeup_rectification_items = await fetchRows(
-      supabaseService
-        .from("writeup_rectification_items")
-        .select("*")
-        .or(`job_id.eq.${jobId},job_number.eq.${normalizedJobNumber}`),
-      "writeup_rectification_items"
-    );
     snapshotTables.job_share_links = await fetchRows(
       supabaseService
         .from("job_share_links")
@@ -435,18 +424,6 @@ export default async function handler(req, res) {
     if (checkSheetsError) throw new Error(checkSheetsError.message);
 
     // Writeups + rectification
-    const { error: writeupRectError } = await supabaseService
-      .from("writeup_rectification_items")
-      .delete()
-      .or(`job_id.eq.${jobId},job_number.eq.${normalizedJobNumber}`);
-    if (writeupRectError) throw new Error(writeupRectError.message);
-
-    const { error: writeupTasksError } = await supabaseService
-      .from("job_writeup_tasks")
-      .delete()
-      .eq("job_id", jobId);
-    if (writeupTasksError) throw new Error(writeupTasksError.message);
-
     const { error: writeupsError } = await supabaseService
       .from("job_writeups")
       .delete()

@@ -349,7 +349,7 @@ export const checkWarrantyJobCompletion = async (jobId, userId) => {
         job_number,
         status,
         job_source,
-        job_writeups(writeup_id, work_performed, parts_used, recommendations)
+        job_writeups(writeup_id, fault, rectification, task_checklist)
       `)
       .eq("id", jobId)
       .single();
@@ -380,9 +380,13 @@ export const checkWarrantyJobCompletion = async (jobId, userId) => {
     
     // Check if write-up is complete (has all required fields)
     const writeUp = jobData.job_writeups[0];
-    const isComplete = writeUp.work_performed && 
-                       writeUp.work_performed.trim() !== "" &&
-                       writeUp.parts_used;
+    const checklistMeta =
+      writeUp?.task_checklist && typeof writeUp.task_checklist === "object"
+        ? writeUp.task_checklist.meta || {}
+        : {};
+    const isComplete =
+      Boolean((writeUp.fault || "").trim()) &&
+      Boolean((writeUp.rectification || "").trim() || (checklistMeta.additionalParts || "").trim());
     
     if (!isComplete) {
       console.log("⚠️ Warranty write-up incomplete - sending to QC");
@@ -426,7 +430,7 @@ export const completeWarrantyQC = async (jobId, completedBy) => {
         job_number,
         status,
         job_source,
-        job_writeups(writeup_id, work_performed, parts_used)
+        job_writeups(writeup_id, fault, rectification, task_checklist)
       `)
       .eq("id", jobId)
       .single();
@@ -445,9 +449,13 @@ export const completeWarrantyQC = async (jobId, completedBy) => {
     }
     
     const writeUp = jobData.job_writeups[0];
-    const isComplete = writeUp.work_performed && 
-                       writeUp.work_performed.trim() !== "" &&
-                       writeUp.parts_used;
+    const checklistMeta =
+      writeUp?.task_checklist && typeof writeUp.task_checklist === "object"
+        ? writeUp.task_checklist.meta || {}
+        : {};
+    const isComplete =
+      Boolean((writeUp.fault || "").trim()) &&
+      Boolean((writeUp.rectification || "").trim() || (checklistMeta.additionalParts || "").trim());
     
     if (!isComplete) {
       console.log("⚠️ Write-up still incomplete");

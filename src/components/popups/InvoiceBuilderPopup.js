@@ -74,7 +74,7 @@ export default function InvoiceBuilderPopup({
       };
     });
     setRequestLines(normalized);
-    setLabourTotal(Number(jobData?.writeUp?.labour_time || 0));
+    setLabourTotal(Number(jobData?.writeUp?.task_checklist?.meta?.labourTime || 0));
   }, [jobData]);
 
   const partLines = useMemo(() => {

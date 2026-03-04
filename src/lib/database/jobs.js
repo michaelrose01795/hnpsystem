@@ -188,20 +188,6 @@ const hasPaidInvoiceForJob = async (jobId) => {
   });
 };
 
-const mapRectificationRow = (row) => ({
-  recordId: row.id,
-  description: row.description || "",
-  status: normaliseRectificationStatus(row.status),
-  isAdditionalWork: row.is_additional_work !== false,
-  vhcItemId: row.vhc_item_id ?? null,
-  authorizationId: row.authorization_id ?? null,
-  authorizedAmount:
-    row.authorized_amount !== null && row.authorized_amount !== undefined
-      ? Number(row.authorized_amount)
-      : null,
-  source: "database",
-});
-
 const extractAuthorizedItems = (authRows = []) => {
   const items = [];
 
@@ -312,76 +298,6 @@ const normaliseCauseEntries = (entries = []) => {
       };
     })
     .filter(Boolean);
-};
-
-const syncWriteUpRectificationItems = async ({
-  jobId,
-  jobNumber,
-  writeupId,
-  items,
-}) => {
-  const filteredItems = (items || [])
-    .filter((item) => item && item.description && item.description.trim().length > 0)
-    .map((item) => ({
-      id: item.recordId ?? undefined,
-      job_id: jobId,
-      job_number: jobNumber,
-      writeup_id: writeupId,
-      description: item.description.trim(),
-      status: item.status === "complete" ? "complete" : "waiting",
-      is_additional_work: item.isAdditionalWork !== false,
-      vhc_item_id: item.vhcItemId ?? null,
-      authorization_id: item.authorizationId ?? null,
-      authorized_amount:
-        item.authorizedAmount !== null && item.authorizedAmount !== undefined
-          ? Number(item.authorizedAmount)
-          : null,
-      updated_at: new Date().toISOString(),
-      ...(item.recordId ? {} : { created_at: new Date().toISOString() }),
-    }));
-
-  const { data: existingRows, error: existingError } = await supabase
-    // ⚠️ Verify: table or column not found in Supabase schema
-    .from("writeup_rectification_items")
-    .select("id")
-    .eq("writeup_id", writeupId);
-
-  if (existingError && existingError.code !== "PGRST116") {
-    throw existingError;
-  }
-
-  if (filteredItems.length > 0) {
-    const { error: upsertError } = await supabase
-      // ⚠️ Verify: table or column not found in Supabase schema
-      .from("writeup_rectification_items")
-      .upsert(filteredItems, { onConflict: "id" });
-
-    if (upsertError) {
-      throw upsertError;
-    }
-  }
-
-  const keepIds = filteredItems
-    .map((item) => item.id)
-    .filter((id) => id !== null && id !== undefined);
-
-  const staleIds = (existingRows || [])
-    .map((row) => row.id)
-    .filter((id) => !keepIds.includes(id));
-
-  if (staleIds.length > 0) {
-    const { error: deleteError } = await supabase
-      // ⚠️ Verify: table or column not found in Supabase schema
-      .from("writeup_rectification_items")
-      .delete()
-      .in("id", staleIds);
-
-    if (deleteError) {
-      throw deleteError;
-    }
-  }
-
-  return { success: true };
 };
 
 /* ============================================
@@ -535,7 +451,7 @@ const _getAllJobsUncached = async () => {
         )
       ),
       job_notes(note_id, note_text, user_id, created_at, updated_at, linked_request_index, linked_vhc_id, linked_request_indices, linked_vhc_ids, linked_part_id, linked_part_ids),
-      job_writeups(writeup_id, work_performed, parts_used, recommendations, labour_time, technician_id, completion_status, created_at, updated_at),
+      job_writeups(writeup_id, fault, rectification, technician_id, completion_status, created_at, updated_at, task_checklist),
       job_files(file_id, file_name, file_url, file_type, folder, uploaded_by, uploaded_at),
       vhc_authorizations(id, authorized_items, authorized_at),
       booking_request:job_booking_requests(
@@ -634,34 +550,6 @@ export const getDashboardData = async () => {
   }));
 
   return { allJobs, appointments };
-};
-
-/* ============================================
-   GET WRITE-UP RECTIFICATION ITEMS FOR JOB
-   Returns saved rectification checklist entries
-============================================ */
-export const getRectificationItemsByJob = async (jobId) => {
-  try {
-    const { data, error } = await supabase
-      // ⚠️ Verify: table or column not found in Supabase schema
-      .from("writeup_rectification_items")
-      .select("id, job_id, job_number, writeup_id, description, status, is_additional_work, vhc_item_id, authorization_id, authorized_amount")
-      .eq("job_id", jobId)
-      .order("created_at", { ascending: true });
-
-    if (error) {
-      if (error.code === "PGRST116") {
-        return [];
-      }
-
-      throw error;
-    }
-
-    return (data || []).map((row) => mapRectificationRow(row));
-  } catch (error) {
-    console.error("❌ getRectificationItemsByJob error:", error);
-    return [];
-  }
 };
 
 /* ============================================
@@ -1066,7 +954,7 @@ const _getJobByNumberUncached = async (jobNumber, options = {}) => {
         )
       ),
       job_notes(note_id, note_text, user_id, created_at, updated_at, linked_request_index, linked_vhc_id, linked_request_indices, linked_vhc_ids, linked_part_id, linked_part_ids),
-      job_writeups(writeup_id, work_performed, parts_used, recommendations, labour_time, technician_id, completion_status, created_at, updated_at),
+      job_writeups(writeup_id, fault, rectification, technician_id, completion_status, created_at, updated_at, task_checklist),
       job_files(file_id, file_name, file_url, file_type, folder, uploaded_by, uploaded_at)
     `)
     .eq("job_number", jobNumber)
@@ -1376,7 +1264,7 @@ export const getJobByNumberOrReg = async (searchTerm) => {
         )
       ),
       job_notes(note_id, note_text, created_at),
-      job_writeups(writeup_id, work_performed, parts_used, recommendations, completion_status),
+      job_writeups(writeup_id, fault, rectification, completion_status, task_checklist),
       job_files(file_id, file_name, file_url, file_type, folder, uploaded_at)
     `)
     .eq("job_number", searchTerm)
@@ -1493,7 +1381,7 @@ export const getJobByNumberOrReg = async (searchTerm) => {
           )
         ),
         job_notes(note_id, note_text, created_at),
-        job_writeups(writeup_id, work_performed, parts_used, recommendations, completion_status),
+        job_writeups(writeup_id, fault, rectification, completion_status, task_checklist),
         job_files(file_id, file_name, file_url, file_type, folder, uploaded_at)
       `)
       .eq("vehicle_reg", searchTerm.toUpperCase());
@@ -1800,11 +1688,14 @@ const buildWriteUpTaskList = ({ storedTasks = [], requestItems = [], authorisedI
 
   (storedTasks || []).forEach((task) => {
     if (!task) return;
-    const key = `${task.source}:${task.source_key}`;
+    const source = task.source || "request";
+    const sourceKey =
+      task.sourceKey || task.source_key || `${source}-${task.label || "task"}`;
+    const key = `${source}:${sourceKey}`;
     registry.set(key, {
-      taskId: task.task_id,
-      source: task.source,
-      sourceKey: task.source_key,
+      taskId: task.taskId || task.task_id || null,
+      source,
+      sourceKey,
       label: task.label,
       status: sanitiseTaskStatus(task.status),
     });
@@ -1888,7 +1779,11 @@ const normalizeSectionEditors = (value = {}) => ({
   rectification: normalizeSectionEditorList(value.rectification),
 });
 
-const buildTaskChecklistPayload = (tasks = [], sectionEditors = createSectionEditorsState()) => ({
+const buildTaskChecklistPayload = (
+  tasks = [],
+  sectionEditors = createSectionEditorsState(),
+  extraMeta = {}
+) => ({
   version: 2,
   tasks: (Array.isArray(tasks) ? tasks : []).map((task) => ({
     source: task?.source || "request",
@@ -1903,6 +1798,7 @@ const buildTaskChecklistPayload = (tasks = [], sectionEditors = createSectionEdi
   })),
   meta: {
     sectionEditors: normalizeSectionEditors(sectionEditors),
+    ...(extraMeta && typeof extraMeta === "object" ? extraMeta : {}),
   },
 });
 
@@ -1924,6 +1820,58 @@ const parseTaskChecklistPayload = (raw = null) => {
   }
 
   return null;
+};
+
+const extractTasksFromChecklist = (rawChecklist) => {
+  const parsed = parseTaskChecklistPayload(rawChecklist);
+  if (!parsed) {
+    return [];
+  }
+
+  if (Array.isArray(parsed)) {
+    return parsed;
+  }
+
+  return Array.isArray(parsed.tasks) ? parsed.tasks : [];
+};
+
+const extractChecklistMeta = (rawChecklist) => {
+  const parsed = parseTaskChecklistPayload(rawChecklist);
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return {};
+  }
+  return parsed.meta && typeof parsed.meta === "object" ? parsed.meta : {};
+};
+
+const mapChecklistRectificationItem = (item) => {
+  if (!item || typeof item !== "object") {
+    return null;
+  }
+
+  const description = (item.description || item.label || "").toString().trim();
+  if (!description) {
+    return null;
+  }
+
+  return {
+    recordId: item.recordId || null,
+    description,
+    status: normaliseRectificationStatus(item.status),
+    isAdditionalWork: item.isAdditionalWork !== false,
+    vhcItemId: item.vhcItemId ?? null,
+    authorizationId: item.authorizationId ?? null,
+    authorizedAmount:
+      item.authorizedAmount !== null && item.authorizedAmount !== undefined
+        ? Number(item.authorizedAmount)
+        : null,
+    source: item.source || "checklist",
+  };
+};
+
+const extractRectificationItemsFromChecklist = (rawChecklist) => {
+  const meta = extractChecklistMeta(rawChecklist);
+  const items = Array.isArray(meta.rectificationItems) ? meta.rectificationItems : [];
+  return items.map((item) => mapChecklistRectificationItem(item)).filter(Boolean);
 };
 
 const extractSectionEditorsFromChecklist = (rawChecklist) => {
@@ -3235,45 +3183,27 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
       return null;
     }
 
-    const [
-      writeUpResponse,
-      taskRowsResponse,
-      authorizationRowsResponse,
-      rectificationRows,
-      authorisedVhcItems,
-    ] = await Promise.all([
+    const [writeUpResponse, authorizationRowsResponse, authorisedVhcItems] = await Promise.all([
       supabase
         .from("job_writeups")
         .select("*")
         .eq("job_id", job.id)
         .maybeSingle(),
       supabase
-        // ⚠️ Verify: table or column not found in Supabase schema
-        .from("job_writeup_tasks")
-        .select("task_id, source, source_key, label, status")
-        .eq("job_id", job.id)
-        .order("task_id", { ascending: true }),
-      supabase
         .from("vhc_authorizations")
         .select("id, authorized_items, authorized_at")
         .eq("job_id", job.id)
         .order("authorized_at", { ascending: false }),
-      getRectificationItemsByJob(job.id),
       // Canonical "Authorised VHC Items" source: vhc_checks (authorized) + linked parts.
       getAuthorizedVhcItemsWithDetails(job.id),
     ]);
 
     const { data: writeUp, error } = writeUpResponse;
-    const { data: taskRows, error: taskError } = taskRowsResponse;
     const { data: authorizationRows, error: authorizationError } = authorizationRowsResponse;
 
     if (error && error.code !== "PGRST116") {
       console.error("❌ Error fetching write-up:", error);
       return null;
-    }
-
-    if (taskError) {
-      console.error("⚠️ Error fetching write-up tasks:", taskError);
     }
 
     if (authorizationError) {
@@ -3298,16 +3228,20 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
       };
     });
 
+    const checklistMeta = extractChecklistMeta(writeUp?.task_checklist);
     const tasks = buildWriteUpTaskList({
-      storedTasks: taskRows || [],
+      storedTasks: extractTasksFromChecklist(writeUp?.task_checklist),
       requestItems,
       authorisedItems: authorisedTaskItems,
     });
 
-    // ⚠️ Verify: table or column not found in Supabase schema
     const completionStatus = determineCompletionStatus(tasks, writeUp?.completion_status);
-    const latestAuthorizationId = authorizationRows?.[0]?.id ?? null;
-    const rectificationItems = mergeRectificationSources(rectificationRows, canonicalAuthorisedVhcItems);
+    const latestAuthorizationId =
+      authorizationRows?.[0]?.id ?? checklistMeta.vhcAuthorizationId ?? null;
+    const rectificationItems = mergeRectificationSources(
+      extractRectificationItemsFromChecklist(writeUp?.task_checklist),
+      canonicalAuthorisedVhcItems
+    );
 
     const sectionEditors = extractSectionEditorsFromChecklist(writeUp?.task_checklist);
 
@@ -3315,10 +3249,7 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
       qty: writeUp?.qty || Array(10).fill(false),
       booked: writeUp?.booked || Array(10).fill(false),
       completionStatus,
-      jobDescription: ensureBulletFormat(
-        // ⚠️ Verify: table or column not found in Supabase schema
-        job.description || writeUp?.job_description_snapshot || ""
-      ),
+      jobDescription: ensureBulletFormat(job.description || ""),
       tasks,
       requests: requestItems,
       authorisedItems: canonicalAuthorisedVhcItems,
@@ -3351,11 +3282,10 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
 
     return {
       ...basePayload,
-      fault: ensureBulletFormat(writeUp.work_performed || job.description || ""),
-      caused: ensureBulletFormat(writeUp.recommendations || ""),
+      fault: ensureBulletFormat(writeUp.fault || job.description || ""),
+      caused: ensureBulletFormat(checklistMeta.caused || ""),
       rectification:
-        // ⚠️ Verify: table or column not found in Supabase schema
-        ensureBulletFormat(writeUp.ratification || writeUp.rectification_notes || "") ||
+        ensureBulletFormat(writeUp.rectification || "") ||
         buildRectificationSummary(rectificationItems),
       warrantyClaim: writeUp.warranty_claim || "",
       tsrNumber: writeUp.tsr_number || "",
@@ -3363,7 +3293,7 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
       technicalBulletins: ensureBulletFormat(writeUp.technical_bulletins || ""),
       technicalSignature: writeUp.technical_signature || "",
       qualityControl: writeUp.quality_control || "",
-      additionalParts: ensureBulletFormat(writeUp.parts_used || ""),
+      additionalParts: ensureBulletFormat(checklistMeta.additionalParts || ""),
       sectionEditors,
     };
   } catch (error) {
@@ -3409,10 +3339,6 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
       .eq("job_id", job.id)
       .maybeSingle();
 
-    const rectificationItems = Array.isArray(writeUpData?.rectificationItems)
-      ? writeUpData.rectificationItems
-      : [];
-
     const rawTasks = Array.isArray(writeUpData?.tasks) ? writeUpData.tasks : [];
     const filteredTasks = rawTasks
       .map((task) => {
@@ -3432,13 +3358,26 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
       })
       .filter((task) => Boolean(task.label));
 
+    const rectificationItems = Array.isArray(writeUpData?.rectificationItems)
+      ? writeUpData.rectificationItems
+      : filteredTasks
+          .filter((task) => task?.source !== "request")
+          .map((task) => ({
+            description: task?.label || "",
+            status: task?.status === "complete" ? "complete" : "additional_work",
+            isAdditionalWork: true,
+            source: task?.source || "writeup",
+            vhcItemId: null,
+            authorizationId: null,
+            authorizedAmount: null,
+          }));
+
     // ⚠️ Verify: table or column not found in Supabase schema
     const completionStatus = determineCompletionStatus(
       filteredTasks,
       writeUpData?.completionStatus
     );
     const sectionEditors = normalizeSectionEditors(writeUpData?.sectionEditors);
-    const taskChecklistPayload = buildTaskChecklistPayload(filteredTasks, sectionEditors);
 
     const formattedFault = ensureBulletFormat(writeUpData?.fault || "");
     const formattedCaused = ensureBulletFormat(writeUpData?.caused || "");
@@ -3479,89 +3418,6 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
       }
     }
 
-    const { data: existingTasks, error: existingTasksError } = await supabase
-      // ⚠️ Verify: table or column not found in Supabase schema
-      .from("job_writeup_tasks")
-      .select("task_id, source, source_key")
-      .eq("job_id", job.id);
-
-    if (existingTasksError) {
-      console.error("❌ Error loading existing write-up tasks:", existingTasksError);
-      return { success: false, error: existingTasksError.message };
-    }
-
-    const existingTaskMap = new Map(
-      (existingTasks || []).map((task) => [`${task.source}:${task.source_key}`, task])
-    );
-
-    const seenTaskKeys = new Set();
-    const tasksToInsert = [];
-    const tasksToUpdate = [];
-
-    filteredTasks.forEach((task) => {
-      const taskKey = `${task.source}:${task.sourceKey}`;
-      seenTaskKeys.add(taskKey);
-      const payload = {
-        job_id: job.id,
-        source: task.source,
-        source_key: task.sourceKey,
-        label: task.label,
-        status: task.status,
-      };
-
-      const existingTask = existingTaskMap.get(taskKey);
-      if (existingTask) {
-        tasksToUpdate.push({ taskId: existingTask.task_id, payload });
-      } else {
-        tasksToInsert.push(payload);
-      }
-    });
-
-    if (tasksToInsert.length > 0) {
-      const { error: insertTasksError } = await supabase
-        // ⚠️ Verify: table or column not found in Supabase schema
-        .from("job_writeup_tasks")
-        .insert(tasksToInsert);
-
-      if (insertTasksError) {
-        console.error("❌ Error inserting write-up tasks:", insertTasksError);
-        return { success: false, error: insertTasksError.message };
-      }
-    }
-
-    for (const task of tasksToUpdate) {
-      const { error: updateTaskError } = await supabase
-        // ⚠️ Verify: table or column not found in Supabase schema
-        .from("job_writeup_tasks")
-        .update({ label: task.payload.label, status: task.payload.status })
-        .eq("task_id", task.taskId);
-
-      if (updateTaskError) {
-        console.error("❌ Error updating write-up task:", updateTaskError);
-        return { success: false, error: updateTaskError.message };
-      }
-    }
-
-    const tasksToRemove = (existingTasks || []).filter(
-      (task) => !seenTaskKeys.has(`${task.source}:${task.source_key}`)
-    );
-
-    if (tasksToRemove.length > 0) {
-      const { error: deleteTasksError } = await supabase
-        // ⚠️ Verify: table or column not found in Supabase schema
-        .from("job_writeup_tasks")
-        .delete()
-        .in(
-          "task_id",
-          tasksToRemove.map((task) => task.task_id)
-        );
-
-      if (deleteTasksError) {
-        console.error("❌ Error deleting stale write-up tasks:", deleteTasksError);
-        return { success: false, error: deleteTasksError.message };
-      }
-    }
-
     const requestStatusUpdates = filteredTasks
       .filter((task) => task.source === "request")
       .map((task) => {
@@ -3589,13 +3445,34 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
       }
     }
 
+    const normalizedRectificationItems = rectificationItems
+      .map((item) => ({
+        recordId: item?.recordId || null,
+        description: (item?.description || "").toString().trim(),
+        status: item?.status === "complete" ? "complete" : "additional_work",
+        isAdditionalWork: item?.isAdditionalWork !== false,
+        vhcItemId: item?.vhcItemId ?? null,
+        authorizationId: item?.authorizationId ?? null,
+        authorizedAmount:
+          item?.authorizedAmount !== null && item?.authorizedAmount !== undefined
+            ? Number(item.authorizedAmount)
+            : null,
+        source: item?.source || "writeup",
+      }))
+      .filter((item) => Boolean(item.description));
+
+    const taskChecklistPayload = buildTaskChecklistPayload(filteredTasks, sectionEditors, {
+      caused: formattedCaused || "",
+      additionalParts: formattedAdditionalParts || "",
+      vhcAuthorizationId: writeUpData?.vhcAuthorizationId || null,
+      rectificationItems: normalizedRectificationItems,
+    });
+
     // Map ALL form fields to database fields
     const writeUpToSave = {
       job_id: job.id,
-      work_performed: formattedFault || null,
-      parts_used: formattedAdditionalParts || null,
-      recommendations: formattedCaused || null,
-      ratification: rectificationSummary || null,
+      fault: formattedFault || null,
+      rectification: rectificationSummary || null,
       cause_entries: sanitizeCauseEntriesForUpload(writeUpData?.causeEntries),
       warranty_claim: writeUpData?.warrantyClaim || null,
       tsr_number: writeUpData?.tsrNumber || null,
@@ -3605,18 +3482,9 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
       quality_control: writeUpData?.qualityControl || null,
       qty: writeUpData.qty || Array(10).fill(false),
       booked: writeUpData.booked || Array(10).fill(false),
-      labour_time: null, // Calculate if needed
       technician_id: job.assigned_to || null, // Get from job
       updated_at: new Date().toISOString(),
-      // ⚠️ Verify: table or column not found in Supabase schema
       completion_status: completionStatus,
-      // ⚠️ Verify: table or column not found in Supabase schema
-      rectification_notes: rectificationSummary || null,
-      // ⚠️ Verify: table or column not found in Supabase schema
-      job_description_snapshot: formattedJobDescription || null,
-      // ⚠️ Verify: table or column not found in Supabase schema
-      vhc_authorization_reference: writeUpData?.vhcAuthorizationId || null,
-      // ⚠️ Verify: table or column not found in Supabase schema
       task_checklist: taskChecklistPayload,
     };
 
@@ -3652,19 +3520,6 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
       }
 
       writeUpRecord = insertedWriteUp;
-    }
-
-    if (writeUpRecord?.writeup_id) {
-      try {
-        await syncWriteUpRectificationItems({
-          jobId: job.id,
-          jobNumber,
-          writeupId: writeUpRecord.writeup_id,
-          items: rectificationItems,
-        });
-      } catch (syncError) {
-        console.error("⚠️ Failed to sync rectification items:", syncError);
-      }
     }
 
     console.log("✅ Write-up saved successfully");

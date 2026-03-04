@@ -379,6 +379,14 @@ const parseTaskChecklistPayload = (raw = null) => {
   return null;
 };
 
+const extractChecklistMeta = (rawChecklist) => {
+  const parsed = parseTaskChecklistPayload(rawChecklist);
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return {};
+  }
+  return parsed.meta && typeof parsed.meta === "object" ? parsed.meta : {};
+};
+
 const deriveSectionEditorsFromChecklist = (rawChecklist) => {
   const parsed = parseTaskChecklistPayload(rawChecklist);
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
@@ -1495,7 +1503,7 @@ export default function WriteUpForm({
   };
 
   const persistLiveNotes = useCallback(
-    async ({ fault, caused, rectification, causeEntries, sectionEditors }) => {
+    async ({ fault, caused, rectification, causeEntries, sectionEditors, tasks }) => {
       const jobId = writeUpMeta.jobId;
       if (!jobId) {
         return;
@@ -1513,14 +1521,21 @@ export default function WriteUpForm({
         username || ""
       );
       const normalizedEditors = sanitizeSectionEditors(sectionEditors);
+      const checklistTasks = buildTaskChecklistSnapshot(tasks);
       const payload = {
-        work_performed: sanitizedFields.fault || null,
-        recommendations: sanitizedFields.caused || null,
-        ratification: sanitizedFields.rectification || null,
+        fault: sanitizedFields.fault || null,
+        rectification: sanitizedFields.rectification || null,
         cause_entries: normalizedCauseEntries,
         updated_at: new Date().toISOString(),
         task_checklist: {
-          sectionEditors: normalizedEditors,
+          version: 2,
+          tasks: checklistTasks,
+          meta: {
+            caused: sanitizedFields.caused || "",
+            additionalParts: writeUpData.additionalParts || "",
+            vhcAuthorizationId: writeUpData.vhcAuthorizationId || null,
+            sectionEditors: normalizedEditors,
+          },
         },
       };
 
@@ -1578,7 +1593,15 @@ export default function WriteUpForm({
         console.error("❌ Live write-up sync failed:", error);
       }
     },
-    [jobNumber, username, writeUpMeta.jobId, writeUpMeta.writeupId, markFieldsSynced]
+    [
+      jobNumber,
+      username,
+      writeUpMeta.jobId,
+      writeUpMeta.writeupId,
+      writeUpData.additionalParts,
+      writeUpData.vhcAuthorizationId,
+      markFieldsSynced,
+    ]
   );
 
   // ✅ Toggle checklist status and auto-update completion state
@@ -1756,6 +1779,7 @@ export default function WriteUpForm({
           ...snapshot,
           causeEntries: writeUpData.causeEntries,
           sectionEditors: snapshot.sectionEditors,
+          tasks: writeUpData.tasks,
         });
       }, 600);
 
@@ -1856,9 +1880,10 @@ export default function WriteUpForm({
         return;
       }
 
-      const normalizedFault = incoming.work_performed ?? "";
-      const normalizedCause = incoming.recommendations ?? "";
-      const normalizedRectification = incoming.ratification ?? "";
+      const checklistMeta = extractChecklistMeta(incoming.task_checklist);
+      const normalizedFault = incoming.fault ?? "";
+      const normalizedCause = checklistMeta.caused ?? "";
+      const normalizedRectification = incoming.rectification ?? "";
       const incomingEditors = deriveSectionEditorsFromChecklist(incoming.task_checklist);
       setWriteUpData((prev) => {
         const nextState = { ...prev };

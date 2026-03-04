@@ -632,29 +632,14 @@ CREATE TABLE public.job_status_history (
   CONSTRAINT job_status_history_pkey PRIMARY KEY (id),
   CONSTRAINT job_status_history_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
 );
-CREATE TABLE public.job_writeup_tasks (
-  task_id bigint NOT NULL DEFAULT nextval('job_writeup_tasks_task_id_seq'::regclass),
-  job_id integer NOT NULL,
-  source text NOT NULL,
-  source_key text NOT NULL,
-  label text NOT NULL,
-  status text NOT NULL DEFAULT 'additional_work'::text,
-  created_at timestamp with time zone NOT NULL DEFAULT now(),
-  updated_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT job_writeup_tasks_pkey PRIMARY KEY (task_id),
-  CONSTRAINT job_writeup_tasks_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
-);
 CREATE TABLE public.job_writeups (
   writeup_id integer NOT NULL DEFAULT nextval('job_writeups_writeup_id_seq'::regclass),
   job_id integer NOT NULL,
   technician_id integer,
-  work_performed text,
-  parts_used text,
-  recommendations text,
-  labour_time numeric,
+  fault text,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
-  ratification text,
+  rectification text,
   warranty_claim text,
   tsr_number text,
   pwa_number text,
@@ -665,10 +650,7 @@ CREATE TABLE public.job_writeups (
   booked jsonb DEFAULT '[]'::jsonb,
   cause_entries jsonb DEFAULT '[]'::jsonb,
   completion_status text DEFAULT 'additional_work'::text,
-  rectification_notes text,
-  job_description_snapshot text,
-  vhc_authorization_reference integer,
-  task_checklist jsonb DEFAULT '[]'::jsonb,
+  task_checklist jsonb DEFAULT jsonb_build_object('version', 2, 'tasks', '[]'::jsonb, 'meta', jsonb_build_object('sectionEditors', jsonb_build_object('fault', '[]'::jsonb, 'cause', '[]'::jsonb, 'rectification', '[]'::jsonb))),
   CONSTRAINT job_writeups_pkey PRIMARY KEY (writeup_id),
   CONSTRAINT job_writeups_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT job_writeups_technician_id_fkey FOREIGN KEY (technician_id) REFERENCES public.users(user_id)
@@ -1578,23 +1560,4 @@ CREATE TABLE public.workshop_consumables (
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT workshop_consumables_pkey PRIMARY KEY (id)
-);
-CREATE TABLE public.writeup_rectification_items (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  job_id integer NOT NULL,
-  job_number text,
-  writeup_id integer,
-  description text NOT NULL,
-  status text NOT NULL DEFAULT 'waiting'::text,
-  is_additional_work boolean NOT NULL DEFAULT true,
-  vhc_item_id integer,
-  authorization_id integer,
-  authorized_amount numeric,
-  created_at timestamp with time zone NOT NULL DEFAULT now(),
-  updated_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT writeup_rectification_items_pkey PRIMARY KEY (id),
-  CONSTRAINT writeup_rectification_items_vhc_item_id_fkey FOREIGN KEY (vhc_item_id) REFERENCES public.vhc_checks(vhc_id),
-  CONSTRAINT writeup_rectification_items_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
-  CONSTRAINT writeup_rectification_items_writeup_id_fkey FOREIGN KEY (writeup_id) REFERENCES public.job_writeups(writeup_id),
-  CONSTRAINT writeup_rectification_items_authorization_id_fkey FOREIGN KEY (authorization_id) REFERENCES public.vhc_authorizations(id)
 );

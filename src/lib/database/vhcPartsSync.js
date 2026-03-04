@@ -141,16 +141,6 @@ export const syncVhcPartsAuthorisation = async ({ jobId, vhcItemId, approvalStat
       .trim() || `Authorised item ${canonicalVhcId}`;
 
   if (isAuthorised) {
-    const { data: jobRow, error: jobError } = await supabase
-      .from("jobs")
-      .select("job_number")
-      .eq("id", resolvedJobId)
-      .maybeSingle();
-
-    if (jobError) {
-      throw new Error(`Failed to load job number for authorized items: ${jobError.message}`);
-    }
-
     const latestPrePick = pickLatestByUpdatedAt(
       authorisedParts.filter((part) =>
         part.pre_pick_location && String(part.pre_pick_location).trim()
@@ -227,73 +217,6 @@ export const syncVhcPartsAuthorisation = async ({ jobId, vhcItemId, approvalStat
       }
     }
 
-    const jobNumber = jobRow?.job_number || null;
-
-    const { data: writeupRow, error: writeupError } = await supabase
-      .from("job_writeups")
-      .select("writeup_id")
-      .eq("job_id", resolvedJobId)
-      .maybeSingle();
-
-    if (writeupError) {
-      throw new Error(`Failed to load writeup for rectification sync: ${writeupError.message}`);
-    }
-
-    const { data: rectificationRows, error: rectificationError } = await supabase
-      .from("writeup_rectification_items")
-      .select("id")
-      .eq("job_id", resolvedJobId)
-      .eq("vhc_item_id", canonicalVhcId);
-
-    if (rectificationError) {
-      throw new Error(`Failed to load rectification rows: ${rectificationError.message}`);
-    }
-
-    const rectificationId = rectificationRows?.[0]?.id || null;
-    if (rectificationRows && rectificationRows.length > 1) {
-      const duplicateIds = rectificationRows.slice(1).map((row) => row.id);
-      await supabase
-        .from("writeup_rectification_items")
-        .delete()
-        .in("id", duplicateIds);
-    }
-
-    const rectificationPayload = {
-      job_id: resolvedJobId,
-      job_number: jobNumber,
-      writeup_id: writeupRow?.writeup_id ?? null,
-      description,
-      status: "waiting",
-      is_additional_work: true,
-      vhc_item_id: canonicalVhcId,
-      authorization_id: null,
-      authorized_amount: null,
-      updated_at: now,
-    };
-
-    if (rectificationId) {
-      const { error: rectificationUpdateError } = await supabase
-        .from("writeup_rectification_items")
-        .update(rectificationPayload)
-        .eq("id", rectificationId);
-
-      if (rectificationUpdateError) {
-        throw new Error(
-          `Failed to update writeup rectification row: ${rectificationUpdateError.message}`
-        );
-      }
-    } else {
-      const { error: rectificationInsertError } = await supabase
-        .from("writeup_rectification_items")
-        .insert([{ ...rectificationPayload, created_at: now }]);
-
-      if (rectificationInsertError) {
-        throw new Error(
-          `Failed to insert writeup rectification row: ${rectificationInsertError.message}`
-        );
-      }
-    }
-
     // Write note_text, pre_pick_location, request_id directly on vhc_checks
     await supabase
       .from("vhc_checks")
@@ -324,16 +247,6 @@ export const syncVhcPartsAuthorisation = async ({ jobId, vhcItemId, approvalStat
 
     if (prePickClearError) {
       throw new Error(`Failed to clear pre-pick location: ${prePickClearError.message}`);
-    }
-
-    const { error: rectificationDeleteError } = await supabase
-      .from("writeup_rectification_items")
-      .delete()
-      .eq("job_id", resolvedJobId)
-      .eq("vhc_item_id", canonicalVhcId);
-
-    if (rectificationDeleteError) {
-      throw new Error(`Failed to delete rectification rows: ${rectificationDeleteError.message}`);
     }
 
     // Clear consolidated columns on vhc_checks when declining/resetting

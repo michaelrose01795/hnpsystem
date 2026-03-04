@@ -197,10 +197,9 @@ export const getVehicleMaintenanceHistory = async (vehicleId) => {
       updated_at,
       job_writeups(
         writeup_id,
-        work_performed,
-        parts_used,
-        recommendations,
-        labour_time,
+        fault,
+        rectification,
+        task_checklist,
         created_at
       ),
       appointments(
