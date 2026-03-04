@@ -540,9 +540,46 @@ export default function JobCardDetailPage() {
       return decision === "completed";
     });
   }, [jobData?.vhcChecks]);
+  const vhcSummaryRowsCompleted = useMemo(() => {
+    const checks = Array.isArray(jobData?.vhcChecks) ? jobData.vhcChecks : [];
+    const summaryRows = checks.filter((check) => {
+      const section = (check?.section || "").toString().trim();
+      return section !== "VHC_CHECKSHEET" && section !== "VHC Checksheet";
+    });
+    if (summaryRows.length === 0) return false;
+
+    // Mirror vhc_checks truth more robustly: some rows may keep authorization_state as
+    // "authorized" while display_status or Complete flag indicates final completion/decline.
+    return summaryRows.every((check) => {
+      const decisions = [
+        check?.display_status,
+        check?.approval_status,
+        check?.approvalStatus,
+        check?.authorization_state,
+        check?.authorizationState,
+        check?.status,
+      ]
+        .map((value) => normaliseDecisionStatus(value))
+        .filter(Boolean);
+
+      const isCompletedByFlag = check?.Complete === true || check?.complete === true;
+      const hasCompleted = decisions.includes("completed") || isCompletedByFlag;
+      const hasDeclined = decisions.includes("declined");
+      return hasCompleted || hasDeclined;
+    });
+  }, [jobData?.vhcChecks]);
+  const hasRedAmberRepairRows = useMemo(() => {
+    const checks = Array.isArray(jobData?.vhcChecks) ? jobData.vhcChecks : [];
+    return checks.some((check) => {
+      const section = (check?.section || "").toString().trim();
+      if (section === "VHC_CHECKSHEET" || section === "VHC Checksheet") return false;
+      const severity = resolveVhcSeverity(check);
+      return severity === "red" || severity === "amber";
+    });
+  }, [jobData?.vhcChecks]);
   const vhcAuthorizedWorkCompleted = vhcRowsMarkedCompleted;
-  const vhcTabComplete = vhcRowsMarkedCompleted;
-  const vhcTabAmberReady = vhcTabReadyByRedAmberDecisions && !vhcTabComplete;
+  const vhcTabComplete = vhcSummaryRowsCompleted;
+  const vhcTabAmberReady = hasRedAmberRepairRows && !vhcTabComplete;
 
   // Invoice tab is visible for anyone who can open this page to make review easier
   const canViewInvoice = true;
@@ -695,7 +732,7 @@ export default function JobCardDetailPage() {
       if (!jobNumber) return;
 
       const { silent, force } = options;
-      const throttleMs = process.env.NODE_ENV === "production" ? 5000 : 10000;
+      const throttleMs = process.env.NODE_ENV === "production" ? 1200 : 2000;
       const now = Date.now();
 
       if (silent && !force) {
@@ -1036,7 +1073,7 @@ export default function JobCardDetailPage() {
   }, [confirm, fetchJobData, jobData, user?.id, user?.user_id]);
 
   const scheduleRealtimeRefresh = useCallback(() => {
-    const MIN_REFRESH_INTERVAL_MS = process.env.NODE_ENV === "production" ? 5000 : 30000;
+    const MIN_REFRESH_INTERVAL_MS = process.env.NODE_ENV === "production" ? 800 : 1200;
     const now = Date.now();
 
     if (typeof document !== "undefined" && document.hidden) {
@@ -1047,11 +1084,11 @@ export default function JobCardDetailPage() {
       clearTimeout(jobRealtimeRefreshRef.current);
     }
 
-    const nextDelay = Math.max(750, MIN_REFRESH_INTERVAL_MS - (now - lastRealtimeFetchAtRef.current));
+    const nextDelay = Math.max(180, MIN_REFRESH_INTERVAL_MS - (now - lastRealtimeFetchAtRef.current));
 
     jobRealtimeRefreshRef.current = setTimeout(() => {
       lastRealtimeFetchAtRef.current = Date.now();
-      fetchJobData({ silent: true });
+      fetchJobData({ silent: true, force: true });
     }, nextDelay);
   }, [fetchJobData]);
 
@@ -2227,6 +2264,7 @@ export default function JobCardDetailPage() {
   const invoicePrerequisitesMet =
     writeUpComplete &&
     vhcQualified &&
+    (!jobData.vhcRequired || vhcSummaryRowsCompleted) &&
     mileageRecorded &&
     partsReady &&
     partsAllocated;
@@ -2236,6 +2274,9 @@ export default function JobCardDetailPage() {
   }
   if (!vhcQualified) {
     invoiceBlockingReasons.push("Complete the Vehicle Health Check or mark it as not required.");
+  }
+  if (jobData.vhcRequired && !vhcSummaryRowsCompleted) {
+    invoiceBlockingReasons.push("Set every VHC Summary row status to Complete or Declined.");
   }
   if (!mileageRecorded) {
     invoiceBlockingReasons.push("Enter current mileage in the Vehicle section.");
@@ -2294,7 +2335,7 @@ export default function JobCardDetailPage() {
     { id: "notes", label: "Notes", badge: notesTabBadge},
     ...(canViewPartsTab ? [{ id: "parts", label: "Parts"}] : []),
     { id: "write-up", label: "Write Up"},
-    ...(canViewVhcTab ? [{ id: "vhc", label: "VHC", badge: vhcTabBadge}] : []),
+    ...(canViewVhcTab ? [{ id: "vhc", label: "VHC" }] : []),
     { id: "warranty", label: "Warranty"},
     { id: "clocking", label: "Clocking"},
     { id: "messages", label: "Messages"},
@@ -2917,6 +2958,7 @@ export default function JobCardDetailPage() {
               return (
                 <button
                   key={tab.id}
+                  className="jobcard-tab-button"
                   onClick={(e) => {
                     handleTabClick(tab.id);
                     e.currentTarget.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
@@ -2972,6 +3014,11 @@ export default function JobCardDetailPage() {
         <style jsx global>{`
           .jobcard-tabs-scroll-container::-webkit-scrollbar {
             display: none;
+          }
+          .jobcard-tab-button:hover,
+          .jobcard-tab-button:active,
+          .jobcard-tab-button:focus {
+            transform: none !important;
           }
           .vehicle-mileage-input::placeholder {
             color: var(--grey-accent);
@@ -3390,7 +3437,6 @@ function CustomerRequestsTab({
         prePickLocation: null,
         noteText: "",
         vhcItemId: null,
-        partsJobItemId: null,
       }));
     }
 
@@ -3406,7 +3452,6 @@ function CustomerRequestsTab({
       prePickLocation: row.prePickLocation ?? row.pre_pick_location ?? null,
       noteText: row.noteText ?? row.note_text ?? "",
       vhcItemId: row.vhcItemId ?? row.vhc_item_id ?? null,
-      partsJobItemId: row.partsJobItemId ?? row.parts_job_item_id ?? null,
     }));
   }, [jobData?.jobRequests, jobData?.job_requests, jobData?.requests]);
 
@@ -3748,7 +3793,6 @@ function CustomerRequestsTab({
         prePickLocation: row.prePickLocation ?? row.pre_pick_location ?? null,
         noteText: row.noteText ?? row.note_text ?? "",
         vhcItemId: row.vhcItemId ?? row.vhc_item_id ?? null,
-        partsJobItemId: row.partsJobItemId ?? row.parts_job_item_id ?? null,
         labourHours: row.labourHours ?? row.labour_hours ?? null,
         partsCost: row.partsCost ?? row.parts_cost ?? null,
         complete: Boolean(row.complete ?? row.Complete ?? false),

@@ -7,10 +7,10 @@ This file consolidates the VHC status audit documentation into a single referenc
 ## What status fields exist
 
 ### VHC item (vhc_checks) status fields
-- `vhc_checks.approval_status` (pending/authorized/declined/completed) controls the approval workflow state for a VHC item.
-- `vhc_checks.display_status` (red/amber/green/authorized/declined/completed) controls how the item is grouped in the VHC summary list and overrides the original severity when present.
+- `vhc_checks.approval_status` (pending/authorised/declined/completed) controls the approval workflow state for a VHC item.
+- `vhc_checks.display_status` (red/amber/green/authorised/declined/completed) controls how the item is grouped in the VHC summary list and overrides the original severity when present.
 - `vhc_checks.labour_complete` and `vhc_checks.parts_complete` are completion flags used in the summary table status dot (awaiting parts/labour vs ready for decision).
-- `vhc_checks.approved_at` and `vhc_checks.approved_by` are timestamps/actors set when approval moves to authorized/declined/completed.
+- `vhc_checks.approved_at` and `vhc_checks.approved_by` are timestamps/actors set when approval moves to authorised/declined/completed.
 
 ### VHC builder payload status fields (stored in vhc_checks.issue_description for section VHC_CHECKSHEET)
 These are severity and condition inputs captured in the section modals and used to derive summary severity:
@@ -24,27 +24,27 @@ These are severity and condition inputs captured in the section modals and used 
 - `jobs.vhc_required` gates whether VHC is required in workflow snapshots.
 - `jobs.vhc_completed_at` marks VHC completion for workflow snapshots and status blockers.
 - `jobs.vhc_sent_at` marks VHC sent to customer for workflow snapshots.
-- `jobs.additional_work_authorized_at` marks additional work authorized for workflow snapshots.
+- `jobs.additional_work_authorized_at` marks additional work authorised for workflow snapshots.
 - `vhc_send_history.sent_at`, `vhc_authorizations.authorized_at`, and `vhc_declinations.declined_at` are logged events that feed workflow status snapshots.
 - `vhc_workflow_status.status` (free-text in `vhc_workflow_status`) is read by the customer portal but no write path is present in this repo.
 
 ## Severity vs approval vs workflow
 - Severity is derived from the VHC builder payload (see `src/lib/vhc/summary.js`) and is normalized to `red/amber/green/grey` in `src/components/VHC/VhcDetailsPanel.js` for display.
-- Approval is tracked on `vhc_checks.approval_status` and is the source of the decision state (pending/authorized/declined/completed).
-- Workflow status is derived from job-level timestamps and authorization/declination tables (see `src/lib/status/jobStatusSnapshot.js`).
+- Approval is tracked on `vhc_checks.approval_status` and is the source of the decision state (pending/authorised/declined/completed).
+- Workflow status is derived from job-level timestamps and authorisation/declination tables (see `src/lib/status/jobStatusSnapshot.js`).
 
 ## How section rules affect status display
 - Health Check cards (`VhcDetailsPanel` health-check tab) derive section severity using metrics first, then item/concern statuses (red > amber > grey > green).
 - Summary tab rows are generated from VHC builder payload items that normalize to red/amber, then grouped by `display_status` when present; otherwise they stay in their original severity list.
-- A `display_status` of `completed` keeps the item in the Authorized list but shows a Completed status label.
+- A `display_status` of `completed` keeps the item in the Authorised list but shows a Completed status label.
 
 ## Where VHC statuses affect job/workflow status
 - `vhc_completed_at` and `vhc_sent_at` are used in workflow snapshots and job blocking reasons (`src/lib/status/jobStatusSnapshot.js`).
 - Sub-status timeline updates for VHC events use `logJobSubStatus` in `src/lib/services/jobStatusService.js`.
 
 ## Findings (inconsistencies/risks)
-- `workflows.vhc.status` uses `authorised` (UK spelling) while `vhc_checks.approval_status` uses `authorized` (US spelling). `src/lib/status/catalog/vhc.js` normalizes both, but `buildVhcStatus` returns `authorised` directly.
-- Single-item approval updates in `VhcDetailsPanel` do not pass `displayStatus` on reset to pending, so `display_status` may remain `authorized`/`declined` instead of restoring the original severity. Bulk reset does pass the raw severity.
+- `workflows.vhc.status` uses `authorised` (UK spelling) while `vhc_checks.approval_status` uses `authorised` (US spelling). `src/lib/status/catalogue/vhc.js` normalizes both, but `buildVhcStatus` returns `authorised` directly.
+- Single-item approval updates in `VhcDetailsPanel` do not pass `displayStatus` on reset to pending, so `display_status` may remain `authorised`/`declined` instead of restoring the original severity. Bulk reset does pass the raw severity.
 - `vhc_workflow_status.status` is read (customer portal + VHC panel) but no write path exists in this repo.
 - `parse-checksheet` passes a `status` field to `createVHCCheck`, but `vhc_checks` schema does not include a `status` column, so this value appears unused.
 - Job card severity helper treats any "green" value as `grey` (`src/pages/job-cards/[jobNumber].js`), which may be intentional but is inconsistent with other places that treat green as a positive severity.
@@ -57,15 +57,15 @@ These are severity and condition inputs captured in the section modals and used 
 
 | Field name | Possible values (code) | Meaning in UI | Where set | Where read | Section-specific rules | Related UI surfaces |
 | --- | --- | --- | --- | --- | --- | --- |
-| `vhc_checks.approval_status` | `pending`, `authorized`, `declined`, `completed` | Approval decision for a VHC item; drives status dot and sections in VHC summary. | `src/pages/api/vhc/update-item-status.js` called from `src/components/VHC/VhcDetailsPanel.js` (single + bulk updates). | `src/components/VHC/VhcDetailsPanel.js`, `src/lib/vhc/calculateVhcTotals.js` | Pending uses parts/labour completeness to show "Add labour", "Add parts", or "Awaiting decision". | VHC Summary tab in `src/components/VHC/VhcDetailsPanel.js` |
-| `vhc_checks.display_status` | `red`, `amber`, `green`, `authorized`, `declined`, `completed` | Overrides which summary list a row appears in; `completed` keeps row in Authorized list but shows Completed status. | `src/pages/api/vhc/update-item-status.js` (implicit for authorized/declined/completed; can be explicitly passed for reset). | `src/components/VHC/VhcDetailsPanel.js`, `src/lib/vhc/calculateVhcTotals.js` | When present, replaces original severity; completed -> authorized list. | VHC Summary tab in `src/components/VHC/VhcDetailsPanel.js` |
+| `vhc_checks.approval_status` | `pending`, `authorised`, `declined`, `completed` | Approval decision for a VHC item; drives status dot and sections in VHC summary. | `src/pages/api/vhc/update-item-status.js` called from `src/components/VHC/VhcDetailsPanel.js` (single + bulk updates). | `src/components/VHC/VhcDetailsPanel.js`, `src/lib/vhc/calculateVhcTotals.js` | Pending uses parts/labour completeness to show "Add labour", "Add parts", or "Awaiting decision". | VHC Summary tab in `src/components/VHC/VhcDetailsPanel.js` |
+| `vhc_checks.display_status` | `red`, `amber`, `green`, `authorised`, `declined`, `completed` | Overrides which summary list a row appears in; `completed` keeps row in Authorised list but shows Completed status. | `src/pages/api/vhc/update-item-status.js` (implicit for authorised/declined/completed; can be explicitly passed for reset). | `src/components/VHC/VhcDetailsPanel.js`, `src/lib/vhc/calculateVhcTotals.js` | When present, replaces original severity; completed -> authorised list. | VHC Summary tab in `src/components/VHC/VhcDetailsPanel.js` |
 | `vhc_checks.labour_complete` | `true`, `false` | Checkbox state in summary table for labour completeness. | `src/pages/api/vhc/update-item-status.js` (from VHC summary interactions). | `src/components/VHC/VhcDetailsPanel.js` | Used by `resolveRowStatusState` to show "Add labour" vs "Awaiting decision". | VHC Summary tab |
 | `vhc_checks.parts_complete` | `true`, `false` | Auto-complete flag when parts cost exists or parts marked not required. | `src/components/VHC/VhcDetailsPanel.js` (auto-sync to API via `/api/vhc/update-item-status`). | `src/components/VHC/VhcDetailsPanel.js` | Used by `resolveRowStatusState` to show "Add parts" vs "Awaiting decision". | VHC Summary tab |
-| `vhc_checks.approved_at`, `vhc_checks.approved_by` | timestamps / user identifiers | Timestamp + actor when approval moves to authorized/declined/completed. | `src/pages/api/vhc/update-item-status.js` | `src/components/VHC/VhcDetailsPanel.js` | None. | VHC Summary tab (status hover details via local state) |
+| `vhc_checks.approved_at`, `vhc_checks.approved_by` | timestamps / user identifiers | Timestamp + actor when approval moves to authorised/declined/completed. | `src/pages/api/vhc/update-item-status.js` | `src/components/VHC/VhcDetailsPanel.js` | None. | VHC Summary tab (status hover details via local state) |
 | `jobs.vhc_required` | `true`, `false` | Whether VHC is required for the job. | Job update flows in `src/lib/database/jobs.js` and external data entry (no direct VHC UI set). | `src/lib/services/vhcStatusService.js`, `src/lib/status/jobStatusSnapshot.js` | Determines whether workflow status can be `not_required` vs `pending`. | Status sidebar snapshot, dashboards |
 | `jobs.vhc_completed_at` | timestamp or null | VHC completed marker for workflow status and blockers. | `src/lib/services/jobStatusService.js` via `autoSetVHCCompleteStatus`. | `src/lib/status/jobStatusSnapshot.js`, `src/lib/services/vhcStatusService.js` | Used for workflow status (`completed`) and blocking reasons. | Status sidebar snapshot, dashboards |
-| `jobs.vhc_sent_at` | timestamp or null | VHC sent marker for workflow status. | `src/lib/services/jobStatusService.js` via `autoSetVHCSentStatus`; `src/lib/services/vhcStatusService.js` | `src/lib/status/jobStatusSnapshot.js`, `src/lib/services/vhcStatusService.js` | Used for workflow status (`sent`) and gating authorize/decline actions. | Status sidebar snapshot, dashboards |
-| `jobs.additional_work_authorized_at` | timestamp or null | Additional work authorized marker for workflow status. | `src/lib/services/jobStatusService.js` via `autoSetAdditionalWorkRequiredStatus`. | `src/lib/status/jobStatusSnapshot.js` | Used for workflow status (`authorised`). | Status sidebar snapshot |
+| `jobs.vhc_sent_at` | timestamp or null | VHC sent marker for workflow status. | `src/lib/services/jobStatusService.js` via `autoSetVHCSentStatus`; `src/lib/services/vhcStatusService.js` | `src/lib/status/jobStatusSnapshot.js`, `src/lib/services/vhcStatusService.js` | Used for workflow status (`sent`) and gating authorise/decline actions. | Status sidebar snapshot, dashboards |
+| `jobs.additional_work_authorized_at` | timestamp or null | Additional work authorised marker for workflow status. | `src/lib/services/jobStatusService.js` via `autoSetAdditionalWorkRequiredStatus`. | `src/lib/status/jobStatusSnapshot.js` | Used for workflow status (`authorised`). | Status sidebar snapshot |
 | `vhc_workflow_status.status` | free text; typical values in `src/lib/vhc/summary.js`: "VHC not started", "In progress", "Waiting for parts", "Sent to customer", "Awaiting approval", "Approved", "Declined", "Completed" | Display status for customer portal summaries. | No write path found in this repo. | `src/customers/hooks/useCustomerPortalData.js`, `src/components/VHC/VhcDetailsPanel.js` (workflow data load) | Not applied to VHC summary table; only high-level portal labels. | Customer portal summaries |
 | `vhc_send_history.sent_at` | timestamp | Logged when VHC is sent to customer. | `src/lib/services/vhcStatusService.js` | `src/lib/status/jobStatusSnapshot.js` (via `vhc_sent_at`) | Contributes to workflow status and history. | Status sidebar snapshot |
 | `vhc_authorizations.authorized_at` | timestamp | Logged when customer authorizes additional work. | `src/lib/services/vhcStatusService.js` | `src/lib/status/jobStatusSnapshot.js` | Contributes to workflow status (`authorised`). | Status sidebar snapshot |
@@ -76,7 +76,7 @@ These are severity and condition inputs captured in the section modals and used 
 
 ## Summary row logic by section (VHC summary/health check)
 
-| Section name | Row type | Fields used | Logic (exact conditions in code) | UI label or badge shown | Color mapping | Where the row status is rendered |
+| Section name | Row type | Fields used | Logic (exact conditions in code) | UI label or badge shown | Colour mapping | Where the row status is rendered |
 | --- | --- | --- | --- | --- | --- | --- |
 | Wheels & Tyres | Wheel rows (NSF/OSF/NSR/OSR) and Spare/Kit | VHC builder payload: `wheelsTyres.*.tread`, `wheelsTyres.*.concerns[].status` | `determineTreadSeverity` uses average tread depth: <=2.5 -> Red, <=3.5 -> Amber, else Green. Row status is dominant of tread severity + concern statuses (`determineDominantStatus`). | Badge uses normalized Red/Amber/Green label. | `SEVERITY_THEME` in `VhcDetailsPanel`; tyre diagram uses danger/advisory/good. | `src/lib/vhc/summary.js` + `src/components/VHC/VhcDetailsPanel.js` (Summary + Health Check tabs) |
 | Brakes & Hubs | Front/Rear Pads | `frontPads.measurement`, `frontPads.status`, `frontPads.concerns[].status` (same for rear) | Row status = `normaliseStatus(pad.status)` or dominant concern status. Measurement displayed but not used to set status in summary. | Badge shows normalized status (Red/Amber/Green). | `SEVERITY_THEME` in `VhcDetailsPanel`; brake diagram uses critical/advisory/good. | `src/lib/vhc/summary.js` + `src/components/VHC/VhcDetailsPanel.js` |
@@ -86,7 +86,7 @@ These are severity and condition inputs captured in the section modals and used 
 | External | Concern rows per category | `externalInspection.*.concerns[].status` | Each concern becomes its own row; status comes from concern status. If no concerns, entry status can be used but modal does not set it. | Concern status text (Red/Amber/Green). | `SEVERITY_THEME` in `VhcDetailsPanel`. | `src/lib/vhc/summary.js` + `src/components/VHC/VhcDetailsPanel.js` |
 | Internal | Concern rows per category | `internalElectrics.*.concerns[].status` | Same as External: one row per concern with its status. | Concern status text (Red/Amber/Green). | `SEVERITY_THEME` in `VhcDetailsPanel`. | `src/lib/vhc/summary.js` + `src/components/VHC/VhcDetailsPanel.js` |
 | Underside | Concern rows per category | `underside.*.concerns[].status` | Same as External: one row per concern with its status. | Concern status text (Red/Amber/Green). | `SEVERITY_THEME` in `VhcDetailsPanel`. | `src/lib/vhc/summary.js` + `src/components/VHC/VhcDetailsPanel.js` |
-| Summary table (all sections) | Summary row status dot | `vhc_checks.approval_status`, `vhc_checks.labour_complete`, `vhc_checks.parts_complete`, parts costs, labour hours, parts-not-required | `resolveRowStatusState` order: if approval status is completed -> Completed (green tick). If authorized -> Approved (green). If declined -> Declined (red cross). Else (pending): if missing labour and parts -> "Add labour & parts"; missing labour -> "Add labour"; missing parts -> "Add parts"; otherwise "Awaiting decision". | Status dot tooltip shows label; status column uses colored dot. | Colors: success for approved/completed, danger for declined, warning for missing/awaiting. | `src/components/VHC/VhcDetailsPanel.js` in Summary tab tables |
+| Summary table (all sections) | Summary row status dot | `vhc_checks.approval_status`, `vhc_checks.labour_complete`, `vhc_checks.parts_complete`, parts costs, labour hours, parts-not-required | `resolveRowStatusState` order: if approval status is completed -> Completed (green tick). If authorised -> Approved (green). If declined -> Declined (red cross). Else (pending): if missing labour and parts -> "Add labour & parts"; missing labour -> "Add labour"; missing parts -> "Add parts"; otherwise "Awaiting decision". | Status dot tooltip shows label; status column uses coloured dot. | Colours: success for approved/completed, danger for declined, warning for missing/awaiting. | `src/components/VHC/VhcDetailsPanel.js` in Summary tab tables |
 
 ---
 
@@ -94,7 +94,7 @@ These are severity and condition inputs captured in the section modals and used 
 
 ## VHC summary + health check UI
 - `src/components/VHC/VhcDetailsPanel.js` - summary tables and health check cards; uses `vhc_checks.approval_status`, `display_status`, `labour_complete`, `parts_complete`, plus VHC builder payload severity.
-- `src/components/VHC/VhcSharedComponents.js` - severity badge styling for red/amber/green/authorized/declined.
+- `src/components/VHC/VhcSharedComponents.js` - severity badge styling for red/amber/green/authorised/declined.
 
 ## Section modals (status capture)
 - `src/components/VHC/WheelsTyresDetailsModal.js` - concern statuses (Red/Amber/Green) and tread-derived severity for tyres; provides diagram severity.
@@ -115,10 +115,10 @@ These are severity and condition inputs captured in the section modals and used 
 - `src/pages/stock-catalogue.js` - displays VHC item ID badge when parts are linked to VHC.
 
 ## Status snapshot + workflow views
-- `src/lib/status/jobStatusSnapshot.js` - derives `workflows.vhc.status` from job timestamps and authorization/declination history.
+- `src/lib/status/jobStatusSnapshot.js` - derives `workflows.vhc.status` from job timestamps and authorisation/declination history.
 - `src/components/StatusTracking/StatusSidebar.js` - renders workflow snapshot status data from `/api/status/snapshot`.
-- `src/lib/status/catalog/timeline.js` - maps VHC sub-status labels to timeline events.
-- `src/lib/status/catalog/job.js` - includes `vhc_*` sub-status ids in job status catalog.
+- `src/lib/status/catalogue/timeline.js` - maps VHC sub-status labels to timeline events.
+- `src/lib/status/catalogue/job.js` - includes `vhc_*` sub-status ids in job status catalogue.
 
 ## VHC totals + summary logic
 - `src/lib/vhc/summary.js` - builds section-level status/metrics from VHC builder payload.
@@ -140,7 +140,7 @@ These are severity and condition inputs captured in the section modals and used 
   - Method: PATCH/POST
   - Payload: `{ vhcItemId, approvalStatus, displayStatus, labourHours, partsCost, totalOverride, labourComplete, partsComplete, approvedBy }`
   - Writes: `vhc_checks.approval_status`, `display_status`, `labour_hours`, `parts_cost`, `total_override`, `labour_complete`, `parts_complete`, `approved_at`, `approved_by`, `updated_at`.
-  - Notes: if `approvalStatus` is authorized/declined/completed and `displayStatus` not provided, API sets `display_status` to the approval status; for pending resets, UI must pass `displayStatus` to restore severity.
+  - Notes: if `approvalStatus` is authorised/declined/completed and `displayStatus` not provided, API sets `display_status` to the approval status; for pending resets, UI must pass `displayStatus` to restore severity.
 
 - `src/components/VHC/VhcDetailsPanel.js`
   - `updateEntryStatus` and `handleBulkStatus` call `/api/vhc/update-item-status` to set approval state (single + bulk).

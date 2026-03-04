@@ -36,10 +36,10 @@ Examples:
 - DB `jobs.status = "checked_in"` -> header badge shows "Checked In".
 - DB `jobs.status = "Open"` -> header badge shows "Open" (raw string, not normalized).
 
-Color rules (manager header badge):
-- If `jobData.status === "Open"`: success surface colors.
-- Else if `jobData.status === "Complete"`: info surface colors.
-- Else: warning surface colors.
+Colour rules (manager header badge):
+- If `jobData.status === "Open"`: success surface colours.
+- Else if `jobData.status === "Complete"`: info surface colours.
+- Else: warning surface colours.
 
 Other status-dependent behaviour:
 - Check-in button shows only when `jobData.status` lowercases to `booked`.
@@ -65,7 +65,7 @@ Source of truth:
 
 Current status display:
 - `currentStatusForDisplay = snapshot.job.status` (raw DB value).
-- `currentStatusMeta = snapshot.job.statusMeta` (label, color, department).
+- `currentStatusMeta = snapshot.job.statusMeta` (label, colour, department).
 - Header shows "Current Status" with `currentStatusMeta.label` if present, else raw status.
 
 Timeline entries (labels and types):
@@ -88,7 +88,7 @@ These are produced by `src/lib/status/jobStatusSnapshot.js`. The sidebar UI curr
 VHC workflow (`snapshot.workflows.vhc.status`):
 - `not_required` when `vhc_required` is false.
 - `declined` when `vhc_declined_at` exists.
-- `authorised` when `additional_work_authorized_at` or latest authorization exists.
+- `authorised` when `additional_work_authorized_at` or latest authorisation exists.
 - `sent` when `vhc_sent_at` exists.
 - `completed` when `vhc_completed_at` exists.
 - `in_progress` when VHC checks exist.
@@ -142,9 +142,9 @@ Source: `src/lib/partsPipeline.js`
 
 ### VHC Item States
 Sources: `src/components/VHC/*`, `src/pages/api/vhc/update-item-status.js`
-- Approval status values: `pending`, `authorized`, `declined`, `completed`.
+- Approval status values: `pending`, `authorised`, `declined`, `completed`.
 - Display severity values used in UI: `red`, `amber`, `green`, `grey` (also capitalized variants in some modals).
-- UI labels shown: "Authorised", "Declined", "Red Items", "Amber Items", "Green Items". Data/field values use US spelling (`authorized`) internally.
+- UI labels shown: "Authorised", "Declined", "Red Items", "Amber Items", "Green Items". Data/field values use US spelling (`authorised`) internally.
 
 ### Tracking
 Sources: `src/lib/database/tracking.js`, `src/pages/tracking/index.js`
@@ -178,7 +178,7 @@ Sources: `src/lib/database/dashboard/mot.js`, `src/pages/dashboard/mot/index.js`
 
 ## Checklist: Same Behaviour Means
 - All pages render the same status text for the same underlying data (no label changes).
-- Status colors and badges remain unchanged.
+- Status colours and badges remain unchanged.
 - Legacy job status values still resolve to the same visible label as before.
 - Timeline entries keep the same labels, ordering, and event types.
 - Workflow-derived statuses (VHC, parts, invoice) remain the same strings in the snapshot.

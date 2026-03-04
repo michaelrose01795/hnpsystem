@@ -147,10 +147,7 @@ export const syncVhcPartsAuthorisation = async ({ jobId, vhcItemId, approvalStat
       )
     );
 
-    const latestAuthorisedPart = latestPrePick || pickLatestByUpdatedAt(authorisedParts);
-
     const latestPrePickLocation = latestPrePick?.pre_pick_location || null;
-    const partsJobItemId = latestAuthorisedPart?.id || null;
 
     const { data: noteRows, error: notesError } = await supabase
       .from("job_notes")
@@ -192,7 +189,6 @@ export const syncVhcPartsAuthorisation = async ({ jobId, vhcItemId, approvalStat
       status: "inprogress",
       request_source: REQUEST_SOURCE,
       vhc_item_id: canonicalVhcId,
-      parts_job_item_id: partsJobItemId,
       pre_pick_location: latestPrePickLocation,
       note_text: noteText,
       updated_at: now,

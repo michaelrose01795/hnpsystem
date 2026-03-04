@@ -1026,18 +1026,41 @@ export default function GlobalNotesWidget() {
             {!isLoading && activeNote && (
               <>
                 <div className={styles.field}>
-                  <label className={`${styles.label} ${styles.titleLabel}`} htmlFor="floating-note-title">
-                    Title
-                  </label>
-                <input
-                  id="floating-note-title"
-                  className={`${styles.input} ${styles.titleInput}`}
-                  value={activeNote.title || ""}
-                  onChange={(event) => onChangeTitle(event.target.value)}
-                  onBlur={() => onBlurSave(activeNote.noteId)}
-                  placeholder="Title"
-                  disabled={activeNoteReadOnly}
-                />
+                  <div className={styles.titleRow}>
+                    <label className={`${styles.label} ${styles.titleLabel}`} htmlFor="floating-note-title">
+                      Title
+                    </label>
+                    <div className={styles.titleActions}>
+                      <button
+                        type="button"
+                        className={styles.shareButton}
+                        onClick={openShareModal}
+                        disabled={!activeNoteOwnedByUser}
+                      >
+                        Share
+                      </button>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={Boolean(activeNote.isGlobal)}
+                        aria-label="Toggle global note visibility"
+                        className={`${styles.visibilitySwitch} ${activeNote.isGlobal ? styles.visibilitySwitchOn : ""}`}
+                        onClick={() => onToggleGlobal(!activeNote.isGlobal)}
+                        disabled={!activeNoteOwnedByUser}
+                      >
+                        <span className={styles.visibilityThumb} />
+                      </button>
+                    </div>
+                  </div>
+                  <input
+                    id="floating-note-title"
+                    className={`${styles.input} ${styles.titleInput}`}
+                    value={activeNote.title || ""}
+                    onChange={(event) => onChangeTitle(event.target.value)}
+                    onBlur={() => onBlurSave(activeNote.noteId)}
+                    placeholder="Title"
+                    disabled={activeNoteReadOnly}
+                  />
                 </div>
 
                 <div className={styles.fieldGrow}>
@@ -1089,32 +1112,6 @@ export default function GlobalNotesWidget() {
                     </div>
                   )}
                 </div>
-
-                {activeNote && (
-                  <div className={styles.visibilityPanel}>
-                    <div className={styles.visibilityToggleRow}>
-                      <button
-                        type="button"
-                        className={styles.shareButton}
-                        onClick={openShareModal}
-                        disabled={!activeNoteOwnedByUser}
-                      >
-                        Share
-                      </button>
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={Boolean(activeNote.isGlobal)}
-                        aria-label="Toggle global note visibility"
-                        className={`${styles.visibilitySwitch} ${activeNote.isGlobal ? styles.visibilitySwitchOn : ""}`}
-                        onClick={() => onToggleGlobal(!activeNote.isGlobal)}
-                        disabled={!activeNoteOwnedByUser}
-                      >
-                        <span className={styles.visibilityThumb} />
-                      </button>
-                    </div>
-                  </div>
-                )}
 
               </>
             )}

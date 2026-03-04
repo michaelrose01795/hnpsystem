@@ -160,7 +160,7 @@ export default async function handler(req, res) {
       "parts_goods_in_items"
     );
 
-    const partsJobItemIds = snapshotTables.parts_job_items.map((row) => row.id);
+    const jobPartItemIds = snapshotTables.parts_job_items.map((row) => row.id);
     snapshotTables.parts_delivery_items = await fetchRows(
       supabaseService.from("parts_delivery_items").select("*").eq("job_id", jobId),
       "parts_delivery_items"
@@ -176,12 +176,12 @@ export default async function handler(req, res) {
 
     const deliveryItemIds = snapshotTables.parts_delivery_items.map((row) => row.id);
 
-    const stockMovementsByJobItem = partsJobItemIds.length
+    const stockMovementsByJobItem = jobPartItemIds.length
       ? await fetchRows(
           supabaseService
             .from("parts_stock_movements")
             .select("*")
-            .in("job_item_id", partsJobItemIds),
+            .in("job_item_id", jobPartItemIds),
           "parts_stock_movements"
         )
       : [];
@@ -377,12 +377,12 @@ export default async function handler(req, res) {
 
     const { error: nullRequestsError } = await supabaseService
       .from("job_requests")
-      .update({ parts_job_item_id: null, vhc_item_id: null })
+      .update({ vhc_item_id: null })
       .eq("job_id", jobId);
     if (nullRequestsError) throw new Error(nullRequestsError.message);
 
     // Parts stock movements
-    await deleteByIds("parts_stock_movements", "job_item_id", partsJobItemIds);
+    await deleteByIds("parts_stock_movements", "job_item_id", jobPartItemIds);
     await deleteByIds("parts_stock_movements", "delivery_item_id", deliveryItemIds);
 
     // Parts delivery / job links (delete before invoices due to FK)

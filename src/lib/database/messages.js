@@ -680,11 +680,12 @@ export const sendThreadMessage = async ({
   assertMessagingWriteAccess();
   const senderUserId = normalizeUserId(senderId);
   const threadIdNum = threadId ? Number(threadId) : null;
+  let resolvedReceiverId = normalizeUserId(receiverId);
   if (!senderUserId || !content?.trim()) {
     throw new Error("Message content and sender are required.");
   }
 
-  if (!threadIdNum && !receiverId) {
+  if (!threadIdNum && !resolvedReceiverId) {
     throw new Error("Messages must belong to a thread or include a receiverId.");
   }
 
@@ -700,12 +701,69 @@ export const sendThreadMessage = async ({
     if (!membership) {
       throw new Error("You are not part of this conversation.");
     }
+
+    const { data: threadRow, error: threadError } = await dbClient
+      .from("message_threads")
+      .select("thread_type")
+      .eq("thread_id", threadIdNum)
+      .maybeSingle();
+
+    if (threadError) throw threadError;
+    if (!threadRow) {
+      throw new Error("Conversation not found.");
+    }
+
+    if (threadRow.thread_type === "direct") {
+      if (resolvedReceiverId && resolvedReceiverId === senderUserId) {
+        throw new Error("Direct messages must target the other participant.");
+      }
+
+      if (!resolvedReceiverId) {
+        const { data: otherMemberRows, error: otherMemberError } = await dbClient
+          .from("message_thread_members")
+          .select("user_id")
+          .eq("thread_id", threadIdNum)
+          .neq("user_id", senderUserId)
+          .limit(1);
+
+        if (otherMemberError) throw otherMemberError;
+        const otherParticipantId = otherMemberRows?.[0]?.user_id || null;
+        if (!otherParticipantId) {
+          throw new Error("Direct conversation is missing the other participant.");
+        }
+        resolvedReceiverId = otherParticipantId;
+      } else {
+        const { data: receiverMembership, error: receiverMembershipError } = await dbClient
+          .from("message_thread_members")
+          .select("member_id")
+          .eq("thread_id", threadIdNum)
+          .eq("user_id", resolvedReceiverId)
+          .maybeSingle();
+
+        if (receiverMembershipError) throw receiverMembershipError;
+        if (!receiverMembership) {
+          throw new Error("Receiver is not part of this conversation.");
+        }
+      }
+    } else if (resolvedReceiverId) {
+      const { data: receiverMembership, error: receiverMembershipError } = await dbClient
+        .from("message_thread_members")
+        .select("member_id")
+        .eq("thread_id", threadIdNum)
+        .eq("user_id", resolvedReceiverId)
+        .maybeSingle();
+
+      if (receiverMembershipError) throw receiverMembershipError;
+      if (!receiverMembership) {
+        throw new Error("Receiver is not part of this conversation.");
+      }
+    }
   }
 
     const payload = {
       content: content.trim(),
       sender_id: senderUserId,
-      receiver_id: receiverId,
+      receiver_id: resolvedReceiverId,
       thread_id: threadIdNum || null,
       metadata: metadata || null,
     };

@@ -2538,7 +2538,7 @@ export default function WriteUpForm({
                             )}
                           </div>
                           <div style={{ fontSize: "12px", color: "var(--info)" }}>
-                            {rowMeta?.kind === "added" ? `Added item ${rowMeta.index}` : `Item ${index + 1}`}
+                            {rowMeta?.kind === "added" ? `Added item ${rowMeta.index}` : `Authorised ${index + 1}`}
                           </div>
                           <textarea
                             value={stripAuthorizedPrefix(task.label)}

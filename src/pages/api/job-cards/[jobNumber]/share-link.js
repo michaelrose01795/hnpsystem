@@ -1,6 +1,7 @@
 // file location: src/pages/api/job-cards/[jobNumber]/share-link.js
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
+import { resolveJobIdentity } from "@/lib/jobs/jobIdentity";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -24,11 +25,25 @@ function isLinkExpired(createdAt) {
 }
 
 export default async function handler(req, res) {
-  const { jobNumber } = req.query;
+  const { jobNumber: rawJobNumber } = req.query;
+  const allowedMethods = new Set(["GET", "POST"]);
+  if (!allowedMethods.has(req.method)) {
+    return res.status(405).json({ success: false, error: "Method not allowed" });
+  }
 
-  if (!jobNumber) {
+  if (!rawJobNumber) {
     return res.status(400).json({ success: false, error: "Job number is required" });
   }
+
+  const identity = await resolveJobIdentity({
+    client: dbClient,
+    identifier: rawJobNumber,
+    select: "id, job_number",
+  });
+  if (!identity?.id) {
+    return res.status(404).json({ success: false, error: "Job not found" });
+  }
+  const canonicalJobNumber = identity.job_number;
 
   // GET: Validate a share link
   if (req.method === "GET") {
@@ -43,7 +58,7 @@ export default async function handler(req, res) {
       const { data: shareLink, error: linkError } = await dbClient
         .from("job_share_links")
         .select("*")
-        .eq("job_number", jobNumber)
+        .eq("job_number", canonicalJobNumber)
         .eq("link_code", linkCode)
         .maybeSingle();
 
@@ -69,7 +84,7 @@ export default async function handler(req, res) {
           customer:customer_id(*),
           vehicle:vehicle_id(*)
         `)
-        .eq("job_number", jobNumber)
+        .eq("id", identity.id)
         .maybeSingle();
 
       if (jobRowError) {
@@ -149,7 +164,7 @@ export default async function handler(req, res) {
       const { data: existingLinks, error: fetchError } = await dbClient
         .from("job_share_links")
         .select("*")
-        .eq("job_number", jobNumber)
+        .eq("job_number", canonicalJobNumber)
         .order("created_at", { ascending: false })
         .limit(1);
 
@@ -180,7 +195,7 @@ export default async function handler(req, res) {
       const { data: job, error: jobError } = await dbClient
         .from("jobs")
         .select("id")
-        .eq("job_number", jobNumber)
+        .eq("id", identity.id)
         .maybeSingle();
 
       if (jobError || !job) {
@@ -192,7 +207,7 @@ export default async function handler(req, res) {
         .from("job_share_links")
         .insert({
           job_id: job.id,
-          job_number: jobNumber,
+          job_number: canonicalJobNumber,
           link_code: linkCode,
           created_at: new Date().toISOString(),
         })
@@ -217,5 +232,4 @@ export default async function handler(req, res) {
     }
   }
 
-  return res.status(405).json({ success: false, error: "Method not allowed" });
 }

@@ -4,23 +4,47 @@ import { getNotesByJob } from "@/lib/database/notes";
 import { getCustomerJobs } from "@/lib/database/customers";
 import { mapCustomerJobsToHistory, normalizeRequests } from "@/lib/jobcards/utils";
 import { supabaseService } from "@/lib/supabaseClient";
+import { resolveJobIdentity } from "@/lib/jobs/jobIdentity";
 
-const loadArchivedJob = async (jobNumber) => {
+const buildArchiveCandidates = (input) => {
+  const token = String(input || "").trim();
+  if (!token) return [];
+  const noHash = token.replace(/^#/, "");
+  const upper = noHash.toUpperCase();
+  const candidates = new Set([noHash, upper]);
+  if (/^\d+$/.test(noHash)) {
+    const parsed = Number.parseInt(noHash, 10);
+    if (Number.isInteger(parsed) && parsed > 0) {
+      candidates.add(String(parsed));
+      candidates.add(String(parsed).padStart(5, "0"));
+    }
+  }
+  return Array.from(candidates);
+};
+
+const loadArchivedJob = async (jobNumberIdentifier) => {
   if (!supabaseService) {
     return { error: { message: "Service role key not configured" } };
+  }
+
+  const candidates = buildArchiveCandidates(jobNumberIdentifier);
+  if (candidates.length === 0) {
+    return { error: { message: "Archived job not found" } };
   }
 
   const { data, error } = await supabaseService
     .from("job_archive")
     .select("snapshot")
-    .eq("job_number", jobNumber)
-    .single();
+    .in("job_number", candidates)
+    .order("completed_at", { ascending: false })
+    .limit(1);
 
-  if (error || !data?.snapshot) {
+  const first = Array.isArray(data) ? data[0] : null;
+  if (error || !first?.snapshot) {
     return { error: { message: "Archived job not found" } };
   }
 
-  const snapshot = data.snapshot || {};
+  const snapshot = first.snapshot || {};
   const jobCard = snapshot.jobCard || snapshot.job || null;
   return {
     data: {
@@ -35,7 +59,7 @@ const loadArchivedJob = async (jobNumber) => {
 };
 
 export default async function handler(req, res) {
-  const { jobNumber, archive, force } = req.query;
+  const { jobNumber: rawJobNumber, archive, force } = req.query;
 
   if (req.method !== "GET") {
     res.setHeader("Allow", ["GET"]);
@@ -44,19 +68,25 @@ export default async function handler(req, res) {
       .json({ message: `Method ${req.method} not allowed` });
   }
 
-  if (!jobNumber || typeof jobNumber !== "string") {
+  if (!rawJobNumber || typeof rawJobNumber !== "string") {
     return res.status(400).json({ message: "Job number is required" });
   }
 
   try {
     const requestArchive = String(archive || "") === "1";
+    const identity = await resolveJobIdentity({
+      client: supabaseService,
+      identifier: rawJobNumber,
+      select: "id, job_number",
+    });
+    const canonicalJobNumber = identity?.job_number || String(rawJobNumber).trim();
 
     if (requestArchive) {
-      const { data, error } = await loadArchivedJob(jobNumber);
+      const { data, error } = await loadArchivedJob(canonicalJobNumber);
       if (error || !data?.jobCard) {
         return res
           .status(404)
-          .json({ message: `Archived job card ${jobNumber} not found` });
+          .json({ message: `Archived job card ${rawJobNumber} not found` });
       }
 
       res.setHeader("Cache-Control", "no-store, max-age=0, must-revalidate");
@@ -70,10 +100,10 @@ export default async function handler(req, res) {
     }
 
     const requestForce = String(force || "") === "1";
-    const { data, error } = await getJobByNumber(jobNumber, { noCache: requestForce });
+    const { data, error } = await getJobByNumber(canonicalJobNumber, { noCache: requestForce });
 
     if (error || !data?.jobCard) {
-      const archived = await loadArchivedJob(jobNumber);
+      const archived = await loadArchivedJob(canonicalJobNumber);
       if (archived?.data?.jobCard) {
         res.setHeader("Cache-Control", "no-store, max-age=0, must-revalidate");
         return res.status(200).json({
@@ -86,7 +116,7 @@ export default async function handler(req, res) {
       }
       return res
         .status(404)
-        .json({ message: `Job card ${jobNumber} not found` });
+        .json({ message: `Job card ${rawJobNumber} not found` });
     }
 
     const { jobCard, customer, vehicle } = data;

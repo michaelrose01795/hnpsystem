@@ -1,5 +1,6 @@
 import { supabaseService } from "@/lib/supabaseClient";
 import { sendSystemNotification } from "@/lib/notifications/system";
+import { resolveJobIdentity } from "@/lib/jobs/jobIdentity";
 
 const BOOKING_REQUEST_FIELDS = `
   request_id,
@@ -59,7 +60,14 @@ const insertNotification = async ({ jobNumber, type, message, targetRole }) => {
   }
 };
 
-const fetchJobContext = async (jobNumber) => {
+const fetchJobContext = async (jobNumberIdentifier) => {
+  const identity = await resolveJobIdentity({
+    client: supabaseService,
+    identifier: jobNumberIdentifier,
+    select: "id, job_number",
+  });
+  if (!identity?.id) return null;
+
   const { data, error } = await supabaseService
     .from("jobs")
     .select(
@@ -76,7 +84,7 @@ const fetchJobContext = async (jobNumber) => {
       vehicle:vehicle_id(vehicle_id, registration, reg_number, make_model)
     `
     )
-    .eq("job_number", jobNumber)
+    .eq("id", identity.id)
     .maybeSingle();
 
   if (error) throw error;
@@ -135,15 +143,15 @@ export default async function handler(req, res) {
       .json({ success: false, error: "Service role key is not configured" });
   }
 
-  const { jobNumber } = req.query || {};
-  if (!jobNumber) {
+  const { jobNumber: rawJobNumber } = req.query || {};
+  if (!rawJobNumber) {
     return res
       .status(400)
       .json({ success: false, error: "Job number is required" });
   }
 
   try {
-    const jobRow = await fetchJobContext(jobNumber);
+    const jobRow = await fetchJobContext(rawJobNumber);
     if (!jobRow) {
       return res
         .status(404)

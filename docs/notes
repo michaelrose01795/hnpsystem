@@ -5,14 +5,22 @@ TO DO:
 Continue flow with job number 56.
 
 CONTINUE
-Write up database table
+message database table
+
+
+
+CHECK
+within the "Proforma" section wihtin the invoice, make sure that the "Proforma complete" is not ready for complete until within the VCH tab all of the row status wihtin the summary tab are set to complete, if its set to anything else then make sure that the Proforma is not complete and shows the front end information. 
 
 
 CHECK
-within the job_writeups database table add another database column for when an addintional section is added using the "+" button, have the two column names "added_fault" and "added_rectification", so the "added_fault" will link to the description box which is added within the "Fault" section and the "added_rectification" table will link to the added boc wihtin the "Rectification" seciton
+When a vch authrorised it updates instantly within the customer request and write up tab and parts tab, but not within the invoice tab for the proforma section or invoice section fix this 
 
-CHECK
-deep dive into finding out if the job card database tables can be simplifed, all link wihtin one another, or combined into one table for the whole job card and another table for the whole VHC tab (only the vhc_checks table as its a large part of the job card) 
+
+
+
+
+
 
 
 

@@ -1,7 +1,8 @@
 // file location: src/features/invoices/components/InvoiceDetailSection.js
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import InvoiceDetail from "@/features/invoices/components/InvoiceDetail";
 import styles from "@/features/invoices/styles/invoice.module.css";
+import { supabase } from "@/lib/supabaseClient";
 
 const InvoiceSkeleton = () => {
   return (
@@ -28,15 +29,17 @@ export default function InvoiceDetailSection({
 
   const identifier = jobNumber || orderNumber || "";
 
-  const fetchInvoice = useCallback(async () => {
+  const fetchInvoice = useCallback(async ({ silent = false } = {}) => {
     if (!identifier) {
       setError("Provide a job number or order number to view invoice.");
       setData(null);
       setLoading(false);
       return;
     }
-    setLoading(true);
-    setError("");
+    if (!silent) {
+      setLoading(true);
+      setError("");
+    }
     try {
       const endpoint = jobNumber
         ? `/api/invoices/by-job/${encodeURIComponent(jobNumber)}`
@@ -52,10 +55,14 @@ export default function InvoiceDetailSection({
       setData(payload.data);
     } catch (err) {
       console.error("Invoice fetch failed", err);
-      setError(err.message || "Unable to load invoice");
-      setData(null);
+      if (!silent) {
+        setError(err.message || "Unable to load invoice");
+        setData(null);
+      }
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, [identifier, jobNumber, orderNumber]);
 
@@ -64,10 +71,158 @@ export default function InvoiceDetailSection({
     return () => {};
   }, [fetchInvoice]);
 
+  const invoiceSyncSignature = useMemo(() => {
+    if (!jobData || typeof jobData !== "object") return "";
+
+    const requests = Array.isArray(jobData.jobRequests)
+      ? jobData.jobRequests
+      : Array.isArray(jobData.job_requests)
+      ? jobData.job_requests
+      : [];
+    const parts = Array.isArray(jobData.partsAllocations)
+      ? jobData.partsAllocations
+      : Array.isArray(jobData.parts_job_items)
+      ? jobData.parts_job_items
+      : [];
+    const vhcChecks = Array.isArray(jobData.vhcChecks)
+      ? jobData.vhcChecks
+      : Array.isArray(jobData.vhc_checks)
+      ? jobData.vhc_checks
+      : [];
+    const authorisedRows = Array.isArray(jobData.authorizedVhcItems)
+      ? jobData.authorizedVhcItems
+      : Array.isArray(jobData.authorisedVhcItems)
+      ? jobData.authorisedVhcItems
+      : [];
+
+    const requestSig = requests
+      .map((row) =>
+        [
+          row?.request_id ?? row?.requestId ?? "",
+          row?.request_source ?? row?.requestSource ?? "",
+          row?.job_type ?? row?.jobType ?? "",
+          row?.request_status ?? row?.status ?? "",
+          row?.updated_at ?? row?.updatedAt ?? "",
+        ].join(":")
+      )
+      .sort()
+      .join("|");
+
+    const partsSig = parts
+      .map((row) =>
+        [
+          row?.id ?? "",
+          row?.allocated_to_request_id ?? row?.allocatedToRequestId ?? "",
+          row?.vhc_item_id ?? row?.vhcItemId ?? "",
+          row?.status ?? "",
+          row?.quantity_allocated ?? row?.quantityAllocated ?? row?.qty ?? "",
+          row?.unit_price ?? row?.unitPrice ?? "",
+          row?.updated_at ?? row?.updatedAt ?? "",
+        ].join(":")
+      )
+      .sort()
+      .join("|");
+
+    const vhcSig = vhcChecks
+      .map((row) =>
+        [
+          row?.vhc_id ?? row?.vhcId ?? "",
+          row?.request_id ?? row?.requestId ?? "",
+          row?.approval_status ?? row?.approvalStatus ?? "",
+          row?.authorization_state ?? row?.authorizationState ?? "",
+          row?.display_status ?? row?.displayStatus ?? "",
+          row?.Complete ?? row?.complete ?? "",
+          row?.updated_at ?? row?.updatedAt ?? "",
+        ].join(":")
+      )
+      .sort()
+      .join("|");
+
+    const authorisedSig = authorisedRows
+      .map((row) =>
+        [
+          row?.request_id ?? row?.requestId ?? "",
+          row?.vhc_id ?? row?.vhcItemId ?? row?.vhc_item_id ?? "",
+          row?.approval_status ?? row?.approvalStatus ?? "",
+          row?.authorization_state ?? row?.authorizationState ?? "",
+          row?.approved_at ?? row?.approvedAt ?? "",
+          row?.updated_at ?? row?.updatedAt ?? "",
+        ].join(":")
+      )
+      .sort()
+      .join("|");
+
+    return `${requestSig}__${partsSig}__${vhcSig}__${authorisedSig}`;
+  }, [jobData]);
+
+  useEffect(() => {
+    if (!identifier || !invoiceSyncSignature) return;
+    const timeout = setTimeout(() => {
+      fetchInvoice({ silent: true });
+    }, 250);
+    return () => clearTimeout(timeout);
+  }, [identifier, invoiceSyncSignature, fetchInvoice]);
+
+  useEffect(() => {
+    if (!jobId) return;
+
+    let refreshTimeout = null;
+    const queueRefresh = () => {
+      if (refreshTimeout) clearTimeout(refreshTimeout);
+      refreshTimeout = setTimeout(() => {
+        fetchInvoice({ silent: true });
+      }, 120);
+    };
+
+    const channel = supabase.channel(`invoice-sync-${jobId}`);
+    const tables = [
+      "job_requests",
+      "parts_job_items",
+      "vhc_checks",
+      "job_writeups",
+      "invoice_requests",
+      "invoice_request_items",
+      "proforma_request_overrides",
+      "invoices",
+    ];
+
+    tables.forEach((table) => {
+      const filter =
+        table === "invoices"
+          ? jobNumber
+            ? `job_number=eq.${jobNumber}`
+            : `job_id=eq.${jobId}`
+          : `job_id=eq.${jobId}`;
+      channel.on(
+        "postgres_changes",
+        { event: "*", schema: "public", table, filter },
+        () => queueRefresh()
+      );
+    });
+
+    channel.subscribe();
+
+    return () => {
+      if (refreshTimeout) clearTimeout(refreshTimeout);
+      supabase.removeChannel(channel);
+    };
+  }, [jobId, fetchInvoice]);
+
   const handlePrint = useCallback(() => {
     if (typeof window !== "undefined") {
       window.print();
     }
+  }, []);
+
+  const handleDataPatch = useCallback((updater) => {
+    setData((prev) => {
+      if (!prev) return prev;
+      if (typeof updater === "function") {
+        const next = updater(prev);
+        return next || prev;
+      }
+      return prev;
+    });
   }, []);
 
   const handleEmail = useCallback(async () => {
@@ -156,6 +311,8 @@ export default function InvoiceDetailSection({
         emailStatus={emailStatus}
         customerEmail={customerEmail}
         jobData={jobData}
+        onDataRefresh={fetchInvoice}
+        onDataPatch={handleDataPatch}
       />
     </>
   );

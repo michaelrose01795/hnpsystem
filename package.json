@@ -4,6 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "uk:check": "node scripts/enforce-uk-english.js",
+    "uk:check:all": "node scripts/enforce-uk-english.js --all",
+    "uk:fix": "node scripts/enforce-uk-english.js --fix",
     "build": "next build",
     "start": "next start",
     "backfill:vhc-severity": "node scripts/backfill-vhc-severity.js",

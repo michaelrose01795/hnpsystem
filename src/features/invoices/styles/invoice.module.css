@@ -111,7 +111,6 @@
   flex-wrap: wrap; /* // allow wrap on small screens */
   justify-content: space-between; /* // push content apart */
   gap: 10px; /* // spacing */
-  min-height: 98px; /* // keep table start position consistent across sections */
   align-items: flex-start; /* // pin content to top edge */
 } /* // end requestHeader */
 

@@ -1,10 +1,15 @@
 // file location: src/lib/invoices/detailService.js // describe where this helper lives
 import supabase from "@/lib/supabaseClient"; // import shared Supabase client for DB access
+import { createClient } from "@supabase/supabase-js";
 
 const DEFAULT_VAT_RATE = 20; // default VAT percentage when configuration missing
 const DEFAULT_LABOUR_RATE = 85; // default labour rate per hour fallback
 
 const RATE_KEYS = ["vat_rate", "default_labour_rate"]; // configuration keys stored in company_settings table
+const serviceRoleClient =
+  process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+    ? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
+    : null;
 
 async function fetchCompanyRates() { // fetch VAT + labour rate snapshot
   const { data, error } = await supabase // run Supabase query
@@ -142,20 +147,20 @@ async function fetchJobRequests(jobId) { // fetch job requests fallback
 async function fetchAuthorizedVhcRequests(jobId) { // fetch authorised VHC rows linked to job requests
   const { data, error } = await supabase
     .from("vhc_checks")
-    .select("request_id, issue_title, issue_description, labour_hours, parts_cost, approval_status, authorization_state, section")
+    .select("vhc_id, request_id, issue_title, issue_description, labour_hours, parts_cost, approval_status, authorization_state, section")
     .eq("job_id", jobId);
   if (error && error.code !== "PGRST116") {
     throw error;
   }
+  const isAuthorisedDecision = (value) => {
+    const normalized = String(value || "").trim().toLowerCase();
+    return normalized === "authorized" || normalized === "authorised" || normalized === "completed";
+  };
   return (data || []).filter((row) => {
     const section = String(row?.section || "").trim();
     if (section === "VHC_CHECKSHEET" || section === "VHC Checksheet") return false;
-    const decision = String(row?.authorization_state || row?.approval_status || "").trim().toLowerCase();
-    return (
-      decision === "authorized" ||
-      decision === "authorised" ||
-      decision === "completed"
-    );
+    // Accept either field because legacy rows and sync races can leave one stale.
+    return isAuthorisedDecision(row?.authorization_state) || isAuthorisedDecision(row?.approval_status);
   });
 } // end fetchAuthorizedVhcRequests
 
@@ -165,6 +170,7 @@ async function fetchJobPartAllocations(jobId) { // fetch parts allocated to job 
     .select(`
       id,
       allocated_to_request_id,
+      vhc_item_id,
       quantity_allocated,
       unit_price,
       unit_cost,
@@ -276,9 +282,6 @@ function attachWriteUpDetailsToRequests(requests = [], writeUp = null) {
       }
     });
 
-  const globalFault = compactWriteUpText(writeUp.fault || "");
-  const globalRectification = compactWriteUpText(writeUp.rectification || "");
-
   return requests.map((request) => {
     const requestId = request?.request_id ?? null;
     const sortOrder = request?.request_sort_order ?? request?.request_number ?? null;
@@ -289,12 +292,10 @@ function attachWriteUpDetailsToRequests(requests = [], writeUp = null) {
 
     const fault =
       (keyById ? faultByRequestId[keyById] : "") ||
-      (keyBySort ? faultBySortOrder[keyBySort] : "") ||
-      globalFault;
+      (keyBySort ? faultBySortOrder[keyBySort] : "");
     const rectification =
       (keyById ? rectificationByRequestId[keyById] : "") ||
-      (keyBySort ? rectificationBySortOrder[keyBySort] : "") ||
-      globalRectification;
+      (keyBySort ? rectificationBySortOrder[keyBySort] : "");
 
     if (!fault && !rectification) return request;
     return {
@@ -346,6 +347,7 @@ function buildVehicleDetails(invoice, job, vehicle) { // build vehicle row snaps
 
 function enrichRequestsFromJob(jobRequests, partAllocations, vatRate, labourRate, authorizedVhcRows = []) { // fallback builder for request payload
   const groupedParts = {}; // map request_id -> part items
+  const groupedPartsByVhcId = {}; // map vhc_item_id -> part items
   partAllocations.forEach((allocation) => { // iterate all part allocations
     const key =
       allocation.allocated_to_request_id !== null &&
@@ -356,6 +358,15 @@ function enrichRequestsFromJob(jobRequests, partAllocations, vatRate, labourRate
       groupedParts[key] = []; // create array
     }
     groupedParts[key].push(allocation); // push allocation
+
+    const vhcKey =
+      allocation.vhc_item_id !== null && allocation.vhc_item_id !== undefined
+        ? String(allocation.vhc_item_id)
+        : null;
+    if (vhcKey) {
+      if (!groupedPartsByVhcId[vhcKey]) groupedPartsByVhcId[vhcKey] = [];
+      groupedPartsByVhcId[vhcKey].push(allocation);
+    }
   }); // done grouping
   const authorisedByRequestId = {};
   (authorizedVhcRows || []).forEach((row) => {
@@ -382,6 +393,7 @@ function enrichRequestsFromJob(jobRequests, partAllocations, vatRate, labourRate
       issueDescription,
       labourHours: Number.isFinite(labourHours) ? labourHours : null,
       partsCost: Number.isFinite(partsCost) ? partsCost : null,
+      vhcItemId: row?.vhc_id ?? row?.vhcItemId ?? row?.vhc_item_id ?? null,
     };
     if (!existing) {
       authorisedByRequestId[key] = candidate;
@@ -466,7 +478,19 @@ function enrichRequestsFromJob(jobRequests, partAllocations, vatRate, labourRate
         ? request.request_id
         : "unassigned"; // choose parts bucket key
     const requestParts = groupedParts[bucketKey] || []; // keep strictly linked parts for this request
-    const parts = requestParts
+    const vhcParts =
+      vhcMeta?.vhcItemId !== null && vhcMeta?.vhcItemId !== undefined
+        ? groupedPartsByVhcId[String(vhcMeta.vhcItemId)] || []
+        : [];
+    const mergedRequestParts = [...requestParts];
+    const seenPartRowIds = new Set(mergedRequestParts.map((row) => String(row?.id)));
+    vhcParts.forEach((row) => {
+      const rowId = String(row?.id);
+      if (seenPartRowIds.has(rowId)) return;
+      seenPartRowIds.add(rowId);
+      mergedRequestParts.push(row);
+    });
+    const parts = mergedRequestParts
       .map((item) => { // map part allocations
       const qty = Number(item.quantity_allocated || 0); // parse quantity
       const unitGross = Number(item.unit_price) || 0; // stored unit price includes VAT
@@ -591,6 +615,7 @@ function normalizeInvoiceRequests(structuredRequests, options = {}) { // convert
     return { // return normalized request object
       request_id: request.request_id ?? null, // available when schema includes it
       request_kind: isAuthorised ? "authorised" : "request", // explicit row type for frontend
+      request_source: request.request_source || request.requestSource || null,
       request_number: request.request_number || index + 1, // preserve stored request number
       request_label: requestLabel, // typed request label
       title: request.title || requestLabel, // title fallback with full description
@@ -606,6 +631,134 @@ function normalizeInvoiceRequests(structuredRequests, options = {}) { // convert
     }; // end object
   }); // finish mapping
 } // end normalizeInvoiceRequests
+
+function appendMissingAuthorisedRowsFromVhcChecks({
+  requests = [],
+  partAllocations = [],
+  authorizedVhcRows = [],
+  vatRate = DEFAULT_VAT_RATE,
+  labourRate = DEFAULT_LABOUR_RATE,
+}) {
+  const existingRequestIdSet = new Set(
+    (Array.isArray(requests) ? requests : [])
+      .map((request) => request?.request_id)
+      .filter((value) => value !== null && value !== undefined)
+      .map((value) => String(value))
+  );
+
+  const groupedPartsByVhcId = {};
+  (Array.isArray(partAllocations) ? partAllocations : []).forEach((allocation) => {
+    const vhcId = allocation?.vhc_item_id;
+    if (vhcId === null || vhcId === undefined) return;
+    const key = String(vhcId);
+    if (!groupedPartsByVhcId[key]) groupedPartsByVhcId[key] = [];
+    groupedPartsByVhcId[key].push(allocation);
+  });
+
+  const missingRows = [];
+  (Array.isArray(authorizedVhcRows) ? authorizedVhcRows : []).forEach((row) => {
+    const requestId = row?.request_id ?? null;
+    if (requestId !== null && requestId !== undefined && existingRequestIdSet.has(String(requestId))) {
+      return;
+    }
+
+    const labourHoursRaw = row?.labour_hours;
+    const labourHours =
+      labourHoursRaw !== null && labourHoursRaw !== undefined && labourHoursRaw !== ""
+        ? Number(labourHoursRaw)
+        : 0;
+    const safeLabourHours = Number.isFinite(labourHours) ? labourHours : 0;
+    const labourNet = safeLabourHours * labourRate;
+    const labourVat = labourNet * (vatRate / 100);
+
+    const vhcId = row?.vhc_id ?? null;
+    const linkedParts = vhcId !== null && vhcId !== undefined ? groupedPartsByVhcId[String(vhcId)] || [] : [];
+    const parts = linkedParts
+      .map((item) => {
+        const qty = Number(item.quantity_allocated || 0);
+        const unitGross = Number(item.unit_price) || 0;
+        const vatFactor = 1 + vatRate / 100;
+        const unitNet = vatFactor > 0 ? unitGross / vatFactor : unitGross;
+        const net = unitNet * qty;
+        const gross = unitGross * qty;
+        const vat = gross - net;
+        return {
+          part_number: item.part?.part_number || "",
+          description: item.part?.name || item.part?.description || "Part",
+          retail: item.part?.unit_price || null,
+          qty,
+          price: unitNet,
+          vat,
+          rate: vatRate,
+          net_price: net,
+        };
+      })
+      .filter((part) => part.qty > 0);
+
+    const partsFromAllocationsNet = parts.reduce((sum, part) => sum + Number(part.net_price || 0), 0);
+    const vhcPartsCostRaw =
+      row?.parts_cost !== null && row?.parts_cost !== undefined && row?.parts_cost !== ""
+        ? Number(row.parts_cost)
+        : null;
+    const vhcPartsCost = Number.isFinite(vhcPartsCostRaw) ? vhcPartsCostRaw : 0;
+    const partsNet = partsFromAllocationsNet > 0 ? partsFromAllocationsNet : vhcPartsCost;
+    const partsVat =
+      partsFromAllocationsNet > 0
+        ? parts.reduce((sum, part) => sum + Number(part.vat || 0), 0)
+        : partsNet * (vatRate / 100);
+
+    const issueTitle = String(row?.issue_title || "").trim();
+    const issueDescription = String(row?.issue_description || "").trim();
+    const title = issueDescription ? `${issueTitle} - ${issueDescription}` : issueTitle || "Authorised VHC Item";
+
+    const summaryBits = [];
+    if (safeLabourHours > 0) summaryBits.push(`Labour: ${safeLabourHours}h`);
+    if (partsNet > 0) summaryBits.push(`Authorised parts: £${partsNet.toFixed(2)}`);
+
+    missingRows.push({
+      request_id: requestId,
+      request_kind: "authorised",
+      request_source: "vhc_authorised",
+      request_number: 0, // normalized below
+      request_label: "",
+      title,
+      summary: summaryBits.join(" | "),
+      job_type: "Authorised",
+      labour: {
+        hours: safeLabourHours,
+        net: labourNet,
+        vat: labourVat,
+        rate: vatRate,
+      },
+      parts: parts.map((part) => ({
+        part_number: part.part_number,
+        description: part.description,
+        retail: part.retail,
+        qty: part.qty,
+        price: part.price,
+        vat: part.vat,
+        rate: part.rate,
+      })),
+      totals: {
+        request_total_net: labourNet + partsNet,
+        request_total_vat: labourVat + partsVat,
+        request_total_gross: labourNet + partsNet + labourVat + partsVat,
+      },
+    });
+  });
+
+  if (missingRows.length === 0) return requests;
+
+  const base = Array.isArray(requests) ? [...requests] : [];
+  const existingMaxNumber = base.reduce(
+    (max, request) => Math.max(max, Number(request?.request_number || 0)),
+    0
+  );
+  missingRows.forEach((row, index) => {
+    row.request_number = existingMaxNumber + index + 1;
+  });
+  return [...base, ...missingRows];
+}
 
 function buildCompanyBlock(profile) { // shape company object for API
   return { // return structure
@@ -641,6 +794,115 @@ function aggregateRequestTotals(requests = []) { // summarize request totals int
   );
 } // end aggregateRequestTotals
 
+const buildProformaRequestKey = ({ requestId, requestKind, requestNumber }) => {
+  const kind = requestKind === "authorised" ? "authorised" : "request";
+  if (requestId !== null && requestId !== undefined) {
+    return `${kind}:id:${String(requestId)}`;
+  }
+  return `${kind}:idx:${Number(requestNumber || 0)}`;
+};
+
+async function fetchProformaOverrides(jobId) {
+  if (!jobId) return [];
+  const db = serviceRoleClient || supabase;
+  const { data, error } = await db
+    .from("proforma_request_overrides")
+    .select("*")
+    .eq("job_id", jobId);
+  if (error && error.code !== "PGRST116") {
+    console.warn("fetchProformaOverrides error", error);
+    return [];
+  }
+  return Array.isArray(data) ? data : [];
+}
+
+function applyProformaOverrides(requests = [], overrides = []) {
+  if (!Array.isArray(requests) || requests.length === 0 || !Array.isArray(overrides) || overrides.length === 0) {
+    return requests;
+  }
+  const byKey = new Map();
+  overrides.forEach((row) => {
+    const key = String(row?.request_key || "").trim();
+    if (key) byKey.set(key, row);
+  });
+
+  return requests.map((request) => {
+    const key = buildProformaRequestKey({
+      requestId: request?.request_id ?? null,
+      requestKind: request?.request_kind || "request",
+      requestNumber: request?.request_number || 0,
+    });
+    const row = byKey.get(key);
+    if (!row) {
+      return { ...request, proforma_key: key, proforma_override: null };
+    }
+
+    const labourHours =
+      row.labour_hours_override !== null && row.labour_hours_override !== undefined
+        ? Number(row.labour_hours_override) || 0
+        : Number(request?.labour?.hours || 0);
+    const labourNet =
+      row.labour_total_override !== null && row.labour_total_override !== undefined
+        ? Number(row.labour_total_override) || 0
+        : Number(request?.labour?.net || 0);
+    const partsNetCurrent = Number(request?.totals?.request_total_net || 0) - Number(request?.labour?.net || 0);
+    const partsNet =
+      row.parts_total_override !== null && row.parts_total_override !== undefined
+        ? Number(row.parts_total_override) || 0
+        : partsNetCurrent;
+    const vatValue =
+      row.tax_total_override !== null && row.tax_total_override !== undefined
+        ? Number(row.tax_total_override) || 0
+        : Number(request?.totals?.request_total_vat || 0);
+    const grossValue =
+      row.total_override !== null && row.total_override !== undefined
+        ? Number(row.total_override) || 0
+        : labourNet + partsNet + vatValue;
+
+    return {
+      ...request,
+      title: row.title_override || request.title,
+      summary: row.summary_override || request.summary,
+      labour: {
+        ...(request.labour || {}),
+        hours: labourHours,
+        net: labourNet,
+      },
+      totals: {
+        ...(request.totals || {}),
+        request_total_net: labourNet + partsNet,
+        request_total_vat: vatValue,
+        request_total_gross: grossValue,
+      },
+      proforma_key: key,
+      proforma_override: {
+        title_override: row.title_override || "",
+        summary_override: row.summary_override || "",
+        labour_hours_override:
+          row.labour_hours_override !== null && row.labour_hours_override !== undefined
+            ? Number(row.labour_hours_override)
+            : null,
+        labour_total_override:
+          row.labour_total_override !== null && row.labour_total_override !== undefined
+            ? Number(row.labour_total_override)
+            : null,
+        parts_total_override:
+          row.parts_total_override !== null && row.parts_total_override !== undefined
+            ? Number(row.parts_total_override)
+            : null,
+        tax_total_override:
+          row.tax_total_override !== null && row.tax_total_override !== undefined
+            ? Number(row.tax_total_override)
+            : null,
+        total_override:
+          row.total_override !== null && row.total_override !== undefined
+            ? Number(row.total_override)
+            : null,
+      },
+    };
+  });
+}
+
 async function buildJobInvoiceFallback({ jobNumber, vatRate, labourRate, companyProfile }) { // build proforma payload from job data
   if (!jobNumber) {
     return null;
@@ -654,7 +916,18 @@ async function buildJobInvoiceFallback({ jobNumber, vatRate, labourRate, company
     fetchJobPartAllocations(job.id),
     fetchAuthorizedVhcRequests(job.id)
   ]); // collect request + parts info
-  const requests = enrichRequestsFromJob(jobRequests, partAllocations, vatRate, labourRate, authorizedVhcRows); // derive request blocks
+  const derivedRequests = enrichRequestsFromJob(jobRequests, partAllocations, vatRate, labourRate, authorizedVhcRows); // derive request blocks
+  const requestsWithMissingAuthorised = appendMissingAuthorisedRowsFromVhcChecks({
+    requests: derivedRequests,
+    partAllocations,
+    authorizedVhcRows,
+    vatRate,
+    labourRate,
+  });
+  const writeUp = await fetchJobWriteUp(job.id);
+  const requestsWithWriteUp = attachWriteUpDetailsToRequests(requestsWithMissingAuthorised, writeUp);
+  const overrides = await fetchProformaOverrides(job.id);
+  const requests = applyProformaOverrides(requestsWithWriteUp, overrides);
   const totals = aggregateRequestTotals(requests); // compute totals
   const invoiceTo = formatAddress(customer); // build customer address
   const companyBlock = buildCompanyBlock(companyProfile); // company snapshot
@@ -826,13 +1099,18 @@ export async function getInvoiceDetailPayload({ jobNumber, orderNumber }) { // m
   ); // finish snapshot fetch
   const invoiceRequests = await fetchInvoiceRequests(invoice.id); // try fetching stored invoice requests
   let requests = []; // prepare array
+  let livePartAllocations = [];
+  let liveAuthorizedVhcRows = [];
   if (invoiceRequests.length > 0) { // use stored requests when available
     let authorisedRequestIds = [];
     if (job?.id) {
-      const [jobRequests, authorizedVhcRows] = await Promise.all([
+      const [jobRequests, authorizedVhcRows, partAllocations] = await Promise.all([
         fetchJobRequests(job.id),
-        fetchAuthorizedVhcRequests(job.id)
+        fetchAuthorizedVhcRequests(job.id),
+        fetchJobPartAllocations(job.id)
       ]);
+      liveAuthorizedVhcRows = Array.isArray(authorizedVhcRows) ? authorizedVhcRows : [];
+      livePartAllocations = Array.isArray(partAllocations) ? partAllocations : [];
       const fromJobRequests = (Array.isArray(jobRequests) ? jobRequests : [])
         .filter((row) => {
           const source = String(row?.request_source || row?.requestSource || "").trim().toLowerCase();
@@ -846,7 +1124,7 @@ export async function getInvoiceDetailPayload({ jobNumber, orderNumber }) { // m
         })
         .map((row) => row?.request_id ?? row?.requestId)
         .filter((value) => value !== null && value !== undefined);
-      const fromVhcChecks = (Array.isArray(authorizedVhcRows) ? authorizedVhcRows : [])
+      const fromVhcChecks = liveAuthorizedVhcRows
         .map((row) => row?.request_id ?? row?.requestId)
         .filter((value) => value !== null && value !== undefined);
       authorisedRequestIds = [...new Set([...fromJobRequests, ...fromVhcChecks].map((value) => String(value)))];
@@ -858,9 +1136,20 @@ export async function getInvoiceDetailPayload({ jobNumber, orderNumber }) { // m
       fetchJobPartAllocations(job.id), // part allocations
       fetchAuthorizedVhcRequests(job.id)
     ]); // finish fetching
+    livePartAllocations = Array.isArray(partAllocations) ? partAllocations : [];
+    liveAuthorizedVhcRows = Array.isArray(authorizedVhcRows) ? authorizedVhcRows : [];
     requests = enrichRequestsFromJob(jobRequests, partAllocations, vatRate, labourRate, authorizedVhcRows); // build from job data
   } else { // fallback when no job at all
     requests = []; // keep empty list
+  }
+  if (job?.id && liveAuthorizedVhcRows.length > 0) {
+    requests = appendMissingAuthorisedRowsFromVhcChecks({
+      requests,
+      partAllocations: livePartAllocations,
+      authorizedVhcRows: liveAuthorizedVhcRows,
+      vatRate,
+      labourRate,
+    });
   }
   if (job?.id && requests.length > 0) {
     const writeUp = await fetchJobWriteUp(job.id);

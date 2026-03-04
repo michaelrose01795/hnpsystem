@@ -516,10 +516,11 @@ const RANK_TO_SEVERITY = {
   1: "grey",
   0: "green",
 };
-const LABOUR_RATE = 150;
-const QUOTE_LABOUR_RATE = 85;
-const LABOUR_COST_DEFAULT_GBP = 150;
 const LABOUR_VAT_RATE = 0.2;
+const LABOUR_RATE_GROSS_DEFAULT_GBP = 150;
+const LABOUR_RATE = LABOUR_RATE_GROSS_DEFAULT_GBP / (1 + LABOUR_VAT_RATE);
+const QUOTE_LABOUR_RATE = 85;
+const LABOUR_COST_DEFAULT_GBP = LABOUR_RATE;
 const SEVERITY_META = {
   red: { title: "Red Repairs", description: "", accent: "var(--danger-dark)" },
   amber: { title: "Amber Repairs", description: "", accent: "var(--warning-dark)" },
@@ -1453,6 +1454,7 @@ export default function VhcDetailsPanel({
     open: false,
     itemId: null,
     costInput: String(LABOUR_COST_DEFAULT_GBP),
+    hoursInput: "",
   });
   const labourOverrideDebounceRef = useRef({});
   const labourHoursPersistDebounceRef = useRef({});
@@ -2228,6 +2230,28 @@ export default function VhcDetailsPanel({
     return new Map(summaryItems.map((item) => [String(item.id), item]));
   }, [summaryItems]);
 
+  const resolveOriginalSeverityDisplay = useCallback(
+    (itemId, fallbackItem = null) => {
+      const canonicalId = String(resolveCanonicalVhcId(itemId) || "");
+      const fallbackId = String(itemId || "");
+      const check =
+        vhcChecksData.find((row) => String(row?.vhc_id) === canonicalId) ||
+        vhcChecksData.find((row) => String(row?.vhc_id) === fallbackId) ||
+        null;
+
+      const fromDb = normaliseColour(check?.severity || check?.display_status);
+      if (fromDb) return fromDb;
+
+      return (
+        normaliseColour(fallbackItem?.rawSeverity) ||
+        normaliseColour(fallbackItem?.severityKey) ||
+        resolveSeverityKey(fallbackItem?.rawSeverity, fallbackItem?.displayStatus) ||
+        null
+      );
+    },
+    [resolveCanonicalVhcId, vhcChecksData]
+  );
+
   const greenItems = useMemo(() => {
     const items = [];
     sections.forEach((section) => {
@@ -2851,20 +2875,23 @@ export default function VhcDetailsPanel({
 
   const getEntryForItem = (itemId) => ensureEntryValue(itemEntries, itemId);
 
+  const hasValidLabourHoursInput = useCallback((value) => {
+    if (value === null || value === undefined) return false;
+    const text = String(value).trim();
+    if (!text) return false;
+    const numeric = Number(text);
+    return Number.isFinite(numeric) && numeric >= 0;
+  }, []);
+
   const resolveLabourHoursValue = (itemId, entry) => {
     const localValue = entry?.laborHours;
     if (localValue === "") return "";
     if (localValue !== null && localValue !== undefined) {
-      const localNumeric = Number(localValue);
-      if (Number.isFinite(localNumeric) && localNumeric === 0 && !entry?.labourComplete) {
-        return "";
-      }
       return localValue;
     }
     const canonicalId = resolveCanonicalVhcId(itemId);
     const hours = labourHoursByVhcItem.map.get(canonicalId);
     if (!Number.isFinite(hours)) return "";
-    if (hours === 0 && !entry?.labourComplete) return "";
     return String(hours);
   };
 
@@ -2872,11 +2899,7 @@ export default function VhcDetailsPanel({
     if (typeof entry?.labourComplete === "boolean" && entry.labourComplete) {
       return true;
     }
-    if (labourHoursValue === null || labourHoursValue === undefined) return false;
-    const text = String(labourHoursValue).trim();
-    if (!text) return false;
-    const numeric = Number(text);
-    return Number.isFinite(numeric) && numeric >= 0;
+    return hasValidLabourHoursInput(labourHoursValue);
   };
 
   const buildSummaryItemIdentity = useCallback((summaryItem) => {
@@ -3073,7 +3096,7 @@ export default function VhcDetailsPanel({
     const dbStatus = normaliseDecisionStatus(status) || "pending";
     const completeFlag = dbStatus === "completed";
     const summaryItem = summaryItemLookup.get(String(itemId));
-    const severityKey = resolveSeverityKey(summaryItem?.rawSeverity, summaryItem?.displayStatus);
+    const severityKey = resolveOriginalSeverityDisplay(itemId, summaryItem);
     let newDisplayStatus = null;
     if (dbStatus === "authorized") newDisplayStatus = "authorized";
     if (dbStatus === "declined") newDisplayStatus = "declined";
@@ -3114,7 +3137,7 @@ export default function VhcDetailsPanel({
         labourComplete: labourCompleteValue,
         complete: completeFlag,
       };
-      if (newDisplayStatus) {
+      if (newDisplayStatus && dbStatus !== "pending") {
         requestBody.displayStatus = newDisplayStatus;
       }
       if (resolvedLabourHours !== "" && resolvedLabourHours !== null && resolvedLabourHours !== undefined) {
@@ -3497,12 +3520,13 @@ export default function VhcDetailsPanel({
   };
 
   const openLabourCostModal = (itemId, labourHoursValue) => {
-    const currentCost = computeLabourCost(labourHoursValue);
-    const defaultCost = currentCost > 0 ? currentCost : LABOUR_COST_DEFAULT_GBP;
+    const parsedHours = Number(labourHoursValue);
+    const resolvedHours = Number.isFinite(parsedHours) && parsedHours >= 0 ? parsedHours : 0;
     setLabourCostModal({
       open: true,
       itemId,
-      costInput: defaultCost.toFixed(2),
+      costInput: LABOUR_COST_DEFAULT_GBP.toFixed(2),
+      hoursInput: resolvedHours.toFixed(2),
     });
   };
 
@@ -3510,7 +3534,8 @@ export default function VhcDetailsPanel({
     setLabourCostModal({
       open: false,
       itemId: null,
-      costInput: String(LABOUR_COST_DEFAULT_GBP),
+      costInput: LABOUR_COST_DEFAULT_GBP.toFixed(2),
+      hoursInput: "",
     });
   };
 
@@ -3521,9 +3546,9 @@ export default function VhcDetailsPanel({
       return;
     }
 
-    const parsedCost = parseCurrencyValue(labourCostModal.costInput);
-    const netCost = parsedCost === null ? LABOUR_COST_DEFAULT_GBP : parsedCost;
-    const hoursValue = (netCost / LABOUR_RATE).toFixed(2);
+    const parsedHours = Number(labourCostModal.hoursInput);
+    const resolvedHours = Number.isFinite(parsedHours) && parsedHours >= 0 ? parsedHours : 0;
+    const hoursValue = resolvedHours.toFixed(2);
 
     setItemEntries((prev) => ({
       ...prev,
@@ -3728,7 +3753,7 @@ export default function VhcDetailsPanel({
           return null;
         }
 
-        const item = itemsMap.get(itemId);
+          const item = itemsMap.get(itemId);
 
         // Determine the display_status based on the action
         let displayStatus = null;
@@ -3738,10 +3763,10 @@ export default function VhcDetailsPanel({
           displayStatus = 'declined';
         } else if (dbStatus === "completed") {
           displayStatus = 'completed';
-        } else if (dbStatus === "pending") {
-          // For Reset: restore original severity
-          displayStatus = item?.severityKey || resolveSeverityKey(item?.rawSeverity, item?.displayStatus);
-        }
+          } else if (dbStatus === "pending") {
+            // For Reset: restore original severity from DB where available.
+            displayStatus = resolveOriginalSeverityDisplay(itemId, item);
+          }
 
         try {
           const entry = getEntryForItem(itemId);
@@ -3749,10 +3774,12 @@ export default function VhcDetailsPanel({
           const requestBody = {
             vhcItemId: parsedId,
             approvalStatus: dbStatus,
-            displayStatus: displayStatus,
             approvedBy: authUserId || dbUserId || "system",
             complete: completeFlag,
           };
+          if (displayStatus && dbStatus !== "pending") {
+            requestBody.displayStatus = displayStatus;
+          }
           if (resolvedLabourHours !== "" && resolvedLabourHours !== null && resolvedLabourHours !== undefined) {
             requestBody.labourHours = resolvedLabourHours;
           }
@@ -3818,7 +3845,7 @@ export default function VhcDetailsPanel({
       // Clear selection
       setSeveritySelections((prev) => ({ ...prev, [severity]: [] }));
     },
-    [severitySelections, severityLists, resolveCanonicalVhcId, resolveLabourHoursValue, resolveLabourCompleteValue, authUserId, dbUserId, refreshJobData, createVhcCheckForDisplayId]
+    [severitySelections, severityLists, resolveCanonicalVhcId, resolveLabourHoursValue, resolveLabourCompleteValue, authUserId, dbUserId, refreshJobData, createVhcCheckForDisplayId, resolveOriginalSeverityDisplay]
   );
 
   const handleMoveItem = useCallback(
@@ -3875,8 +3902,7 @@ export default function VhcDetailsPanel({
           ...(severityLists.authorized || []),
           ...(severityLists.declined || []),
         ].find((row) => String(row?.id) === String(itemId));
-        const restoredPendingSeverity =
-          sourceItem?.severityKey || resolveSeverityKey(sourceItem?.rawSeverity, sourceItem?.displayStatus);
+        const restoredPendingSeverity = resolveOriginalSeverityDisplay(itemId, sourceItem);
         const newDisplayStatus =
           newStatus === 'authorized'
             ? 'authorized'
@@ -3911,7 +3937,7 @@ export default function VhcDetailsPanel({
         console.error(`❌ [VHC MOVE ERROR] Exception:`, error);
       }
     },
-    [resolveCanonicalVhcId, resolveLabourHoursValue, resolveLabourCompleteValue, authUserId, dbUserId, refreshJobData]
+    [resolveCanonicalVhcId, resolveLabourHoursValue, resolveLabourCompleteValue, authUserId, dbUserId, refreshJobData, resolveOriginalSeverityDisplay]
   );
 
   const labourSuggestionUserId = useMemo(() => {
@@ -4528,12 +4554,12 @@ export default function VhcDetailsPanel({
                             const existingSession = labourEditSessionRef.current[item.id] || {};
                             setItemEntries((prev) => ({
                               ...prev,
-                              [item.id]: {
-                                ...ensureEntryValue(prev, item.id),
-                                laborHours: value,
-                                labourComplete: !isBlank,
-                              },
-                            }));
+                                [item.id]: {
+                                  ...ensureEntryValue(prev, item.id),
+                                  laborHours: value,
+                                  labourComplete: hasValidLabourHoursInput(value),
+                                },
+                              }));
                             labourEditSessionRef.current[item.id] = {
                               ...existingSession,
                               initialValue: existingSession.initialValue ?? String(resolvedLabourHours ?? ""),
@@ -5463,6 +5489,7 @@ export default function VhcDetailsPanel({
       const isBlank = hoursValue === "" || hoursValue === null || hoursValue === undefined;
       const parsedHours = Number(hoursValue);
       const labourHours = !isBlank && Number.isFinite(parsedHours) ? parsedHours : null;
+      const hasValidHours = hasValidLabourHoursInput(hoursValue);
 
       try {
         let vhcItemIdToUse = parsedId;
@@ -5479,20 +5506,20 @@ export default function VhcDetailsPanel({
           const vhcResponse = await fetch("/api/vhc/update-item-status", {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              vhcItemId: vhcItemIdToUse,
-              labourHours: isBlank ? null : labourHours,
-              labourComplete: !isBlank,
-              approvedBy: authUserId || dbUserId || null,
-            }),
-          });
+              body: JSON.stringify({
+                vhcItemId: vhcItemIdToUse,
+                labourHours: hasValidHours ? labourHours : null,
+                labourComplete: hasValidHours,
+                approvedBy: authUserId || dbUserId || null,
+              }),
+            });
           const vhcResult = await vhcResponse.json();
           if (!vhcResponse.ok || !vhcResult?.success) {
             console.warn("Failed to update vhc_checks labour hours:", vhcResult?.message);
           } else {
             setVhcChecksData((prev) => prev.map((check) => {
               if (String(check.vhc_id) !== String(vhcItemIdToUse)) return check;
-              return { ...check, labour_hours: labourHours, labour_complete: !isBlank };
+              return { ...check, labour_hours: hasValidHours ? labourHours : null, labour_complete: hasValidHours };
             }));
           }
 
@@ -5545,7 +5572,7 @@ export default function VhcDetailsPanel({
         console.error("Failed to persist labour hours", error);
       }
     },
-    [authUserId, dbUserId, job?.id, resolveCanonicalVhcId, createVhcCheckForDisplayId, refreshJobData]
+    [authUserId, dbUserId, job?.id, resolveCanonicalVhcId, createVhcCheckForDisplayId, refreshJobData, hasValidLabourHoursInput]
   );
 
   const queuePersistLabourHours = useCallback(
@@ -9210,46 +9237,87 @@ export default function VhcDetailsPanel({
                 Labour Cost
               </h4>
               <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      marginBottom: "8px",
-                      fontSize: "13px",
-                      fontWeight: "600",
-                      color: "#666",
-                    }}
-                  >
-                    Labour Net Cost (GBP)
-                  </label>
-                  <input
-                    type="text"
-                    value={labourCostModal.costInput}
-                    onChange={(event) => setLabourCostModal((prev) => ({ ...prev, costInput: event.target.value }))}
-                    placeholder="150.00"
-                    style={{
-                      width: "100%",
-                      padding: "12px 16px",
-                      borderRadius: "12px",
-                      border: "2px solid var(--surface-light)",
-                      backgroundColor: "var(--surface-light)",
-                      fontSize: "15px",
-                      transition: "border-color 0.2s",
-                    }}
-                    onFocus={(event) => {
-                      event.target.style.borderColor = "var(--primary)";
-                    }}
-                    onBlur={(event) => {
-                      event.target.style.borderColor = "var(--surface-light)";
-                    }}
-                  />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                  <div>
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: "8px",
+                        fontSize: "13px",
+                        fontWeight: "600",
+                        color: "#666",
+                      }}
+                    >
+                      Labour Time (Hours)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      value={labourCostModal.hoursInput}
+                      onChange={(event) => setLabourCostModal((prev) => ({ ...prev, hoursInput: event.target.value }))}
+                      placeholder="0.00"
+                      style={{
+                        width: "100%",
+                        padding: "12px 16px",
+                        borderRadius: "12px",
+                        border: "2px solid var(--surface-light)",
+                        backgroundColor: "var(--surface-light)",
+                        fontSize: "15px",
+                        transition: "border-color 0.2s",
+                      }}
+                      onFocus={(event) => {
+                        event.target.style.borderColor = "var(--primary)";
+                      }}
+                      onBlur={(event) => {
+                        event.target.style.borderColor = "var(--surface-light)";
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: "8px",
+                        fontSize: "13px",
+                        fontWeight: "600",
+                        color: "#666",
+                      }}
+                    >
+                      Labour Net Cost / Hour (GBP)
+                    </label>
+                    <input
+                      type="text"
+                      value={labourCostModal.costInput}
+                      onChange={(event) => setLabourCostModal((prev) => ({ ...prev, costInput: event.target.value }))}
+                      placeholder={LABOUR_COST_DEFAULT_GBP.toFixed(2)}
+                      style={{
+                        width: "100%",
+                        padding: "12px 16px",
+                        borderRadius: "12px",
+                        border: "2px solid var(--surface-light)",
+                        backgroundColor: "var(--surface-light)",
+                        fontSize: "15px",
+                        transition: "border-color 0.2s",
+                      }}
+                      onFocus={(event) => {
+                        event.target.style.borderColor = "var(--primary)";
+                      }}
+                      onBlur={(event) => {
+                        event.target.style.borderColor = "var(--surface-light)";
+                      }}
+                    />
+                  </div>
                 </div>
 
                 {(() => {
                   const parsed = parseCurrencyValue(labourCostModal.costInput);
                   const net = parsed === null ? LABOUR_COST_DEFAULT_GBP : parsed;
-                  const vat = net * LABOUR_VAT_RATE;
-                  const gross = net + vat;
+                  const parsedHours = Number(labourCostModal.hoursInput);
+                  const hours = Number.isFinite(parsedHours) && parsedHours >= 0 ? parsedHours : 0;
+                  const labourTotalNet = hours * net;
+                  const vat = labourTotalNet * LABOUR_VAT_RATE;
+                  const gross = labourTotalNet + vat;
                   return (
                     <div
                       style={{
@@ -9262,7 +9330,15 @@ export default function VhcDetailsPanel({
                       }}
                     >
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", color: "var(--info-dark)" }}>
-                        <span>Net</span>
+                        <span>Labour Total (Net)</span>
+                        <strong>£{labourTotalNet.toFixed(2)}</strong>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", color: "var(--info-dark)" }}>
+                        <span>Default Price (Inc VAT)</span>
+                        <strong>£{LABOUR_RATE_GROSS_DEFAULT_GBP.toFixed(2)}</strong>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", color: "var(--info-dark)" }}>
+                        <span>Labour Rate (Net / Hour)</span>
                         <strong>£{net.toFixed(2)}</strong>
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", color: "var(--info-dark)" }}>

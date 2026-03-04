@@ -38,6 +38,24 @@ const normaliseJobNumberInput = (value) => {
   return null;
 };
 
+const buildJobNumberLookupCandidates = (value) => {
+  const normalized = normaliseJobNumberInput(value);
+  if (!normalized) return [];
+
+  const token = normalized.replace(/^#/, "");
+  const candidates = new Set([token, token.toUpperCase()]);
+
+  if (/^\d+$/.test(token)) {
+    const parsed = Number.parseInt(token, 10);
+    if (Number.isInteger(parsed) && parsed > 0) {
+      candidates.add(String(parsed));
+      candidates.add(String(parsed).padStart(5, "0"));
+    }
+  }
+
+  return Array.from(candidates).filter(Boolean);
+};
+
 export const formatJobNumberFromId = (jobId) => {
   if (!jobId) {
     return null;
@@ -603,7 +621,7 @@ export const getAuthorizedAdditionalWorkByJob = async (jobId) => {
         .from("vhc_checks")
         .select("vhc_id, section, issue_title, issue_description, approval_status")
         .eq("job_id", jobId)
-        .eq("approval_status", "authorized");
+        .in("approval_status", ["authorized", "authorised"]);
 
       if (vhcChecksError && vhcChecksError.code !== "PGRST116") {
         console.error("⚠️ Error fetching authorized VHC checks:", vhcChecksError);
@@ -797,7 +815,12 @@ const _getJobByNumberUncached = async (jobNumber, options = {}) => {
     }
   }
   
-  const { data: jobData, error: jobError } = await supabase
+  const jobNumberCandidates = buildJobNumberLookupCandidates(jobNumber);
+  if (jobNumberCandidates.length === 0) {
+    return { data: null, error: { message: "Job number is required" } };
+  }
+
+  const jobsQuery = supabase
     .from("jobs")
     .select(`
       id,
@@ -891,7 +914,6 @@ const _getJobByNumberUncached = async (jobNumber, options = {}) => {
         status,
         request_source,
         vhc_item_id,
-        parts_job_item_id,
         pre_pick_location,
         note_text,
         created_at,
@@ -957,8 +979,12 @@ const _getJobByNumberUncached = async (jobNumber, options = {}) => {
       job_writeups(writeup_id, fault, rectification, technician_id, completion_status, created_at, updated_at, task_checklist),
       job_files(file_id, file_name, file_url, file_type, folder, uploaded_by, uploaded_at)
     `)
-    .eq("job_number", jobNumber)
-    .maybeSingle();
+    .in("job_number", jobNumberCandidates)
+    .order("updated_at", { ascending: false })
+    .limit(1);
+
+  const { data: jobRows, error: jobError } = await jobsQuery;
+  const jobData = Array.isArray(jobRows) ? jobRows[0] : null;
 
   if (jobError) {
     console.error("❌ getJobByNumber error:", jobError);
@@ -1017,7 +1043,6 @@ const _getJobByNumberUncached = async (jobNumber, options = {}) => {
           status,
           request_source,
           vhc_item_id,
-          parts_job_item_id,
           pre_pick_location,
           note_text,
           created_at,
@@ -2051,7 +2076,6 @@ const formatJobData = (data) => {
     status: request.status || null,
     requestSource: request.request_source || "customer_request",
     vhcItemId: request.vhc_item_id ?? null,
-    partsJobItemId: request.parts_job_item_id ?? null,
     prePickLocation: request.pre_pick_location || null,
     noteText: request.note_text || "",
     createdAt: request.created_at || null,

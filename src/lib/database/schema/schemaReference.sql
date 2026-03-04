@@ -604,12 +604,10 @@ CREATE TABLE public.job_requests (
   status text NOT NULL DEFAULT 'inprogress'::text,
   request_source text NOT NULL DEFAULT 'customer_request'::text,
   vhc_item_id integer,
-  parts_job_item_id uuid,
   pre_pick_location text CHECK (pre_pick_location IS NULL OR (pre_pick_location = ANY (ARRAY['service_rack_1'::text, 'service_rack_2'::text, 'service_rack_3'::text, 'service_rack_4'::text, 'sales_rack_1'::text, 'sales_rack_2'::text, 'sales_rack_3'::text, 'sales_rack_4'::text, 'stairs_pre_pick'::text, 'no_pick'::text, 'on_order'::text]))),
   note_text text,
   CONSTRAINT job_requests_pkey PRIMARY KEY (request_id),
   CONSTRAINT job_requests_vhc_item_id_fkey FOREIGN KEY (vhc_item_id) REFERENCES public.vhc_checks(vhc_id),
-  CONSTRAINT job_requests_parts_job_item_id_fkey FOREIGN KEY (parts_job_item_id) REFERENCES public.parts_job_items(id),
   CONSTRAINT job_requests_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
 );
 CREATE TABLE public.job_share_links (
@@ -1231,6 +1229,27 @@ CREATE TABLE public.payment_plans (
   CONSTRAINT payment_plans_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT payment_plans_invoice_id_fkey FOREIGN KEY (invoice_id) REFERENCES public.invoices(id)
 );
+CREATE TABLE public.proforma_request_overrides (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  job_id integer NOT NULL,
+  request_id bigint,
+  request_key text NOT NULL,
+  request_kind text NOT NULL DEFAULT 'request'::text CHECK (request_kind = ANY (ARRAY['request'::text, 'authorised'::text])),
+  request_number integer,
+  title_override text,
+  summary_override text,
+  labour_hours_override numeric,
+  parts_total_override numeric,
+  labour_total_override numeric,
+  tax_total_override numeric,
+  total_override numeric,
+  updated_by text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT proforma_request_overrides_pkey PRIMARY KEY (id),
+  CONSTRAINT proforma_request_overrides_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
+  CONSTRAINT proforma_request_overrides_request_id_fkey FOREIGN KEY (request_id) REFERENCES public.job_requests(request_id)
+);
 CREATE TABLE public.staff_vehicle_history (
   history_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
   vehicle_id uuid NOT NULL,
@@ -1445,7 +1464,7 @@ CREATE TABLE public.vhc_checks (
   measurement text,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
-  approval_status text DEFAULT 'pending'::text CHECK (approval_status IS NULL OR (approval_status = ANY (ARRAY['pending'::text, 'authorized'::text, 'declined'::text, 'completed'::text, 'n/a'::text]))),
+  approval_status text DEFAULT 'pending'::text CHECK (approval_status IS NULL OR (approval_status = ANY (ARRAY['pending'::text, 'authorized'::text, 'authorised'::text, 'declined'::text, 'completed'::text, 'n/a'::text]))),
   labour_hours numeric,
   parts_cost numeric,
   total_override numeric,
@@ -1453,7 +1472,7 @@ CREATE TABLE public.vhc_checks (
   parts_complete boolean DEFAULT false,
   approved_at timestamp with time zone,
   approved_by text,
-  display_status text CHECK (display_status IS NULL OR (display_status = ANY (ARRAY['red'::text, 'amber'::text, 'green'::text, 'authorized'::text, 'declined'::text, 'completed'::text]))),
+  display_status text CHECK (display_status IS NULL OR (display_status = ANY (ARRAY['red'::text, 'amber'::text, 'green'::text, 'authorized'::text, 'authorised'::text, 'declined'::text, 'completed'::text]))),
   authorization_state text DEFAULT 'n/a'::text,
   severity text CHECK (severity IS NULL OR (severity = ANY (ARRAY['red'::text, 'amber'::text, 'green'::text, 'grey'::text]))),
   slot_code integer,

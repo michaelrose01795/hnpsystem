@@ -70,7 +70,8 @@ export default async function handler(req, res) {
       if (!["pending", "authorized", "declined", "completed", "n/a"].includes(nextApprovalStatus)) {
         return res.status(400).json({
           success: false,
-          message: "approvalStatus must be 'pending', 'authorized', 'declined', 'completed', or 'n/a'"
+          message:
+            "approvalStatus must be 'pending', 'authorized/authorised', 'declined', 'completed', or 'n/a'"
         });
       }
       updateData.approval_status = nextApprovalStatus;
@@ -129,6 +130,16 @@ export default async function handler(req, res) {
         updateData.labour_hours = null;
       } else {
         updateData.labour_hours = parseFloat(labourHours) || 0;
+      }
+
+      // Keep labour_complete aligned when callers send labourHours only.
+      if (labourComplete === undefined) {
+        if (labourHours === "" || labourHours === null) {
+          updateData.labour_complete = false;
+        } else {
+          const parsedLabourHours = Number(labourHours);
+          updateData.labour_complete = Number.isFinite(parsedLabourHours) && parsedLabourHours >= 0;
+        }
       }
     }
 

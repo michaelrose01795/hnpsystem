@@ -4,6 +4,7 @@ import { markVHCAsSent } from "@/lib/services/vhcStatusService";
 import { isSmtpConfigured } from "@/lib/email/smtp";
 import { sendDmsEmail } from "@/lib/email/emailApi";
 import { getEmailBranding, renderEmailShell, resolveEmailBaseUrl } from "@/lib/email/template";
+import { resolveJobIdentity } from "@/lib/jobs/jobIdentity";
 
 const COMPANY_NAME = process.env.SMTP_COMPANY_NAME || "Service Department";
 
@@ -56,16 +57,26 @@ export default async function handler(req, res) {
     return res.status(500).json({ success: false, error: "Service role key is not configured" });
   }
 
-  const { jobNumber } = req.query || {};
-  if (!jobNumber) {
+  const { jobNumber: rawJobNumber } = req.query || {};
+  if (!rawJobNumber) {
     return res.status(400).json({ success: false, error: "Job number is required" });
   }
 
   try {
+    const identity = await resolveJobIdentity({
+      client: supabaseService,
+      identifier: rawJobNumber,
+      select: "id, job_number",
+    });
+    if (!identity?.id) {
+      return res.status(404).json({ success: false, error: "Job not found" });
+    }
+
+    const canonicalJobNumber = identity.job_number;
     const { data: jobRow, error: jobError } = await supabaseService
       .from("jobs")
       .select("id, job_number, status, vhc_completed_at, customer:customer_id(firstname, lastname, email)")
-      .eq("job_number", jobNumber)
+      .eq("id", identity.id)
       .maybeSingle();
 
     if (jobError) throw jobError;
@@ -89,7 +100,7 @@ export default async function handler(req, res) {
     const { data: existingLinks, error: linksError } = await supabaseService
       .from("job_share_links")
       .select("link_code, created_at")
-      .eq("job_number", jobNumber)
+      .eq("job_number", canonicalJobNumber)
       .order("created_at", { ascending: false })
       .limit(1);
 
@@ -103,7 +114,7 @@ export default async function handler(req, res) {
       createdAt = new Date().toISOString();
       const { error: insertError } = await supabaseService.from("job_share_links").insert({
         job_id: jobRow.id,
-        job_number: jobNumber,
+        job_number: canonicalJobNumber,
         link_code: linkCode,
         created_at: createdAt,
       });
@@ -111,16 +122,16 @@ export default async function handler(req, res) {
     }
 
     const baseUrl = resolveEmailBaseUrl(req);
-    const shareUrl = `${baseUrl}/vhc/share/${jobNumber}/${linkCode}`;
+    const shareUrl = `${baseUrl}/vhc/share/${canonicalJobNumber}/${linkCode}`;
     const customerName = `${jobRow.customer?.firstname || ""} ${jobRow.customer?.lastname || ""}`.trim() || "Customer";
     const branding = getEmailBranding(req, COMPANY_NAME);
 
     await sendDmsEmail({
       req,
       to: customerEmail,
-      subject: `Vehicle Health Check for Job #${jobNumber}`,
-      html: buildHtml({ customerName, jobNumber, shareUrl, branding }),
-      text: `Hello ${customerName},\n\nYour Vehicle Health Check for job #${jobNumber} is ready.\nOpen it here: ${shareUrl}\n\nThis link expires in 24 hours.\n\nRegards,\n${COMPANY_NAME}`,
+      subject: `Vehicle Health Check for Job #${canonicalJobNumber}`,
+      html: buildHtml({ customerName, jobNumber: canonicalJobNumber, shareUrl, branding }),
+      text: `Hello ${customerName},\n\nYour Vehicle Health Check for job #${canonicalJobNumber} is ready.\nOpen it here: ${shareUrl}\n\nThis link expires in 24 hours.\n\nRegards,\n${COMPANY_NAME}`,
       companyName: COMPANY_NAME,
     });
 

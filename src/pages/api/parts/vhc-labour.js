@@ -1,7 +1,6 @@
 // file location: src/pages/api/parts/vhc-labour.js
 
 import { supabase } from "@/lib/supabaseClient";
-import { resolveAuditIds } from "@/lib/utils/ids";
 
 const parseLabourHours = (value) => {
   const parsed = Number(value);
@@ -18,7 +17,7 @@ export default async function handler(req, res) {
     });
   }
 
-  const { jobId, vhcItemId, labourHours, userId, userNumericId } = req.body || {};
+  const { jobId, vhcItemId, labourHours } = req.body || {};
   if (!jobId || vhcItemId === null || vhcItemId === undefined) {
     return res.status(400).json({
       success: false,
@@ -35,7 +34,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { uuid: auditUserId } = resolveAuditIds(userId, userNumericId);
     const resolvedHours = parseLabourHours(labourHours);
 
     const { data: updatedItems, error } = await supabase
@@ -43,11 +41,10 @@ export default async function handler(req, res) {
       .update({
         labour_hours: resolvedHours,
         updated_at: new Date().toISOString(),
-        updated_by: auditUserId || null,
       })
       .eq("job_id", jobId)
       .eq("vhc_item_id", parsedVhcItemId)
-      .select("id, job_id, vhc_item_id, labour_hours, updated_at, updated_by");
+      .select("id, job_id, vhc_item_id, labour_hours, updated_at");
 
     if (error) {
       throw error;
