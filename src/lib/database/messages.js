@@ -40,6 +40,153 @@ const formatMemberRow = (row) => ({
   profile: formatUserProfile(row.user),
 });
 
+const CONVERSATION_LOG_KEY = "_conversation";
+
+const stripConversationMetadata = (metadata) => {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return metadata || null;
+  }
+  const next = { ...metadata };
+  delete next[CONVERSATION_LOG_KEY];
+  return Object.keys(next).length ? next : null;
+};
+
+const getConversationLog = (metadata) => {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return [];
+  const entries = metadata[CONVERSATION_LOG_KEY];
+  return Array.isArray(entries) ? entries : [];
+};
+
+const buildConversationMessageId = (threadId) =>
+  `t${threadId}-m${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
+
+const normalizeStoredSenderProfile = (sender) => {
+  if (!sender || typeof sender !== "object") return null;
+  const id = normalizeUserId(sender.user_id ?? sender.id);
+  if (!id) return null;
+  return {
+    id,
+    firstName: sender.first_name || sender.firstName || "",
+    lastName: sender.last_name || sender.lastName || "",
+    email: sender.email || "",
+    role: sender.role || "",
+    name:
+      sender.name ||
+      [sender.first_name || sender.firstName, sender.last_name || sender.lastName]
+        .filter(Boolean)
+        .join(" ")
+        .trim() ||
+      sender.email ||
+      "Team Member",
+  };
+};
+
+const normalizeConversationEntry = (entry, fallback = {}) => {
+  if (!entry || typeof entry !== "object") return null;
+  const threadId = Number(entry.threadId ?? fallback.threadId ?? null);
+  const createdAt = entry.createdAt || entry.created_at || fallback.createdAt || new Date().toISOString();
+  const senderId = normalizeUserId(entry.senderId ?? entry.sender_id ?? fallback.senderId ?? null);
+  const receiverId = normalizeUserId(
+    entry.receiverId ?? entry.receiver_id ?? fallback.receiverId ?? null
+  );
+  const content = String(entry.content ?? fallback.content ?? "").trim();
+  if (!content) return null;
+
+  return {
+    id: entry.id || fallback.id || buildConversationMessageId(threadId || "0"),
+    threadId: Number.isFinite(threadId) ? threadId : fallback.threadId || null,
+    content,
+    createdAt,
+    senderId: senderId || null,
+    receiverId: receiverId || null,
+    sender: normalizeStoredSenderProfile(entry.sender) || fallback.sender || null,
+    metadata: stripConversationMetadata(entry.metadata ?? fallback.metadata ?? null),
+    savedForever: Boolean(entry.savedForever ?? entry.saved_forever ?? fallback.savedForever),
+  };
+};
+
+const sortConversationEntries = (entries = []) =>
+  [...entries].sort(
+    (a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime()
+  );
+
+const extractConversationEntriesFromRows = (rows = []) => {
+  if (!Array.isArray(rows) || rows.length === 0) return [];
+  const withConversationLog = rows.find((row) => getConversationLog(row.metadata).length > 0);
+
+  if (withConversationLog) {
+    const entries = getConversationLog(withConversationLog.metadata)
+      .map((entry) =>
+        normalizeConversationEntry(entry, {
+          threadId: withConversationLog.thread_id,
+          senderId: withConversationLog.sender_id,
+          receiverId: withConversationLog.receiver_id,
+          createdAt: withConversationLog.created_at,
+          metadata: withConversationLog.metadata,
+          savedForever: withConversationLog.saved_forever,
+        })
+      )
+      .filter(Boolean);
+    return sortConversationEntries(entries);
+  }
+
+  const legacyEntries = rows
+    .map((row) =>
+      normalizeConversationEntry(
+        {
+          id: row.message_id,
+          threadId: row.thread_id,
+          content: row.content,
+          createdAt: row.created_at,
+          senderId: row.sender_id,
+          receiverId: row.receiver_id,
+          sender: row.sender,
+          metadata: row.metadata,
+          savedForever: row.saved_forever,
+        },
+        {
+          id: row.message_id,
+          threadId: row.thread_id,
+        }
+      )
+    )
+    .filter(Boolean);
+
+  return sortConversationEntries(legacyEntries);
+};
+
+const serializeConversationEntries = (entries = []) =>
+  entries.map((entry) => ({
+    id: entry.id,
+    threadId: entry.threadId,
+    content: entry.content,
+    createdAt: entry.createdAt,
+    senderId: entry.senderId,
+    receiverId: entry.receiverId,
+    sender: entry.sender || null,
+    metadata: entry.metadata || null,
+    savedForever: Boolean(entry.savedForever),
+  }));
+
+const buildConversationRowPayload = (threadId, entries = []) => {
+  const sorted = sortConversationEntries(entries);
+  const latest = sorted[sorted.length - 1];
+  if (!latest) return null;
+  const metadata = {
+    ...(latest.metadata || {}),
+    [CONVERSATION_LOG_KEY]: serializeConversationEntries(sorted),
+  };
+  return {
+    thread_id: threadId,
+    sender_id: latest.senderId || null,
+    receiver_id: latest.receiverId || null,
+    content: latest.content,
+    created_at: latest.createdAt || new Date().toISOString(),
+    metadata,
+    saved_forever: Boolean(latest.savedForever),
+  };
+};
+
 const formatMessageRow = (row) => ({
   id: row.message_id,
   threadId: row.thread_id,
@@ -48,7 +195,7 @@ const formatMessageRow = (row) => ({
   senderId: row.sender_id,
   receiverId: row.receiver_id,
   sender: formatUserProfile(row.sender),
-  metadata: row.metadata || null,
+  metadata: stripConversationMetadata(row.metadata),
   savedForever: Boolean(row.saved_forever),
 });
 
@@ -599,6 +746,95 @@ export const deleteThreadCascade = async ({ threadId, actorId }) => {
   return true;
 };
 
+const MESSAGE_ROW_SELECT = `
+  message_id,
+  thread_id,
+  content,
+  created_at,
+  sender_id,
+  receiver_id,
+  metadata,
+  saved_forever,
+  sender:users!messages_sender_id_fkey(user_id, first_name, last_name, email, role)
+`;
+
+const hydrateConversationSenders = async (messages = []) => {
+  const senderIds = Array.from(
+    new Set(
+      messages
+        .map((message) => normalizeUserId(message.senderId))
+        .filter(Boolean)
+    )
+  );
+
+  if (!senderIds.length) {
+    return messages.map((message) => ({ ...message, sender: message.sender || null }));
+  }
+
+  const { data: userRows, error } = await dbClient
+    .from("users")
+    .select("user_id, first_name, last_name, email, role")
+    .in("user_id", senderIds);
+
+  if (error) {
+    console.error("❌ hydrateConversationSenders error:", error);
+    return messages.map((message) => ({ ...message, sender: message.sender || null }));
+  }
+
+  const userMap = new Map((userRows || []).map((row) => [row.user_id, formatUserProfile(row)]));
+  return messages.map((message) => ({
+    ...message,
+    sender: message.sender || userMap.get(message.senderId) || null,
+  }));
+};
+
+const fetchThreadMessageRows = async (threadId) => {
+  const { data, error } = await dbClient
+    .from("messages")
+    .select(MESSAGE_ROW_SELECT)
+    .eq("thread_id", threadId)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data || [];
+};
+
+const persistThreadConversationRows = async ({ threadId, entries, existingRows }) => {
+  const payload = buildConversationRowPayload(threadId, entries);
+  if (!payload) {
+    throw new Error("Conversation payload is empty.");
+  }
+
+  const canonicalRow = existingRows?.[0] || null;
+  let data = null;
+  if (canonicalRow?.message_id) {
+    const result = await dbClient
+      .from("messages")
+      .update(payload)
+      .eq("message_id", canonicalRow.message_id)
+      .select(MESSAGE_ROW_SELECT)
+      .single();
+    if (result.error) throw result.error;
+    data = result.data;
+  } else {
+    const result = await dbClient
+      .from("messages")
+      .insert(payload)
+      .select(MESSAGE_ROW_SELECT)
+      .single();
+    if (result.error) throw result.error;
+    data = result.data;
+  }
+
+  const staleIds = (existingRows || [])
+    .map((row) => row.message_id)
+    .filter((id) => id && id !== data.message_id);
+  if (staleIds.length) {
+    await dbClient.from("messages").delete().in("message_id", staleIds);
+  }
+
+  return data;
+};
+
 export const getThreadMessages = async (threadId, userId, limit = 50, before) => {
   const threadIdNum = Number(threadId);
   const userIdNum = normalizeUserId(userId);
@@ -618,34 +854,49 @@ export const getThreadMessages = async (threadId, userId, limit = 50, before) =>
     throw new Error("You are not a participant in this conversation.");
   }
 
-  const query = dbClient
-    .from("messages")
-    .select(
-      `
-      message_id,
-      thread_id,
-      content,
-      created_at,
-      sender_id,
-      receiver_id,
-      sender:users!messages_sender_id_fkey(user_id, first_name, last_name, email, role)
-    `
-    )
-    .eq("thread_id", threadIdNum)
-    .order("created_at", { ascending: true })
-    .limit(limit);
+  try {
+    let rows = await fetchThreadMessageRows(threadIdNum);
+    const hasConversationRow = rows.some(
+      (row) => getConversationLog(row.metadata).length > 0
+    );
+    if (!hasConversationRow && rows.length > 1) {
+      const legacyEntries = extractConversationEntriesFromRows(rows);
+      await persistThreadConversationRows({
+        threadId: threadIdNum,
+        entries: legacyEntries,
+        existingRows: rows,
+      });
+      rows = await fetchThreadMessageRows(threadIdNum);
+    }
 
-  if (before) {
-    query.lt("created_at", before);
-  }
+    const entries = extractConversationEntriesFromRows(rows);
+    const hydrated = await hydrateConversationSenders(entries);
 
-  const { data, error } = await query;
-  if (error) {
+    let filtered = hydrated;
+    if (before) {
+      filtered = filtered.filter(
+        (message) => new Date(message.createdAt).getTime() < new Date(before).getTime()
+      );
+    }
+    if (limit > 0 && filtered.length > limit) {
+      filtered = filtered.slice(filtered.length - limit);
+    }
+
+    return filtered.map((message) => ({
+      id: message.id,
+      threadId: message.threadId || threadIdNum,
+      content: message.content,
+      createdAt: message.createdAt,
+      senderId: message.senderId,
+      receiverId: message.receiverId,
+      sender: message.sender,
+      metadata: stripConversationMetadata(message.metadata),
+      savedForever: Boolean(message.savedForever),
+    }));
+  } catch (error) {
     console.error("❌ getThreadMessages error:", error);
     return [];
   }
-
-  return (data || []).map(formatMessageRow);
 };
 
 export const markThreadRead = async ({ threadId, userId }) => {
@@ -758,74 +1009,122 @@ export const sendThreadMessage = async ({
         throw new Error("Receiver is not part of this conversation.");
       }
     }
-  }
-
-    const payload = {
+    const existingRows = await fetchThreadMessageRows(threadIdNum);
+    const existingEntries = extractConversationEntriesFromRows(existingRows);
+    const senderProfile =
+      (await hydrateConversationSenders([{ senderId: senderUserId }]))?.[0]?.sender || null;
+    const newEntry = {
+      id: buildConversationMessageId(threadIdNum),
+      threadId: threadIdNum,
       content: content.trim(),
-      sender_id: senderUserId,
-      receiver_id: resolvedReceiverId,
-      thread_id: threadIdNum || null,
-      metadata: metadata || null,
+      createdAt: new Date().toISOString(),
+      senderId: senderUserId,
+      receiverId: resolvedReceiverId,
+      sender: senderProfile,
+      metadata: stripConversationMetadata(metadata),
+      savedForever: false,
     };
 
+    const nextEntries = [...existingEntries, newEntry];
+    const persistedRow = await persistThreadConversationRows({
+      threadId: threadIdNum,
+      entries: nextEntries,
+      existingRows,
+    });
+
+    await dbClient
+      .from("message_threads")
+      .update({ updated_at: newEntry.createdAt })
+      .eq("thread_id", threadIdNum);
+
+    await markThreadRead({ threadId: threadIdNum, userId: senderUserId });
+
+    return {
+      id: newEntry.id,
+      threadId: threadIdNum,
+      content: newEntry.content,
+      createdAt: newEntry.createdAt,
+      senderId: newEntry.senderId,
+      receiverId: newEntry.receiverId,
+      sender: newEntry.sender || formatUserProfile(persistedRow?.sender),
+      metadata: newEntry.metadata,
+      savedForever: false,
+    };
+  }
+
+  const payload = {
+    content: content.trim(),
+    sender_id: senderUserId,
+    receiver_id: resolvedReceiverId,
+    thread_id: null,
+    metadata: stripConversationMetadata(metadata),
+  };
   const { data, error } = await dbClient
     .from("messages")
     .insert(payload)
-    .select(
-      `
-      message_id,
-      thread_id,
-      content,
-      created_at,
-      sender_id,
-      receiver_id,
-      sender:users!messages_sender_id_fkey(user_id, first_name, last_name, email, role),
-      metadata,
-      saved_forever
-    `
-    )
+    .select(MESSAGE_ROW_SELECT)
     .single();
-
   if (error) throw error;
-
-  if (threadIdNum) {
-    await dbClient
-      .from("message_threads")
-      .update({ updated_at: data.created_at })
-      .eq("thread_id", threadIdNum);
-  }
-
-  await markThreadRead({ threadId: threadIdNum, userId: senderUserId });
-
   return formatMessageRow(data);
 };
 
-export const markMessageSaved = async ({ messageId, saved = true }) => {
+export const markMessageSaved = async ({ messageId, threadId = null, saved = true }) => {
   assertMessagingWriteAccess();
-  const msgId = Number(messageId);
-  if (!msgId) {
+  const messageKey = String(messageId || "").trim();
+  if (!messageKey) {
     throw new Error("messageId is required to save a message.");
   }
 
-  const { data, error } = await dbClient
-    .from("messages")
-    .update({ saved_forever: saved })
-    .eq("message_id", msgId)
-    .select(
-      `
-      message_id,
-      thread_id,
-      content,
-      created_at,
-      sender_id,
-      receiver_id,
-      metadata,
-      saved_forever,
-      sender:users!messages_sender_id_fkey(user_id, first_name, last_name, email, role)
-    `
-    )
-    .maybeSingle();
+  const numericMessageId = Number(messageKey);
+  if (Number.isFinite(numericMessageId) && numericMessageId > 0) {
+    const { data, error } = await dbClient
+      .from("messages")
+      .update({ saved_forever: saved })
+      .eq("message_id", numericMessageId)
+      .select(MESSAGE_ROW_SELECT)
+      .maybeSingle();
+    if (error) throw error;
+    if (data) return formatMessageRow(data);
+  }
 
-  if (error) throw error;
-  return formatMessageRow(data);
+  const parsedThreadId =
+    normalizeUserId(threadId) ||
+    normalizeUserId((messageKey.match(/^t(\d+)-m/i) || [])[1]);
+  if (!parsedThreadId) {
+    throw new Error("threadId is required to save this message.");
+  }
+
+  const existingRows = await fetchThreadMessageRows(parsedThreadId);
+  const existingEntries = extractConversationEntriesFromRows(existingRows);
+  const targetIndex = existingEntries.findIndex(
+    (entry) => String(entry.id) === messageKey
+  );
+  if (targetIndex < 0) {
+    throw new Error("Message not found in this conversation.");
+  }
+
+  const nextEntries = [...existingEntries];
+  nextEntries[targetIndex] = {
+    ...nextEntries[targetIndex],
+    savedForever: saved !== false,
+  };
+
+  await persistThreadConversationRows({
+    threadId: parsedThreadId,
+    entries: nextEntries,
+    existingRows,
+  });
+
+  const hydrated = await hydrateConversationSenders([nextEntries[targetIndex]]);
+  return {
+    id: hydrated[0].id,
+    threadId: parsedThreadId,
+    content: hydrated[0].content,
+    createdAt: hydrated[0].createdAt,
+    senderId: hydrated[0].senderId,
+    receiverId: hydrated[0].receiverId,
+    sender: hydrated[0].sender,
+    metadata: stripConversationMetadata(hydrated[0].metadata),
+    savedForever: Boolean(hydrated[0].savedForever),
+  };
 };

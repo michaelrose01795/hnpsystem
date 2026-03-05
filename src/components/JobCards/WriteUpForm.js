@@ -751,7 +751,6 @@ export default function WriteUpForm({
   const closeButtonColor = "var(--accent-purple)";
 
   const [jobData, setJobData] = useState(jobCardData);
-  const [, setAuthorizedItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [writeUpData, setWriteUpData] = useState({
@@ -813,7 +812,6 @@ export default function WriteUpForm({
       return;
     }
 
-    setAuthorizedItems(resolved);
     setWriteUpData((prev) => {
       const normalizedEntries = resolved.map((item, index) => {
         const baseLabel =
@@ -834,7 +832,7 @@ export default function WriteUpForm({
         return {
           ...item,
           source: "vhc",
-          sourceKey: createAuthorizedSourceKey(item || {}, index, jobCardData?.jobCard?.id || writeUpMeta.jobId),
+          sourceKey: createAuthorizedSourceKey(item || {}, index, jobCardData?.jobCard?.id),
           label: description || `Authorised item ${index + 1}`,
           status: item?.status === "complete" ? "complete" : "additional_work",
         };
@@ -846,7 +844,7 @@ export default function WriteUpForm({
       }
       return { ...prev, tasks: mergedTasks };
     });
-  }, [jobCardData?.jobCard?.authorizedVhcItems, jobCardData?.jobCard?.id, writeUpMeta.jobId]);
+  }, [jobCardData?.jobCard?.authorizedVhcItems, jobCardData?.jobCard?.id]);
   const markFieldsSynced = useCallback((fields) => {
     lastSyncedFieldsRef.current = {
       fault: fields.fault || "",
@@ -894,116 +892,6 @@ export default function WriteUpForm({
     },
     [isTech, userDisplayName]
   );
-
-  const refreshAuthorizedWork = useCallback(async () => {
-    if (!jobNumber) {
-      return;
-    }
-
-    try {
-      // IMPORTANT: Rectification must use the exact same source as Job Card "Authorised VHC Items".
-      // Prefer job payload from the parent job card page; fall back to fetching if needed.
-      let jobPayload = jobCardData;
-      if (!jobPayload || !jobPayload?.jobCard) {
-        const jobResponse = await getJobByNumber(jobNumber);
-        jobPayload = jobResponse?.data || null;
-      }
-      if (jobPayload) {
-        setJobData((prev) => (prev === jobPayload ? prev : jobPayload));
-      }
-
-      const parseJson = (value) => {
-        if (!value) return null;
-        if (typeof value === "object") return value;
-        try {
-          return JSON.parse(value);
-        } catch (_error) {
-          return null;
-        }
-      };
-      const serviceChoiceLabels = {
-        reset: "Service Reminder Reset",
-        not_required: "Service Reminder Not Required",
-        no_reminder: "Doesn't Have a Service Reminder",
-        indicator_on: "Service Indicator On",
-      };
-      const checks = Array.isArray(jobPayload?.jobCard?.vhcChecks)
-        ? jobPayload.jobCard.vhcChecks
-        : [];
-      const builderRecord = checks.find((check) => {
-        const section = (check?.section || "").toString().trim();
-        return section === "VHC_CHECKSHEET" || section === "VHC Checksheet";
-      });
-      const parsedPayload = parseJson(builderRecord?.issue_description || builderRecord?.data);
-      const choiceKey = parsedPayload?.serviceIndicator?.serviceChoice || "";
-      const serviceChoiceLabel = serviceChoiceLabels[choiceKey] || choiceKey || "";
-      const normaliseServiceText = (value = "") =>
-        value
-          .toString()
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, " ")
-          .replace(/\s+/g, " ")
-          .trim();
-
-      const resolved = Array.isArray(jobPayload?.jobCard?.authorizedVhcItems)
-        ? jobPayload.jobCard.authorizedVhcItems
-        : [];
-      setAuthorizedItems(resolved);
-
-      setWriteUpData((prev) => {
-        const normalizedEntries = resolved.map((item, index) => {
-          const baseLabel = (
-            item?.label ||
-            item?.description ||
-            item?.issueDescription ||
-            item?.issue_description ||
-            item?.section ||
-            ""
-          ).toString().trim();
-          const sectionLabel = (item?.section || "").toString();
-          const labelKey = normaliseServiceText(baseLabel);
-          const sectionKey = normaliseServiceText(sectionLabel);
-          const isServiceIndicatorRow =
-            sectionKey.includes("service indicator") ||
-            sectionKey.includes("under bonnet") ||
-            labelKey.includes("service indicator") ||
-            labelKey.includes("under bonnet");
-          const isServiceReminderOil =
-            (labelKey.includes("service reminder") && labelKey.includes("oil")) ||
-            labelKey.includes("service reminder oil level") ||
-            labelKey.includes("service reminder/oil level");
-          const isServiceReminder =
-            labelKey.includes("service reminder") || sectionKey.includes("service reminder");
-          const description =
-            isServiceIndicatorRow && (isServiceReminderOil || isServiceReminder) && serviceChoiceLabel
-              ? `Service Reminder - ${serviceChoiceLabel}`
-              : baseLabel;
-          return {
-            ...item,
-            source: "vhc",
-            sourceKey: createAuthorizedSourceKey(
-              item || {},
-              index,
-              jobPayload?.jobCard?.id || writeUpMeta.jobId
-            ),
-            label: description || `Authorised item ${index + 1}`,
-            status: item?.status === "complete" ? "complete" : "additional_work",
-          };
-        });
-
-        const mergedTasks = ensureAuthorizedTasks(prev.tasks, normalizedEntries);
-        if (tasksAreEqual(prev.tasks, mergedTasks)) {
-          return prev;
-        }
-        return {
-          ...prev,
-          tasks: mergedTasks,
-        };
-      });
-    } catch (error) {
-      console.error("Failed to refresh authorized work:", error);
-    }
-  }, [jobNumber, jobCardData, writeUpMeta.jobId]);
 
   const requestTasks = useMemo(
     () => writeUpData.tasks.filter((task) => task && isFaultTaskSource(task.source)),
@@ -1154,7 +1042,6 @@ export default function WriteUpForm({
           const mergedTasks = ensureAuthorizedTasks(writeUpResponse.tasks || [], canonicalEntries);
           const normalizedEditors = sanitizeSectionEditors(writeUpResponse.sectionEditors);
           const completionStatusValue = writeUpResponse.completionStatus || "additional_work";
-          setAuthorizedItems(canonicalAuthorised);
           setWriteUpData((prev) => ({
             ...prev,
             fault: writeUpResponse.fault || "",
@@ -1186,7 +1073,6 @@ export default function WriteUpForm({
           markTasksSynced(computeTaskSignature(mergedTasks, completionStatusValue));
         } else {
           const fallbackDescription = formatNoteValue(jobPayload?.jobCard?.description || "");
-          setAuthorizedItems([]);
           setWriteUpData((prev) => ({
             ...prev,
             fault: fallbackDescription,
@@ -1242,96 +1128,18 @@ export default function WriteUpForm({
 
   useEffect(() => {
     if (!jobData?.jobCard) return;
-    setWriteUpMeta((prev) => ({
-      jobId: jobData.jobCard.id ?? prev.jobId,
-      writeupId: jobData.jobCard.writeUp?.writeup_id ?? prev.writeupId,
-    }));
+    setWriteUpMeta((prev) => {
+      const nextJobId = jobData.jobCard.id ?? prev.jobId;
+      const nextWriteupId = jobData.jobCard.writeUp?.writeup_id ?? prev.writeupId;
+      if (prev.jobId === nextJobId && prev.writeupId === nextWriteupId) {
+        return prev;
+      }
+      return {
+        jobId: nextJobId,
+        writeupId: nextWriteupId,
+      };
+    });
   }, [jobData]);
-
-  useEffect(() => {
-    refreshAuthorizedWork();
-  }, [refreshAuthorizedWork]);
-
-  useEffect(() => {
-    if (!writeUpMeta.jobId) {
-      return undefined;
-    }
-
-    const channel = supabase.channel(`vhc-authorizations-${writeUpMeta.jobId}`);
-    const handleAuthorizationChange = () => {
-      refreshAuthorizedWork();
-    };
-
-    channel.on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "vhc_authorizations",
-        filter: `job_id=eq.${writeUpMeta.jobId}`,
-      },
-      handleAuthorizationChange
-    );
-
-    void channel.subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [writeUpMeta.jobId, refreshAuthorizedWork]);
-
-  useEffect(() => {
-    if (!writeUpMeta.jobId) {
-      return undefined;
-    }
-
-    const channel = supabase.channel(`vhc-checks-${writeUpMeta.jobId}`);
-    const handleVhcCheckChange = () => {
-      refreshAuthorizedWork();
-    };
-
-    channel.on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "vhc_checks",
-        filter: `job_id=eq.${writeUpMeta.jobId}`,
-      },
-      handleVhcCheckChange
-    );
-
-    void channel.subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [writeUpMeta.jobId, refreshAuthorizedWork]);
-
-  useEffect(() => {
-    if (!writeUpMeta.jobId) {
-      return undefined;
-    }
-
-    const channel = supabase.channel(`authorized-parts-${writeUpMeta.jobId}`);
-    const handlePartsChange = () => {
-      refreshAuthorizedWork();
-    };
-
-    channel.on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "parts_job_items",
-        filter: `job_id=eq.${writeUpMeta.jobId}`,
-      },
-      handlePartsChange
-    );
-
-    void channel.subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [writeUpMeta.jobId, refreshAuthorizedWork]);
 
   // ✅ Shared handler for plain text fields
   const handleInputChange = (field) => (event) => {

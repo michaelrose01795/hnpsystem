@@ -673,24 +673,6 @@ const getAvailableCommands = (userRoles = []) => {
   });
 };
 
-const formatRealtimeMessage = (rawMessage, thread) => {
-  const senderMember = thread?.members?.find((member) => member.userId === rawMessage.sender_id);
-  const senderProfile = senderMember?.profile || null;
-  return {
-    id: rawMessage.message_id,
-    threadId: rawMessage.thread_id,
-    content: rawMessage.content,
-    createdAt: rawMessage.created_at,
-    senderId: rawMessage.sender_id,
-    receiverId: rawMessage.receiver_id,
-    sender: senderProfile
-      ? { ...senderProfile }
-      : { id: rawMessage.sender_id, name: "Unknown" },
-    metadata: rawMessage.metadata || null,
-    savedForever: Boolean(rawMessage.saved_forever),
-  };
-};
-
 const sortDirectoryEntries = (entries = []) =>
   [...entries].sort((a, b) =>
     (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" })
@@ -1385,6 +1367,15 @@ function MessagesPage() {
     const channel = supabase.channel(`messages-refresh-${dbUserId}`);
 
     if (threadIds.length) {
+      const refreshFromMessageChange = (payload) => {
+        const row = payload?.new;
+        if (!row) return;
+        fetchThreads();
+        if (activeThread && activeThread.id === row.thread_id && row.sender_id !== dbUserId) {
+          openThread(activeThread.id, { ...activeThread, hasUnread: false });
+        }
+      };
+
       channel.on(
         "postgres_changes",
         {
@@ -1393,25 +1384,17 @@ function MessagesPage() {
           event: "INSERT",
           filter: `thread_id=in.(${threadIds.join(",")})`,
         },
-        (payload) => {
-          if (!payload?.new) return;
-          const rawMessage = payload.new;
-          fetchThreads();
-          if (
-            activeThread &&
-            activeThread.id === rawMessage.thread_id &&
-            rawMessage.sender_id !== dbUserId
-          ) {
-            const formatted = formatRealtimeMessage(rawMessage, activeThread);
-            setMessages((prev) => {
-              if (prev.some((message) => message.id === formatted.id)) {
-                return prev;
-              }
-              return [...prev, formatted];
-            });
-            openThread(activeThread.id, { ...activeThread, hasUnread: false });
-          }
-        }
+        refreshFromMessageChange
+      );
+      channel.on(
+        "postgres_changes",
+        {
+          schema: "public",
+          table: "messages",
+          event: "UPDATE",
+          filter: `thread_id=in.(${threadIds.join(",")})`,
+        },
+        refreshFromMessageChange
       );
     }
 

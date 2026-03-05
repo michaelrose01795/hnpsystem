@@ -364,6 +364,7 @@ export default function JobCardDetailPage() {
   const [activeTab, setActiveTab] = useState("customer-requests");
   const tabsScrollRef = useRef(null);
   const tabsDragScrollRef = useRef({ active: false, startX: 0, startScrollLeft: 0 });
+  const prefetchedJobTabsRef = useRef(new Set());
   const [tabsOverflowing, setTabsOverflowing] = useState(false);
   const [sharedNote, setSharedNote] = useState("");
   const [sharedNoteMeta, setSharedNoteMeta] = useState(null);
@@ -615,6 +616,55 @@ export default function JobCardDetailPage() {
       setActiveTab("customer-requests");
     }
   }, [router.query.tab]);
+
+  useEffect(() => {
+    if (!router.isReady || !jobNumber) {
+      return;
+    }
+    if (prefetchedJobTabsRef.current.has(jobNumber)) {
+      return;
+    }
+
+    prefetchedJobTabsRef.current.add(jobNumber);
+
+    const safeJobNumber = encodeURIComponent(jobNumber);
+    const baseRoute = `/job-cards/${safeJobNumber}`;
+    const tabIdsToPrefetch = [
+      "customer-requests",
+      "contact",
+      "scheduling",
+      "service-history",
+      "notes",
+      "parts",
+      "write-up",
+      "vhc",
+      "warranty",
+      "clocking",
+      "messages",
+      "documents",
+      "invoice",
+    ];
+    const relatedRoutes = [
+      `${baseRoute}/write-up`,
+      `${baseRoute}/check-box`,
+      `${baseRoute}/car-details`,
+      `${baseRoute}/add-checksheet`,
+      `${baseRoute}/dealer-car-details`,
+      `${baseRoute}/upload-checksheet`,
+      `${baseRoute}/upload-dealer-file`,
+    ];
+
+    const routes = [
+      ...tabIdsToPrefetch.map((tabId) => `${baseRoute}?tab=${tabId}`),
+      ...relatedRoutes,
+    ];
+
+    routes.forEach((route) => {
+      router.prefetch(route).catch(() => {
+        // Ignore prefetch errors; navigation still works with standard loading.
+      });
+    });
+  }, [router, router.isReady, jobNumber]);
 
   const triggerNewNotesHighlight = useCallback((options = {}) => {
     const { clearBadgeAfterMs = 3000 } = options;

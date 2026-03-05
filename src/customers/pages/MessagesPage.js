@@ -556,7 +556,7 @@ export default function CustomerMessagesPage() {
         const response = await fetch(`/api/messages/messages/${message.id}/save`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ saved: true }),
+          body: JSON.stringify({ saved: true, threadId: activeThread?.id || null }),
         });
         const payload = await response.json();
         if (!response.ok) {
@@ -574,7 +574,7 @@ export default function CustomerMessagesPage() {
         setSavingMessageId(null);
       }
     },
-    [fetchThreads, confirm]
+    [activeThread, fetchThreads, confirm]
   );
 
   // Effect: Load composer users when composer opens
@@ -713,17 +713,28 @@ export default function CustomerMessagesPage() {
   useEffect(() => {
     if (!dbUserId || typeof window === "undefined") return undefined;
 
+    const refreshFromMessageChange = (payload) => {
+      if (!payload?.new) return;
+      // Only refresh threads list, don't re-open the thread
+      fetchThreads();
+      // If message is for active thread and not from current user, just reload messages without refreshing threads again
+      if (activeThread?.id === payload.new.thread_id && payload.new.sender_id !== dbUserId) {
+        openThread(activeThread, true); // Skip refresh since we just called fetchThreads
+      }
+    };
+
     const channel = supabase
       .channel(`customer-messaging-${dbUserId}`)
-      .on("postgres_changes", { schema: "public", table: "messages", event: "INSERT" }, (payload) => {
-        if (!payload?.new) return;
-        // Only refresh threads list, don't re-open the thread
-        fetchThreads();
-        // If message is for active thread and not from current user, just reload messages without refreshing threads again
-        if (activeThread?.id === payload.new.thread_id && payload.new.sender_id !== dbUserId) {
-          openThread(activeThread, true); // Skip refresh since we just called fetchThreads
-        }
-      })
+      .on(
+        "postgres_changes",
+        { schema: "public", table: "messages", event: "INSERT" },
+        refreshFromMessageChange
+      )
+      .on(
+        "postgres_changes",
+        { schema: "public", table: "messages", event: "UPDATE" },
+        refreshFromMessageChange
+      )
       .on(
         "postgres_changes",
         {

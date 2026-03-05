@@ -164,6 +164,30 @@ export default function Sidebar({
     }
   }, [isClockedIn, dbUserId]);
 
+  const shouldForceReloadNavigation = useMemo(() => {
+    const currentPath = (pathname || router?.asPath || router?.pathname || "").split("?")[0];
+    return /^\/job-cards\/[^/]+$/i.test(currentPath);
+  }, [pathname, router?.asPath, router?.pathname]);
+
+  const handleNavLinkClick = useCallback(
+    (event, href) => {
+      if (!href || !shouldForceReloadNavigation || typeof window === "undefined") return;
+      if (
+        event.defaultPrevented ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey ||
+        event.button === 1
+      ) {
+        return;
+      }
+      event.preventDefault();
+      window.location.assign(href);
+    },
+    [shouldForceReloadNavigation]
+  );
+
   const renderLinkLabel = (label, href) => {
     const isMessagesItem = href === "/messages";
     if (!href) {
@@ -312,6 +336,7 @@ export default function Sidebar({
                   key={shortcut.href}
                   href={shortcut.href}
                   title={shortcut.description}
+                  onClick={(event) => handleNavLinkClick(event, shortcut.href)}
                   style={{
                     display: "block",
                     padding: "10px 14px",
@@ -365,6 +390,7 @@ export default function Sidebar({
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={(event) => handleNavLinkClick(event, item.href)}
                   style={{
                     display: "block",
                     padding: "10px 14px",
@@ -411,6 +437,7 @@ export default function Sidebar({
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={(event) => handleNavLinkClick(event, item.href)}
                   style={{
                     display: "block",
                     padding: "10px 14px",
@@ -527,6 +554,7 @@ export default function Sidebar({
                   <Link
                     key={item.href}
                     href={item.href}
+                    onClick={(event) => handleNavLinkClick(event, item.href)}
                     style={{
                       display: "block",
                       padding: "10px 14px",

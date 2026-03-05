@@ -1492,6 +1492,56 @@ const formatThreadMessageRow = (row) => {
   };
 };
 
+const getThreadConversationEntries = (rows = []) => {
+  if (!Array.isArray(rows) || rows.length === 0) return [];
+  const withLog = rows.find(
+    (row) => row?.metadata && Array.isArray(row.metadata._conversation)
+  );
+
+  if (withLog) {
+    const fallbackSenderProfile = withLog.sender || {};
+    const fallbackSenderName = [fallbackSenderProfile.first_name, fallbackSenderProfile.last_name]
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+    return (withLog.metadata._conversation || [])
+      .map((entry) => {
+        if (!entry || typeof entry !== "object") return null;
+        const merged = {
+          message_id: entry.id || null,
+          thread_id: entry.threadId || withLog.thread_id,
+          content: entry.content || "",
+          created_at: entry.createdAt || withLog.created_at,
+          sender_id: entry.senderId || withLog.sender_id || null,
+          metadata: entry.metadata || null,
+          sender:
+            entry.sender &&
+            typeof entry.sender === "object" &&
+            (entry.sender.id || entry.sender.user_id || entry.sender.email)
+              ? {
+                  user_id: entry.sender.user_id || entry.sender.id || null,
+                  first_name: entry.sender.first_name || entry.sender.firstName || "",
+                  last_name: entry.sender.last_name || entry.sender.lastName || "",
+                  email: entry.sender.email || "",
+                  role: entry.sender.role || "",
+                }
+              : {
+                  user_id: fallbackSenderProfile.user_id || withLog.sender_id || null,
+                  first_name: fallbackSenderProfile.first_name || "",
+                  last_name: fallbackSenderProfile.last_name || "",
+                  email: fallbackSenderProfile.email || "",
+                  role: fallbackSenderProfile.role || "",
+                  name: fallbackSenderName,
+                },
+        };
+        return formatThreadMessageRow(merged);
+      })
+      .filter(Boolean);
+  }
+
+  return rows.map(formatThreadMessageRow).filter(Boolean);
+};
+
 const fetchJobMessagingThread = async (jobNumber) => {
   const hash = buildJobThreadHash(jobNumber);
   if (!hash) return null;
@@ -1578,9 +1628,7 @@ const fetchJobMessagingThread = async (jobNumber) => {
       .map(formatThreadParticipantRow)
       .filter(Boolean);
 
-    const messages = (messagesResult?.data || [])
-      .map(formatThreadMessageRow)
-      .filter(Boolean);
+    const messages = getThreadConversationEntries(messagesResult?.data || []);
 
     return {
       id: threadRow.thread_id,
