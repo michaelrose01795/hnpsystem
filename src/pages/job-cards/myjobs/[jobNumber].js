@@ -2910,12 +2910,15 @@ export default function TechJobDetailPage() {
                   }}
                   onClick={() => openSection("wheelsTyres")}
                   onMouseEnter={(e) => {
+                    e.currentTarget.style.position = "relative";
+                    e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
                     e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)";
                     e.currentTarget.style.transform = "translateY(-2px)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.boxShadow = "none";
                     e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.zIndex = "0";
                   }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
@@ -2950,12 +2953,15 @@ export default function TechJobDetailPage() {
                   }}
                   onClick={() => openSection("brakesHubs")}
                   onMouseEnter={(e) => {
+                    e.currentTarget.style.position = "relative";
+                    e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
                     e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)";
                     e.currentTarget.style.transform = "translateY(-2px)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.boxShadow = "none";
                     e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.zIndex = "0";
                   }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
@@ -2990,12 +2996,15 @@ export default function TechJobDetailPage() {
                   }}
                   onClick={() => openSection("serviceIndicator")}
                   onMouseEnter={(e) => {
+                    e.currentTarget.style.position = "relative";
+                    e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
                     e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)";
                     e.currentTarget.style.transform = "translateY(-2px)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.boxShadow = "none";
                     e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.zIndex = "0";
                   }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
@@ -3042,12 +3051,15 @@ export default function TechJobDetailPage() {
                   }}
                   onClick={() => openSection("externalInspection")}
                   onMouseEnter={(e) => {
+                    e.currentTarget.style.position = "relative";
+                    e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
                     e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)";
                     e.currentTarget.style.transform = "translateY(-2px)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.boxShadow = "none";
                     e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.zIndex = "0";
                   }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
@@ -3083,12 +3095,15 @@ export default function TechJobDetailPage() {
                   }}
                   onClick={() => openSection("internalElectrics")}
                   onMouseEnter={(e) => {
+                    e.currentTarget.style.position = "relative";
+                    e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
                     e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)";
                     e.currentTarget.style.transform = "translateY(-2px)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.boxShadow = "none";
                     e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.zIndex = "0";
                   }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
@@ -3124,12 +3139,15 @@ export default function TechJobDetailPage() {
                   }}
                   onClick={() => openSection("underside")}
                   onMouseEnter={(e) => {
+                    e.currentTarget.style.position = "relative";
+                    e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
                     e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)";
                     e.currentTarget.style.transform = "translateY(-2px)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.boxShadow = "none";
                     e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.zIndex = "0";
                   }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>

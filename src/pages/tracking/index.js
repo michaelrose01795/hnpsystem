@@ -375,12 +375,15 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick }) => {
         transition: "all 0.2s ease",
       }}
       onMouseEnter={(e) => {
+        e.currentTarget.style.position = "relative";
+        e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
         e.currentTarget.style.transform = "translateY(-2px)";
         e.currentTarget.style.boxShadow = isHighlighted ? "0 6px 16px rgba(var(--danger-rgb), 0.3)" : "0 4px 12px rgba(var(--grey-accent-rgb), 0.2)";
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.transform = "translateY(0)";
         e.currentTarget.style.boxShadow = isHighlighted ? "0 4px 12px rgba(var(--danger-rgb), 0.2)" : "none";
+        e.currentTarget.style.zIndex = "0";
       }}
     >
       <div>

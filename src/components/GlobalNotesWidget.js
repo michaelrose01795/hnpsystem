@@ -522,10 +522,15 @@ export default function GlobalNotesWidget() {
       setDragSelectionLock(false);
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerup", onPointerUp);
-      if (closePanelTimerRef.current) clearTimeout(closePanelTimerRef.current);
       for (const timer of saveTimersRef.current.values()) clearTimeout(timer);
     };
   }, [isPanelVisible, isPanelMounted]);
+
+  useEffect(() => {
+    return () => {
+      if (closePanelTimerRef.current) clearTimeout(closePanelTimerRef.current);
+    };
+  }, []);
 
   const startBubbleDrag = (event) => {
     event.preventDefault();

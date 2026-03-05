@@ -1868,11 +1868,13 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
             event.currentTarget.style.background = "var(--surface)";
             event.currentTarget.style.borderColor = missingLinkedAccount ? "var(--danger)" : "var(--primary)";
             event.currentTarget.style.transform = "translateY(-1px)";
+            event.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
           }}
           onMouseLeave={(event) => {
             event.currentTarget.style.background = restingBackground;
             event.currentTarget.style.border = restingBorder;
             event.currentTarget.style.transform = "translateY(0)";
+            event.currentTarget.style.zIndex = "0";
           }}
           onClick={() => {
             if (missingLinkedAccount) {

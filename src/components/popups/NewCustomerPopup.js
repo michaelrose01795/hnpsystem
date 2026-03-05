@@ -685,12 +685,14 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
               if (!loading) {
                 e.currentTarget.style.transform = "translateY(-2px)";
                 e.currentTarget.style.boxShadow = "0 6px 16px rgba(0, 0, 0, 0.2)";
+                e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
               }
             }}
             onMouseLeave={(e) => {
               if (!loading) {
                 e.currentTarget.style.transform = "translateY(0)";
                 e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
+                e.currentTarget.style.zIndex = "0";
               }
             }}
           >

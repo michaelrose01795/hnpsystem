@@ -6765,12 +6765,13 @@ export default function VhcDetailsPanel({
 
                 const isExpanded = expandedVhcItems.has(vhcId);
 
-                // Check if row is locked (authorized or declined)
+                // Check if row is locked (authorised, declined, or completed)
                 const entry = getEntryForItem(vhcId);
                 const entryDecision = normaliseDecisionStatus(entry.status);
                 const canonicalId = resolveCanonicalVhcId(vhcId);
                 const isLocked =
                   entryDecision === "authorized" ||
+                  entryDecision === "declined" ||
                   entryDecision === "completed" ||
                   authorizedViewIds.has(String(canonicalId));
                 const canAddPart = !isCustomerView && !readOnly && !isLocked;
@@ -6920,9 +6921,9 @@ export default function VhcDetailsPanel({
                           transition: "all 0.2s ease",
                           opacity: isLocked ? 0.5 : 1,
                         }}
-                        title={isLocked ? "Cannot modify authorised or completed items" : ""}
+                        title={isLocked ? "Cannot modify authorised, declined or completed items" : ""}
                       >
-                        {isPartsNotRequired ? "✓ Not Required" : "Mark Not Required"}
+                        {isPartsNotRequired ? "✓ Not Required" : "Not required?"}
                       </button>
                     </td>
                   </tr>

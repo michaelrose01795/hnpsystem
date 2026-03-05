@@ -1283,6 +1283,8 @@ const JobListCard = ({ job, onNavigate, onQuickView, index = 0 }) => {
         transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
       }}
       onMouseEnter={(event) => {
+        event.currentTarget.style.position = "relative";
+        event.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
         event.currentTarget.style.transform = "translateY(-2px)";
         event.currentTarget.style.boxShadow = "none";
         event.currentTarget.style.borderColor = "var(--primary)";
@@ -1291,6 +1293,7 @@ const JobListCard = ({ job, onNavigate, onQuickView, index = 0 }) => {
         event.currentTarget.style.transform = "translateY(0)";
         event.currentTarget.style.boxShadow = "none";
         event.currentTarget.style.borderColor = "var(--surface-light)";
+        event.currentTarget.style.zIndex = "0";
       }}
     >
       {/* Header Row - Job Number, Reg, Status */}
@@ -1448,6 +1451,8 @@ const OrderListCard = ({ order, onNavigate, index = 0 }) => {
         transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
       }}
       onMouseEnter={(event) => {
+        event.currentTarget.style.position = "relative";
+        event.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
         event.currentTarget.style.transform = "translateY(-2px)";
         event.currentTarget.style.boxShadow = "none";
         event.currentTarget.style.borderColor = "var(--primary)";
@@ -1456,6 +1461,7 @@ const OrderListCard = ({ order, onNavigate, index = 0 }) => {
         event.currentTarget.style.transform = "translateY(0)";
         event.currentTarget.style.boxShadow = "none";
         event.currentTarget.style.borderColor = "var(--surface-light)";
+        event.currentTarget.style.zIndex = "0";
       }}
     >
       <div

@@ -521,10 +521,12 @@ export default function TechsDashboard() {
             onMouseEnter={(e) => {
               e.target.style.transform = "translateY(-2px)";
               e.target.style.backgroundColor = "rgba(var(--primary-rgb), 0.14)";
+              e.target.style.zIndex = "var(--hover-surface-z, 80)";
             }}
             onMouseLeave={(e) => {
               e.target.style.transform = "translateY(0)";
               e.target.style.backgroundColor = "rgba(var(--primary-rgb), 0.08)";
+              e.target.style.zIndex = "0";
             }}
           >
             <div style={{ fontSize: "16px", fontWeight: "700", color: "var(--text-primary)" }}>View All Jobs</div>
@@ -545,10 +547,12 @@ export default function TechsDashboard() {
             onMouseEnter={(e) => {
               e.target.style.transform = "translateY(-2px)";
               e.target.style.backgroundColor = "rgba(var(--primary-rgb), 0.14)";
+              e.target.style.zIndex = "var(--hover-surface-z, 80)";
             }}
             onMouseLeave={(e) => {
               e.target.style.transform = "translateY(0)";
               e.target.style.backgroundColor = "rgba(var(--primary-rgb), 0.08)";
+              e.target.style.zIndex = "0";
             }}
           >
             <div style={{ fontSize: "16px", fontWeight: "700", color: "var(--text-primary)" }}>Time Tracking</div>
@@ -569,10 +573,12 @@ export default function TechsDashboard() {
             onMouseEnter={(e) => {
               e.target.style.transform = "translateY(-2px)";
               e.target.style.backgroundColor = "rgba(var(--primary-rgb), 0.14)";
+              e.target.style.zIndex = "var(--hover-surface-z, 80)";
             }}
             onMouseLeave={(e) => {
               e.target.style.transform = "translateY(0)";
               e.target.style.backgroundColor = "rgba(var(--primary-rgb), 0.08)";
+              e.target.style.zIndex = "0";
             }}
           >
             <div style={{ fontSize: "16px", fontWeight: "700", color: "var(--text-primary)" }}>Request Consumables</div>

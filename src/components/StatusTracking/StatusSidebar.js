@@ -407,11 +407,13 @@ export default function StatusSidebar({
                     e.currentTarget.style.backgroundColor = 'var(--background)';
                     e.currentTarget.style.transform = 'translateY(-1px)';
                     e.currentTarget.style.boxShadow = '0 4px 8px rgba(var(--shadow-rgb),0.15)';
+                    e.currentTarget.style.zIndex = 'var(--hover-surface-z, 80)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.backgroundColor = 'var(--surface)';
                     e.currentTarget.style.transform = 'translateY(0)';
                     e.currentTarget.style.boxShadow = '0 2px 6px rgba(var(--shadow-rgb),0.1)';
+                    e.currentTarget.style.zIndex = '0';
                   }}
                 >
                   Search

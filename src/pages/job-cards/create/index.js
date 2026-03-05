@@ -2740,10 +2740,12 @@ export default function CreateJobCardPage() {
                   onMouseEnter={(e) => {
                     e.currentTarget.style.backgroundColor = "var(--primary-dark)";
                     e.currentTarget.style.transform = "translateY(-1px)";
+                    e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.backgroundColor = "var(--primary)";
                     e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.zIndex = "0";
                   }}
                 >
                   Manage Documents

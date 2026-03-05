@@ -34,34 +34,39 @@ const cardStyle = {
 
 const UNREAD_MARKER_STORAGE_KEY = "messagesUnreadMarkerDismissals";
 
-const SectionTitle = ({ title, subtitle, action }) => (
-  <div
-    style={{
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      gap: "12px",
-    }}
-  >
-    <div>
-      <h3
-        style={{
-          margin: 0,
-          fontSize: "1rem",
-          color: palette.accent,
-        }}
-      >
-        {title}
-      </h3>
-      {subtitle && (
-        <p style={{ margin: "4px 0 0", color: palette.textMuted, fontSize: "0.85rem" }}>
-          {subtitle}
-        </p>
+const SectionTitle = ({ title, subtitle, action }) => {
+  const hasHeading = Boolean(title || subtitle);
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: hasHeading ? "space-between" : "center",
+        alignItems: "center",
+        gap: "12px",
+      }}
+    >
+      {hasHeading && (
+        <div>
+          <h3
+            style={{
+              margin: 0,
+              fontSize: "1rem",
+              color: palette.accent,
+            }}
+          >
+            {title}
+          </h3>
+          {subtitle && (
+            <p style={{ margin: "4px 0 0", color: palette.textMuted, fontSize: "0.85rem" }}>
+              {subtitle}
+            </p>
+          )}
+        </div>
       )}
+      {action}
     </div>
-    {action}
-  </div>
-);
+  );
+};
 
 const ComposeToggleButton = ({ active, children, onClick }) => (
   <button
@@ -758,15 +763,30 @@ function MessagesPage() {
     return getAvailableCommands(user?.roles || []);
   }, [user?.roles]);
 
+  const hasThreadStarted = useCallback((thread) => {
+    const content = thread?.lastMessage?.content;
+    return Boolean(
+      (typeof content === "string" && content.trim()) || thread?.lastMessage?.id
+    );
+  }, []);
+
+  const visibleThreads = useMemo(
+    () =>
+      threads.filter(
+        (thread) => hasThreadStarted(thread) || thread.id === activeThreadId
+      ),
+    [threads, hasThreadStarted, activeThreadId]
+  );
+
   const filteredThreads = useMemo(() => {
     const term = threadSearchTerm.trim().toLowerCase();
-    if (!term) return threads;
-    return threads.filter((thread) => {
+    if (!term) return visibleThreads;
+    return visibleThreads.filter((thread) => {
       const title = (thread.title || "").toLowerCase();
       const lastMessage = (thread.lastMessage?.content || "").toLowerCase();
       return title.includes(term) || lastMessage.includes(term);
     });
-  }, [threadSearchTerm, threads]);
+  }, [threadSearchTerm, visibleThreads]);
 
   const userNameColor = "var(--accent-purple)";
   const systemTitleColor = userNameColor;
@@ -1419,7 +1439,7 @@ function MessagesPage() {
   }, [activeThread, dbUserId, fetchThreads, openThread, threads]);
 
   useEffect(() => {
-    if (!threads.length) {
+    if (!visibleThreads.length) {
       setActiveThreadId(null);
       setMessages([]);
       return;
@@ -1428,9 +1448,9 @@ function MessagesPage() {
       return;
     }
     if (!activeThreadId) {
-      openThread(threads[0].id, threads[0]);
+      openThread(visibleThreads[0].id, visibleThreads[0]);
     }
-  }, [threads, activeThreadId, activeSystemView, openThread]);
+  }, [visibleThreads, activeThreadId, activeSystemView, openThread]);
 
   useEffect(() => {
     if (scrollerRef.current) {
@@ -1802,7 +1822,7 @@ function MessagesPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
             <div style={{ ...cardStyle, flex: 1, minHeight: 0 }}>
               <SectionTitle
-                title={threadSelectionMode ? "Selected" : "Threads"}
+                title={threadSelectionMode ? "Selected" : ""}
                 subtitle={
                   threadSelectionMode && selectedThreadIds.length
                     ? `${selectedThreadIds.length} thread(s) selected`
@@ -1851,7 +1871,18 @@ function MessagesPage() {
                       </button>
                     </div>
                   ) : (
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", paddingTop: "4px", paddingBottom: "2px" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        paddingTop: "4px",
+                        paddingBottom: "2px",
+                        position: "relative",
+                        overflow: "visible",
+                        zIndex: 2,
+                      }}
+                    >
                       <button
                         type="button"
                         onClick={openSystemNotificationsThread}
@@ -1879,6 +1910,7 @@ function MessagesPage() {
                             ? `inset 0 0 0 1px ${palette.accent}, 0 2px 8px rgba(30, 64, 175, 0.12)`
                             : `inset 0 0 0 1px ${palette.border}, 0 2px 8px rgba(15, 23, 42, 0.08)`;
                           event.currentTarget.style.transform = "translateY(-1px)";
+                          event.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
                         }}
                         onMouseLeave={(event) => {
                           event.currentTarget.style.backgroundColor = activeSystemView
@@ -1888,6 +1920,7 @@ function MessagesPage() {
                             ? `inset 0 0 0 1px ${palette.accent}`
                             : "none";
                           event.currentTarget.style.transform = "translateY(0)";
+                          event.currentTarget.style.zIndex = "0";
                         }}
                       >
                         System
@@ -1906,11 +1939,11 @@ function MessagesPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          if (!threads.length) return;
+                          if (!visibleThreads.length) return;
                           setThreadSelectionMode(true);
                           setSelectedThreadIds([]);
                         }}
-                        disabled={!threads.length}
+                        disabled={!visibleThreads.length}
                         style={{
                           borderRadius: radii.pill,
                           padding: "8px 14px",
@@ -1918,20 +1951,22 @@ function MessagesPage() {
                           backgroundColor: "var(--surface)",
                           color: palette.accent,
                           fontWeight: 600,
-                          cursor: threads.length ? "pointer" : "not-allowed",
+                          cursor: visibleThreads.length ? "pointer" : "not-allowed",
                           transition: "background-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease",
                         }}
                         onMouseEnter={(event) => {
-                          if (!threads.length) return;
+                          if (!visibleThreads.length) return;
                           event.currentTarget.style.backgroundColor = "rgba(var(--accent-purple-rgb), 0.08)";
                           event.currentTarget.style.boxShadow = `inset 0 0 0 1px ${palette.border}, 0 2px 8px rgba(15, 23, 42, 0.08)`;
                           event.currentTarget.style.transform = "translateY(-1px)";
+                          event.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
                         }}
                         onMouseLeave={(event) => {
-                          if (!threads.length) return;
+                          if (!visibleThreads.length) return;
                           event.currentTarget.style.backgroundColor = "var(--surface)";
                           event.currentTarget.style.boxShadow = "none";
                           event.currentTarget.style.transform = "translateY(0)";
+                          event.currentTarget.style.zIndex = "0";
                         }}
                       >
                         Select
@@ -1939,27 +1974,40 @@ function MessagesPage() {
                       <button
                         type="button"
                         onClick={handleOpenNewChatModal}
+                        aria-label="Start new chat"
                         style={{
-                          width: 40,
-                          height: 40,
+                          width: 42,
+                          height: 42,
+                          minWidth: 42,
+                          minHeight: 42,
+                          maxWidth: 42,
+                          maxHeight: 42,
+                          padding: 0,
+                          flex: "0 0 42px",
                           borderRadius: "50%",
                           border: `1px solid ${palette.border}`,
                           backgroundColor: "var(--surface)",
                           color: palette.accent,
-                          fontSize: "1.2rem",
+                          fontSize: "1.45rem",
                           fontWeight: 700,
+                          lineHeight: 1,
                           cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
                           transition: "background-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease",
                         }}
                         onMouseEnter={(event) => {
                           event.currentTarget.style.backgroundColor = "rgba(var(--accent-purple-rgb), 0.08)";
                           event.currentTarget.style.boxShadow = `inset 0 0 0 1px ${palette.border}, 0 2px 8px rgba(15, 23, 42, 0.08)`;
                           event.currentTarget.style.transform = "translateY(-1px)";
+                          event.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
                         }}
                         onMouseLeave={(event) => {
                           event.currentTarget.style.backgroundColor = "var(--surface)";
                           event.currentTarget.style.boxShadow = "none";
                           event.currentTarget.style.transform = "translateY(0)";
+                          event.currentTarget.style.zIndex = "0";
                         }}
                       >
                         +
@@ -2072,6 +2120,7 @@ function MessagesPage() {
                                 event.currentTarget.style.backgroundColor = "rgba(var(--accent-purple-rgb), 0.08)";
                                 event.currentTarget.style.transform = "translateY(-1px)";
                                 event.currentTarget.style.boxShadow = "0 8px 18px rgba(15, 23, 42, 0.08)";
+                                event.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
                               }}
                               onMouseLeave={(event) => {
                                 if (threadSelectionMode || activeThreadId === thread.id) return;
@@ -2080,6 +2129,7 @@ function MessagesPage() {
                                   : "var(--surface)";
                                 event.currentTarget.style.transform = "translateY(0)";
                                 event.currentTarget.style.boxShadow = "0 4px 12px rgba(15, 23, 42, 0.04)";
+                                event.currentTarget.style.zIndex = "0";
                               }}
                             >
                               <strong
@@ -2773,9 +2823,9 @@ function MessagesPage() {
 
       {newChatModalOpen && (
         <ModalPortal>
-          <div className="popup-backdrop">
+          <div className="popup-backdrop start-new-chat-backdrop">
             <div
-              className="popup-card"
+              className="popup-card start-new-chat-popup"
               style={{
                 borderRadius: "32px",
                 width: "100%",
@@ -2834,6 +2884,8 @@ function MessagesPage() {
                 display: "flex",
                 flexDirection: "column",
                 gap: "10px",
+                paddingTop: "2px",
+                paddingBottom: "2px",
               }}
             >
               {directoryLoading && (
@@ -2849,6 +2901,7 @@ function MessagesPage() {
                     return (
                       <button
                         key={entry.id}
+                        className="chat-user-option"
                         type="button"
                         onClick={() => handleDirectoryUser(entry)}
                         style={{

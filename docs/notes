@@ -12,6 +12,15 @@ message database table
 CHECK
 make sure that all hover action within the whole app when hover is active it does go underneath another section so it hides the top half but instead goes above it the edge so the whole of the hover action isnt blocked, make this change to every section within the app atm, and make sure for furture it doesnt happen either 
 
+CHECK
+Mkae sure wihtint he writeup tab the checkboxes do not ever get automatically reset, they can only be manually checked or unchecked which changes it wihtin the database
+
+
+CHECK
+Hvae it wihtin the parts identified tab that the Mark Not required button change to "Not required?" is also deactiviated when the user authoirses or declines the row from the summary tab
+
+TODO
+Fix front end the summary tab has just reset the status of each row deep dive into fixing this. 
 
 
 

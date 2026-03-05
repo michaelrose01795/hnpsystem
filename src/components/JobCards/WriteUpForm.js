@@ -179,6 +179,19 @@ const toPastTenseRequest = (value = "") => {
 const ensureAuthorizedTasks = (tasks = [], authorizedItems = []) => {
   const baseTasks = (Array.isArray(tasks) ? tasks : []).filter(Boolean);
   const normalizedAuthorized = Array.isArray(authorizedItems) ? authorizedItems.filter(Boolean) : [];
+  const normalizeTaskStatus = (value) => (value === "complete" ? "complete" : "additional_work");
+  const extractVhcItemId = (task = {}) => {
+    const explicit = task?.vhcItemId ?? task?.vhc_item_id ?? null;
+    if (explicit !== null && explicit !== undefined && `${explicit}`.trim()) {
+      return String(explicit).trim();
+    }
+    const sourceKey = String(task?.sourceKey || "").trim();
+    if (!sourceKey) return null;
+    const reqMatch = sourceKey.match(/-req-(\d+)$/i);
+    if (reqMatch?.[1]) return `req-${reqMatch[1]}`;
+    const numericTail = sourceKey.match(/-(\d+)$/);
+    return numericTail?.[1] ? numericTail[1] : null;
+  };
   const normaliseLabel = (value = "") =>
     value
       .toString()
@@ -205,6 +218,14 @@ const ensureAuthorizedTasks = (tasks = [], authorizedItems = []) => {
 
   const existingVhcTasks = baseTasks.filter((task) => task.source === "vhc");
   const existingByKey = new Map(existingVhcTasks.map((task) => [composeTaskKey(task), task]));
+  const existingByVhcItemId = new Map(
+    existingVhcTasks
+      .map((task) => {
+        const key = extractVhcItemId(task);
+        return key ? [key, task] : null;
+      })
+      .filter(Boolean)
+  );
   const existingByLabel = new Map(
     existingVhcTasks
       .filter((task) => task?.label)
@@ -226,8 +247,9 @@ const ensureAuthorizedTasks = (tasks = [], authorizedItems = []) => {
       taskId: item.taskId || null,
       source,
       sourceKey,
+      vhcItemId: item.vhcItemId ?? item.vhc_item_id ?? extractVhcItemId(item),
       label,
-      status: item.status === "complete" ? "complete" : "additional_work",
+      status: normalizeTaskStatus(item.status),
     };
 
     const key = composeTaskKey(candidate);
@@ -237,17 +259,28 @@ const ensureAuthorizedTasks = (tasks = [], authorizedItems = []) => {
       nextVhcTasks.push({
         ...candidate,
         taskId: existing.taskId ?? candidate.taskId ?? null,
-        status: existing.status || candidate.status,
+        status: normalizeTaskStatus(existing.status || candidate.status),
         label: shouldOverrideLabel(existing.label, candidate.label) ? candidate.label : existing.label,
       });
     } else {
+      const vhcIdKey = extractVhcItemId(candidate);
+      const vhcMatch = vhcIdKey ? existingByVhcItemId.get(vhcIdKey) : null;
+      if (vhcMatch) {
+        nextVhcTasks.push({
+          ...candidate,
+          taskId: vhcMatch.taskId ?? candidate.taskId ?? null,
+          status: normalizeTaskStatus(vhcMatch.status || candidate.status),
+          label: shouldOverrideLabel(vhcMatch.label, candidate.label) ? candidate.label : vhcMatch.label,
+        });
+        return;
+      }
       const labelKey = normaliseLabel(candidate.label);
       const labelMatch = labelKey ? existingByLabel.get(labelKey) : null;
       if (labelMatch) {
         nextVhcTasks.push({
           ...candidate,
           taskId: labelMatch.taskId ?? candidate.taskId ?? null,
-          status: labelMatch.status || candidate.status,
+          status: normalizeTaskStatus(labelMatch.status || candidate.status),
           label: shouldOverrideLabel(labelMatch.label, candidate.label) ? candidate.label : labelMatch.label,
         });
       } else {
@@ -1087,16 +1120,20 @@ export default function WriteUpForm({
             additionalParts: "",
             qty: createCheckboxArray(),
             booked: createCheckboxArray(),
-            tasks: ensureAuthorizedTasks(
-              fallbackRequests.map((item) => ({
-                taskId: null,
-                source: item.source,
-                sourceKey: item.sourceKey,
-                label: item.label,
-                status: "additional_work",
-              })),
-              []
-            ),
+            // Preserve existing checklist states when write-up row is temporarily unavailable.
+            tasks:
+              Array.isArray(prev.tasks) && prev.tasks.length > 0
+                ? prev.tasks
+                : ensureAuthorizedTasks(
+                    fallbackRequests.map((item) => ({
+                      taskId: null,
+                      source: item.source,
+                      sourceKey: item.sourceKey,
+                      label: item.label,
+                      status: "additional_work",
+                    })),
+                    []
+                  ),
             completionStatus: "additional_work",
             jobDescription: fallbackDescription,
             vhcAuthorizationId: null,

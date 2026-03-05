@@ -185,10 +185,12 @@ export default function CompanyAccountDetailPage() {
                   onMouseEnter={(e) => {
                     e.currentTarget.style.borderColor = "var(--primary)";
                     e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.borderColor = "var(--surface-light)";
                     e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.zIndex = "0";
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", flexWrap: "wrap" }}>
@@ -262,10 +264,12 @@ export default function CompanyAccountDetailPage() {
                   onMouseEnter={(e) => {
                     e.currentTarget.style.borderColor = "var(--primary)";
                     e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.borderColor = "var(--surface-light)";
                     e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.zIndex = "0";
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", flexWrap: "wrap" }}>

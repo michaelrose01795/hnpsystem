@@ -35,11 +35,16 @@ export default function Section({
         fontFamily: "inherit",
         transition: "all 0.2s ease-in-out",    // smooth hover effect
         boxShadow: "none",
+        position: "relative",
+        overflow: "visible",
+        zIndex: 0,
       }}
       onMouseEnter={(e) => {
+        e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
         if (hoverShadow) e.currentTarget.style.boxShadow = "0 4px 12px rgba(var(--shadow-rgb),0.12)";
       }}
       onMouseLeave={(e) => {
+        e.currentTarget.style.zIndex = "0";
         if (hoverShadow) e.currentTarget.style.boxShadow = "none";
       }}
     >

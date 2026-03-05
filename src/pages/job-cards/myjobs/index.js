@@ -797,15 +797,19 @@ export default function MyJobsPage() {
                       transition: "all 0.2s ease",
                       display: "flex",
                       alignItems: "center",
-                      gap: "12px"
+                      gap: "12px",
+                      position: "relative",
+                      zIndex: 0,
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = "translateY(-1px)";
                       e.currentTarget.style.borderColor = "var(--primary)";
+                      e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.transform = "translateY(0)";
                       e.currentTarget.style.borderColor = "var(--border)";
+                      e.currentTarget.style.zIndex = "0";
                     }}
                   >
                     {/* Status Badge */}

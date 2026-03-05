@@ -334,12 +334,15 @@ export default function NewsFeed() {
                 width: "100%",
               }}
               onMouseEnter={(e) => {
+                e.currentTarget.style.position = "relative";
+                e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
                 e.currentTarget.style.transform = "translateY(-8px)";
                 e.currentTarget.style.boxShadow = "0 8px 16px rgba(0, 0, 0, 0.1)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = "translateY(0)";
                 e.currentTarget.style.boxShadow = "none";
+                e.currentTarget.style.zIndex = "0";
               }}
             >
               {/* Title */}
@@ -597,12 +600,14 @@ export default function NewsFeed() {
                   if (!saving) {
                     e.currentTarget.style.transform = "translateY(-2px)";
                     e.currentTarget.style.boxShadow = "0 6px 16px rgba(0, 0, 0, 0.2)";
+                    e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!saving) {
                     e.currentTarget.style.transform = "translateY(0)";
                     e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
+                    e.currentTarget.style.zIndex = "0";
                   }
                 }}
               >

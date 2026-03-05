@@ -14,6 +14,10 @@ input[type="number"] {
 /* ========================================================= */
 /* === Reset & Base Styles === */
 /* ========================================================= */
+:root {
+  --hover-surface-z: 80;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -325,10 +329,13 @@ a {
   color: var(--primary);
   text-decoration: none;
   transition: color 0.2s;
+  position: relative;
+  z-index: 0;
 }
 a:hover {
   color: var(--primary-light);
   text-decoration: underline;
+  z-index: var(--hover-surface-z);
 }
 
 /* Buttons */
@@ -342,10 +349,13 @@ button {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  position: relative;
+  z-index: 0;
 }
 button:hover {
   background: var(--primary-light);
   transform: translateY(-1px);
+  z-index: var(--hover-surface-z);
 }
 button:active {
   transform: translateY(0);
@@ -374,6 +384,8 @@ select {
   outline: none;
   background-color: var(--surface-light);
   color: var(--text-primary);
+  position: relative;
+  z-index: 0;
 }
 
 input[type="search"] {
@@ -389,12 +401,14 @@ input:hover,
 textarea:hover,
 select:hover {
   border-color: var(--border);
+  z-index: var(--hover-surface-z);
 }
 input:focus,
 textarea:focus,
 select:focus {
   border-color: var(--primary);
   background-color: var(--surface);
+  z-index: var(--hover-surface-z);
 }
 
 /* Placeholder style */
@@ -427,6 +441,9 @@ section {
   background: var(--layer-section-level-2);
   border: 1px solid var(--border);
   transition: all 0.2s ease;
+  position: relative;
+  overflow: visible;
+  z-index: 0;
 }
 
 div.card,
@@ -437,12 +454,33 @@ div.news-card {
   background: var(--layer-section-level-1);
   border: 1px solid var(--border);
   transition: all 0.2s ease;
+  position: relative;
+  overflow: visible;
+  z-index: 0;
 }
 section:hover,
 div.card:hover,
 div.news-card:hover {
   transform: translateY(-2px);
   border-color: var(--primary);
+  z-index: var(--hover-surface-z);
+}
+
+/* Hover layering contract for future UI surfaces. */
+.hover-layer-root {
+  position: relative;
+  isolation: isolate;
+}
+
+.hover-lift {
+  position: relative;
+  z-index: 0;
+}
+
+.hover-lift:hover,
+.hover-lift:focus-within,
+.hover-lift:focus-visible {
+  z-index: var(--hover-surface-z);
 }
 
 div.news-card h3,
@@ -2378,6 +2416,28 @@ body:has(.login-page-wrapper) {
   overflow-y: auto;
   overscroll-behavior: contain;
   min-height: 0;
+}
+
+/* Prevent global hover lift clipping inside the Start New Chat modal's scroll containers. */
+.start-new-chat-popup button:hover,
+.start-new-chat-popup button:active {
+  transform: none;
+}
+
+/* Keep hover feedback inside Start New Chat without lift/jank. */
+.start-new-chat-popup .chat-user-option {
+  transition: background-color 0.14s ease, border-color 0.14s ease;
+}
+
+.start-new-chat-popup .chat-user-option:hover,
+.start-new-chat-popup .chat-user-option:focus-visible {
+  background-color: rgba(var(--accent-purple-rgb), 0.08) !important;
+  border-color: rgba(var(--accent-purple-rgb), 0.4) !important;
+}
+
+/* Backdrop blur is expensive while scrolling large lists; disable for this modal only. */
+.start-new-chat-backdrop {
+  backdrop-filter: none;
 }
 
 @media (max-width: 768px) {

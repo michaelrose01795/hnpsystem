@@ -388,12 +388,15 @@ export default function JobProgressTracker({
                   minHeight: "72px",
                 }}
                 onMouseEnter={(e) => {
+                  e.currentTarget.style.position = "relative";
+                  e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
                   e.currentTarget.style.transform = "translateY(-2px)";
                   e.currentTarget.style.boxShadow = "none";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = "translateY(0)";
                   e.currentTarget.style.boxShadow = "none";
+                  e.currentTarget.style.zIndex = "0";
                 }}
               >
                 <div style={{ textAlign: "left", minWidth: 0 }}>
