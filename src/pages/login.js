@@ -1,7 +1,7 @@
 // ✅ Connected to Supabase (frontend)
 // ✅ Imports converted to use absolute alias "@/"
 // file location: /src/pages/login.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { signIn, useSession } from "next-auth/react";
 import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
@@ -14,6 +14,18 @@ import { roleCategories } from "@/config/users"; // Dev users config
 
 const FIELD_MAX_WIDTH = 380;
 const LOGOUT_BARRIER_STORAGE_KEY = "hnp-logout-barrier-until";
+const PENDING_LOGOUT_STORAGE_KEY = "hnp-pending-logout";
+const hasActiveLogoutBarrier = () => {
+  if (typeof window === "undefined") return false;
+  const raw = window.sessionStorage.getItem(LOGOUT_BARRIER_STORAGE_KEY);
+  const until = Number(raw);
+  if (!Number.isFinite(until) || until <= 0) return false;
+  if (until <= Date.now()) {
+    window.sessionStorage.removeItem(LOGOUT_BARRIER_STORAGE_KEY);
+    return false;
+  }
+  return true;
+};
 
 const LoginCard = ({
   title,
@@ -88,6 +100,7 @@ export default function LoginPage() {
   const userContext = useUser();
   const user = userContext?.user;
   const dbUserId = userContext?.dbUserId;
+  const logout = userContext?.logout;
   const logoutInProgress = userContext?.logoutInProgress;
   const { usersByRole, usersByRoleDetailed, isLoading: rosterLoading, refreshRoster } = useRoster();
 
@@ -111,6 +124,7 @@ export default function LoginPage() {
   const [showRevertResult, setShowRevertResult] = useState(false);
   const [revertResultType, setRevertResultType] = useState("success");
   const [revertResultMessage, setRevertResultMessage] = useState("");
+  const finalizedPendingLogoutRef = useRef(false);
 
   const loginRoleCategories = React.useMemo(() => {
     const rosterRoles = Object.keys(usersByRoleDetailed || usersByRole || {}).filter(Boolean);
@@ -313,7 +327,7 @@ export default function LoginPage() {
 
   // Redirect once user is logged in (via NextAuth session or UserContext) + auto clock-in
   useEffect(() => {
-    if (logoutInProgress) return;
+    if (logoutInProgress || hasActiveLogoutBarrier()) return;
     const activeUser =
       user || (sessionStatus === "authenticated" && session?.user ? session.user : null);
     if (!activeUser) return;
@@ -352,6 +366,35 @@ export default function LoginPage() {
     const target = isCustomer ? "/customer" : "/newsfeed";
     router.push(target);
   }, [user, session, sessionStatus, router, dbUserId, logoutInProgress]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (finalizedPendingLogoutRef.current) return;
+    if (window.sessionStorage.getItem(PENDING_LOGOUT_STORAGE_KEY) !== "1") return;
+    finalizedPendingLogoutRef.current = true;
+    window.sessionStorage.removeItem(PENDING_LOGOUT_STORAGE_KEY);
+
+    void (async () => {
+      try {
+        const url = dbUserId ? `/api/profile/clock?userId=${dbUserId}` : "/api/profile/clock";
+        const statusRes = await fetch(url, { credentials: "include" });
+        if (statusRes.ok) {
+          const statusData = await statusRes.json();
+          if (statusData?.data?.isClockedIn) {
+            await fetch(url, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({ action: "clock-out" }),
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Auto clock-out on logout failed:", err);
+      }
+      await logout?.();
+    })();
+  }, [dbUserId, logout]);
 
   useEffect(() => {
     // ⚠️ Mock data found — replacing with Supabase query

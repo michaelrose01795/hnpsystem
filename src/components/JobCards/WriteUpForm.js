@@ -909,7 +909,7 @@ export default function WriteUpForm({
         jobPayload = jobResponse?.data || null;
       }
       if (jobPayload) {
-        setJobData(jobPayload);
+        setJobData((prev) => (prev === jobPayload ? prev : jobPayload));
       }
 
       const parseJson = (value) => {
@@ -981,7 +981,11 @@ export default function WriteUpForm({
           return {
             ...item,
             source: "vhc",
-            sourceKey: createAuthorizedSourceKey(item || {}, index, jobPayload?.jobCard?.id || writeUpMeta.jobId || jobData?.jobCard?.id),
+            sourceKey: createAuthorizedSourceKey(
+              item || {},
+              index,
+              jobPayload?.jobCard?.id || writeUpMeta.jobId
+            ),
             label: description || `Authorised item ${index + 1}`,
             status: item?.status === "complete" ? "complete" : "additional_work",
           };
@@ -999,7 +1003,7 @@ export default function WriteUpForm({
     } catch (error) {
       console.error("Failed to refresh authorized work:", error);
     }
-  }, [jobNumber, jobCardData, jobData?.jobCard?.authorizedVhcItems, jobData?.jobCard?.id, writeUpMeta.jobId]);
+  }, [jobNumber, jobCardData, writeUpMeta.jobId]);
 
   const requestTasks = useMemo(
     () => writeUpData.tasks.filter((task) => task && isFaultTaskSource(task.source)),

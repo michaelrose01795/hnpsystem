@@ -8,7 +8,17 @@ CONTINUE
 message database table
 
 
+TODO
+The messages database table should have one row per whole chat to and from conversation, not one row for each message being sent. 
 
+TODO
+Have it so withint he thread section within the messages page the "+" button is centered and more like a round plus button instead of bottom right corner and oval shape
+
+TODO
+Have it so wihtin the message thread section if a use is added from the "+" button and no chat has been started then remove the user row from the thread section. 
+
+TODO
+make sure that all hover action within the whole app when hover is active it does go underneath another section so it hides the top half but instead goes above it the edge so the whole of the hover action isnt blocked, make this change to every section within the app atm, and make sure for furture it doesnt happen either 
 
 
 

@@ -12,6 +12,10 @@ import { sidebarSections } from "@/config/navigation";
 import { departmentDashboardShortcuts } from "@/config/departmentDashboards";
 import BrandLogo from "@/components/BrandLogo";
 
+const LOGOUT_BARRIER_STORAGE_KEY = "hnp-logout-barrier-until";
+const LOGOUT_BARRIER_MS = 8000;
+const PENDING_LOGOUT_STORAGE_KEY = "hnp-pending-logout";
+
 const hiddenHrRoutes = new Set([
   "/hr/employees",
   "/hr/attendance",
@@ -35,7 +39,7 @@ export default function Sidebar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout, dbUserId } = useUser();
+  const { user, dbUserId } = useUser();
   const { unreadCount } = useMessagesBadge(dbUserId);
   const derivedRoles = user?.roles?.map((role) => role.toLowerCase()) || [];
   const userRoles =
@@ -100,26 +104,20 @@ export default function Sidebar({
   const departmentSections = filterAccessibleSections(groupedSections.departments);
   const accountSections = filterAccessibleSections(groupedSections.account);
 
-  const handleLogout = async () => {
-    // Clock out before logging out
-    try {
-      const url = dbUserId ? `/api/profile/clock?userId=${dbUserId}` : "/api/profile/clock";
-      const statusRes = await fetch(url, { credentials: "include" });
-      if (statusRes.ok) {
-        const statusData = await statusRes.json();
-        if (statusData?.data?.isClockedIn) {
-          await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ action: "clock-out" }),
-          });
-        }
-      }
-    } catch (err) {
-      console.error("Auto clock-out on logout failed:", err);
+  useEffect(() => {
+    void router.prefetch("/login");
+  }, [router]);
+
+  const handleLogout = () => {
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem(
+        LOGOUT_BARRIER_STORAGE_KEY,
+        String(Date.now() + LOGOUT_BARRIER_MS)
+      );
+      window.sessionStorage.setItem(PENDING_LOGOUT_STORAGE_KEY, "1");
+      window.location.replace("/login");
+      return;
     }
-    await logout?.();
     router.replace("/login");
   };
 
