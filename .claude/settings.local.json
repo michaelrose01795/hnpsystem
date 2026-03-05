@@ -43,7 +43,21 @@
       "Bash(wc:*)",
       "Bash(xargs:*)",
       "Bash(where:*)",
-      "Bash(powershell.exe -Command:*)"
+      "Bash(powershell.exe -Command:*)",
+      "Bash(tr ';' '\\\\n')",
+      "Bash(export PATH=\"/f:$PATH\")",
+      "Bash(/f/node.exe --version)",
+      "Bash(/f/npm.cmd --version)",
+      "Bash(export PATH=\"/f:/f/npm-global:$PATH\")",
+      "Bash(/f/node.exe /f/node_modules/npm/bin/npm-cli.js install -g vercel next)",
+      "Bash(mkdir -p /f/npm-global /f/npm-cache)",
+      "Read(//f//**)",
+      "Bash(export PATH=\"/f:/f/hnpsystem/.npm-global:$PATH\")",
+      "Bash(/f/hnpsystem/.npm-global/vercel.cmd --version)",
+      "Bash(/f/node.exe /f/hnpsystem/.npm-global/node_modules/vercel/dist/vc.js --version)",
+      "Bash(tasklist.exe)",
+      "Bash(taskkill.exe //F //IM git.exe)",
+      "Bash(rm -f /f/hnpsystem/.git/index.lock)"
     ],
     "deny": [],
     "ask": []
