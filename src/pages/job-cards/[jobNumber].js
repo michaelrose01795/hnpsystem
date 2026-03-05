@@ -2232,9 +2232,14 @@ export default function JobCardDetailPage() {
   }
 
   try {
+  const writeUpCompletionStatus = String(
+    jobData.writeUp?.completion_status || jobData.completionStatus || ""
+  )
+    .trim()
+    .toLowerCase();
   const writeUpComplete =
-    jobData.completionStatus === "complete" ||
-    jobData.writeUp?.completion_status === "complete";
+    writeUpCompletionStatus === "complete" ||
+    writeUpCompletionStatus === "waiting_additional_work";
   const vhcQualified = !jobData.vhcRequired || Boolean(jobData.vhcCompletedAt);
   const mileageRecorded =
     jobData.mileage !== null &&
@@ -3163,6 +3168,21 @@ export default function JobCardDetailPage() {
                 jobCardData={jobData}
                 showHeader={false}
                 onSaveSuccess={() => fetchJobData({ silent: true, force: true })}
+                onCompletionChange={(nextStatus) => {
+                  const normalized = String(nextStatus || "").trim().toLowerCase();
+                  setJobData((prev) => {
+                    if (!prev) return prev;
+                    return {
+                      ...prev,
+                      completionStatus: normalized || prev.completionStatus,
+                      writeUp: {
+                        ...(prev.writeUp || {}),
+                        completion_status:
+                          normalized || prev.writeUp?.completion_status || "",
+                      },
+                    };
+                  });
+                }}
               />
             </div>
           </div>

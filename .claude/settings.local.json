@@ -57,7 +57,8 @@
       "Bash(/f/node.exe /f/hnpsystem/.npm-global/node_modules/vercel/dist/vc.js --version)",
       "Bash(tasklist.exe)",
       "Bash(taskkill.exe //F //IM git.exe)",
-      "Bash(rm -f /f/hnpsystem/.git/index.lock)"
+      "Bash(rm -f /f/hnpsystem/.git/index.lock)",
+      "Read(//c/Users/micha/AppData/Roaming/npm/**)"
     ],
     "deny": [],
     "ask": []

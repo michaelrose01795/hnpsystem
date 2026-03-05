@@ -16,6 +16,7 @@ import { AlertProvider } from "@/context/AlertContext";
 import { ThemeProvider } from "@/styles/themeProvider";
 import { ConfirmationProvider } from "@/context/ConfirmationContext";
 import GlobalNotesWidget from "@/components/GlobalNotesWidget";
+import GlobalDraftPersistence from "@/components/App/GlobalDraftPersistence";
 
 function AppWrapper({ Component, pageProps }) {
   const router = useRouter();
@@ -104,6 +105,7 @@ function AppWrapper({ Component, pageProps }) {
 
   return (
     <>
+      <GlobalDraftPersistence />
       <Component {...pageProps} />
       {!hideNotesWidget && <GlobalNotesWidget />}
     </>

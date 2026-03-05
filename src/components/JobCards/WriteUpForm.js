@@ -1060,6 +1060,9 @@ export default function WriteUpForm({
           }
 
           markTasksSynced(computeTaskSignature(writeUpData.tasks, nextCompletionStatus));
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new CustomEvent("app:drafts:clear-route"));
+          }
 
           if (!silent) {
             alert("✅ Write-up saved successfully!");
