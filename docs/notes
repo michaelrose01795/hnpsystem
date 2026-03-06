@@ -6,24 +6,6 @@ Continue flow with job number 56.
 
 
 
-CHECK
-change it so within the health check section the user cannon open any of the sections if the row/section has been authorised, declined or completed. make sure the tech user cannot reopen vhc if wor has been otherirsed or declinded or completed. 
-
-CHECK
-Link the check boxes being ticked within the write up tab to set the status of that row to complete within the summary tab as well as the customer request tab
-
-
-
-CHECK
-Mkae sure wihtint he writeup tab the checkboxes do not ever get automatically reset, they can only be manually checked or unchecked which changes it wihtin the database
-
-
-CHECK
-Hvae it wihtin the parts identified tab that the Mark Not required button change to "Not required?" is also deactiviated when the user authoirses or declines the row from the summary tab
-
-TODO
-Fix front end the summary tab has just reset the status of each row deep dive into fixing this. 
-
 
 
 ADDITIONS 

@@ -3643,10 +3643,19 @@ function CustomerRequestsTab({
       .toLowerCase()
       .replace(/\s+/g, "_");
 
+    const UK_LABELS = {
+      authorized: "Authorised",
+      authorised: "Authorised",
+      completed: "Completed",
+      declined: "Declined",
+      inprogress: "In Progress",
+      pending: "Pending",
+      cancelled: "Cancelled",
+      on_hold: "On Hold",
+    };
     const statusLabel =
-      normalizedStatus === "inprogress"
-        ? "In Progress"
-        : normalizedStatus
+      UK_LABELS[normalizedStatus] ||
+      normalizedStatus
             .split("_")
             .filter(Boolean)
             .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
@@ -3720,6 +3729,10 @@ function CustomerRequestsTab({
                 ? vhcCheckByRequestId.get(String(row.requestId))
                 : null) ||
               null;
+            const checkDecision = matchedCheck
+              ? normaliseAuthorizationState(matchedCheck.authorization_state || matchedCheck.approval_status)
+              : null;
+            const checkIsComplete = checkDecision === "completed" || matchedCheck?.Complete === true || matchedCheck?.complete === true;
             return {
               request_id: row?.requestId ?? matchedCheck?.request_id ?? null,
               vhc_item_id: row?.vhcItemId ?? matchedCheck?.vhc_id ?? null,
@@ -3740,7 +3753,10 @@ function CustomerRequestsTab({
               time: row?.hours ?? matchedCheck?.labour_hours ?? null,
               job_type: row?.jobType ?? "Customer",
               paymentType: row?.jobType ?? "Customer",
-              status: row?.status ?? matchedCheck?.status ?? null,
+              status: row?.status ?? (checkIsComplete ? "completed" : checkDecision) ?? null,
+              approval_status: matchedCheck?.approval_status ?? null,
+              authorization_state: matchedCheck?.authorization_state ?? null,
+              complete: checkIsComplete,
               request_source: "vhc_authorised",
               sort_order: row?.sortOrder ?? null,
             };
@@ -3752,20 +3768,28 @@ function CustomerRequestsTab({
         const decision = normaliseAuthorizationState(row?.authorization_state || row?.approval_status);
         return decision === "authorized" || decision === "completed" || row?.Complete === true || row?.complete === true;
       })
-      .map((row) => ({
-        vhc_item_id: row?.vhc_id ?? null,
-        issue_title: row?.issue_title ?? null,
-        issue_description: row?.issue_description ?? null,
-        note_text: row?.note_text ?? null,
-        section: row?.section ?? "",
-        labour_hours: row?.labour_hours ?? null,
-        parts_cost: row?.parts_cost ?? null,
-        approved_at: row?.approved_at ?? null,
-        approved_by: row?.approved_by ?? null,
-        pre_pick_location: row?.pre_pick_location ?? null,
-        request_id: row?.request_id ?? null,
-        request_source: "vhc_authorised",
-      }));
+      .map((row) => {
+        const decision = normaliseAuthorizationState(row?.authorization_state || row?.approval_status);
+        const isComplete = decision === "completed" || row?.Complete === true || row?.complete === true;
+        return {
+          vhc_item_id: row?.vhc_id ?? null,
+          issue_title: row?.issue_title ?? null,
+          issue_description: row?.issue_description ?? null,
+          note_text: row?.note_text ?? null,
+          section: row?.section ?? "",
+          labour_hours: row?.labour_hours ?? null,
+          parts_cost: row?.parts_cost ?? null,
+          approved_at: row?.approved_at ?? null,
+          approved_by: row?.approved_by ?? null,
+          pre_pick_location: row?.pre_pick_location ?? null,
+          request_id: row?.request_id ?? null,
+          request_source: "vhc_authorised",
+          status: isComplete ? "completed" : decision || null,
+          approval_status: row?.approval_status ?? null,
+          authorization_state: row?.authorization_state ?? null,
+          complete: isComplete,
+        };
+      });
 
     // Merge all sources so authorised rows remain visible even if one source is stale/partial.
     const mergedAuthorized = [];

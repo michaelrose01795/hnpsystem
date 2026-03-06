@@ -741,6 +741,11 @@ export const getAuthorizedVhcItemsWithDetails = async (jobId) => {
         detail && base.toLowerCase().includes(detail.toLowerCase()) ? null : detail;
       const label = cleanedDetail ? `${base} - ${cleanedDetail}` : base;
 
+      const decision =
+        normaliseAuthorizationState(row?.authorization_state) ||
+        normaliseAuthorizationState(row?.approval_status);
+      const isComplete = decision === "completed" || row?.Complete === true || row?.complete === true;
+
       return {
         vhcItemId: row.vhc_id ?? null,
         description: row.issue_title || row.issue_description || row.section || "Authorised item",
@@ -754,6 +759,10 @@ export const getAuthorizedVhcItemsWithDetails = async (jobId) => {
         noteText: row.note_text ?? null,
         prePickLocation: row.pre_pick_location ?? null,
         requestId: row.request_id ?? null,
+        status: isComplete ? "complete" : "additional_work",
+        approvalStatus: row.approval_status ?? null,
+        authorizationState: row.authorization_state ?? null,
+        complete: isComplete,
       };
     });
   } catch (error) {
@@ -1912,6 +1921,7 @@ const buildTaskChecklistPayload = (
         : task?.status === "inprogress"
         ? "inprogress"
         : "additional_work",
+    ...(task?.vhcItemId ? { vhcItemId: task.vhcItemId } : {}),
   })),
   meta: {
     sectionEditors: normalizeSectionEditors(sectionEditors),
@@ -3487,6 +3497,7 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
           sourceKey: task?.sourceKey || `${source}-${task?.label || "task"}`,
           label: (task?.label || "").toString().trim(),
           status,
+          ...(task?.vhcItemId ? { vhcItemId: task.vhcItemId } : {}),
         };
       })
       .filter((task) => Boolean(task.label));

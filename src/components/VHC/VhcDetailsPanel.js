@@ -1028,7 +1028,7 @@ const buildBrakeHealthCardItems = (items = [], brakesRaw = {}) => {
   return displayItems.length > 0 ? displayItems : items;
 };
 
-const HealthSectionCard = ({ config, section, rawData, onOpen, locked }) => {
+const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
   const rawItems = Array.isArray(section?.items) ? section.items : [];
   const items = config.key === "brakesHubs" ? buildBrakeHealthCardItems(rawItems, rawData) : rawItems;
   const hasItems = items.length > 0;
@@ -1070,20 +1070,20 @@ const HealthSectionCard = ({ config, section, rawData, onOpen, locked }) => {
         >
           <button
             type="button"
-            onClick={() => !locked && onOpen && onOpen(config.key)}
+            onClick={() => onOpen && onOpen(config.key)}
             style={{
               padding: "8px 14px",
               borderRadius: "10px",
-              border: locked ? "1px solid var(--info)" : "1px solid var(--primary)",
-              background: locked ? "var(--info)" : "var(--primary)",
+              border: "1px solid var(--primary)",
+              background: "var(--primary)",
               color: "var(--surface)",
               fontWeight: 600,
-              cursor: onOpen && !locked ? "pointer" : "not-allowed",
-              opacity: onOpen && !locked ? 1 : 0.6,
+              cursor: onOpen ? "pointer" : "not-allowed",
+              opacity: onOpen ? 1 : 0.6,
             }}
-            disabled={!onOpen || locked}
+            disabled={!onOpen}
           >
-            {locked ? "Locked" : "Open"}
+            Open
           </button>
         </div>
       </div>
@@ -2565,13 +2565,11 @@ export default function VhcDetailsPanel({
       underside: "underside",
     };
     const locked = new Set();
-    ["authorized", "declined"].forEach((listKey) => {
-      (severityLists[listKey] || []).forEach((item) => {
-        const sectionKey = categoryToSection[item.categoryId];
-        if (sectionKey) {
-          locked.add(sectionKey);
-        }
-      });
+    (severityLists.authorized || []).forEach((item) => {
+      const sectionKey = categoryToSection[item.categoryId];
+      if (sectionKey) {
+        locked.add(sectionKey);
+      }
     });
     return locked;
   }, [severityLists]);
@@ -3414,6 +3412,7 @@ export default function VhcDetailsPanel({
   }, [labourHoursByVhcItem, severityLists, resolveCanonicalVhcId]);
 
   // Initialize itemEntries from vhcApprovalLookup (database values)
+  // Important: do not overwrite a decided local row status with a stale "pending" value.
   useEffect(() => {
     setItemEntries((prev) => {
       const updated = { ...prev };
@@ -3423,13 +3422,21 @@ export default function VhcDetailsPanel({
       items.forEach((item) => {
         const entry = ensureEntryValue(prev, item.id);
 
-        // Get approval data from database
-        const approvalData = vhcApprovalLookup.get(String(item.id));
+        // Resolve by canonical VHC id first, then display id fallback.
+        const canonicalId = resolveCanonicalVhcId(item.id);
+        const approvalData =
+          vhcApprovalLookup.get(String(canonicalId)) ||
+          vhcApprovalLookup.get(String(item.id));
         if (approvalData) {
+          const dbDecision = normaliseDecisionStatus(approvalData.approvalStatus);
+          const nextStatus =
+            dbDecision && (dbDecision !== "pending" || !entry.status)
+              ? dbDecision
+              : entry.status || null;
           // Build the updated entry with database values
           const updatedEntry = {
             ...entry,
-            status: approvalData.approvalStatus || entry.status || null,
+            status: nextStatus,
             completed: approvalData.complete ?? entry.completed ?? false,
           };
 
@@ -3471,7 +3478,7 @@ export default function VhcDetailsPanel({
 
       return hasChanges ? updated : prev;
     });
-  }, [vhcApprovalLookup, severityLists]);
+  }, [vhcApprovalLookup, severityLists, resolveCanonicalVhcId]);
 
   // Check if Summary actions can be enabled and notify parent with completion + lock reason.
   // IMPORTANT: Only gate on Parts/Labour checkbox columns in Summary.
@@ -5010,7 +5017,8 @@ export default function VhcDetailsPanel({
     const measurement = item.measurement || "";
     const categoryLabel = item.categoryLabel || item.sectionName || "Recorded Section";
     const decisionKey = resolveVhcRowDecisionKey(item, entry);
-    const isAuthorized = decisionKey === "authorized" || severity === "authorized";
+    const isCompleted = decisionKey === "completed";
+    const isAuthorized = decisionKey === "authorized" || severity === "authorized" || isCompleted;
     const isDeclined = decisionKey === "declined" || severity === "declined";
     // Only show authorize/decline checkboxes for pending red/amber items
     const showDecision = (severity === "red" || severity === "amber") && !isAuthorized && !isDeclined;
@@ -5176,7 +5184,7 @@ export default function VhcDetailsPanel({
                       }
                     }}
                   />
-                  Final Check - {isAuthorized ? "Authorised" : "Declined"}
+                  Final Check - {isCompleted ? "Completed" : isAuthorized ? "Authorised" : "Declined"}
                 </label>
               </div>
             )}
@@ -8011,7 +8019,7 @@ export default function VhcDetailsPanel({
                       if (selectedSet.has(item.id)) {
                         selectedTotal += finalTotal;
                       }
-                      if (decisionKey === "authorized") {
+                      if (decisionKey === "authorized" || decisionKey === "completed") {
                         authorisedTotal += finalTotal;
                       } else if (decisionKey === "declined") {
                         declinedTotal += finalTotal;
@@ -8238,7 +8246,6 @@ export default function VhcDetailsPanel({
                       section={data}
                       rawData={rawData}
                       onOpen={handleOpenSection}
-                      locked={lockedSectionKeys.has(config.key)}
                     />
                   ))}
 
@@ -8536,7 +8543,6 @@ export default function VhcDetailsPanel({
                       section={data}
                       rawData={rawData}
                       onOpen={handleOpenSection}
-                      locked={lockedSectionKeys.has(config.key)}
                     />
                   ))}
 

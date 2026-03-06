@@ -341,6 +341,23 @@ export default async function handler(req, res) {
             })
             .eq("vhc_id", vhcItemId);
         }
+
+        // Sync linked job_requests status for this VHC item
+        if (normalizedStatus === "completed" || normalizedStatus === "authorized" || normalizedStatus === "declined" || normalizedStatus === "pending") {
+          const requestStatus =
+            normalizedStatus === "completed" ? "complete"
+            : normalizedStatus === "authorized" ? "authorized"
+            : normalizedStatus === "declined" ? "declined"
+            : "inprogress";
+          await supabase
+            .from("job_requests")
+            .update({
+              status: requestStatus,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("job_id", jobId)
+            .eq("vhc_item_id", vhcItemId);
+        }
       }
     }
 

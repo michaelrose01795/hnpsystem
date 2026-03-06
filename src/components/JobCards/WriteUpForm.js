@@ -252,6 +252,13 @@ const ensureAuthorizedTasks = (tasks = [], authorizedItems = []) => {
       status: normalizeTaskStatus(item.status),
     };
 
+    // When the canonical VHC item says "complete", that is the source of truth
+    // from vhc_checks and must win over a stale saved task_checklist entry.
+    const resolveStatus = (saved, canonical) => {
+      if (canonical === "complete") return "complete";
+      return normalizeTaskStatus(saved || canonical);
+    };
+
     const key = composeTaskKey(candidate);
     const existing = existingByKey.get(key);
     if (existing) {
@@ -259,7 +266,7 @@ const ensureAuthorizedTasks = (tasks = [], authorizedItems = []) => {
       nextVhcTasks.push({
         ...candidate,
         taskId: existing.taskId ?? candidate.taskId ?? null,
-        status: normalizeTaskStatus(existing.status || candidate.status),
+        status: resolveStatus(existing.status, candidate.status),
         label: shouldOverrideLabel(existing.label, candidate.label) ? candidate.label : existing.label,
       });
     } else {
@@ -269,7 +276,7 @@ const ensureAuthorizedTasks = (tasks = [], authorizedItems = []) => {
         nextVhcTasks.push({
           ...candidate,
           taskId: vhcMatch.taskId ?? candidate.taskId ?? null,
-          status: normalizeTaskStatus(vhcMatch.status || candidate.status),
+          status: resolveStatus(vhcMatch.status, candidate.status),
           label: shouldOverrideLabel(vhcMatch.label, candidate.label) ? candidate.label : vhcMatch.label,
         });
         return;
@@ -280,7 +287,7 @@ const ensureAuthorizedTasks = (tasks = [], authorizedItems = []) => {
         nextVhcTasks.push({
           ...candidate,
           taskId: labelMatch.taskId ?? candidate.taskId ?? null,
-          status: normalizeTaskStatus(labelMatch.status || candidate.status),
+          status: resolveStatus(labelMatch.status, candidate.status),
           label: shouldOverrideLabel(labelMatch.label, candidate.label) ? candidate.label : labelMatch.label,
         });
       } else {
@@ -409,6 +416,7 @@ const buildTaskChecklistSnapshot = (tasks = []) =>
     sourceKey: task?.sourceKey || composeTaskKey(task),
     label: task?.label || "",
     status: task?.status === "complete" ? "complete" : "additional_work",
+    ...(task?.vhcItemId ? { vhcItemId: task.vhcItemId } : {}),
   }));
 
 const buildAddedSectionText = (tasks = [], source = "") =>
