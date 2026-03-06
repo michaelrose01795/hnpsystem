@@ -2038,9 +2038,8 @@ export default function VhcDetailsPanel({
       ? "var(--warning)"
       : "var(--info)";
   const handleOpenSection = useCallback((sectionKey) => {
-    if (lockedSectionKeys.has(sectionKey)) return;
     setActiveSection(sectionKey);
-  }, [lockedSectionKeys]);
+  }, []);
 
   const handleSectionDismiss = useCallback(
     (sectionKey, draftData) => {
