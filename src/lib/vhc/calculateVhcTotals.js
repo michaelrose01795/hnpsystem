@@ -51,7 +51,7 @@ function safeJsonParse(value) {
  * @param {Array} partsJobItems - Array of parts_job_items records from the database
  * @returns {Object} - { authorized: number, declined: number }
  */
-export function calculateVhcFinancialTotals(vhcChecks = [], partsJobItems = []) {
+export function calculateVhcFinancialTotals(vhcChecks = [], partsJobItems = [], { forceRecalculate = false } = {}) {
   const totals = {
     authorized: 0,
     declined: 0,
@@ -83,7 +83,7 @@ export function calculateVhcFinancialTotals(vhcChecks = [], partsJobItems = []) 
     const shouldUseStoredTotals =
       (hasStoredAuthorized && storedAuthorized > 0) ||
       (hasStoredDeclined && storedDeclined > 0);
-    if (shouldUseStoredTotals) {
+    if (shouldUseStoredTotals && !forceRecalculate) {
       return {
         authorized: hasStoredAuthorized ? storedAuthorized : 0,
         declined: hasStoredDeclined ? storedDeclined : 0,

@@ -1028,7 +1028,7 @@ const buildBrakeHealthCardItems = (items = [], brakesRaw = {}) => {
   return displayItems.length > 0 ? displayItems : items;
 };
 
-const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
+const HealthSectionCard = ({ config, section, rawData, onOpen, locked }) => {
   const rawItems = Array.isArray(section?.items) ? section.items : [];
   const items = config.key === "brakesHubs" ? buildBrakeHealthCardItems(rawItems, rawData) : rawItems;
   const hasItems = items.length > 0;
@@ -1070,20 +1070,20 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
         >
           <button
             type="button"
-            onClick={() => onOpen && onOpen(config.key)}
+            onClick={() => !locked && onOpen && onOpen(config.key)}
             style={{
               padding: "8px 14px",
               borderRadius: "10px",
-              border: "1px solid var(--primary)",
-              background: "var(--primary)",
+              border: locked ? "1px solid var(--info)" : "1px solid var(--primary)",
+              background: locked ? "var(--info)" : "var(--primary)",
               color: "var(--surface)",
               fontWeight: 600,
-              cursor: onOpen ? "pointer" : "not-allowed",
-              opacity: onOpen ? 1 : 0.6,
+              cursor: onOpen && !locked ? "pointer" : "not-allowed",
+              opacity: onOpen && !locked ? 1 : 0.6,
             }}
-            disabled={!onOpen}
+            disabled={!onOpen || locked}
           >
-            Open
+            {locked ? "Locked" : "Open"}
           </button>
         </div>
       </div>
@@ -2038,8 +2038,9 @@ export default function VhcDetailsPanel({
       ? "var(--warning)"
       : "var(--info)";
   const handleOpenSection = useCallback((sectionKey) => {
+    if (lockedSectionKeys.has(sectionKey)) return;
     setActiveSection(sectionKey);
-  }, []);
+  }, [lockedSectionKeys]);
 
   const handleSectionDismiss = useCallback(
     (sectionKey, draftData) => {
@@ -2565,11 +2566,13 @@ export default function VhcDetailsPanel({
       underside: "underside",
     };
     const locked = new Set();
-    (severityLists.authorized || []).forEach((item) => {
-      const sectionKey = categoryToSection[item.categoryId];
-      if (sectionKey) {
-        locked.add(sectionKey);
-      }
+    ["authorized", "declined"].forEach((listKey) => {
+      (severityLists[listKey] || []).forEach((item) => {
+        const sectionKey = categoryToSection[item.categoryId];
+        if (sectionKey) {
+          locked.add(sectionKey);
+        }
+      });
     });
     return locked;
   }, [severityLists]);
@@ -8236,6 +8239,7 @@ export default function VhcDetailsPanel({
                       section={data}
                       rawData={rawData}
                       onOpen={handleOpenSection}
+                      locked={lockedSectionKeys.has(config.key)}
                     />
                   ))}
 
@@ -8533,6 +8537,7 @@ export default function VhcDetailsPanel({
                       section={data}
                       rawData={rawData}
                       onOpen={handleOpenSection}
+                      locked={lockedSectionKeys.has(config.key)}
                     />
                   ))}
 

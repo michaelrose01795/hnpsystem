@@ -1,6 +1,7 @@
 // API endpoint to update VHC item approval status and related fields
 import { supabase } from "@/lib/supabaseClient";
 import { syncVhcPartsAuthorisation } from "@/lib/database/vhcPartsSync";
+import { calculateVhcFinancialTotals } from "@/lib/vhc/calculateVhcTotals";
 
 export default async function handler(req, res) {
   if (req.method !== "PATCH" && req.method !== "POST") {
@@ -340,6 +341,49 @@ export default async function handler(req, res) {
             })
             .eq("vhc_id", vhcItemId);
         }
+      }
+    }
+
+    // Recalculate and persist authorized/declined totals on the VHC_CHECKSHEET row
+    if (approvalStatus !== undefined && updatedRow?.job_id) {
+      try {
+        const jobId = updatedRow.job_id;
+
+        // Fetch all vhc_checks for this job
+        const { data: allChecks } = await supabase
+          .from("vhc_checks")
+          .select("*")
+          .eq("job_id", jobId);
+
+        // Fetch all parts_job_items for this job
+        const { data: allParts } = await supabase
+          .from("parts_job_items")
+          .select("*, parts_catalog(unit_price)")
+          .eq("job_id", jobId);
+
+        if (Array.isArray(allChecks)) {
+          const newTotals = calculateVhcFinancialTotals(allChecks, allParts || [], { forceRecalculate: true });
+
+          // Find the VHC_CHECKSHEET row and update its totals
+          const checksheetRow = allChecks.find((c) => {
+            const section = (c?.section || "").toString().trim();
+            return section === "VHC_CHECKSHEET" || section === "VHC Checksheet";
+          });
+
+          if (checksheetRow?.vhc_id) {
+            await supabase
+              .from("vhc_checks")
+              .update({
+                authorized_total_gbp: newTotals.authorized,
+                declined_total_gbp: newTotals.declined,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("vhc_id", checksheetRow.vhc_id);
+          }
+        }
+      } catch (totalsError) {
+        // Non-critical – log but don't fail the request
+        console.error("Failed to persist VHC totals:", totalsError);
       }
     }
 

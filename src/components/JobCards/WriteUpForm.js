@@ -1495,6 +1495,7 @@ export default function WriteUpForm({
     let toggledSection = null;
     let nextCompletionStatus = null;
     let timelineEventLabel = null;
+    let vhcSyncPayload = null;
     setWriteUpData((prev) => {
       const updatedTasks = prev.tasks.map((task) => {
         const currentKey = composeTaskKey(task);
@@ -1546,6 +1547,14 @@ export default function WriteUpForm({
             authorisedList.findIndex((task) => composeTaskKey(task) === taskKey) + 1;
           timelineEventLabel = `Authorised ${authorisedIndex || 1} ${isComplete ? "Complete" : "Uncompleted"}`;
         }
+
+        // Capture VHC item sync payload for source === "vhc" tasks
+        if (toggledTask.source === "vhc" && toggledTask.vhcItemId) {
+          vhcSyncPayload = {
+            vhcItemId: toggledTask.vhcItemId,
+            isComplete,
+          };
+        }
       }
 
       // Check if there are any rectification tasks (additional work authorized)
@@ -1594,6 +1603,25 @@ export default function WriteUpForm({
     }
     if (toggledSection) {
       recordSectionEditor(toggledSection);
+    }
+
+    // Sync VHC item status when a VHC write-up checkbox is toggled
+    if (vhcSyncPayload) {
+      void (async () => {
+        try {
+          await fetch("/api/vhc/update-item-status", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              vhcItemId: vhcSyncPayload.vhcItemId,
+              approvalStatus: vhcSyncPayload.isComplete ? "completed" : "authorized",
+              complete: vhcSyncPayload.isComplete,
+            }),
+          });
+        } catch (err) {
+          console.error("Failed to sync VHC item status from write-up:", err);
+        }
+      })();
     }
   };
   useEffect(() => {

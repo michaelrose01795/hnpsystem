@@ -4,8 +4,14 @@ TO DO:
 
 Continue flow with job number 56.
 
-CONTINUE
-message database table
+
+
+CHECK
+change it so within the health check section the user cannon open any of the sections if the row/section has been authorised, declined or completed. make sure the tech user cannot reopen vhc if wor has been otherirsed or declinded or completed. 
+
+CHECK
+Link the check boxes being ticked within the write up tab to set the status of that row to complete within the summary tab as well as the customer request tab
+
 
 
 CHECK
