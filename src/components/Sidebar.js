@@ -251,6 +251,7 @@ export default function Sidebar({
       {/* Header */}
       {/* Brand logo replaces the old Navigation/Workspace labels while keeping header spacing consistent. Background now follows the sidebar theme for both light/dark modes. */}
       <div
+        className="sidebar-logo-header"
         style={{
           background: "var(--surface)", // match sidebar surface so the header blends with the current theme (light or dark)
           padding: "16px 18px",

@@ -26,14 +26,55 @@ const MONTHS = [
   "July", "August", "September", "October", "November", "December",
 ];
 
+const toYmd = (date) => {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const parseYmd = (value) => {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [y, m, d] = value.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  if (Number.isNaN(date.getTime())) return null;
+  return date;
+};
+
+const getWeekStartMonday = (date) => {
+  const copy = new Date(date);
+  const day = copy.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  copy.setDate(copy.getDate() + diff);
+  copy.setHours(0, 0, 0, 0);
+  return copy;
+};
+
+const roundHours = (value) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return 0;
+  return Number(parsed.toFixed(2));
+};
+
+const formatHours = (value) => roundHours(value).toFixed(2);
+
 const buildRequestOptions = (jobNumberValue, requestRows) => {
   const trimmed = jobNumberValue.trim();
   if (!trimmed) return [];
+  const totalAllocatedHours = (Array.isArray(requestRows) ? requestRows : []).reduce((sum, request) => {
+    const hours = Number(request?.hours);
+    return Number.isFinite(hours) ? sum + hours : sum;
+  }, 0);
   const options = [
     {
       value: "job",
       label: `Job: ${trimmed}`,
-      description: "Clock onto the whole job",
+      description:
+        totalAllocatedHours > 0
+          ? `${formatHours(totalAllocatedHours)}h allocated total`
+          : "Clock onto the whole job",
+      allocatedHours: totalAllocatedHours > 0 ? roundHours(totalAllocatedHours) : null,
     },
   ];
 
@@ -48,7 +89,10 @@ const buildRequestOptions = (jobNumberValue, requestRows) => {
     options.push({
       value: `request:${requestId}`,
       label: `Req ${order}: ${description}`,
-      description: request?.hours ? `${request.hours}h allocated` : "",
+      description: request?.hours ? `${formatHours(request.hours)}h allocated` : "",
+      allocatedHours: request?.hours !== null && request?.hours !== undefined
+        ? roundHours(request.hours)
+        : null,
     });
   });
 
@@ -77,17 +121,24 @@ export default function EfficiencyTab({
   const [targets, setTargets] = useState(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [periodFilter, setPeriodFilter] = useState("month");
+  const [filterDate, setFilterDate] = useState(toYmd(now));
+  const [overviewTechFilter, setOverviewTechFilter] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Modal state for add/edit
   const [modalOpen, setModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
   const [formDate, setFormDate] = useState("");
   const [formJobNumber, setFormJobNumber] = useState("");
+  const [formDescription, setFormDescription] = useState("");
+  const [formAllocatedHours, setFormAllocatedHours] = useState("");
   const [formHours, setFormHours] = useState("");
   const [formNotes, setFormNotes] = useState("");
   const [formDayType, setFormDayType] = useState("weekday");
   const [formError, setFormError] = useState("");
   const [formSubmitting, setFormSubmitting] = useState(false);
+  const [jobLookupState, setJobLookupState] = useState("idle");
 
   // Job request lookup state (matches Start Job popup pattern)
   const [selectedRequestValue, setSelectedRequestValue] = useState("job");
@@ -95,8 +146,6 @@ export default function EfficiencyTab({
   const [requestOptions, setRequestOptions] = useState([]);
   const lastJobNumberRef = useRef("");
 
-  // Delete confirmation
-  const [deletingId, setDeletingId] = useState(null);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
 
   // Overall tab detail popup state
@@ -197,19 +246,81 @@ export default function EfficiencyTab({
     }
   }, [filterUserId, visibleTechs, activeTab]);
 
+  useEffect(() => {
+    const current = parseYmd(filterDate);
+    if (current && current.getFullYear() === selectedYear && current.getMonth() + 1 === selectedMonth) {
+      return;
+    }
+    setFilterDate(`${selectedYear}-${String(selectedMonth).padStart(2, "0")}-01`);
+  }, [filterDate, selectedMonth, selectedYear]);
+
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const filterDateValue = useMemo(() => {
+    const parsed = parseYmd(filterDate);
+    if (parsed) return parsed;
+    return new Date(selectedYear, selectedMonth - 1, 1);
+  }, [filterDate, selectedMonth, selectedYear]);
+
+  const periodFilteredEntries = useMemo(() => {
+    if (!Array.isArray(entries) || entries.length === 0) return [];
+    const filterDayYmd = toYmd(filterDateValue);
+    const filterWeekStart = getWeekStartMonday(filterDateValue);
+    const filterWeekEnd = new Date(filterWeekStart);
+    filterWeekEnd.setDate(filterWeekStart.getDate() + 7);
+
+    return entries.filter((entry) => {
+      if (!entry?.date) return false;
+      if (periodFilter === "month") return true;
+      if (periodFilter === "day") {
+        return entry.date === filterDayYmd;
+      }
+      if (periodFilter === "week") {
+        const entryDate = parseYmd(entry.date);
+        if (!entryDate) return false;
+        return entryDate >= filterWeekStart && entryDate < filterWeekEnd;
+      }
+      return true;
+    });
+  }, [entries, filterDateValue, periodFilter]);
+
+  const searchedEntries = useMemo(() => {
+    if (!normalizedSearch) return periodFilteredEntries;
+    return periodFilteredEntries.filter((entry) => {
+      const jobNumber = String(entry.job_number || "").toLowerCase();
+      const description = String(entry.job_description || "").toLowerCase();
+      const notes = String(entry.notes || "").toLowerCase();
+      const hoursSpent = String(entry.hours_spent ?? "").toLowerCase();
+      const allocatedHours = String(entry.allocated_hours ?? "").toLowerCase();
+      return (
+        jobNumber.includes(normalizedSearch) ||
+        description.includes(normalizedSearch) ||
+        notes.includes(normalizedSearch) ||
+        hoursSpent.includes(normalizedSearch) ||
+        allocatedHours.includes(normalizedSearch)
+      );
+    });
+  }, [normalizedSearch, periodFilteredEntries]);
+
+  const overviewEntries = useMemo(() => {
+    if (overviewTechFilter === "all") return searchedEntries;
+    const selectedTechId = Number(overviewTechFilter);
+    if (!Number.isFinite(selectedTechId)) return searchedEntries;
+    return searchedEntries.filter((entry) => entry.user_id === selectedTechId);
+  }, [overviewTechFilter, searchedEntries]);
+
   // Group entries by user
   const entriesByUser = useMemo(() => {
     const map = new Map();
-    entries.forEach((e) => {
+    searchedEntries.forEach((e) => {
       if (!map.has(e.user_id)) map.set(e.user_id, []);
       map.get(e.user_id).push(e);
     });
     return map;
-  }, [entries]);
+  }, [searchedEntries]);
 
-  // Per-tech summaries
+  // Per-tech summaries (respecting current filters/search)
   const techSummaries = useMemo(() => {
-    return technicians.map((tech) => {
+    return visibleTechs.map((tech) => {
       const techEntries = entriesByUser.get(tech.user_id) || [];
       const target = targets.get(tech.user_id) || { monthlyTargetHours: 160, weight: 1.0 };
       const totals = calculateTechTotals(techEntries, target);
@@ -221,12 +332,18 @@ export default function EfficiencyTab({
         weight: target.weight,
       };
     });
-  }, [technicians, entriesByUser, targets]);
+  }, [entriesByUser, targets, visibleTechs]);
 
-  // Overall totals
+  const overviewTechSummaries = useMemo(() => {
+    if (overviewTechFilter === "all") return techSummaries;
+    const selectedTechId = Number(overviewTechFilter);
+    return techSummaries.filter((summary) => summary.tech.user_id === selectedTechId);
+  }, [overviewTechFilter, techSummaries]);
+
+  // Overall totals (respecting filters/search + optional overview tech filter)
   const overallTotals = useMemo(
-    () => calculateOverallTotals(techSummaries),
-    [techSummaries]
+    () => calculateOverallTotals(overviewTechSummaries),
+    [overviewTechSummaries]
   );
 
   // Current tab data
@@ -235,6 +352,24 @@ export default function EfficiencyTab({
   const activeSummary = activeTechId
     ? techSummaries.find((s) => s.tech.user_id === activeTechId)
     : null;
+
+  const totalsForFilteredSet = useMemo(() => {
+    const sourceEntries = activeTab === "overall" ? overviewEntries : activeSummary?.entries || [];
+    return sourceEntries.reduce(
+      (acc, entry) => {
+        const logged = Number(entry.hours_spent || 0);
+        const allocated = Number(entry.allocated_hours || 0);
+        acc.logged += logged;
+        acc.allocated += allocated;
+        return acc;
+      },
+      { logged: 0, allocated: 0 }
+    );
+  }, [activeSummary?.entries, activeTab, overviewEntries]);
+
+  const filteredSetDifference = Number(
+    (totalsForFilteredSet.logged - totalsForFilteredSet.allocated).toFixed(2)
+  );
 
   const isTabEditable =
     editable &&
@@ -252,14 +387,12 @@ export default function EfficiencyTab({
 
   const openDetailPopup = (techUserId) => {
     setDetailPopupTechId(techUserId);
-    setDeletingId(null);
     setDetailEditMode(false);
     setDetailEditError("");
   };
 
   const closeDetailPopup = () => {
     setDetailPopupTechId(null);
-    setDeletingId(null);
     setDetailEditMode(false);
     setDetailEditError("");
   };
@@ -309,10 +442,13 @@ export default function EfficiencyTab({
     setEditingEntry(null);
     setFormDate(new Date().toISOString().split("T")[0]);
     setFormJobNumber("");
+    setFormDescription("");
+    setFormAllocatedHours("");
     setFormHours("");
     setFormNotes("");
     setFormDayType("weekday");
     setFormError("");
+    setJobLookupState("idle");
     resetRequestState();
     // Temporarily store target tech ID for the add operation
     setDetailPopupTargetTech(techUserId);
@@ -351,10 +487,13 @@ export default function EfficiencyTab({
     setEditingEntry(null);
     setFormDate(new Date().toISOString().split("T")[0]);
     setFormJobNumber("");
+    setFormDescription("");
+    setFormAllocatedHours("");
     setFormHours("");
     setFormNotes("");
     setFormDayType("weekday");
     setFormError("");
+    setJobLookupState("idle");
     resetRequestState();
     setModalOpen(true);
   };
@@ -362,11 +501,18 @@ export default function EfficiencyTab({
   const openEditModal = (entry) => {
     setEditingEntry(entry);
     setFormDate(entry.date);
-    setFormJobNumber(entry.job_number);
-    setFormHours(String(entry.hours_spent));
+    setFormJobNumber(entry.job_number || "");
+    setFormDescription(entry.job_description || "");
+    setFormAllocatedHours(
+      entry.allocated_hours !== null && entry.allocated_hours !== undefined
+        ? formatHours(entry.allocated_hours)
+        : ""
+    );
+    setFormHours(formatHours(entry.hours_spent));
     setFormNotes(entry.notes || "");
     setFormDayType(entry.day_type);
     setFormError("");
+    setJobLookupState("idle");
     resetRequestState();
     setModalOpen(true);
   };
@@ -377,6 +523,7 @@ export default function EfficiencyTab({
     setFormError("");
     setFormSubmitting(false);
     setDetailPopupTargetTech(null);
+    setJobLookupState("idle");
     resetRequestState();
   };
 
@@ -388,6 +535,7 @@ export default function EfficiencyTab({
       setRequestOptions([]);
       setSelectedRequestValue("job");
       setSelectedRequestId(null);
+      setJobLookupState("idle");
       lastJobNumberRef.current = "";
       return;
     }
@@ -401,20 +549,28 @@ export default function EfficiencyTab({
     let isMounted = true;
     const fallbackOptions = buildRequestOptions(trimmed, []);
     setRequestOptions(fallbackOptions);
+    setJobLookupState("loading");
 
     const loadRequests = async () => {
       try {
         // Look up the job by job_number
         const { data: jobData, error: jobError } = await supabase
           .from("jobs")
-          .select("id, job_number")
+          .select("id, job_number, description")
           .ilike("job_number", trimmed)
           .maybeSingle();
 
         if (jobError || !jobData?.id) {
           if (!isMounted) return;
+          setJobLookupState("unmatched");
           setRequestOptions(fallbackOptions);
           return;
+        }
+
+        if (!isMounted) return;
+        setJobLookupState("matched");
+        if (!formDescription.trim() && jobData.description) {
+          setFormDescription(jobData.description);
         }
 
         const { data, error } = await supabase
@@ -424,10 +580,12 @@ export default function EfficiencyTab({
           .order("sort_order", { ascending: true });
         if (error) throw error;
         if (!isMounted) return;
-        setRequestOptions(buildRequestOptions(trimmed, data || []));
+        const nextOptions = buildRequestOptions(trimmed, data || []);
+        setRequestOptions(nextOptions);
       } catch (err) {
         console.warn("Failed to load job requests:", err);
         if (!isMounted) return;
+        setJobLookupState("unmatched");
         setRequestOptions(fallbackOptions);
       }
     };
@@ -439,9 +597,20 @@ export default function EfficiencyTab({
     };
   }, [formJobNumber, modalOpen]);
 
+  useEffect(() => {
+    if (!modalOpen) return;
+    if (!formJobNumber.trim()) return;
+    const selected = requestOptions.find((option) => option.value === selectedRequestValue);
+    if (!selected || selected.allocatedHours === null || selected.allocatedHours === undefined) return;
+    setFormAllocatedHours(formatHours(selected.allocatedHours));
+  }, [formJobNumber, modalOpen, requestOptions, selectedRequestValue]);
+
   // Derive the final job_number string to save (includes request context)
   const resolveJobNumberForSave = () => {
     const baseJobNumber = formJobNumber.trim();
+    if (!baseJobNumber) {
+      return null;
+    }
     if (!selectedRequestValue || selectedRequestValue === "job") {
       return baseJobNumber;
     }
@@ -457,15 +626,30 @@ export default function EfficiencyTab({
     setFormError("");
 
     if (!formDate) { setFormError("Date is required."); return; }
-    if (!formJobNumber.trim()) { setFormError("Job number is required."); return; }
+    if (!formJobNumber.trim() && !formDescription.trim()) {
+      setFormError("Enter a job number or a job description.");
+      return;
+    }
     const hours = Number(formHours);
-    if (!formHours || Number.isNaN(hours) || hours <= 0) {
-      setFormError("Hours must be greater than 0.");
+    if (!formHours || Number.isNaN(hours) || hours < 0.1) {
+      setFormError("Total clocked must be at least 0.1 hours.");
+      return;
+    }
+    const allocatedHoursParsed =
+      formAllocatedHours === "" ? null : Number(formAllocatedHours);
+    if (
+      formAllocatedHours !== "" &&
+      (Number.isNaN(allocatedHoursParsed) || allocatedHoursParsed < 0.1)
+    ) {
+      setFormError("Allocated hours must be at least 0.1 when provided.");
       return;
     }
     if (!formDayType) { setFormError("Day type is required."); return; }
 
     const jobNumberToSave = resolveJobNumberForSave();
+    const normalizedHours = roundHours(hours);
+    const normalizedAllocatedHours =
+      allocatedHoursParsed === null ? null : roundHours(allocatedHoursParsed);
 
     setFormSubmitting(true);
     try {
@@ -473,8 +657,10 @@ export default function EfficiencyTab({
         await updateEfficiencyEntry(editingEntry.id, {
           date: formDate,
           jobNumber: jobNumberToSave,
-          hoursSpent: hours,
+          hoursSpent: normalizedHours,
           notes: formNotes.trim(),
+          jobDescription: formDescription.trim(),
+          allocatedHours: normalizedAllocatedHours,
           dayType: formDayType,
         });
       } else {
@@ -483,8 +669,10 @@ export default function EfficiencyTab({
           userId: targetUserId,
           date: formDate,
           jobNumber: jobNumberToSave,
-          hoursSpent: hours,
+          hoursSpent: normalizedHours,
           notes: formNotes.trim(),
+          jobDescription: formDescription.trim(),
+          allocatedHours: normalizedAllocatedHours,
           dayType: formDayType,
         });
       }
@@ -501,13 +689,22 @@ export default function EfficiencyTab({
     setDeleteSubmitting(true);
     try {
       await deleteEfficiencyEntry(entryId);
-      setDeletingId(null);
       await fetchData();
     } catch (err) {
       setError(err?.message || "Failed to delete entry.");
     } finally {
       setDeleteSubmitting(false);
     }
+  };
+
+  const handleDeleteFromEditModal = async () => {
+    if (!editingEntry?.id) return;
+    const confirmed = typeof window === "undefined"
+      ? true
+      : window.confirm("Delete this job entry?");
+    if (!confirmed) return;
+    await handleDelete(editingEntry.id);
+    closeModal();
   };
 
   // Styles
@@ -792,9 +989,105 @@ export default function EfficiencyTab({
                 cursor: "pointer",
               }}
             >
-              + Add Entry
+              + Add Job Entry
             </button>
           )}
+        </div>
+      </div>
+
+      <div style={{ ...sectionStyle, padding: "16px 18px", gap: "12px" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "10px",
+            flexWrap: "wrap",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              gap: "8px",
+              padding: "6px",
+              borderRadius: "999px",
+              backgroundColor: "var(--surface-light)",
+              border: "1px solid var(--surface-light)",
+              flex: "0 0 auto",
+            }}
+          >
+            {["day", "week", "month"].map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setPeriodFilter(mode)}
+                style={{
+                  padding: "8px 14px",
+                  borderRadius: "999px",
+                  border:
+                    periodFilter === mode
+                      ? "1px solid var(--primary)"
+                      : "1px solid transparent",
+                  backgroundColor: periodFilter === mode ? "var(--surface)" : "transparent",
+                  color:
+                    periodFilter === mode
+                      ? "var(--text-primary)"
+                      : "var(--text-secondary)",
+                  fontSize: "0.82rem",
+                  fontWeight: periodFilter === mode ? 600 : 500,
+                  cursor: "pointer",
+                  textTransform: "capitalize",
+                }}
+              >
+                {mode}
+              </button>
+            ))}
+          </div>
+          <div style={{ width: "fit-content", flex: "0 0 auto" }}>
+            <CalendarField
+              id="efficiencyFilterDate"
+              className="compact-picker efficiency-filter-field efficiency-filter-calendar"
+              value={filterDate}
+              onChange={(event) => setFilterDate(event.target.value)}
+            />
+          </div>
+          {activeTab === "overall" && (
+            <div style={{ width: "fit-content", flex: "0 0 auto" }}>
+              <DropdownField
+                id="efficiencyOverviewTech"
+                className="compact-picker efficiency-tech-filter-dropdown"
+                value={overviewTechFilter}
+                onChange={(event) => setOverviewTechFilter(event.target.value)}
+                placeholder="All technicians"
+                options={[
+                  { key: "all", value: "all", label: "All technicians" },
+                  ...visibleTechs.map((tech) => ({
+                    key: `tech-${tech.user_id}`,
+                    value: String(tech.user_id),
+                    label: tech.first_name,
+                  })),
+                ]}
+              />
+            </div>
+          )}
+          <div style={{ width: "min(220px, 100%)", flex: "0 1 220px" }}>
+            <input
+              type="search"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Search job number, logged time, description..."
+              style={{
+                borderRadius: "999px",
+                border: "1px solid rgba(var(--primary-rgb), 0.22)",
+                background: "linear-gradient(180deg, rgba(var(--primary-rgb), 0.12), rgba(var(--primary-rgb), 0.06))",
+                padding: "10px 16px",
+                width: "100%",
+                fontSize: "0.86rem",
+                color: "var(--text-primary)",
+                boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb), 0.45)",
+              }}
+            />
+          </div>
         </div>
       </div>
 
@@ -828,6 +1121,30 @@ export default function EfficiencyTab({
               Overall Efficiency - {MONTHS[selectedMonth - 1]} {selectedYear}
             </h3>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px" }}>
+              <div style={statCardStyle}>
+                <span style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+                  Logged Total
+                </span>
+                <strong style={{ fontSize: "1.6rem", color: "var(--primary-dark)" }}>
+                  {formatHours(totalsForFilteredSet.logged)}h
+                </strong>
+              </div>
+              <div style={statCardStyle}>
+                <span style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+                  Allocated Total
+                </span>
+                <strong style={{ fontSize: "1.6rem", color: "var(--primary-dark)" }}>
+                  {formatHours(totalsForFilteredSet.allocated)}h
+                </strong>
+              </div>
+              <div style={statCardStyle}>
+                <span style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+                  Logged - Allocated
+                </span>
+                <strong style={{ fontSize: "1.6rem", color: filteredSetDifference >= 0 ? "var(--success)" : "var(--danger)" }}>
+                  {filteredSetDifference >= 0 ? "+" : ""}{formatHours(Math.abs(filteredSetDifference))}h
+                </strong>
+              </div>
               <div style={statCardStyle}>
                 <span style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
                   Weighted Actual
@@ -881,14 +1198,14 @@ export default function EfficiencyTab({
                   </tr>
                 </thead>
                 <tbody>
-                  {techSummaries.length === 0 ? (
+                  {overviewTechSummaries.length === 0 ? (
                     <tr>
                       <td colSpan={6} style={{ ...tdStyle, textAlign: "center", color: "var(--grey-accent)" }}>
                         No technicians configured.
                       </td>
                     </tr>
                   ) : (
-                    techSummaries.map(({ tech, totals, weight }) => (
+                    overviewTechSummaries.map(({ tech, totals, weight }) => (
                       <tr
                         key={tech.user_id}
                         onClick={() => openDetailPopup(tech.user_id)}
@@ -913,6 +1230,7 @@ export default function EfficiencyTab({
               </table>
             </div>
           </div>
+
         </>
       )}
 
@@ -927,26 +1245,34 @@ export default function EfficiencyTab({
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px" }}>
               <div style={statCardStyle}>
                 <span style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
-                  Actual Hours
+                  Logged Total
                 </span>
                 <strong style={{ fontSize: "1.6rem", color: "var(--primary-dark)" }}>
-                  {activeSummary.totals.actualHours}h
+                  {formatHours(totalsForFilteredSet.logged)}h
                 </strong>
               </div>
               <div style={statCardStyle}>
                 <span style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
-                  Target Hours
+                  Allocated Total
+                </span>
+                <strong style={{ fontSize: "1.6rem", color: "var(--primary-dark)" }}>
+                  {formatHours(totalsForFilteredSet.allocated)}h
+                </strong>
+              </div>
+              <div style={statCardStyle}>
+                <span style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+                  Logged - Allocated
+                </span>
+                <strong style={{ fontSize: "1.6rem", color: filteredSetDifference >= 0 ? "var(--success)" : "var(--danger)" }}>
+                  {filteredSetDifference >= 0 ? "+" : ""}{formatHours(Math.abs(filteredSetDifference))}h
+                </strong>
+              </div>
+              <div style={statCardStyle}>
+                <span style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+                  Monthly Target
                 </span>
                 <strong style={{ fontSize: "1.6rem", color: "var(--primary-dark)" }}>
                   {activeSummary.totals.targetHours}h
-                </strong>
-              </div>
-              <div style={statCardStyle}>
-                <span style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
-                  Difference
-                </span>
-                <strong style={{ fontSize: "1.6rem", color: activeSummary.totals.difference >= 0 ? "var(--success)" : "var(--danger)" }}>
-                  {activeSummary.totals.difference >= 0 ? "+" : ""}{activeSummary.totals.difference}h
                 </strong>
               </div>
               <div style={statCardStyle}>
@@ -972,29 +1298,55 @@ export default function EfficiencyTab({
                     <tr>
                       <th style={thStyle}>Date</th>
                       <th style={thStyle}>Job Number</th>
-                      <th style={thStyle}>Hours Spent</th>
+                      <th style={thStyle}>Job Description</th>
+                      <th style={thStyle}>Allocated Total</th>
+                      <th style={thStyle}>Logged Total</th>
+                      <th style={thStyle}>Difference</th>
                       <th style={thStyle}>Notes</th>
                       <th style={thStyle}>Day Type</th>
-                      {isTabEditable && <th style={thStyle}>Actions</th>}
                     </tr>
                   </thead>
                   <tbody>
                     {activeSummary.entries.length === 0 ? (
                       <tr>
-                        <td colSpan={isTabEditable ? 6 : 5} style={{ ...tdStyle, textAlign: "center", color: "var(--grey-accent)", padding: "32px 16px" }}>
-                          No entries for {MONTHS[selectedMonth - 1]} {selectedYear}. {isTabEditable ? "Click \"+ Add Entry\" to get started." : ""}
+                        <td colSpan={8} style={{ ...tdStyle, textAlign: "center", color: "var(--grey-accent)", padding: "32px 16px" }}>
+                          No entries for {MONTHS[selectedMonth - 1]} {selectedYear}. {isTabEditable ? "Click \"+ Add Job Entry\" to get started." : ""}
                         </td>
                       </tr>
                     ) : (
                       activeSummary.entries.map((entry) => {
                         const isFromClocking = entry._source === "job_clocking";
+                        const logged = Number(entry.hours_spent || 0);
+                        const allocated = Number(entry.allocated_hours || 0);
+                        const rowDifference = Number((logged - allocated).toFixed(2));
                         return (
-                        <tr key={entry.id}>
+                        <tr
+                          key={entry.id}
+                          onClick={() => {
+                            if (!isTabEditable || isFromClocking) return;
+                            openEditModal(entry);
+                          }}
+                          style={{
+                            cursor: isTabEditable && !isFromClocking ? "pointer" : "default",
+                            backgroundColor: isTabEditable && !isFromClocking ? "transparent" : undefined,
+                          }}
+                        >
                           <td style={tdStyle}>
                             {new Date(entry.date + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
                           </td>
                           <td style={{ ...tdStyle, fontWeight: 600 }}>{entry.job_number}</td>
-                          <td style={tdStyle}>{entry.hours_spent}h</td>
+                          <td style={{ ...tdStyle, maxWidth: "220px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {entry.job_description || "—"}
+                          </td>
+                          <td style={tdStyle}>
+                            {entry.allocated_hours !== null && entry.allocated_hours !== undefined
+                              ? `${formatHours(entry.allocated_hours)}h`
+                              : "—"}
+                          </td>
+                          <td style={tdStyle}>{formatHours(logged)}h</td>
+                          <td style={{ ...tdStyle, color: rowDifference >= 0 ? "var(--success)" : "var(--danger)", fontWeight: 600 }}>
+                            {rowDifference >= 0 ? "+" : ""}{formatHours(Math.abs(rowDifference))}h
+                          </td>
                           <td style={{ ...tdStyle, maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                             {entry.notes || "—"}
                           </td>
@@ -1012,87 +1364,6 @@ export default function EfficiencyTab({
                               {entry.day_type}
                             </span>
                           </td>
-                          {isTabEditable && (
-                            <td style={tdStyle}>
-                              {isFromClocking ? (
-                                <span style={{ fontSize: "0.72rem", color: "var(--grey-accent)", fontStyle: "italic" }}>Auto</span>
-                              ) : (
-                              <div style={{ display: "flex", gap: "8px" }}>
-                                <button
-                                  type="button"
-                                  onClick={() => openEditModal(entry)}
-                                  style={{
-                                    padding: "6px 12px",
-                                    borderRadius: "8px",
-                                    border: "1px solid var(--surface-light)",
-                                    background: "var(--surface)",
-                                    color: "var(--primary)",
-                                    fontSize: "0.78rem",
-                                    fontWeight: 600,
-                                    cursor: "pointer",
-                                  }}
-                                >
-                                  Edit
-                                </button>
-                                {deletingId === entry.id ? (
-                                  <div style={{ display: "flex", gap: "4px" }}>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleDelete(entry.id)}
-                                      disabled={deleteSubmitting}
-                                      style={{
-                                        padding: "6px 10px",
-                                        borderRadius: "8px",
-                                        border: "none",
-                                        background: "var(--danger)",
-                                        color: "var(--surface)",
-                                        fontSize: "0.75rem",
-                                        fontWeight: 600,
-                                        cursor: deleteSubmitting ? "not-allowed" : "pointer",
-                                        opacity: deleteSubmitting ? 0.7 : 1,
-                                      }}
-                                    >
-                                      {deleteSubmitting ? "..." : "Yes"}
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => setDeletingId(null)}
-                                      style={{
-                                        padding: "6px 10px",
-                                        borderRadius: "8px",
-                                        border: "1px solid var(--surface-light)",
-                                        background: "var(--surface)",
-                                        color: "var(--info)",
-                                        fontSize: "0.75rem",
-                                        fontWeight: 600,
-                                        cursor: "pointer",
-                                      }}
-                                    >
-                                      No
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    onClick={() => setDeletingId(entry.id)}
-                                    style={{
-                                      padding: "6px 12px",
-                                      borderRadius: "8px",
-                                      border: "1px solid var(--danger)33",
-                                      background: "var(--danger-surface)",
-                                      color: "var(--danger)",
-                                      fontSize: "0.78rem",
-                                      fontWeight: 600,
-                                      cursor: "pointer",
-                                    }}
-                                  >
-                                    Delete
-                                  </button>
-                                )}
-                              </div>
-                            )}
-                            </td>
-                          )}
                         </tr>
                         );
                       })
@@ -1156,7 +1427,7 @@ export default function EfficiencyTab({
                         cursor: "pointer",
                       }}
                     >
-                      + Add Entry
+                      + Add Job Entry
                     </button>
                   )}
                   {isDetailPopupEditable && (
@@ -1347,13 +1618,12 @@ export default function EfficiencyTab({
                         <th style={thStyle}>Hours Spent</th>
                         <th style={thStyle}>Notes</th>
                         <th style={thStyle}>Day Type</th>
-                        {isDetailPopupEditable && <th style={thStyle}>Actions</th>}
                       </tr>
                     </thead>
                     <tbody>
                       {detailPopupSummary.entries.length === 0 ? (
                         <tr>
-                          <td colSpan={isDetailPopupEditable ? 6 : 5} style={{ ...tdStyle, textAlign: "center", color: "var(--grey-accent)", padding: "32px 16px" }}>
+                          <td colSpan={5} style={{ ...tdStyle, textAlign: "center", color: "var(--grey-accent)", padding: "32px 16px" }}>
                             No entries for {MONTHS[selectedMonth - 1]} {selectedYear}.
                           </td>
                         </tr>
@@ -1361,12 +1631,21 @@ export default function EfficiencyTab({
                         detailPopupSummary.entries.map((entry) => {
                           const isFromClocking = entry._source === "job_clocking";
                           return (
-                          <tr key={entry.id}>
+                          <tr
+                            key={entry.id}
+                            onClick={() => {
+                              if (!isDetailPopupEditable || isFromClocking) return;
+                              openEditModal(entry);
+                            }}
+                            style={{
+                              cursor: isDetailPopupEditable && !isFromClocking ? "pointer" : "default",
+                            }}
+                          >
                             <td style={tdStyle}>
                               {new Date(entry.date + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
                             </td>
                             <td style={{ ...tdStyle, fontWeight: 600 }}>{entry.job_number}</td>
-                            <td style={tdStyle}>{entry.hours_spent}h</td>
+                            <td style={tdStyle}>{formatHours(entry.hours_spent)}h</td>
                             <td style={{ ...tdStyle, maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               {entry.notes || "\u2014"}
                             </td>
@@ -1384,87 +1663,6 @@ export default function EfficiencyTab({
                                 {entry.day_type}
                               </span>
                             </td>
-                            {isDetailPopupEditable && (
-                              <td style={tdStyle}>
-                                {isFromClocking ? (
-                                  <span style={{ fontSize: "0.72rem", color: "var(--grey-accent)", fontStyle: "italic" }}>Auto</span>
-                                ) : (
-                                <div style={{ display: "flex", gap: "8px" }}>
-                                  <button
-                                    type="button"
-                                    onClick={() => openEditModal(entry)}
-                                    style={{
-                                      padding: "6px 12px",
-                                      borderRadius: "8px",
-                                      border: "1px solid var(--surface-light)",
-                                      background: "var(--surface)",
-                                      color: "var(--primary)",
-                                      fontSize: "0.78rem",
-                                      fontWeight: 600,
-                                      cursor: "pointer",
-                                    }}
-                                  >
-                                    Edit
-                                  </button>
-                                  {deletingId === entry.id ? (
-                                    <div style={{ display: "flex", gap: "4px" }}>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleDelete(entry.id)}
-                                        disabled={deleteSubmitting}
-                                        style={{
-                                          padding: "6px 10px",
-                                          borderRadius: "8px",
-                                          border: "none",
-                                          background: "var(--danger)",
-                                          color: "var(--surface)",
-                                          fontSize: "0.75rem",
-                                          fontWeight: 600,
-                                          cursor: deleteSubmitting ? "not-allowed" : "pointer",
-                                          opacity: deleteSubmitting ? 0.7 : 1,
-                                        }}
-                                      >
-                                        {deleteSubmitting ? "..." : "Yes"}
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => setDeletingId(null)}
-                                        style={{
-                                          padding: "6px 10px",
-                                          borderRadius: "8px",
-                                          border: "1px solid var(--surface-light)",
-                                          background: "var(--surface)",
-                                          color: "var(--info)",
-                                          fontSize: "0.75rem",
-                                          fontWeight: 600,
-                                          cursor: "pointer",
-                                        }}
-                                      >
-                                        No
-                                      </button>
-                                    </div>
-                                  ) : (
-                                    <button
-                                      type="button"
-                                      onClick={() => setDeletingId(entry.id)}
-                                      style={{
-                                        padding: "6px 12px",
-                                        borderRadius: "8px",
-                                        border: "1px solid var(--danger)33",
-                                        background: "var(--danger-surface)",
-                                        color: "var(--danger)",
-                                        fontSize: "0.78rem",
-                                        fontWeight: 600,
-                                        cursor: "pointer",
-                                      }}
-                                    >
-                                      Delete
-                                    </button>
-                                  )}
-                                </div>
-                                )}
-                              </td>
-                            )}
                           </tr>
                           );
                         })
@@ -1517,10 +1715,10 @@ export default function EfficiencyTab({
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
                   <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
-                    Efficiency Entry
+                    Job Entry
                   </p>
                   <h3 style={{ margin: "4px 0 0", fontSize: "1.3rem", color: "var(--primary-dark)" }}>
-                    {editingEntry ? "Edit Entry" : "New Entry"}
+                    {editingEntry ? "Edit Job Entry" : "New Job Entry"}
                   </h3>
                 </div>
                 <button
@@ -1584,8 +1782,7 @@ export default function EfficiencyTab({
                         setFormJobNumber(e.target.value);
                         setFormError("");
                       }}
-                      placeholder="e.g., 00001"
-                      required
+                      placeholder="e.g., 00001 (optional)"
                       style={{
                         borderRadius: "16px",
                         border: "1px solid var(--surface-light)",
@@ -1596,6 +1793,25 @@ export default function EfficiencyTab({
                         outline: "none",
                       }}
                     />
+                    <span
+                      style={{
+                        fontSize: "0.76rem",
+                        color:
+                          jobLookupState === "matched"
+                            ? "var(--success)"
+                            : jobLookupState === "unmatched"
+                              ? "var(--danger)"
+                              : "var(--grey-accent)",
+                      }}
+                    >
+                      {jobLookupState === "matched"
+                        ? "Job recognised. Allocated hours/description loaded."
+                        : jobLookupState === "unmatched"
+                          ? "Job not recognised. Enter details manually."
+                          : jobLookupState === "loading"
+                            ? "Checking job number..."
+                            : "You can still save without a job number."}
+                    </span>
                   </div>
                 </div>
 
@@ -1618,24 +1834,23 @@ export default function EfficiencyTab({
                   className="efficiency-request-dropdown"
                 />
 
-                {/* Row 2: Hours + Day Type */}
+                {/* Row 2: Allocated Hours + Day Type */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label
-                      htmlFor="efficiencyHours"
+                      htmlFor="efficiencyAllocatedHours"
                       style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--grey-accent)" }}
                     >
-                      Hours Spent
+                      Allocated Hours
                     </label>
                     <input
-                      id="efficiencyHours"
+                      id="efficiencyAllocatedHours"
                       type="number"
-                      step="0.25"
-                      min="0.25"
-                      value={formHours}
-                      onChange={(e) => setFormHours(e.target.value)}
-                      placeholder="e.g. 2.5"
-                      required
+                      step="0.1"
+                      min="0.1"
+                      value={formAllocatedHours}
+                      onChange={(e) => setFormAllocatedHours(e.target.value)}
+                      placeholder="Auto from job/request or enter manually"
                       style={{
                         borderRadius: "16px",
                         border: "1px solid var(--surface-light)",
@@ -1661,7 +1876,66 @@ export default function EfficiencyTab({
                   />
                 </div>
 
-                {/* Row 3: Notes (full width) */}
+                {/* Row 3: Job Description */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <label
+                    htmlFor="efficiencyJobDescription"
+                    style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--grey-accent)" }}
+                  >
+                    Job Description
+                  </label>
+                  <textarea
+                    id="efficiencyJobDescription"
+                    value={formDescription}
+                    onChange={(e) => setFormDescription(e.target.value)}
+                    placeholder="Describe the job when no matching job number is found..."
+                    rows={2}
+                    style={{
+                      borderRadius: "16px",
+                      border: "1px solid var(--surface-light)",
+                      background: "var(--surface-light)",
+                      padding: "12px 14px",
+                      fontSize: "0.95rem",
+                      color: "var(--text-primary)",
+                      outline: "none",
+                      resize: "vertical",
+                      minHeight: "64px",
+                    }}
+                  />
+                </div>
+
+                {/* Row 4: Total Clocked */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "16px" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <label
+                      htmlFor="efficiencyHours"
+                      style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--grey-accent)" }}
+                    >
+                      Total Clocked
+                    </label>
+                    <input
+                      id="efficiencyHours"
+                      type="number"
+                      step="0.1"
+                      min="0.1"
+                      value={formHours}
+                      onChange={(e) => setFormHours(e.target.value)}
+                      placeholder="e.g. 0.1"
+                      required
+                      style={{
+                        borderRadius: "16px",
+                        border: "1px solid var(--surface-light)",
+                        background: "var(--surface-light)",
+                        padding: "12px 14px",
+                        fontSize: "0.95rem",
+                        color: "var(--text-primary)",
+                        outline: "none",
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Row 5: Notes (full width) */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                   <label
                     htmlFor="efficiencyNotes"
@@ -1690,7 +1964,30 @@ export default function EfficiencyTab({
                 </div>
 
                 {/* Actions */}
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", paddingTop: "4px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", paddingTop: "4px" }}>
+                  <div>
+                    {editingEntry && editingEntry._source !== "job_clocking" && (
+                      <button
+                        type="button"
+                        onClick={handleDeleteFromEditModal}
+                        disabled={deleteSubmitting}
+                        style={{
+                          padding: "12px 20px",
+                          borderRadius: "14px",
+                          border: "1px solid var(--danger)33",
+                          background: "var(--danger-surface)",
+                          color: "var(--danger)",
+                          fontSize: "0.9rem",
+                          fontWeight: 600,
+                          cursor: deleteSubmitting ? "not-allowed" : "pointer",
+                          opacity: deleteSubmitting ? 0.7 : 1,
+                        }}
+                      >
+                        {deleteSubmitting ? "Deleting..." : "Delete Entry"}
+                      </button>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", gap: "12px" }}>
                   <button
                     type="button"
                     onClick={closeModal}
@@ -1722,8 +2019,9 @@ export default function EfficiencyTab({
                       opacity: formSubmitting ? 0.7 : 1,
                     }}
                   >
-                    {formSubmitting ? "Saving..." : editingEntry ? "Update Entry" : "Add Entry"}
+                    {formSubmitting ? "Saving..." : editingEntry ? "Update Job Entry" : "Add Job Entry"}
                   </button>
+                  </div>
                 </div>
               </form>
             </div>
@@ -1773,6 +2071,63 @@ export default function EfficiencyTab({
               font-size: 0.7rem;
               text-transform: uppercase;
               letter-spacing: 0.02em;
+            }
+            :global(.efficiency-filter-calendar) {
+              width: fit-content;
+            }
+            :global(.efficiency-filter-calendar .calendar-api__field) {
+              width: fit-content;
+            }
+            :global(.efficiency-filter-calendar .calendar-api__label),
+            :global(.efficiency-tech-filter-dropdown .dropdown-api__label) {
+              display: none;
+            }
+            :global(.efficiency-filter-calendar .calendar-api__control),
+            :global(.efficiency-tech-filter-dropdown .dropdown-api__control) {
+              width: fit-content !important;
+              min-width: 0 !important;
+              min-height: unset !important;
+              padding: 10px 14px !important;
+              border-radius: 999px !important;
+              border: 1px solid rgba(var(--primary-rgb), 0.22) !important;
+              background: linear-gradient(
+                180deg,
+                rgba(var(--primary-rgb), 0.12),
+                rgba(var(--primary-rgb), 0.06)
+              ) !important;
+              color: var(--text-primary) !important;
+              box-shadow: inset 0 1px 0 rgba(var(--surface-rgb), 0.45) !important;
+              backdrop-filter: blur(10px);
+              -webkit-backdrop-filter: blur(10px);
+            }
+            :global(.efficiency-filter-calendar .calendar-api__value),
+            :global(.efficiency-tech-filter-dropdown .dropdown-api__value) {
+              flex: 0 0 auto !important;
+              white-space: nowrap;
+              font-size: 0.86rem !important;
+              font-weight: 600 !important;
+              color: var(--text-primary) !important;
+            }
+            :global(.efficiency-tech-filter-dropdown) {
+              width: fit-content;
+            }
+            :global(.efficiency-tech-filter-dropdown .dropdown-api__control) {
+              max-width: 17ch;
+            }
+            :global(.efficiency-filter-calendar .calendar-api__control:hover:not(:disabled)),
+            :global(.efficiency-tech-filter-dropdown .dropdown-api__control:hover:not(:disabled)),
+            :global(.efficiency-tech-filter-dropdown.dropdown-api.is-open .dropdown-api__control),
+            :global(.efficiency-tech-filter-dropdown .dropdown-api__control:focus-visible) {
+              border-color: rgba(var(--primary-rgb), 0.45) !important;
+              background: linear-gradient(
+                180deg,
+                rgba(var(--primary-rgb), 0.18),
+                rgba(var(--primary-rgb), 0.1)
+              ) !important;
+            }
+            :global(.efficiency-tech-filter-dropdown .dropdown-api__menu) {
+              min-width: 100%;
+              width: max-content;
             }
           `}</style>
         </ModalPortal>

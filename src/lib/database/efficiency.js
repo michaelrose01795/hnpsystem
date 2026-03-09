@@ -8,6 +8,76 @@ const TECH_NAMES = ["Glen", "Jake", "Scott", "Paul", "Cheryl", "Michael"];
 const DEFAULT_TARGET_HOURS = 160;
 const DEFAULT_WEIGHT = 1.0;
 const MICHAEL_WEIGHT = 1.0;
+const ENTRY_META_PREFIX = "__HNP_JOB_META__:";
+
+const normalizeHourValue = (value, { allowNull = false } = {}) => {
+  if (value === null || value === undefined || value === "") {
+    return allowNull ? null : 0;
+  }
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return allowNull ? null : 0;
+  }
+  return Number(parsed.toFixed(2));
+};
+
+const parseOptionalNumber = (value) => {
+  return normalizeHourValue(value, { allowNull: true });
+};
+
+const parseEntryMetaFromNotes = (storedNotes) => {
+  if (typeof storedNotes !== "string" || !storedNotes.trim()) {
+    return { notes: "", jobDescription: "", allocatedHours: null };
+  }
+  if (!storedNotes.startsWith(ENTRY_META_PREFIX)) {
+    return { notes: storedNotes, jobDescription: "", allocatedHours: null };
+  }
+  try {
+    const parsed = JSON.parse(storedNotes.slice(ENTRY_META_PREFIX.length));
+    return {
+      notes: typeof parsed?.notes === "string" ? parsed.notes : "",
+      jobDescription:
+        typeof parsed?.jobDescription === "string" ? parsed.jobDescription : "",
+      allocatedHours: parseOptionalNumber(parsed?.allocatedHours),
+    };
+  } catch (_error) {
+    return { notes: storedNotes, jobDescription: "", allocatedHours: null };
+  }
+};
+
+const serializeEntryNotes = ({ notes, jobDescription, allocatedHours }) => {
+  const cleanNotes = typeof notes === "string" ? notes.trim() : "";
+  const cleanDescription = typeof jobDescription === "string" ? jobDescription.trim() : "";
+  const cleanAllocated = normalizeHourValue(allocatedHours, { allowNull: true });
+  const hasMeta = cleanDescription || cleanAllocated !== null;
+
+  if (!hasMeta) {
+    return cleanNotes || null;
+  }
+
+  return `${ENTRY_META_PREFIX}${JSON.stringify({
+    notes: cleanNotes,
+    jobDescription: cleanDescription,
+    allocatedHours: cleanAllocated,
+  })}`;
+};
+
+const normalizeEfficiencyEntry = (row = {}) => {
+  const parsedMeta = parseEntryMetaFromNotes(row.notes);
+  return {
+    ...row,
+    notes: parsedMeta.notes,
+    job_description:
+      typeof row.job_description === "string" && row.job_description.trim()
+        ? row.job_description
+        : parsedMeta.jobDescription,
+    allocated_hours:
+      row.allocated_hours !== undefined && row.allocated_hours !== null
+        ? normalizeHourValue(row.allocated_hours)
+        : parsedMeta.allocatedHours,
+    hours_spent: normalizeHourValue(row.hours_spent),
+  };
+};
 
 /**
  * Fetch the list of technicians matching the efficiency roster.
@@ -43,14 +113,14 @@ export async function getEfficiencyEntries(userId, year, month) {
 
   const { data, error } = await db
     .from("tech_efficiency_entries")
-    .select("id, user_id, date, job_number, hours_spent, notes, day_type, created_at, updated_at")
+    .select("*")
     .eq("user_id", userId)
     .gte("date", startDate)
     .lt("date", endDate)
     .order("date", { ascending: true });
 
   if (error) throw error;
-  return data || [];
+  return (data || []).map(normalizeEfficiencyEntry);
 }
 
 /**
@@ -65,20 +135,32 @@ export async function getAllEfficiencyEntries(userIds, year, month) {
 
   const { data, error } = await db
     .from("tech_efficiency_entries")
-    .select("id, user_id, date, job_number, hours_spent, notes, day_type, created_at, updated_at")
+    .select("*")
     .in("user_id", userIds)
     .gte("date", startDate)
     .lt("date", endDate)
     .order("date", { ascending: true });
 
   if (error) throw error;
-  return data || [];
+  return (data || []).map(normalizeEfficiencyEntry);
 }
 
 /**
  * Insert a new efficiency entry.
  */
-export async function addEfficiencyEntry({ userId, date, jobNumber, hoursSpent, notes, dayType }) {
+export async function addEfficiencyEntry({
+  userId,
+  date,
+  jobNumber,
+  hoursSpent,
+  notes,
+  dayType,
+  jobDescription,
+  allocatedHours,
+}) {
+  const storedNotes = serializeEntryNotes({ notes, jobDescription, allocatedHours });
+  const normalizedAllocatedHours = normalizeHourValue(allocatedHours, { allowNull: true });
+  const normalizedHoursSpent = normalizeHourValue(hoursSpent);
   const { data, error } = await db
     .from("tech_efficiency_entries")
     .insert([
@@ -86,8 +168,10 @@ export async function addEfficiencyEntry({ userId, date, jobNumber, hoursSpent, 
         user_id: userId,
         date,
         job_number: jobNumber,
-        hours_spent: hoursSpent,
-        notes: notes || null,
+        job_description: jobDescription || null,
+        allocated_hours: normalizedAllocatedHours,
+        hours_spent: normalizedHoursSpent,
+        notes: storedNotes,
         day_type: dayType,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -97,20 +181,28 @@ export async function addEfficiencyEntry({ userId, date, jobNumber, hoursSpent, 
     .single();
 
   if (error) throw error;
-  return data;
+  return normalizeEfficiencyEntry(data);
 }
 
 /**
  * Update an existing efficiency entry.
  */
-export async function updateEfficiencyEntry(entryId, { date, jobNumber, hoursSpent, notes, dayType }) {
+export async function updateEfficiencyEntry(
+  entryId,
+  { date, jobNumber, hoursSpent, notes, dayType, jobDescription, allocatedHours }
+) {
+  const storedNotes = serializeEntryNotes({ notes, jobDescription, allocatedHours });
+  const normalizedAllocatedHours = normalizeHourValue(allocatedHours, { allowNull: true });
+  const normalizedHoursSpent = normalizeHourValue(hoursSpent);
   const { data, error } = await db
     .from("tech_efficiency_entries")
     .update({
       date,
       job_number: jobNumber,
-      hours_spent: hoursSpent,
-      notes: notes || null,
+      job_description: jobDescription || null,
+      allocated_hours: normalizedAllocatedHours,
+      hours_spent: normalizedHoursSpent,
+      notes: storedNotes,
       day_type: dayType,
       updated_at: new Date().toISOString(),
     })
@@ -119,7 +211,7 @@ export async function updateEfficiencyEntry(entryId, { date, jobNumber, hoursSpe
     .single();
 
   if (error) throw error;
-  return data;
+  return normalizeEfficiencyEntry(data);
 }
 
 /**
@@ -270,6 +362,8 @@ export async function getJobClockingAsEfficiency(userIds, year, month) {
       user_id: row.user_id,
       date: dateStr,
       job_number: row.job_number || "",
+      job_description: "",
+      allocated_hours: null,
       hours_spent: hours,
       notes: "Auto-logged from job clocking",
       day_type: dayType,

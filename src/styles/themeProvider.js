@@ -113,6 +113,16 @@ const normalizeMode = (value) => {
   return "light";
 };
 
+const normalizeDbMode = (value) => {
+  if (value === null || typeof value === "undefined" || value === "") {
+    return "system";
+  }
+  if (typeof value === "boolean") {
+    return value ? "dark" : "light";
+  }
+  return normalizeMode(value);
+};
+
 const getSystemPreferredMode = () => {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
     return "light";
@@ -317,12 +327,7 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
         }
 
         if (!cancelled && data) {
-          const preference =
-            data.dark_mode === null || typeof data.dark_mode === "undefined"
-              ? "system"
-              : data.dark_mode
-              ? "dark"
-              : "light";
+          const preference = normalizeDbMode(data.dark_mode);
           const { resolved } = applyMode(preference);
           const nextAccent =
             typeof data.accent_color === "string" && data.accent_color.length > 0
@@ -351,18 +356,56 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
 
   const persistPreference = useCallback(
     async (nextMode) => {
-      void nextMode;
-      void dbUserId;
-      // Users table writes are restricted to HR Manager > Employees and password reset flow.
+      if (!dbUserId) return;
+      try {
+        const query = new URLSearchParams();
+        if (process.env.NODE_ENV !== "production") {
+          query.set("userId", String(dbUserId));
+        }
+        const response = await fetch(
+          `/api/profile/theme-preferences${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ mode: normalizeMode(nextMode) }),
+          }
+        );
+        if (!response.ok) {
+          const payload = await response.json().catch(() => null);
+          throw new Error(payload?.message || `Theme preference save failed (${response.status})`);
+        }
+      } catch (error) {
+        console.error("Failed to save theme preference", error?.message || error);
+      }
     },
     [dbUserId]
   );
 
   const persistAccentPreference = useCallback(
     async (nextAccent) => {
-      void nextAccent;
-      void dbUserId;
-      // Users table writes are restricted to HR Manager > Employees and password reset flow.
+      if (!dbUserId) return;
+      try {
+        const query = new URLSearchParams();
+        if (process.env.NODE_ENV !== "production") {
+          query.set("userId", String(dbUserId));
+        }
+        const response = await fetch(
+          `/api/profile/theme-preferences${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ accent: normalizeAccent(nextAccent) }),
+          }
+        );
+        if (!response.ok) {
+          const payload = await response.json().catch(() => null);
+          throw new Error(payload?.message || `Accent preference save failed (${response.status})`);
+        }
+      } catch (error) {
+        console.error("Failed to save accent preference", error?.message || error);
+      }
     },
     [dbUserId]
   );

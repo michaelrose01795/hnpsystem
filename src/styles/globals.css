@@ -322,6 +322,49 @@ div.news-card {
     margin-bottom: calc(var(--layout-card-gap) - 12px);
     border-radius: var(--radius-card);
   }
+
+  .sidebar-logo-header {
+    display: none !important;
+  }
+
+  .popup-backdrop {
+    padding: 10px !important;
+    align-items: flex-start !important;
+  }
+
+  .popup-card {
+    width: min(100%, calc(100vw - 20px)) !important;
+    max-width: min(100%, calc(100vw - 20px)) !important;
+    max-height: calc(100dvh - 20px) !important;
+    border-radius: 16px !important;
+    overflow-y: auto !important;
+  }
+
+  .popup-card h1,
+  .popup-card h2 {
+    font-size: 1.05rem !important;
+    line-height: 1.3 !important;
+  }
+
+  .popup-card h3,
+  .popup-card h4 {
+    font-size: 0.95rem !important;
+    line-height: 1.3 !important;
+  }
+
+  .popup-card p,
+  .popup-card span,
+  .popup-card label,
+  .popup-card li,
+  .popup-card td,
+  .popup-card th,
+  .popup-card button,
+  .popup-card input,
+  .popup-card textarea,
+  .popup-card select {
+    font-size: 0.84rem !important;
+    line-height: 1.3 !important;
+  }
 }
 
 /* Links */

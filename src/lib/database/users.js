@@ -18,6 +18,7 @@ const USER_COLUMNS = [
   "created_at",
   "updated_at",
   "dark_mode",
+  "accent_color",
   "is_active",
   "department",
   "employment_type",
@@ -52,7 +53,16 @@ const mapUserRow = (row = {}) => ({
   passwordHash: row.password_hash,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
-  darkMode: row.dark_mode,
+  darkMode: row.dark_mode === true || row.dark_mode === "dark",
+  themeMode:
+    row.dark_mode === null || typeof row.dark_mode === "undefined"
+      ? "system"
+      : typeof row.dark_mode === "boolean"
+        ? row.dark_mode
+          ? "dark"
+          : "light"
+        : row.dark_mode,
+  accentColor: row.accent_color,
   isActive: row.is_active,
   department: row.department,
   employmentType: row.employment_type,
