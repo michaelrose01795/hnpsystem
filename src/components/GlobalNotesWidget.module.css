@@ -336,11 +336,11 @@
 .input,
 .textarea {
   width: 100%;
-  border-radius: 12px;
+  border-radius: var(--control-radius);
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text-primary);
-  padding: 9px 11px;
+  padding: var(--control-padding);
   outline: none;
   font-family: inherit;
 }
@@ -365,7 +365,7 @@
   min-height: 120px;
   height: 100%;
   flex: 1 1 auto;
-  border-radius: 12px;
+  border-radius: var(--control-radius);
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text-primary);
@@ -422,7 +422,7 @@
   max-width: min(320px, calc(100% - 20px));
   border: 1px solid var(--border);
   background: var(--surface);
-  border-radius: 12px;
+  border-radius: var(--control-radius);
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
   max-height: 170px;
   overflow-y: auto;
@@ -451,7 +451,7 @@
   border: 1px solid rgba(var(--primary-rgb), 0.5);
   background: rgba(var(--primary-rgb), 0.14);
   color: var(--text-primary);
-  border-radius: 12px;
+  border-radius: var(--control-radius);
   padding: 6px 10px;
   font-size: 12px;
   cursor: pointer;
@@ -603,11 +603,11 @@
 .shareSearch {
   width: 100%;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--control-radius);
   background: var(--surface-light);
   color: var(--text-primary);
   padding: 8px 126px 8px 10px;
-  font-size: 13px;
+  font-size: var(--control-font-size);
 }
 
 .shareSelectedCount {
@@ -625,7 +625,7 @@
   border: 1px solid var(--border);
   background: var(--surface-light);
   color: var(--text-primary);
-  border-radius: 10px;
+  border-radius: var(--control-radius);
   padding: 8px 10px;
   font-size: 12px;
   cursor: pointer;

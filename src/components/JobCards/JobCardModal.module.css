@@ -1,11 +1,11 @@
 /* file location: src/components/JobCards/JobCardModal.module.css */
 .modalOverlay {
-  position: fixed; /* stays fixed */
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(var(--shadow-rgb),0.6); /* dim background */
+  background: rgba(var(--shadow-rgb), 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -15,7 +15,7 @@
 .modal {
   background: var(--surface);
   padding: 20px;
-  border-radius: 8px;
+  border-radius: var(--radius-panel);
   width: 400px;
   max-width: 90%;
   box-shadow: none;
@@ -23,34 +23,41 @@
 
 .input {
   width: 100%;
-  padding: 8px;
-  margin: 10px 0;
+  padding: var(--control-padding);
+  margin: 6px 0;
+  border-radius: var(--control-radius);
+  border: var(--control-border);
+  background: var(--control-bg);
 }
 
 .button {
-  background: red;
-  color: white;
-  padding: 8px 12px;
+  background: var(--primary);
+  color: var(--text-inverse);
+  padding: var(--control-padding);
+  min-height: var(--control-height);
+  border-radius: var(--control-radius);
   border: none;
   cursor: pointer;
   margin-right: 8px;
 }
 
 .closeButton {
-  background: var(--grey-accent-dark);
-  color: white;
-  padding: 8px 12px;
-  border: none;
+  background: var(--surface-light);
+  color: var(--text-primary);
+  padding: var(--control-padding);
+  min-height: var(--control-height);
+  border-radius: var(--control-radius);
+  border: 1px solid var(--border);
   cursor: pointer;
 }
 
 .error {
-  color: red;
+  color: var(--danger);
   margin-top: 10px;
 }
 
 .jobDetails {
   margin-top: 20px;
-  border-top: 1px solid var(--background);
+  border-top: 1px solid var(--border);
   padding-top: 10px;
 }

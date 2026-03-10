@@ -37,7 +37,7 @@ export default function JobTimeline({ jobNumber }) {
   }
 
   if (error) {
-    return <p style={{ color: "red", padding: "10px" }}>Error: {error}</p>;
+    return <p style={{ color: "var(--danger)", padding: "10px" }}>Error: {error}</p>;
   }
 
   if (!timeline.length) {

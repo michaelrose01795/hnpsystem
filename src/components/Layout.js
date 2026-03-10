@@ -1418,7 +1418,15 @@ export default function Layout({
           <div className="login-brand redirect-brand" aria-hidden="true">
             <BrandLogo alt="" className="login-logo" />
           </div>
-          <div className="orientation-lock__spinner redirect-spinner" aria-hidden="true"></div>
+          <div className="orientation-lock__device-visual" aria-hidden="true">
+            <div className="orientation-lock__device orientation-lock__device--portrait">
+              <span className="orientation-lock__device-notch"></span>
+            </div>
+            <div className="orientation-lock__rotate-arrow">↻</div>
+            <div className="orientation-lock__device orientation-lock__device--landscape">
+              <span className="orientation-lock__device-notch"></span>
+            </div>
+          </div>
           <div className="orientation-lock__copy redirect-copy">
             <p className="orientation-lock__kicker redirect-kicker">Phone Orientation</p>
             <h2 className="orientation-lock__title redirect-title">

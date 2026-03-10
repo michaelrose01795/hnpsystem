@@ -28,11 +28,11 @@ const cardStyle = {
 };
 
 const inputStyle = {
-  width: "100%", // Inputs fill available width
-  padding: "10px 12px", // Comfortable padding for data entry
-  borderRadius: "10px", // Rounded inputs consistent with cards
-  border: "1px solid var(--danger)", // Light red border accent
-  fontSize: "0.95rem", // Legible input text size
+  width: "100%",
+  padding: "12px 14px",
+  borderRadius: "var(--control-radius)",
+  border: "1px solid var(--surface-light)",
+  fontSize: "0.95rem",
 };
 
 const tableHeaderStyle = {
@@ -300,8 +300,8 @@ const TechConsumableRequestPage = () => {
               href="/dashboard"
               style={{
                 display: "inline-block",
-                padding: "10px 18px",
-                borderRadius: "999px",
+                padding: "var(--control-padding)",
+                borderRadius: "var(--control-radius)",
                 background: "var(--primary)",
                 color: "var(--surface)",
                 fontWeight: 600,
@@ -325,17 +325,13 @@ const TechConsumableRequestPage = () => {
               <h1 style={{ margin: 0, fontSize: "1.6rem", color: "var(--primary-dark)" }}>
                 Request Workshop Consumables
               </h1>
-              <p style={{ marginTop: "6px", color: "var(--grey-accent)" }}>
-                Submit consumable requirements to the workshop management team for
-                purchasing and replenishment.
-              </p>
             </div>
             <button
               type="button"
               onClick={() => setShowStockCheck(true)}
               style={{
-                padding: "10px 18px",
-                borderRadius: "999px",
+                padding: "var(--control-padding)",
+                borderRadius: "var(--control-radius)",
                 border: "1px solid var(--primary)",
                 background: "var(--surface)",
                 color: "var(--primary-dark)",
@@ -363,7 +359,7 @@ const TechConsumableRequestPage = () => {
                 required
               />
               {requestForm.partName.trim() && (
-                <div style={{ marginTop: "4px", border: "1px solid var(--surface-light)", borderRadius: "10px", padding: "8px", background: "var(--surface-lightest)", display: "flex", flexDirection: "column", gap: "6px" }}>
+                <div style={{ marginTop: "4px", border: "1px solid var(--surface-light)", borderRadius: "var(--control-radius)", padding: "8px", background: "var(--surface-lightest)", display: "flex", flexDirection: "column", gap: "6px" }}>
                   {stockLoading ? (
                     <span style={{ color: "var(--grey-accent-dark)", fontSize: "0.85rem" }}>Searching stock…</span>
                   ) : stockMatches.length > 0 ? (
@@ -378,7 +374,7 @@ const TechConsumableRequestPage = () => {
                             style={{
                               textAlign: "left",
                               border: "1px solid var(--surface-light)",
-                              borderRadius: "8px",
+                              borderRadius: "var(--control-radius)",
                               padding: "6px 10px",
                               background: "var(--surface)",
                               cursor: "pointer",
@@ -403,7 +399,7 @@ const TechConsumableRequestPage = () => {
                       disabled={addingTemporaryItem}
                       style={{
                         padding: "6px 12px",
-                        borderRadius: "999px",
+                        borderRadius: "var(--control-radius)",
                         border: "1px solid var(--primary)",
                         background: addingTemporaryItem ? "rgba(var(--primary-rgb),0.35)" : "var(--surface)",
                         color: "var(--primary-dark)",
@@ -442,8 +438,8 @@ const TechConsumableRequestPage = () => {
               <button
                 type="submit"
                 style={{
-                  padding: "12px 24px",
-                  borderRadius: "12px",
+                  padding: "var(--control-padding)",
+                  borderRadius: "var(--control-radius)",
                   border: "none",
                   background: "var(--primary)",
                   color: "var(--surface)",
@@ -480,7 +476,7 @@ const TechConsumableRequestPage = () => {
           )}
 
           <div style={{ overflowX: "auto", maxHeight: "420px", overflowY: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 12px", minWidth: "640px" }}>
+            <table className="table-api" style={{ minWidth: "640px" }}>
               <thead>
                 <tr>
                   <th style={tableHeaderStyle}>Status</th>
@@ -492,7 +488,7 @@ const TechConsumableRequestPage = () => {
               </thead>
               <tbody>
                 {filteredRequests.map((request) => (
-                  <tr key={request.id} style={{ background: "var(--danger-surface)", borderRadius: "12px" }}>
+                  <tr key={request.id}>
                     <td style={{ padding: "12px" }}>
                       <span
                         style={{

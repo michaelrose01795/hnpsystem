@@ -58,7 +58,8 @@
       "Bash(tasklist.exe)",
       "Bash(taskkill.exe //F //IM git.exe)",
       "Bash(rm -f /f/hnpsystem/.git/index.lock)",
-      "Read(//c/Users/micha/AppData/Roaming/npm/**)"
+      "Read(//c/Users/micha/AppData/Roaming/npm/**)",
+      "Bash(find /workspaces/hnpsystem/src -type f \\\\\\(-name *.tsx -o -name *.jsx -o -name *.ts -o -name *.js \\\\\\))"
     ],
     "deny": [],
     "ask": []

@@ -297,14 +297,7 @@ const GlobalSearch = ({
     }
   };
 
-  const searchBackground = isDarkMode
-    ? "rgba(var(--primary-rgb), 0.14)"
-    : "rgba(var(--primary-rgb), 0.08)";
   const dropdownBackground = "var(--layer-section-level-2)";
-  const baseBorderColor = isDarkMode
-    ? "rgba(var(--primary-rgb), 0.5)"
-    : "rgba(var(--primary-rgb), 0.35)";
-  const borderColor = isFocused ? accentColor : baseBorderColor;
   const textColor = isDarkMode ? "var(--search-text)" : "var(--text-primary)";
   const placeholderColor = isDarkMode ? "rgba(var(--primary-rgb), 0.7)" : "rgba(var(--primary-rgb), 0.7)";
   const drawerBorderColor = isDarkMode ? "rgba(var(--accent-purple-rgb), 0.45)" : "var(--surface)";
@@ -324,7 +317,7 @@ const GlobalSearch = ({
           <div
             style={{
               padding: "12px 16px",
-              borderRadius: "12px",
+              borderRadius: "var(--control-radius)",
               backgroundColor: dropdownBackground,
               border: `1px solid ${drawerBorderColor}`,
               boxShadow: "none",
@@ -418,7 +411,7 @@ const GlobalSearch = ({
           <div
             style={{
               padding: "16px",
-              borderRadius: "12px",
+              borderRadius: "var(--control-radius)",
               backgroundColor: dropdownBackground,
               border: `1px solid ${drawerBorderColor}`,
               boxShadow: "none",
@@ -446,14 +439,12 @@ const GlobalSearch = ({
           display: "flex",
           alignItems: "center",
           gap: "6px",
-          background: searchBackground,
-          border: `1px solid ${borderColor}`,
-          borderRadius: "999px",
-          padding: "3px 8px",
-          boxShadow: isFocused
-            ? "0 0 0 2px rgba(var(--primary-rgb), 0.22)"
-            : "0 1px 0 rgba(var(--primary-rgb), 0.1)",
-          transition: "all 0.2s ease",
+          background: "var(--control-bg)",
+          border: "var(--control-border)",
+          borderRadius: "var(--control-radius)",
+          padding: "var(--control-padding)",
+          boxShadow: "none",
+          transition: "var(--control-transition)",
         }}
       >
         <input
@@ -469,14 +460,14 @@ const GlobalSearch = ({
           }}
           onBlur={() => setIsFocused(false)}
           onKeyDown={handleKeyDown}
-          placeholder="Gloable Search"
+          placeholder="Global Search"
           style={{
             flex: 1,
-              border: "none",
-              outline: "none",
-              backgroundColor: "transparent",
-              color: textColor,
-              fontSize: "0.84rem",
+            border: "none",
+            outline: "none",
+            backgroundColor: "transparent",
+            color: textColor,
+            fontSize: "var(--control-font-size)",
           }}
         />
 
