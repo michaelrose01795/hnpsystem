@@ -27,6 +27,7 @@ import { roleCategories } from "@/config/users";
 import { getUserActiveJobs, clockOutFromJob } from "@/lib/database/jobClocking";
 import { DropdownField } from "@/components/dropdownAPI";
 import { getWelcomeQuoteSlotKey } from "@/lib/welcomeQuoteSlot";
+import BrandLogo from "@/components/BrandLogo";
 
 const SERVICE_ACTION_ROLES = new Set([
   "service",
@@ -1412,8 +1413,27 @@ export default function Layout({
         <JobCardModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
       )}
       <TopbarAlerts />
-      <div className="orientation-lock">
-        <div className="orientation-lock__message">Please rotate your phone to landscape.</div>
+      <div className="orientation-lock" role="status" aria-live="polite">
+        <div className="orientation-lock__card redirect-card">
+          <div className="login-brand redirect-brand" aria-hidden="true">
+            <BrandLogo alt="" className="login-logo" />
+          </div>
+          <div className="orientation-lock__spinner redirect-spinner" aria-hidden="true"></div>
+          <div className="orientation-lock__copy redirect-copy">
+            <p className="orientation-lock__kicker redirect-kicker">Phone Orientation</p>
+            <h2 className="orientation-lock__title redirect-title">
+              Please rotate your phone to landscape.
+            </h2>
+            <p className="orientation-lock__sub redirect-sub">
+              This view is designed for a wider layout.
+            </p>
+          </div>
+          <div className="orientation-lock__dots redirect-dots" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
       </div>
     </div>
   );
