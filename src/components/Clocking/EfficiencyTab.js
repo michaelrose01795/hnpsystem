@@ -870,7 +870,6 @@ export default function EfficiencyTab({
       doc.setFont("helvetica", "normal");
       doc.setTextColor(80);
       doc.text("Efficiency Timesheet", 10, 20);
-      doc.text(`Filter: ${periodFilter.charAt(0).toUpperCase()}${periodFilter.slice(1)}`, 70, 20);
       doc.setTextColor(0);
 
       // Export each filtered entry as its own row so repeated dates stay repeated.
@@ -910,7 +909,7 @@ export default function EfficiencyTab({
       doc.setFont("helvetica", "bold");
       doc.text("Actual Hours:", 10, finalY);
       doc.text("Target Hours:", 60, finalY);
-      doc.text("Difference:", 110, finalY);
+      doc.text("Total Difference:", 110, finalY);
       doc.text("Efficiency:", 155, finalY);
       doc.setFont("helvetica", "normal");
       doc.text(`${formatHours(summaryTotals.actualHours)}h`, 34, finalY);
