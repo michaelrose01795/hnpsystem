@@ -7,6 +7,7 @@ import {
   getEfficiencyEntries,
   getAllEfficiencyEntries,
   getJobClockingAsEfficiency,
+  getOvertimeAsEfficiency,
   getAllTechTargets,
   addEfficiencyEntry,
   updateEfficiencyEntry,
@@ -19,6 +20,7 @@ import {
 import ModalPortal from "@/components/popups/ModalPortal";
 import { CalendarField } from "@/components/calendarAPI";
 import { DropdownField } from "@/components/dropdownAPI";
+import { TabGroup } from "@/components/tabAPI/TabGroup";
 import { supabase } from "@/lib/supabaseClient";
 
 const MONTHS = [
@@ -49,6 +51,13 @@ const getWeekStartMonday = (date) => {
   copy.setDate(copy.getDate() + diff);
   copy.setHours(0, 0, 0, 0);
   return copy;
+};
+
+const getAutoDayTypeFromDate = (value) => {
+  const date = parseYmd(value);
+  if (!date) return "weekday";
+  const day = date.getDay();
+  return day === 0 || day === 6 ? "saturday" : "weekday";
 };
 
 const roundHours = (value) => {
@@ -191,13 +200,14 @@ export default function EfficiencyTab({
     setLoading(true);
     setError("");
     try {
-      const [manualEntries, clockingEntries, allTargets] = await Promise.all([
+      const [manualEntries, clockingEntries, overtimeEntries, allTargets] = await Promise.all([
         getAllEfficiencyEntries(allUserIds, selectedYear, selectedMonth),
         getJobClockingAsEfficiency(allUserIds, selectedYear, selectedMonth),
+        getOvertimeAsEfficiency(allUserIds, selectedYear, selectedMonth),
         getAllTechTargets(allUserIds),
       ]);
-      // Merge manual entries + job_clocking entries, clocking entries first then manual
-      const merged = [...clockingEntries, ...manualEntries];
+      // Merge tracked sources into a single timeline.
+      const merged = [...clockingEntries, ...overtimeEntries, ...manualEntries];
       // Sort by date ascending
       merged.sort((a, b) => (a.date > b.date ? 1 : a.date < b.date ? -1 : 0));
       setEntries(merged);
@@ -323,7 +333,13 @@ export default function EfficiencyTab({
     return visibleTechs.map((tech) => {
       const techEntries = entriesByUser.get(tech.user_id) || [];
       const target = targets.get(tech.user_id) || { monthlyTargetHours: 160, weight: 1.0 };
-      const totals = calculateTechTotals(techEntries, target);
+      const totals = calculateTechTotals(techEntries, target, {
+        year: selectedYear,
+        month: selectedMonth,
+        period: periodFilter,
+        anchorDate: filterDateValue,
+        weeklyContractedHours: target.weeklyContractedHours ?? tech.contracted_hours ?? 40,
+      });
       return {
         tech,
         entries: techEntries,
@@ -332,7 +348,7 @@ export default function EfficiencyTab({
         weight: target.weight,
       };
     });
-  }, [entriesByUser, targets, visibleTechs]);
+  }, [entriesByUser, filterDateValue, periodFilter, selectedMonth, selectedYear, targets, visibleTechs]);
 
   const overviewTechSummaries = useMemo(() => {
     if (overviewTechFilter === "all") return techSummaries;
@@ -370,6 +386,14 @@ export default function EfficiencyTab({
   const filteredSetDifference = Number(
     (totalsForFilteredSet.logged - totalsForFilteredSet.allocated).toFixed(2)
   );
+  const totalDifferenceColor = (value) =>
+    Number(value) < -0.01 ? "var(--success)" : "var(--danger)";
+  const formatSignedHours = (value) => {
+    const numeric = Number(value || 0);
+    if (numeric > 0) return `+${formatHours(numeric)}h`;
+    if (numeric < 0) return `-${formatHours(Math.abs(numeric))}h`;
+    return `${formatHours(0)}h`;
+  };
 
   const isTabEditable =
     editable &&
@@ -399,7 +423,7 @@ export default function EfficiencyTab({
 
   const startDetailEdit = () => {
     if (!detailPopupSummary) return;
-    setDetailEditTargetHours(String(detailPopupSummary.target.monthlyTargetHours));
+    setDetailEditTargetHours(String(detailPopupSummary.target.weeklyContractedHours ?? 40));
     setDetailEditWeight(String(detailPopupSummary.weight));
     setDetailEditError("");
     setDetailEditMode(true);
@@ -411,12 +435,7 @@ export default function EfficiencyTab({
   };
 
   const saveDetailEdit = async () => {
-    const hrs = Number(detailEditTargetHours);
     const wt = Number(detailEditWeight);
-    if (!detailEditTargetHours || Number.isNaN(hrs) || hrs <= 0) {
-      setDetailEditError("Target hours must be greater than 0.");
-      return;
-    }
     if (!detailEditWeight || Number.isNaN(wt) || wt < 0 || wt > 1) {
       setDetailEditError("Weight must be between 0 and 1.");
       return;
@@ -425,7 +444,7 @@ export default function EfficiencyTab({
     setDetailEditError("");
     try {
       await upsertTechTarget(detailPopupTechId, {
-        monthlyTargetHours: hrs,
+        monthlyTargetHours: detailPopupSummary?.target?.monthlyTargetHours ?? 160,
         weight: wt,
       });
       setDetailEditMode(false);
@@ -605,6 +624,11 @@ export default function EfficiencyTab({
     setFormAllocatedHours(formatHours(selected.allocatedHours));
   }, [formJobNumber, modalOpen, requestOptions, selectedRequestValue]);
 
+  useEffect(() => {
+    if (!modalOpen || !formDate) return;
+    setFormDayType(getAutoDayTypeFromDate(formDate));
+  }, [formDate, modalOpen]);
+
   // Derive the final job_number string to save (includes request context)
   const resolveJobNumberForSave = () => {
     const baseJobNumber = formJobNumber.trim();
@@ -708,28 +732,6 @@ export default function EfficiencyTab({
   };
 
   // Styles
-  const tabBarStyle = {
-    display: "flex",
-    gap: "4px",
-    flexWrap: "wrap",
-    padding: "4px",
-    borderRadius: "14px",
-    background: "var(--surface-light)",
-    border: "1px solid var(--surface-light)",
-  };
-
-  const tabStyle = (isActive) => ({
-    padding: "10px 18px",
-    borderRadius: "10px",
-    border: "none",
-    background: isActive ? "var(--primary)" : "transparent",
-    color: isActive ? "var(--surface)" : "var(--primary-dark)",
-    fontWeight: 600,
-    fontSize: "0.85rem",
-    cursor: "pointer",
-    transition: "all 0.15s ease",
-  });
-
   const monthNavStyle = {
     display: "flex",
     alignItems: "center",
@@ -822,41 +824,43 @@ export default function EfficiencyTab({
         ? `efficiency-overall-${selectedYear}-${String(selectedMonth).padStart(2, "0")}.pdf`
         : `efficiency-${techName.toLowerCase()}-${selectedYear}-${String(selectedMonth).padStart(2, "0")}.pdf`;
 
-      // Build existing entries map by day number
-      const existingByDay = new Map();
-      if (activeSummary) {
-        activeSummary.entries.forEach((entry) => {
-          const day = new Date(entry.date).getDate();
-          if (!existingByDay.has(day)) existingByDay.set(day, []);
-          existingByDay.get(day).push(entry);
+      const exportEntries = (activeSummary?.entries || [])
+        .slice()
+        .sort((a, b) => {
+          if (a.date !== b.date) return a.date > b.date ? 1 : -1;
+          const aCreated = String(a.created_at || "");
+          const bCreated = String(b.created_at || "");
+          return aCreated > bCreated ? 1 : aCreated < bCreated ? -1 : 0;
         });
-      }
 
-      const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
-      const rows = [];
-      for (let day = 1; day <= 31; day++) {
-        const entriesForDay = existingByDay.get(day) || [];
-        if (entriesForDay.length > 0) {
-          entriesForDay.forEach((entry) => {
-            rows.push([
-              `${String(day).padStart(2, "0")}/${String(selectedMonth).padStart(2, "0")}/${selectedYear}`,
-              entry.job_number || "",
-              entry.hours_spent ? String(entry.hours_spent) : "",
-              entry.notes || "",
-              entry.day_type || "",
-            ]);
-          });
-        } else {
-          rows.push([
-            day <= daysInMonth
-              ? `${String(day).padStart(2, "0")}/${String(selectedMonth).padStart(2, "0")}/${selectedYear}`
+      const rows = exportEntries.length > 0
+        ? exportEntries.map((entry) => {
+          const entryDate = parseYmd(entry.date);
+          const formattedDate = entryDate
+            ? `${String(entryDate.getDate()).padStart(2, "0")}/${String(entryDate.getMonth() + 1).padStart(2, "0")}/${entryDate.getFullYear()}`
+            : String(entry.date || "");
+          return [
+            formattedDate,
+            entry.job_number || "",
+            entry.job_description || "",
+            entry.allocated_hours !== null && entry.allocated_hours !== undefined
+              ? `${formatHours(entry.allocated_hours)}h`
               : "",
-            "", "", "", "",
-          ]);
-        }
-      }
+            `${formatHours(entry.hours_spent || 0)}h`,
+            entry.notes || "",
+            entry.day_type || "",
+          ];
+        })
+        : [["", "", "", "", "", "", ""]];
 
-      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const summaryTotals = activeSummary?.totals || {
+        actualHours: 0,
+        targetHours: 0,
+        difference: 0,
+        efficiencyPct: 0,
+      };
+
+      const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
 
       // Title
       doc.setFontSize(14);
@@ -866,12 +870,13 @@ export default function EfficiencyTab({
       doc.setFont("helvetica", "normal");
       doc.setTextColor(80);
       doc.text("Efficiency Timesheet", 10, 20);
+      doc.text(`Filter: ${periodFilter.charAt(0).toUpperCase()}${periodFilter.slice(1)}`, 70, 20);
       doc.setTextColor(0);
 
-      // Table - use doc.autoTable after plugin is applied
+      // Export each filtered entry as its own row so repeated dates stay repeated.
       doc.autoTable({
         startY: 25,
-        head: [["Date", "Job Number", "Hours Spent", "Notes", "Day Type"]],
+        head: [["Date", "Job Number", "Description", "Allocated", "Total Clocked", "Notes", "Day Type"]],
         body: rows,
         theme: "grid",
         styles: {
@@ -888,16 +893,18 @@ export default function EfficiencyTab({
           fontSize: 7,
         },
         columnStyles: {
-          0: { cellWidth: 28 },
-          1: { cellWidth: 32 },
-          2: { cellWidth: 22 },
-          3: { cellWidth: "auto" },
-          4: { cellWidth: 26 },
+          0: { cellWidth: 26 },
+          1: { cellWidth: 38 },
+          2: { cellWidth: 64 },
+          3: { cellWidth: 22 },
+          4: { cellWidth: 24 },
+          5: { cellWidth: "auto" },
+          6: { cellWidth: 24 },
         },
         margin: { left: 10, right: 10 },
       });
 
-      // Summary row below the table
+      // Summary row below the table uses the same totals shown on the page.
       const finalY = (doc.lastAutoTable?.finalY ?? 280) + 6;
       doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
@@ -905,6 +912,11 @@ export default function EfficiencyTab({
       doc.text("Target Hours:", 60, finalY);
       doc.text("Difference:", 110, finalY);
       doc.text("Efficiency:", 155, finalY);
+      doc.setFont("helvetica", "normal");
+      doc.text(`${formatHours(summaryTotals.actualHours)}h`, 34, finalY);
+      doc.text(`${formatHours(summaryTotals.targetHours)}h`, 85, finalY);
+      doc.text(formatSignedHours(summaryTotals.difference), 130, finalY);
+      doc.text(`${Number(summaryTotals.efficiencyPct || 0).toFixed(1)}%`, 175, finalY);
 
       doc.save(fileName);
     } catch (err) {
@@ -918,24 +930,19 @@ export default function EfficiencyTab({
       {/* Combined row: Tabs + Month Nav + Print */}
       <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
         {/* Tab bar */}
-        <div style={{ ...tabBarStyle, flex: "1 1 auto" }}>
-          <button
-            type="button"
-            style={tabStyle(activeTab === "overall")}
-            onClick={() => setActiveTab("overall")}
-          >
-            Overall
-          </button>
-          {visibleTechs.map((tech) => (
-            <button
-              key={tech.user_id}
-              type="button"
-              style={tabStyle(activeTab === String(tech.user_id))}
-              onClick={() => setActiveTab(String(tech.user_id))}
-            >
-              {tech.first_name}
-            </button>
-          ))}
+        <div style={{ flex: "1 1 auto" }}>
+          <TabGroup
+            ariaLabel="Efficiency technicians"
+            value={activeTab}
+            onChange={(nextValue) => setActiveTab(String(nextValue))}
+            items={[
+              { value: "overall", label: "Overall" },
+              ...visibleTechs.map((tech) => ({
+                value: String(tech.user_id),
+                label: tech.first_name,
+              })),
+            ]}
+          />
         </div>
 
         {/* Month navigation */}
@@ -1139,10 +1146,10 @@ export default function EfficiencyTab({
               </div>
               <div style={statCardStyle}>
                 <span style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
-                  Logged - Allocated
+                  Total Difference
                 </span>
-                <strong style={{ fontSize: "1.6rem", color: filteredSetDifference >= 0 ? "var(--success)" : "var(--danger)" }}>
-                  {filteredSetDifference >= 0 ? "+" : ""}{formatHours(Math.abs(filteredSetDifference))}h
+                <strong style={{ fontSize: "1.6rem", color: totalDifferenceColor(filteredSetDifference) }}>
+                  {formatSignedHours(filteredSetDifference)}
                 </strong>
               </div>
               <div style={statCardStyle}>
@@ -1261,10 +1268,10 @@ export default function EfficiencyTab({
               </div>
               <div style={statCardStyle}>
                 <span style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
-                  Logged - Allocated
+                  Total Difference
                 </span>
-                <strong style={{ fontSize: "1.6rem", color: filteredSetDifference >= 0 ? "var(--success)" : "var(--danger)" }}>
-                  {filteredSetDifference >= 0 ? "+" : ""}{formatHours(Math.abs(filteredSetDifference))}h
+                <strong style={{ fontSize: "1.6rem", color: totalDifferenceColor(filteredSetDifference) }}>
+                  {formatSignedHours(filteredSetDifference)}
                 </strong>
               </div>
               <div style={statCardStyle}>
@@ -1344,8 +1351,8 @@ export default function EfficiencyTab({
                               : "—"}
                           </td>
                           <td style={tdStyle}>{formatHours(logged)}h</td>
-                          <td style={{ ...tdStyle, color: rowDifference >= 0 ? "var(--success)" : "var(--danger)", fontWeight: 600 }}>
-                            {rowDifference >= 0 ? "+" : ""}{formatHours(Math.abs(rowDifference))}h
+                          <td style={{ ...tdStyle, color: totalDifferenceColor(rowDifference), fontWeight: 600 }}>
+                            {formatSignedHours(rowDifference)}
                           </td>
                           <td style={{ ...tdStyle, maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                             {entry.notes || "—"}
@@ -1490,7 +1497,7 @@ export default function EfficiencyTab({
                   gap: "12px",
                 }}>
                   <span style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)", fontWeight: 600 }}>
-                    Edit Target &amp; Weight
+                    Contracted Hours &amp; Weight
                   </span>
                   {detailEditError && (
                     <div style={{
@@ -1507,22 +1514,24 @@ export default function EfficiencyTab({
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: "12px", alignItems: "end" }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                       <label style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--grey-accent)" }}>
-                        Monthly Target Hours
+                        Contracted Hours / Week
                       </label>
                       <input
                         type="number"
                         step="1"
                         min="1"
                         value={detailEditTargetHours}
-                        onChange={(e) => setDetailEditTargetHours(e.target.value)}
+                        readOnly
                         style={{
                           borderRadius: "10px",
                           border: "1px solid var(--surface-light)",
-                          background: "var(--surface)",
+                          background: "var(--surface-light)",
                           padding: "10px 12px",
                           fontSize: "0.9rem",
                           color: "var(--text-primary)",
                           outline: "none",
+                          cursor: "not-allowed",
+                          opacity: 0.8,
                         }}
                       />
                     </div>
@@ -1758,7 +1767,7 @@ export default function EfficiencyTab({
               )}
 
               <form onSubmit={handleFormSubmit} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
-                {/* Row 1: Date + Job Number */}
+                {/* Row 1: Date + Day Type */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                   <CalendarField
                     id="efficiencyDate"
@@ -1767,6 +1776,22 @@ export default function EfficiencyTab({
                     onChange={(event) => setFormDate(event.target.value)}
                     required
                   />
+                  <DropdownField
+                    id="efficiencyDayType"
+                    label="Day Type"
+                    placeholder="Select day type"
+                    options={[
+                      { key: "weekday", value: "weekday", label: "Weekday", description: "Monday - Friday" },
+                      { key: "saturday", value: "saturday", label: "Saturday", description: "Weekend entry" },
+                    ]}
+                    value={formDayType}
+                    onChange={(event) => setFormDayType(event.target.value)}
+                    required
+                  />
+                </div>
+
+                {/* Row 2: Job Number + Job Clocking On */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", alignItems: "start" }}>
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label
                       htmlFor="efficiencyJobNumber"
@@ -1808,33 +1833,32 @@ export default function EfficiencyTab({
                         ? "Job recognised. Allocated hours/description loaded."
                         : jobLookupState === "unmatched"
                           ? "Job not recognised. Enter details manually."
-                          : jobLookupState === "loading"
+                        : jobLookupState === "loading"
                             ? "Checking job number..."
                             : "You can still save without a job number."}
                     </span>
                   </div>
+                  <DropdownField
+                    value={selectedRequestValue}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSelectedRequestValue(val);
+                      if (val.startsWith("request:")) {
+                        const idValue = Number(val.replace("request:", ""));
+                        setSelectedRequestId(Number.isFinite(idValue) ? idValue : null);
+                      } else {
+                        setSelectedRequestId(null);
+                      }
+                    }}
+                    label="Job Clocking On"
+                    options={requestOptions}
+                    placeholder={formJobNumber.trim() ? `Job: ${formJobNumber.trim()}` : "No job number"}
+                    disabled={!formJobNumber.trim()}
+                    className="efficiency-request-dropdown"
+                  />
                 </div>
 
-                {/* Work type selector (same as Start Job popup) */}
-                <DropdownField
-                  value={selectedRequestValue}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setSelectedRequestValue(val);
-                    if (val.startsWith("request:")) {
-                      const idValue = Number(val.replace("request:", ""));
-                      setSelectedRequestId(Number.isFinite(idValue) ? idValue : null);
-                    } else {
-                      setSelectedRequestId(null);
-                    }
-                  }}
-                  options={requestOptions}
-                  placeholder={formJobNumber.trim() ? `Job: ${formJobNumber.trim()}` : "No job number"}
-                  disabled={!formJobNumber.trim()}
-                  className="efficiency-request-dropdown"
-                />
-
-                {/* Row 2: Allocated Hours + Day Type */}
+                {/* Row 3: Allocated Hours + Total Clocked */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label
@@ -1862,50 +1886,6 @@ export default function EfficiencyTab({
                       }}
                     />
                   </div>
-                  <DropdownField
-                    id="efficiencyDayType"
-                    label="Day Type"
-                    placeholder="Select day type"
-                    options={[
-                      { key: "weekday", value: "weekday", label: "Weekday", description: "Monday - Friday" },
-                      { key: "saturday", value: "saturday", label: "Saturday", description: "Saturday shift" },
-                    ]}
-                    value={formDayType}
-                    onChange={(event) => setFormDayType(event.target.value)}
-                    required
-                  />
-                </div>
-
-                {/* Row 3: Job Description */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  <label
-                    htmlFor="efficiencyJobDescription"
-                    style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--grey-accent)" }}
-                  >
-                    Job Description
-                  </label>
-                  <textarea
-                    id="efficiencyJobDescription"
-                    value={formDescription}
-                    onChange={(e) => setFormDescription(e.target.value)}
-                    placeholder="Describe the job when no matching job number is found..."
-                    rows={2}
-                    style={{
-                      borderRadius: "16px",
-                      border: "1px solid var(--surface-light)",
-                      background: "var(--surface-light)",
-                      padding: "12px 14px",
-                      fontSize: "0.95rem",
-                      color: "var(--text-primary)",
-                      outline: "none",
-                      resize: "vertical",
-                      minHeight: "64px",
-                    }}
-                  />
-                </div>
-
-                {/* Row 4: Total Clocked */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "16px" }}>
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label
                       htmlFor="efficiencyHours"
@@ -1935,32 +1915,60 @@ export default function EfficiencyTab({
                   </div>
                 </div>
 
-                {/* Row 5: Notes (full width) */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  <label
-                    htmlFor="efficiencyNotes"
-                    style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--grey-accent)" }}
-                  >
-                    Notes
-                  </label>
-                  <textarea
-                    id="efficiencyNotes"
-                    value={formNotes}
-                    onChange={(e) => setFormNotes(e.target.value)}
-                    placeholder="Optional notes..."
-                    rows={3}
-                    style={{
-                      borderRadius: "16px",
-                      border: "1px solid var(--surface-light)",
-                      background: "var(--surface-light)",
-                      padding: "12px 14px",
-                      fontSize: "0.95rem",
-                      color: "var(--text-primary)",
-                      outline: "none",
-                      resize: "vertical",
-                      minHeight: "70px",
-                    }}
-                  />
+                {/* Row 4: Job Description + Notes */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <label
+                      htmlFor="efficiencyJobDescription"
+                      style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--grey-accent)" }}
+                    >
+                      Job Description
+                    </label>
+                    <textarea
+                      id="efficiencyJobDescription"
+                      value={formDescription}
+                      onChange={(e) => setFormDescription(e.target.value)}
+                      placeholder="Describe the job when no matching job number is found..."
+                      rows={2}
+                      style={{
+                        borderRadius: "16px",
+                        border: "1px solid var(--surface-light)",
+                        background: "var(--surface-light)",
+                        padding: "12px 14px",
+                        fontSize: "0.95rem",
+                        color: "var(--text-primary)",
+                        outline: "none",
+                        resize: "vertical",
+                        minHeight: "64px",
+                      }}
+                    />
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <label
+                      htmlFor="efficiencyNotes"
+                      style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--grey-accent)" }}
+                    >
+                      Notes
+                    </label>
+                    <textarea
+                      id="efficiencyNotes"
+                      value={formNotes}
+                      onChange={(e) => setFormNotes(e.target.value)}
+                      placeholder="Optional notes..."
+                      rows={2}
+                      style={{
+                        borderRadius: "16px",
+                        border: "1px solid var(--surface-light)",
+                        background: "var(--surface-light)",
+                        padding: "12px 14px",
+                        fontSize: "0.95rem",
+                        color: "var(--text-primary)",
+                        outline: "none",
+                        resize: "vertical",
+                        minHeight: "64px",
+                      }}
+                    />
+                  </div>
                 </div>
 
                 {/* Actions */}

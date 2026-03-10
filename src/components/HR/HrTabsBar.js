@@ -1,6 +1,6 @@
 // file location: src/components/HR/HrTabsBar.js
-import Link from "next/link";
 import { useRouter } from "next/router";
+import { TabLinkGroup } from "@/components/tabAPI/TabGroup";
 
 const hrTabs = [
   { href: "/hr/employees", label: "Employee Records" },
@@ -30,46 +30,16 @@ export default function HrTabsBar() {
         marginBottom: "20px",
       }}
     >
-      <nav
-        aria-label="HR modules"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-          gap: "10px",
-        }}
-      >
-        {hrTabs.map((tab) => {
-          const isActive =
-            router.pathname === tab.href ||
-            (tab.href !== "/admin/users" && router.pathname.startsWith(tab.href));
-
-          return (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              style={{
-                minHeight: "44px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "10px 12px",
-                backgroundColor: isActive ? "var(--accent-purple)" : "var(--info-surface)",
-                borderRadius: "12px",
-                color: isActive ? "var(--surface)" : "var(--accent-purple)",
-                fontWeight: 600,
-                fontSize: "0.85rem",
-                textDecoration: "none",
-                border: isActive ? "1px solid var(--accent-purple)" : "1px solid var(--accent-purple-surface)",
-                boxShadow: isActive ? "0 2px 8px rgba(0, 0, 0, 0.25)" : "inset 0 -1px 0 rgba(var(--accent-purple-rgb), 0.05)",
-                transition: "background-color 0.2s ease, color 0.2s ease",
-                textAlign: "center",
-              }}
-            >
-              {tab.label}
-            </Link>
-          );
-        })}
-      </nav>
+      <TabLinkGroup
+        items={hrTabs}
+        ariaLabel="HR modules"
+        layout="grid"
+        stretch
+        isActive={(tab) =>
+          router.pathname === tab.href ||
+          (tab.href !== "/admin/users" && router.pathname.startsWith(tab.href))
+        }
+      />
     </div>
   );
 }

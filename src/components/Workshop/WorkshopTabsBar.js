@@ -1,6 +1,6 @@
 // file location: src/components/Workshop/WorkshopTabsBar.js
-import Link from "next/link";
 import { useRouter } from "next/router";
+import { TabLinkGroup } from "@/components/tabAPI/TabGroup";
 
 export const workshopTabs = [
   { href: "/workshop", label: "Dashboard" },
@@ -43,42 +43,19 @@ export default function WorkshopTabsBar() {
           justifyContent: "space-between",
         }}
       >
-        <nav
-          aria-label="Workshop navigation"
+        <div
           style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "10px",
+            display: "block",
             flex: 1,
             minWidth: "260px",
           }}
         >
-          {workshopTabs.map((tab) => {
-            const active = isActive(tab.href);
-            return (
-              <Link
-                key={tab.href}
-                href={tab.href}
-                style={{
-                  padding: "10px 16px",
-                  borderRadius: "12px",
-                  border: active ? "1px solid var(--primary)" : "1px solid var(--surface-light)",
-                  backgroundColor: active ? "var(--primary)" : "var(--surface-light)",
-                  color: active ? "var(--text-inverse)" : "var(--text-primary)",
-                  fontWeight: 600,
-                  fontSize: "0.85rem",
-                  textDecoration: "none",
-                  boxShadow: "none",
-                  transition: "background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease",
-                  whiteSpace: "nowrap",
-                  display: "inline-block",
-                }}
-              >
-                {tab.label}
-              </Link>
-            );
-          })}
-        </nav>
+          <TabLinkGroup
+            items={workshopTabs}
+            ariaLabel="Workshop navigation"
+            isActive={(tab) => isActive(tab.href)}
+          />
+        </div>
 
         <div
           style={{
@@ -88,35 +65,11 @@ export default function WorkshopTabsBar() {
             justifyContent: "flex-end",
           }}
         >
-          {workshopQuickActions.map((action) => {
-            const active = isActive(action.href);
-            return (
-              <Link
-                key={action.href}
-                href={action.href}
-                style={{
-                  minWidth: "140px",
-                  textAlign: "center",
-                  padding: "10px 18px",
-                  borderRadius: "999px",
-                  border: active ? "1px solid var(--primary)" : "1px solid var(--primary)",
-                  backgroundColor: active ? "var(--primary)" : "var(--surface)",
-                  color: active ? "var(--text-inverse)" : "var(--primary)",
-                  fontWeight: 600,
-                  fontSize: "0.9rem",
-                  textDecoration: "none",
-                  boxShadow: active
-                    ? "0 4px 12px rgba(var(--primary-rgb), 0.25)"
-                    : "0 2px 8px rgba(var(--primary-rgb), 0.12)",
-                  transition: "background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
-                  whiteSpace: "nowrap",
-                  display: "inline-block",
-                }}
-              >
-                {action.label}
-              </Link>
-            );
-          })}
+          <TabLinkGroup
+            items={workshopQuickActions}
+            ariaLabel="Workshop quick actions"
+            isActive={(tab) => isActive(tab.href)}
+          />
         </div>
       </div>
     </div>

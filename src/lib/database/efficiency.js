@@ -86,7 +86,7 @@ const normalizeEfficiencyEntry = (row = {}) => {
 export async function getEfficiencyTechnicians() {
   const { data, error } = await db
     .from("users")
-    .select("user_id, first_name, last_name, role")
+    .select("user_id, first_name, last_name, role, contracted_hours")
     .in("first_name", TECH_NAMES);
 
   if (error) throw error;
@@ -258,18 +258,29 @@ export async function getTechTarget(userId) {
  * Returns a Map of userId -> { monthlyTargetHours, weight }.
  */
 export async function getAllTechTargets(userIds) {
-  const { data, error } = await db
+  const [{ data, error }, { data: usersData, error: usersError }] = await Promise.all([
+    db
     .from("tech_efficiency_targets")
     .select("user_id, monthly_target_hours, weight")
-    .in("user_id", userIds);
+    .in("user_id", userIds),
+    db
+      .from("users")
+      .select("user_id, contracted_hours")
+      .in("user_id", userIds),
+  ]);
 
   if (error) throw error;
+  if (usersError) throw usersError;
 
   const map = new Map();
+  const contractedHoursMap = new Map(
+    (usersData || []).map((row) => [row.user_id, Number(row.contracted_hours ?? 40)])
+  );
   (data || []).forEach((row) => {
     map.set(row.user_id, {
       monthlyTargetHours: Number(row.monthly_target_hours),
       weight: Number(row.weight),
+      weeklyContractedHours: contractedHoursMap.get(row.user_id) ?? 40,
     });
   });
 
@@ -279,6 +290,7 @@ export async function getAllTechTargets(userIds) {
       map.set(uid, {
         monthlyTargetHours: DEFAULT_TARGET_HOURS,
         weight: DEFAULT_WEIGHT,
+        weeklyContractedHours: contractedHoursMap.get(uid) ?? 40,
       });
     }
   });
@@ -374,12 +386,131 @@ export async function getJobClockingAsEfficiency(userIds, year, month) {
   });
 }
 
+export async function getOvertimeAsEfficiency(userIds, year, month) {
+  const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
+  const endMonth = month === 12 ? 1 : month + 1;
+  const endYear = month === 12 ? year + 1 : year;
+  const endDate = `${endYear}-${String(endMonth).padStart(2, "0")}-01`;
+
+  const { data, error } = await db
+    .from("overtime_sessions")
+    .select("session_id, user_id, date, total_hours, notes, created_at, updated_at")
+    .in("user_id", userIds)
+    .gte("date", startDate)
+    .lt("date", endDate)
+    .order("date", { ascending: true });
+
+  if (error) {
+    console.error("Failed to fetch overtime_sessions for efficiency:", error.message);
+    return [];
+  }
+
+  return (data || []).map((row) => {
+    const overtimeDate = new Date(`${row.date}T00:00:00`);
+    const dayType = overtimeDate.getDay() === 6 ? "saturday" : "weekday";
+    return {
+      id: `ot_${row.session_id}`,
+      user_id: row.user_id,
+      date: row.date,
+      job_number: "OVERTIME",
+      job_description: "Profile overtime",
+      allocated_hours: null,
+      hours_spent: normalizeHourValue(row.total_hours),
+      notes: row.notes || "Overtime from profile",
+      day_type: dayType,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      _source: "overtime_sessions",
+    };
+  });
+}
+
 /**
  * Calculate totals for a single technician.
  */
-export function calculateTechTotals(entries, target) {
+const getTargetHoursForWindow = (monthlyTargetHours, options = {}) => {
+  const {
+    year,
+    month,
+    period = "month",
+    anchorDate = null,
+    referenceDate = new Date(),
+    weeklyContractedHours = null,
+  } = options;
+  if (!year || !month) {
+    return Number(monthlyTargetHours || 0);
+  }
+
+  const normalizedMonthlyTarget = Number(monthlyTargetHours || 0);
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const currentYear = referenceDate.getFullYear();
+  const currentMonth = referenceDate.getMonth() + 1;
+  const isFutureMonth = year > currentYear || (year === currentYear && month > currentMonth);
+  const isCurrentMonth = year === currentYear && month === currentMonth;
+  const dailyContractedHours =
+    weeklyContractedHours !== null && weeklyContractedHours !== undefined
+      ? Number(weeklyContractedHours || 0) / 5
+      : null;
+  const targetPerDay = daysInMonth > 0 ? normalizedMonthlyTarget / daysInMonth : 0;
+  const targetForEligibleDays = (eligibleDays) =>
+    dailyContractedHours !== null
+      ? Number((dailyContractedHours * eligibleDays).toFixed(2))
+      : Number((targetPerDay * eligibleDays).toFixed(2));
+
+  if (isFutureMonth) {
+    return 0;
+  }
+
+  if (period === "day") {
+    if (!(anchorDate instanceof Date) || Number.isNaN(anchorDate.getTime())) {
+      return targetForEligibleDays(1);
+    }
+    const isFutureDay = anchorDate > referenceDate;
+    if (isFutureDay) return 0;
+    const dayOfWeek = anchorDate.getDay();
+    if (dailyContractedHours !== null && (dayOfWeek === 0 || dayOfWeek === 6)) {
+      return 0;
+    }
+    return targetForEligibleDays(1);
+  }
+
+  if (period === "week") {
+    if (!(anchorDate instanceof Date) || Number.isNaN(anchorDate.getTime())) {
+      return targetForEligibleDays(5);
+    }
+    const weekStart = new Date(anchorDate);
+    const weekday = weekStart.getDay();
+    const offset = weekday === 0 ? -6 : 1 - weekday;
+    weekStart.setDate(weekStart.getDate() + offset);
+    weekStart.setHours(0, 0, 0, 0);
+
+    let eligibleDays = 0;
+    for (let index = 0; index < 7; index += 1) {
+      const day = new Date(weekStart);
+      day.setDate(weekStart.getDate() + index);
+      if (day.getFullYear() !== year || day.getMonth() + 1 !== month) continue;
+      if (isCurrentMonth && day > referenceDate) continue;
+      if (dailyContractedHours !== null && (day.getDay() === 0 || day.getDay() === 6)) continue;
+      eligibleDays += 1;
+    }
+    return targetForEligibleDays(eligibleDays);
+  }
+
+  const lastEligibleDate = isCurrentMonth
+    ? referenceDate.getDate()
+    : daysInMonth;
+  let eligibleDays = 0;
+  for (let dayNumber = 1; dayNumber <= lastEligibleDate; dayNumber += 1) {
+    const day = new Date(year, month - 1, dayNumber);
+    if (dailyContractedHours !== null && (day.getDay() === 0 || day.getDay() === 6)) continue;
+    eligibleDays += 1;
+  }
+  return targetForEligibleDays(eligibleDays);
+};
+
+export function calculateTechTotals(entries, target, options = {}) {
   const actualHours = entries.reduce((sum, e) => sum + Number(e.hours_spent || 0), 0);
-  const targetHours = target.monthlyTargetHours;
+  const targetHours = getTargetHoursForWindow(target.monthlyTargetHours, options);
   const difference = actualHours - targetHours;
   const efficiencyPct = targetHours > 0 ? (actualHours / targetHours) * 100 : 0;
 
