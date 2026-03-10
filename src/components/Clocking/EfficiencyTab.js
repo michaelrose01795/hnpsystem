@@ -20,8 +20,10 @@ import {
 import ModalPortal from "@/components/popups/ModalPortal";
 import { CalendarField } from "@/components/calendarAPI";
 import { DropdownField } from "@/components/dropdownAPI";
+import { SearchBar } from "@/components/searchBarAPI";
 import { TabGroup } from "@/components/tabAPI/TabGroup";
 import { supabase } from "@/lib/supabaseClient";
+import { useTheme } from "@/styles/themeProvider";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -60,6 +62,26 @@ const getAutoDayTypeFromDate = (value) => {
   return day === 0 || day === 6 ? "saturday" : "weekday";
 };
 
+const countWeekdaysInRange = (startDate, endDate) => {
+  if (!(startDate instanceof Date) || !(endDate instanceof Date)) return 0;
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return 0;
+  if (endDate < startDate) return 0;
+
+  let count = 0;
+  const cursor = new Date(startDate);
+  cursor.setHours(0, 0, 0, 0);
+  const finish = new Date(endDate);
+  finish.setHours(0, 0, 0, 0);
+
+  while (cursor <= finish) {
+    const day = cursor.getDay();
+    if (day !== 0 && day !== 6) count += 1;
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return count;
+};
+
 const roundHours = (value) => {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return 0;
@@ -67,6 +89,17 @@ const roundHours = (value) => {
 };
 
 const formatHours = (value) => roundHours(value).toFixed(2);
+const formatFilterHeadingDate = (date) =>
+  date instanceof Date && !Number.isNaN(date.getTime())
+    ? date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+    : "";
+
+const sortEntriesNewestFirst = (items) =>
+  [...(Array.isArray(items) ? items : [])].sort((a, b) => {
+    const dateCompare = String(b?.date || "").localeCompare(String(a?.date || ""));
+    if (dateCompare !== 0) return dateCompare;
+    return String(b?.created_at || "").localeCompare(String(a?.created_at || ""));
+  });
 
 const buildRequestOptions = (jobNumberValue, requestRows) => {
   const trimmed = jobNumberValue.trim();
@@ -121,6 +154,7 @@ export default function EfficiencyTab({
   filterUserId = null,
   editableUserId = null,
 }) {
+  const { accent } = useTheme();
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
@@ -270,6 +304,18 @@ export default function EfficiencyTab({
     if (parsed) return parsed;
     return new Date(selectedYear, selectedMonth - 1, 1);
   }, [filterDate, selectedMonth, selectedYear]);
+  const activeFilterHeading = useMemo(() => {
+    if (periodFilter === "day") {
+      return formatFilterHeadingDate(filterDateValue);
+    }
+    if (periodFilter === "week") {
+      const weekStart = getWeekStartMonday(filterDateValue);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      return `${formatFilterHeadingDate(weekStart)} - ${formatFilterHeadingDate(weekEnd)}`;
+    }
+    return `${MONTHS[selectedMonth - 1]} ${selectedYear}`;
+  }, [filterDateValue, periodFilter, selectedMonth, selectedYear]);
 
   const periodFilteredEntries = useMemo(() => {
     if (!Array.isArray(entries) || entries.length === 0) return [];
@@ -324,6 +370,9 @@ export default function EfficiencyTab({
     searchedEntries.forEach((e) => {
       if (!map.has(e.user_id)) map.set(e.user_id, []);
       map.get(e.user_id).push(e);
+    });
+    map.forEach((userEntries, userId) => {
+      map.set(userId, sortEntriesNewestFirst(userEntries));
     });
     return map;
   }, [searchedEntries]);
@@ -388,6 +437,22 @@ export default function EfficiencyTab({
   );
   const totalDifferenceColor = (value) =>
     Number(value) < -0.01 ? "var(--success)" : "var(--danger)";
+  const filteredSetStatusColor = totalDifferenceColor(filteredSetDifference);
+  const overallSectionStatusColor = totalDifferenceColor(overallTotals?.difference ?? 0);
+  const statusTone = (color) =>
+    color === "var(--success)"
+      ? {
+          background: "var(--success-surface)",
+          text: "var(--success)",
+          label: "var(--success)",
+          border: "rgba(34, 197, 94, 0.22)",
+        }
+      : {
+          background: "var(--danger-surface)",
+          text: "var(--danger)",
+          label: "var(--danger)",
+          border: "rgba(239, 68, 68, 0.22)",
+        };
   const formatSignedHours = (value) => {
     const numeric = Number(value || 0);
     if (numeric > 0) return `+${formatHours(numeric)}h`;
@@ -762,8 +827,8 @@ export default function EfficiencyTab({
   const statCardStyle = {
     borderRadius: "14px",
     padding: "16px",
-    background: "var(--danger-surface)",
-    border: "1px solid var(--surface-light)",
+    background: "var(--accent-purple-surface)",
+    border: "1px solid rgba(var(--accent-purple-rgb), 0.22)",
     display: "flex",
     flexDirection: "column",
     gap: "4px",
@@ -799,9 +864,56 @@ export default function EfficiencyTab({
   };
 
   const effColor = (pct) => {
-    if (pct >= 100) return "var(--success)";
-    if (pct >= 80) return "var(--primary)";
+    if (pct >= 80) return "var(--success)";
     return "var(--danger)";
+  };
+  const statusCardStyle = (color) => ({
+    ...statCardStyle,
+  });
+  const statusLabelStyle = (color) => ({
+    fontSize: "0.72rem",
+    textTransform: "uppercase",
+    letterSpacing: "0.08em",
+    color: statusTone(color).label,
+  });
+  const summaryValueStyle = (color) => ({
+    fontSize: "1.6rem",
+    color: statusTone(color).text,
+  });
+  const summarySplitTitleStyle = (color) => ({
+    fontSize: "0.62rem",
+    textTransform: "uppercase",
+    letterSpacing: "0.08em",
+    color: statusTone(color).label,
+    opacity: 0.85,
+  });
+  const currentMonthTargetHours = useMemo(() => {
+    const monthStart = new Date(selectedYear, selectedMonth - 1, 1);
+    const monthEnd = new Date(selectedYear, selectedMonth, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (monthStart > today) return 0;
+    const currentRangeEnd = monthEnd < today ? monthEnd : today;
+    return countWeekdaysInRange(monthStart, currentRangeEnd) * 8;
+  }, [selectedMonth, selectedYear]);
+  const fullMonthTargetHours = useMemo(() => {
+    const monthStart = new Date(selectedYear, selectedMonth - 1, 1);
+    const monthEnd = new Date(selectedYear, selectedMonth, 0);
+    return countWeekdaysInRange(monthStart, monthEnd) * 8;
+  }, [selectedMonth, selectedYear]);
+  const detailStatusLabelStyle = (color) => ({
+    fontSize: "0.7rem",
+    textTransform: "uppercase",
+    letterSpacing: "0.08em",
+    color: statusTone(color).label,
+  });
+  const popupErrorAccent = accent === "red" ? "var(--warning)" : "var(--danger)";
+  const popupErrorSurface = accent === "red" ? "var(--warning-surface)" : "var(--danger-surface)";
+  const popupErrorText = accent === "red" ? "var(--warning-dark)" : "var(--danger-dark)";
+  const popupFieldErrorStyle = {
+    border: `1px solid ${popupErrorAccent}`,
+    background: popupErrorSurface,
   };
 
   // Download PDF handler - generates a portrait B&W PDF with 31 rows
@@ -925,11 +1037,11 @@ export default function EfficiencyTab({
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+    <div className="efficiency-page" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       {/* Combined row: Tabs + Month Nav + Print */}
-      <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+      <div className="efficiency-topbar" style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
         {/* Tab bar */}
-        <div style={{ flex: "1 1 auto" }}>
+        <div className="efficiency-topbar-tabs" style={{ flex: "1 1 auto" }}>
           <TabGroup
             ariaLabel="Efficiency technicians"
             value={activeTab}
@@ -945,7 +1057,7 @@ export default function EfficiencyTab({
         </div>
 
         {/* Month navigation */}
-        <div style={{ ...monthNavStyle, flexShrink: 0 }}>
+        <div className="efficiency-month-nav" style={{ ...monthNavStyle, flexShrink: 0 }}>
           <button type="button" style={monthBtnStyle} onClick={handlePrevMonth}>
             &lsaquo; Prev
           </button>
@@ -958,7 +1070,7 @@ export default function EfficiencyTab({
         </div>
 
         {/* Action buttons */}
-        <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+        <div className="efficiency-topbar-actions" style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
           {activeTab !== "overall" && (
             <button
               type="button"
@@ -1001,7 +1113,7 @@ export default function EfficiencyTab({
         </div>
       </div>
 
-      <div style={{ ...sectionStyle, padding: "16px 18px", gap: "12px" }}>
+      <div className="efficiency-filter-shell" style={{ ...sectionStyle, padding: "16px 18px", gap: "12px" }}>
         <div
           style={{
             display: "flex",
@@ -1012,6 +1124,7 @@ export default function EfficiencyTab({
           }}
         >
           <div
+            className="efficiency-period-toggle"
             style={{
               display: "flex",
               gap: "8px",
@@ -1076,22 +1189,13 @@ export default function EfficiencyTab({
               />
             </div>
           )}
-          <div style={{ width: "min(220px, 100%)", flex: "0 1 220px" }}>
-            <input
-              type="search"
+          <div className="efficiency-search-wrap" style={{ width: "min(220px, 100%)", flex: "0 1 220px" }}>
+            <SearchBar
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
+              onClear={() => setSearchTerm("")}
               placeholder="Search job number, logged time, description..."
-              style={{
-                borderRadius: "999px",
-                border: "1px solid rgba(var(--primary-rgb), 0.22)",
-                background: "linear-gradient(180deg, rgba(var(--primary-rgb), 0.12), rgba(var(--primary-rgb), 0.06))",
-                padding: "10px 16px",
-                width: "100%",
-                fontSize: "0.86rem",
-                color: "var(--text-primary)",
-                boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb), 0.45)",
-              }}
+              ariaLabel="Search efficiency entries"
             />
           </div>
         </div>
@@ -1124,62 +1228,62 @@ export default function EfficiencyTab({
           {/* Overall stats */}
           <div style={sectionStyle}>
             <h3 style={{ margin: 0, fontSize: "1.15rem", color: "var(--primary-dark)" }}>
-              Overall Efficiency - {MONTHS[selectedMonth - 1]} {selectedYear}
+              Overall Efficiency - {activeFilterHeading}
             </h3>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px" }}>
+            <div className="efficiency-summary-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px" }}>
               <div style={statCardStyle}>
-                <span style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+                <span style={statusLabelStyle(overallSectionStatusColor)}>
                   Logged Total
                 </span>
-                <strong style={{ fontSize: "1.6rem", color: "var(--primary-dark)" }}>
+                <strong style={summaryValueStyle(overallSectionStatusColor)}>
                   {formatHours(totalsForFilteredSet.logged)}h
                 </strong>
               </div>
               <div style={statCardStyle}>
-                <span style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+                <span style={statusLabelStyle(overallSectionStatusColor)}>
                   Allocated Total
                 </span>
-                <strong style={{ fontSize: "1.6rem", color: "var(--primary-dark)" }}>
+                <strong style={summaryValueStyle(overallSectionStatusColor)}>
                   {formatHours(totalsForFilteredSet.allocated)}h
                 </strong>
               </div>
-              <div style={statCardStyle}>
-                <span style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+              <div style={statusCardStyle(overallSectionStatusColor)}>
+                <span style={statusLabelStyle(overallSectionStatusColor)}>
                   Total Difference
                 </span>
-                <strong style={{ fontSize: "1.6rem", color: totalDifferenceColor(filteredSetDifference) }}>
+                <strong style={summaryValueStyle(overallSectionStatusColor)}>
                   {formatSignedHours(filteredSetDifference)}
                 </strong>
               </div>
               <div style={statCardStyle}>
-                <span style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+                <span style={statusLabelStyle(overallSectionStatusColor)}>
                   Weighted Actual
                 </span>
-                <strong style={{ fontSize: "1.6rem", color: "var(--primary-dark)" }}>
+                <strong style={summaryValueStyle(overallSectionStatusColor)}>
                   {overallTotals.weightedActual}h
                 </strong>
               </div>
               <div style={statCardStyle}>
-                <span style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+                <span style={statusLabelStyle(overallSectionStatusColor)}>
                   Weighted Target
                 </span>
-                <strong style={{ fontSize: "1.6rem", color: "var(--primary-dark)" }}>
+                <strong style={summaryValueStyle(overallSectionStatusColor)}>
                   {overallTotals.weightedTarget}h
                 </strong>
               </div>
-              <div style={statCardStyle}>
-                <span style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+              <div style={statusCardStyle(overallSectionStatusColor)}>
+                <span style={statusLabelStyle(overallSectionStatusColor)}>
                   Difference
                 </span>
-                <strong style={{ fontSize: "1.6rem", color: overallTotals.difference >= 0 ? "var(--success)" : "var(--danger)" }}>
-                  {overallTotals.difference >= 0 ? "+" : ""}{overallTotals.difference}h
+                <strong style={summaryValueStyle(overallSectionStatusColor)}>
+                  {formatSignedHours(overallTotals.difference)}
                 </strong>
               </div>
-              <div style={statCardStyle}>
-                <span style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+              <div style={statusCardStyle(overallSectionStatusColor)}>
+                <span style={statusLabelStyle(overallSectionStatusColor)}>
                   Overall Efficiency
                 </span>
-                <strong style={{ fontSize: "1.6rem", color: effColor(overallTotals.efficiencyPct) }}>
+                <strong style={summaryValueStyle(overallSectionStatusColor)}>
                   {overallTotals.efficiencyPct}%
                 </strong>
               </div>
@@ -1191,7 +1295,7 @@ export default function EfficiencyTab({
             <h3 style={{ margin: 0, fontSize: "1.15rem", color: "var(--primary-dark)" }}>
               Technician Breakdown
             </h3>
-            <div style={tableWrapperStyle}>
+            <div className="efficiency-table-wrap" style={tableWrapperStyle}>
               <table style={tableStyle}>
                 <thead>
                   <tr>
@@ -1223,8 +1327,8 @@ export default function EfficiencyTab({
                         <td style={tdStyle}>{(weight * 100).toFixed(0)}%</td>
                         <td style={tdStyle}>{totals.actualHours}h</td>
                         <td style={tdStyle}>{totals.targetHours}h</td>
-                        <td style={{ ...tdStyle, color: totals.difference >= 0 ? "var(--success)" : "var(--danger)", fontWeight: 600 }}>
-                          {totals.difference >= 0 ? "+" : ""}{totals.difference}h
+                        <td style={{ ...tdStyle, color: totalDifferenceColor(totals.difference), fontWeight: 600 }}>
+                          {formatSignedHours(totals.difference)}
                         </td>
                         <td style={{ ...tdStyle, fontWeight: 700, color: effColor(totals.efficiencyPct) }}>
                           {totals.efficiencyPct}%
@@ -1246,46 +1350,73 @@ export default function EfficiencyTab({
           {/* Tech stats */}
           <div style={sectionStyle}>
             <h3 style={{ margin: 0, fontSize: "1.15rem", color: "var(--primary-dark)" }}>
-              {activeSummary.tech.first_name} - {MONTHS[selectedMonth - 1]} {selectedYear}
+              {activeSummary.tech.first_name} - {activeFilterHeading}
             </h3>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px" }}>
+            <div className="efficiency-summary-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px" }}>
               <div style={statCardStyle}>
-                <span style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+                <span style={statusLabelStyle(filteredSetStatusColor)}>
                   Logged Total
                 </span>
-                <strong style={{ fontSize: "1.6rem", color: "var(--primary-dark)" }}>
+                <strong style={summaryValueStyle(filteredSetStatusColor)}>
                   {formatHours(totalsForFilteredSet.logged)}h
                 </strong>
               </div>
               <div style={statCardStyle}>
-                <span style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+                <span style={statusLabelStyle(filteredSetStatusColor)}>
                   Allocated Total
                 </span>
-                <strong style={{ fontSize: "1.6rem", color: "var(--primary-dark)" }}>
+                <strong style={summaryValueStyle(filteredSetStatusColor)}>
                   {formatHours(totalsForFilteredSet.allocated)}h
                 </strong>
               </div>
-              <div style={statCardStyle}>
-                <span style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+              <div style={statusCardStyle(filteredSetStatusColor)}>
+                <span style={statusLabelStyle(filteredSetStatusColor)}>
                   Total Difference
                 </span>
-                <strong style={{ fontSize: "1.6rem", color: totalDifferenceColor(filteredSetDifference) }}>
+                <strong style={summaryValueStyle(filteredSetStatusColor)}>
                   {formatSignedHours(filteredSetDifference)}
                 </strong>
               </div>
-              <div style={statCardStyle}>
-                <span style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+              <div style={{ ...statCardStyle, gridColumn: "span 2", minWidth: "320px" }}>
+                <span style={statusLabelStyle(filteredSetStatusColor)}>
                   Monthly Target
                 </span>
-                <strong style={{ fontSize: "1.6rem", color: "var(--primary-dark)" }}>
-                  {activeSummary.totals.targetHours}h
-                </strong>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "12px",
+                    alignItems: "stretch",
+                    marginTop: "2px",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "4px",
+                      paddingRight: "12px",
+                      borderRight: "1px solid rgba(var(--accent-purple-rgb), 0.22)",
+                    }}
+                  >
+                    <span style={summarySplitTitleStyle(filteredSetStatusColor)}>Current Target</span>
+                    <strong style={summaryValueStyle(filteredSetStatusColor)}>
+                      {formatHours(currentMonthTargetHours)}h
+                    </strong>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px", paddingLeft: "2px" }}>
+                    <span style={summarySplitTitleStyle(filteredSetStatusColor)}>Monthly Target</span>
+                    <strong style={summaryValueStyle(filteredSetStatusColor)}>
+                      {formatHours(fullMonthTargetHours)}h
+                    </strong>
+                  </div>
+                </div>
               </div>
-              <div style={statCardStyle}>
-                <span style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+              <div style={statusCardStyle(filteredSetStatusColor)}>
+                <span style={statusLabelStyle(filteredSetStatusColor)}>
                   Efficiency
                 </span>
-                <strong style={{ fontSize: "1.6rem", color: effColor(activeSummary.totals.efficiencyPct) }}>
+                <strong style={summaryValueStyle(filteredSetStatusColor)}>
                   {activeSummary.totals.efficiencyPct}%
                 </strong>
               </div>
@@ -1297,7 +1428,7 @@ export default function EfficiencyTab({
             <h3 style={{ margin: 0, fontSize: "1.05rem", color: "var(--primary-dark)" }}>
               Entries
             </h3>
-            <div style={tableWrapperStyle}>
+            <div className="efficiency-table-wrap" style={tableWrapperStyle}>
               <div style={{ maxHeight: "520px", overflowY: "auto" }}>
                 <table style={tableStyle}>
                   <thead>
@@ -1597,19 +1728,19 @@ export default function EfficiencyTab({
                     {detailPopupSummary.totals.targetHours}h
                   </strong>
                 </div>
-                <div style={statCardStyle}>
-                  <span style={{ fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+                <div style={statusCardStyle(totalDifferenceColor(detailPopupSummary.totals.difference))}>
+                  <span style={detailStatusLabelStyle(totalDifferenceColor(detailPopupSummary.totals.difference))}>
                     Difference
                   </span>
-                  <strong style={{ fontSize: "1.3rem", color: detailPopupSummary.totals.difference >= 0 ? "var(--success)" : "var(--danger)" }}>
-                    {detailPopupSummary.totals.difference >= 0 ? "+" : ""}{detailPopupSummary.totals.difference}h
+                  <strong style={{ fontSize: "1.3rem", color: statusTone(totalDifferenceColor(detailPopupSummary.totals.difference)).text }}>
+                    {formatSignedHours(detailPopupSummary.totals.difference)}
                   </strong>
                 </div>
-                <div style={statCardStyle}>
-                  <span style={{ fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+                <div style={statusCardStyle(effColor(detailPopupSummary.totals.efficiencyPct))}>
+                  <span style={detailStatusLabelStyle(effColor(detailPopupSummary.totals.efficiencyPct))}>
                     Efficiency
                   </span>
-                  <strong style={{ fontSize: "1.3rem", color: effColor(detailPopupSummary.totals.efficiencyPct) }}>
+                  <strong style={{ fontSize: "1.3rem", color: statusTone(effColor(detailPopupSummary.totals.efficiencyPct)).text }}>
                     {detailPopupSummary.totals.efficiencyPct}%
                   </strong>
                 </div>
@@ -1705,6 +1836,7 @@ export default function EfficiencyTab({
             aria-modal="true"
           >
             <div
+              className="efficiency-job-modal"
               style={{
                 width: "min(580px, 100%)",
                 maxHeight: "90vh",
@@ -1722,7 +1854,7 @@ export default function EfficiencyTab({
               {/* Modal header */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
-                  <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+                  <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--grey-accent)" }}>
                     Job Entry
                   </p>
                   <h3 style={{ margin: "4px 0 0", fontSize: "1.3rem", color: "var(--primary-dark)" }}>
@@ -1739,7 +1871,7 @@ export default function EfficiencyTab({
                     borderRadius: "10px",
                     border: "1px solid var(--surface-light)",
                     background: "var(--surface)",
-                    color: "var(--info)",
+                    color: "var(--grey-accent)",
                     fontSize: "1.1rem",
                     fontWeight: 600,
                     cursor: "pointer",
@@ -1794,7 +1926,7 @@ export default function EfficiencyTab({
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label
                       htmlFor="efficiencyJobNumber"
-                      style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--grey-accent)" }}
+                      style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-primary)" }}
                     >
                       Job Number
                     </label>
@@ -1806,7 +1938,7 @@ export default function EfficiencyTab({
                         setFormJobNumber(e.target.value);
                         setFormError("");
                       }}
-                      placeholder="e.g., 00001 (optional)"
+                      placeholder="Job no. optional"
                       style={{
                         borderRadius: "16px",
                         border: "1px solid var(--surface-light)",
@@ -1829,12 +1961,12 @@ export default function EfficiencyTab({
                       }}
                     >
                       {jobLookupState === "matched"
-                        ? "Job recognised. Allocated hours/description loaded."
+                        ? "Job found."
                         : jobLookupState === "unmatched"
-                          ? "Job not recognised. Enter details manually."
+                          ? "Enter manually."
                         : jobLookupState === "loading"
-                            ? "Checking job number..."
-                            : "You can still save without a job number."}
+                            ? "Checking..."
+                            : "Job no. optional."}
                     </span>
                   </div>
                   <DropdownField
@@ -1851,7 +1983,7 @@ export default function EfficiencyTab({
                     }}
                     label="Job Clocking On"
                     options={requestOptions}
-                    placeholder={formJobNumber.trim() ? `Job: ${formJobNumber.trim()}` : "No job number"}
+                    placeholder={formJobNumber.trim() ? `Job: ${formJobNumber.trim()}` : "Select clocking"}
                     disabled={!formJobNumber.trim()}
                     className="efficiency-request-dropdown"
                   />
@@ -1862,18 +1994,21 @@ export default function EfficiencyTab({
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label
                       htmlFor="efficiencyAllocatedHours"
-                      style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--grey-accent)" }}
+                      style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-primary)" }}
                     >
                       Allocated Hours
                     </label>
                     <input
                       id="efficiencyAllocatedHours"
                       type="number"
-                      step="0.1"
+                      step="0.01"
                       min="0.1"
                       value={formAllocatedHours}
-                      onChange={(e) => setFormAllocatedHours(e.target.value)}
-                      placeholder="Auto from job/request or enter manually"
+                      onChange={(e) => {
+                        setFormAllocatedHours(e.target.value);
+                        setFormError("");
+                      }}
+                      placeholder="Allocated hours"
                       style={{
                         borderRadius: "16px",
                         border: "1px solid var(--surface-light)",
@@ -1882,24 +2017,28 @@ export default function EfficiencyTab({
                         fontSize: "0.95rem",
                         color: "var(--text-primary)",
                         outline: "none",
+                        ...(formError.toLowerCase().includes("allocated hours") ? popupFieldErrorStyle : {}),
                       }}
                     />
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label
                       htmlFor="efficiencyHours"
-                      style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--grey-accent)" }}
+                      style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-primary)" }}
                     >
                       Total Clocked
                     </label>
                     <input
                       id="efficiencyHours"
                       type="number"
-                      step="0.1"
+                      step="0.01"
                       min="0.1"
                       value={formHours}
-                      onChange={(e) => setFormHours(e.target.value)}
-                      placeholder="e.g. 0.1"
+                      onChange={(e) => {
+                        setFormHours(e.target.value);
+                        setFormError("");
+                      }}
+                      placeholder="Clocked hours"
                       required
                       style={{
                         borderRadius: "16px",
@@ -1909,6 +2048,7 @@ export default function EfficiencyTab({
                         fontSize: "0.95rem",
                         color: "var(--text-primary)",
                         outline: "none",
+                        ...(formError.toLowerCase().includes("total clocked") ? popupFieldErrorStyle : {}),
                       }}
                     />
                   </div>
@@ -1919,7 +2059,7 @@ export default function EfficiencyTab({
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label
                       htmlFor="efficiencyJobDescription"
-                      style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--grey-accent)" }}
+                      style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-primary)" }}
                     >
                       Job Description
                     </label>
@@ -1927,7 +2067,7 @@ export default function EfficiencyTab({
                       id="efficiencyJobDescription"
                       value={formDescription}
                       onChange={(e) => setFormDescription(e.target.value)}
-                      placeholder="Describe the job when no matching job number is found..."
+                      placeholder="Job description"
                       rows={2}
                       style={{
                         borderRadius: "16px",
@@ -1939,13 +2079,14 @@ export default function EfficiencyTab({
                         outline: "none",
                         resize: "vertical",
                         minHeight: "64px",
+                        overflowY: "auto",
                       }}
                     />
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label
                       htmlFor="efficiencyNotes"
-                      style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--grey-accent)" }}
+                      style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-primary)" }}
                     >
                       Notes
                     </label>
@@ -1953,7 +2094,7 @@ export default function EfficiencyTab({
                       id="efficiencyNotes"
                       value={formNotes}
                       onChange={(e) => setFormNotes(e.target.value)}
-                      placeholder="Optional notes..."
+                      placeholder="Notes"
                       rows={2}
                       style={{
                         borderRadius: "16px",
@@ -1965,6 +2106,7 @@ export default function EfficiencyTab({
                         outline: "none",
                         resize: "vertical",
                         minHeight: "64px",
+                        overflowY: "auto",
                       }}
                     />
                   </div>
@@ -2034,6 +2176,12 @@ export default function EfficiencyTab({
             </div>
           </div>
           <style jsx>{`
+            :global(.efficiency-page) {
+              min-width: 0;
+            }
+            :global(.efficiency-page .tab-api__item) {
+              min-height: 40px;
+            }
             :global([data-theme="dark"]) .efficiency-modal-overlay {
               background: rgba(10, 10, 10, 0.8);
             }
@@ -2055,6 +2203,21 @@ export default function EfficiencyTab({
             :global(.efficiency-request-dropdown .dropdown-api__value) {
               font-size: 14px;
               font-weight: 500;
+            }
+            :global(.efficiency-job-modal input::placeholder),
+            :global(.efficiency-job-modal textarea::placeholder) {
+              color: var(--grey-accent);
+              opacity: 1;
+            }
+            :global(.efficiency-job-modal .calendar-api__value.is-placeholder),
+            :global(.efficiency-job-modal .dropdown-api__value.is-placeholder),
+            :global(.efficiency-job-modal .calendar-api__helper),
+            :global(.efficiency-job-modal .dropdown-api__helper) {
+              color: var(--grey-accent) !important;
+            }
+            :global(.efficiency-job-modal .calendar-api__label),
+            :global(.efficiency-job-modal .dropdown-api__label) {
+              color: var(--text-primary) !important;
             }
             :global(.efficiency-request-dropdown.dropdown-api.is-open .dropdown-api__control),
             :global(.efficiency-request-dropdown .dropdown-api__control:focus-visible) {
@@ -2135,6 +2298,119 @@ export default function EfficiencyTab({
             :global(.efficiency-tech-filter-dropdown .dropdown-api__menu) {
               min-width: 100%;
               width: max-content;
+            }
+            @media (max-width: 430px) {
+              :global(.efficiency-page) {
+                gap: 12px !important;
+              }
+              :global(.efficiency-page h3) {
+                font-size: 1rem !important;
+              }
+              :global(.efficiency-topbar) {
+                gap: 8px !important;
+                align-items: stretch !important;
+              }
+              :global(.efficiency-topbar-tabs),
+              :global(.efficiency-month-nav),
+              :global(.efficiency-topbar-actions) {
+                width: 100%;
+              }
+              :global(.efficiency-month-nav) {
+                justify-content: space-between;
+                gap: 8px !important;
+              }
+              :global(.efficiency-month-nav button),
+              :global(.efficiency-topbar-actions button) {
+                font-size: 0.76rem !important;
+                padding: 8px 12px !important;
+                border-radius: 10px !important;
+              }
+              :global(.efficiency-topbar-actions) {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr;
+              }
+              :global(.efficiency-filter-shell) {
+                padding: 12px !important;
+                gap: 10px !important;
+              }
+              :global(.efficiency-filter-shell > div:first-child) {
+                gap: 8px !important;
+                justify-content: flex-start !important;
+              }
+              :global(.efficiency-period-toggle) {
+                width: 100%;
+                justify-content: space-between;
+              }
+              :global(.efficiency-period-toggle button) {
+                flex: 1 1 0;
+                font-size: 0.75rem !important;
+                padding: 8px 10px !important;
+              }
+              :global(.efficiency-search-wrap) {
+                flex-basis: 100% !important;
+                width: 100% !important;
+              }
+              :global(.efficiency-search-wrap input) {
+                font-size: 0.8rem !important;
+                padding: 9px 13px !important;
+              }
+              :global(.efficiency-filter-calendar .calendar-api__control),
+              :global(.efficiency-tech-filter-dropdown .dropdown-api__control) {
+                font-size: 0.8rem !important;
+                padding: 8px 11px !important;
+              }
+              :global(.efficiency-summary-grid) {
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                gap: 10px !important;
+              }
+              :global(.efficiency-summary-grid > div) {
+                padding: 12px !important;
+                border-radius: 12px !important;
+                min-width: 0 !important;
+              }
+              :global(.efficiency-summary-grid span) {
+                font-size: 0.62rem !important;
+              }
+              :global(.efficiency-summary-grid strong) {
+                font-size: 1.1rem !important;
+              }
+              :global(.efficiency-summary-grid > div[style*="grid-column: span 2"]) {
+                grid-column: 1 / -1 !important;
+                min-width: 0 !important;
+              }
+              :global(.efficiency-table-wrap) {
+                overflow-x: auto !important;
+              }
+              :global(.efficiency-table-wrap table) {
+                min-width: 720px;
+                font-size: 0.78rem !important;
+              }
+              :global(.efficiency-table-wrap th),
+              :global(.efficiency-table-wrap td) {
+                padding: 9px 10px !important;
+              }
+              :global(.efficiency-job-modal) {
+                width: min(100%, 96vw) !important;
+                padding: 20px 18px !important;
+                gap: 14px !important;
+              }
+              :global(.efficiency-job-modal form) {
+                gap: 14px !important;
+              }
+              :global(.efficiency-job-modal form > div[style*="grid-template-columns: 1fr 1fr"]) {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+              }
+              :global(.efficiency-job-modal input),
+              :global(.efficiency-job-modal textarea),
+              :global(.efficiency-job-modal .dropdown-api__control),
+              :global(.efficiency-job-modal .calendar-api__control) {
+                font-size: 0.9rem !important;
+                padding: 10px 12px !important;
+              }
+              :global(.efficiency-job-modal button) {
+                font-size: 0.82rem !important;
+              }
             }
           `}</style>
         </ModalPortal>

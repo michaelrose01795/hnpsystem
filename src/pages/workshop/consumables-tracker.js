@@ -11,6 +11,7 @@ import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { useTheme } from "@/styles/themeProvider";
 import StockCheckPopup from "@/components/Consumables/StockCheckPopup";
 import { CalendarField } from "@/components/calendarAPI";
+import { SearchBar } from "@/components/searchBarAPI";
 
 const containerStyle = {
   flex: 1,
@@ -1739,20 +1740,13 @@ function ConsumablesTrackerPage() {
                     maxWidth: "360px",
                   }}
                 >
-                  <input
-                    type="search"
+                  <SearchBar
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
+                    onClear={() => setSearchQuery("")}
                     placeholder="Search by item, date, cost, supplier…"
                     style={{
                       width: "100%",
-                      padding: "10px 14px",
-                      borderRadius: "10px",
-                      border: "1px solid var(--search-surface-muted)",
-                      background: "var(--search-surface)",
-                      color: "var(--search-text)",
-                      fontSize: "0.9rem",
-                      outline: "none",
                     }}
                   />
                 </div>
@@ -2041,4 +2035,3 @@ function ConsumablesTrackerPage() {
 }
 
 export default ConsumablesTrackerPage;
-

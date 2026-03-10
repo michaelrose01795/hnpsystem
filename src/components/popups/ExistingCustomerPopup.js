@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { searchCustomers } from "@/lib/database/customers"; // ✅ use shared function
 import PopupModal from "@/components/popups/popupStyleApi";
+import { SearchBar } from "@/components/searchBarAPI";
 
 // ExistingCustomerPopup component
 export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }) {
@@ -68,19 +69,14 @@ export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }
   return (
     <PopupModal onClose={onClose} cardStyle={{ maxWidth: "650px" }} ariaLabel="Existing customer">
       <div style={{ padding: "32px" }}>
-        <input
-          type="search"
+        <SearchBar
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          onClear={() => setSearch("")}
           placeholder="Search by name, email, or mobile"
           style={{
             width: "100%",
             marginBottom: "16px",
-            padding: "10px 12px",
-            borderRadius: "10px",
-            border: "1px solid var(--surface-light)",
-            backgroundColor: "var(--surface)",
-            color: "var(--text-primary)",
           }}
         />
 

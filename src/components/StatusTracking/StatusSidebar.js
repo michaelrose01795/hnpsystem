@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import JobProgressTracker from '@/components/StatusTracking/JobProgressTracker';
+import { SearchBar } from '@/components/searchBarAPI';
 // ⚠️ Mock data found — replacing with Supabase query
 // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
 
@@ -372,22 +373,12 @@ export default function StatusSidebar({
           {!hasUrlJobId && !jobId && (
             <form onSubmit={handleSearch} style={{ marginTop: '12px' }}>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <input
-                  type="search"
+                <SearchBar
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
+                  onClear={() => setSearchInput('')}
                   placeholder="Enter job number..."
-                  style={{
-                    flex: 1,
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    border: '2px solid var(--search-surface-muted)',
-                    fontSize: '14px',
-                    color: 'var(--search-text)',
-                    outline: 'none',
-                    backgroundColor: 'var(--search-surface)',
-                    boxShadow: 'none'
-                  }}
+                  style={{ flex: 1 }}
                 />
                 <button
                   type="submit"

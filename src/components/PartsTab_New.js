@@ -6,6 +6,7 @@ import CalendarField from "@/components/calendarAPI/CalendarField";
 import TimePickerField from "@/components/timePickerAPI/TimePickerField";
 import { DropdownField } from "@/components/dropdownAPI";
 import ModalPortal from "@/components/popups/ModalPortal";
+import { SearchBar } from "@/components/searchBarAPI";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
 
 // Helper functions (keep existing)
@@ -1799,8 +1800,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             Search and add parts to this job
           </p>
         </div>
-        <input
-          type="search"
+        <SearchBar
           value={catalogSearch}
           disabled={!canAllocateParts}
           onChange={(e) => {
@@ -1808,15 +1808,15 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             setCatalogSuccessMessage("");
             setCatalogSubmitError("");
           }}
+          onClear={() => {
+            setCatalogSearch("");
+            setCatalogSuccessMessage("");
+            setCatalogSubmitError("");
+          }}
           placeholder={canAllocateParts ? "Search by part number or description..." : "Search disabled"}
           style={{
             width: "100%",
-            padding: "10px 12px",
-            borderRadius: "8px",
-            border: "1px solid var(--surface-light)",
-            fontSize: "14px",
-            backgroundColor: canAllocateParts ? "var(--surface)" : "var(--info-surface)",
-            color: "var(--info-dark)",
+            opacity: canAllocateParts ? 1 : 0.7,
           }}
         />
         {catalogLoading && <div style={{ fontSize: "13px", color: "var(--info)", marginTop: "8px" }}>Searching...</div>}

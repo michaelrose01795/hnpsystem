@@ -11,6 +11,7 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { CalendarField } from "@/components/calendarAPI";
 import { DropdownField } from "@/components/dropdownAPI";
+import { SearchBar } from "@/components/searchBarAPI";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
 import { addMonths } from "date-fns";
 
@@ -484,18 +485,11 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
           </button>
         </div>
 
-        <input
-          type="search"
+        <SearchBar
           value={query}
           onChange={(event) => setQuery(event.target.value)}
+          onClear={() => setQuery("")}
           placeholder={type === "car" ? "Search bays or overflow" : "Search key safes, drawers"}
-          style={{
-            padding: "10px 14px",
-            borderRadius: "12px",
-            border: "1px solid var(--search-surface-muted)",
-            backgroundColor: "var(--search-surface)",
-            color: "var(--search-text)",
-          }}
         />
 
         <div style={{ maxHeight: "320px", overflow: "auto", display: "flex", flexDirection: "column", gap: "10px" }}>

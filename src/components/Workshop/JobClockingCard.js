@@ -13,6 +13,7 @@ import {
 } from "@/lib/database/jobClocking"; // Import clocking functions
 import { getAllJobs } from "@/lib/database/jobs"; // Import jobs function
 import { useConfirmation } from "@/context/ConfirmationContext";
+import { SearchBar } from "@/components/searchBarAPI";
 
 export default function JobClockingCard() {
   const { user, setStatus, refreshCurrentJob, setCurrentJob, dbUserId } = useUser(); // Get logged-in user and helpers
@@ -547,24 +548,15 @@ export default function JobClockingCard() {
         {showAvailableJobs && (
           <div>
             {/* Search Bar */}
-            <input
-              type="search"
-              placeholder="🔍 Search jobs by number, reg, customer, or vehicle..."
+            <SearchBar
+              placeholder="Search jobs by number, reg, customer, or vehicle..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onClear={() => setSearchTerm("")}
               style={{
                 width: "100%",
-                padding: "12px 16px",
                 marginBottom: "16px",
-                borderRadius: "8px",
-                border: "1px solid var(--search-surface-muted)",
-                fontSize: "14px",
-                outline: "none",
-                backgroundColor: "var(--search-surface)",
-                color: "var(--search-text)"
               }}
-              onFocus={(e) => e.target.style.borderColor = "var(--primary)"}
-              onBlur={(e) => e.target.style.borderColor = "var(--search-surface-muted)"}
             />
 
             {/* Jobs Table */}

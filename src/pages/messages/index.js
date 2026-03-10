@@ -16,6 +16,7 @@ import { appShellTheme } from "@/styles/appTheme";
 import useMessagesApi from "@/hooks/api/useMessagesApi";
 import { useTheme } from "@/styles/themeProvider";
 import ModalPortal from "@/components/popups/ModalPortal";
+import { SearchBar } from "@/components/searchBarAPI";
 
 const palette = appShellTheme.palette;
 const radii = appShellTheme.radii;
@@ -2023,25 +2024,15 @@ function MessagesPage() {
                 </p>
               )}
 
-              <input
-                type="search"
+              <SearchBar
                 placeholder="Search threads..."
                 value={threadSearchTerm}
                 onChange={(event) => setThreadSearchTerm(event.target.value)}
+                onClear={() => setThreadSearchTerm("")}
                 style={{
                   width: "100%",
                   marginTop: "10px",
                   marginBottom: "10px",
-                  padding: "12px 14px 12px 40px",
-                  borderRadius: radii.pill,
-                  border: "1px solid var(--search-surface-muted)",
-                  backgroundColor: "var(--search-surface)",
-                  color: "var(--search-text)",
-                  backgroundImage:
-                    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E\")",
-                  backgroundRepeat: "no-repeat",
-                  backgroundPosition: "14px center",
-                  backgroundSize: "16px 16px",
                 }}
               />
 
@@ -2683,18 +2674,13 @@ function MessagesPage() {
                 <strong style={{ fontSize: "0.85rem", color: "var(--search-text)" }}>
                   Manage group members
                 </strong>
-                <input
-                  type="search"
+                <SearchBar
                   value={groupSearchTerm}
                   onChange={(event) => setGroupSearchTerm(event.target.value)}
+                  onClear={() => setGroupSearchTerm("")}
                   placeholder="Search colleagues to add (min 2 letters)…"
                   style={{
                     width: "100%",
-                    padding: "10px 12px",
-                    borderRadius: radii.lg,
-                    border: "1px solid var(--search-surface-muted)",
-                    backgroundColor: "var(--search-surface)",
-                    color: "var(--search-text)",
                   }}
                 />
                 {groupSearchTerm.trim().length > 0 && groupSearchTerm.trim().length < 2 && (
@@ -2862,18 +2848,13 @@ function MessagesPage() {
               </ComposeToggleButton>
             </div>
 
-            <input
-              type="search"
+            <SearchBar
               placeholder="Search everyone..."
               value={directorySearch}
               onChange={(event) => setDirectorySearch(event.target.value)}
+              onClear={() => setDirectorySearch("")}
               style={{
                 width: "100%",
-                padding: "12px 14px",
-                borderRadius: radii.lg,
-                border: "1px solid var(--search-surface-muted)",
-                backgroundColor: "var(--search-surface)",
-                color: "var(--search-text)",
               }}
             />
 

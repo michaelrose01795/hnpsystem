@@ -7,6 +7,7 @@ import CompanyAccountForm from "@/components/companyAccounts/CompanyAccountForm"
 import AccountTable from "@/components/accounts/AccountTable";
 import { useUser } from "@/context/UserContext";
 import { deriveAccountPermissions } from "@/lib/accounts/permissions";
+import { SearchBar } from "@/components/searchBarAPI";
 
 const ALLOWED_ROLES = ["ADMIN", "OWNER", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER"];
 
@@ -160,16 +161,13 @@ export default function CompanyAccountsIndexPage() {
   const renderLedgerTab = () => (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
       <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
-        <input
-          type="search"
+        <SearchBar
           placeholder="Search ledger accounts"
           value={ledgerSearch}
           onChange={(event) => setLedgerSearch(event.target.value)}
+          onClear={() => setLedgerSearch("")}
           style={{
             flex: "1 1 260px",
-            padding: "10px 14px",
-            borderRadius: "999px",
-            border: "1px solid var(--surface-light)",
           }}
         />
       </div>
@@ -387,16 +385,13 @@ export default function CompanyAccountsIndexPage() {
               ) : (
                 <>
                   <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
-                    <input
-                      type="search"
+                    <SearchBar
                       placeholder="Search companies A-Z"
                       value={search}
                       onChange={(event) => setSearch(event.target.value)}
+                      onClear={() => setSearch("")}
                       style={{
                         flex: "1 1 260px",
-                        padding: "10px 14px",
-                        borderRadius: "999px",
-                        border: "1px solid var(--surface-light)",
                       }}
                     />
                     {permissions.canCreateAccount && (

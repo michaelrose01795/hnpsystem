@@ -1,5 +1,6 @@
 // file location: src/components/VHC/TyresSection.js
 import React, { useEffect, useMemo, useState } from "react"; // Import React hooks for component logic
+import { SearchBar } from "@/components/searchBarAPI";
 import themeConfig from "@/styles/appTheme"; // Import shared theme for consistent styling
 import { searchTyres } from "@/lib/tyre/tyreAPI"; // Import placeholder tyre search helper
 
@@ -83,8 +84,7 @@ export default function TyresSection({
         <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: palette.textMuted, marginBottom: "6px" }}>
           Search Tyre
         </label>
-        <input
-          type="search"
+        <SearchBar
           value={query}
           placeholder="Search by make, size, load, or speed"
           onChange={(event) => setQuery(event.target.value)}
@@ -92,17 +92,7 @@ export default function TyresSection({
           onBlur={() => {
             setTimeout(() => setIsFocused(false), 150);
           }}
-          style={{
-            width: "100%",
-            padding: "12px 14px",
-            borderRadius: "12px",
-            border: "1px solid var(--search-surface-muted)",
-            backgroundColor: "var(--search-surface)",
-            fontSize: "14px",
-            color: "var(--search-text)",
-            boxShadow: "none",
-            transition: "border-color 0.2s ease",
-          }}
+          onClear={() => setQuery("")}
         />
         {isFocused && results.length > 0 && (
           <div

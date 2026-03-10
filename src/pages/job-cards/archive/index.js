@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Layout from "@/components/Layout";
+import { SearchBar } from "@/components/searchBarAPI";
 
 const STATUS_BADGES = {
   Complete: { bg: "var(--success-surface)", color: "var(--info-dark)" },
@@ -63,19 +64,13 @@ export default function ArchivedJobsPage() {
             color: "var(--search-text)",
           }}
         >
-          <input
-            type="search"
+          <SearchBar
             value={query}
             onChange={(event) => setQuery(event.target.value)}
+            onClear={() => setQuery("")}
             placeholder="Search by reg, job number, or customer name"
             style={{
               flex: "1 1 260px",
-              padding: "12px 16px",
-              border: "1px solid var(--search-surface-muted)",
-              borderRadius: "10px",
-              fontSize: "1rem",
-              background: "var(--search-surface)",
-              color: "var(--search-text)",
             }}
           />
           <button

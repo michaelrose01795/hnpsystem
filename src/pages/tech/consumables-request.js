@@ -8,6 +8,7 @@ import Layout from "@/components/Layout"; // Import global layout wrapper
 import { useUser } from "@/context/UserContext"; // Import user context for role-based permissions
 import Link from "next/link"; // Import Next.js Link for navigation buttons
 import StockCheckPopup from "@/components/Consumables/StockCheckPopup";
+import { SearchBar } from "@/components/searchBarAPI";
 
 const pageWrapperStyle = {
   padding: "24px", // Provide comfortable outer spacing
@@ -461,17 +462,13 @@ const TechConsumableRequestPage = () => {
         <div style={{ ...cardStyle }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
             <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-dark)" }}>Requests</h2>
-            <input
-              type="search"
+            <SearchBar
               placeholder="Search requests"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
+              onClear={() => setSearchTerm("")}
               style={{
-                ...inputStyle,
                 maxWidth: "240px",
-                backgroundColor: "var(--search-surface)",
-                border: "1px solid var(--search-surface-muted)",
-                color: "var(--search-text)",
               }}
             />
           </div>

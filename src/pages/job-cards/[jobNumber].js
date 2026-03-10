@@ -37,6 +37,7 @@ import PartsTabNew from "@/components/PartsTab_New";
 import NotesTabNew from "@/components/NotesTab_New";
 import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
 import WriteUpForm from "@/components/JobCards/WriteUpForm";
+import { SearchBar } from "@/components/searchBarAPI";
 import { DropdownField } from "@/components/dropdownAPI";
 import { CalendarField } from "@/components/calendarAPI";
 import { TimePickerField } from "@/components/timePickerAPI";
@@ -6550,8 +6551,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
             <span style={{ fontSize: "0.75rem", color: "var(--info)" }}>{allocationDisabledReason}</span>
           )}
         </div>
-        <input
-          type="search"
+        <SearchBar
           value={catalogSearch}
           disabled={!canAllocateParts}
           onChange={(event) => {
@@ -6559,15 +6559,15 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
             setCatalogSuccessMessage("");
             setCatalogSubmitError("");
           }}
+          onClear={() => {
+            setCatalogSearch("");
+            setCatalogSuccessMessage("");
+            setCatalogSubmitError("");
+          }}
           placeholder={canAllocateParts ? "Search by part number or description" : "Stock allocation disabled"}
           style={{
             width: "100%",
-            padding: "12px",
-            borderRadius: "10px",
-            border: "1px solid var(--surface-light)",
-            fontSize: "0.95rem",
-            backgroundColor: canAllocateParts ? "var(--surface)" : "var(--info-surface)",
-            color: "var(--info-dark)",
+            opacity: canAllocateParts ? 1 : 0.7,
           }}
         />
         {catalogLoading && (

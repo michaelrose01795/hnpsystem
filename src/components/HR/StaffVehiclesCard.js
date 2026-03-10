@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { SectionCard } from "@/components/HR/MetricCard";
 import { DropdownField } from "@/components/dropdownAPI";
+import { SearchBar } from "@/components/searchBarAPI";
 
 const initialVehicleForm = {
   make: "",
@@ -807,8 +808,7 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
               <label style={historyLabelStyle}>
                 Job Number
                 <div style={{ marginTop: "6px", display: "flex", gap: "8px" }}>
-                  <input
-                    type="search"
+                  <SearchBar
                     value={historyForms[selectedHistoryVehicleId]?.jobNumber ?? ""}
                     onChange={(event) =>
                       handleHistoryFieldChange(selectedHistoryVehicleId, "jobNumber", event.target.value)
@@ -822,6 +822,7 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
                         fetchJobSummary(selectedHistoryVehicleId, event.currentTarget.value.trim());
                       }
                     }}
+                    onClear={() => handleHistoryFieldChange(selectedHistoryVehicleId, "jobNumber", "")}
                     style={historyInputStyle}
                     placeholder="Search job number"
                   />
@@ -1130,4 +1131,3 @@ function VehicleInfo({ label, value }) {
     </div>
   );
 }
-

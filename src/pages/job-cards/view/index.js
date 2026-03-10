@@ -11,6 +11,7 @@ import { getAllJobs, updateJobStatus } from "@/lib/database/jobs"; // import dat
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { useUser } from "@/context/UserContext";
 import { DropdownField } from "@/components/dropdownAPI";
+import { SearchBar } from "@/components/searchBarAPI";
 import { deriveJobTypeDisplay, formatDetectedJobTypeLabel } from "@/lib/jobType/display";
 
 const TODAY_STATUSES = ["Booked", "Checked In", "In Progress", "Invoiced", "Complete"];
@@ -723,20 +724,15 @@ export default function ViewJobCards() {
                   color: "var(--search-text)",
                 }}
               >
-                <input
-                  type="search"
+                <SearchBar
                   placeholder={searchPlaceholder}
                   value={searchValues[activeTab]}
                   onChange={(event) =>
                     handleSearchValueChange(activeTab, event.target.value)
                   }
+                  onClear={() => handleSearchValueChange(activeTab, "")}
                   style={{
                     flex: 1,
-                    border: "none",
-                    outline: "none",
-                    background: "transparent",
-                    fontSize: "14px",
-                    color: "var(--search-text)",
                   }}
                 />
               </div>

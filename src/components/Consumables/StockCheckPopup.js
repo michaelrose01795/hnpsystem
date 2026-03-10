@@ -1,6 +1,7 @@
 // file location: src/components/Consumables/StockCheckPopup.js
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import ModalPortal from "@/components/popups/ModalPortal";
+import { SearchBar } from "@/components/searchBarAPI";
 
 const consumableNameCollator = new Intl.Collator(undefined, {
   numeric: true,
@@ -794,19 +795,14 @@ function StockCheckPopup({
                 </span>
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
-                <input
-                  type="search"
+                <SearchBar
                   value={stockSearch}
                   onChange={(event) => setStockSearch(event.target.value)}
+                  onClear={() => setStockSearch("")}
                   placeholder="Search consumables"
                   style={{
                     flex: "1 1 260px",
                     minWidth: "240px",
-                    padding: "10px 14px",
-                    borderRadius: "12px",
-                    border: "1px solid var(--surface-light)",
-                    background: "var(--search-surface, var(--surface))",
-                    color: "var(--primary-dark)",
                   }}
                 />
                 <button

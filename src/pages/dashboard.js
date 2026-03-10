@@ -9,6 +9,7 @@ import WorkshopManagerDashboard from "@/components/dashboards/WorkshopManagerDas
 import ServiceManagerDashboard from "@/components/dashboards/ServiceManagerDashboard"; // import service manager dashboard
 import AfterSalesManagerDashboard from "@/components/dashboards/AfterSalesManagerDashboard"; // import after sales manager dashboard
 import RetailManagersDashboard from "@/components/dashboards/RetailManagersDashboard"; // import retail managers dashboard component
+import { SearchBar } from "@/components/searchBarAPI";
 import { roleCategories } from "@/config/users"; // import role category definitions
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 
@@ -229,20 +230,14 @@ export default function Dashboard() {
             }}
           >
             <h2 style={{ marginBottom: "16px", color: "var(--primary)" }}>Search Jobs</h2>
-            <input
-              type="search"
+            <SearchBar
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onClear={() => setSearchTerm("")}
               placeholder="Search by job number, reg, or customer"
               style={{
                 width: "100%",
-                padding: "10px 12px",
-                borderRadius: "6px",
-                border: "1px solid var(--search-surface-muted)",
                 marginBottom: "12px",
-                outline: "none",
-                backgroundColor: "var(--search-surface)",
-                color: "var(--search-text)",
               }}
             />
             <button

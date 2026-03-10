@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { getAllJobs, updateJob } from "@/lib/database/jobs";
+import { SearchBar } from "@/components/searchBarAPI";
 
 const WASH_KEYWORDS = ["wash", "valet", "clean"];
 
@@ -508,21 +509,14 @@ export default function ValetDashboard() {
               alignItems: "center",
             }}
           >
-            <input
-              type="search"
+            <SearchBar
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
+              onClear={() => setSearchTerm("")}
               placeholder="Search by reg, job number, customer, or vehicle"
               style={{
                 flex: 1,
                 minWidth: "240px",
-                padding: "10px 14px",
-                borderRadius: "8px",
-                border: "1px solid var(--search-surface-muted)",
-                fontSize: "14px",
-                outline: "none",
-                backgroundColor: "var(--search-surface)",
-                color: "var(--search-text)",
               }}
             />
             <span style={{ fontSize: "14px", color: "var(--grey-accent)" }}>

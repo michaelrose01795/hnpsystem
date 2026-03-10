@@ -510,12 +510,14 @@ const getTargetHoursForWindow = (monthlyTargetHours, options = {}) => {
 
 export function calculateTechTotals(entries, target, options = {}) {
   const actualHours = entries.reduce((sum, e) => sum + Number(e.hours_spent || 0), 0);
+  const allocatedHours = entries.reduce((sum, e) => sum + Number(e.allocated_hours || 0), 0);
   const targetHours = getTargetHoursForWindow(target.monthlyTargetHours, options);
   const difference = actualHours - targetHours;
-  const efficiencyPct = targetHours > 0 ? (actualHours / targetHours) * 100 : 0;
+  const efficiencyPct = actualHours > 0 ? (allocatedHours / actualHours) * 100 : 0;
 
   return {
     actualHours: Math.round(actualHours * 100) / 100,
+    allocatedHours: Math.round(allocatedHours * 100) / 100,
     targetHours,
     difference: Math.round(difference * 100) / 100,
     efficiencyPct: Math.round(efficiencyPct * 10) / 10,
@@ -528,21 +530,27 @@ export function calculateTechTotals(entries, target, options = {}) {
 export function calculateOverallTotals(techSummaries) {
   let weightedActual = 0;
   let weightedTarget = 0;
+  let totalActual = 0;
+  let totalAllocated = 0;
 
   techSummaries.forEach(({ totals, weight }) => {
     weightedActual += totals.actualHours * weight;
     weightedTarget += totals.targetHours * weight;
+    totalActual += totals.actualHours;
+    totalAllocated += totals.allocatedHours || 0;
   });
 
   const difference = Math.round((weightedActual - weightedTarget) * 100) / 100;
   const efficiencyPct =
-    weightedTarget > 0
-      ? Math.round(((weightedActual / weightedTarget) * 100) * 10) / 10
+    totalActual > 0
+      ? Math.round(((totalAllocated / totalActual) * 100) * 10) / 10
       : 0;
 
   return {
     weightedActual: Math.round(weightedActual * 100) / 100,
     weightedTarget: Math.round(weightedTarget * 100) / 100,
+    totalActual: Math.round(totalActual * 100) / 100,
+    totalAllocated: Math.round(totalAllocated * 100) / 100,
     difference,
     efficiencyPct,
   };

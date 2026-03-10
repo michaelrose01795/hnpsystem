@@ -10,6 +10,7 @@ import { ACCOUNT_STATUSES, ACCOUNT_TYPES } from "@/config/accounts";
 import { deriveAccountPermissions } from "@/lib/accounts/permissions";
 import { exportToCsv } from "@/utils/exportUtils";
 import { CalendarField } from "@/components/calendarAPI";
+import { SearchBar } from "@/components/searchBarAPI";
 const ALLOWED_ROLES = [
   "ADMIN",
   "OWNER",
@@ -99,18 +100,14 @@ export default function AccountsListPage() {
         background: "var(--surface)",
       }}
     >
-      <input
-        type="search"
+      <SearchBar
         name="search"
         placeholder="Search account, customer, or billing"
         value={filters.search}
         onChange={(event) => setFilters((prev) => ({ ...prev, search: event.target.value }))}
+        onClear={() => setFilters((prev) => ({ ...prev, search: "" }))}
         style={{
           flex: "1 1 240px",
-          padding: "10px 14px",
-          borderRadius: "999px",
-          border: "1px solid var(--surface-light)",
-          background: "var(--surface-light)",
         }}
       />
       <select

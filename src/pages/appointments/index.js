@@ -6,6 +6,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react"; // Imp
 import Layout from "@/components/Layout"; // Main layout wrapper
 import Popup from "@/components/popups/Popup"; // Reusable popup modal
 import { DropdownField } from "@/components/dropdownAPI";
+import { SearchBar } from "@/components/searchBarAPI";
 import { useRouter } from "next/router"; // For reading query params
 import { useUser } from "@/context/UserContext"; // Access current user for check-in attribution
 import { useNextAction } from "@/context/NextActionContext"; // Trigger follow-up actions after check-in
@@ -1291,24 +1292,12 @@ export default function Appointments() {
           }}
         >
           <div style={{ flex: "1 1 50%" }}>
-            <input
-              type="search"
+            <SearchBar
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onClear={() => setSearchQuery("")}
               placeholder="Search by Job #, Name, Reg, or Vehicle..."
               disabled={isLoading}
-              style={{
-                width: "100%",
-                padding: "10px 16px",
-                borderRadius: "8px",
-                border: "1px solid var(--search-surface-muted)",
-                fontSize: "14px",
-                outline: "none",
-                backgroundColor: "var(--search-surface)",
-                color: "var(--search-text)",
-              }}
-              onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
-              onBlur={(e) => (e.target.style.borderColor = "var(--search-surface-muted)")}
             />
           </div>
           <div style={{ flex: "1 1 50%", display: "flex", gap: "12px" }}>

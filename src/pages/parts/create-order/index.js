@@ -12,6 +12,7 @@ import { useTheme } from "@/styles/themeProvider";
 import { updateCustomer } from "@/lib/database/customers";
 import { CalendarField } from "@/components/calendarAPI";
 import { TimePickerField } from "@/components/timePickerAPI";
+import { SearchBar } from "@/components/searchBarAPI";
 
 const cardStyle = {
   borderRadius: "20px",
@@ -1148,15 +1149,13 @@ export default function PartsJobCardPage() {
               </button>
             </div>
           </div>
-          <input
-            type="search"
+          <SearchBar
             value={partSearchQuery}
             onChange={(event) => setPartSearchQuery(event.target.value)}
+            onClear={() => setPartSearchQuery("")}
             placeholder="Search by part number or description"
             style={{
-              ...inputStyle,
               width: "100%",
-              fontSize: "1rem",
             }}
           />
           {partSearchLoading ? (

@@ -16,6 +16,7 @@ import { getTechnicianUsers, getMotTesterUsers } from "@/lib/database/users";
 import { normalizeDisplayName } from "@/utils/nameUtils";
 import { supabase } from "@/lib/supabaseClient";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
+import { SearchBar } from "@/components/searchBarAPI";
 import { deriveJobTypeDisplay } from "@/lib/jobType/display";
 
 // Layout constants ensure consistent panel sizing and scroll thresholds
@@ -1339,24 +1340,14 @@ export default function NextJobsPage() {
             </h2>
           </div>
           
-          <input
-            type="search"
+          <SearchBar
             placeholder="Search job number, reg, or customer..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)} // Update search term
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onClear={() => setSearchTerm("")}
             style={{
-              padding: "10px 12px",
               marginBottom: "12px",
-              borderRadius: "8px",
-              border: "1px solid var(--accent-purple)",
-              backgroundColor: "var(--surface)",
-              color: "var(--text-primary)",
-              fontSize: "14px",
-              outline: "none",
-              transition: "border-color 0.2s"
             }}
-            onFocus={(e) => e.currentTarget.style.borderColor = "var(--primary)"}
-            onBlur={(e) => e.currentTarget.style.borderColor = "var(--accent-purple)"}
           />
 
           <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>

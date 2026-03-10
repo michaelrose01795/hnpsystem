@@ -15,6 +15,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { summarizePartsPipeline } from "@/lib/partsPipeline";
 import { normalizeDisplayName } from "@/utils/nameUtils";
 import { deriveJobTypeDisplay } from "@/lib/jobType/display";
+import { SearchBar } from "@/components/searchBarAPI";
 
 const STATUS_BADGE_STYLES = {
   Waiting: { background: "var(--warning-surface)", color: "var(--danger-dark)" },
@@ -605,28 +606,14 @@ export default function MyJobsPage() {
           color: "var(--search-text)"
         }}>
           {/* Search Input */}
-          <input
-            type="search"
+          <SearchBar
             placeholder="Search by job number, customer, reg, or vehicle..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onClear={() => setSearchTerm("")}
             style={{
               flex: 1,
               minWidth: "220px",
-              padding: "12px 16px",
-              borderRadius: "8px",
-              border: "1px solid var(--search-surface-muted)",
-              fontSize: "14px",
-              outline: "none",
-              transition: "border-color 0.2s",
-              backgroundColor: "var(--search-surface)",
-              color: "var(--search-text)"
-            }}
-            onFocus={(e) => {
-              e.target.style.borderColor = "var(--primary)";
-            }}
-            onBlur={(e) => {
-              e.target.style.borderColor = "var(--search-surface-muted)";
             }}
           />
 

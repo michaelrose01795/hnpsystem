@@ -9,6 +9,7 @@ import { useCustomerPortalData } from "@/customers/hooks/useCustomerPortalData";
 import { useUser } from "@/context/UserContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
 import { supabase } from "@/lib/supabaseClient";
+import { SearchBar } from "@/components/searchBarAPI";
 
 const STAFF_ROLE_ALLOWLIST = new Set([
   "workshop manager",
@@ -1188,12 +1189,11 @@ export default function CustomerMessagesPage() {
                 </div>
                 <div className="mt-4 space-y-3">
                   <label className="text-xs font-semibold uppercase text-[var(--text-secondary)]">Search users</label>
-                  <input
-                    type="search"
+                  <SearchBar
                     value={composerSearch}
                     onChange={(event) => setComposerSearch(event.target.value)}
+                    onClear={() => setComposerSearch("")}
                     placeholder="Find teammates by name or email"
-                    className="w-full rounded-2xl border border-[var(--search-surface-muted)] bg-[var(--search-surface)] px-4 py-3 text-sm text-[var(--search-text)] focus:border-[var(--primary)] focus:outline-none"
                   />
                   <div className="max-h-60 overflow-y-auto space-y-2 rounded-2xl border border-[var(--search-surface-muted)] bg-[var(--search-surface)] p-3 text-[var(--search-text)]">
                     {composerLoading && (

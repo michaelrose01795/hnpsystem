@@ -12,6 +12,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { isValidUuid, sanitizeNumericId } from "@/lib/utils/ids";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
+import { SearchBar } from "@/components/searchBarAPI";
 
 const PRE_PICK_OPTIONS = [
   { value: "", label: "Not assigned" },
@@ -2457,19 +2458,13 @@ useEffect(() => {
 
           {/* Search and Filter Controls */}
           <div style={{ display: "flex", gap: "12px", marginBottom: "12px", alignItems: "center" }}>
-            <input
-              type="search"
+            <SearchBar
               placeholder="Search part number, description, OEM code"
               value={inventorySearch}
               onChange={(event) => setInventorySearch(event.target.value)}
+              onClear={() => setInventorySearch("")}
               style={{
                 flex: 1,
-                padding: "12px",
-                borderRadius: "8px",
-                border: "1px solid var(--search-surface-muted)",
-                outline: "none",
-                backgroundColor: "var(--search-surface)",
-                color: "var(--search-text)",
               }}
             />
 
