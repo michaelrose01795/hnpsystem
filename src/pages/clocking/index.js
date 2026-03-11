@@ -7,6 +7,8 @@ import { supabase } from "@/lib/supabaseClient";
 import { clockInToJob, clockOutFromJob } from "@/lib/database/jobClocking";
 import { generateTechnicianSlug } from "@/utils/technicianSlug";
 import ModalPortal from "@/components/popups/ModalPortal";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import { ContentWidth, FilterToolbarRow, PageShell, SectionShell, TabRow } from "@/components/ui";
 import dynamic from "next/dynamic";
 const EfficiencyTab = dynamic(() => import("@/components/Clocking/EfficiencyTab"), { ssr: false });
 
@@ -501,9 +503,19 @@ function ClockingOverviewTab({ onSummaryChange }) {
   };
 
   return (
-    <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "24px" }}>
+    <DevLayoutSection
+      sectionKey="clocking-overview-shell"
+      sectionType="section-shell"
+      shell
+      style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "24px" }}
+    >
       {/* Summary Stats Section */}
       <section
+        data-dev-section="1"
+        data-dev-section-key="clocking-overview-stats"
+        data-dev-section-type="section-shell"
+        data-dev-section-parent="clocking-overview-shell"
+        data-dev-shell="1"
         style={{
           background: "var(--surface)",
           borderRadius: "var(--radius-md)",
@@ -527,9 +539,13 @@ function ClockingOverviewTab({ onSummaryChange }) {
         {loading && teamStatus.length === 0 ? (
           <p style={{ color: "var(--info)" }}>Loading statistics...</p>
         ) : (
-          <div
-            style={{
-              display: "grid",
+            <div
+              data-dev-section="1"
+              data-dev-section-key="clocking-overview-stats-grid"
+              data-dev-section-type="grid-card"
+              data-dev-section-parent="clocking-overview-stats"
+              style={{
+                display: "grid",
               gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
               gap: "14px",
             }}
@@ -735,6 +751,11 @@ function ClockingOverviewTab({ onSummaryChange }) {
 
       {/* Technician Grid Section */}
       <section
+        data-dev-section="1"
+        data-dev-section-key="clocking-overview-technician-status"
+        data-dev-section-type="section-shell"
+        data-dev-section-parent="clocking-overview-shell"
+        data-dev-shell="1"
         style={{
           background: "var(--surface)",
           borderRadius: "var(--radius-md)",
@@ -769,6 +790,10 @@ function ClockingOverviewTab({ onSummaryChange }) {
           </div>
         ) : (
           <div
+            data-dev-section="1"
+            data-dev-section-key="clocking-overview-technician-grid"
+            data-dev-section-type="grid-card"
+            data-dev-section-parent="clocking-overview-technician-status"
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
@@ -795,6 +820,10 @@ function ClockingOverviewTab({ onSummaryChange }) {
                   key={tech.userId}
                   href={`/clocking/${tech.slug}`}
                   style={{ textDecoration: "none", color: "inherit" }}
+                  data-dev-section="1"
+                  data-dev-section-key={`clocking-overview-tech-${tech.userId}`}
+                  data-dev-section-type="content-card"
+                  data-dev-section-parent="clocking-overview-technician-grid"
                 >
                   <article
                     style={{
@@ -1184,7 +1213,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
           background: var(--primary-light) !important;
         }
       `}</style>
-    </div>
+    </DevLayoutSection>
   );
 }
 
@@ -1208,29 +1237,33 @@ export default function ClockingPage() {
 
   return (
     <Layout>
-      <div style={{ background: "var(--background)", minHeight: "100vh", padding: "40px 0" }}>
-        <div className="mx-auto w-full max-w-none space-y-6 px-4 sm:px-6 lg:px-10">
-          {/* Page-level tabs: Overview | Efficiency */}
-          <div className="clocking-tab-bar" style={{
-            display: "inline-flex",
-            gap: "12px",
-            padding: "8px",
-            borderRadius: "var(--control-radius)",
-            background: "var(--tab-container-bg)",
-            border: "none",
-          }}>
+      <PageShell sectionKey="clocking-page-shell" style={{ background: "var(--background)", minHeight: "100vh", padding: "24px 0" }}>
+        <ContentWidth sectionKey="clocking-page-content" parentKey="clocking-page-shell" widthMode="content" className="mx-auto w-full max-w-none space-y-6 px-4 sm:px-6 lg:px-10">
+          <FilterToolbarRow sectionKey="clocking-toolbar-row" parentKey="clocking-page-content">
+            <TabRow sectionKey="clocking-tab-row" parentKey="clocking-toolbar-row" className="clocking-tab-bar">
             <button type="button" style={pageTabStyle(pageTab === "overview")} onClick={() => setPageTab("overview")}>
               Overview
             </button>
             <button type="button" style={pageTabStyle(pageTab === "efficiency")} onClick={() => setPageTab("efficiency")}>
               Efficiency
             </button>
-          </div>
+            </TabRow>
+          </FilterToolbarRow>
 
           {pageTab === "overview" && <ClockingOverviewTab />}
-          {pageTab === "efficiency" && <EfficiencyTab editable={false} />}
-        </div>
-      </div>
+          {pageTab === "efficiency" && (
+            <SectionShell sectionKey="clocking-efficiency-shell" parentKey="clocking-page-content">
+              <DevLayoutSection
+                sectionKey="clocking-efficiency-content"
+                parentKey="clocking-efficiency-shell"
+                sectionType="content-card"
+              >
+                <EfficiencyTab editable={false} />
+              </DevLayoutSection>
+            </SectionShell>
+          )}
+        </ContentWidth>
+      </PageShell>
       <style jsx>{`
         .clocking-tab-bar button {
           transform: none !important;

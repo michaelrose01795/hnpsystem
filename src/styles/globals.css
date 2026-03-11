@@ -148,6 +148,97 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   box-shadow: none;
 }
 
+.app-layout-page-shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--page-stack-gap);
+  width: 100%;
+}
+
+.app-layout-content-width {
+  width: 100%;
+  max-width: var(--page-content-max-width);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--page-stack-gap);
+}
+
+.app-layout-section-shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--section-card-padding);
+  border-radius: var(--section-card-radius);
+  background: var(--page-card-bg-alt);
+  border: var(--section-card-border);
+}
+
+.app-layout-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--section-card-padding);
+  border-radius: var(--section-card-radius);
+  background: var(--section-card-bg);
+  border: var(--section-card-border);
+}
+
+.app-layout-surface-subtle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-sm);
+  background: rgba(var(--primary-rgb), 0.06);
+  border: 1px solid rgba(var(--primary-rgb), 0.12);
+}
+
+.app-layout-surface-accent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-sm);
+  background: rgba(var(--primary-rgb), 0.1);
+  border: 1px solid rgba(var(--primary-rgb), 0.2);
+}
+
+.app-layout-tab-row {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-radius: var(--control-radius);
+  background: var(--tab-container-bg);
+}
+
+.app-layout-toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.app-layout-stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-height: 110px;
+  padding: var(--space-4);
+  border-radius: var(--radius-sm);
+  background: rgba(var(--primary-rgb), 0.1);
+}
+
+.app-layout-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
 .app-toolbar-row,
 .app-header-row {
   display: flex;

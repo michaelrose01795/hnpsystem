@@ -4,43 +4,41 @@ import React, { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import Layout from "@/components/Layout";
 import { getWorkshopDashboardData } from "@/lib/database/dashboard/workshop";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import { ContentWidth, PageShell, SectionShell, StatCard } from "@/components/ui";
 
-const MetricCard = ({ label, value, helper }) => (
-  <div
+const MetricCard = ({ sectionKey, parentKey, label, value, helper }) => (
+  <StatCard
+    sectionKey={sectionKey}
+    parentKey={parentKey}
     className="app-section-card"
-    style={{
-      minWidth: "140px",
-      flex: "1 1 140px",
-    }}
+    style={{ minWidth: "140px", flex: "1 1 140px" }}
   >
     <p style={{ margin: 0, textTransform: "uppercase", fontSize: "0.75rem", color: "var(--primary-dark)" }}>
       {label}
     </p>
     <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600 }}>{value}</p>
     {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info)" }}>{helper}</p>}
-  </div>
+  </StatCard>
 );
 
-const Section = ({ title, subtitle, children, style }) => (
-  <section
-    className="app-section-card"
-    style={{
-      gap: "12px",
-      ...style,
-    }}
-  >
+const Section = ({ sectionKey, parentKey, title, subtitle, children, style }) => (
+  <SectionShell sectionKey={sectionKey} parentKey={parentKey} className="app-section-card" style={{ gap: "12px", ...style }}>
     <div>
       <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-dark)" }}>{title}</h2>
       {subtitle && <p style={{ margin: "6px 0 0", color: "var(--info)" }}>{subtitle}</p>}
     </div>
     {children}
-  </section>
+  </SectionShell>
 );
 
-const TrendBlock = ({ title, data }) => {
+const TrendBlock = ({ sectionKey, parentKey, title, data }) => {
   const maxValue = Math.max(1, ...(data || []).map((item) => item.count));
   return (
-    <div
+    <DevLayoutSection
+      sectionKey={sectionKey}
+      parentKey={parentKey}
+      sectionType="content-card"
       style={{
         border: "1px solid var(--danger-surface)",
         borderRadius: "var(--radius-sm)",
@@ -78,7 +76,7 @@ const TrendBlock = ({ title, data }) => {
           </div>
         ))}
       </div>
-    </div>
+    </DevLayoutSection>
   );
 };
 
@@ -162,49 +160,96 @@ export default function WorkshopDashboard() {
 
   return (
     <Layout>
-      <div>
-        <Section title="Daily checkpoints">
+      <PageShell sectionKey="workshop-dashboard-shell">
+        <ContentWidth sectionKey="workshop-dashboard-content" parentKey="workshop-dashboard-shell" widthMode="content">
+        <Section sectionKey="workshop-dashboard-daily-checkpoints" parentKey="workshop-dashboard-content" title="Daily checkpoints">
           {loading ? (
             <p style={{ color: "var(--info)" }}>Loading today's metrics...</p>
           ) : error ? (
             <p style={{ color: "var(--primary)" }}>{error}</p>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "12px" }}>
+            <DevLayoutSection
+              sectionKey="workshop-dashboard-checkpoints-grid"
+              parentKey="workshop-dashboard-daily-checkpoints"
+              sectionType="grid-card"
+              style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "12px" }}
+            >
               <MetricCard
+                sectionKey="workshop-dashboard-metric-in-progress"
+                parentKey="workshop-dashboard-checkpoints-grid"
                 label="Jobs in progress"
                 value={dashboardData.dailySummary.inProgress}
                 helper="Vehicles currently on the bay"
               />
               <MetricCard
+                sectionKey="workshop-dashboard-metric-checkedin"
+                parentKey="workshop-dashboard-checkpoints-grid"
                 label="Checked in today"
                 value={dashboardData.dailySummary.checkedInToday}
                 helper="Arrivals since midnight"
               />
-              <MetricCard label="Jobs completed" value={dashboardData.dailySummary.completedToday} helper="Finished today" />
               <MetricCard
+                sectionKey="workshop-dashboard-metric-completed"
+                parentKey="workshop-dashboard-checkpoints-grid"
+                label="Jobs completed"
+                value={dashboardData.dailySummary.completedToday}
+                helper="Finished today"
+              />
+              <MetricCard
+                sectionKey="workshop-dashboard-metric-availability"
+                parentKey="workshop-dashboard-checkpoints-grid"
                 label="Technician availability"
                 value={`${availableTechnicians} / ${dashboardData.technicianAvailability.totalTechnicians}`}
                 helper={`${dashboardData.technicianAvailability.onJobs} techs on jobs`}
               />
-            </div>
+            </DevLayoutSection>
           )}
         </Section>
 
-        <div style={twoColSplitStyle}>
-          <Section title="Progress" subtitle="Completed vs scheduled" style={{ height: "100%", minHeight: "250px" }}>
+        <DevLayoutSection
+          sectionKey="workshop-dashboard-analytics-row"
+          parentKey="workshop-dashboard-content"
+          sectionType="section-shell"
+          shell
+          style={twoColSplitStyle}
+        >
+          <Section
+            sectionKey="workshop-dashboard-progress"
+            parentKey="workshop-dashboard-analytics-row"
+            title="Progress"
+            subtitle="Completed vs scheduled"
+            style={{ height: "100%", minHeight: "250px" }}
+          >
             <ProgressBar
               completed={dashboardData.progress.completed}
               target={dashboardData.progress.scheduled}
             />
           </Section>
 
-          <Section title="Check-in trends" subtitle="Last 7 days" style={{ height: "100%", minHeight: "250px" }}>
-            <TrendBlock title="Daily check-ins" data={dashboardData.trends.checkInsLast7} />
+          <Section
+            sectionKey="workshop-dashboard-checkin-trends"
+            parentKey="workshop-dashboard-analytics-row"
+            title="Check-in trends"
+            subtitle="Last 7 days"
+            style={{ height: "100%", minHeight: "250px" }}
+          >
+            <TrendBlock
+              sectionKey="workshop-dashboard-checkin-trends-chart"
+              parentKey="workshop-dashboard-checkin-trends"
+              title="Daily check-ins"
+              data={dashboardData.trends.checkInsLast7}
+            />
           </Section>
-        </div>
+        </DevLayoutSection>
 
-        <div style={twoColSplitStyle}>
-          <Section title="Next jobs queue" style={{ height: "100%", minHeight: "360px" }}>
+        <DevLayoutSection
+          sectionKey="workshop-dashboard-worklist-row"
+          parentKey="workshop-dashboard-content"
+          sectionType="section-shell"
+          shell
+          style={twoColSplitStyle}
+        >
+          <Section sectionKey="workshop-dashboard-next-jobs-queue" parentKey="workshop-dashboard-worklist-row" title="Next jobs queue" style={{ height: "100%", minHeight: "360px" }}>
             {loading ? (
               <p style={{ color: "var(--info)" }}>Loading queue...</p>
             ) : (
@@ -244,7 +289,13 @@ export default function WorkshopDashboard() {
             )}
           </Section>
 
-          <Section title="Outstanding VHCs" subtitle="Jobs requiring follow-up" style={{ height: "100%", minHeight: "360px" }}>
+          <Section
+            sectionKey="workshop-dashboard-outstanding-vhc"
+            parentKey="workshop-dashboard-worklist-row"
+            title="Outstanding VHCs"
+            subtitle="Jobs requiring follow-up"
+            style={{ height: "100%", minHeight: "360px" }}
+          >
             {loading ? (
               <p style={{ color: "var(--info)" }}>Loading VHC backlog...</p>
             ) : dashboardData.outstandingVhc.length === 0 ? (
@@ -279,8 +330,9 @@ export default function WorkshopDashboard() {
               </div>
             )}
           </Section>
-        </div>
-      </div>
+        </DevLayoutSection>
+        </ContentWidth>
+      </PageShell>
     </Layout>
   );
 }

@@ -14,3 +14,6 @@ export { default as StatusMessage } from "./StatusMessage";
 // Control components
 export { default as Button } from "./Button";
 export { default as InputField } from "./InputField";
+
+// Shared layout architecture
+export * from "./layout-system";

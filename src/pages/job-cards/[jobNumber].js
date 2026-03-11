@@ -2539,9 +2539,19 @@ export default function JobCardDetailPage() {
   return (
     <JobCardErrorBoundary>
       <Layout>
-      <div style={pageStackStyle}>
+      <div
+        style={pageStackStyle}
+        data-dev-section="1"
+        data-dev-section-key="jobcard-page-shell"
+        data-dev-section-type="page-shell"
+        data-dev-shell="1"
+      >
         {isArchiveMode && (
           <section
+            data-dev-section="1"
+            data-dev-section-key="jobcard-archive-banner"
+            data-dev-section-type="section-shell"
+            data-dev-section-parent="jobcard-page-shell"
             style={{
               padding: "12px 16px",
               borderRadius: "var(--radius-sm)",
@@ -2557,16 +2567,22 @@ export default function JobCardDetailPage() {
         )}
 
         {/* ✅ Header Section */}
-        <section style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "20px",
-          backgroundColor: "var(--surface)",
-          borderRadius: "var(--radius-sm)",
-          border: "none",
-          flexShrink: 0
-        }}>
+        <section
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "20px",
+            backgroundColor: "var(--surface)",
+            borderRadius: "var(--radius-sm)",
+            border: "none",
+            flexShrink: 0,
+          }}
+          data-dev-section="1"
+          data-dev-section-key="jobcard-header"
+          data-dev-section-type="section-header-row"
+          data-dev-section-parent="jobcard-page-shell"
+        >
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
               <h1 style={{ 
@@ -2796,6 +2812,11 @@ export default function JobCardDetailPage() {
         {/* ✅ Related Jobs Panel */}
         {(relatedJobs.length > 0 || jobData.isPrimeJob) && (
           <section
+            data-dev-section="1"
+            data-dev-section-key="jobcard-related-jobs-shell"
+            data-dev-section-type="section-shell"
+            data-dev-section-parent="jobcard-page-shell"
+            data-dev-shell="1"
             style={{
               padding: "12px 20px",
               backgroundColor: "var(--primary-surface)",
@@ -2889,13 +2910,25 @@ export default function JobCardDetailPage() {
         )}
 
         {/* ✅ Vehicle & Customer Info Bar */}
-        <section style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr 0.9fr 1fr",
-          gap: "16px",
-          flexShrink: 0
-        }}>
-          <div style={{
+        <section
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr 0.9fr 1fr",
+            gap: "16px",
+            flexShrink: 0,
+          }}
+          data-dev-section="1"
+          data-dev-section-key="jobcard-summary-shell"
+          data-dev-section-type="section-shell"
+          data-dev-section-parent="jobcard-page-shell"
+          data-dev-shell="1"
+        >
+          <div
+            data-dev-section="1"
+            data-dev-section-key="jobcard-summary-vehicle"
+            data-dev-section-type="content-card"
+            data-dev-section-parent="jobcard-summary-shell"
+            style={{
             padding: "16px 20px",
             backgroundColor: "var(--surface)",
             borderRadius: "var(--radius-sm)",
@@ -2946,6 +2979,10 @@ export default function JobCardDetailPage() {
           </div>
 
           <div
+            data-dev-section="1"
+            data-dev-section-key="jobcard-summary-customer"
+            data-dev-section-type="content-card"
+            data-dev-section-parent="jobcard-summary-shell"
             onClick={() => {
               const fallbackNameParts = (jobData.customer || "")
                 .split(" ")
@@ -2982,7 +3019,12 @@ export default function JobCardDetailPage() {
             </div>
           </div>
 
-          <div style={{
+          <div
+            data-dev-section="1"
+            data-dev-section-key="jobcard-summary-vhc-financials"
+            data-dev-section-type="stat-card"
+            data-dev-section-parent="jobcard-summary-shell"
+            style={{
             padding: "16px 20px",
             backgroundColor: "var(--surface)",
             borderRadius: "var(--radius-sm)",
@@ -3006,6 +3048,10 @@ export default function JobCardDetailPage() {
           </div>
 
           <div
+            data-dev-section="1"
+            data-dev-section-key="jobcard-summary-locations"
+            data-dev-section-type="content-card"
+            data-dev-section-parent="jobcard-summary-shell"
             onClick={() => setTrackerQuickModalOpen(true)}
             style={{
               padding: "16px 20px",
@@ -3039,7 +3085,13 @@ export default function JobCardDetailPage() {
         </section>
 
         {/* ✅ Tabs Navigation */}
-        <section className="page-surface-plain">
+        <section
+          className="page-surface-plain"
+          data-dev-section="1"
+          data-dev-section-key="jobcard-tab-row"
+          data-dev-section-type="tab-row"
+          data-dev-section-parent="jobcard-page-shell"
+        >
           <div
             className={`tab-scroll-row${tabsOverflowing ? " is-overflowing" : ""}`}
             ref={tabsScrollRef}
@@ -3117,9 +3169,21 @@ export default function JobCardDetailPage() {
         `}</style>
 
         {/* ✅ Tab Content */}
-        <section>
+        <section
+          data-dev-section="1"
+          data-dev-section-key="jobcard-tab-content-shell"
+          data-dev-section-type="section-shell"
+          data-dev-section-parent="jobcard-page-shell"
+          data-dev-shell="1"
+        >
           {/* Preload all tabs on page load; switch by display only. */}
-          <div style={{ display: activeTab === "customer-requests" ? "block" : "none" }}>
+          <div
+            style={{ display: activeTab === "customer-requests" ? "block" : "none" }}
+            data-dev-section="1"
+            data-dev-section-key="jobcard-tab-customer-requests"
+            data-dev-section-type="content-card"
+            data-dev-section-parent="jobcard-tab-content-shell"
+          >
             <CustomerRequestsTab
               jobData={jobData}
               canEdit={canEdit}
@@ -3133,7 +3197,13 @@ export default function JobCardDetailPage() {
             />
           </div>
 
-          <div style={{ display: activeTab === "contact" ? "block" : "none" }}>
+          <div
+            style={{ display: activeTab === "contact" ? "block" : "none" }}
+            data-dev-section="1"
+            data-dev-section-key="jobcard-tab-contact"
+            data-dev-section-type="content-card"
+            data-dev-section-parent="jobcard-tab-content-shell"
+          >
             <ContactTab
               jobData={jobData}
               canEdit={canEdit}
@@ -3142,7 +3212,13 @@ export default function JobCardDetailPage() {
             />
           </div>
 
-          <div style={{ display: activeTab === "scheduling" ? "block" : "none" }}>
+          <div
+            style={{ display: activeTab === "scheduling" ? "block" : "none" }}
+            data-dev-section="1"
+            data-dev-section-key="jobcard-tab-scheduling"
+            data-dev-section-type="content-card"
+            data-dev-section-parent="jobcard-tab-content-shell"
+          >
             <SchedulingTab
               jobData={jobData}
               canEdit={canEdit}
@@ -3158,12 +3234,24 @@ export default function JobCardDetailPage() {
             />
           </div>
 
-          <div style={{ display: activeTab === "service-history" ? "block" : "none" }}>
+          <div
+            style={{ display: activeTab === "service-history" ? "block" : "none" }}
+            data-dev-section="1"
+            data-dev-section-key="jobcard-tab-service-history"
+            data-dev-section-type="content-card"
+            data-dev-section-parent="jobcard-tab-content-shell"
+          >
             <ServiceHistoryTab vehicleJobHistory={vehicleJobHistory} />
           </div>
 
           {canViewPartsTab && (
-            <div style={{ display: activeTab === "parts" ? "block" : "none" }}>
+            <div
+              style={{ display: activeTab === "parts" ? "block" : "none" }}
+              data-dev-section="1"
+              data-dev-section-key="jobcard-tab-parts"
+              data-dev-section-type="content-card"
+              data-dev-section-parent="jobcard-tab-content-shell"
+            >
               <PartsTabNew
                 jobData={jobData}
                 canEdit={canEdit}
@@ -3175,7 +3263,13 @@ export default function JobCardDetailPage() {
             </div>
           )}
 
-          <div style={{ display: activeTab === "notes" ? "block" : "none" }}>
+          <div
+            style={{ display: activeTab === "notes" ? "block" : "none" }}
+            data-dev-section="1"
+            data-dev-section-key="jobcard-tab-notes"
+            data-dev-section-type="content-card"
+            data-dev-section-parent="jobcard-tab-content-shell"
+          >
             <NotesTabNew
               jobData={jobData}
               canEdit={canEdit}
@@ -3186,7 +3280,13 @@ export default function JobCardDetailPage() {
             />
           </div>
 
-          <div style={{ display: activeTab === "write-up" ? "block" : "none", height: "100%" }}>
+          <div
+            style={{ display: activeTab === "write-up" ? "block" : "none", height: "100%" }}
+            data-dev-section="1"
+            data-dev-section-key="jobcard-tab-writeup"
+            data-dev-section-type="content-card"
+            data-dev-section-parent="jobcard-tab-content-shell"
+          >
             <div
               style={{
                 height: "100%",
@@ -3219,7 +3319,13 @@ export default function JobCardDetailPage() {
             </div>
           </div>
 
-          <div style={{ display: activeTab === "vhc" ? "block" : "none" }}>
+          <div
+            style={{ display: activeTab === "vhc" ? "block" : "none" }}
+            data-dev-section="1"
+            data-dev-section-key="jobcard-tab-vhc"
+            data-dev-section-type="content-card"
+            data-dev-section-parent="jobcard-tab-content-shell"
+          >
             <VHCTab
               jobNumber={jobNumber}
               jobData={jobData}
@@ -3231,7 +3337,13 @@ export default function JobCardDetailPage() {
             />
           </div>
 
-          <div style={{ display: activeTab === "warranty" ? "block" : "none" }}>
+          <div
+            style={{ display: activeTab === "warranty" ? "block" : "none" }}
+            data-dev-section="1"
+            data-dev-section-key="jobcard-tab-warranty"
+            data-dev-section-type="content-card"
+            data-dev-section-parent="jobcard-tab-content-shell"
+          >
             <WarrantyTab
               jobData={jobData}
               canEdit={canEdit}
@@ -3239,11 +3351,23 @@ export default function JobCardDetailPage() {
             />
           </div>
 
-          <div style={{ display: activeTab === "clocking" ? "block" : "none" }}>
+          <div
+            style={{ display: activeTab === "clocking" ? "block" : "none" }}
+            data-dev-section="1"
+            data-dev-section-key="jobcard-tab-clocking"
+            data-dev-section-type="content-card"
+            data-dev-section-parent="jobcard-tab-content-shell"
+          >
             <ClockingTab jobData={jobData} canEdit={canEdit} />
           </div>
 
-          <div style={{ display: activeTab === "messages" ? "block" : "none" }}>
+          <div
+            style={{ display: activeTab === "messages" ? "block" : "none" }}
+            data-dev-section="1"
+            data-dev-section-key="jobcard-tab-messages"
+            data-dev-section-type="content-card"
+            data-dev-section-parent="jobcard-tab-content-shell"
+          >
             <MessagesTab
               thread={jobData?.messagingThread}
               jobNumber={jobData?.jobNumber || jobNumber}
@@ -3251,7 +3375,13 @@ export default function JobCardDetailPage() {
             />
           </div>
 
-          <div style={{ display: activeTab === "documents" ? "block" : "none" }}>
+          <div
+            style={{ display: activeTab === "documents" ? "block" : "none" }}
+            data-dev-section="1"
+            data-dev-section-key="jobcard-tab-documents"
+            data-dev-section-type="content-card"
+            data-dev-section-parent="jobcard-tab-content-shell"
+          >
             <DocumentsTab
               documents={jobDocuments}
               canDelete={canManageDocuments}
@@ -3260,7 +3390,14 @@ export default function JobCardDetailPage() {
             />
           </div>
 
-          <div data-invoice-print-area style={{ display: activeTab === "invoice" ? "block" : "none" }}>
+          <div
+            data-invoice-print-area
+            style={{ display: activeTab === "invoice" ? "block" : "none" }}
+            data-dev-section="1"
+            data-dev-section-key="jobcard-tab-invoice"
+            data-dev-section-type="content-card"
+            data-dev-section-parent="jobcard-tab-content-shell"
+          >
             {!invoicePrerequisitesMet && (
               <div
                 style={{

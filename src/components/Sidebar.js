@@ -11,6 +11,7 @@ import { useMessagesBadge } from "@/hooks/useMessagesBadge";
 import { sidebarSections } from "@/config/navigation";
 import { departmentDashboardShortcuts } from "@/config/departmentDashboards";
 import BrandLogo from "@/components/BrandLogo";
+import { useDevLayoutOverlay } from "@/context/DevLayoutOverlayContext";
 
 const LOGOUT_BARRIER_STORAGE_KEY = "hnp-logout-barrier-until";
 const LOGOUT_BARRIER_MS = 8000;
@@ -40,6 +41,8 @@ export default function Sidebar({
   const pathname = usePathname();
   const router = useRouter();
   const { user, dbUserId } = useUser();
+  const { canAccess: canUseDevOverlay, enabled: devOverlayEnabled, toggleEnabled: toggleDevOverlay } =
+    useDevLayoutOverlay();
   const { unreadCount } = useMessagesBadge(dbUserId);
   const derivedRoles = user?.roles?.map((role) => role.toLowerCase()) || [];
   const userRoles =
@@ -426,20 +429,52 @@ export default function Sidebar({
                       </button>
                     </div>
                     {process.env.NODE_ENV !== "production" && (
-                      <Link
-                        className="app-sidebar__link"
-                        href="/dev/user-diagnostic"
+                      <div
                         style={{
+                          display: "flex",
+                          gap: "8px",
                           width: "100%",
                           marginTop: "8px",
-                          background: "transparent",
-                          color: "var(--text-secondary)",
-                          fontSize: "0.78rem",
-                          textAlign: "center",
                         }}
                       >
-                        Diagnostics
-                      </Link>
+                        <Link
+                          className="app-sidebar__link"
+                          href="/dev/user-diagnostic"
+                          style={{
+                            flex: 1,
+                            marginBottom: 0,
+                            background: "transparent",
+                            color: "var(--text-secondary)",
+                            fontSize: "0.78rem",
+                            textAlign: "center",
+                          }}
+                        >
+                          Diagnostics
+                        </Link>
+                        {canUseDevOverlay && (
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={devOverlayEnabled}
+                            aria-label="Toggle dev layout overlay"
+                            className="app-sidebar__link"
+                            onClick={toggleDevOverlay}
+                            style={{
+                              flex: 1,
+                              marginBottom: 0,
+                              border: "none",
+                              background: devOverlayEnabled ? "var(--primary)" : "rgba(var(--primary-rgb), 0.08)",
+                              color: devOverlayEnabled ? "var(--text-inverse)" : "var(--primary-dark)",
+                              fontSize: "0.78rem",
+                              fontWeight: 700,
+                              textAlign: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            Dev Overlay {devOverlayEnabled ? "ON" : "OFF"}
+                          </button>
+                        )}
+                      </div>
                     )}
                   </Fragment>
                 );

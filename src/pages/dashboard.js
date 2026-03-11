@@ -10,6 +10,8 @@ import ServiceManagerDashboard from "@/components/dashboards/ServiceManagerDashb
 import AfterSalesManagerDashboard from "@/components/dashboards/AfterSalesManagerDashboard"; // import after sales manager dashboard
 import RetailManagersDashboard from "@/components/dashboards/RetailManagersDashboard"; // import retail managers dashboard component
 import { SearchBar } from "@/components/searchBarAPI";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import { ContentWidth, PageShell, SectionShell } from "@/components/ui";
 import { roleCategories } from "@/config/users"; // import role category definitions
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 
@@ -164,9 +166,15 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      <div> {/* outer container for dashboard */}
+      <PageShell sectionKey="dashboard-fallback-shell">
+        <ContentWidth sectionKey="dashboard-fallback-content" parentKey="dashboard-fallback-shell" widthMode="content">
+        <div> {/* outer container for dashboard */}
         <div
           className="app-section-card"
+          data-dev-section="1"
+          data-dev-section-key="dashboard-fallback-toolbar"
+          data-dev-section-type="toolbar"
+          data-dev-section-parent="dashboard-fallback-content"
           style={{
             display: "flex",
             justifyContent: "flex-end",
@@ -192,6 +200,11 @@ export default function Dashboard() {
         </div>
 
         <div
+          data-dev-section="1"
+          data-dev-section-key="dashboard-fallback-table-shell"
+          data-dev-section-type="section-shell"
+          data-dev-section-parent="dashboard-fallback-content"
+          data-dev-shell="1"
           style={{
             backgroundColor: "var(--danger-surface)",
             padding: "var(--section-card-padding)",
@@ -227,15 +240,21 @@ export default function Dashboard() {
           </table>
         </div>
       </div>
+      </ContentWidth>
+      </PageShell>
 
       {showSearch && (
-        <div
+        <DevLayoutSection
+          sectionKey="dashboard-fallback-search-modal"
+          sectionType="floating-action"
           style={{
             ...popupOverlayStyles,
             zIndex: 1300,
           }}
         >
-          <div
+          <SectionShell
+            sectionKey="dashboard-fallback-search-modal-card"
+            parentKey="dashboard-fallback-search-modal"
             style={{
               ...popupCardStyles,
               padding: "30px",
@@ -306,8 +325,8 @@ export default function Dashboard() {
                 </ul>
               )}
             </div>
-          </div>
-        </div>
+          </SectionShell>
+        </DevLayoutSection>
       )}
     </Layout>
   );

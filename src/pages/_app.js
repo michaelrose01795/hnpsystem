@@ -15,8 +15,11 @@ import { RosterProvider } from "@/context/RosterContext"; // import roster conte
 import { AlertProvider } from "@/context/AlertContext";
 import { ThemeProvider } from "@/styles/themeProvider";
 import { ConfirmationProvider } from "@/context/ConfirmationContext";
+import { DevLayoutOverlayProvider } from "@/context/DevLayoutOverlayContext";
+import { DevLayoutRegistryProvider } from "@/context/DevLayoutRegistryContext";
 import GlobalNotesWidget from "@/components/GlobalNotesWidget";
 import GlobalDraftPersistence from "@/components/App/GlobalDraftPersistence";
+import DevLayoutOverlayRoot from "@/components/dev-layout-overlay/DevLayoutOverlayRoot";
 
 function AppWrapper({ Component, pageProps }) {
   const router = useRouter();
@@ -163,6 +166,7 @@ function AppWrapper({ Component, pageProps }) {
       <GlobalDraftPersistence />
       <Component {...pageProps} />
       {!hideNotesWidget && <GlobalNotesWidget />}
+      <DevLayoutOverlayRoot />
     </>
   ); // render the requested page
 }
@@ -174,17 +178,21 @@ export default function MyApp({ Component, pageProps }) {
       <AlertProvider>
         <ConfirmationProvider>
           <UserProvider>
-            <ThemeProvider defaultMode="system">
-              <NextActionProvider>
-                <JobsProvider>
-                  <ClockingProvider>
-                    <RosterProvider>
-                      <AppWrapper Component={Component} pageProps={pageProps} />
-                    </RosterProvider>
-                  </ClockingProvider>
-                </JobsProvider>
-              </NextActionProvider>
-            </ThemeProvider>
+            <DevLayoutOverlayProvider>
+              <DevLayoutRegistryProvider>
+                <ThemeProvider defaultMode="system">
+                  <NextActionProvider>
+                    <JobsProvider>
+                      <ClockingProvider>
+                        <RosterProvider>
+                          <AppWrapper Component={Component} pageProps={pageProps} />
+                        </RosterProvider>
+                      </ClockingProvider>
+                    </JobsProvider>
+                  </NextActionProvider>
+                </ThemeProvider>
+              </DevLayoutRegistryProvider>
+            </DevLayoutOverlayProvider>
           </UserProvider>
         </ConfirmationProvider>
       </AlertProvider>
