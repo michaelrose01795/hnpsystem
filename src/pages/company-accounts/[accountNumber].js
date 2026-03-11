@@ -176,7 +176,7 @@ export default function CompanyAccountDetailPage() {
                   onClick={() => router.push(`/job-cards/${job.job_number}`)}
                   style={{
                     padding: "16px",
-                    borderRadius: "12px",
+                    borderRadius: "var(--radius-sm)",
                     border: "1px solid var(--surface-light)",
                     background: "var(--surface)",
                     cursor: "pointer",
@@ -201,7 +201,7 @@ export default function CompanyAccountDetailPage() {
                           <span
                             style={{
                               padding: "4px 10px",
-                              borderRadius: "999px",
+                              borderRadius: "var(--radius-pill)",
                               fontSize: "0.75rem",
                               fontWeight: 600,
                               background: "var(--surface-light)",
@@ -255,7 +255,7 @@ export default function CompanyAccountDetailPage() {
                   onClick={() => router.push(`/invoices/${invoice.invoice_number}`)}
                   style={{
                     padding: "16px",
-                    borderRadius: "12px",
+                    borderRadius: "var(--radius-sm)",
                     border: "1px solid var(--surface-light)",
                     background: "var(--surface)",
                     cursor: "pointer",
@@ -280,7 +280,7 @@ export default function CompanyAccountDetailPage() {
                           <span
                             style={{
                               padding: "4px 10px",
-                              borderRadius: "999px",
+                              borderRadius: "var(--radius-pill)",
                               fontSize: "0.75rem",
                               fontWeight: 600,
                               background:
@@ -360,7 +360,7 @@ export default function CompanyAccountDetailPage() {
             style={{
               alignSelf: "flex-start",
               padding: "8px 14px",
-              borderRadius: "999px",
+              borderRadius: "var(--radius-pill)",
               border: "1px solid var(--surface-light)",
               background: "var(--surface)",
               color: "var(--text-primary)",
@@ -396,7 +396,7 @@ export default function CompanyAccountDetailPage() {
             <div
               style={{
                 padding: "24px",
-                borderRadius: "16px",
+                borderRadius: "var(--radius-md)",
                 border: "1px solid var(--surface-light)",
                 background: "var(--surface)",
                 display: "flex",
@@ -439,7 +439,7 @@ export default function CompanyAccountDetailPage() {
                       onClick={() => setActiveTab(tab.id)}
                       style={{
                         flex: "0 0 auto",
-                        borderRadius: "999px",
+                        borderRadius: "var(--radius-pill)",
                         border: "1px solid transparent",
                         padding: "10px 20px",
                         fontSize: "0.9rem",
@@ -488,7 +488,7 @@ export default function CompanyAccountDetailPage() {
                       onClick={() => setMode("edit")}
                       style={{
                         padding: "10px 18px",
-                        borderRadius: "10px",
+                        borderRadius: "var(--radius-sm)",
                         border: "1px solid var(--surface-light)",
                         background: "var(--surface)",
                         color: "var(--text-primary)",
@@ -513,7 +513,7 @@ export default function CompanyAccountDetailPage() {
                       disabled={saving}
                       style={{
                         padding: "10px 18px",
-                        borderRadius: "10px",
+                        borderRadius: "var(--radius-sm)",
                         border: "none",
                         background: saving ? "var(--surface-muted)" : "var(--danger)",
                         color: "var(--text-inverse)",

@@ -2,6 +2,56 @@
 import React, { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
+const pickStyleKeys = (style, keys) => {
+  if (!style) return undefined;
+  return keys.reduce((acc, key) => {
+    if (style[key] !== undefined) {
+      acc[key] = style[key];
+    }
+    return acc;
+  }, {});
+};
+
+const WRAPPER_STYLE_KEYS = [
+  "width",
+  "minWidth",
+  "maxWidth",
+  "flex",
+  "flexGrow",
+  "flexShrink",
+  "flexBasis",
+  "margin",
+  "marginTop",
+  "marginRight",
+  "marginBottom",
+  "marginLeft",
+  "alignSelf",
+  "justifySelf",
+];
+
+const CONTROL_LAYOUT_STYLE_KEYS = [
+  "width",
+  "minWidth",
+  "maxWidth",
+  "justifyContent",
+  "cursor",
+];
+
+const LABEL_LAYOUT_STYLE_KEYS = ["display", "margin", "marginTop", "marginBottom", "alignSelf"];
+const VALUE_LAYOUT_STYLE_KEYS = ["display", "alignItems", "justifyContent", "minWidth", "whiteSpace"];
+const CHEVRON_LAYOUT_STYLE_KEYS = ["width", "height"];
+const MENU_LAYOUT_STYLE_KEYS = [
+  "width",
+  "minWidth",
+  "maxWidth",
+  "maxHeight",
+  "overflow",
+  "overflowY",
+  "overflowX",
+  "zIndex",
+];
+const OPTION_LAYOUT_STYLE_KEYS = ["minHeight"];
+
 /**
  * DropdownAPI
  *
@@ -44,39 +94,13 @@ export default function Dropdown({
   usePortal = true,
   ...rest
 }) {
-  const extractedControlStyle = style
-    ? {
-        border: style.border,
-        borderColor: style.borderColor,
-        borderWidth: style.borderWidth,
-        borderStyle: style.borderStyle,
-        borderRadius: style.borderRadius,
-        background: style.background,
-        backgroundColor: style.backgroundColor,
-        boxShadow: style.boxShadow,
-        padding: style.padding,
-        fontSize: style.fontSize,
-        color: style.color,
-        outline: style.outline,
-      }
-    : undefined;
-  const wrapperStyle = style
-    ? {
-        ...style,
-        border: undefined,
-        borderColor: undefined,
-        borderWidth: undefined,
-        borderStyle: undefined,
-        borderRadius: undefined,
-        background: undefined,
-        backgroundColor: undefined,
-        boxShadow: undefined,
-        padding: undefined,
-      }
-    : undefined;
-  const mergedControlStyle = extractedControlStyle
-    ? { ...extractedControlStyle, ...(controlStyle || {}) }
-    : controlStyle;
+  const wrapperStyle = pickStyleKeys(style, WRAPPER_STYLE_KEYS);
+  const mergedControlStyle = pickStyleKeys(controlStyle, CONTROL_LAYOUT_STYLE_KEYS);
+  const mergedLabelStyle = pickStyleKeys(labelStyle, LABEL_LAYOUT_STYLE_KEYS);
+  const mergedValueStyle = pickStyleKeys(valueStyle, VALUE_LAYOUT_STYLE_KEYS);
+  const mergedChevronStyle = pickStyleKeys(chevronStyle, CHEVRON_LAYOUT_STYLE_KEYS);
+  const mergedMenuStyle = pickStyleKeys(menuStyle, MENU_LAYOUT_STYLE_KEYS);
+  const mergedOptionStyle = pickStyleKeys(optionStyle, OPTION_LAYOUT_STYLE_KEYS);
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [menuPosition, setMenuPosition] = useState(null);
@@ -350,7 +374,7 @@ export default function Dropdown({
   return (
     <div className={wrapperClasses} ref={dropdownRef} style={wrapperStyle} {...rest}>
       {label && (
-        <label className="dropdown-api__label" htmlFor={controlId} style={labelStyle}>
+        <label className="dropdown-api__label" htmlFor={controlId} style={mergedLabelStyle}>
           {label}
         </label>
       )}
@@ -365,10 +389,10 @@ export default function Dropdown({
         onKeyDown={handleControlKeyDown}
         disabled={disabled}
       >
-        <span className={`dropdown-api__value ${selectedOption ? "" : "is-placeholder"}`} style={valueStyle}>
+        <span className={`dropdown-api__value ${selectedOption ? "" : "is-placeholder"}`} style={mergedValueStyle}>
           {selectedOption?.label || placeholder}
         </span>
-        <span className="dropdown-api__chevron" aria-hidden="true" style={chevronStyle}>
+        <span className="dropdown-api__chevron" aria-hidden="true" style={mergedChevronStyle}>
           <svg width="16" height="16" viewBox="0 0 16 16" role="presentation">
             <path
               d="M4.5 6l3.5 3.5L11.5 6"
@@ -393,8 +417,8 @@ export default function Dropdown({
               ref={menuRef}
               style={
                 usePortal
-                  ? (menuPosition ? { ...(menuStyle || {}), ...menuPosition } : menuStyle)
-                  : menuStyle
+                  ? (menuPosition ? { ...(mergedMenuStyle || {}), ...menuPosition } : mergedMenuStyle)
+                  : mergedMenuStyle
               }
             >
               {searchable && (
@@ -445,7 +469,7 @@ export default function Dropdown({
                     disabled={option.disabled}
                     onClick={() => handleOptionSelect(option)}
                     onKeyDown={(event) => handleOptionKeyDown(event, option, index)}
-                    style={optionStyle}
+                    style={mergedOptionStyle}
                   >
                     <span className="dropdown-api__option-label">{option.label}</span>
                     {(option.description || option.meta) && (

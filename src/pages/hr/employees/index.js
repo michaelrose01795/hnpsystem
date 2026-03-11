@@ -49,7 +49,7 @@ export default function EmployeeManagement() {
 
   return (
     <Layout>
-      <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
+      <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
         <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <p style={{ color: "var(--info)", marginTop: "6px" }}>
@@ -60,13 +60,12 @@ export default function EmployeeManagement() {
             <button
               type="button"
               style={{
-                padding: "10px 16px",
-                borderRadius: "10px",
+                padding: "var(--control-padding)",
+                borderRadius: "var(--input-radius)",
                 border: "1px solid var(--accent-purple-surface)",
                 background: "var(--surface)",
                 fontWeight: 600,
                 color: "var(--accent-purple)",
-                boxShadow: "none",
               }}
             >
               + Add Employee
@@ -74,13 +73,12 @@ export default function EmployeeManagement() {
             <button
               type="button"
               style={{
-                padding: "10px 16px",
-                borderRadius: "10px",
+                padding: "var(--control-padding)",
+                borderRadius: "var(--input-radius)",
                 border: "none",
                 background: "var(--accent-purple)",
                 fontWeight: 600,
                 color: "white",
-                boxShadow: "none",
               }}
             >
               Manage Keycloak Access
@@ -212,7 +210,7 @@ function DirectoryFilters({ filters, setFilters, departments, employmentTypes })
 }
 
 const selectStyle = {
-  borderRadius: "999px",
+  borderRadius: "var(--radius-pill)",
   border: "1px solid var(--accent-purple-surface)",
   padding: "6px 12px",
   fontWeight: 600,

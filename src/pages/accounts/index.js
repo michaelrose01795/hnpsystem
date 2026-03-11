@@ -90,14 +90,11 @@ export default function AccountsListPage() {
   };
   const renderFilters = () => (
     <div
+      className="app-section-card"
       style={{
         display: "flex",
         flexWrap: "wrap",
         gap: "12px",
-        padding: "16px",
-        borderRadius: "16px",
-        border: "1px solid var(--surface-light)",
-        background: "var(--surface)",
       }}
     >
       <SearchBar
@@ -117,7 +114,7 @@ export default function AccountsListPage() {
         style={{
           flex: "0 0 200px",
           padding: "10px 12px",
-          borderRadius: "999px",
+          borderRadius: "var(--radius-pill)",
           border: "1px solid var(--surface-light)",
           background: "var(--surface-light)",
         }}
@@ -134,7 +131,7 @@ export default function AccountsListPage() {
         style={{
           flex: "0 0 200px",
           padding: "10px 12px",
-          borderRadius: "999px",
+          borderRadius: "var(--radius-pill)",
           border: "1px solid var(--surface-light)",
           background: "var(--surface-light)",
         }}
@@ -150,8 +147,8 @@ export default function AccountsListPage() {
       <div style={{ flex: "0 0 180px" }}>
         <CalendarField name="dateTo" placeholder="To date" value={filters.dateTo} onChange={(event) => setFilters((prev) => ({ ...prev, dateTo: event.target.value }))} />
       </div>
-      <input type="number" name="minBalance" value={filters.minBalance} placeholder="Min Balance" onChange={(event) => setFilters((prev) => ({ ...prev, minBalance: event.target.value }))} style={{ flex: "0 0 140px", padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)", background: "var(--surface-light)" }} />
-      <input type="number" name="maxBalance" value={filters.maxBalance} placeholder="Max Balance" onChange={(event) => setFilters((prev) => ({ ...prev, maxBalance: event.target.value }))} style={{ flex: "0 0 140px", padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)", background: "var(--surface-light)" }} />
+      <input type="number" name="minBalance" value={filters.minBalance} placeholder="Min Balance" onChange={(event) => setFilters((prev) => ({ ...prev, minBalance: event.target.value }))} style={{ flex: "0 0 140px", padding: "10px 12px", borderRadius: "var(--radius-sm)", border: "1px solid var(--surface-light)", background: "var(--surface-light)" }} />
+      <input type="number" name="maxBalance" value={filters.maxBalance} placeholder="Max Balance" onChange={(event) => setFilters((prev) => ({ ...prev, maxBalance: event.target.value }))} style={{ flex: "0 0 140px", padding: "10px 12px", borderRadius: "var(--radius-sm)", border: "1px solid var(--surface-light)", background: "var(--surface-light)" }} />
     </div>
   );
   const handlePageChange = (nextPage) => {
@@ -171,10 +168,10 @@ export default function AccountsListPage() {
             </div>
             <div style={{ display: "flex", gap: "10px" }}>
               {canExport && (
-                <button type="button" onClick={handleExport} style={{ padding: "10px 16px", borderRadius: "10px", border: "1px solid var(--primary)", background: "transparent", color: "var(--primary)", fontWeight: 600 }}>Export</button>
+                <button type="button" onClick={handleExport} style={{ padding: "10px 16px", borderRadius: "var(--radius-sm)", border: "1px solid var(--primary)", background: "transparent", color: "var(--primary)", fontWeight: 600 }}>Export</button>
               )}
               {canCreateAccount && (
-                <button type="button" onClick={() => router.push("/accounts/create")} style={{ padding: "10px 20px", borderRadius: "10px", border: "none", background: "var(--primary)", color: "white", fontWeight: 700 }}>New Account</button>
+                <button type="button" onClick={() => router.push("/accounts/create")} style={{ padding: "10px 20px", borderRadius: "var(--radius-sm)", border: "none", background: "var(--primary)", color: "white", fontWeight: 700 }}>New Account</button>
               )}
             </div>
           </div>

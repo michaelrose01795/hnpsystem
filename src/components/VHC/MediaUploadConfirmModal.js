@@ -166,7 +166,7 @@ export default function MediaUploadConfirmModal({
         <div style={{
           flex: 1,
           background: "var(--background)",
-          borderRadius: "12px",
+          borderRadius: "var(--radius-sm)",
           overflow: "hidden",
           display: "flex",
           alignItems: "center",
@@ -181,7 +181,7 @@ export default function MediaUploadConfirmModal({
                 maxWidth: "100%",
                 maxHeight: "100%",
                 objectFit: "contain",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
               }}
             />
           ) : previewUrl && mediaType === "video" ? (
@@ -191,7 +191,7 @@ export default function MediaUploadConfirmModal({
               style={{
                 maxWidth: "100%",
                 maxHeight: "100%",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
               }}
             />
           ) : (
@@ -208,7 +208,7 @@ export default function MediaUploadConfirmModal({
         {mediaFile && (
           <div style={{
             background: "var(--surface)",
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             padding: "16px",
             display: "flex",
             flexDirection: "column",
@@ -244,7 +244,7 @@ export default function MediaUploadConfirmModal({
         {/* Customer Visibility Toggle */}
         <div style={{
           background: "var(--surface)",
-          borderRadius: "12px",
+          borderRadius: "var(--radius-sm)",
           padding: "16px",
         }}>
           <label style={{
@@ -302,7 +302,7 @@ export default function MediaUploadConfirmModal({
             style={{
               width: "100%",
               padding: "10px 12px",
-              borderRadius: "8px",
+              borderRadius: "var(--radius-xs)",
               border: "1px solid var(--accent-purple-surface)",
               background: "var(--surface)",
               color: "var(--text)",
@@ -317,7 +317,7 @@ export default function MediaUploadConfirmModal({
         {uploading && (
           <div style={{
             background: "var(--accent-purple-surface)",
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             padding: "16px",
           }}>
             <div style={{
@@ -335,7 +335,7 @@ export default function MediaUploadConfirmModal({
               width: "100%",
               height: "8px",
               background: "var(--background)",
-              borderRadius: "4px",
+              borderRadius: "var(--radius-xs)",
               overflow: "hidden",
             }}>
               <div style={{
@@ -352,7 +352,7 @@ export default function MediaUploadConfirmModal({
         {error && (
           <div style={{
             background: "var(--danger-surface)",
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             padding: "16px",
             color: "var(--danger)",
             fontSize: "13px",

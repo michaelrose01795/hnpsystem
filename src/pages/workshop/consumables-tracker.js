@@ -26,11 +26,10 @@ const workspaceShellStyle = {
   flex: 1,
   display: "flex",
   flexDirection: "column",
-  borderRadius: "24px",
-  boxShadow: "none",
-  border: "1px solid var(--surface-light)",
+  borderRadius: "var(--radius-xl)",
+  border: "var(--section-card-border)",
   background: "var(--layer-section-level-2)",
-  padding: "24px",
+  padding: "var(--page-card-padding)",
   minHeight: 0,
   overflow: "hidden",
 };
@@ -47,11 +46,10 @@ const mainColumnStyle = {
 };
 
 const cardStyle = {
-  backgroundColor: "var(--surface)",
-  borderRadius: "16px",
-  padding: "20px",
-  boxShadow: "none",
-  border: "1px solid var(--surface-muted)",
+  backgroundColor: "var(--section-card-bg)",
+  borderRadius: "var(--section-card-radius)",
+  padding: "var(--section-card-padding)",
+  border: "var(--section-card-border)",
 };
 
 const sectionTitleStyle = {
@@ -66,7 +64,7 @@ const badgeBaseStyle = {
   alignItems: "center",
   gap: "6px",
   padding: "4px 10px",
-  borderRadius: "999px",
+  borderRadius: "var(--radius-pill)",
   fontSize: "0.75rem",
   fontWeight: 600,
 };
@@ -74,7 +72,7 @@ const badgeBaseStyle = {
 const budgetInputStyle = {
   width: "100%",
   padding: "10px 12px",
-  borderRadius: "10px",
+  borderRadius: "var(--radius-sm)",
   border: "none",
   fontSize: "0.95rem",
 };
@@ -83,7 +81,7 @@ const orderHistoryGridTemplate = "minmax(150px, 2fr) repeat(5, minmax(90px, 1fr)
 
 const orderHistoryContainerStyle = {
   marginTop: "12px",
-  borderRadius: "12px",
+  borderRadius: "var(--radius-sm)",
   border: "1px solid var(--surface-light)",
   background: "var(--surface-light)",
   padding: "12px",
@@ -144,7 +142,7 @@ const orderModalCloseButtonStyle = {
 
 const orderModalButtonStyle = {
   padding: "10px 20px",
-  borderRadius: "10px",
+  borderRadius: "var(--radius-sm)",
   border: "none",
   cursor: "pointer",
   fontWeight: 600,
@@ -168,13 +166,13 @@ const orderModalFormGroupStyle = {
 
 const orderModalInputStyle = {
   padding: "10px 14px",
-  borderRadius: "8px",
+  borderRadius: "var(--radius-xs)",
   border: "1px solid var(--surface-light)",
 };
 
 const orderButtonStyle = {
   padding: "8px 16px",
-  borderRadius: "10px",
+  borderRadius: "var(--radius-sm)",
   border: "none",
   background: "var(--primary)",
   color: "var(--surface)",
@@ -185,7 +183,7 @@ const orderButtonStyle = {
 
 const stockCheckButtonStyle = {
   padding: "10px 18px",
-  borderRadius: "999px",
+  borderRadius: "var(--radius-pill)",
   border: "1px solid var(--primary)",
   background: "var(--surface)",
   color: "var(--text-primary)",
@@ -1054,7 +1052,7 @@ function ConsumablesTrackerPage() {
               style={{
                 display: "inline-block",
                 padding: "10px 18px",
-                borderRadius: "999px",
+                borderRadius: "var(--radius-pill)",
                 background: "var(--primary)",
                 color: "var(--surface)",
                 fontWeight: 600,
@@ -1098,7 +1096,7 @@ function ConsumablesTrackerPage() {
                     onClick={() => setShowDuplicateModal(false)}
                     style={{
                       padding: "10px 16px",
-                      borderRadius: "10px",
+                      borderRadius: "var(--radius-sm)",
                       border: "none",
                       background: "var(--primary)",
                       color: "var(--surface)",
@@ -1339,7 +1337,7 @@ function ConsumablesTrackerPage() {
               <div
                 style={{
                   background: "var(--layer-section-level-1)",
-                  borderRadius: "14px",
+                  borderRadius: "var(--radius-md)",
                   border: "1px solid var(--surface-light)",
                   padding: "14px",
                   marginBottom: "12px",
@@ -1402,7 +1400,7 @@ function ConsumablesTrackerPage() {
                       onClick={() => handleMonthChange(-1)}
                       style={{
                         padding: "6px 10px",
-                        borderRadius: "10px",
+                        borderRadius: "var(--radius-sm)",
                         border: "1px solid var(--primary)",
                         background: "var(--surface)",
                         color: "var(--text-primary)",
@@ -1426,7 +1424,7 @@ function ConsumablesTrackerPage() {
                       disabled={!canAdvanceToNextMonth}
                       style={{
                         padding: "6px 10px",
-                        borderRadius: "10px",
+                        borderRadius: "var(--radius-sm)",
                         border: "1px solid var(--primary)",
                         background: canAdvanceToNextMonth
                           ? "var(--surface)"
@@ -1598,7 +1596,7 @@ function ConsumablesTrackerPage() {
                           key={`log-${log.id || log.date}-${log.itemName}`}
                           style={{
                             background: highlightRowBackground,
-                            borderRadius: "12px",
+                            borderRadius: "var(--radius-sm)",
                           }}
                         >
                           <td style={{ padding: "12px", color: mutedTextColor }}>
@@ -1818,7 +1816,7 @@ function ConsumablesTrackerPage() {
                             key={`consumable-${item.id}`}
                             style={{
                               background: highlightRowBackground,
-                              borderRadius: "12px",
+                              borderRadius: "var(--radius-sm)",
                               cursor: "pointer",
                             }}
                             onClick={() => openHistoryModal(item)}
@@ -1931,7 +1929,7 @@ function ConsumablesTrackerPage() {
                       key={`request-${request.id}`}
                       style={{
                         background: highlightRowBackground,
-                        borderRadius: "12px",
+                        borderRadius: "var(--radius-sm)",
                       }}
                     >
                       <td style={{ padding: "12px", color: mutedTextColor }}>
@@ -1962,7 +1960,7 @@ function ConsumablesTrackerPage() {
                             alignItems: "center",
                             gap: "6px",
                             padding: "4px 10px",
-                            borderRadius: "999px",
+                            borderRadius: "var(--radius-pill)",
                             fontWeight: 600,
                             fontSize: "0.75rem",
                             ...(statusBadgeStyles[

@@ -84,7 +84,7 @@ export default function PublicSharePreviewPage() {
       padding: "6px 12px",
       background: isDark ? "var(--surface)" : "var(--info-surface)",
       border: "1px solid var(--info-surface)",
-      borderRadius: "8px",
+      borderRadius: "var(--radius-xs)",
       fontSize: "12px",
       color: "var(--info)",
     };
@@ -98,7 +98,7 @@ export default function PublicSharePreviewPage() {
         padding: "6px 12px",
         background: "rgba(var(--accent-purple-rgb), 0.08)",
         border: "1px solid rgba(var(--accent-purple-rgb), 0.25)",
-        borderRadius: "8px",
+        borderRadius: "var(--radius-xs)",
         fontSize: "12px",
         color: "var(--accent-purple)",
         textAlign: "right",
@@ -110,7 +110,7 @@ export default function PublicSharePreviewPage() {
       padding: "6px 12px",
       background: "rgba(var(--danger-rgb), 0.08)",
       border: "1px solid rgba(var(--danger-rgb), 0.25)",
-      borderRadius: "8px",
+      borderRadius: "var(--radius-xs)",
       fontSize: "12px",
       color: "var(--danger)",
       textAlign: "right",
@@ -715,7 +715,7 @@ export default function PublicSharePreviewPage() {
       <div
         style={{
           border: `1px solid ${theme.border || "var(--info-surface)"}`,
-          borderRadius: "16px",
+          borderRadius: "var(--radius-md)",
           background: (severity === "authorized" || severity === "declined") ? "var(--surface)" : (theme.background || "var(--surface)"),
           overflow: "hidden",
           marginBottom: "18px",
@@ -785,7 +785,7 @@ export default function PublicSharePreviewPage() {
             style={{
               padding: "12px",
               border: `1px solid ${item.color}33`,
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               background: `${item.color}11`,
             }}
           >
@@ -834,7 +834,7 @@ export default function PublicSharePreviewPage() {
           style={{
             padding: "18px",
             border: "1px solid var(--info-surface)",
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             background: "var(--info-surface)",
             color: "var(--info)",
             fontSize: "13px",
@@ -855,7 +855,7 @@ export default function PublicSharePreviewPage() {
               key={file.file_id}
               style={{
                 background: "var(--surface)",
-                borderRadius: "12px",
+                borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--info-surface)",
                 overflow: "hidden",
               }}
@@ -900,7 +900,7 @@ export default function PublicSharePreviewPage() {
           style={{
             padding: "18px",
             border: "1px solid var(--info-surface)",
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             background: "var(--info-surface)",
             color: "var(--info)",
             fontSize: "13px",
@@ -921,7 +921,7 @@ export default function PublicSharePreviewPage() {
               key={file.file_id}
               style={{
                 background: "var(--surface)",
-                borderRadius: "12px",
+                borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--info-surface)",
                 overflow: "hidden",
               }}
@@ -982,7 +982,7 @@ export default function PublicSharePreviewPage() {
               width: "64px",
               height: "64px",
               margin: "0 auto 16px",
-              borderRadius: "50%",
+              borderRadius: "var(--radius-full)",
               background: "var(--warning-surface)",
               display: "flex",
               alignItems: "center",
@@ -1109,12 +1109,12 @@ export default function PublicSharePreviewPage() {
                 >
                   {tab.label}
                   {tab.id === "photos" && photoFiles.length > 0 && (
-                    <span style={{ marginLeft: "8px", background: "var(--info-surface)", padding: "2px 8px", borderRadius: "12px", fontSize: "12px" }}>
+                    <span style={{ marginLeft: "8px", background: "var(--info-surface)", padding: "2px 8px", borderRadius: "var(--radius-sm)", fontSize: "12px" }}>
                       {photoFiles.length}
                     </span>
                   )}
                   {tab.id === "videos" && videoFiles.length > 0 && (
-                    <span style={{ marginLeft: "8px", background: "var(--info-surface)", padding: "2px 8px", borderRadius: "12px", fontSize: "12px" }}>
+                    <span style={{ marginLeft: "8px", background: "var(--info-surface)", padding: "2px 8px", borderRadius: "var(--radius-sm)", fontSize: "12px" }}>
                       {videoFiles.length}
                     </span>
                   )}

@@ -9,14 +9,8 @@ const ALLOWED_ROLES = ["after sales manager", "after sales director", "aftersale
 
 const Section = ({ title, subtitle, children }) => (
   <section
+    className="app-section-card"
     style={{
-      background: "var(--surface)",
-      borderRadius: "18px",
-      padding: "24px",
-      border: "1px solid var(--surface-light)",
-      boxShadow: "none",
-      display: "flex",
-      flexDirection: "column",
       gap: "12px",
     }}
   >
@@ -30,13 +24,9 @@ const Section = ({ title, subtitle, children }) => (
 
 const MetricCard = ({ label, value, helper }) => (
   <div
+    className="app-section-card"
     style={{
-      border: "1px solid var(--surface-light)",
-      borderRadius: "14px",
-      padding: "16px",
       minWidth: 180,
-      background: "var(--surface)",
-      boxShadow: "none",
     }}
   >
     <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--primary-dark)" }}>{label}</p>
@@ -95,7 +85,7 @@ const FollowUpList = ({ items }) => (
   <div
     style={{
       border: "1px solid var(--surface-light)",
-      borderRadius: "12px",
+      borderRadius: "var(--radius-sm)",
       padding: "12px",
       background: "var(--surface)",
       display: "flex",
@@ -165,14 +155,11 @@ export default function AfterSalesDashboard() {
 
   return (
     <Layout>
-      <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
+      <div>
         <header
+          className="app-section-card"
           style={{
             background: "var(--surface-light)",
-            borderRadius: "18px",
-            padding: "24px",
-            border: "1px solid var(--surface-light)",
-            boxShadow: "none",
           }}
         >
           <p style={{ margin: 0, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--primary-dark)" }}>

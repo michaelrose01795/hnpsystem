@@ -51,13 +51,6 @@ const ADVANCED_TABS = [
 ];
 
 const sectionCardStyle = {
-  background: "var(--surface)",
-  borderRadius: "20px",
-  border: "1px solid var(--surface-light)",
-  padding: "24px",
-  boxShadow: "none",
-  display: "flex",
-  flexDirection: "column",
   gap: "18px",
 };
 
@@ -81,9 +74,9 @@ const labelStyle = {
 };
 
 const inputStyle = {
-  borderRadius: "10px",
+  borderRadius: "var(--radius-sm)",
   border: "1px solid var(--surface-light)",
-  padding: "10px 12px",
+  padding: "var(--control-padding)",
   fontSize: "0.95rem",
   fontFamily: "inherit",
   background: "var(--layer-section-level-1)",
@@ -92,8 +85,8 @@ const inputStyle = {
 
 const addPartInputStyle = {
   ...inputStyle,
-  height: "42px",
-  minHeight: "42px",
+  height: "var(--control-height)",
+  minHeight: "var(--control-height)",
   padding: "8px 12px",
 };
 
@@ -124,8 +117,8 @@ const notesTextareaStyle = {
 };
 
 const addressFieldStyle = {
-  padding: "10px 12px",
-  borderRadius: "10px",
+  padding: "var(--control-padding)",
+  borderRadius: "var(--radius-sm)",
   border: "1px solid var(--surface-light)",
   background: "var(--layer-section-level-1)",
   color: "var(--text-primary)",
@@ -142,17 +135,9 @@ const compactFieldWrapStyle = {
   width: "fit-content",
 };
 
-const compactDropdownOverride = {
-  ".dropdown-api__control": {
-    minHeight: "40px",
-    padding: "10px 40px 10px 12px",
-    borderRadius: "10px",
-  },
-};
-
 const primaryButtonStyle = (disabled = false) => ({
   padding: "12px 20px",
-  borderRadius: "12px",
+  borderRadius: "var(--radius-sm)",
   border: "none",
   fontWeight: 600,
   fontSize: "0.95rem",
@@ -162,8 +147,8 @@ const primaryButtonStyle = (disabled = false) => ({
 });
 
 const secondaryButtonStyle = {
-  padding: "10px 18px",
-  borderRadius: "10px",
+  padding: "var(--control-padding)",
+  borderRadius: "var(--radius-sm)",
   border: "1px solid var(--primary)",
   fontWeight: 600,
   fontSize: "0.9rem",
@@ -174,7 +159,7 @@ const secondaryButtonStyle = {
 
 const dangerButtonStyle = {
   padding: "8px 14px",
-  borderRadius: "10px",
+  borderRadius: "var(--radius-sm)",
   border: "1px solid var(--danger)",
   fontWeight: 600,
   fontSize: "0.85rem",
@@ -210,8 +195,8 @@ const invoiceCellStyle = {
 
 const invoiceRowStyle = {
   background: "var(--layer-section-level-1)",
-  borderRadius: "16px",
-  boxShadow: "0 10px 25px rgba(15, 23, 42, 0.08)",
+  borderRadius: "var(--radius-md)",
+  boxShadow: "var(--shadow-lg)",
 };
 
 const createDefaultInvoiceForm = (invoiceDate) => ({
@@ -821,30 +806,8 @@ function GoodsInPage() {
   return (
     <Layout>
       <style jsx>{`
-        .compact-dropdown :global(.dropdown-api__control) {
-          min-height: 40px;
-          padding: 10px 40px 10px 12px;
-          border-radius: 10px;
-          font-size: 0.95rem;
-          border: 1px solid var(--surface-light);
-          background: var(--layer-section-level-1);
-          color: var(--text-primary);
-          box-shadow: none;
-          width: fit-content;
-          min-width: 0;
-        }
         .compact-dropdown {
           width: fit-content;
-        }
-        .compact-dropdown :global(.dropdown-api__chevron) {
-          right: 12px;
-        }
-        .compact-dropdown :global(.dropdown-api.is-open .dropdown-api__control),
-        .compact-dropdown :global(.dropdown-api__control:focus-visible) {
-          border: 1px solid var(--surface-light);
-          background: var(--layer-section-level-1);
-          box-shadow: none;
-          outline: none;
         }
         .bin-suggestions {
           border: 1px solid var(--surface-light);
@@ -867,31 +830,8 @@ function GoodsInPage() {
         [data-theme="dark"] .bin-suggestion-button {
           color: var(--text-primary);
         }
-        .compact-calendar :global(.calendar-api__control) {
-          padding: 10px 40px 10px 12px;
-          border-radius: 10px;
-          font-size: 0.95rem;
-          min-height: 40px;
-          border: 1px solid var(--surface-light);
-          background: var(--layer-section-level-1);
-          color: var(--text-primary);
-          box-shadow: none;
-          backdrop-filter: none;
-          -webkit-backdrop-filter: none;
-          width: fit-content;
-          min-width: 0;
-        }
         .compact-calendar {
           width: fit-content;
-        }
-        .compact-calendar :global(.calendar-api__icon) {
-          right: 12px;
-        }
-        .compact-calendar :global(.calendar-api__control:hover:not(:disabled)),
-        .compact-calendar :global(.calendar-api__control:focus) {
-          border-color: var(--surface-light);
-          background: var(--layer-section-level-1);
-          box-shadow: none;
         }
         .add-part-section {
           padding: 20px 22px;
@@ -907,7 +847,7 @@ function GoodsInPage() {
         .add-part-fields-shell {
           border: 1px solid var(--surface-light);
           background: var(--layer-section-level-2);
-          border-radius: 14px;
+          border-radius: var(--control-radius);
           padding: 12px;
           overflow: visible;
         }
@@ -943,7 +883,7 @@ function GoodsInPage() {
         .invoice-details-shell {
           border: 1px solid var(--surface-light);
           background: var(--layer-section-level-2);
-          border-radius: 14px;
+          border-radius: var(--control-radius);
           padding: 12px;
           display: flex;
           flex-direction: column;
@@ -978,7 +918,7 @@ function GoodsInPage() {
           <div
             style={{
               padding: "12px 16px",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               background:
                 toast.type === "error"
                   ? "var(--danger-surface)"
@@ -999,7 +939,7 @@ function GoodsInPage() {
 
         <div
           style={{
-            borderRadius: "999px",
+            borderRadius: "var(--radius-pill)",
             border: "1px solid var(--surface-light)",
             background: "var(--surface)",
             padding: "6px",
@@ -1023,7 +963,7 @@ function GoodsInPage() {
               }}
               style={{
                 flex: "0 0 auto",
-                borderRadius: "999px",
+                borderRadius: "var(--radius-pill)",
                 border: "1px solid transparent",
                 padding: "10px 20px",
                 fontSize: "0.9rem",
@@ -1043,7 +983,7 @@ function GoodsInPage() {
           ))}
         </div>
 
-        <section style={sectionCardStyle} className="invoice-details-section">
+        <section style={sectionCardStyle} className="app-section-card invoice-details-section">
           <div className="invoice-details-toolbar">
             <h2 style={{ margin: 0 }}>Invoice details</h2>
             <div style={{ display: "flex", gap: "10px" }}>
@@ -1169,7 +1109,7 @@ function GoodsInPage() {
           </div>
         </section>
 
-        <section style={sectionCardStyle} className="add-part-section">
+        <section style={sectionCardStyle} className="app-section-card add-part-section">
           <div className="add-part-toolbar">
             <h2 style={{ margin: 0 }}>Add part</h2>
             <button style={secondaryButtonStyle} onClick={() => setPartSearchOpen(true)}>
@@ -1180,7 +1120,7 @@ function GoodsInPage() {
             <div
               style={{
                 border: "1px solid var(--danger)",
-                borderRadius: "12px",
+                borderRadius: "var(--radius-sm)",
                 padding: "10px 14px",
                 color: "var(--danger)",
                 background: "var(--danger-surface)",
@@ -1265,7 +1205,7 @@ function GoodsInPage() {
                       marginTop: "6px",
                       maxHeight: "200px",
                       overflowY: "auto",
-                      borderRadius: "12px",
+                      borderRadius: "var(--radius-sm)",
                       zIndex: 1000,
                     }}
                     onMouseDown={(event) => event.preventDefault()}
@@ -1634,7 +1574,7 @@ function GoodsInPage() {
           </div>
         </section>
 
-        <section style={sectionCardStyle}>
+        <section className="app-section-card" style={sectionCardStyle}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
               <h2 style={{ margin: 0 }}>Invoice lines</h2>
@@ -1682,7 +1622,7 @@ function GoodsInPage() {
             <ScrollArea
               maxHeight="420px"
               style={{
-                borderRadius: "20px",
+                borderRadius: "var(--radius-lg)",
                 border: "1px solid var(--surface-light)",
                 overflowX: "hidden",
                 background: "var(--layer-section-level-2)",
@@ -1842,7 +1782,7 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
         ? "1px solid color-mix(in srgb, var(--danger) 30%, var(--surface-light))"
         : "1px solid var(--surface-light)";
       const restingBackground =
-        "linear-gradient(180deg, var(--surface) 0%, color-mix(in srgb, var(--surface) 88%, var(--surface-light)) 100%)";
+        "var(--surface)";
 
       return (
         <button
@@ -1853,12 +1793,12 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
             textAlign: "left",
             padding: "14px",
             border: restingBorder,
-            borderRadius: "14px",
+            borderRadius: "var(--radius-md)",
             marginBottom: index === results.length - 1 ? 0 : "10px",
             cursor: "pointer",
             background: restingBackground,
             color: "var(--text-primary)",
-            boxShadow: "0 1px 0 rgba(0,0,0,0.02)",
+            boxShadow: "var(--shadow-sm)",
             transition: "background 0.15s ease, border-color 0.15s ease, transform 0.15s ease",
             display: "flex",
             flexDirection: "column",
@@ -1895,7 +1835,7 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
                 color: "var(--primary)",
                 background: "color-mix(in srgb, var(--primary) 12%, transparent)",
                 border: "1px solid color-mix(in srgb, var(--primary) 28%, var(--surface-light))",
-                borderRadius: "999px",
+                borderRadius: "var(--radius-pill)",
                 padding: "3px 8px",
                 whiteSpace: "nowrap",
               }}
@@ -1909,7 +1849,7 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
                 color: "var(--text-secondary)",
                 background: "var(--layer-section-level-1)",
                 border: "1px solid var(--surface-light)",
-                borderRadius: "999px",
+                borderRadius: "var(--radius-pill)",
                 padding: "2px 8px",
               }}
             >
@@ -1921,7 +1861,7 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
                   color: "var(--text-secondary)",
                   background: "var(--layer-section-level-1)",
                   border: "1px solid var(--surface-light)",
-                  borderRadius: "999px",
+                  borderRadius: "var(--radius-pill)",
                   padding: "2px 8px",
                 }}
               >
@@ -1937,7 +1877,7 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
                 border: missingLinkedAccount
                   ? "1px solid color-mix(in srgb, var(--danger) 28%, var(--surface-light))"
                   : "1px solid color-mix(in srgb, var(--success) 28%, var(--surface-light))",
-                borderRadius: "999px",
+                borderRadius: "var(--radius-pill)",
                 padding: "2px 8px",
                 fontWeight: 600,
               }}
@@ -1955,7 +1895,7 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
         className="popup-card"
         style={{
           ...popupCardStyles,
-          borderRadius: "32px",
+          borderRadius: "var(--radius-xl)",
           width: "100%",
           maxWidth: "760px",
           height: "620px",
@@ -1970,7 +1910,7 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <h3 style={{ margin: 0, color: "var(--text-primary)" }}>Supplier accounts</h3>
-          <button onClick={onClose} style={{ ...secondaryButtonStyle, borderRadius: "12px" }}>
+          <button onClick={onClose} style={{ ...secondaryButtonStyle, borderRadius: "var(--radius-sm)" }}>
             Close
           </button>
         </div>
@@ -1993,7 +1933,7 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
         <div
           style={{
             border: "1px solid var(--surface-light)",
-            borderRadius: "16px",
+            borderRadius: "var(--radius-md)",
             background: "var(--layer-section-level-1)",
             padding: "10px",
             minHeight: "392px",
@@ -2112,7 +2052,7 @@ function GoodsInPartSearchModal({ onClose, onSelect, initialQuery = "" }) {
                 textAlign: "left",
                 padding: "12px",
                 border: "1px solid var(--surface-light)",
-                borderRadius: "10px",
+                borderRadius: "var(--radius-sm)",
                 marginBottom: "8px",
                 cursor: "pointer",
               }}
@@ -2435,7 +2375,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
   const infoCalloutStyle = {
     background: "var(--layer-section-level-2)",
     border: "1px solid var(--surface-light)",
-    borderRadius: "12px",
+    borderRadius: "var(--radius-sm)",
     padding: "10px 12px",
     color: "var(--text-secondary)",
     fontSize: "0.9rem",
@@ -2445,7 +2385,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
   const modalSectionStyle = {
     background: "var(--surface)",
     border: "1px solid var(--surface-light)",
-    borderRadius: "16px",
+    borderRadius: "var(--radius-md)",
     padding: "16px",
     display: "flex",
     flexDirection: "column",
@@ -2456,7 +2396,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
     width: "100%",
     textAlign: "left",
     border: "1px solid var(--surface-light)",
-    borderRadius: "12px",
+    borderRadius: "var(--radius-sm)",
     padding: "12px",
     marginBottom: "8px",
     cursor: "pointer",
@@ -2567,7 +2507,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
               <div
                 style={{
                   border: "1px solid var(--surface-light)",
-                  borderRadius: "12px",
+                  borderRadius: "var(--radius-sm)",
                   overflow: "hidden",
                 }}
               >
@@ -2619,7 +2559,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
               <div
                 style={{
                   border: "1px solid var(--surface-light)",
-                  borderRadius: "12px",
+                  borderRadius: "var(--radius-sm)",
                   overflow: "hidden",
                 }}
               >

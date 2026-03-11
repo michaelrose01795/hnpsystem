@@ -32,7 +32,7 @@ export default function TechEfficiencyPage() {
           <div
             style={{
               background: "var(--surface)",
-              borderRadius: "18px",
+              borderRadius: "var(--radius-md)",
               padding: "32px",
               border: "1px solid var(--surface-light)",
               textAlign: "center",

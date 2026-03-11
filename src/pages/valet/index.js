@@ -162,7 +162,7 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving }) => {
       style={{
         border: "1px solid var(--surface-light)",
         padding: "16px 20px",
-        borderRadius: "12px",
+        borderRadius: "var(--radius-sm)",
         backgroundColor: "var(--surface)",
         boxShadow: "none",
         display: "flex",
@@ -528,7 +528,7 @@ export default function ValetDashboard() {
             <div
               style={{
                 padding: "12px 16px",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
                 backgroundColor: "var(--danger-surface)",
                 color: "var(--danger)",
                 fontSize: "14px",

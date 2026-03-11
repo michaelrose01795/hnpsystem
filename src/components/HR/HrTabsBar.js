@@ -21,12 +21,9 @@ export default function HrTabsBar() {
 
   return (
     <div
+      className="app-section-card"
       style={{
-        background: "var(--surface)",
-        borderRadius: "18px",
         padding: "14px",
-        border: "1px solid var(--accent-purple-surface)",
-        boxShadow: "none",
         marginBottom: "20px",
       }}
     >

@@ -112,7 +112,7 @@ export default function NextActionPrompt() {
         onClick={openPrompt}
         style={{
           padding: "8px 16px",
-          borderRadius: "14px",
+          borderRadius: "var(--radius-md)",
           border: "none",
           background: "var(--danger)",
           color: "white",
@@ -122,7 +122,6 @@ export default function NextActionPrompt() {
           alignItems: "center",
           gap: "8px",
           cursor: "pointer",
-          boxShadow: "none",
         }}
       >
         <span role="img" aria-label="Next action">🔔</span>
@@ -137,7 +136,7 @@ export default function NextActionPrompt() {
           ariaLabel="Next action prompt"
           cardStyle={{
             width: "min(520px, 100%)",
-            borderRadius: "24px",
+            borderRadius: "var(--radius-xl)",
             padding: "28px",
             display: "flex",
             flexDirection: "column",
@@ -175,7 +174,7 @@ export default function NextActionPrompt() {
             <div
             style={{
               padding: "16px",
-              borderRadius: "16px",
+              borderRadius: "var(--radius-md)",
               background: "rgba(var(--danger-rgb), 0.1)",
               border: "1px solid rgba(var(--danger-rgb), 0.25)",
               display: "grid",
@@ -207,7 +206,7 @@ export default function NextActionPrompt() {
                   onChange={(event) => setKeyLocation(event.target.value)}
                   style={{
                     padding: "10px 12px",
-                    borderRadius: "12px",
+                    borderRadius: "var(--input-radius)",
                     border: "1px solid rgba(var(--danger-rgb), 0.3)",
                     background: "var(--surface)",
                     color: "var(--info-dark)",
@@ -229,7 +228,7 @@ export default function NextActionPrompt() {
                   onChange={(event) => setVehicleLocation(event.target.value)}
                   style={{
                     padding: "10px 12px",
-                    borderRadius: "12px",
+                    borderRadius: "var(--input-radius)",
                     border: "1px solid rgba(var(--danger-rgb), 0.3)",
                     background: "var(--surface)",
                     color: "var(--info-dark)",
@@ -253,7 +252,7 @@ export default function NextActionPrompt() {
                   rows={3}
                   style={{
                     padding: "10px 12px",
-                    borderRadius: "12px",
+                    borderRadius: "var(--input-radius)",
                     border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
                     resize: "vertical",
                     fontFamily: "inherit",
@@ -265,7 +264,7 @@ export default function NextActionPrompt() {
                 <div
                   style={{
                     padding: "10px 12px",
-                    borderRadius: "12px",
+                    borderRadius: "var(--input-radius)",
                     backgroundColor: feedback.type === "success" ? "var(--success-surface)" : "var(--danger-surface)",
                     color: feedback.type === "success" ? "var(--success-dark)" : "var(--danger)",
                     fontWeight: 600,
@@ -281,7 +280,7 @@ export default function NextActionPrompt() {
                   onClick={closePrompt}
                   style={{
                     padding: "10px 16px",
-                    borderRadius: "12px",
+                    borderRadius: "var(--input-radius)",
                     border: "1px solid var(--info)",
                     background: "var(--surface)",
                     color: "var(--info-dark)",
@@ -296,7 +295,7 @@ export default function NextActionPrompt() {
                   disabled={isSubmitting}
                   style={{
                     padding: "10px 18px",
-                    borderRadius: "12px",
+                    borderRadius: "var(--input-radius)",
                     border: "none",
                     background: isSubmitting
                       ? "var(--danger)"
@@ -304,7 +303,6 @@ export default function NextActionPrompt() {
                     color: "white",
                     fontWeight: 700,
                     cursor: isSubmitting ? "wait" : "pointer",
-                    boxShadow: "none",
                     minWidth: "140px",
                   }}
                 >

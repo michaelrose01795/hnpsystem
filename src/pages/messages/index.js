@@ -23,11 +23,10 @@ const radii = appShellTheme.radii;
 const shadows = appShellTheme.shadows;
 
 const cardStyle = {
-  background: "var(--surface)",
-  border: `1px solid ${palette.border}`,
-  borderRadius: "22px",
-  padding: "20px",
-  boxShadow: "none",
+  background: "var(--section-card-bg)",
+  border: "var(--section-card-border)",
+  borderRadius: "var(--radius-lg)",
+  padding: "var(--section-card-padding)",
   display: "flex",
   flexDirection: "column",
   gap: "14px",
@@ -51,14 +50,14 @@ const SectionTitle = ({ title, subtitle, action }) => {
           <h3
             style={{
               margin: 0,
-              fontSize: "1rem",
+              fontSize: "var(--text-h4)",
               color: palette.accent,
             }}
           >
             {title}
           </h3>
           {subtitle && (
-            <p style={{ margin: "4px 0 0", color: palette.textMuted, fontSize: "0.85rem" }}>
+            <p style={{ margin: "4px 0 0", color: palette.textMuted, fontSize: "var(--text-body-sm)" }}>
               {subtitle}
             </p>
           )}
@@ -99,7 +98,7 @@ const Chip = ({ label, onRemove, disabled = false, color = palette.accent }) => 
       borderRadius: radii.pill,
       backgroundColor: palette.accentSurface,
       color,
-      fontSize: "0.85rem",
+      fontSize: "var(--text-body-sm)",
       fontWeight: 600,
     }}
   >
@@ -114,7 +113,7 @@ const Chip = ({ label, onRemove, disabled = false, color = palette.accent }) => 
           background: "transparent",
           color: disabled ? palette.textMuted : color,
           cursor: disabled ? "not-allowed" : "pointer",
-          fontSize: "0.9rem",
+          fontSize: "var(--text-body)",
         }}
       >
         ×
@@ -131,7 +130,7 @@ const AvatarBadge = ({ name }) => {
       style={{
         width: 40,
         height: 40,
-        borderRadius: "50%",
+        borderRadius: "var(--radius-full)",
         backgroundColor: palette.accentSurface,
         color: palette.accent,
         fontWeight: 700,
@@ -305,7 +304,7 @@ const MessageBubble = ({ message, isMine, nameColor = palette.accent, userRoles 
     backgroundColor: isMine ? "rgba(var(--accent-purple-rgb), 0.14)" : "var(--search-surface)",
     color: palette.textPrimary,
     maxWidth: "540px",
-    boxShadow: "0 4px 12px rgba(15, 23, 42, 0.06)",
+    boxShadow: "var(--shadow-md)",
     lineHeight: 1.5,
   };
 
@@ -1803,14 +1802,7 @@ function MessagesPage() {
 
   return (
     <Layout>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "20px",
-          minHeight: "calc(100vh - 180px)",
-        }}
-      >
+      <div className="app-page-stack" style={{ minHeight: "100%" }}>
         <div
           style={{
             flex: 1,
@@ -1930,7 +1922,7 @@ function MessagesPage() {
                             style={{
                               width: 8,
                               height: 8,
-                              borderRadius: "50%",
+                              borderRadius: "var(--radius-full)",
                               backgroundColor: palette.accent,
                               display: "inline-block",
                             }}
@@ -1985,11 +1977,11 @@ function MessagesPage() {
                           maxHeight: 42,
                           padding: 0,
                           flex: "0 0 42px",
-                          borderRadius: "50%",
+                          borderRadius: "var(--radius-full)",
                           border: `1px solid ${palette.border}`,
                           backgroundColor: "var(--surface)",
                           color: palette.accent,
-                          fontSize: "1.45rem",
+                          fontSize: "var(--text-h2)",
                           fontWeight: 700,
                           lineHeight: 1,
                           cursor: "pointer",
@@ -2019,7 +2011,7 @@ function MessagesPage() {
               />
 
               {threadDeleteError && (
-                <p style={{ color: "var(--danger)", margin: "4px 0 0", fontSize: "0.8rem" }}>
+                <p style={{ color: "var(--danger)", margin: "4px 0 0", fontSize: "var(--text-label)" }}>
                   {threadDeleteError}
                 </p>
               )}
@@ -2088,7 +2080,7 @@ function MessagesPage() {
                               disabled={threadSelectionMode}
                               style={{
                                 flex: 1,
-                                borderRadius: "16px",
+                                borderRadius: "var(--radius-md)",
                                 border: activeThreadId === thread.id
                                   ? `1px solid rgba(var(--accent-purple-rgb), 0.26)`
                                   : `1px solid ${palette.border}`,
@@ -2126,7 +2118,7 @@ function MessagesPage() {
                               <strong
                                 style={{
                                   display: "block",
-                                  fontSize: "0.95rem",
+                                  fontSize: "var(--text-body)",
                                   fontWeight: activeThreadId === thread.id ? 800 : 700,
                                   color: systemTitleColor,
                                 }}
@@ -2138,7 +2130,7 @@ function MessagesPage() {
                                   style={{
                                     display: "block",
                                     marginTop: "6px",
-                                    fontSize: "0.82rem",
+                                    fontSize: "var(--text-label)",
                                     color: "rgba(71, 85, 105, 0.86)",
                                     lineHeight: 1.45,
                                   }}
@@ -2152,7 +2144,7 @@ function MessagesPage() {
                                     : thread.lastMessage.content}
                                 </span>
                               ) : (
-                                <span style={{ fontSize: "0.8rem", color: palette.textMuted }}>
+                                <span style={{ fontSize: "var(--text-label)", color: palette.textMuted }}>
                                   No messages yet
                                 </span>
                               )}
@@ -2216,7 +2208,7 @@ function MessagesPage() {
                       borderRadius: radii.pill,
                       backgroundColor: "var(--danger-surface)",
                       color: "var(--danger)",
-                      fontSize: "0.75rem",
+                      fontSize: "var(--text-caption)",
                       fontWeight: 600,
                     }}
                   >
@@ -2259,7 +2251,7 @@ function MessagesPage() {
                               }}
                             >
                               <div style={{ flex: 1, height: "1px", backgroundColor: palette.border }} />
-                              <span style={{ fontSize: "0.75rem", fontWeight: 700, color: systemTitleColor }}>
+                              <span style={{ fontSize: "var(--text-caption)", fontWeight: 700, color: systemTitleColor }}>
                                 Unread
                               </span>
                               <div style={{ flex: 1, height: "1px", backgroundColor: palette.border }} />
@@ -2267,7 +2259,7 @@ function MessagesPage() {
                           )}
                           <article
                             style={{
-                              borderRadius: "14px",
+                              borderRadius: "var(--radius-md)",
                               border: `1px solid ${palette.border}`,
                               padding: "12px",
                               backgroundColor: "var(--surface)",
@@ -2275,7 +2267,7 @@ function MessagesPage() {
                             }}
                           >
                             <p style={{ margin: 0, color: palette.textPrimary }}>{note.message || "System update"}</p>
-                            <p style={{ margin: "6px 0 0", fontSize: "0.75rem", color: palette.textMuted }}>
+                            <p style={{ margin: "6px 0 0", fontSize: "var(--text-caption)", color: palette.textMuted }}>
                               {formatNotificationTimestamp(note.created_at)}
                             </p>
                           </article>
@@ -2379,7 +2371,7 @@ function MessagesPage() {
                           }}
                         >
                           <div style={{ flex: 1, height: "1px", backgroundColor: palette.border }} />
-                          <span style={{ fontSize: "0.75rem", fontWeight: 700, color: systemTitleColor }}>
+                          <span style={{ fontSize: "var(--text-caption)", fontWeight: 700, color: systemTitleColor }}>
                             Unread
                           </span>
                           <div style={{ flex: 1, height: "1px", backgroundColor: palette.border }} />
@@ -2448,10 +2440,10 @@ function MessagesPage() {
                           }}
                         >
                           <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                            <span style={{ fontWeight: 700, color: palette.accent, fontSize: "0.95rem" }}>
+                            <span style={{ fontWeight: 700, color: palette.accent, fontSize: "var(--text-body)" }}>
                               {cmd.command}
                             </span>
-                            <span style={{ fontSize: "0.85rem", color: palette.textMuted }}>
+                            <span style={{ fontSize: "var(--text-body-sm)", color: palette.textMuted }}>
                               {cmd.description}
                             </span>
                           </div>
@@ -2482,12 +2474,12 @@ function MessagesPage() {
                       style={{
                         width: "32px",
                         height: "32px",
-                        borderRadius: "50%",
+                        borderRadius: "var(--radius-full)",
                         border: `1px solid ${palette.border}`,
                         backgroundColor: "var(--surface)",
                         color: palette.accent,
                         fontWeight: 700,
-                        fontSize: "1rem",
+                        fontSize: "var(--text-h4)",
                         cursor: "pointer",
                         display: "flex",
                         alignItems: "center",
@@ -2514,7 +2506,7 @@ function MessagesPage() {
                     </button>
                   </div>
                   {conversationError && (
-                    <p style={{ color: "var(--danger)", margin: 0, fontSize: "0.85rem" }}>
+                    <p style={{ color: "var(--danger)", margin: 0, fontSize: "var(--text-body-sm)" }}>
                       {conversationError}
                     </p>
                   )}
@@ -2558,7 +2550,7 @@ function MessagesPage() {
                 maxHeight: "90vh",
                 overflowY: "auto",
                 backgroundColor: "var(--surface)",
-                borderRadius: "20px",
+                borderRadius: "var(--radius-lg)",
                 border: `1px solid ${palette.border}`,
                 boxShadow: shadows.lg,
                 padding: "24px",
@@ -2575,7 +2567,7 @@ function MessagesPage() {
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label style={{ fontSize: "0.85rem", color: palette.textMuted }}>Group name</label>
+              <label style={{ fontSize: "var(--text-body-sm)", color: palette.textMuted }}>Group name</label>
               <input
                 type="text"
                 value={groupEditTitle}
@@ -2592,7 +2584,7 @@ function MessagesPage() {
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              <strong style={{ fontSize: "0.85rem", color: palette.textMuted }}>
+              <strong style={{ fontSize: "var(--text-body-sm)", color: palette.textMuted }}>
                 Members ({activeThread.members.length})
               </strong>
               <div
@@ -2618,7 +2610,7 @@ function MessagesPage() {
                         justifyContent: "space-between",
                         alignItems: "center",
                         border: `1px solid ${palette.border}`,
-                        borderRadius: "12px",
+                        borderRadius: "var(--radius-sm)",
                         padding: "10px 12px",
                         backgroundColor: "var(--surface)",
                         gap: "12px",
@@ -2630,7 +2622,7 @@ function MessagesPage() {
                           {member.profile?.name || "Unknown"}
                           {isSelf ? " • You" : ""}
                         </span>
-                        <span style={{ fontSize: "0.8rem", color: palette.textMuted }}>
+                        <span style={{ fontSize: "var(--text-label)", color: palette.textMuted }}>
                           {member.role === "leader" ? "Leader" : "Member"}
                         </span>
                       </div>
@@ -2662,7 +2654,7 @@ function MessagesPage() {
               <div
                 style={{
                   border: "1px dashed var(--search-surface-muted)",
-                  borderRadius: "16px",
+                  borderRadius: "var(--radius-md)",
                   padding: "12px",
                   backgroundColor: "var(--search-surface)",
                   display: "flex",
@@ -2671,7 +2663,7 @@ function MessagesPage() {
                   color: "var(--search-text)",
                 }}
               >
-                <strong style={{ fontSize: "0.85rem", color: "var(--search-text)" }}>
+                <strong style={{ fontSize: "var(--text-body-sm)", color: "var(--search-text)" }}>
                   Manage group members
                 </strong>
                 <SearchBar
@@ -2684,12 +2676,12 @@ function MessagesPage() {
                   }}
                 />
                 {groupSearchTerm.trim().length > 0 && groupSearchTerm.trim().length < 2 && (
-                  <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--search-text)" }}>
+                  <p style={{ margin: 0, fontSize: "var(--text-caption)", color: "var(--search-text)" }}>
                     Keep typing at least 2 letters to search.
                   </p>
                 )}
                 {groupSearchLoading && (
-                  <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--search-text)" }}>
+                  <p style={{ margin: 0, fontSize: "var(--text-label)", color: "var(--search-text)" }}>
                     Looking up colleagues…
                   </p>
                 )}
@@ -2711,19 +2703,19 @@ function MessagesPage() {
                           justifyContent: "space-between",
                           alignItems: "center",
                           border: `1px solid ${palette.border}`,
-                          borderRadius: "12px",
+                          borderRadius: "var(--radius-sm)",
                           padding: "8px 12px",
                           backgroundColor: "var(--surface)",
                         }}
                       >
                         <div>
-                          <strong style={{ fontSize: "0.9rem", color: userNameColor }}>
+                          <strong style={{ fontSize: "var(--text-body)", color: userNameColor }}>
                             {entry.name}
                           </strong>
                           <p
                             style={{
                               margin: 0,
-                              fontSize: "0.75rem",
+                              fontSize: "var(--text-caption)",
                               color: palette.textMuted,
                             }}
                           >
@@ -2753,12 +2745,12 @@ function MessagesPage() {
                 {!groupSearchLoading &&
                   groupSearchTerm.trim().length >= 2 &&
                   groupSearchResults.length === 0 && (
-                    <p style={{ margin: 0, fontSize: "0.8rem", color: palette.textMuted }}>
+                    <p style={{ margin: 0, fontSize: "var(--text-label)", color: palette.textMuted }}>
                       No colleagues match that search.
                     </p>
                   )}
                 {groupManageError && (
-                  <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--danger)" }}>
+                  <p style={{ margin: 0, fontSize: "var(--text-label)", color: "var(--danger)" }}>
                     {groupManageError}
                   </p>
                 )}
@@ -2766,7 +2758,7 @@ function MessagesPage() {
             )}
 
             {groupEditError && (
-              <p style={{ color: "var(--danger)", margin: 0, fontSize: "0.85rem" }}>{groupEditError}</p>
+              <p style={{ color: "var(--danger)", margin: 0, fontSize: "var(--text-body-sm)" }}>{groupEditError}</p>
             )}
 
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
@@ -2813,7 +2805,7 @@ function MessagesPage() {
             <div
               className="popup-card start-new-chat-popup"
               style={{
-                borderRadius: "32px",
+                borderRadius: "var(--radius-xl)",
                 width: "100%",
                 maxWidth: "640px",
                 maxHeight: "90vh",
@@ -2887,7 +2879,7 @@ function MessagesPage() {
                         onClick={() => handleDirectoryUser(entry)}
                         style={{
                           textAlign: "left",
-                          borderRadius: "16px",
+                          borderRadius: "var(--radius-md)",
                           border: `1px solid ${selected ? palette.accent : palette.border}`,
                           padding: "12px 14px",
                           backgroundColor: selected ? palette.accentSurface : "var(--surface)",
@@ -2904,14 +2896,14 @@ function MessagesPage() {
                         >
                           <span
                             style={{
-                              fontSize: "1rem",
+                              fontSize: "var(--text-h4)",
                               fontWeight: 700,
                               color: userNameColor,
                             }}
                           >
                             {entry.name}
                           </span>
-                          <span style={{ fontSize: "0.85rem", color: palette.textMuted, fontWeight: 600 }}>
+                          <span style={{ fontSize: "var(--text-body-sm)", color: palette.textMuted, fontWeight: 600 }}>
                             {entry.role || "Team member"}
                           </span>
                         </div>
@@ -2947,7 +2939,7 @@ function MessagesPage() {
                     />
                   ))
                 ) : (
-                  <span style={{ color: palette.textMuted, fontSize: "0.85rem" }}>
+                  <span style={{ color: palette.textMuted, fontSize: "var(--text-body-sm)" }}>
                     No participants selected yet.
                   </span>
                 )}
@@ -2971,7 +2963,7 @@ function MessagesPage() {
             </div>
 
             {composeError && (
-              <p style={{ color: "var(--danger)", margin: 0, fontSize: "0.85rem" }}>
+              <p style={{ color: "var(--danger)", margin: 0, fontSize: "var(--text-body-sm)" }}>
                 {composeError}
               </p>
             )}
@@ -3049,7 +3041,7 @@ function MessagesPage() {
                 style={{
                   border: "none",
                   background: "none",
-                  fontSize: "1.5rem",
+                  fontSize: "var(--text-h1)",
                   cursor: "pointer",
                   color: palette.textMuted,
                   padding: "4px",
@@ -3069,7 +3061,7 @@ function MessagesPage() {
                 backgroundColor: "var(--accent-surface)",
                 borderRadius: radii.lg,
                 borderLeft: `3px solid ${palette.accent}`,
-                fontSize: "0.85rem"
+                fontSize: "var(--text-body-sm)"
               }}>
                 <strong style={{ color: palette.accent }}>Click any command below</strong> to insert it into your message!
               </div>
@@ -3101,7 +3093,7 @@ function MessagesPage() {
                     <div key={category}>
                       <h4 style={{
                         margin: "0 0 8px 0",
-                        fontSize: "0.85rem",
+                        fontSize: "var(--text-body-sm)",
                         fontWeight: 700,
                         color: palette.accent,
                         textTransform: "uppercase",
@@ -3131,10 +3123,10 @@ function MessagesPage() {
                               e.currentTarget.style.transform = "translateX(0)";
                             }}
                           >
-                            <strong style={{ color: palette.accent, fontSize: "0.95rem" }}>
+                            <strong style={{ color: palette.accent, fontSize: "var(--text-body)" }}>
                               {cmd.command}
                             </strong>
-                            <p style={{ margin: "2px 0 0 0", fontSize: "0.85rem", color: palette.textMuted }}>
+                            <p style={{ margin: "2px 0 0 0", fontSize: "var(--text-body-sm)", color: palette.textMuted }}>
                               {cmd.description}
                             </p>
                           </div>
@@ -3158,7 +3150,7 @@ function MessagesPage() {
                 borderLeft: `4px solid var(--success)`
               }}>
                 <strong style={{ color: "var(--success)" }}>Smart Linking:</strong>
-                <p style={{ margin: "4px 0 0 0", fontSize: "0.9rem", color: palette.textMuted }}>
+                <p style={{ margin: "4px 0 0 0", fontSize: "var(--text-body)", color: palette.textMuted }}>
                   When you use <code>/job[number]</code> together with <code>/vehicle</code> or <code>/customer</code>,
                   the system automatically links the vehicle and customer from that job!
                 </p>
@@ -3171,7 +3163,7 @@ function MessagesPage() {
                 borderLeft: `4px solid var(--warning)`
               }}>
                 <strong style={{ color: "var(--warning)" }}>Tip:</strong>
-                <p style={{ margin: "4px 0 0 0", fontSize: "0.9rem", color: palette.textMuted }}>
+                <p style={{ margin: "4px 0 0 0", fontSize: "var(--text-body)", color: palette.textMuted }}>
                   Commands are case-insensitive and will be automatically linked when you send your message.
                 </p>
               </div>
@@ -3218,7 +3210,7 @@ function MessagesPage() {
                 style={{
                   border: "none",
                   background: "none",
-                  fontSize: "1.5rem",
+                  fontSize: "var(--text-h1)",
                   cursor: "pointer",
                   color: palette.textMuted,
                   padding: "4px",
@@ -3229,7 +3221,7 @@ function MessagesPage() {
             </div>
 
             <div>
-              <h4 style={{ margin: "0 0 12px 0", color: palette.textMuted, fontSize: "0.9rem" }}>
+              <h4 style={{ margin: "0 0 12px 0", color: palette.textMuted, fontSize: "var(--text-body)" }}>
                 Members ({activeThread.members.length})
               </h4>
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -3249,7 +3241,7 @@ function MessagesPage() {
                       <div style={{ fontWeight: 600, color: palette.textPrimary }}>
                         {member.profile?.name || "Unknown"}
                       </div>
-                      <div style={{ fontSize: "0.85rem", color: palette.textMuted }}>
+                      <div style={{ fontSize: "var(--text-body-sm)", color: palette.textMuted }}>
                         {member.profile?.role || "Unknown role"}
                       </div>
                     </div>
@@ -3260,7 +3252,7 @@ function MessagesPage() {
                           borderRadius: radii.pill,
                           backgroundColor: palette.accentSurface,
                           color: palette.accent,
-                          fontSize: "0.75rem",
+                          fontSize: "var(--text-caption)",
                           fontWeight: 700,
                         }}
                       >

@@ -198,16 +198,12 @@ export default function AfterSalesManagerDashboard() {
   const progress = Math.round((totals.actual / totals.target) * 100);
 
   return (
-    <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "24px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       <header
+        className="app-section-card"
         style={{
-          padding: "24px",
-          borderRadius: "18px",
           background: "var(--warning-surface)",
           border: "1px solid var(--warning)",
-          boxShadow: "none",
-          display: "flex",
-          flexDirection: "column",
           gap: "6px",
         }}
       >
@@ -219,34 +215,24 @@ export default function AfterSalesManagerDashboard() {
       </header>
 
       <section
+        className="app-section-card"
         style={{
           display: "flex",
           flexWrap: "wrap",
           gap: "12px",
-          background: "var(--surface)",
           padding: "14px 20px",
-          borderRadius: "16px",
           border: "1px solid var(--warning)",
-          boxShadow: "none",
         }}
       >
         {quickActions.map((action) => (
           <Link
             key={action.href}
             href={action.href}
+            className="app-topbar-link"
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "10px 20px",
-              borderRadius: "999px",
-              border: "1px solid var(--warning)",
-              backgroundColor: "var(--surface)",
-              color: "var(--warning-dark)",
+              borderRadius: "var(--radius-pill)",
               fontWeight: 600,
               fontSize: "0.9rem",
-              textDecoration: "none",
-              boxShadow: "none",
             }}
           >
             {action.label}
@@ -264,15 +250,11 @@ export default function AfterSalesManagerDashboard() {
         {metricCards.map((metric) => (
           <div
             key={metric.label}
+            className="app-section-card"
             style={{
-              background: "var(--surface)",
-              borderRadius: "18px",
               border: `1px solid ${metric.accent}22`,
               padding: "18px",
-              display: "flex",
-              flexDirection: "column",
               gap: "6px",
-              boxShadow: "none",
             }}
           >
             <span style={{ textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)", fontSize: "0.78rem" }}>
@@ -315,7 +297,7 @@ export default function AfterSalesManagerDashboard() {
                   <div
                     style={{
                       height: "12px",
-                      borderRadius: "999px",
+                      borderRadius: "var(--radius-pill)",
                       background: "var(--warning-surface)",
                       border: "1px solid var(--warning)",
                       overflow: "hidden",
@@ -346,7 +328,7 @@ export default function AfterSalesManagerDashboard() {
                 key={site.site}
                 style={{
                   border: "1px solid var(--warning)",
-                  borderRadius: "14px",
+                  borderRadius: "var(--radius-sm)",
                   padding: "14px",
                   display: "flex",
                   justifyContent: "space-between",
@@ -386,7 +368,7 @@ export default function AfterSalesManagerDashboard() {
               key={risk.title}
               style={{
                 border: "1px solid var(--warning)",
-                borderRadius: "16px",
+                borderRadius: "var(--radius-md)",
                 padding: "16px",
                 background: risk.severity === "high" ? "var(--warning-surface)" : "var(--warning-surface)",
               }}
@@ -423,7 +405,7 @@ export default function AfterSalesManagerDashboard() {
                 key={metric.label}
                 style={{
                   border: "1px dashed var(--warning)",
-                  borderRadius: "14px",
+                  borderRadius: "var(--radius-sm)",
                   padding: "14px",
                   background: "var(--warning-surface)",
                   display: "flex",
@@ -443,7 +425,7 @@ export default function AfterSalesManagerDashboard() {
             style={{
               marginTop: "8px",
               padding: "12px",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               background: "var(--success)",
               color: "var(--success-dark)",
               fontWeight: 600,

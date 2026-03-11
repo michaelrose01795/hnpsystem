@@ -327,14 +327,7 @@ export default function WorkshopManagerDashboard() {
   );
 
   return (
-    <div
-      style={{
-        padding: "24px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "24px",
-      }}
-    >
+    <div>
       <section
         style={{
           display: "grid",
@@ -344,12 +337,10 @@ export default function WorkshopManagerDashboard() {
       >
         {dashboardLoading ? (
           <div
+            className="app-section-card"
             style={{
               gridColumn: "1 / -1",
               padding: "18px",
-              borderRadius: "18px",
-              background: "var(--surface)",
-              border: "1px solid var(--surface-light)",
               color: "var(--info)",
             }}
           >
@@ -357,11 +348,10 @@ export default function WorkshopManagerDashboard() {
           </div>
         ) : dashboardError ? (
           <div
+            className="app-section-card"
             style={{
               gridColumn: "1 / -1",
               padding: "18px",
-              borderRadius: "18px",
-              background: "var(--surface)",
               border: "1px solid var(--danger)",
               color: "var(--danger)",
             }}
@@ -373,11 +363,10 @@ export default function WorkshopManagerDashboard() {
             <div
               key={metric.label}
               style={{
-                borderRadius: "18px",
+                borderRadius: "var(--radius-md)",
                 padding: "18px",
                 background: "var(--surface)",
                 border: `1px solid ${metric.accent}22`,
-                boxShadow: "none",
                 display: "flex",
                 flexDirection: "column",
                 gap: "6px",
@@ -425,7 +414,7 @@ export default function WorkshopManagerDashboard() {
                   key={item.key}
                   style={{
                     border: `1px solid ${item.accent}33`,
-                    borderRadius: "14px",
+                    borderRadius: "var(--radius-sm)",
                     padding: "14px",
                     display: "flex",
                     flexDirection: "column",
@@ -459,7 +448,7 @@ export default function WorkshopManagerDashboard() {
                   key={bay.key}
                   style={{
                     border: `1px solid ${bay.tone}33`,
-                    borderRadius: "14px",
+                    borderRadius: "var(--radius-sm)",
                     padding: "14px",
                     display: "flex",
                     flexDirection: "column",
@@ -486,7 +475,7 @@ export default function WorkshopManagerDashboard() {
             style={{
               padding: "12px",
               backgroundColor: "var(--surface-light)",
-              borderRadius: "6px",
+              borderRadius: "var(--radius-xs)",
               color: "var(--info)",
             }}
           >
@@ -497,7 +486,7 @@ export default function WorkshopManagerDashboard() {
             style={{
               padding: "12px",
               backgroundColor: "var(--surface-light)",
-              borderRadius: "6px",
+              borderRadius: "var(--radius-xs)",
             }}
           >
             <p style={{ margin: "0 0 6px", color: "var(--primary-dark)", fontWeight: 600 }}>
@@ -519,7 +508,7 @@ export default function WorkshopManagerDashboard() {
           style={{
             padding: "12px",
             backgroundColor: "var(--surface-light)",
-            borderRadius: "6px",
+            borderRadius: "var(--radius-xs)",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -538,13 +527,12 @@ export default function WorkshopManagerDashboard() {
             disabled={consumableLoading || (!!consumableError && consumableOrders.length === 0)}
             style={{
               padding: "10px 18px",
-              borderRadius: "10px",
+              borderRadius: "var(--radius-sm)",
               border: "none",
               background: consumableLoading ? "var(--grey-accent)" : "var(--primary)",
               color: "var(--surface)",
               fontWeight: 600,
               cursor: consumableLoading ? "not-allowed" : "pointer",
-              boxShadow: "none",
             }}
           >
             View Consumable Orders
@@ -560,7 +548,7 @@ export default function WorkshopManagerDashboard() {
           style={{
             padding: "12px",
             backgroundColor: "var(--surface-light)",
-            borderRadius: "6px",
+            borderRadius: "var(--radius-xs)",
             display: "flex",
             flexDirection: "column",
             gap: "8px",
@@ -591,7 +579,7 @@ export default function WorkshopManagerDashboard() {
             <div
               className="popup-card"
               style={{
-                borderRadius: "32px",
+                borderRadius: "var(--radius-xl)",
                 width: "100%",
                 maxWidth: "960px",
                 maxHeight: "90vh",
@@ -652,7 +640,7 @@ export default function WorkshopManagerDashboard() {
                 onChange={(event) => setSelectedMonth(event.target.value)}
                 style={{
                   padding: "8px 12px",
-                  borderRadius: "10px",
+                  borderRadius: "var(--control-radius-xs)",
                   border: "1px solid var(--surface-light)",
                   fontSize: "0.95rem",
                   background: "var(--surface-light)",
@@ -729,7 +717,7 @@ export default function WorkshopManagerDashboard() {
                         key={item.id}
                         style={{
                           backgroundColor: "var(--danger-surface)",
-                          borderRadius: "12px",
+                          borderRadius: "var(--radius-sm)",
                         }}
                       >
                         <td style={{ padding: "12px", fontWeight: 600, color: "var(--text-secondary)" }}>

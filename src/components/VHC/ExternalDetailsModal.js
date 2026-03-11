@@ -379,7 +379,7 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
                 <div
                   style={{
                     padding: "16px",
-                    borderRadius: "16px",
+                    borderRadius: "var(--radius-md)",
                     border: `1px dashed ${palette.border}`,
                     backgroundColor: palette.accentSurface,
                     color: palette.textMuted,
@@ -402,10 +402,9 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
                         flexDirection: "column",
                         gap: "10px",
                         padding: "14px",
-                        borderRadius: "16px",
+                        borderRadius: "var(--radius-md)",
                         border: `1px solid ${palette.border}`,
                         background: palette.surface,
-                        boxShadow: "none",
                       }}
                     >
                       {rowLocked && lockReason && (

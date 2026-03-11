@@ -6,13 +6,9 @@ import { getServiceDashboardData } from "@/lib/database/dashboard/service";
 
 const MetricCard = ({ label, value, helper }) => (
   <div
+    className="app-section-card"
     style={{
-      border: "1px solid var(--surface-light)",
-      borderRadius: "16px",
-      padding: "18px",
-      background: "var(--surface)",
       minWidth: 160,
-      boxShadow: "none",
     }}
   >
     <p style={{ margin: 0, textTransform: "uppercase", fontSize: "0.75rem", color: "var(--primary-dark)" }}>{label}</p>
@@ -23,14 +19,8 @@ const MetricCard = ({ label, value, helper }) => (
 
 const Section = ({ title, subtitle, children }) => (
   <section
+    className="app-section-card"
     style={{
-      background: "var(--surface)",
-      borderRadius: "18px",
-      padding: "24px",
-      border: "1px solid var(--surface-light)",
-      boxShadow: "none",
-      display: "flex",
-      flexDirection: "column",
       gap: "12px",
     }}
   >
@@ -89,7 +79,7 @@ const TrendBlock = ({ data }) => {
         gap: "8px",
         padding: "12px",
         border: "1px solid var(--danger-surface)",
-        borderRadius: "12px",
+        borderRadius: "var(--radius-sm)",
         background: "var(--surface)",
       }}
     >
@@ -142,7 +132,7 @@ const QueueItem = ({ job }) => (
       justifyContent: "space-between",
       alignItems: "center",
       border: "1px solid var(--surface-light)",
-      borderRadius: "12px",
+      borderRadius: "var(--radius-sm)",
       padding: "12px 14px",
       background: "var(--surface)",
     }}
@@ -193,14 +183,11 @@ export default function ServiceDashboard() {
 
   return (
     <Layout>
-      <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
+      <div>
         <header
+          className="app-section-card"
           style={{
             background: "var(--surface-light)",
-            borderRadius: "18px",
-            padding: "24px",
-            border: "1px solid var(--surface-light)",
-            boxShadow: "none",
           }}
         >
           <p style={{ margin: 0, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--primary-dark)" }}>

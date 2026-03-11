@@ -40,10 +40,10 @@ const LoginCard = ({
   >
     <div
       style={{
-        borderRadius: "32px",
+        borderRadius: "var(--radius-xl)",
         border: "1px solid rgba(15, 23, 42, 0.08)",
         background: "var(--surface)",
-        boxShadow: "0 30px 70px rgba(15, 23, 42, 0.15)",
+        boxShadow: "var(--shadow-xl)",
         padding: "2.25rem",
         backdropFilter: "blur(18px)",
         width: "100%",
@@ -550,10 +550,10 @@ export default function LoginPage() {
               width: "100%",
               maxWidth: "420px",
               background: "var(--surface)",
-              borderRadius: "16px",
+              borderRadius: "var(--radius-md)",
               border: "1px solid var(--surface-light)",
               padding: "18px",
-              boxShadow: "0 16px 36px rgba(15, 23, 42, 0.22)",
+              boxShadow: "var(--shadow-xl)",
             }}
           >
             <h3 style={{ margin: 0, fontSize: "1.1rem", color: "var(--text-primary)" }}>
@@ -572,7 +572,7 @@ export default function LoginPage() {
                 style={{
                   width: "100%",
                   padding: "10px 12px",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   border: "1px solid var(--surface-light)",
                 }}
               />
@@ -585,7 +585,7 @@ export default function LoginPage() {
                 style={{
                   width: "100%",
                   padding: "10px 12px",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   border: "1px solid var(--surface-light)",
                 }}
               />
@@ -613,7 +613,7 @@ export default function LoginPage() {
                     border: "1px solid var(--border)",
                     background: "var(--surface-light)",
                     color: "var(--text-primary)",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     padding: "8px 12px",
                     cursor: "pointer",
                   }}
@@ -627,7 +627,7 @@ export default function LoginPage() {
                     border: "none",
                     background: "var(--primary)",
                     color: "var(--text-inverse)",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     padding: "8px 12px",
                     cursor: isResettingPassword ? "not-allowed" : "pointer",
                     opacity: isResettingPassword ? 0.6 : 1,
@@ -658,10 +658,10 @@ export default function LoginPage() {
               width: "100%",
               maxWidth: "460px",
               background: "var(--surface)",
-              borderRadius: "16px",
+              borderRadius: "var(--radius-md)",
               border: "1px solid var(--surface-light)",
               padding: "18px",
-              boxShadow: "0 16px 36px rgba(15, 23, 42, 0.22)",
+              boxShadow: "var(--shadow-xl)",
             }}
           >
             <h3 style={{ margin: 0, fontSize: "1.05rem", color: "var(--text-primary)" }}>
@@ -679,7 +679,7 @@ export default function LoginPage() {
                   border: "1px solid var(--border)",
                   background: "var(--surface-light)",
                   color: "var(--text-primary)",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   padding: "8px 12px",
                   cursor: "pointer",
                 }}
@@ -694,7 +694,7 @@ export default function LoginPage() {
                   border: "none",
                   background: "var(--danger)",
                   color: "var(--text-inverse)",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   padding: "8px 12px",
                   cursor: isRevertingPassword ? "not-allowed" : "pointer",
                   opacity: isRevertingPassword ? 0.6 : 1,
@@ -724,11 +724,11 @@ export default function LoginPage() {
               width: "100%",
               maxWidth: "520px",
               background: "var(--surface)",
-              borderRadius: "16px",
+              borderRadius: "var(--radius-md)",
               border: "1px solid var(--surface-light)",
               borderTop: "4px solid #b91c1c",
               padding: "22px",
-              boxShadow: "0 16px 36px rgba(15, 23, 42, 0.22)",
+              boxShadow: "var(--shadow-xl)",
               textAlign: "center",
             }}
           >
@@ -743,9 +743,9 @@ export default function LoginPage() {
               onClick={() => setShowRevertResult(false)}
               style={{
                 border: "none",
-                background: "#b91c1c",
+                background: "var(--primary-dark)",
                 color: "#ffffff",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
                 padding: "9px 14px",
                 cursor: "pointer",
                 fontWeight: 600,

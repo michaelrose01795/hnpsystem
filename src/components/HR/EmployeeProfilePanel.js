@@ -5,20 +5,20 @@ import { StatusTag } from "@/components/HR/MetricCard";
 import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
 
 const panelCardStyle = {
-  borderRadius: "18px",
+  borderRadius: "var(--radius-md)",
   border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
-  background: "var(--surface)",
-  padding: "18px",
+  background: "var(--section-card-bg)",
+  padding: "var(--section-card-padding)",
   display: "flex",
   flexDirection: "column",
   gap: "14px",
-  boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+  boxShadow: "var(--shadow-lg)",
 };
 
 const sectionCardStyle = {
-  borderRadius: "18px",
+  borderRadius: "var(--radius-md)",
   border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
-  background: "var(--surface)",
+  background: "var(--section-card-bg)",
   padding: "16px",
   display: "flex",
   flexDirection: "column",
@@ -99,13 +99,13 @@ export default function EmployeeProfilePanel({ employee }) {
             top: "18px",
             right: "18px",
             padding: "10px 16px",
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             border: "1px solid rgba(var(--primary-rgb), 0.4)",
             background: "rgba(var(--primary-rgb), 0.18)",
             fontWeight: 700,
             color: "var(--text-primary)",
             cursor: "pointer",
-            boxShadow: "0 8px 18px rgba(0,0,0,0.25)",
+            boxShadow: "var(--shadow-lg)",
           }}
         >
           Edit employee details
@@ -131,7 +131,7 @@ export default function EmployeeProfilePanel({ employee }) {
                   key={chip}
                   style={{
                     padding: "6px 12px",
-                    borderRadius: "999px",
+                    borderRadius: "var(--radius-pill)",
                     border: "1px solid rgba(var(--primary-rgb), 0.35)",
                     background: "rgba(var(--primary-rgb), 0.08)",
                     color: "var(--text-primary)",
@@ -153,7 +153,7 @@ export default function EmployeeProfilePanel({ employee }) {
                 onClick={() => handleCopy(employee.keycloakId)}
                 style={{
                   padding: "4px 10px",
-                  borderRadius: "999px",
+                  borderRadius: "var(--radius-pill)",
                   border: "1px solid rgba(var(--primary-rgb), 0.4)",
                   background: "transparent",
                   color: "var(--primary)",
@@ -199,9 +199,9 @@ export default function EmployeeProfilePanel({ employee }) {
           <div style={{ display: "grid", gap: "12px" }}>
             <div
               style={{
-                borderRadius: "16px",
+                borderRadius: "var(--radius-md)",
                 border: "1px solid rgba(var(--primary-rgb), 0.35)",
-                background: "linear-gradient(135deg, rgba(var(--primary-rgb), 0.18), rgba(0,0,0,0))",
+                background: "rgba(var(--primary-rgb), 0.1)",
                 padding: "14px",
               }}
             >
@@ -274,8 +274,8 @@ export default function EmployeeProfilePanel({ employee }) {
             className="w-full"
             onClick={() => setShowDocumentsPopup(true)}
             style={{
-              padding: "10px 14px",
-              borderRadius: "12px",
+              padding: "var(--control-padding)",
+              borderRadius: "var(--radius-sm)",
               border: "1px solid rgba(var(--primary-rgb), 0.4)",
               background: "rgba(var(--primary-rgb), 0.12)",
               color: "var(--text-primary)",
@@ -291,7 +291,7 @@ export default function EmployeeProfilePanel({ employee }) {
                 <div
                   key={doc.id}
                   style={{
-                    borderRadius: "14px",
+                    borderRadius: "var(--radius-sm)",
                     border: "1px solid rgba(var(--grey-accent-rgb), 0.3)",
                     background: "rgba(var(--grey-accent-rgb), 0.08)",
                     padding: "12px",
@@ -313,7 +313,7 @@ export default function EmployeeProfilePanel({ employee }) {
                     type="button"
                     style={{
                       padding: "6px 12px",
-                      borderRadius: "999px",
+                      borderRadius: "var(--radius-pill)",
                       border: "1px solid rgba(var(--primary-rgb), 0.35)",
                       background: "transparent",
                       color: "var(--primary)",
@@ -329,7 +329,7 @@ export default function EmployeeProfilePanel({ employee }) {
             ) : (
               <div
                 style={{
-                  borderRadius: "14px",
+                  borderRadius: "var(--radius-sm)",
                   border: "1px dashed rgba(var(--grey-accent-rgb), 0.4)",
                   padding: "14px",
                   color: "var(--text-secondary)",
@@ -362,7 +362,7 @@ function CardBlock({ title, icon, action = null, children }) {
             style={{
               width: "32px",
               height: "32px",
-              borderRadius: "10px",
+              borderRadius: "var(--radius-xs)",
               display: "grid",
               placeItems: "center",
               background: "rgba(var(--primary-rgb), 0.15)",
@@ -409,7 +409,7 @@ function ActionButton({ children, onClick }) {
       onClick={onClick}
       style={{
         padding: "4px 8px",
-        borderRadius: "999px",
+        borderRadius: "var(--radius-pill)",
         border: "1px solid rgba(var(--primary-rgb), 0.35)",
         background: "transparent",
         color: "var(--primary)",

@@ -7,13 +7,12 @@ const todayIso = () => new Date().toISOString().slice(0, 10);
 
 const cardStyle = {
   ...popupCardStyles,
-  padding: "28px",
+  padding: "var(--page-card-padding)",
   width: "min(560px, 100%)",
-  boxShadow: "none",
 };
 
 const buttonStyle = {
-  borderRadius: "10px",
+  borderRadius: "var(--radius-sm)",
   padding: "8px 14px",
   fontWeight: 700,
   border: "none",
@@ -201,7 +200,7 @@ export default function DeliverySchedulerModal({
               onChange={(event) => setSelectedDeliveryId(event.target.value)}
               style={{
                 width: "100%",
-                borderRadius: "10px",
+                borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--surface-light)",
                 padding: "10px 12px",
                 fontWeight: 600,
@@ -235,7 +234,7 @@ export default function DeliverySchedulerModal({
                     style={{
                       width: "100%",
                       marginTop: "4px",
-                      borderRadius: "10px",
+                      borderRadius: "var(--radius-sm)",
                       border: "1px solid var(--surface-light)",
                       padding: "8px 10px",
                     }}
@@ -251,7 +250,7 @@ export default function DeliverySchedulerModal({
                     style={{
                       width: "100%",
                       marginTop: "4px",
-                      borderRadius: "10px",
+                      borderRadius: "var(--radius-sm)",
                       border: "1px solid var(--surface-light)",
                       padding: "8px 10px",
                     }}
@@ -270,7 +269,7 @@ export default function DeliverySchedulerModal({
               style={{
                 width: "100%",
                 marginTop: "4px",
-                borderRadius: "12px",
+                borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--surface-light)",
                 padding: "10px",
                 resize: "vertical",
@@ -287,7 +286,7 @@ export default function DeliverySchedulerModal({
               style={{
                 width: "100%",
                 marginTop: "4px",
-                borderRadius: "10px",
+                borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--surface-light)",
                 padding: "8px 10px",
               }}
@@ -303,7 +302,7 @@ export default function DeliverySchedulerModal({
               style={{
                 width: "100%",
                 marginTop: "4px",
-                borderRadius: "12px",
+                borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--surface-light)",
                 padding: "10px",
                 resize: "vertical",

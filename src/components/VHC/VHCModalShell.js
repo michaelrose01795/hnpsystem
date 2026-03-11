@@ -97,7 +97,7 @@ export default function VHCModalShell({
               style={{
                 marginBottom: "12px",
                 padding: "8px 12px",
-                borderRadius: "999px",
+                borderRadius: "var(--radius-pill)",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "8px",
@@ -145,7 +145,7 @@ export default function VHCModalShell({
             <div
               style={{
                 padding: "16px 20px",
-                borderRadius: "12px",
+                borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--danger)",
                 background: "var(--surface)",
                 color: "var(--danger)",

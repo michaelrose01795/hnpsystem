@@ -70,7 +70,7 @@ export default function ViewAccountPage() {
     router.push(`/accounts/invoices?accountId=${account?.account_id || ""}`);
   };
   const detailCard = (label, value) => (
-    <div style={{ flex: "1 1 200px", border: "1px solid var(--surface-light)", borderRadius: "16px", padding: "16px", background: "var(--surface)" }}>
+    <div className="app-section-card" style={{ flex: "1 1 200px" }}>
       <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</p>
       <strong style={{ display: "block", marginTop: "8px", fontSize: "1.4rem", color: "var(--primary)" }}>{value}</strong>
     </div>
@@ -87,17 +87,17 @@ export default function ViewAccountPage() {
                   <p style={{ margin: 0, color: "var(--text-secondary)", textTransform: "uppercase", fontSize: "0.8rem", letterSpacing: "0.05em" }}>Account</p>
                   <h1 style={{ margin: "4px 0", fontSize: "2rem", color: "var(--primary)" }}>{account.billing_name || account.account_id}</h1>
                   <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                    <span style={{ padding: "4px 12px", borderRadius: "999px", background: "var(--surface-light)", fontWeight: 600 }}>ID: {account.account_id}</span>
-                    <span style={{ padding: "4px 12px", borderRadius: "999px", background: "var(--surface-light)", fontWeight: 600 }}>Customer: {account.customer_id}</span>
-                    <span style={{ padding: "4px 12px", borderRadius: "999px", background: "var(--surface-light)", fontWeight: 600 }}>Type: {account.account_type}</span>
-                    <span style={{ padding: "4px 12px", borderRadius: "999px", background: account.status === "Frozen" ? "rgba(var(--warning-rgb), 0.18)" : "rgba(var(--success-rgb), 0.18)", color: account.status === "Frozen" ? "var(--warning-text)" : "var(--success-text)", fontWeight: 700 }}>{account.status}</span>
+                    <span style={{ padding: "4px 12px", borderRadius: "var(--radius-pill)", background: "var(--surface-light)", fontWeight: 600 }}>ID: {account.account_id}</span>
+                    <span style={{ padding: "4px 12px", borderRadius: "var(--radius-pill)", background: "var(--surface-light)", fontWeight: 600 }}>Customer: {account.customer_id}</span>
+                    <span style={{ padding: "4px 12px", borderRadius: "var(--radius-pill)", background: "var(--surface-light)", fontWeight: 600 }}>Type: {account.account_type}</span>
+                    <span style={{ padding: "4px 12px", borderRadius: "var(--radius-pill)", background: account.status === "Frozen" ? "rgba(var(--warning-rgb), 0.18)" : "rgba(var(--success-rgb), 0.18)", color: account.status === "Frozen" ? "var(--warning-text)" : "var(--success-text)", fontWeight: 700 }}>{account.status}</span>
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                  <button type="button" onClick={handleTransactionsPage} style={{ padding: "10px 16px", borderRadius: "10px", border: "1px solid var(--surface-light)", background: "var(--surface-light)", fontWeight: 600 }}>Transactions</button>
-                  <button type="button" onClick={handleInvoicesPage} style={{ padding: "10px 16px", borderRadius: "10px", border: "1px solid var(--surface-light)", background: "var(--surface-light)", fontWeight: 600 }}>Invoices</button>
-                  {permissions.canEditAccount && <button type="button" onClick={handleEdit} style={{ padding: "10px 18px", borderRadius: "10px", border: "1px solid var(--primary)", background: "transparent", color: "var(--primary)", fontWeight: 600 }}>Edit</button>}
-                  {permissions.canFreezeAccount && <button type="button" onClick={handleFreezeToggle} style={{ padding: "10px 18px", borderRadius: "10px", border: "none", background: account.status === "Frozen" ? "var(--surface-light)" : "var(--primary)", color: account.status === "Frozen" ? "var(--text-secondary)" : "white", fontWeight: 700 }}>{account.status === "Frozen" ? "Unfreeze" : "Freeze"}</button>}
+                  <button type="button" onClick={handleTransactionsPage} style={{ padding: "10px 16px", borderRadius: "var(--radius-sm)", border: "1px solid var(--surface-light)", background: "var(--surface-light)", fontWeight: 600 }}>Transactions</button>
+                  <button type="button" onClick={handleInvoicesPage} style={{ padding: "10px 16px", borderRadius: "var(--radius-sm)", border: "1px solid var(--surface-light)", background: "var(--surface-light)", fontWeight: 600 }}>Invoices</button>
+                  {permissions.canEditAccount && <button type="button" onClick={handleEdit} style={{ padding: "10px 18px", borderRadius: "var(--radius-sm)", border: "1px solid var(--primary)", background: "transparent", color: "var(--primary)", fontWeight: 600 }}>Edit</button>}
+                  {permissions.canFreezeAccount && <button type="button" onClick={handleFreezeToggle} style={{ padding: "10px 18px", borderRadius: "var(--radius-sm)", border: "none", background: account.status === "Frozen" ? "var(--surface-light)" : "var(--primary)", color: account.status === "Frozen" ? "var(--text-secondary)" : "white", fontWeight: 700 }}>{account.status === "Frozen" ? "Unfreeze" : "Freeze"}</button>}
                 </div>
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
@@ -106,7 +106,7 @@ export default function ViewAccountPage() {
                 {detailCard("Credit Terms", `${account.credit_terms || 0} days`)}
                 {detailCard("Created", account.created_at ? new Date(account.created_at).toLocaleDateString("en-GB") : "—")}
               </div>
-              <section style={{ border: "1px solid var(--surface-light)", borderRadius: "16px", padding: "20px", background: "var(--surface)" }}>
+              <section className="app-section-card">
                 <h2 style={{ margin: 0, color: "var(--primary)", fontSize: "1.25rem" }}>Billing Information</h2>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px", marginTop: "12px" }}>
                   <div><p style={{ margin: 0, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", fontSize: "0.75rem" }}>Name</p><strong>{account.billing_name || "—"}</strong></div>
@@ -115,7 +115,7 @@ export default function ViewAccountPage() {
                   <div><p style={{ margin: 0, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", fontSize: "0.75rem" }}>Address</p><strong>{[account.billing_address_line1, account.billing_address_line2, account.billing_city, account.billing_postcode, account.billing_country].filter(Boolean).join(", ") || "—"}</strong></div>
                 </div>
               </section>
-              <section style={{ border: "1px solid var(--surface-light)", borderRadius: "16px", padding: "20px", background: "var(--surface)", display: "flex", flexDirection: "column", gap: "12px" }}>
+              <section className="app-section-card" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                 <h2 style={{ margin: 0, color: "var(--primary)", fontSize: "1.25rem" }}>Internal Notes</h2>
                 <p style={{ margin: 0, color: "var(--text-secondary)", lineHeight: 1.6 }}>{account.notes || "No notes recorded."}</p>
               </section>

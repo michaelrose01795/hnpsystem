@@ -477,9 +477,8 @@ const extractTasksFromChecklist = (rawChecklist) => {
 
 const sectionBoxStyle = {
   backgroundColor: "var(--layer-section-level-3)",
-  padding: "18px",
-  borderRadius: "16px",
-  boxShadow: "none",
+  padding: "var(--section-card-padding)",
+  borderRadius: "var(--radius-md)",
   border: "1px solid var(--accent-purple-surface)",
   display: "flex",
   flexDirection: "column",
@@ -562,7 +561,7 @@ const buildManualTaskSourceKey = (prefix) =>
 
 const modernInputStyle = {
   width: "100%",
-  borderRadius: "10px",
+  borderRadius: "var(--control-radius-xs)",
   border: "1px solid var(--info)",
   padding: "10px 12px",
   fontSize: "14px",
@@ -573,7 +572,7 @@ const modernInputStyle = {
 
 const modernTextareaStyle = {
   width: "100%",
-  borderRadius: "10px",
+  borderRadius: "var(--control-radius-xs)",
   border: "1px solid var(--info)",
   padding: "10px 12px",
   fontSize: "14px",
@@ -594,7 +593,7 @@ const modernSelectStyle = {
 };
 
 const modernButtonStyle = {
-  borderRadius: "12px",
+  borderRadius: "var(--radius-sm)",
   border: "none",
   padding: "12px 20px",
   fontWeight: 600,
@@ -625,7 +624,7 @@ const sectionSubtitleStyle = {
 };
 
 const statusBadgeStyle = {
-  borderRadius: "999px",
+  borderRadius: "var(--radius-pill)",
   padding: "6px 14px",
   backgroundColor: "var(--info-surface)",
   color: "var(--info-dark)",
@@ -636,7 +635,7 @@ const statusBadgeStyle = {
 const addSectionButtonStyle = {
   width: "30px",
   height: "30px",
-  borderRadius: "999px",
+  borderRadius: "var(--radius-pill)",
   border: "1px solid var(--accent-purple)",
   backgroundColor: "var(--surface)",
   color: "var(--accent-purple)",
@@ -654,7 +653,7 @@ const deleteAddedRowButtonStyle = {
   border: "1px solid var(--danger)",
   backgroundColor: "var(--danger-surface)",
   color: "var(--danger)",
-  borderRadius: "8px",
+  borderRadius: "var(--radius-xs)",
   fontSize: "12px",
   fontWeight: 600,
   padding: "4px 10px",
@@ -662,7 +661,7 @@ const deleteAddedRowButtonStyle = {
 };
 
 const cardRowStyle = (completed) => ({
-  borderRadius: "12px",
+  borderRadius: "var(--radius-sm)",
   border: `1px solid ${completed ? "var(--info)" : "var(--accent-purple-surface)"}`,
   padding: "12px",
   backgroundColor: completed ? "var(--success-surface)" : "var(--layer-section-level-2)",
@@ -672,14 +671,13 @@ const cardRowStyle = (completed) => ({
 });
 
 const rectificationCardStyle = (completed) => ({
-  borderRadius: "12px",
+  borderRadius: "var(--radius-sm)",
   border: `1px solid ${completed ? "var(--info)" : "var(--danger)"}`,
   padding: "12px",
   backgroundColor: completed ? "var(--success-surface)" : "var(--layer-section-level-3)",
   display: "flex",
   flexDirection: "column",
   gap: "8px",
-  boxShadow: "none",
 });
 
 const rectRowHeaderStyle = {
@@ -702,14 +700,13 @@ const checkboxStyle = {
 };
 
 const causeRowStyle = {
-  borderRadius: "12px",
+  borderRadius: "var(--radius-sm)",
   border: "1px solid var(--info)",
   backgroundColor: "var(--layer-section-level-3)",
   padding: "12px",
   display: "flex",
   flexDirection: "column",
   gap: "12px",
-  boxShadow: "none",
 };
 
 const generateCauseId = () => {
@@ -2063,7 +2060,7 @@ export default function WriteUpForm({
           height: "60px",
           border: "4px solid var(--surface)",
           borderTop: "4px solid var(--primary)",
-          borderRadius: "50%",
+          borderRadius: "var(--radius-full)",
           animation: "spin 1s linear infinite"
         }}></div>
         <p style={{ color: "var(--grey-accent)" }}>Loading write-up...</p>
@@ -2101,9 +2098,8 @@ export default function WriteUpForm({
           marginBottom: "12px",
           padding: "16px",
           backgroundColor: "var(--surface)",
-          borderRadius: "16px",
-          boxShadow: "none",
-          flexShrink: 0
+          borderRadius: "var(--radius-md)",
+                  flexShrink: 0
         }}>
           <button
             onClick={goBackToJobCard}
@@ -2111,8 +2107,7 @@ export default function WriteUpForm({
               ...modernButtonStyle,
               backgroundColor: "var(--accent-purple)",
               color: "white",
-              boxShadow: "none",
-            }}
+                        }}
           >
             ← Back to job
           </button>
@@ -2133,7 +2128,7 @@ export default function WriteUpForm({
             padding: "8px 16px",
             backgroundColor: completionStatusColor,
             color: "white",
-            borderRadius: "20px",
+            borderRadius: "var(--radius-lg)",
             fontWeight: "600",
             fontSize: "13px"
           }}>
@@ -2145,9 +2140,8 @@ export default function WriteUpForm({
       {/* ✅ Main Content Layout */}
       <div style={{
         flex: 1,
-        borderRadius: "8px",
-        boxShadow: "none",
-        border: "none",
+        borderRadius: "var(--radius-xs)",
+              border: "none",
         background: "transparent",
         padding: 0,
         overflow: "hidden",
@@ -2170,7 +2164,7 @@ export default function WriteUpForm({
                   display: "inline-flex",
                   gap: "6px",
                   padding: "6px",
-                  borderRadius: "999px",
+                  borderRadius: "var(--radius-pill)",
                   border: "1px solid var(--surface-light)",
                   backgroundColor: "var(--layer-section-level-3)",
                 }}
@@ -2179,7 +2173,7 @@ export default function WriteUpForm({
                   type="button"
                   onClick={() => setActiveTab("writeup")}
                   style={{
-                    borderRadius: "999px",
+                    borderRadius: "var(--radius-pill)",
                     border: "1px solid transparent",
                     padding: "8px 14px",
                     fontSize: "12px",
@@ -2197,7 +2191,7 @@ export default function WriteUpForm({
                   type="button"
                   onClick={() => setActiveTab("extras")}
                   style={{
-                    borderRadius: "999px",
+                    borderRadius: "var(--radius-pill)",
                     border: "1px solid transparent",
                     padding: "8px 14px",
                     fontSize: "12px",
@@ -2455,10 +2449,9 @@ export default function WriteUpForm({
                   style={{
                     backgroundColor: "var(--layer-section-level-3)",
                     padding: "16px",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     border: "1px solid var(--surface-light)",
-                    boxShadow: "none",
-                    display: "flex",
+                                      display: "flex",
                     flexDirection: "column",
                     minHeight: "140px",
                     gap: "8px"
@@ -2520,10 +2513,9 @@ export default function WriteUpForm({
                 width: "480px",
                 maxWidth: "90%",
                 backgroundColor: "var(--surface)",
-                borderRadius: "18px",
+                borderRadius: "var(--radius-lg)",
                 padding: "32px",
-                boxShadow: "none",
-                display: "flex",
+                              display: "flex",
                 flexDirection: "column",
                 gap: "16px",
               }}
@@ -2562,7 +2554,7 @@ export default function WriteUpForm({
                 style={{
                   flex: 1,
                   border: "none",
-                  borderRadius: "10px",
+                  borderRadius: "var(--control-radius-xs)",
                   padding: "12px 16px",
                   background: "var(--info)",
                   color: "white",
@@ -2578,7 +2570,7 @@ export default function WriteUpForm({
                 style={{
                   flex: 1,
                   border: "1px solid var(--info)",
-                  borderRadius: "10px",
+                  borderRadius: "var(--control-radius-xs)",
                   padding: "12px 16px",
                   background: "var(--surface)",
                   color: "var(--accent-purple)",

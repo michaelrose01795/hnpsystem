@@ -33,7 +33,7 @@ export default function AccountsReportsPage() {
   }, []);
   const current = reportData[activePeriod] || {};
   const metricCard = (label, value, accent = "var(--primary)") => (
-    <div style={{ border: "1px solid var(--surface-light)", borderRadius: "16px", padding: "20px", background: "var(--surface)", flex: "1 1 220px" }}>
+    <div className="app-section-card" style={{ flex: "1 1 220px" }}>
       <p style={{ margin: 0, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", fontSize: "0.8rem" }}>{label}</p>
       <strong style={{ display: "block", marginTop: "10px", fontSize: "1.8rem", color: accent }}>{value}</strong>
     </div>
@@ -51,13 +51,13 @@ export default function AccountsReportsPage() {
               <h1 style={{ margin: 0, fontSize: "2rem", color: "var(--primary)" }}></h1>
               <p style={{ margin: "4px 0 0", color: "var(--text-secondary)", fontSize: "0.95rem" }}>Monitor account creation velocity, exposure, and overdue invoices.</p>
             </div>
-            <button type="button" onClick={handleExport} style={{ padding: "10px 18px", borderRadius: "10px", border: "1px solid var(--primary)", background: "transparent", color: "var(--primary)", fontWeight: 600 }}>Export Summary</button>
+            <button type="button" onClick={handleExport} style={{ padding: "10px 18px", borderRadius: "var(--radius-sm)", border: "1px solid var(--primary)", background: "transparent", color: "var(--primary)", fontWeight: 600 }}>Export Summary</button>
           </div>
           <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
             {REPORT_PERIODS.map((period) => {
               const isActive = activePeriod === period.value;
               return (
-                <button key={period.value} type="button" onClick={() => setActivePeriod(period.value)} style={{ padding: "10px 16px", borderRadius: "999px", border: isActive ? "1px solid var(--primary)" : "1px solid var(--surface-light)", background: isActive ? "var(--primary)" : "var(--surface-light)", color: isActive ? "var(--text-inverse)" : "var(--text-secondary)", fontWeight: 600, transition: "all 0.2s ease" }}>{period.label}</button>
+                <button key={period.value} type="button" onClick={() => setActivePeriod(period.value)} style={{ padding: "10px 16px", borderRadius: "var(--radius-pill)", border: isActive ? "1px solid var(--primary)" : "1px solid var(--surface-light)", background: isActive ? "var(--primary)" : "var(--surface-light)", color: isActive ? "var(--text-inverse)" : "var(--text-secondary)", fontWeight: 600, transition: "all 0.2s ease" }}>{period.label}</button>
               );
             })}
           </div>
@@ -70,7 +70,7 @@ export default function AccountsReportsPage() {
                 {metricCard("Overdue Invoices", current.overdueInvoices ?? 0, "var(--warning-text)")}
                 {metricCard("Average Balance", new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(current.averageBalance || 0), "#0f766e")}
               </div>
-              <section style={{ border: "1px solid var(--surface-light)", borderRadius: "16px", padding: "20px", background: "var(--surface)", display: "flex", flexDirection: "column", gap: "12px" }}>
+              <section className="app-section-card" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                 <h2 style={{ margin: 0, color: "var(--primary)", fontSize: "1.4rem" }}>Highlights</h2>
                 <ul style={{ margin: 0, paddingLeft: "20px", color: "var(--text-secondary)", lineHeight: 1.6 }}>
                   <li>{current.newAccounts ?? 0} new accounts opened during this period.</li>

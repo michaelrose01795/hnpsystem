@@ -45,7 +45,7 @@ export default function ConfirmationDialog({
       cardStyle={{
         width: "min(520px, 100%)",
         padding: "28px",
-        borderRadius: "24px",
+        borderRadius: "var(--radius-xl)",
         display: "flex",
         flexDirection: "column",
         gap: "20px",
@@ -108,8 +108,8 @@ export default function ConfirmationDialog({
           type="button"
           onClick={onCancel}
           style={{
-            padding: "10px 16px",
-            borderRadius: "12px",
+            padding: "var(--control-padding)",
+            borderRadius: "var(--radius-sm)",
             border: "1px solid var(--border)",
             backgroundColor: "var(--surface)",
             color: "var(--text-primary)",
@@ -123,14 +123,13 @@ export default function ConfirmationDialog({
           type="button"
           onClick={handleConfirm}
           style={{
-            padding: "10px 16px",
-            borderRadius: "12px",
+            padding: "var(--control-padding)",
+            borderRadius: "var(--radius-sm)",
             border: "1px solid var(--primary)",
             backgroundColor: "var(--primary)",
             color: "var(--surface)",
             cursor: "pointer",
             fontWeight: 600,
-            boxShadow: "none",
           }}
         >
           {confirmLabel}

@@ -168,7 +168,7 @@ export default function JobProgressTracker({
     <div
       style={{
         backgroundColor: COLORS.panelBg,
-        borderRadius: "16px",
+        borderRadius: "var(--radius-md)",
         border: "1px solid var(--surface-light)",
         padding: "12px",
         boxShadow: "none",
@@ -205,7 +205,7 @@ export default function JobProgressTracker({
               alignItems: "center",
               gap: "10px",
               background: "var(--surface)",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               border: "1px solid var(--surface-light)",
               padding: "8px 12px",
               minWidth: isWide ? "240px" : "100%",
@@ -215,7 +215,7 @@ export default function JobProgressTracker({
               style={{
                 width: "12px",
                 height: "12px",
-                borderRadius: "999px",
+                borderRadius: "var(--radius-pill)",
                 backgroundColor: currentStatusMeta?.color || COLORS.base,
               }}
             />
@@ -239,7 +239,7 @@ export default function JobProgressTracker({
           gap: "10px",
           marginBottom: "14px",
           padding: "12px",
-          borderRadius: "12px",
+          borderRadius: "var(--radius-sm)",
           border: "1px solid var(--surface-light)",
           backgroundColor: "var(--surface)",
         }}
@@ -346,7 +346,7 @@ export default function JobProgressTracker({
                   transform: "translateY(-50%)",
                   width: "14px",
                   height: "14px",
-                  borderRadius: "50%",
+                  borderRadius: "var(--radius-full)",
                   backgroundColor: nodeColor,
                   border: "2px solid var(--surface)",
                   boxShadow: "none"
@@ -374,7 +374,7 @@ export default function JobProgressTracker({
                 style={{
                   width: "100%",
                   backgroundColor: "var(--surface)",
-                  borderRadius: "12px",
+                  borderRadius: "var(--radius-sm)",
                   border: isCurrent
                     ? "1px solid rgba(var(--danger-rgb), 0.35)"
                     : "1px solid rgba(var(--background-rgb), 0.8)",
@@ -420,7 +420,7 @@ export default function JobProgressTracker({
                         textTransform: "uppercase",
                         letterSpacing: "0.06em",
                         backgroundColor: "var(--surface-light)",
-                        borderRadius: "999px",
+                        borderRadius: "var(--radius-pill)",
                         padding: "2px 8px",
                         color: isEvent ? "var(--accent-orange)" : "var(--grey-accent)",
                         border: "1px solid rgba(var(--grey-accent-rgb),0.3)",

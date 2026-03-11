@@ -1,37 +1,15 @@
 // file location: src/components/dashboards/DashboardPrimitives.js
 // Shared presentational components used across dashboard views.
 import React from "react";
+import Section from "@/components/Section";
 
-export const SectionCard = ({ title, subtitle, children, borderColor = "var(--surface-light)", style }) => (
-  <section
-    style={{
-      background: "var(--surface)",
-      borderRadius: "18px",
-      padding: "20px",
-      border: `1px solid ${borderColor}`,
-      boxShadow: "none",
-      display: "flex",
-      flexDirection: "column",
-      gap: "14px",
-      ...style,
-    }}
-  >
-    {(title || subtitle) && (
-      <div>
-        {title && <h2 style={{ margin: 0, fontSize: "1.1rem", color: "var(--primary-dark)" }}>{title}</h2>}
-        {subtitle && (
-          <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "0.9rem" }}>{subtitle}</p>
-        )}
-      </div>
-    )}
-    {children}
-  </section>
-);
+// Re-export Section as SectionCard for backward compatibility
+export const SectionCard = Section;
 
 export const MetricPill = ({ label, value, accent = "var(--primary-dark)", helper }) => (
   <div
     style={{
-      borderRadius: "14px",
+      borderRadius: "var(--control-radius)",
       padding: "14px 16px",
       border: `1px solid ${accent}33`,
       background: `${accent}0f`,

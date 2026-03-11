@@ -548,7 +548,7 @@ export default function UserDiagnosticDevPage() {
           gap: "6px",
           padding: "6px 14px",
           marginBottom: "16px",
-          borderRadius: "8px",
+          borderRadius: "var(--radius-xs)",
           border: "1px solid var(--surface-light)",
           background: "transparent",
           color: "var(--text-secondary)",
@@ -570,7 +570,7 @@ export default function UserDiagnosticDevPage() {
         disabled={running || userLoading}
         style={{
           padding: "10px 20px",
-          borderRadius: "8px",
+          borderRadius: "var(--radius-xs)",
           border: "none",
           background: running ? "var(--text-secondary)" : "var(--primary)",
           color: "var(--text-inverse)",
@@ -606,7 +606,7 @@ export default function UserDiagnosticDevPage() {
                 style={{
                   background: "var(--surface)",
                   border: `1px solid ${result.pass ? "var(--success)" : "var(--danger)"}`,
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   padding: "14px 16px",
                 }}
               >
@@ -629,7 +629,7 @@ export default function UserDiagnosticDevPage() {
                       style={{
                         background: "none",
                         border: "1px solid var(--surface-light)",
-                        borderRadius: "6px",
+                        borderRadius: "var(--radius-xs)",
                         padding: "4px 10px",
                         cursor: "pointer",
                         fontSize: "12px",
@@ -650,7 +650,7 @@ export default function UserDiagnosticDevPage() {
                       marginLeft: "34px",
                       background: "var(--surface-light)",
                       padding: "12px",
-                      borderRadius: "6px",
+                      borderRadius: "var(--radius-xs)",
                       overflowX: "auto",
                       fontSize: "12px",
                       maxHeight: "300px",
@@ -673,7 +673,7 @@ export default function UserDiagnosticDevPage() {
             padding: "16px",
             background: passCount === totalCount ? "var(--success)" : "var(--danger)",
             color: "var(--text-inverse)",
-            borderRadius: "8px",
+            borderRadius: "var(--radius-xs)",
             fontWeight: 600,
             fontSize: "16px",
           }}

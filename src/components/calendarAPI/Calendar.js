@@ -1,5 +1,35 @@
 import React, { useState, useRef, useEffect, useId, useMemo } from "react";
 
+const pickStyleKeys = (style, keys) => {
+  if (!style) return undefined;
+  return keys.reduce((acc, key) => {
+    if (style[key] !== undefined) {
+      acc[key] = style[key];
+    }
+    return acc;
+  }, {});
+};
+
+const WRAPPER_STYLE_KEYS = [
+  "width",
+  "minWidth",
+  "maxWidth",
+  "flex",
+  "flexGrow",
+  "flexShrink",
+  "flexBasis",
+  "margin",
+  "marginTop",
+  "marginRight",
+  "marginBottom",
+  "marginLeft",
+  "alignSelf",
+  "justifySelf",
+];
+
+const CONTROL_LAYOUT_STYLE_KEYS = ["width", "minWidth", "maxWidth", "justifyContent", "cursor"];
+const LABEL_LAYOUT_STYLE_KEYS = ["display", "margin", "marginTop", "marginBottom", "alignSelf"];
+
 export default function Calendar({
   label,
   placeholder = "Select a date",
@@ -23,20 +53,9 @@ export default function Calendar({
   labelStyle,
   ...rest
 }) {
-  const wrapperStyle = style
-    ? {
-        ...style,
-        border: undefined,
-        borderColor: undefined,
-        borderWidth: undefined,
-        borderStyle: undefined,
-        borderRadius: undefined,
-        background: undefined,
-        backgroundColor: undefined,
-        boxShadow: undefined,
-        padding: undefined,
-      }
-    : undefined;
+  const wrapperStyle = pickStyleKeys(style, WRAPPER_STYLE_KEYS);
+  const mergedControlStyle = pickStyleKeys(controlStyle, CONTROL_LAYOUT_STYLE_KEYS);
+  const mergedLabelStyle = pickStyleKeys(labelStyle, LABEL_LAYOUT_STYLE_KEYS);
   const generatedId = useId();
   const controlId = id || generatedId;
   const [isOpen, setIsOpen] = useState(false);
@@ -237,7 +256,7 @@ export default function Calendar({
   return (
     <div ref={calendarRef} className={containerClassName} style={wrapperStyle} {...rest}>
       {label && (
-        <label htmlFor={controlId} className="calendar-api__label" style={labelStyle}>
+        <label htmlFor={controlId} className="calendar-api__label" style={mergedLabelStyle}>
           <span>{label}{required && <span className="calendar-api__required"> *</span>}</span>
         </label>
       )}
@@ -247,7 +266,7 @@ export default function Calendar({
         id={controlId}
         type="button"
         className="calendar-api__control"
-        style={controlStyle}
+        style={mergedControlStyle}
         onClick={() => !disabled && setIsOpen(!isOpen)}
         onKeyDown={handleKeyDown}
         disabled={disabled}

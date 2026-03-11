@@ -338,7 +338,7 @@ export default function InvoiceBuilderPopup({
               key={line.id}
               style={{
                 border: "1px solid var(--accent-purple-surface)",
-                borderRadius: "10px",
+                borderRadius: "var(--input-radius)",
                 padding: "12px",
                 marginBottom: "10px",
                 background: "var(--surface)"
@@ -362,7 +362,7 @@ export default function InvoiceBuilderPopup({
                 }
                 style={{
                   width: "100%",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   border: "1px solid var(--info)",
                   padding: "8px 10px",
                   fontSize: "14px"
@@ -393,7 +393,7 @@ export default function InvoiceBuilderPopup({
           ) : (
             <div
               style={{
-                borderRadius: "12px",
+                borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--accent-purple-surface)",
                 overflow: "hidden"
               }}
@@ -449,7 +449,7 @@ export default function InvoiceBuilderPopup({
                 onClick={() => setSelectedProvider(provider.id)}
                 style={{
                   padding: "10px 16px",
-                  borderRadius: "10px",
+                  borderRadius: "var(--input-radius)",
                   border:
                     selectedProvider === provider.id
                       ? "2px solid var(--info-dark)"
@@ -504,7 +504,7 @@ export default function InvoiceBuilderPopup({
         >
           <div
             style={{
-              borderRadius: "10px",
+              borderRadius: "var(--input-radius)",
               border: "1px solid var(--accent-purple-surface)",
               padding: "12px",
               background: "var(--surface)"
@@ -520,7 +520,7 @@ export default function InvoiceBuilderPopup({
               onChange={(event) => setLabourTotal(Number(event.target.value))}
               style={{
                 width: "100%",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
                 border: "1px solid var(--info)",
                 padding: "10px",
                 fontSize: "14px",
@@ -531,7 +531,7 @@ export default function InvoiceBuilderPopup({
 
           <div
             style={{
-              borderRadius: "10px",
+              borderRadius: "var(--input-radius)",
               border: "1px solid var(--accent-purple-surface)",
               padding: "12px",
               background: "var(--surface)"
@@ -545,7 +545,7 @@ export default function InvoiceBuilderPopup({
               onChange={(event) => setVatRate(Number(event.target.value))}
               style={{
                 width: "100%",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
                 border: "1px solid var(--info)",
                 padding: "10px",
                 fontSize: "14px",
@@ -565,7 +565,7 @@ export default function InvoiceBuilderPopup({
             style={{
               marginBottom: "18px",
               padding: "16px",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               border: "1px solid var(--accent-purple-surface)",
               background: "var(--info-surface)"
             }}
@@ -584,7 +584,7 @@ export default function InvoiceBuilderPopup({
                 }}
                 style={{
                   padding: "10px 16px",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   border: "none",
                   background: "var(--info-dark)",
                   color: "white",
@@ -598,7 +598,7 @@ export default function InvoiceBuilderPopup({
                 onClick={handlePrintInvoice}
                 style={{
                   padding: "10px 16px",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   border: "1px solid var(--info)",
                   background: "var(--surface)",
                   cursor: "pointer"
@@ -612,7 +612,7 @@ export default function InvoiceBuilderPopup({
                 disabled={isSharing}
                 style={{
                   padding: "10px 16px",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   border: "1px solid var(--info-dark)",
                   background: "var(--info-dark)",
                   color: "white",
@@ -627,7 +627,7 @@ export default function InvoiceBuilderPopup({
                 disabled={isSharing}
                 style={{
                   padding: "10px 16px",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   border: "1px solid var(--info)",
                   background: "var(--surface)",
                   cursor: isSharing ? "not-allowed" : "pointer"
@@ -658,7 +658,7 @@ export default function InvoiceBuilderPopup({
               style={{
                 background: "transparent",
                 border: "1px solid var(--info)",
-                borderRadius: "999px",
+                borderRadius: "var(--radius-pill)",
                 padding: "6px 12px",
                 fontSize: "12px",
                 cursor: "pointer"
@@ -669,7 +669,7 @@ export default function InvoiceBuilderPopup({
           </div>
           <div
             style={{
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               border: "1px solid var(--accent-purple-surface)",
               padding: "14px",
               background: "var(--info-surface)",
@@ -737,7 +737,7 @@ export default function InvoiceBuilderPopup({
             onClick={onClose}
             style={{
               padding: "10px 18px",
-              borderRadius: "8px",
+              borderRadius: "var(--radius-xs)",
               border: "1px solid var(--accent-purple-surface)",
               background: "var(--surface)",
               cursor: "pointer"
@@ -751,7 +751,7 @@ export default function InvoiceBuilderPopup({
             disabled={isSubmitting}
             style={{
               padding: "10px 18px",
-              borderRadius: "8px",
+              borderRadius: "var(--radius-xs)",
               border: "none",
               background: "var(--info-dark)",
               color: "white",

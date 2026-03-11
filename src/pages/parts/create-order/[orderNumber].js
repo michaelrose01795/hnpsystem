@@ -15,11 +15,6 @@ const containerStyle = {
 };
 
 const sectionCard = {
-  background: "var(--surface)",
-  borderRadius: "20px",
-  border: "1px solid var(--surface-light)",
-  padding: "20px",
-  boxShadow: "none",
 };
 
 const infoGrid = {
@@ -30,7 +25,7 @@ const infoGrid = {
 
 const tabButtonStyle = (active) => ({
   padding: "10px 18px",
-  borderRadius: "999px",
+  borderRadius: "var(--radius-pill)",
   border: active ? "1px solid var(--primary-dark)" : "1px solid var(--surface-light)",
   background: active ? "var(--primary-dark)" : "var(--surface-light)",
   color: active ? "var(--surface)" : "var(--primary-dark)",
@@ -110,7 +105,7 @@ const statusChip = (label, tone = "info") => {
     <span
       style={{
         padding: "4px 12px",
-        borderRadius: "999px",
+        borderRadius: "var(--radius-pill)",
         fontSize: "0.8rem",
         fontWeight: 600,
         ...colors,
@@ -269,7 +264,7 @@ export default function PartsOrderDetail() {
   return (
     <Layout>
       <div style={containerStyle}>
-        <div style={sectionCard}>
+        <div className="app-section-card" style={sectionCard}>
           <p
             style={{
               margin: 0,
@@ -323,7 +318,7 @@ export default function PartsOrderDetail() {
           </div>
         </div>
 
-        <div style={sectionCard}>
+        <div className="app-section-card" style={sectionCard}>
           <h2 style={{ margin: "0 0 12px", color: "var(--primary-dark)" }}>Customer & Vehicle</h2>
           <div style={infoGrid}>
             <InfoCell label="Customer" value={order?.customer_name || "—"} />
@@ -344,7 +339,7 @@ export default function PartsOrderDetail() {
           <InfoCell label="Notes" value={order?.notes || "No notes recorded"} fullWidth />
         </div>
 
-        <div style={sectionCard}>
+        <div className="app-section-card" style={sectionCard}>
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "12px" }}>
             <button
               type="button"
@@ -413,7 +408,7 @@ function SummaryPill({ label, value }) {
     <div
       style={{
         border: "1px solid var(--surface-light)",
-        borderRadius: "14px",
+        borderRadius: "var(--radius-md)",
         padding: "10px 14px",
         minWidth: "140px",
       }}
@@ -456,7 +451,7 @@ function StatusTab({ order, onDeliveryChange, onInvoiceChange, saving, error }) 
         <div
           style={{
             border: "1px solid var(--danger)",
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             padding: "10px 14px",
             color: "var(--danger)",
           }}
@@ -507,7 +502,7 @@ function StatusTab({ order, onDeliveryChange, onInvoiceChange, saving, error }) 
       <div
         style={{
           border: "1px dashed var(--surface-light)",
-          borderRadius: "14px",
+          borderRadius: "var(--radius-md)",
           padding: "14px",
           background: completionReady
             ? "rgba(var(--success-rgb,34,139,34),0.08)"
@@ -550,7 +545,7 @@ function StatusStageButton({ label, active, completed, onClick, disabled }) {
       onClick={onClick}
       disabled={disabled}
       style={{
-        borderRadius: "12px",
+        borderRadius: "var(--radius-sm)",
         border: active ? "1px solid var(--primary-dark)" : "1px solid var(--surface-light)",
         padding: "10px 14px",
         minWidth: "160px",
@@ -583,7 +578,7 @@ function PartsTab({ items, orderNotes }) {
           key={item.id}
           style={{
             border: "1px solid var(--surface-light)",
-            borderRadius: "16px",
+            borderRadius: "var(--radius-md)",
             padding: "14px",
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
@@ -604,7 +599,7 @@ function PartsTab({ items, orderNotes }) {
       {orderNotes && (
         <div
           style={{
-            borderRadius: "16px",
+            borderRadius: "var(--radius-md)",
             border: "1px solid var(--surface-light)",
             padding: "12px",
           }}
@@ -638,7 +633,7 @@ function DeliveryTab({ order }) {
 function InvoiceTab({ orderNumber }) {
   if (!orderNumber) {
     return (
-      <div style={{ border: "1px solid var(--surface-light)", borderRadius: "14px", padding: "12px" }}>
+      <div style={{ border: "1px solid var(--surface-light)", borderRadius: "var(--radius-md)", padding: "12px" }}>
         <p style={{ margin: 0, color: "var(--danger-dark)" }}>Order number missing — cannot render invoice.</p>
       </div>
     );

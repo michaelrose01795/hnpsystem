@@ -73,15 +73,12 @@ export default function ServiceManagerDashboard() {
   }, []);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "16px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       <header
+        className="app-section-card"
         style={{
           background: "var(--info-surface)",
-          borderRadius: "18px",
-          padding: "24px",
           border: "1px solid var(--info-surface)",
-          display: "flex",
-          flexDirection: "column",
           gap: "6px",
         }}
       >
@@ -93,34 +90,24 @@ export default function ServiceManagerDashboard() {
       </header>
 
       <section
+        className="app-section-card"
         style={{
           display: "flex",
           flexWrap: "wrap",
           gap: "12px",
-          background: "var(--surface)",
           padding: "14px 20px",
-          borderRadius: "16px",
           border: "1px solid var(--info-surface)",
-          boxShadow: "none",
         }}
       >
         {quickActions.map((action) => (
           <Link
             key={action.href}
             href={action.href}
+            className="app-topbar-link"
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "10px 20px",
-              borderRadius: "999px",
-              border: "1px solid var(--info)",
-              backgroundColor: "var(--surface)",
-              color: "var(--info-dark)",
+              borderRadius: "var(--radius-pill)",
               fontWeight: 600,
               fontSize: "0.9rem",
-              textDecoration: "none",
-              boxShadow: "none",
             }}
           >
             {action.label}
@@ -143,14 +130,10 @@ export default function ServiceManagerDashboard() {
         ].map((metric) => (
           <div
             key={metric.label}
+            className="app-section-card"
             style={{
-              borderRadius: "18px",
               padding: "18px",
-              background: "var(--surface)",
               border: `1px solid ${metric.accent}22`,
-              boxShadow: "none",
-              display: "flex",
-              flexDirection: "column",
               gap: "6px",
             }}
           >
@@ -171,14 +154,10 @@ export default function ServiceManagerDashboard() {
         }}
       >
         <article
+          className="app-section-card"
           style={{
-            background: "var(--surface)",
-            borderRadius: "18px",
-            padding: "20px",
+            padding: "var(--section-card-padding)",
             border: "1px solid var(--info-surface)",
-            boxShadow: "none",
-            display: "flex",
-            flexDirection: "column",
             gap: "16px",
           }}
         >
@@ -195,7 +174,7 @@ export default function ServiceManagerDashboard() {
                 key={advisor.advisor}
                 style={{
                   border: "1px solid var(--info-surface)",
-                  borderRadius: "14px",
+                  borderRadius: "var(--radius-sm)",
                   padding: "14px",
                   display: "grid",
                   gridTemplateColumns: "1.2fr repeat(4, 1fr)",
@@ -229,14 +208,10 @@ export default function ServiceManagerDashboard() {
         </article>
 
         <article
+          className="app-section-card"
           style={{
-            background: "var(--surface)",
-            borderRadius: "18px",
-            padding: "20px",
+            padding: "var(--section-card-padding)",
             border: "1px solid var(--info-surface)",
-            boxShadow: "none",
-            display: "flex",
-            flexDirection: "column",
             gap: "18px",
           }}
         >
@@ -249,7 +224,7 @@ export default function ServiceManagerDashboard() {
               <div
                 key={car.vehicle}
                 style={{
-                  borderRadius: "14px",
+                  borderRadius: "var(--radius-sm)",
                   padding: "14px",
                   border: "1px solid var(--info-surface)",
                   background: "var(--info-surface)",
@@ -277,12 +252,10 @@ export default function ServiceManagerDashboard() {
         }}
       >
         <article
+          className="app-section-card"
           style={{
-            background: "var(--surface)",
-            borderRadius: "18px",
-            padding: "20px",
+            padding: "var(--section-card-padding)",
             border: "1px solid var(--info-surface)",
-            boxShadow: "none",
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
@@ -298,7 +271,7 @@ export default function ServiceManagerDashboard() {
                 key={customer.jobNumber}
                 style={{
                   border: "1px solid var(--info-surface)",
-                  borderRadius: "14px",
+                  borderRadius: "var(--radius-sm)",
                   padding: "14px",
                   display: "grid",
                   gridTemplateColumns: "1.4fr 1fr 1fr",
@@ -326,14 +299,10 @@ export default function ServiceManagerDashboard() {
         </article>
 
         <article
+          className="app-section-card"
           style={{
-            background: "var(--surface)",
-            borderRadius: "18px",
-            padding: "20px",
+            padding: "var(--section-card-padding)",
             border: "1px solid var(--info-surface)",
-            boxShadow: "none",
-            display: "flex",
-            flexDirection: "column",
             gap: "12px",
           }}
         >
@@ -347,7 +316,7 @@ export default function ServiceManagerDashboard() {
                 key={`${item.slot}-${item.owner}`}
                 style={{
                   border: "1px dashed var(--info)",
-                  borderRadius: "14px",
+                  borderRadius: "var(--radius-sm)",
                   padding: "14px",
                   background: "var(--info-surface)",
                 }}
@@ -364,7 +333,7 @@ export default function ServiceManagerDashboard() {
             style={{
               marginTop: "8px",
               padding: "12px 14px",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               background: "var(--success-surface)",
               color: "var(--info-dark)",
               fontWeight: 600,

@@ -600,7 +600,7 @@ export default function EmployeesTab() {
                 style={{
                   width: "100%",
                   padding: "10px 120px 10px 14px",
-                  borderRadius: "10px",
+                  borderRadius: "var(--input-radius)",
                   border: "1px solid var(--surface-light)",
                   background: "var(--surface-light)",
                   color: "var(--text-primary)",
@@ -637,7 +637,7 @@ export default function EmployeesTab() {
             <div
               style={{
                 padding: "16px",
-                borderRadius: "14px",
+                borderRadius: "var(--radius-sm)",
                 border: "1px dashed var(--surface-light)",
                 textAlign: "center",
                 color: "var(--text-secondary)",
@@ -658,7 +658,7 @@ export default function EmployeesTab() {
                   cursor: "pointer",
                   textAlign: "left",
                   padding: "14px",
-                  borderRadius: "14px",
+                  borderRadius: "var(--radius-sm)",
                   border: isSelected ? "1px solid var(--accent-purple)" : "1px solid var(--surface-light)",
                   background: isSelected ? "rgba(var(--accent-purple-rgb), 0.12)" : "var(--surface)",
                   display: "grid",
@@ -685,7 +685,7 @@ export default function EmployeesTab() {
                   style={{
                     width: "46px",
                     height: "46px",
-                    borderRadius: "50%",
+                    borderRadius: "var(--radius-full)",
                     background: "rgba(var(--accent-purple-rgb), 0.2)",
                     color: "var(--accent-purple)",
                     fontWeight: 700,
@@ -712,7 +712,7 @@ export default function EmployeesTab() {
                       <span
                         style={{
                           padding: "4px 8px",
-                          borderRadius: "999px",
+                          borderRadius: "var(--radius-pill)",
                           border: "1px solid rgba(var(--accent-purple-rgb), 0.4)",
                           background: "rgba(var(--accent-purple-rgb), 0.12)",
                           color: "var(--accent-purple)",
@@ -727,7 +727,7 @@ export default function EmployeesTab() {
                       <span
                         style={{
                           padding: "4px 8px",
-                          borderRadius: "999px",
+                          borderRadius: "var(--radius-pill)",
                           border: "1px solid rgba(var(--grey-accent-rgb), 0.4)",
                           background: "rgba(var(--grey-accent-rgb), 0.15)",
                           color: "var(--text-primary)",
@@ -764,8 +764,8 @@ export default function EmployeesTab() {
             type="button"
             onClick={handleStartEditEmployee}
             style={{
-              padding: "10px 16px",
-              borderRadius: "10px",
+              padding: "var(--control-padding)",
+              borderRadius: "var(--input-radius)",
               border: "1px solid var(--accent-purple-surface)",
               background: "var(--surface)",
               fontWeight: 600,
@@ -823,7 +823,7 @@ export default function EmployeesTab() {
             <div
               key={index}
               style={{
-                borderRadius: "14px",
+                borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--surface-light)",
                 background: "var(--surface)",
                 padding: "14px",
@@ -837,17 +837,17 @@ export default function EmployeesTab() {
                 style={{
                   width: "46px",
                   height: "46px",
-                  borderRadius: "50%",
+                  borderRadius: "var(--radius-full)",
                   background: "var(--surface-light)",
                   border: "1px solid var(--surface-light)",
                 }}
               />
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                <div style={{ height: "12px", width: "60%", background: "var(--surface-light)", borderRadius: "8px" }} />
-                <div style={{ height: "10px", width: "40%", background: "var(--surface-light)", borderRadius: "8px" }} />
-                <div style={{ height: "10px", width: "50%", background: "var(--surface-light)", borderRadius: "8px" }} />
+                <div style={{ height: "12px", width: "60%", background: "var(--surface-light)", borderRadius: "var(--radius-xs)" }} />
+                <div style={{ height: "10px", width: "40%", background: "var(--surface-light)", borderRadius: "var(--radius-xs)" }} />
+                <div style={{ height: "10px", width: "50%", background: "var(--surface-light)", borderRadius: "var(--radius-xs)" }} />
               </div>
-              <div style={{ height: "12px", width: "12px", background: "var(--surface-light)", borderRadius: "4px" }} />
+              <div style={{ height: "12px", width: "12px", background: "var(--surface-light)", borderRadius: "var(--radius-xs)" }} />
             </div>
           ))}
         </div>
@@ -873,13 +873,12 @@ export default function EmployeesTab() {
             type="button"
             onClick={handleShowAddEmployee}
             style={{
-              padding: "10px 16px",
-              borderRadius: "10px",
+              padding: "var(--control-padding)",
+              borderRadius: "var(--input-radius)",
               border: "1px solid var(--accent-purple-surface)",
               background: "var(--surface)",
               fontWeight: 600,
               color: "var(--accent-purple)",
-              boxShadow: "none",
               cursor: "pointer",
             }}
           >
@@ -888,13 +887,12 @@ export default function EmployeesTab() {
           <button
             type="button"
             style={{
-              padding: "10px 16px",
-              borderRadius: "10px",
+              padding: "var(--control-padding)",
+              borderRadius: "var(--input-radius)",
               border: "none",
               background: "var(--accent-purple)",
               fontWeight: 600,
               color: "white",
-              boxShadow: "none",
               cursor: "pointer",
             }}
           >
@@ -936,8 +934,8 @@ function EmployeeForm({
               type="button"
               onClick={onCancel}
               style={{
-                padding: "8px 16px",
-                borderRadius: "8px",
+                padding: "var(--control-padding)",
+                borderRadius: "var(--radius-xs)",
                 border: "1px solid var(--surface-light)",
                 background: "var(--surface)",
                 fontWeight: 600,
@@ -952,8 +950,8 @@ function EmployeeForm({
               onClick={onSave}
               disabled={isSaving}
               style={{
-                padding: "8px 20px",
-                borderRadius: "8px",
+                padding: "var(--control-padding)",
+                borderRadius: "var(--radius-xs)",
                 border: "none",
                 background: "var(--accent-purple)",
                 fontWeight: 600,
@@ -975,8 +973,8 @@ function EmployeeForm({
                 color: "var(--danger-dark)",
                 background: "var(--danger-surface)",
                 border: "1px solid var(--danger-border)",
-                borderRadius: "10px",
-                padding: "10px 12px",
+                borderRadius: "var(--input-radius)",
+                padding: "var(--control-padding)",
                 fontWeight: 600,
                 lineHeight: 1.4,
               }}
@@ -1060,7 +1058,7 @@ function SearchableListDropdown({
         placeholder={placeholder}
         style={{
           padding: "10px",
-          borderRadius: "8px",
+          borderRadius: "var(--radius-xs)",
           border: hasError ? "1px solid var(--danger)" : "1px solid var(--surface-light)",
           boxShadow: hasError ? "0 0 0 2px rgba(var(--danger-rgb), 0.12)" : "none",
           width: "100%",
@@ -1078,10 +1076,10 @@ function SearchableListDropdown({
             overflowY: "auto",
             background: "var(--surface)",
             border: "1px solid var(--surface-light)",
-            borderRadius: "8px",
+            borderRadius: "var(--radius-xs)",
             marginTop: "4px",
             zIndex: 1000,
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+            boxShadow: "var(--shadow-md)",
           }}
         >
           {filteredItems.length > 0 ? (
@@ -1149,7 +1147,7 @@ function SectionHeading({ title, hasError = false, errorCount = 0 }) {
             color: "var(--danger-dark)",
             background: "rgba(var(--danger-rgb), 0.15)",
             border: "1px solid var(--danger-border)",
-            borderRadius: "999px",
+            borderRadius: "var(--radius-pill)",
             padding: "2px 8px",
             textTransform: "none",
             letterSpacing: "normal",
@@ -1170,7 +1168,7 @@ function EmployeeDetailsFields({
   availableJobTitles,
 }) {
   const update = (field) => (event) => onFieldChange(field, event.target.value);
-  const inputStyle = { padding: "10px", borderRadius: "8px", border: "1px solid var(--surface-light)" };
+  const inputStyle = { padding: "10px", borderRadius: "var(--radius-xs)", border: "1px solid var(--surface-light)" };
   const applyFieldErrorStyle = (field, baseStyle = inputStyle) =>
     fieldErrors[field]
       ? {
@@ -1193,7 +1191,7 @@ function EmployeeDetailsFields({
     const hasError = Boolean(sectionErrors[section]?.length);
     return {
       border: hasError ? "1px solid var(--danger-border)" : "1px solid transparent",
-      borderRadius: "12px",
+      borderRadius: "var(--radius-sm)",
       padding: "12px",
       background: hasError ? "rgba(var(--danger-rgb), 0.08)" : "transparent",
       boxShadow: hasError ? "0 0 0 2px rgba(var(--danger-rgb), 0.08)" : "none",
@@ -1278,12 +1276,12 @@ function EmployeeDetailsFields({
             </select>
           </FormField>
           <FormField label="Start Date" errorMessage={fieldErrors.startDate}>
-            <div style={applyFieldErrorStyle("startDate", { borderRadius: "8px" })}>
+            <div style={applyFieldErrorStyle("startDate", { borderRadius: "var(--radius-xs)" })}>
               <CalendarField name="startDate" id="startDate" value={values.startDate} onChange={update("startDate")} />
             </div>
           </FormField>
           <FormField label="Probation Ends" errorMessage={fieldErrors.probationEnd}>
-            <div style={applyFieldErrorStyle("probationEnd", { borderRadius: "8px" })}>
+            <div style={applyFieldErrorStyle("probationEnd", { borderRadius: "var(--radius-xs)" })}>
               <CalendarField name="probationEnd" id="probationEnd" value={values.probationEnd} onChange={update("probationEnd")} />
             </div>
           </FormField>
@@ -1429,7 +1427,7 @@ function AddressSearchField({ value, onChange }) {
 
   const inputStyle = {
     padding: "10px",
-    borderRadius: "8px",
+    borderRadius: "var(--radius-xs)",
     border: "1px solid var(--surface-light)",
     fontSize: "0.9rem",
   };
@@ -1479,11 +1477,11 @@ function AddressSearchField({ value, onChange }) {
               zIndex: 20,
               background: "var(--background, #fff)",
               border: "1px solid var(--surface-light)",
-              borderRadius: "8px",
+              borderRadius: "var(--radius-xs)",
               marginTop: "4px",
               maxHeight: "200px",
               overflowY: "auto",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+              boxShadow: "var(--shadow-md)",
             }}
           >
             {results.map((addr, i) => (
@@ -1532,7 +1530,7 @@ function EmergencyContactSection({ value, onChange, userId }) {
 
   const inputStyle = {
     padding: "10px",
-    borderRadius: "8px",
+    borderRadius: "var(--radius-xs)",
     border: "1px solid var(--surface-light)",
     fontSize: "0.9rem",
   };
@@ -1541,7 +1539,7 @@ function EmergencyContactSection({ value, onChange, userId }) {
     <div
       style={{
         border: "1px solid var(--surface-light)",
-        borderRadius: "12px",
+        borderRadius: "var(--radius-sm)",
         padding: "16px",
         display: "flex",
         flexDirection: "column",
@@ -1611,8 +1609,8 @@ function EmergencyContactSection({ value, onChange, userId }) {
 }
 
 const buttonStylePrimary = {
-  padding: "10px 18px",
-  borderRadius: "10px",
+  padding: "var(--control-padding)",
+  borderRadius: "var(--input-radius)",
   border: "none",
   background: "var(--accent-purple)",
   color: "white",
@@ -1621,8 +1619,8 @@ const buttonStylePrimary = {
 };
 
 const buttonStyleGhost = {
-  padding: "10px 18px",
-  borderRadius: "10px",
+  padding: "var(--control-padding)",
+  borderRadius: "var(--input-radius)",
   border: "1px dashed var(--accent-purple)",
   background: "transparent",
   color: "var(--accent-purple)",
@@ -1636,7 +1634,7 @@ function SampleAutofillBlock({ value, onChange, onApply, onClear }) {
       style={{
         marginTop: "12px",
         border: "1px dashed var(--accent-purple-surface)",
-        borderRadius: "12px",
+        borderRadius: "var(--radius-sm)",
         padding: "16px",
         background: "var(--surface-light)",
         display: "flex",
@@ -1657,7 +1655,7 @@ function SampleAutofillBlock({ value, onChange, onApply, onClear }) {
         rows={6}
         style={{
           padding: "12px",
-          borderRadius: "10px",
+          borderRadius: "var(--input-radius)",
           border: "1px solid var(--surface-light)",
           resize: "vertical",
         }}

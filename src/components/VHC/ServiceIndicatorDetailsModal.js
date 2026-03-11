@@ -170,7 +170,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
             <span
               style={{
                 padding: "6px 12px",
-                borderRadius: "999px",
+                borderRadius: "var(--radius-pill)",
                 background: "var(--danger-surface)",
                 color: palette.danger,
                 fontWeight: 600,
@@ -182,7 +182,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
             <span
               style={{
                 padding: "6px 12px",
-                borderRadius: "999px",
+                borderRadius: "var(--radius-pill)",
                 background: "var(--warning-surface)",
                 color: palette.warning,
                 fontWeight: 600,
@@ -194,7 +194,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
             <span
               style={{
                 padding: "6px 12px",
-                borderRadius: "999px",
+                borderRadius: "var(--radius-pill)",
                 background: "var(--success-surface)",
                 color: palette.success,
                 fontWeight: 600,
@@ -213,7 +213,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                borderRadius: "12px",
+                borderRadius: "var(--radius-sm)",
                 border: `1px solid ${palette.border}`,
                 padding: "10px 12px",
                 background: palette.surface,
@@ -384,7 +384,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                     type="button"
                     onClick={() => setServiceChoice(option.key)}
                     style={{
-                      borderRadius: "16px",
+                      borderRadius: "var(--radius-md)",
                       padding: "14px 16px",
                       border: `1px solid ${isActive ? toneColor : palette.border}`,
                       background: isActive ? toneColor : palette.surface,
@@ -426,7 +426,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                     onClick={() => setOilStatus(option)}
                     style={{
                       padding: "12px 20px",
-                      borderRadius: "999px",
+                      borderRadius: "var(--radius-pill)",
                       border: `1px solid ${isActive ? optionBorder : palette.border}`,
                       background: isActive ? optionBorder : palette.surface,
                       color: isActive ? "var(--text-inverse)" : palette.textPrimary,
@@ -474,7 +474,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                     onClick={() => openConcernFor(item)}
                     style={{
                       padding: "12px",
-                      borderRadius: "14px",
+                      borderRadius: "var(--radius-md)",
                       border: `1px solid ${palette.border}`,
                       background: palette.surface,
                       color: palette.textPrimary,
@@ -571,7 +571,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                   readOnly={locked}
                   style={{
                     width: "100%",
-                    borderRadius: "16px",
+                    borderRadius: "var(--radius-md)",
                     border: `1px solid ${palette.border}`,
                     padding: "12px",
                     fontSize: "14px",
@@ -589,7 +589,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                   disabled={locked}
                   placeholder="Describe concern..."
                   inputStyle={{
-                    borderRadius: "16px",
+                    borderRadius: "var(--radius-md)",
                     border: `1px solid ${palette.border}`,
                     padding: "12px",
                     fontSize: "14px",
@@ -607,7 +607,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                 onChange={(e) => setConcernStatus(e.target.value)}
                 className="vhc-concern-dropdown"
                 style={{
-                  borderRadius: "14px",
+                  borderRadius: "var(--radius-md)",
                   border: `1px solid ${palette.border}`,
                   padding: "10px 12px",
                   background: palette.surface,
@@ -646,7 +646,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                 <div
                   style={{
                     padding: "16px",
-                    borderRadius: "16px",
+                    borderRadius: "var(--radius-md)",
                     border: `1px dashed ${palette.border}`,
                     backgroundColor: palette.accentSurface,
                     color: palette.textMuted,
@@ -664,7 +664,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                       flexDirection: "column",
                       gap: "12px",
                       padding: "16px",
-                      borderRadius: "18px",
+                      borderRadius: "var(--radius-lg)",
                       border: `1px solid ${palette.border}`,
                       background: palette.surface,
                     }}
@@ -676,7 +676,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                         onChange={(e) => updateConcern(concern._globalIndex, { status: e.target.value })}
                         className="vhc-concern-dropdown"
                         style={{
-                          borderRadius: "999px",
+                          borderRadius: "var(--radius-pill)",
                           padding: "6px 12px",
                           border: `1px solid ${palette.border}`,
                           background: palette.surfaceAlt,
@@ -698,7 +698,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                         onChange={(e) => updateConcern(concern._globalIndex, { text: e.target.value })}
                         rows={3}
                         style={{
-                          borderRadius: "14px",
+                          borderRadius: "var(--radius-md)",
                           border: `1px solid ${palette.border}`,
                           padding: "10px 12px",
                           fontSize: "14px",
@@ -715,7 +715,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                         disabled={locked}
                         placeholder="Describe concern..."
                         inputStyle={{
-                          borderRadius: "14px",
+                          borderRadius: "var(--radius-md)",
                           border: `1px solid ${palette.border}`,
                           padding: "10px 12px",
                           fontSize: "14px",

@@ -9,7 +9,7 @@ const consumableNameCollator = new Intl.Collator(undefined, {
 });
 
 const modalStyle = {
-  borderRadius: "32px",
+  borderRadius: "var(--radius-xl)",
   width: "min(960px, calc(100vw - 32px))",
   maxWidth: "960px",
   maxHeight: "calc(100vh - 32px)",
@@ -25,9 +25,9 @@ const modalStyle = {
 const sectionCardStyle = {
   background: "var(--surface)",
   border: "1px solid var(--surface-light)",
-  borderRadius: "16px",
+  borderRadius: "var(--radius-md)",
   padding: "16px",
-  boxShadow: "none",
+
 };
 
 const checkboxLabelStyle = {
@@ -40,24 +40,24 @@ const checkboxLabelStyle = {
 
 const buttonPrimaryStyle = {
   padding: "10px 18px",
-  borderRadius: "12px",
+  borderRadius: "var(--radius-sm)",
   border: "none",
   background: "var(--primary)",
   color: "var(--surface)",
   fontWeight: 600,
   cursor: "pointer",
-  boxShadow: "none",
+
 };
 
 const buttonSecondaryStyle = {
   padding: "8px 14px",
-  borderRadius: "10px",
+  borderRadius: "var(--input-radius)",
   border: "1px solid var(--surface-light)",
   background: "var(--surface)",
   color: "var(--primary-dark)",
   fontWeight: 600,
   cursor: "pointer",
-  boxShadow: "none",
+
 };
 
 const requestStatusTone = {
@@ -479,7 +479,7 @@ function StockCheckPopup({
           gap: "8px",
           padding: "12px",
           border: "1px solid var(--surface-light)",
-          borderRadius: "12px",
+          borderRadius: "var(--radius-sm)",
           background: "var(--surface-light)",
         }}
       >
@@ -538,7 +538,7 @@ function StockCheckPopup({
               }
               style={{
                 padding: "8px 10px",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
                 border: "1px solid var(--surface-light)",
                 flex: "1 1 220px",
               }}
@@ -643,7 +643,7 @@ function StockCheckPopup({
                       placeholder="e.g. nitrile gloves"
                       style={{
                         padding: "8px 10px",
-                        borderRadius: "10px",
+                        borderRadius: "var(--input-radius)",
                         border: "1px solid var(--surface-light)",
                       }}
                       required
@@ -658,7 +658,7 @@ function StockCheckPopup({
                       placeholder="Optional supplier"
                       style={{
                         padding: "8px 10px",
-                        borderRadius: "10px",
+                        borderRadius: "var(--input-radius)",
                         border: "1px solid var(--surface-light)",
                       }}
                     />
@@ -674,7 +674,7 @@ function StockCheckPopup({
                       placeholder="0.00"
                       style={{
                         padding: "8px 10px",
-                        borderRadius: "10px",
+                        borderRadius: "var(--input-radius)",
                         border: "1px solid var(--surface-light)",
                       }}
                     />
@@ -715,7 +715,7 @@ function StockCheckPopup({
                     {data.stockChecks.map((request) => {
                       const tone = requestStatusTone[request.status] || requestStatusTone.pending;
                       return (
-                        <tr key={request.id} style={{ background: "var(--surface-light)", borderRadius: "12px" }}>
+                        <tr key={request.id} style={{ background: "var(--surface-light)", borderRadius: "var(--radius-sm)" }}>
                           <td style={{ padding: "8px", fontWeight: 600 }}>{request.consumableName || "—"}</td>
                           <td style={{ padding: "8px", color: "var(--grey-accent-dark)" }}>{request.technicianName || "—"}</td>
                           <td style={{ padding: "8px", color: "var(--grey-accent-dark)" }}>
@@ -734,7 +734,7 @@ function StockCheckPopup({
                                 display: "inline-flex",
                                 alignItems: "center",
                                 padding: "2px 10px",
-                                borderRadius: "999px",
+                                borderRadius: "var(--radius-pill)",
                                 fontSize: "0.8rem",
                                 fontWeight: 600,
                                 background: tone.background,

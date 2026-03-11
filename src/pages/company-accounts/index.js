@@ -205,11 +205,11 @@ export default function CompanyAccountsIndexPage() {
               flexDirection: "column",
               gap: "10px",
               padding: "18px",
-              borderRadius: "18px",
+              borderRadius: "var(--radius-md)",
               border: "1px solid var(--surface-light)",
-              background: "white",
+              background: "var(--surface)",
               textAlign: "left",
-              boxShadow: "0 6px 18px rgba(25, 25, 38, 0.08)",
+              boxShadow: "var(--shadow-md)",
               transition: "transform 0.2s ease, box-shadow 0.2s ease",
             }}
           >
@@ -227,7 +227,7 @@ export default function CompanyAccountsIndexPage() {
                     color: "var(--primary-dark)",
                     background: "var(--primary-tint, rgba(101, 44, 245, 0.08))",
                     padding: "4px 10px",
-                    borderRadius: "999px",
+                    borderRadius: "var(--radius-pill)",
                     fontSize: "0.85rem",
                   }}
                 >
@@ -248,7 +248,7 @@ export default function CompanyAccountsIndexPage() {
                     color: "var(--text-primary)",
                     padding: "6px 12px",
                     background: "var(--surface-light)",
-                    borderRadius: "999px",
+                    borderRadius: "var(--radius-pill)",
                   }}
                 >
                   Contact · {account.contact_name}
@@ -261,7 +261,7 @@ export default function CompanyAccountsIndexPage() {
                     color: "var(--text-secondary)",
                     padding: "6px 12px",
                     background: "var(--surface-light)",
-                    borderRadius: "999px",
+                    borderRadius: "var(--radius-pill)",
                   }}
                 >
                   {account.contact_email}
@@ -274,7 +274,7 @@ export default function CompanyAccountsIndexPage() {
                     color: "var(--text-secondary)",
                     padding: "6px 12px",
                     background: "var(--surface-light)",
-                    borderRadius: "999px",
+                    borderRadius: "var(--radius-pill)",
                   }}
                 >
                   {account.contact_phone}
@@ -287,7 +287,7 @@ export default function CompanyAccountsIndexPage() {
                     color: "var(--text-secondary)",
                     padding: "6px 12px",
                     background: "var(--surface-light)",
-                    borderRadius: "999px",
+                    borderRadius: "var(--radius-pill)",
                   }}
                 >
                   {account.billing_city}
@@ -310,7 +310,7 @@ export default function CompanyAccountsIndexPage() {
           </div>
           <div
             style={{
-              borderRadius: "999px",
+              borderRadius: "var(--radius-pill)",
               border: "1px solid var(--surface-light)",
               background: "var(--surface)",
               padding: "6px",
@@ -334,7 +334,7 @@ export default function CompanyAccountsIndexPage() {
                   onClick={() => setActiveTab(tab.id)}
                   style={{
                     flex: "0 0 auto",
-                    borderRadius: "999px",
+                    borderRadius: "var(--radius-pill)",
                     border: "1px solid transparent",
                     padding: "10px 20px",
                     fontSize: "0.9rem",
@@ -363,7 +363,7 @@ export default function CompanyAccountsIndexPage() {
                   style={{
                     alignSelf: "flex-start",
                     padding: "10px 18px",
-                    borderRadius: "10px",
+                    borderRadius: "var(--radius-sm)",
                     border: "1px solid var(--surface-light)",
                     background: "transparent",
                     fontWeight: 600,
@@ -401,7 +401,7 @@ export default function CompanyAccountsIndexPage() {
                         style={{
                           flex: "0 0 auto",
                           padding: "10px 18px",
-                          borderRadius: "999px",
+                          borderRadius: "var(--radius-pill)",
                           border: "none",
                           background: "var(--primary)",
                           color: "white",

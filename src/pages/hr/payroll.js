@@ -35,7 +35,7 @@ function PayrollContent() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
+    <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
       <header style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
         <p style={{ color: "var(--info)" }}>
           Track compensation, pay rise approvals, overtime payments, and exports.
@@ -137,7 +137,7 @@ function PayrollContent() {
                 key={summary.id}
                 style={{
                   border: "1px solid var(--accent-purple-surface)",
-                  borderRadius: "12px",
+                  borderRadius: "var(--radius-sm)",
                   padding: "12px",
                   display: "flex",
                   flexDirection: "column",
@@ -172,8 +172,8 @@ export default function HrPayroll({ embedded = false } = {}) {
 }
 
 const buttonStylePrimary = {
-  padding: "10px 18px",
-  borderRadius: "10px",
+  padding: "var(--control-padding)",
+  borderRadius: "var(--input-radius)",
   border: "none",
   background: "var(--danger)",
   color: "white",
@@ -182,8 +182,8 @@ const buttonStylePrimary = {
 };
 
 const buttonStyleSecondary = {
-  padding: "8px 14px",
-  borderRadius: "10px",
+  padding: "var(--control-padding)",
+  borderRadius: "var(--input-radius)",
   border: "1px solid var(--warning)",
   background: "var(--surface)",
   color: "var(--danger)",

@@ -1,5 +1,6 @@
 // file location: src/components/HR/MetricCard.js
 import React from "react";
+import Section from "@/components/Section";
 
 export function MetricCard({
   icon,
@@ -11,14 +12,9 @@ export function MetricCard({
 }) {
   return (
     <div
+      className="app-section-card"
       style={{
-        background: "var(--surface)",
-        borderRadius: "16px",
-        padding: "20px",
-        display: "flex",
-        flexDirection: "column",
         gap: "14px",
-        boxShadow: "none",
         minWidth: "200px",
         flex: 1,
       }}
@@ -42,7 +38,7 @@ export function MetricCard({
           style={{
             backgroundColor: "rgba(var(--info-rgb), 0.08)",
             color: accentColor,
-            borderRadius: "999px",
+            borderRadius: "var(--radius-pill)",
             padding: "6px 12px",
             fontSize: "0.8rem",
             fontWeight: 600,
@@ -56,44 +52,8 @@ export function MetricCard({
   );
 }
 
-export function SectionCard({ title, subtitle, action, children }) {
-  return (
-    <div
-      style={{
-        background: "var(--surface)",
-        borderRadius: "16px",
-        padding: "20px",
-        boxShadow: "none",
-        display: "flex",
-        flexDirection: "column",
-        gap: "18px",
-        flex: 1,
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "16px",
-        }}
-      >
-        <div>
-          <div style={{ fontWeight: 700, fontSize: "1.05rem", color: "var(--accent-purple)" }}>
-            {title}
-          </div>
-          {subtitle ? (
-            <div style={{ fontSize: "0.85rem", color: "var(--info)", marginTop: "4px" }}>
-              {subtitle}
-            </div>
-          ) : null}
-        </div>
-        {action ? <div>{action}</div> : null}
-      </div>
-      {children}
-    </div>
-  );
-}
+// Re-export Section as SectionCard for backward compatibility
+export const SectionCard = Section;
 
 export function StatusTag({ label, tone = "default" }) {
   const variants = {
@@ -112,7 +72,7 @@ export function StatusTag({ label, tone = "default" }) {
         color: palette.color,
         fontWeight: 600,
         fontSize: "0.75rem",
-        borderRadius: "999px",
+        borderRadius: "var(--radius-pill)",
         padding: "4px 10px",
       }}
     >

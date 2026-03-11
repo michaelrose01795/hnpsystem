@@ -219,7 +219,7 @@ export default function JobClockingCard() {
         padding: "20px",
         textAlign: "center",
         backgroundColor: "var(--warning-surface)",
-        borderRadius: "8px",
+        borderRadius: "var(--radius-xs)",
         border: "1px solid var(--warning)"
       }}>
         <p style={{ margin: 0, color: "var(--warning-dark)" }}>
@@ -241,7 +241,7 @@ export default function JobClockingCard() {
       {/* ✅ Daily Summary Card */}
       <div style={{
         backgroundColor: "var(--surface)",
-        borderRadius: "16px",
+        borderRadius: "var(--radius-md)",
         padding: "24px",
         boxShadow: "none",
         border: "1px solid var(--surface-light)"
@@ -269,7 +269,7 @@ export default function JobClockingCard() {
               backgroundColor: loading ? "var(--background)" : "var(--primary)",
               color: "white",
               border: "none",
-              borderRadius: "8px",
+              borderRadius: "var(--radius-xs)",
               cursor: loading ? "not-allowed" : "pointer",
               fontSize: "14px",
               fontWeight: "600",
@@ -292,7 +292,7 @@ export default function JobClockingCard() {
             <div style={{
               padding: "16px",
               backgroundColor: "var(--info-surface)",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               border: "1px solid var(--info)"
             }}>
               <p style={{ fontSize: "13px", color: "var(--grey-accent)", margin: "0 0 8px 0" }}>
@@ -306,7 +306,7 @@ export default function JobClockingCard() {
             <div style={{
               padding: "16px",
               backgroundColor: "var(--warning-surface)",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               border: "1px solid var(--warning-border)"
             }}>
               <p style={{ fontSize: "13px", color: "var(--grey-accent)", margin: "0 0 8px 0" }}>
@@ -320,7 +320,7 @@ export default function JobClockingCard() {
             <div style={{
               padding: "16px",
               backgroundColor: "var(--success-surface)",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               border: "1px solid var(--success-border)"
             }}>
               <p style={{ fontSize: "13px", color: "var(--grey-accent)", margin: "0 0 8px 0" }}>
@@ -337,7 +337,7 @@ export default function JobClockingCard() {
       {/* ✅ Currently Clocked In Jobs */}
       <div style={{
         backgroundColor: "var(--surface)",
-        borderRadius: "16px",
+        borderRadius: "var(--radius-md)",
         padding: "24px",
         boxShadow: "none",
         border: "1px solid var(--surface-light)"
@@ -356,7 +356,7 @@ export default function JobClockingCard() {
             textAlign: "center",
             padding: "40px",
             backgroundColor: "var(--surface)",
-            borderRadius: "12px"
+            borderRadius: "var(--radius-sm)"
           }}>
             <div style={{ fontSize: "48px", marginBottom: "16px" }}>⏸️</div>
             <p style={{ fontSize: "16px", color: "var(--grey-accent)", margin: 0 }}>
@@ -378,7 +378,7 @@ export default function JobClockingCard() {
                   padding: "16px",
                   backgroundColor: "var(--surface-light)",
                   border: "2px solid var(--primary)",
-                  borderRadius: "12px"
+                  borderRadius: "var(--radius-sm)"
                 }}
               >
                 <div style={{ flex: 1 }}>
@@ -419,7 +419,7 @@ export default function JobClockingCard() {
                     backgroundColor: loading ? "var(--background)" : "var(--danger)",
                     color: "white",
                     border: "none",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     cursor: loading ? "not-allowed" : "pointer",
                     fontSize: "14px",
                     fontWeight: "600",
@@ -439,7 +439,7 @@ export default function JobClockingCard() {
       {/* ✅ Clock Into New Job Section */}
       <div style={{
         backgroundColor: "var(--surface)",
-        borderRadius: "16px",
+        borderRadius: "var(--radius-md)",
         padding: "24px",
         boxShadow: "none",
         border: "1px solid var(--surface-light)"
@@ -471,7 +471,7 @@ export default function JobClockingCard() {
               backgroundColor: showAvailableJobs ? "var(--primary)" : "var(--surface)",
               color: showAvailableJobs ? "white" : "var(--grey-accent)",
               border: "1px solid var(--surface-light)",
-              borderRadius: "8px",
+              borderRadius: "var(--radius-xs)",
               cursor: "pointer",
               fontSize: "13px",
               fontWeight: "600",
@@ -497,7 +497,7 @@ export default function JobClockingCard() {
             disabled={loading}
             style={{
               padding: "12px 16px",
-              borderRadius: "8px",
+              borderRadius: "var(--radius-xs)",
               border: "1px solid var(--surface-light)",
               fontSize: "14px",
               outline: "none"
@@ -512,7 +512,7 @@ export default function JobClockingCard() {
             disabled={loading}
             style={{
               padding: "12px 16px",
-              borderRadius: "8px",
+              borderRadius: "var(--radius-xs)",
               border: "1px solid var(--surface-light)",
               fontSize: "14px",
               cursor: "pointer",
@@ -531,7 +531,7 @@ export default function JobClockingCard() {
               backgroundColor: loading || !selectedJobNumber ? "var(--background)" : "var(--info)",
               color: "white",
               border: "none",
-              borderRadius: "8px",
+              borderRadius: "var(--radius-xs)",
               cursor: loading || !selectedJobNumber ? "not-allowed" : "pointer",
               fontSize: "14px",
               fontWeight: "600",
@@ -564,7 +564,7 @@ export default function JobClockingCard() {
               maxHeight: "400px",
               overflowY: "auto",
               border: "1px solid var(--surface-light)",
-              borderRadius: "8px"
+              borderRadius: "var(--radius-xs)"
             }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead style={{
@@ -615,7 +615,7 @@ export default function JobClockingCard() {
                         <td style={tableCellStyle}>
                           <span style={{
                             padding: "4px 10px",
-                            borderRadius: "6px",
+                            borderRadius: "var(--radius-xs)",
                             fontSize: "12px",
                             fontWeight: "600",
                             backgroundColor: getStatusColor(job.status),
@@ -635,7 +635,7 @@ export default function JobClockingCard() {
                               backgroundColor: "var(--danger)",
                               color: "white",
                               border: "none",
-                              borderRadius: "6px",
+                              borderRadius: "var(--radius-xs)",
                               cursor: "pointer",
                               fontSize: "12px",
                               fontWeight: "600",

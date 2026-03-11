@@ -9,21 +9,14 @@ import { CalendarField } from "@/components/calendarAPI";
 import ModalPortal from "@/components/popups/ModalPortal";
 
 const sectionStyle = {
-  background: "var(--surface)",
-  borderRadius: "18px",
-  border: "1px solid var(--surface-light)",
-  padding: "24px",
-  boxShadow: "none",
-  display: "flex",
-  flexDirection: "column",
   gap: "18px",
 };
 
 const dayCardStyle = {
-  borderRadius: "14px",
+  borderRadius: "var(--radius-md)",
   border: "1px solid var(--surface-light)",
   background: "var(--danger-surface)",
-  padding: "16px",
+  padding: "var(--section-card-padding)",
   display: "flex",
   flexDirection: "column",
   gap: "12px",
@@ -31,7 +24,7 @@ const dayCardStyle = {
 
 const runRowStyle = {
   padding: "12px",
-  borderRadius: "10px",
+  borderRadius: "var(--radius-sm)",
   border: "1px solid rgba(var(--primary-rgb),0.12)",
   background: "var(--surface)",
   display: "grid",
@@ -46,10 +39,10 @@ const queueCardStyle = {
 };
 
 const queueDayStyle = {
-  borderRadius: "14px",
+  borderRadius: "var(--radius-md)",
   border: "1px solid var(--surface-light)",
   background: "var(--surface)",
-  padding: "16px",
+  padding: "var(--section-card-padding)",
   display: "flex",
   flexDirection: "column",
   gap: "12px",
@@ -57,7 +50,7 @@ const queueDayStyle = {
 
 const jobRowButtonStyle = {
   border: "1px solid rgba(var(--primary-rgb),0.15)",
-  borderRadius: "14px",
+  borderRadius: "var(--radius-md)",
   background: "var(--danger-surface)",
   padding: "14px",
   width: "100%",
@@ -79,7 +72,7 @@ const collectionPlannerGridStyle = {
 };
 
 const collectionTableSectionStyle = {
-  borderRadius: "18px",
+  borderRadius: "var(--radius-md)",
   border: "1px solid var(--surface-light)",
   background: "var(--surface)",
   display: "flex",
@@ -93,7 +86,7 @@ const collectionTableScrollStyle = {
 };
 
 const collectionDetailsSectionStyle = {
-  borderRadius: "18px",
+  borderRadius: "var(--radius-md)",
   border: "1px solid var(--surface-light)",
   padding: "18px",
   background: "var(--surface)",
@@ -120,7 +113,7 @@ const statusChipStyle = (variant = "scheduled") => {
   };
   return {
     padding: "4px 12px",
-    borderRadius: "999px",
+    borderRadius: "var(--radius-pill)",
     fontSize: "0.75rem",
     fontWeight: 600,
     letterSpacing: "0.04em",
@@ -131,7 +124,7 @@ const statusChipStyle = (variant = "scheduled") => {
 
 const paidPillStyle = (isPaid) => ({
   padding: "4px 10px",
-  borderRadius: "999px",
+  borderRadius: "var(--radius-pill)",
   fontWeight: 600,
   fontSize: "0.75rem",
   background: isPaid ? "rgba(var(--success-rgb,34,139,34),0.18)" : "rgba(var(--warning-rgb),0.18)",
@@ -151,7 +144,7 @@ const modalOverlayStyle = {
 
 const modalContentStyle = {
   background: "var(--surface)",
-  borderRadius: "18px",
+  borderRadius: "var(--radius-md)",
   padding: "24px",
   width: "min(900px, 100%)",
   maxHeight: "90vh",
@@ -169,7 +162,7 @@ const modalFieldColumnStyle = {
 };
 
 const plannerTabButton = (active) => ({
-  borderRadius: "999px",
+  borderRadius: "var(--radius-pill)",
   border: active ? "1px solid var(--primary)" : "1px solid var(--surface-light)",
   background: active ? "var(--primary)" : "var(--surface)",
   color: active ? "var(--surface)" : "var(--primary-dark)",
@@ -814,7 +807,7 @@ export default function PartsDeliveryPlannerPage() {
   return (
     <Layout>
       <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "22px" }}>
-        <header style={{ ...sectionStyle, boxShadow: "none" }}>
+        <header className="app-section-card" style={sectionStyle}>
           <div
             style={{
               display: "flex",
@@ -844,7 +837,7 @@ export default function PartsDeliveryPlannerPage() {
               type="button"
               onClick={() => openJobModal()}
               style={{
-                borderRadius: "12px",
+                borderRadius: "var(--radius-sm)",
                 padding: "10px 18px",
                 border: "1px solid var(--surface-light)",
                 background: "var(--primary)",
@@ -899,7 +892,7 @@ export default function PartsDeliveryPlannerPage() {
 
         {plannerTab === "delivery" ? (
           <>
-            <section style={queueCardStyle}>
+            <section className="app-section-card" style={queueCardStyle}>
               <div>
                 <p
                   style={{
@@ -997,7 +990,7 @@ export default function PartsDeliveryPlannerPage() {
               </div>
             </section>
 
-            <section style={sectionStyle}>
+            <section className="app-section-card" style={sectionStyle}>
               <div
                 style={{
                   display: "flex",
@@ -1015,7 +1008,7 @@ export default function PartsDeliveryPlannerPage() {
                     onChange={(event) => setSelectedDate(event.target.value)}
                     style={{
                       padding: "8px 10px",
-                      borderRadius: "8px",
+                      borderRadius: "var(--radius-xs)",
                       border: "1px solid var(--surface-light)",
                       fontSize: "0.9rem",
                       color: "var(--primary-dark)",
@@ -1035,7 +1028,7 @@ export default function PartsDeliveryPlannerPage() {
                     onClick={() => setSelectedDate("")}
                     style={{
                       padding: "8px 14px",
-                      borderRadius: "999px",
+                      borderRadius: "var(--radius-pill)",
                       border: "1px solid var(--surface-light)",
                       background: "var(--danger-surface)",
                       color: "var(--primary-dark)",
@@ -1161,7 +1154,7 @@ export default function PartsDeliveryPlannerPage() {
                       style={{
                         flex: "1 1 260px",
                         minWidth: "220px",
-                        borderRadius: "12px",
+                        borderRadius: "var(--radius-sm)",
                         border: "1px solid var(--surface-light)",
                         padding: "10px 12px",
                         fontSize: "1rem",
@@ -1170,7 +1163,7 @@ export default function PartsDeliveryPlannerPage() {
                     <button
                       type="submit"
                       style={{
-                        borderRadius: "12px",
+                        borderRadius: "var(--radius-sm)",
                         padding: "10px 18px",
                         border: "1px solid var(--primary)",
                         background: "var(--primary)",
@@ -1273,7 +1266,7 @@ export default function PartsDeliveryPlannerPage() {
                               <span
                                 style={{
                                   padding: "6px 12px",
-                                  borderRadius: "999px",
+                                  borderRadius: "var(--radius-pill)",
                                   fontSize: "0.8rem",
                                   fontWeight: 600,
                                   background: isSelected ? "var(--primary)" : tone.background,
@@ -1357,7 +1350,7 @@ export default function PartsDeliveryPlannerPage() {
                         onClick={() => router.push(`/parts/create-order/${job.order_number}`)}
                         style={{
                           border: "1px solid rgba(var(--primary-rgb),0.15)",
-                          borderRadius: "16px",
+                          borderRadius: "var(--radius-md)",
                           padding: "14px",
                           display: "flex",
                           flexDirection: "column",
@@ -1498,7 +1491,7 @@ function DeliveryJobModal({
             style={{
               width: "100%",
               marginTop: "6px",
-              borderRadius: "10px",
+              borderRadius: "var(--radius-sm)",
               border: "1px solid var(--surface-light)",
               padding: "10px",
               fontSize: "1rem",
@@ -1510,7 +1503,7 @@ function DeliveryJobModal({
           <div
             style={{
               border: "1px solid var(--surface-light)",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               padding: "8px",
               display: "flex",
               flexDirection: "column",
@@ -1525,7 +1518,7 @@ function DeliveryJobModal({
                 type="button"
                 style={{
                   border: "1px solid rgba(var(--primary-rgb),0.15)",
-                  borderRadius: "10px",
+                  borderRadius: "var(--radius-sm)",
                   padding: "8px 10px",
                   background: "var(--surface)",
                   textAlign: "left",
@@ -1558,7 +1551,7 @@ function DeliveryJobModal({
               onChange={(event) => onFieldChange("payment_method", event.target.value)}
               placeholder="Card / Cash / Account"
               style={{
-                borderRadius: "10px",
+                borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--surface-light)",
                 padding: "10px",
               }}
@@ -1570,7 +1563,7 @@ function DeliveryJobModal({
               type="button"
               onClick={() => onFieldChange("is_paid", !job.is_paid)}
               style={{
-                borderRadius: "999px",
+                borderRadius: "var(--radius-pill)",
                 border: "1px solid var(--surface-light)",
                 padding: "8px 14px",
                 cursor: "pointer",
@@ -1590,7 +1583,7 @@ function DeliveryJobModal({
               onChange={(event) => onFieldChange("part_number", event.target.value)}
               placeholder="Part reference"
               style={{
-                borderRadius: "10px",
+                borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--surface-light)",
                 padding: "10px",
               }}
@@ -1604,7 +1597,7 @@ function DeliveryJobModal({
               onChange={(event) => onFieldChange("part_name", event.target.value)}
               placeholder="Part description"
               style={{
-                borderRadius: "10px",
+                borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--surface-light)",
                 padding: "10px",
               }}
@@ -1618,7 +1611,7 @@ function DeliveryJobModal({
               value={job.quantity || totalQuantity}
               onChange={(event) => onFieldChange("quantity", Number(event.target.value))}
               style={{
-                borderRadius: "10px",
+                borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--surface-light)",
                 padding: "10px",
               }}
@@ -1638,7 +1631,7 @@ function DeliveryJobModal({
               value={job.customer_name || ""}
               onChange={(event) => onFieldChange("customer_name", event.target.value)}
               style={{
-                borderRadius: "10px",
+                borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--surface-light)",
                 padding: "10px",
               }}
@@ -1651,7 +1644,7 @@ function DeliveryJobModal({
               value={job.contact_phone || ""}
               onChange={(event) => onFieldChange("contact_phone", event.target.value)}
               style={{
-                borderRadius: "10px",
+                borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--surface-light)",
                 padding: "10px",
               }}
@@ -1664,7 +1657,7 @@ function DeliveryJobModal({
               value={job.contact_email || ""}
               onChange={(event) => onFieldChange("contact_email", event.target.value)}
               style={{
-                borderRadius: "10px",
+                borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--surface-light)",
                 padding: "10px",
               }}
@@ -1679,7 +1672,7 @@ function DeliveryJobModal({
             onChange={(event) => onFieldChange("address", event.target.value)}
             rows={3}
             style={{
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               border: "1px solid var(--surface-light)",
               padding: "10px",
               resize: "vertical",
@@ -1694,7 +1687,7 @@ function DeliveryJobModal({
             onChange={(event) => onFieldChange("notes", event.target.value)}
             rows={3}
             style={{
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               border: "1px solid var(--surface-light)",
               padding: "10px",
               resize: "vertical",
@@ -1713,7 +1706,7 @@ function DeliveryJobModal({
                   key={item.key || `${item.description}-${item.quantity}`}
                   style={{
                     border: "1px solid var(--surface-light)",
-                    borderRadius: "10px",
+                    borderRadius: "var(--radius-sm)",
                     padding: "8px 10px",
                     display: "flex",
                     justifyContent: "space-between",
@@ -1748,7 +1741,7 @@ function DeliveryJobModal({
             type="button"
             onClick={onClose}
             style={{
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               border: "1px solid var(--surface-light)",
               background: "var(--surface)",
               padding: "10px 18px",
@@ -1764,7 +1757,7 @@ function DeliveryJobModal({
               onClick={onDelete}
               disabled={saving}
               style={{
-                borderRadius: "12px",
+                borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--danger)",
                 background: "var(--danger-surface)",
                 color: "var(--danger)",
@@ -1782,7 +1775,7 @@ function DeliveryJobModal({
             onClick={onSave}
             disabled={saving}
             style={{
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               border: "none",
               background: "var(--primary)",
               color: "var(--surface)",

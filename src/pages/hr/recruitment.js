@@ -6,7 +6,7 @@ import { SectionCard } from "@/components/HR/MetricCard";
 
 function RecruitmentContent() {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
+    <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
         <header>
           <p style={{ color: "var(--info)", marginTop: "6px" }}>
             Manage job listings, applicant pipelines, interview scheduling, and onboarding checklists.

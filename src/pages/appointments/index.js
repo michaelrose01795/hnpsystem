@@ -1171,7 +1171,7 @@ export default function Appointments() {
     const base = {
       display: "inline-block",
       padding: "3px 8px",
-      borderRadius: "10px",
+      borderRadius: "var(--radius-sm)",
       fontSize: "11px",
       fontWeight: "600",
       textTransform: "capitalize",
@@ -1276,18 +1276,15 @@ export default function Appointments() {
   // ---------------- Render ----------------
   return (
     <Layout>
-      <div style={{ height: "100%", display: "flex", flexDirection: "column", padding: "8px 16px" }}>
+      <div className="app-page-stack" style={{ height: "100%" }}>
 
         {/* Top Bar */}
         <div
+          className="app-section-card"
           style={{
             display: "flex",
             gap: "12px",
             alignItems: "center",
-            marginBottom: "12px",
-            padding: "12px",
-            backgroundColor: "var(--surface)",
-            borderRadius: "8px",
             boxShadow: "none",
           }}
         >
@@ -1309,14 +1306,8 @@ export default function Appointments() {
               disabled={isLoading}
               style={{
                 flex: 1,
-                padding: "10px 16px",
-                borderRadius: "8px",
-                border: "1px solid var(--surface-light)",
-                fontSize: "14px",
-                outline: "none",
+                minHeight: "var(--control-height-sm)",
               }}
-              onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
-              onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
             />
             <DropdownField
               value={time}
@@ -1325,16 +1316,8 @@ export default function Appointments() {
               placeholder="Select time"
               style={{
                 flex: 1,
-                borderRadius: "8px",
-                border: "1px solid var(--surface-light)",
-                fontSize: "14px",
               }}
-              controlStyle={{
-                padding: "10px 16px",
-                minHeight: "42px",
-                cursor: isLoading ? "not-allowed" : "pointer",
-                boxShadow: "none",
-              }}
+              size="sm"
             >
               {timeSlots.map((slot) => (
                 <option key={slot} value={slot}>
@@ -1347,14 +1330,14 @@ export default function Appointments() {
               disabled={isLoading}
               style={{
                 flex: 1,
-                padding: "10px 16px",
+                minHeight: "var(--control-height-sm)",
                 backgroundColor: isLoading ? "var(--background)" : "var(--primary)",
                 color: "white",
                 border: "none",
-                borderRadius: "8px",
+                borderRadius: "var(--control-radius-sm)",
                 cursor: isLoading ? "not-allowed" : "pointer",
                 fontWeight: "600",
-                fontSize: "14px",
+                fontSize: "var(--control-font-size)",
                 transition: "background-color 0.2s",
               }}
               onMouseEnter={(e) => {
@@ -1377,7 +1360,7 @@ export default function Appointments() {
           maxHeight: "calc(8 * 42px + 60px)", 
           overflowY: "auto", 
           marginBottom: "12px", 
-          borderRadius: "10px", 
+          borderRadius: "var(--radius-sm)", 
           boxShadow: "none", 
           backgroundColor: "var(--surface)" 
         }}>
@@ -1557,7 +1540,7 @@ export default function Appointments() {
                           onClick={(event) => handleShowStaffOff(event, date, staffEntries)}
                           style={{
                             padding: "6px 12px",
-                            borderRadius: "999px",
+                            borderRadius: "var(--radius-pill)",
                             border: "1px solid var(--primary)",
                             backgroundColor: "var(--surface-light)",
                             color: "var(--primary)",
@@ -1586,7 +1569,7 @@ export default function Appointments() {
           flex: "0 0 40%", 
           marginBottom: "8px", 
           border: "1px solid var(--surface-light)", 
-          borderRadius: "10px", 
+          borderRadius: "var(--radius-sm)", 
           padding: "16px", 
           backgroundColor: "var(--surface)", 
           boxShadow: "none", 
@@ -1604,7 +1587,7 @@ export default function Appointments() {
             <span style={{
               padding: "6px 14px",
               backgroundColor: "var(--surface)",
-              borderRadius: "16px",
+              borderRadius: "var(--radius-md)",
               fontSize: "14px",
               fontWeight: "600",
               color: "var(--text-secondary)"
@@ -1621,7 +1604,7 @@ export default function Appointments() {
                 border: activeDayTab === "jobs" ? "2px solid var(--primary)" : "1px solid var(--surface-light)",
                 backgroundColor: activeDayTab === "jobs" ? "var(--surface-light)" : "var(--surface)",
                 color: activeDayTab === "jobs" ? "var(--text-primary)" : "var(--grey-accent)",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
                 cursor: "pointer",
                 fontWeight: activeDayTab === "jobs" ? "600" : "500",
                 fontSize: "13px",
@@ -1648,7 +1631,7 @@ export default function Appointments() {
                 border: activeDayTab === "tech-hours" ? "2px solid var(--primary)" : "1px solid var(--surface-light)",
                 backgroundColor: activeDayTab === "tech-hours" ? "var(--surface-light)" : "var(--surface)",
                 color: activeDayTab === "tech-hours" ? "var(--text-primary)" : "var(--grey-accent)",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
                 cursor: "pointer",
                 fontWeight: activeDayTab === "tech-hours" ? "600" : "500",
                 fontSize: "13px",
@@ -1673,7 +1656,7 @@ export default function Appointments() {
               marginBottom: "16px", 
               padding: "16px", 
               border: "2px solid var(--primary)", 
-              borderRadius: "8px", 
+              borderRadius: "var(--radius-xs)", 
               background: "var(--surface-light)" 
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
@@ -1687,7 +1670,7 @@ export default function Appointments() {
                 </div>
                 <span style={{
                   padding: "4px 12px",
-                  borderRadius: "999px",
+                  borderRadius: "var(--radius-pill)",
                   backgroundColor: "var(--surface-light)",
                   color: "var(--primary)",
                   fontWeight: "600",
@@ -1715,7 +1698,7 @@ export default function Appointments() {
                     display: "inline-flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    borderRadius: "999px",
+                    borderRadius: "var(--radius-pill)",
                     padding: "4px 10px",
                     fontSize: "12px",
                     fontWeight: "600",
@@ -1730,7 +1713,7 @@ export default function Appointments() {
                   marginBottom: "10px",
                   padding: "10px 12px",
                   background: "var(--surface-light)",
-                  borderRadius: "6px",
+                  borderRadius: "var(--radius-xs)",
                   color: "var(--danger)",
                   fontSize: "13px"
                 }}>
@@ -1767,7 +1750,7 @@ export default function Appointments() {
                           alignItems: "center",
                           padding: "10px 12px",
                           background: "var(--surface)",
-                          borderRadius: "8px",
+                          borderRadius: "var(--radius-xs)",
                           border: "1px solid var(--surface-light)",
                           boxShadow: "none"
                         }}
@@ -1783,7 +1766,7 @@ export default function Appointments() {
                                   fontSize: "11px",
                                   fontWeight: "600",
                                   padding: "2px 8px",
-                                  borderRadius: "999px",
+                                  borderRadius: "var(--radius-pill)",
                                   backgroundColor: "var(--warning-surface)",
                                   color: "var(--warning)"
                                 }}
@@ -1821,7 +1804,7 @@ export default function Appointments() {
                             style={{
                               width: "80px",
                               padding: "6px 8px",
-                              borderRadius: "8px",
+                              borderRadius: "var(--radius-xs)",
                               border: "1px solid var(--surface-light)",
                               fontSize: "14px",
                               textAlign: "right",
@@ -1926,7 +1909,7 @@ export default function Appointments() {
                                 style={{
                                   fontSize: "10px",
                                   padding: "2px 6px",
-                                  borderRadius: "4px",
+                                  borderRadius: "var(--radius-xs)",
                                   backgroundColor: "var(--primary-surface)",
                                   color: "var(--primary)",
                                   fontWeight: "500",
@@ -1966,7 +1949,7 @@ export default function Appointments() {
                           <span
                             style={{
                               padding: "4px 10px",
-                              borderRadius: "12px",
+                              borderRadius: "var(--radius-sm)",
                               fontSize: "11px",
                               fontWeight: "600",
                               ...getCustomerStatusBadgeColors(job.waitingStatus || "Neither"),
@@ -1982,7 +1965,7 @@ export default function Appointments() {
                           {isCheckedIn ? (
                             <span style={{
                               padding: "8px 16px",
-                              borderRadius: "6px",
+                              borderRadius: "var(--radius-xs)",
                               fontSize: "13px",
                               fontWeight: "600",
                               backgroundColor: "var(--success)",
@@ -2002,7 +1985,7 @@ export default function Appointments() {
                                 backgroundColor: isCurrentlyCheckingIn ? "var(--background)" : "var(--primary)",
                                 color: "white",
                                 border: "none",
-                                borderRadius: "6px",
+                                borderRadius: "var(--radius-xs)",
                                 cursor: isCurrentlyCheckingIn ? "not-allowed" : "pointer",
                                 fontSize: "13px",
                                 fontWeight: "600",
@@ -2057,7 +2040,7 @@ export default function Appointments() {
               width: "100%", 
               height: "120px", 
               padding: "12px", 
-              borderRadius: "8px", 
+              borderRadius: "var(--radius-xs)", 
               border: "1px solid var(--surface-light)",
               fontSize: "14px",
               fontFamily: "inherit",
@@ -2079,7 +2062,7 @@ export default function Appointments() {
                 backgroundColor: "var(--primary)", 
                 color: "white", 
                 border: "none", 
-                borderRadius: "8px", 
+                borderRadius: "var(--radius-xs)", 
                 cursor: "pointer",
                 fontWeight: "600",
                 fontSize: "14px",
@@ -2098,7 +2081,7 @@ export default function Appointments() {
                 backgroundColor: "var(--grey-accent)", 
                 color: "white", 
                 border: "none", 
-                borderRadius: "8px", 
+                borderRadius: "var(--radius-xs)", 
                 cursor: "pointer",
                 fontWeight: "600",
                 fontSize: "14px",
@@ -2126,7 +2109,7 @@ export default function Appointments() {
                   key={`${entry.id}-${index}`}
                   style={{
                     padding: "12px",
-                    borderRadius: "10px",
+                    borderRadius: "var(--radius-sm)",
                     backgroundColor: "var(--surface)",
                     border: "1px solid var(--surface-light)",
                     boxShadow: "none"
@@ -2147,7 +2130,7 @@ export default function Appointments() {
               onClick={() => setShowStaffOffPopup(false)}
               style={{
                 padding: "10px 20px",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
                 border: "none",
                 backgroundColor: "var(--primary)",
                 color: "var(--surface)",

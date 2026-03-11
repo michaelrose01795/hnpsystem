@@ -62,8 +62,8 @@ export default function AccountTransactionsPage() {
               <p style={{ margin: "4px 0 0", color: "var(--text-secondary)", fontSize: "0.95rem" }}>Filter ledger entries, export to CSV, and trace adjustments.</p>
             </div>
             <div style={{ display: "flex", gap: "10px" }}>
-              <button type="button" onClick={() => router.push(`/accounts/view/${accountId}`)} style={{ padding: "10px 16px", borderRadius: "10px", border: "1px solid var(--surface-light)", background: "var(--surface-light)", fontWeight: 600 }}>Account</button>
-              {permissions.canExport && <button type="button" onClick={handleExport} style={{ padding: "10px 18px", borderRadius: "10px", border: "1px solid var(--primary)", background: "transparent", color: "var(--primary)", fontWeight: 600 }}>Export</button>}
+              <button type="button" onClick={() => router.push(`/accounts/view/${accountId}`)} style={{ padding: "10px 16px", borderRadius: "var(--radius-sm)", border: "1px solid var(--surface-light)", background: "var(--surface-light)", fontWeight: 600 }}>Account</button>
+              {permissions.canExport && <button type="button" onClick={handleExport} style={{ padding: "10px 18px", borderRadius: "var(--radius-sm)", border: "1px solid var(--primary)", background: "transparent", color: "var(--primary)", fontWeight: 600 }}>Export</button>}
             </div>
           </div>
           <TransactionTable transactions={transactions} loading={loading} filters={filters} onFilterChange={setFilters} pagination={pagination} onPageChange={handlePageChange} onExport={handleExport} />

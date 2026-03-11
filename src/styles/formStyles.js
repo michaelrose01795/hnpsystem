@@ -2,10 +2,10 @@
 // Shared form style objects used across AccountForm, CompanyAccountForm, etc.
 
 export const fieldGroupStyles = {
-  background: "var(--surface)",
-  border: "1px solid var(--surface-light)",
-  borderRadius: "16px",
-  padding: "20px",
+  background: "var(--section-card-bg)",
+  border: "var(--section-card-border)",
+  borderRadius: "var(--section-card-radius)",
+  padding: "var(--section-card-padding)",
   display: "flex",
   flexWrap: "wrap",
   gap: "16px",
@@ -13,10 +13,10 @@ export const fieldGroupStyles = {
 
 export const inputStyles = {
   width: "100%",
-  padding: "10px 12px",
-  borderRadius: "10px",
-  border: "1px solid var(--surface-light)",
-  background: "var(--surface-light)",
+  padding: "var(--input-padding)",
+  borderRadius: "var(--input-radius)",
+  border: "var(--input-border)",
+  background: "var(--input-bg)",
 };
 
 export const labelStyles = {

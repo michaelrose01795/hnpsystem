@@ -87,15 +87,14 @@ const JOB_PART_STATUSES = [
 ];
 
 const cardStyle = {
-  backgroundColor: "var(--surface)",
-  borderRadius: "12px",
-  padding: "20px",
-  boxShadow: "none",
-  border: "1px solid var(--surface-light)",
+  backgroundColor: "var(--section-card-bg)",
+  borderRadius: "var(--section-card-radius)",
+  padding: "var(--section-card-padding)",
+  border: "var(--section-card-border)",
 };
 
 const sectionTitleStyle = {
-  fontSize: "1.1rem",
+  fontSize: "var(--text-h3)",
   fontWeight: 600,
   color: "var(--primary)",
   marginBottom: "12px",
@@ -105,8 +104,8 @@ const buttonStyle = {
   backgroundColor: "var(--primary)",
   color: "white",
   border: "none",
-  padding: "10px 16px",
-  borderRadius: "8px",
+  padding: "var(--control-padding)",
+  borderRadius: "var(--radius-xs)",
   cursor: "pointer",
   fontWeight: 600,
 };
@@ -171,8 +170,8 @@ const RequirementBadge = ({ label, background, color }) => (
       display: "inline-flex",
       alignItems: "center",
       padding: "2px 10px",
-      borderRadius: "999px",
-      fontSize: "0.75rem",
+      borderRadius: "var(--radius-pill)",
+      fontSize: "var(--text-caption)",
       fontWeight: 600,
       background,
       color,
@@ -352,7 +351,7 @@ function StockCataloguePage() {
     const links = (part.linked_jobs || []).filter((link) => matchesLinkedJobStatus(link.status));
     if (links.length === 0) return null;
     return (
-      <div style={{ marginTop: "8px", fontSize: "0.8rem", color: "var(--info-dark)" }}>
+      <div style={{ marginTop: "8px", fontSize: "var(--text-label)", color: "var(--info-dark)" }}>
         <div style={{ fontWeight: 600, color: "var(--primary-dark)", marginBottom: "4px" }}>Linked Jobs</div>
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
           {links.slice(0, 3).map((link) => {
@@ -371,7 +370,7 @@ function StockCataloguePage() {
             );
           })}
           {links.length > 3 && (
-            <div style={{ fontSize: "0.75rem", color: "var(--info)" }}>+{links.length - 3} more jobs…</div>
+            <div style={{ fontSize: "var(--text-caption)", color: "var(--info)" }}>+{links.length - 3} more jobs…</div>
           )}
         </div>
       </div>
@@ -1193,8 +1192,8 @@ useEffect(() => {
               style={{
                 background: "var(--surface-light)",
                 border: "none",
-                borderRadius: "8px",
-                fontSize: "1.1rem",
+                borderRadius: "var(--radius-xs)",
+                fontSize: "var(--text-h3)",
                 cursor: "pointer",
                 color: "var(--text-secondary)",
                 padding: "6px 10px",
@@ -1208,13 +1207,13 @@ useEffect(() => {
             style={{
               marginTop: "12px",
               padding: "12px",
-              borderRadius: "10px",
+              borderRadius: "var(--radius-sm)",
               border: "1px solid var(--surface-light)",
               background: "var(--surface)",
             }}
           >
             <div style={{ fontWeight: 600, color: "var(--primary)" }}>{selectedPart.part_number}</div>
-            <div style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
+            <div style={{ color: "var(--text-secondary)", fontSize: "var(--text-body)" }}>
               {selectedPart.name || "Unnamed part"}
             </div>
           </div>
@@ -1237,7 +1236,7 @@ useEffect(() => {
                   style={{
                     flex: 1,
                     padding: "10px",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     border: "1px solid var(--surface-light)",
                   }}
                 />
@@ -1258,7 +1257,7 @@ useEffect(() => {
             </label>
 
             {addToJobError && (
-              <div style={{ color: "var(--danger)", fontSize: "0.9rem", marginBottom: "10px" }}>
+              <div style={{ color: "var(--danger)", fontSize: "var(--text-body)", marginBottom: "10px" }}>
                 {addToJobError}
               </div>
             )}
@@ -1267,7 +1266,7 @@ useEffect(() => {
               <div
                 style={{
                   border: "1px solid var(--surface-light)",
-                  borderRadius: "10px",
+                  borderRadius: "var(--radius-sm)",
                   padding: "12px",
                   marginBottom: "12px",
                   background: "var(--surface)",
@@ -1276,11 +1275,11 @@ useEffect(() => {
                 <div style={{ fontWeight: 700, color: "var(--primary)" }}>
                   Job #{addToJobResult.jobNumber}
                 </div>
-                <div style={{ color: "var(--text-secondary)", fontSize: "0.9rem", marginTop: "4px" }}>
+                <div style={{ color: "var(--text-secondary)", fontSize: "var(--text-body)", marginTop: "4px" }}>
                   {[addToJobResult.reg, addToJobResult.makeModel].filter(Boolean).join(" • ")}
                 </div>
                 {addToJobResult.description && (
-                  <div style={{ color: "var(--info)", fontSize: "0.85rem", marginTop: "4px" }}>
+                  <div style={{ color: "var(--info)", fontSize: "var(--text-body-sm)", marginTop: "4px" }}>
                     {addToJobResult.description}
                   </div>
                 )}
@@ -1299,7 +1298,7 @@ useEffect(() => {
                 style={{
                   width: "120px",
                   padding: "8px",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   border: "1px solid var(--surface-light)",
                 }}
               />
@@ -1359,7 +1358,7 @@ useEffect(() => {
               style={{
                 width: "100%",
                 padding: "10px",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
                 border: "1px solid var(--surface-light)",
               }}
             />
@@ -1382,7 +1381,7 @@ useEffect(() => {
               style={{
                 width: "100%",
                 padding: "10px",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
                 border: "1px solid var(--surface-light)",
               }}
             />
@@ -1400,7 +1399,7 @@ useEffect(() => {
               style={{
                 width: "100%",
                 padding: "10px",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
                 border: "1px solid var(--surface-light)",
               }}
             />
@@ -1408,7 +1407,7 @@ useEffect(() => {
               <div
                 style={{
                   border: "1px solid var(--surface-light)",
-                  borderRadius: "10px",
+                  borderRadius: "var(--radius-sm)",
                   marginTop: "8px",
                   maxHeight: "180px",
                   overflowY: "auto",
@@ -1439,7 +1438,7 @@ useEffect(() => {
                         <div style={{ fontWeight: 600, color: "var(--primary-dark)" }}>
                           {part.part_number || "—"}
                         </div>
-                        <div style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>
+                        <div style={{ fontSize: "var(--text-body-sm)", color: "var(--info-dark)" }}>
                           {part.name || "Unnamed part"}
                         </div>
                       </button>
@@ -1449,7 +1448,7 @@ useEffect(() => {
               </div>
             )}
             {deliveryForm.partId && selectedDeliveryPart && (
-              <div style={{ marginTop: "8px", fontSize: "0.85rem", color: "var(--accent-purple)" }}>
+              <div style={{ marginTop: "8px", fontSize: "var(--text-body-sm)", color: "var(--accent-purple)" }}>
                 Selected: {selectedDeliveryPart.part_number} · {selectedDeliveryPart.name}{" "}
                 <button
                   type="button"
@@ -1487,7 +1486,7 @@ useEffect(() => {
             <div
               style={{
                 border: "1px solid var(--surface-light)",
-                borderRadius: "12px",
+                borderRadius: "var(--radius-sm)",
                 padding: "16px",
                 marginBottom: "12px",
                 background: "var(--surface)",
@@ -1497,7 +1496,7 @@ useEffect(() => {
                 <span style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>
                   Paste Bulk Data
                 </span>
-                <p style={{ fontSize: "0.85rem", color: "var(--info-dark)", marginBottom: "8px", margin: "4px 0 8px 0" }}>
+                <p style={{ fontSize: "var(--text-body-sm)", color: "var(--info-dark)", marginBottom: "8px", margin: "4px 0 8px 0" }}>
                   Paste one part per line with 8 fields: Order Ref, Part Number, Name, Supplier, Location, Cost Price, Sell Price, Quantity
                 </p>
                 <textarea
@@ -1526,11 +1525,11 @@ useEffect(() => {
                   style={{
                     width: "100%",
                     padding: "10px",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     border: "1px solid var(--surface-light)",
                     resize: "vertical",
                     fontFamily: "monospace",
-                    fontSize: "12px",
+                    fontSize: "var(--text-caption)",
                   }}
                 />
               </label>
@@ -1549,7 +1548,7 @@ useEffect(() => {
                   style={{
                     width: "100%",
                     padding: "10px",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     border: "1px solid var(--surface-light)",
                   }}
                 />
@@ -1569,7 +1568,7 @@ useEffect(() => {
                   style={{
                     width: "100%",
                     padding: "10px",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     border: "1px solid var(--surface-light)",
                   }}
                 />
@@ -1577,7 +1576,7 @@ useEffect(() => {
 
               <div style={{ marginBottom: "10px" }}>
                 <span style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>
-                  Category {detectedCategory && <span style={{ color: "var(--accent-purple)", fontWeight: 500, fontSize: "0.85rem" }}>(Auto-detected: {detectedCategory})</span>}
+                  Category {detectedCategory && <span style={{ color: "var(--accent-purple)", fontWeight: 500, fontSize: "var(--text-body-sm)" }}>(Auto-detected: {detectedCategory})</span>}
                 </span>
                 <input
                   type="text"
@@ -1608,7 +1607,7 @@ useEffect(() => {
                   style={{
                     width: "100%",
                     padding: "10px",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     border: "1px solid var(--surface-light)",
                   }}
                 />
@@ -1616,7 +1615,7 @@ useEffect(() => {
                   <div
                     style={{
                       border: "1px solid var(--surface-light)",
-                      borderRadius: "10px",
+                      borderRadius: "var(--radius-sm)",
                       marginTop: "6px",
                       maxHeight: "120px",
                       overflowY: "auto",
@@ -1663,7 +1662,7 @@ useEffect(() => {
                   </div>
                 )}
                 {newPartForm.category && (
-                  <p style={{ marginTop: "4px", fontSize: "0.85rem", color: "var(--accent-purple)" }}>
+                  <p style={{ marginTop: "4px", fontSize: "var(--text-body-sm)", color: "var(--accent-purple)" }}>
                     Selected: {newPartForm.category}{" "}
                     <button
                       type="button"
@@ -1677,7 +1676,7 @@ useEffect(() => {
                         color: "var(--danger)",
                         cursor: "pointer",
                         fontWeight: 600,
-                        fontSize: "0.85rem",
+                        fontSize: "var(--text-body-sm)",
                       }}
                     >
                       Clear
@@ -1708,7 +1707,7 @@ useEffect(() => {
                     style={{
                       width: "100%",
                       padding: "10px",
-                      borderRadius: "8px",
+                      borderRadius: "var(--radius-xs)",
                       border: "1px solid var(--surface-light)",
                     }}
                   />
@@ -1737,7 +1736,7 @@ useEffect(() => {
                     style={{
                       width: "100%",
                       padding: "10px",
-                      borderRadius: "8px",
+                      borderRadius: "var(--radius-xs)",
                       border: "1px solid var(--surface-light)",
                     }}
                   />
@@ -1745,7 +1744,7 @@ useEffect(() => {
                     <div
                       style={{
                         border: "1px solid var(--surface-light)",
-                        borderRadius: "10px",
+                        borderRadius: "var(--radius-sm)",
                         marginTop: "6px",
                         maxHeight: "120px",
                         overflowY: "auto",
@@ -1780,7 +1779,7 @@ useEffect(() => {
                     </div>
                   )}
                   {newPartForm.storageLocation && (
-                    <p style={{ marginTop: "4px", fontSize: "0.85rem", color: "var(--accent-purple)" }}>
+                    <p style={{ marginTop: "4px", fontSize: "var(--text-body-sm)", color: "var(--accent-purple)" }}>
                       Selected: {newPartForm.storageLocation}
                     </p>
                   )}
@@ -1810,7 +1809,7 @@ useEffect(() => {
                     style={{
                       width: "100%",
                       padding: "10px",
-                      borderRadius: "8px",
+                      borderRadius: "var(--radius-xs)",
                       border: "1px solid var(--surface-light)",
                     }}
                   />
@@ -1831,7 +1830,7 @@ useEffect(() => {
                     style={{
                       width: "100%",
                       padding: "10px",
-                      borderRadius: "8px",
+                      borderRadius: "var(--radius-xs)",
                       border: "1px solid var(--surface-light)",
                     }}
                   />
@@ -1843,7 +1842,7 @@ useEffect(() => {
                   style={{
                     marginTop: "12px",
                     padding: "12px",
-                    borderRadius: "10px",
+                    borderRadius: "var(--radius-sm)",
                     border: "1px solid var(--danger)",
                     background: "rgba(var(--danger-rgb), 0.08)",
                     color: "var(--danger)",
@@ -1904,7 +1903,7 @@ useEffect(() => {
                 style={{
                   width: "100%",
                   padding: "10px",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   border: "1px solid var(--surface-light)",
                 }}
               />
@@ -1927,7 +1926,7 @@ useEffect(() => {
                 style={{
                   width: "100%",
                   padding: "10px",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   border: "1px solid var(--surface-light)",
                 }}
               />
@@ -1953,7 +1952,7 @@ useEffect(() => {
               style={{
                 width: "100%",
                 padding: "10px",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
                 border: "1px solid var(--surface-light)",
               }}
             />
@@ -1972,7 +1971,7 @@ useEffect(() => {
               style={{
                 width: "100%",
                 padding: "10px",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
                 border: "1px solid var(--surface-light)",
                 resize: "vertical",
               }}
@@ -2035,7 +2034,7 @@ useEffect(() => {
                   style={{
                     flex: 1,
                     padding: "12px",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     border: "1px solid var(--surface-light)",
                   }}
                 />
@@ -2063,13 +2062,13 @@ useEffect(() => {
                     <div
                       style={{
                         background: "var(--surface-light)",
-                        borderRadius: "10px",
+                        borderRadius: "var(--radius-sm)",
                         padding: "14px",
                         border: "1px solid var(--surface-light)",
                       }}
                     >
-                      <div style={{ fontSize: "0.8rem", color: "var(--danger)" }}>JOB</div>
-                      <div style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--primary)" }}>
+                      <div style={{ fontSize: "var(--text-label)", color: "var(--danger)" }}>JOB</div>
+                      <div style={{ fontSize: "var(--text-h3)", fontWeight: 700, color: "var(--primary)" }}>
                         {jobData.jobNumber}
                       </div>
                       <div>{jobData.description || "No description"}</div>
@@ -2077,25 +2076,25 @@ useEffect(() => {
                     <div
                       style={{
                         background: "var(--surface-light)",
-                        borderRadius: "10px",
+                        borderRadius: "var(--radius-sm)",
                         padding: "14px",
                         border: "1px solid var(--surface-light)",
                       }}
                     >
-                      <div style={{ fontSize: "0.8rem", color: "var(--danger)" }}>VEHICLE</div>
-                      <div style={{ fontSize: "1.1rem", fontWeight: 700 }}>{jobData.reg}</div>
+                      <div style={{ fontSize: "var(--text-label)", color: "var(--danger)" }}>VEHICLE</div>
+                      <div style={{ fontSize: "var(--text-h3)", fontWeight: 700 }}>{jobData.reg}</div>
                       <div>{jobData.makeModel || `${jobData.make} ${jobData.model}`}</div>
                     </div>
                     <div
                       style={{
                         background: "var(--surface-light)",
-                        borderRadius: "10px",
+                        borderRadius: "var(--radius-sm)",
                         padding: "14px",
                         border: "1px solid var(--surface-light)",
                       }}
                     >
-                      <div style={{ fontSize: "0.8rem", color: "var(--danger)" }}>STATUS</div>
-                      <div style={{ fontSize: "1.1rem", fontWeight: 700 }}>
+                      <div style={{ fontSize: "var(--text-label)", color: "var(--danger)" }}>STATUS</div>
+                      <div style={{ fontSize: "var(--text-h3)", fontWeight: 700 }}>
                         {jobData.status}
                       </div>
                       <div>{jobData.waitingStatus}</div>
@@ -2129,7 +2128,7 @@ useEffect(() => {
                         onClick={() => setSelectedPipelineStage("all")}
                         aria-pressed={selectedPipelineStage === "all"}
                         style={{
-                          borderRadius: "14px",
+                          borderRadius: "var(--radius-md)",
                           border: "1px solid rgba(var(--primary-rgb),0.4)",
                           backgroundColor:
                             selectedPipelineStage === "all" ? "var(--danger-surface)" : "var(--surface)",
@@ -2144,7 +2143,7 @@ useEffect(() => {
                         }}
                       >
                         <span>All Parts</span>
-                        <small style={{ fontSize: "0.75rem", color: "var(--grey-accent-dark)" }}>
+                        <small style={{ fontSize: "var(--text-caption)", color: "var(--grey-accent-dark)" }}>
                           {jobParts.length} line{jobParts.length === 1 ? "" : "s"} total
                         </small>
                       </button>
@@ -2155,7 +2154,7 @@ useEffect(() => {
                           onClick={() => setSelectedPipelineStage(stage.id)}
                           aria-pressed={selectedPipelineStage === stage.id}
                           style={{
-                            borderRadius: "14px",
+                            borderRadius: "var(--radius-md)",
                             border: "1px solid rgba(var(--primary-rgb),0.4)",
                             backgroundColor:
                               selectedPipelineStage === stage.id ? "var(--danger-surface)" : "var(--surface)",
@@ -2171,7 +2170,7 @@ useEffect(() => {
                           }}
                         >
                           <span>{stage.label}</span>
-                          <small style={{ fontSize: "0.75rem", color: "var(--grey-accent-dark)" }}>
+                          <small style={{ fontSize: "var(--text-caption)", color: "var(--grey-accent-dark)" }}>
                             {stage.count} line{stage.count === 1 ? "" : "s"}
                           </small>
                         </button>
@@ -2183,12 +2182,12 @@ useEffect(() => {
                     <div
                       style={{
                         background: "var(--warning-surface)",
-                        borderRadius: "10px",
+                        borderRadius: "var(--radius-sm)",
                         border: "1px solid var(--surface-light)",
                         padding: "10px 14px",
                         marginBottom: "12px",
                         color: "var(--danger-dark)",
-                        fontSize: "0.9rem",
+                        fontSize: "var(--text-body)",
                       }}
                     >
                       No parts currently staged for{" "}
@@ -2201,7 +2200,7 @@ useEffect(() => {
                       style={{
                         background: "var(--surface-light)",
                         border: "1px dashed var(--primary-light)",
-                        borderRadius: "8px",
+                        borderRadius: "var(--radius-xs)",
                         padding: "16px",
                         color: "var(--danger)",
                         textAlign: "center",
@@ -2232,7 +2231,7 @@ useEffect(() => {
                                 <div style={{ fontWeight: 600 }}>
                                   {part.part?.part_number} · {part.part?.name}
                                 </div>
-                                <div style={{ fontSize: "0.85rem", color: "var(--grey-accent-dark)" }}>
+                                <div style={{ fontSize: "var(--text-body-sm)", color: "var(--grey-accent-dark)" }}>
                                   {part.part?.storage_location || "No bin"} · Stock:{" "}
                                   {part.part?.qty_in_stock}
                                 </div>
@@ -2271,7 +2270,7 @@ useEffect(() => {
                                     ...secondaryButtonStyle,
                                     marginTop: "6px",
                                     padding: "6px 10px",
-                                    fontSize: "0.8rem",
+                                    fontSize: "var(--text-label)",
                                   }}
                                 >
                                   Mark fitted
@@ -2283,8 +2282,8 @@ useEffect(() => {
                                     display: "inline-flex",
                                     alignItems: "center",
                                     padding: "4px 10px",
-                                    borderRadius: "999px",
-                                    fontSize: "0.8rem",
+                                    borderRadius: "var(--radius-pill)",
+                                    fontSize: "var(--text-label)",
                                     fontWeight: 600,
                                     backgroundColor: "var(--surface-light)",
                                     color: "var(--danger)",
@@ -2293,7 +2292,7 @@ useEffect(() => {
                                 >
                                   {stageMeta.label}
                                 </span>
-                                <div style={{ fontSize: "0.75rem", color: "var(--grey-accent-dark)" }}>
+                                <div style={{ fontSize: "var(--text-caption)", color: "var(--grey-accent-dark)" }}>
                                   {stageMeta.description}
                                 </div>
                               </td>
@@ -2308,7 +2307,7 @@ useEffect(() => {
                                   style={{
                                     width: "170px",
                                     padding: "8px",
-                                    borderRadius: "8px",
+                                    borderRadius: "var(--radius-xs)",
                                     border: "1px solid var(--surface-light)",
                                   }}
                                 >
@@ -2330,7 +2329,7 @@ useEffect(() => {
                                   style={{
                                     width: "170px",
                                     padding: "8px",
-                                    borderRadius: "8px",
+                                    borderRadius: "var(--radius-xs)",
                                     border: "1px solid var(--surface-light)",
                                   }}
                                 >
@@ -2348,14 +2347,14 @@ useEffect(() => {
                                     style={{
                                       ...secondaryButtonStyle,
                                       padding: "6px 10px",
-                                      fontSize: "0.8rem",
+                                      fontSize: "var(--text-label)",
                                     }}
                                   >
                                     Cancel
                                   </button>
                                 </div>
                               </td>
-                              <td style={{ padding: "10px", verticalAlign: "top", fontSize: "0.9rem" }}>
+                              <td style={{ padding: "10px", verticalAlign: "top", fontSize: "var(--text-body)" }}>
                                 {part.request_notes || "—"}
                               </td>
                             </tr>
@@ -2370,7 +2369,7 @@ useEffect(() => {
                     <div style={{ marginTop: "20px" }}>
                       <h4 style={{ ...sectionTitleStyle, marginBottom: "8px" }}>Workshop Requests</h4>
                       <div style={{ overflowX: "auto" }}>
-                        <table style={{ ...tableStyle, fontSize: "0.9rem" }}>
+                        <table style={{ ...tableStyle, fontSize: "var(--text-body)" }}>
                           <thead>
                             <tr style={{ background: "var(--warning-surface)", color: "var(--danger-dark)" }}>
                               <th style={{ textAlign: "left", padding: "10px" }}>Request</th>
@@ -2389,7 +2388,7 @@ useEffect(() => {
                                   <td style={{ padding: "10px" }}>
                                     <div style={{ fontWeight: 600 }}>{request.description || "Part request"}</div>
                                     {request.part ? (
-                                      <div style={{ fontSize: "0.8rem", color: "var(--info)" }}>
+                                      <div style={{ fontSize: "var(--text-label)", color: "var(--info)" }}>
                                         Suggested: {request.part.part_number} · {request.part.name}
                                       </div>
                                     ) : null}
@@ -2424,7 +2423,7 @@ useEffect(() => {
                       style={{
                         marginTop: "20px",
                         padding: "16px",
-                        borderRadius: "8px",
+                        borderRadius: "var(--radius-xs)",
                         background: "var(--warning-surface)",
                         border: "1px solid var(--warning)",
                         color: "var(--warning-dark)",
@@ -2440,7 +2439,7 @@ useEffect(() => {
                   style={{
                     background: "var(--surface-light)",
                     border: "1px dashed var(--primary-light)",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     padding: "16px",
                     color: "var(--danger)",
                     textAlign: "center",
@@ -2479,11 +2478,11 @@ useEffect(() => {
                 }}
                 style={{
                   padding: "12px",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   border: "1px solid var(--surface-light)",
                   background: "var(--layer-section-level-1)",
                   color: "var(--text-primary)",
-                  fontSize: "0.9rem",
+                  fontSize: "var(--text-body)",
                   minWidth: "140px",
                 }}
               >
@@ -2497,11 +2496,11 @@ useEffect(() => {
                   onChange={(e) => setStatusFilter(e.target.value)}
                   style={{
                     padding: "12px",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     border: "1px solid var(--surface-light)",
                     background: "var(--layer-section-level-1)",
                     color: "var(--text-primary)",
-                    fontSize: "0.9rem",
+                    fontSize: "var(--text-body)",
                     minWidth: "140px",
                   }}
                 >
@@ -2523,11 +2522,11 @@ useEffect(() => {
                     onFocus={() => { document.getElementById('location-dropdown').style.display = 'block'; }}
                     style={{
                       padding: "12px",
-                      borderRadius: "8px",
+                      borderRadius: "var(--radius-xs)",
                       border: "1px solid var(--surface-light)",
                       background: "var(--layer-section-level-1)",
                       color: "var(--text-primary)",
-                      fontSize: "0.9rem",
+                      fontSize: "var(--text-body)",
                       minWidth: "140px",
                       outline: "none",
                     }}
@@ -2543,11 +2542,11 @@ useEffect(() => {
                       marginTop: "4px",
                       background: "var(--surface)",
                       border: "1px solid var(--surface-light)",
-                      borderRadius: "8px",
+                      borderRadius: "var(--radius-xs)",
                       maxHeight: "300px",
                       overflowY: "auto",
                       zIndex: 1000,
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                      boxShadow: "var(--shadow-md)",
                     }}
                   >
                     <div
@@ -2609,7 +2608,7 @@ useEffect(() => {
               <div style={{ color: "var(--grey-accent-light)" }}>No parts found. Refine your search.</div>
             ) : (
               <>
-                <table style={{ ...tableStyle, fontSize: "0.9rem" }}>
+                <table style={{ ...tableStyle, fontSize: "var(--text-body)" }}>
                   <thead>
                     <tr style={{ background: "var(--surface-light)", color: "var(--danger)" }}>
                       <th style={{ textAlign: "left", padding: "10px" }}>Part Number</th>
@@ -2668,7 +2667,7 @@ useEffect(() => {
                                 display: "inline-flex",
                                 alignItems: "center",
                                 padding: "4px 10px",
-                                borderRadius: "999px",
+                                borderRadius: "var(--radius-pill)",
                                 background:
                                   part.stock_status === "low_stock"
                                     ? "rgba(var(--warning-rgb), 0.2)"
@@ -2685,7 +2684,7 @@ useEffect(() => {
                                     : part.stock_status === "high_stock"
                                     ? "var(--success-dark)"
                                     : "var(--info-dark)",
-                                fontSize: "0.75rem",
+                                fontSize: "var(--text-caption)",
                                 fontWeight: 600,
                               }}
                             >
@@ -2758,10 +2757,10 @@ useEffect(() => {
                 marginBottom: "20px",
               }}>
                 <div style={{ flex: 1 }}>
-                  <h2 style={{ margin: 0, color: "var(--primary)", fontSize: "1.3rem", fontWeight: 700 }}>
+                  <h2 style={{ margin: 0, color: "var(--primary)", fontSize: "var(--text-h2)", fontWeight: 700 }}>
                     {selectedPart.part_number}
                   </h2>
-                  <p style={{ margin: "6px 0 0 0", color: "var(--text-secondary)", fontSize: "0.95rem" }}>
+                  <p style={{ margin: "6px 0 0 0", color: "var(--text-secondary)", fontSize: "var(--text-body)" }}>
                     {selectedPart.name}
                   </p>
                 </div>
@@ -2773,11 +2772,11 @@ useEffect(() => {
                         background: "var(--primary)",
                         color: "white",
                         border: "none",
-                        borderRadius: "8px",
+                        borderRadius: "var(--radius-xs)",
                         padding: "8px 16px",
                         cursor: "pointer",
                         fontWeight: 600,
-                        fontSize: "0.9rem",
+                        fontSize: "var(--text-body)",
                       }}
                     >
                       Edit
@@ -2791,11 +2790,11 @@ useEffect(() => {
                           background: isSavingPart ? "var(--surface-light)" : "var(--success)",
                           color: "white",
                           border: "none",
-                          borderRadius: "8px",
+                          borderRadius: "var(--radius-xs)",
                           padding: "8px 16px",
                           cursor: isSavingPart ? "not-allowed" : "pointer",
                           fontWeight: 600,
-                          fontSize: "0.9rem",
+                          fontSize: "var(--text-body)",
                         }}
                       >
                         {isSavingPart ? "Saving..." : "Save"}
@@ -2807,11 +2806,11 @@ useEffect(() => {
                           background: "var(--surface-light)",
                           color: "var(--text-primary)",
                           border: "1px solid var(--surface-light)",
-                          borderRadius: "8px",
+                          borderRadius: "var(--radius-xs)",
                           padding: "8px 16px",
                           cursor: isSavingPart ? "not-allowed" : "pointer",
                           fontWeight: 600,
-                          fontSize: "0.9rem",
+                          fontSize: "var(--text-body)",
                         }}
                       >
                         Cancel
@@ -2827,13 +2826,13 @@ useEffect(() => {
                   style={{
                     background: "var(--surface-light)",
                     border: "none",
-                    borderRadius: "8px",
-                    fontSize: "1.2rem",
+                    borderRadius: "var(--radius-xs)",
+                    fontSize: "var(--text-h2)",
                     cursor: "pointer",
                     color: "var(--text-secondary)",
                     padding: "8px",
-                    width: "36px",
-                    height: "36px",
+                    width: "var(--control-height-xs)",
+                    height: "var(--control-height-xs)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -2862,17 +2861,17 @@ useEffect(() => {
                     {/* Stock Overview Card */}
                     <div style={{
                       background: "var(--layer-section-level-1)",
-                      borderRadius: "12px",
+                      borderRadius: "var(--radius-sm)",
                       padding: "16px",
                       marginBottom: "16px",
                       border: "1px solid var(--surface-light)",
                     }}>
-                      <h3 style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                      <h3 style={{ fontSize: "var(--text-body)", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                         Stock Overview
                       </h3>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                         <div>
-                          <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "4px" }}>On Hand</div>
+                          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", marginBottom: "4px" }}>On Hand</div>
                           {isEditMode ? (
                             <input
                               type="number"
@@ -2880,21 +2879,21 @@ useEffect(() => {
                               onChange={(e) => setEditedPart((prev) => ({ ...prev, qty_in_stock: parseInt(e.target.value) || 0 }))}
                               style={{
                                 padding: "8px",
-                                borderRadius: "6px",
+                                borderRadius: "var(--radius-xs)",
                                 border: "1px solid var(--surface-light)",
                                 background: "var(--surface)",
                                 color: "var(--text-primary)",
-                                fontSize: "1rem",
+                                fontSize: "var(--text-h4)",
                                 fontWeight: 600,
                                 width: "100%",
                               }}
                             />
                           ) : (
-                            <div style={{ fontSize: "1.4rem", fontWeight: 700, color: "var(--primary)" }}>{selectedPart.qty_in_stock}</div>
+                            <div style={{ fontSize: "var(--text-h2)", fontWeight: 700, color: "var(--primary)" }}>{selectedPart.qty_in_stock}</div>
                           )}
                         </div>
                         <div>
-                          <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "4px" }}>Reserved</div>
+                          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", marginBottom: "4px" }}>Reserved</div>
                           {isEditMode ? (
                             <input
                               type="number"
@@ -2902,21 +2901,21 @@ useEffect(() => {
                               onChange={(e) => setEditedPart((prev) => ({ ...prev, qty_reserved: parseInt(e.target.value) || 0 }))}
                               style={{
                                 padding: "8px",
-                                borderRadius: "6px",
+                                borderRadius: "var(--radius-xs)",
                                 border: "1px solid var(--surface-light)",
                                 background: "var(--surface)",
                                 color: "var(--text-primary)",
-                                fontSize: "1rem",
+                                fontSize: "var(--text-h4)",
                                 fontWeight: 600,
                                 width: "100%",
                               }}
                             />
                           ) : (
-                            <div style={{ fontSize: "1.4rem", fontWeight: 700 }}>{selectedPart.qty_reserved || 0}</div>
+                            <div style={{ fontSize: "var(--text-h2)", fontWeight: 700 }}>{selectedPart.qty_reserved || 0}</div>
                           )}
                         </div>
                         <div>
-                          <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "4px" }}>On Order</div>
+                          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", marginBottom: "4px" }}>On Order</div>
                           {isEditMode ? (
                             <input
                               type="number"
@@ -2924,21 +2923,21 @@ useEffect(() => {
                               onChange={(e) => setEditedPart((prev) => ({ ...prev, qty_on_order: parseInt(e.target.value) || 0 }))}
                               style={{
                                 padding: "8px",
-                                borderRadius: "6px",
+                                borderRadius: "var(--radius-xs)",
                                 border: "1px solid var(--surface-light)",
                                 background: "var(--surface)",
                                 color: "var(--text-primary)",
-                                fontSize: "1rem",
+                                fontSize: "var(--text-h4)",
                                 fontWeight: 600,
                                 width: "100%",
                               }}
                             />
                           ) : (
-                            <div style={{ fontSize: "1.4rem", fontWeight: 700 }}>{selectedPart.qty_on_order || 0}</div>
+                            <div style={{ fontSize: "var(--text-h2)", fontWeight: 700 }}>{selectedPart.qty_on_order || 0}</div>
                           )}
                         </div>
                         <div>
-                          <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "4px" }}>Min Level</div>
+                          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", marginBottom: "4px" }}>Min Level</div>
                           {isEditMode ? (
                             <input
                               type="number"
@@ -2946,29 +2945,29 @@ useEffect(() => {
                               onChange={(e) => setEditedPart((prev) => ({ ...prev, reorder_level: parseInt(e.target.value) || 0 }))}
                               style={{
                                 padding: "8px",
-                                borderRadius: "6px",
+                                borderRadius: "var(--radius-xs)",
                                 border: "1px solid var(--surface-light)",
                                 background: "var(--surface)",
                                 color: "var(--text-primary)",
-                                fontSize: "1rem",
+                                fontSize: "var(--text-h4)",
                                 fontWeight: 600,
                                 width: "100%",
                               }}
                             />
                           ) : (
-                            <div style={{ fontSize: "1.4rem", fontWeight: 700 }}>{selectedPart.reorder_level || 0}</div>
+                            <div style={{ fontSize: "var(--text-h2)", fontWeight: 700 }}>{selectedPart.reorder_level || 0}</div>
                           )}
                         </div>
                       </div>
                       <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid var(--surface-light)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <div>
-                          <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>Linked Jobs</div>
-                          <div style={{ fontSize: "1.1rem", fontWeight: 600 }}>{selectedPart.open_job_count || 0}</div>
+                          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)" }}>Linked Jobs</div>
+                          <div style={{ fontSize: "var(--text-h3)", fontWeight: 600 }}>{selectedPart.open_job_count || 0}</div>
                         </div>
                         <span style={{
                           padding: "6px 12px",
-                          borderRadius: "999px",
-                          fontSize: "0.75rem",
+                          borderRadius: "var(--radius-pill)",
+                          fontSize: "var(--text-caption)",
                           fontWeight: 600,
                           background: selectedPart.stock_status === "low_stock"
                             ? "rgba(var(--warning-rgb), 0.2)"
@@ -2993,16 +2992,16 @@ useEffect(() => {
                     {/* Pricing Card */}
                     <div style={{
                       background: "var(--layer-section-level-1)",
-                      borderRadius: "12px",
+                      borderRadius: "var(--radius-sm)",
                       padding: "16px",
                       border: "1px solid var(--surface-light)",
                     }}>
-                      <h3 style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                      <h3 style={{ fontSize: "var(--text-body)", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                         Pricing
                       </h3>
                       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>Cost Price</span>
+                          <span style={{ fontSize: "var(--text-body-sm)", color: "var(--text-secondary)" }}>Cost Price</span>
                           {isEditMode ? (
                             <input
                               type="number"
@@ -3011,21 +3010,21 @@ useEffect(() => {
                               onChange={(e) => setEditedPart((prev) => ({ ...prev, unit_cost: parseFloat(e.target.value) || 0 }))}
                               style={{
                                 padding: "8px",
-                                borderRadius: "6px",
+                                borderRadius: "var(--radius-xs)",
                                 border: "1px solid var(--surface-light)",
                                 background: "var(--surface)",
                                 color: "var(--text-primary)",
-                                fontSize: "1rem",
+                                fontSize: "var(--text-h4)",
                                 fontWeight: 600,
                                 width: "100%",
                               }}
                             />
                           ) : (
-                            <span style={{ fontSize: "1.1rem", fontWeight: 700 }}>{formatCurrency(selectedPart.unit_cost)}</span>
+                            <span style={{ fontSize: "var(--text-h3)", fontWeight: 700 }}>{formatCurrency(selectedPart.unit_cost)}</span>
                           )}
                         </div>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>Sell Price</span>
+                          <span style={{ fontSize: "var(--text-body-sm)", color: "var(--text-secondary)" }}>Sell Price</span>
                           {isEditMode ? (
                             <input
                               type="number"
@@ -3034,22 +3033,22 @@ useEffect(() => {
                               onChange={(e) => setEditedPart((prev) => ({ ...prev, unit_price: parseFloat(e.target.value) || 0 }))}
                               style={{
                                 padding: "8px",
-                                borderRadius: "6px",
+                                borderRadius: "var(--radius-xs)",
                                 border: "1px solid var(--surface-light)",
                                 background: "var(--surface)",
                                 color: "var(--text-primary)",
-                                fontSize: "1rem",
+                                fontSize: "var(--text-h4)",
                                 fontWeight: 600,
                                 width: "100%",
                               }}
                             />
                           ) : (
-                            <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--primary)" }}>{formatCurrency(selectedPart.unit_price)}</span>
+                            <span style={{ fontSize: "var(--text-h3)", fontWeight: 700, color: "var(--primary)" }}>{formatCurrency(selectedPart.unit_price)}</span>
                           )}
                         </div>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "8px", borderTop: "1px solid var(--surface-light)" }}>
-                          <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>Margin</span>
-                          <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--success-dark)" }}>
+                          <span style={{ fontSize: "var(--text-body-sm)", color: "var(--text-secondary)" }}>Margin</span>
+                          <span style={{ fontSize: "var(--text-h3)", fontWeight: 700, color: "var(--success-dark)" }}>
                             {isEditMode
                               ? formatMargin(editedPart?.unit_cost ?? selectedPart.unit_cost, editedPart?.unit_price ?? selectedPart.unit_price)
                               : formatMargin(selectedPart.unit_cost, selectedPart.unit_price)
@@ -3064,17 +3063,17 @@ useEffect(() => {
                   <div>
                     <div style={{
                       background: "var(--layer-section-level-1)",
-                      borderRadius: "12px",
+                      borderRadius: "var(--radius-sm)",
                       padding: "16px",
                       border: "1px solid var(--surface-light)",
                       height: "100%",
                     }}>
-                      <h3 style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                      <h3 style={{ fontSize: "var(--text-body)", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                         Part Information
                       </h3>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "0.9rem" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "var(--text-body)" }}>
                         <div>
-                          <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "4px", fontWeight: 600 }}>DESCRIPTION</div>
+                          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", marginBottom: "4px", fontWeight: 600 }}>DESCRIPTION</div>
                           {isEditMode ? (
                             <input
                               type="text"
@@ -3082,11 +3081,11 @@ useEffect(() => {
                               onChange={(e) => setEditedPart((prev) => ({ ...prev, name: e.target.value }))}
                               style={{
                                 padding: "8px",
-                                borderRadius: "6px",
+                                borderRadius: "var(--radius-xs)",
                                 border: "1px solid var(--surface-light)",
                                 background: "var(--surface)",
                                 color: "var(--text-primary)",
-                                fontSize: "1rem",
+                                fontSize: "var(--text-h4)",
                                 fontWeight: 600,
                                 width: "100%",
                               }}
@@ -3096,7 +3095,7 @@ useEffect(() => {
                           )}
                         </div>
                         <div>
-                          <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "4px", fontWeight: 600 }}>STORAGE LOCATION</div>
+                          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", marginBottom: "4px", fontWeight: 600 }}>STORAGE LOCATION</div>
                           {isEditMode ? (
                             <input
                               type="text"
@@ -3104,21 +3103,21 @@ useEffect(() => {
                               onChange={(e) => setEditedPart((prev) => ({ ...prev, storage_location: e.target.value }))}
                               style={{
                                 padding: "8px",
-                                borderRadius: "6px",
+                                borderRadius: "var(--radius-xs)",
                                 border: "1px solid var(--surface-light)",
                                 background: "var(--surface)",
                                 color: "var(--text-primary)",
-                                fontSize: "1rem",
+                                fontSize: "var(--text-h4)",
                                 fontWeight: 600,
                                 width: "100%",
                               }}
                             />
                           ) : (
-                            <div style={{ color: "var(--text-primary)", fontWeight: 600, fontSize: "1rem" }}>{selectedPart.storage_location || "—"}</div>
+                            <div style={{ color: "var(--text-primary)", fontWeight: 600, fontSize: "var(--text-h4)" }}>{selectedPart.storage_location || "—"}</div>
                           )}
                         </div>
                         <div>
-                          <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "4px", fontWeight: 600 }}>SERVICE DEFAULT</div>
+                          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", marginBottom: "4px", fontWeight: 600 }}>SERVICE DEFAULT</div>
                           {isEditMode ? (
                             <input
                               type="text"
@@ -3126,11 +3125,11 @@ useEffect(() => {
                               onChange={(e) => setEditedPart((prev) => ({ ...prev, service_default_zone: e.target.value }))}
                               style={{
                                 padding: "8px",
-                                borderRadius: "6px",
+                                borderRadius: "var(--radius-xs)",
                                 border: "1px solid var(--surface-light)",
                                 background: "var(--surface)",
                                 color: "var(--text-primary)",
-                                fontSize: "1rem",
+                                fontSize: "var(--text-h4)",
                                 fontWeight: 600,
                                 width: "100%",
                               }}
@@ -3140,7 +3139,7 @@ useEffect(() => {
                           )}
                         </div>
                         <div>
-                          <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "4px", fontWeight: 600 }}>SUPPLIER</div>
+                          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", marginBottom: "4px", fontWeight: 600 }}>SUPPLIER</div>
                           {isEditMode ? (
                             <input
                               type="text"
@@ -3148,11 +3147,11 @@ useEffect(() => {
                               onChange={(e) => setEditedPart((prev) => ({ ...prev, supplier: e.target.value }))}
                               style={{
                                 padding: "8px",
-                                borderRadius: "6px",
+                                borderRadius: "var(--radius-xs)",
                                 border: "1px solid var(--surface-light)",
                                 background: "var(--surface)",
                                 color: "var(--text-primary)",
-                                fontSize: "1rem",
+                                fontSize: "var(--text-h4)",
                                 fontWeight: 600,
                                 width: "100%",
                               }}
@@ -3162,7 +3161,7 @@ useEffect(() => {
                           )}
                         </div>
                         <div>
-                          <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "4px", fontWeight: 600 }}>CATEGORY</div>
+                          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", marginBottom: "4px", fontWeight: 600 }}>CATEGORY</div>
                           {isEditMode ? (
                             <input
                               type="text"
@@ -3170,11 +3169,11 @@ useEffect(() => {
                               onChange={(e) => setEditedPart((prev) => ({ ...prev, category: e.target.value }))}
                               style={{
                                 padding: "8px",
-                                borderRadius: "6px",
+                                borderRadius: "var(--radius-xs)",
                                 border: "1px solid var(--surface-light)",
                                 background: "var(--surface)",
                                 color: "var(--text-primary)",
-                                fontSize: "1rem",
+                                fontSize: "var(--text-h4)",
                                 fontWeight: 600,
                                 width: "100%",
                               }}
@@ -3191,12 +3190,12 @@ useEffect(() => {
                 {/* Linked Jobs Table */}
                 <div style={{
                   background: "var(--layer-section-level-1)",
-                  borderRadius: "12px",
+                  borderRadius: "var(--radius-sm)",
                   padding: "16px",
                   border: "1px solid var(--surface-light)",
                 }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", marginBottom: "12px" }}>
-                    <h3 style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-secondary)", margin: 0, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                    <h3 style={{ fontSize: "var(--text-body)", fontWeight: 600, color: "var(--text-secondary)", margin: 0, textTransform: "uppercase", letterSpacing: "0.5px" }}>
                       Linked Jobs {selectedPart.linked_jobs && selectedPart.linked_jobs.filter((link) => matchesLinkedJobStatus(link.status)).length > 0 && `(${selectedPart.linked_jobs.filter((link) => matchesLinkedJobStatus(link.status)).length})`}
                     </h3>
                     <button
@@ -3208,7 +3207,7 @@ useEffect(() => {
                       style={{
                         ...secondaryButtonStyle,
                         padding: "6px 12px",
-                        fontSize: "0.75rem",
+                        fontSize: "var(--text-caption)",
                         textTransform: "uppercase",
                         letterSpacing: "0.04em",
                       }}
@@ -3230,9 +3229,9 @@ useEffect(() => {
                             : "none",
                       }}
                     >
-                      <table style={{ ...tableStyle, fontSize: "0.85rem" }}>
+                      <table style={{ ...tableStyle, fontSize: "var(--text-body-sm)" }}>
                         <thead>
-                          <tr style={{ background: "var(--surface)", color: "var(--text-secondary)", fontSize: "0.75rem", textTransform: "uppercase" }}>
+                          <tr style={{ background: "var(--surface)", color: "var(--text-secondary)", fontSize: "var(--text-caption)", textTransform: "uppercase" }}>
                             <th style={{ textAlign: "left", padding: "10px", fontWeight: 600 }}>Job Number</th>
                             <th style={{ textAlign: "right", padding: "10px", fontWeight: 600 }}>Qty</th>
                             <th style={{ textAlign: "left", padding: "10px", fontWeight: 600 }}>Source</th>
@@ -3307,8 +3306,8 @@ useEffect(() => {
                       textAlign: "center",
                       color: "var(--text-secondary)",
                       background: "var(--surface)",
-                      borderRadius: "8px",
-                      fontSize: "0.9rem",
+                      borderRadius: "var(--radius-xs)",
+                      fontSize: "var(--text-body)",
                     }}>
                       No linked jobs for this part
                     </div>

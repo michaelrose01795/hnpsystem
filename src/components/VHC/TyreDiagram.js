@@ -79,7 +79,7 @@ export default function TyreDiagram({
 
   const containerStyle = {
     width: "100%",
-    borderRadius: "24px",
+    borderRadius: "var(--radius-xl)",
     padding: "24px",
     border: `1px solid ${palette.border}`,
     background: palette.surface,
@@ -99,7 +99,7 @@ export default function TyreDiagram({
     position: "relative",
     margin: 0,
     padding: 0,
-    borderRadius: "16px",
+    borderRadius: "var(--radius-md)",
     backgroundColor: "inherit",
     backgroundImage: "var(--vhc-vehicle-diagram-image)",
     backgroundPosition: "50% 50%",
@@ -150,7 +150,7 @@ export default function TyreDiagram({
                     transform: "translate(-50%, -50%)",
                     width: `${TYRE_HIT_WIDTH + 22}px`,
                     height: `${TYRE_HIT_HEIGHT + 22}px`,
-                    borderRadius: "18px",
+                    borderRadius: "var(--radius-md)",
                     border: `2px dashed ${selectedWheelStroke}`,
                     background: selectedWheelFill,
                     pointerEvents: "none",
@@ -171,7 +171,7 @@ export default function TyreDiagram({
                   height: `${TYRE_HIT_HEIGHT}px`,
                   maxWidth: `${TYRE_HIT_WIDTH}px`,
                   minWidth: `${TYRE_HIT_WIDTH}px`,
-                  borderRadius: "999px",
+                  borderRadius: "var(--radius-pill)",
                   border: `${isInvalid ? 2 : isActive ? 2 : 1.5}px solid ${
                     isInvalid ? "var(--danger)" : isActive ? "var(--primary)" : colors.border
                   }`,
@@ -203,7 +203,7 @@ export default function TyreDiagram({
                     transform: "translate(-50%, -50%)",
                     width: "6px",
                     height: "6px",
-                    borderRadius: "999px",
+                    borderRadius: "var(--radius-pill)",
                     background: "var(--danger)",
                     zIndex: 5,
                     pointerEvents: "none",
@@ -219,7 +219,7 @@ export default function TyreDiagram({
         type="button"
         onClick={onSpareSelect}
         style={{
-          borderRadius: "18px",
+          borderRadius: "var(--radius-md)",
           border: `1px solid ${invalidSpare ? "var(--danger)" : spareActive ? "var(--primary)" : palette.border}`,
           padding: "8px 18px",
           background: invalidSpare

@@ -343,7 +343,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
       <div
         className="popup-card"
         style={{
-          borderRadius: "32px",
+          borderRadius: "var(--radius-xl)",
           width: "100%",
           maxWidth: "600px",
           maxHeight: "90vh",
@@ -372,7 +372,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
               marginBottom: "24px", // Space below
               padding: "16px", // Inner padding
               backgroundColor: "var(--surface-light)", // Light red bg
-              borderRadius: "8px", // Rounded
+              borderRadius: "var(--radius-xs)", // Rounded
               border: "2px solid var(--primary)" // Accent border
             }}
           >
@@ -397,7 +397,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
                   alignItems: "center", // Vertically center
                   padding: "12px", // Inner spacing
                   backgroundColor: "var(--surface-light)", // Card bg
-                  borderRadius: "6px", // Rounded
+                  borderRadius: "var(--radius-xs)", // Rounded
                   marginBottom: "8px", // Gap between items
                   cursor: "pointer", // ✅ NEW: Show it's clickable
                   transition: "all 0.2s", // ✅ NEW: Smooth hover effect
@@ -438,7 +438,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
                   backgroundColor: loading ? "var(--background)" : "var(--danger)", // Grey when loading
                   color: "white", // Text colour
                   border: "none", // No border
-                  borderRadius: "6px", // Rounded
+                  borderRadius: "var(--radius-xs)", // Rounded
                   cursor: loading || dbUserId == null ? "not-allowed" : "pointer", // Cursor state
                   fontSize: "13px", // Font size
                   fontWeight: "600", // Bold
@@ -481,7 +481,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
               width: "100%", // Full width
               padding: "12px", // Comfortable size
               marginBottom: "12px", // Gap below
-              borderRadius: "6px", // Rounded
+              borderRadius: "var(--radius-xs)", // Rounded
               border: "1px solid var(--surface-light)", // Subtle border
               fontSize: "16px", // Readable size
               outline: "none" // No outline
@@ -517,7 +517,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
                 fontSize: "14px", // Size
                 padding: "8px", // Inner padding
                 backgroundColor: "var(--danger-surface)", // Light bg
-                borderRadius: "4px" // Rounded
+                borderRadius: "var(--radius-xs)" // Rounded
               }}
             >
               {error} {/* Error message */}
@@ -534,7 +534,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
                 loading || !jobNumber.trim() || dbUserId == null ? "var(--background)" : "var(--primary)", // Grey when disabled
               color: "white", // Text colour
               border: "none", // No border
-              borderRadius: "6px", // Rounded
+              borderRadius: "var(--radius-xs)", // Rounded
               fontWeight: "600", // Bold
               fontSize: "16px", // Size
               cursor:
@@ -558,7 +558,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
             backgroundColor: "var(--surface)", // Neutral bg
             color: "var(--grey-accent)", // Muted text
             border: "none", // No border
-            borderRadius: "6px", // Rounded
+            borderRadius: "var(--radius-xs)", // Rounded
             fontWeight: "600", // Bold
             cursor: loading ? "not-allowed" : "pointer", // Cursor state
             transform: "none" // Prevent hover offset
@@ -572,33 +572,12 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
           width: 100%;
         }
 
-        .start-job-request-dropdown .dropdown-api__control {
-          min-height: 44px;
-          padding: 12px;
-          border-radius: 6px;
-          border: 1px solid var(--surface-light);
-          font-size: 14px;
-          background: var(--surface);
-          gap: 8px;
-        }
-
-        .start-job-request-dropdown .dropdown-api__value {
-          font-size: 14px;
-          font-weight: 500;
-        }
-
-        .start-job-request-dropdown.dropdown-api.is-open .dropdown-api__control,
-        .start-job-request-dropdown .dropdown-api__control:focus-visible {
-          border-color: var(--primary);
-          background: var(--surface);
-        }
-
         .start-job-request-dropdown .dropdown-api__option-description {
           display: inline-flex;
           align-items: center;
           width: fit-content;
           padding: 2px 8px;
-          border-radius: 999px;
+          border-radius: var(--radius-pill);
           border: 1px solid var(--success);
           color: var(--success);
           background: rgba(var(--success-rgb), 0.08);

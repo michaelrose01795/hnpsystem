@@ -214,8 +214,8 @@ export default function StatusSidebar({
         backgroundColor: 'var(--primary)',
         color: 'var(--text-inverse)',
         border: 'none',
-        borderRadius: '50%',
-        boxShadow: 'none',
+        borderRadius: 'var(--radius-full)',
+
         cursor: 'pointer',
         zIndex: 51,
         display: 'flex',
@@ -235,9 +235,9 @@ export default function StatusSidebar({
         backgroundColor: 'var(--primary)',
         color: 'var(--text-inverse)',
         border: 'none',
-        borderTopLeftRadius: '8px',
-        borderBottomLeftRadius: '8px',
-        boxShadow: 'none',
+        borderTopLeftRadius: 'var(--radius-xs)',
+        borderBottomLeftRadius: 'var(--radius-xs)',
+
         cursor: 'pointer',
         zIndex: 51,
         display: 'flex',
@@ -258,7 +258,7 @@ export default function StatusSidebar({
         height: '100%',
         width: '100%',
         backgroundColor: 'var(--surface)',
-        boxShadow: 'none',
+
         borderRadius: 0,
         transform: isOpen ? 'translateY(0)' : 'translateY(100%)',
         transition: 'transform 0.3s ease-in-out',
@@ -274,8 +274,8 @@ export default function StatusSidebar({
         height: '100%',
         minHeight: '100%',
         backgroundColor: 'var(--surface)',
-        boxShadow: 'none',
-        borderRadius: '16px',
+
+        borderRadius: 'var(--radius-md)',
         border: '1px solid var(--surface-light)',
         display: 'flex',
         flexDirection: 'column',
@@ -291,7 +291,7 @@ export default function StatusSidebar({
         width: `${panelWidth}px`,
         maxWidth: '100vw',
         backgroundColor: 'var(--surface)',
-        boxShadow: 'none',
+
         borderRadius: '0px',
         transform: isOpen ? 'translateX(0)' : `translateX(${panelWidth}px)`,
         transition: 'transform 0.3s ease-in-out',
@@ -354,7 +354,7 @@ export default function StatusSidebar({
                 right: '16px',
                 background: 'rgba(var(--surface-rgb), 0.2)',
                 border: '1px solid rgba(var(--surface-rgb), 0.35)',
-                borderRadius: '999px',
+                borderRadius: 'var(--radius-pill)',
                 color: 'var(--text-inverse)',
                 fontWeight: '700',
                 fontSize: '14px',
@@ -387,12 +387,11 @@ export default function StatusSidebar({
                     backgroundColor: 'var(--surface)',
                     color: 'var(--accent-purple)',
                     border: 'none',
-                    borderRadius: '6px',
+                    borderRadius: 'var(--radius-xs)',
                     fontWeight: '600',
                     cursor: 'pointer',
                     fontSize: '14px',
-                    transition: 'all 0.2s',
-                    boxShadow: 'none'
+                    transition: 'all 0.2s'
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.backgroundColor = 'var(--background)';
@@ -417,7 +416,7 @@ export default function StatusSidebar({
                   color: 'var(--text-inverse)',
                   backgroundColor: 'rgba(var(--surface-rgb), 0.15)',
                   padding: '6px 10px',
-                  borderRadius: '6px',
+                  borderRadius: 'var(--radius-xs)',
                   border: '1px solid rgba(var(--surface-rgb), 0.3)'
                 }}>
                   {searchError}
@@ -450,7 +449,7 @@ export default function StatusSidebar({
                       backgroundColor: 'rgba(var(--surface-rgb), 0.15)',
                       color: 'var(--text-inverse)',
                       border: '1px solid rgba(var(--surface-rgb), 0.3)',
-                      borderRadius: '6px',
+                      borderRadius: 'var(--radius-xs)',
                       fontSize: '12px',
                       fontWeight: '600',
                       cursor: 'pointer',
@@ -482,7 +481,7 @@ export default function StatusSidebar({
           minHeight: 0, // Allow flex child to shrink for proper scrolling
           padding: '20px',
           background: 'var(--surface)',
-          borderRadius: '0 0 16px 16px' // Match parent border radius
+          borderRadius: '0 0 var(--radius-md) var(--radius-md)' // Match parent border radius
         }}>
           {/* Show message when no job selected */}
           {!jobId ? (

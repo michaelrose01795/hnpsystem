@@ -120,7 +120,7 @@ export default function TechsDashboard() {
               height: "60px",
               border: "4px solid var(--surface-light)",
               borderTop: "4px solid var(--primary)",
-              borderRadius: "50%",
+              borderRadius: "var(--radius-full)",
               animation: "spin 1s linear infinite",
             }}
           />
@@ -163,7 +163,7 @@ export default function TechsDashboard() {
             style={{
               backgroundColor: "var(--accent-purple-surface)",
               padding: "24px",
-              borderRadius: "16px",
+              borderRadius: "var(--radius-md)",
               boxShadow: "none",
               border: "1px solid rgba(var(--primary-rgb),0.25)",
             }}
@@ -178,7 +178,7 @@ export default function TechsDashboard() {
             style={{
               backgroundColor: clockingStatus ? "var(--success-surface)" : "var(--danger-surface)",
               padding: "24px",
-              borderRadius: "16px",
+              borderRadius: "var(--radius-md)",
               boxShadow: "none",
               border: `1px solid ${clockingStatus ? "var(--success-border)" : "var(--danger-border)"}`,
             }}
@@ -207,7 +207,7 @@ export default function TechsDashboard() {
             style={{
               backgroundColor: "rgba(var(--primary-rgb), 0.08)",
               padding: "24px",
-              borderRadius: "16px",
+              borderRadius: "var(--radius-md)",
               boxShadow: "none",
               border: "1px solid rgba(var(--primary-rgb),0.2)",
             }}
@@ -224,7 +224,7 @@ export default function TechsDashboard() {
             style={{
               backgroundColor: "rgba(var(--primary-rgb), 0.08)",
               padding: "24px",
-              borderRadius: "16px",
+              borderRadius: "var(--radius-md)",
               boxShadow: "none",
               border: "1px solid rgba(var(--primary-rgb),0.2)",
             }}
@@ -241,7 +241,7 @@ export default function TechsDashboard() {
             style={{
               backgroundColor: "var(--surface)",
               padding: "24px",
-              borderRadius: "16px",
+              borderRadius: "var(--radius-md)",
               boxShadow: "none",
               border: "2px solid var(--primary)",
             }}
@@ -286,7 +286,7 @@ export default function TechsDashboard() {
                     backgroundColor: "var(--primary)",
                     color: "var(--text-inverse)",
                     border: "none",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     cursor: "pointer",
                     fontSize: "15px",
                     fontWeight: "600",
@@ -308,7 +308,7 @@ export default function TechsDashboard() {
             style={{
               backgroundColor: "var(--surface)",
               padding: "24px",
-              borderRadius: "16px",
+              borderRadius: "var(--radius-md)",
               boxShadow: "none",
               border: "1px solid var(--surface-light)",
             }}
@@ -353,7 +353,7 @@ export default function TechsDashboard() {
                     backgroundColor: "var(--primary)",
                     color: "var(--text-inverse)",
                     border: "none",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     cursor: "pointer",
                     fontSize: "15px",
                     fontWeight: "600",
@@ -374,7 +374,7 @@ export default function TechsDashboard() {
           style={{
             backgroundColor: "var(--surface)",
             padding: "24px",
-            borderRadius: "16px",
+            borderRadius: "var(--radius-md)",
             boxShadow: "none",
             border: "1px solid var(--surface-light)",
           }}
@@ -417,7 +417,7 @@ export default function TechsDashboard() {
                   onClick={() => handleStartJob(job)}
                   style={{
                     border: "1px solid var(--surface-light)",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     padding: "16px",
                     cursor: "pointer",
                     transition: "all 0.2s",
@@ -470,7 +470,7 @@ export default function TechsDashboard() {
                             : job.status === "Complete"
                               ? "1px solid var(--success-border)"
                               : "1px solid var(--warning-border)",
-                        borderRadius: "12px",
+                        borderRadius: "var(--radius-sm)",
                         fontSize: "12px",
                         fontWeight: "600",
                       }}
@@ -485,7 +485,7 @@ export default function TechsDashboard() {
                   style={{
                     border: "1px solid rgba(var(--primary-rgb), 0.2)",
                     backgroundColor: "rgba(var(--primary-rgb), 0.08)",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     padding: "12px 16px",
                     color: "var(--text-secondary)",
                     fontSize: "14px",
@@ -512,7 +512,7 @@ export default function TechsDashboard() {
               padding: "20px",
               backgroundColor: "rgba(var(--primary-rgb), 0.08)",
               border: "1px solid rgba(var(--primary-rgb), 0.25)",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               cursor: "pointer",
               textAlign: "center",
               boxShadow: "none",
@@ -538,7 +538,7 @@ export default function TechsDashboard() {
               padding: "20px",
               backgroundColor: "rgba(var(--primary-rgb), 0.08)",
               border: "1px solid rgba(var(--primary-rgb), 0.25)",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               cursor: "pointer",
               textAlign: "center",
               boxShadow: "none",
@@ -564,7 +564,7 @@ export default function TechsDashboard() {
               padding: "20px",
               backgroundColor: "rgba(var(--primary-rgb), 0.08)",
               border: "1px solid rgba(var(--primary-rgb), 0.25)",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               cursor: "pointer",
               textAlign: "center",
               boxShadow: "none",

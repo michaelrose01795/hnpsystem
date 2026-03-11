@@ -13,7 +13,7 @@ export default function ClockingStats() {
       style={{
         padding: "10px 16px",
         border: "1px solid var(--primary)",
-        borderRadius: "8px",
+        borderRadius: "var(--radius-xs)",
         marginTop: "10px",
         backgroundColor: "var(--surface-light)",
         color: "var(--primary)",

@@ -18,7 +18,7 @@ export const fieldLabelStyle = {
 export const inputStyle = {
   width: "100%",
   padding: "10px 12px",
-  borderRadius: "12px",
+  borderRadius: "var(--radius-sm)",
   border: `1px solid ${palette.border}`,
   backgroundColor: palette.surface,
   fontSize: "14px",
@@ -42,14 +42,14 @@ export const lockedRowOverlayStyle = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  borderRadius: "16px",
+  borderRadius: "var(--radius-md)",
   zIndex: 10,
   pointerEvents: "none",
 };
 
 export const lockedRowBadgeStyle = (isDeclined) => ({
   padding: "8px 16px",
-  borderRadius: "8px",
+  borderRadius: "var(--radius-xs)",
   fontSize: "13px",
   fontWeight: 600,
   backgroundColor: isDeclined ? "var(--danger-surface)" : "var(--success-surface)",

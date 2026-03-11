@@ -7,7 +7,7 @@ import { CalendarField } from "@/components/calendarAPI"; // Date input componen
 
 function DisciplinaryContent() {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
+    <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
       <header>
         <p style={{ color: "var(--info)", marginTop: "6px" }}>
           Log warnings, track follow-ups, and maintain audit trails for workplace incidents.
@@ -94,8 +94,8 @@ export default function HrDisciplinaryIncidents({ embedded = false } = {}) {
 }
 
 const buttonStylePrimary = {
-  padding: "8px 14px",
-  borderRadius: "10px",
+  padding: "var(--control-padding)",
+  borderRadius: "var(--input-radius)",
   border: "none",
   background: "var(--danger)",
   color: "white",
@@ -104,8 +104,8 @@ const buttonStylePrimary = {
 };
 
 const buttonStyleGhost = {
-  padding: "8px 14px",
-  borderRadius: "10px",
+  padding: "var(--control-padding)",
+  borderRadius: "var(--input-radius)",
   border: "1px dashed var(--info)",
   background: "transparent",
   color: "var(--info)",
@@ -123,9 +123,9 @@ const labelStyle = {
 };
 
 const inputStyle = {
-  borderRadius: "10px",
+  borderRadius: "var(--input-radius)",
   border: "1px solid var(--accent-purple-surface)",
-  padding: "10px 12px",
+  padding: "var(--control-padding)",
   fontWeight: 500,
   color: "var(--accent-purple)",
   background: "var(--surface)",

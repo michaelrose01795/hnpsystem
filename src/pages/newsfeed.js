@@ -306,7 +306,7 @@ export default function NewsFeed() {
             className="text-center py-16"
             style={{
               border: "1px solid var(--border)",
-              borderRadius: "16px",
+              borderRadius: "var(--radius-md)",
               backgroundColor: "var(--layer-section-level-1)",
             }}
           >
@@ -326,7 +326,7 @@ export default function NewsFeed() {
               style={{
                 padding: "20px 24px",
                 border: "1px solid var(--border)",
-                borderRadius: "12px",
+                borderRadius: "var(--radius-sm)",
                 backgroundColor: "var(--layer-section-level-1)",
                 cursor: "pointer",
                 transition: "transform 0.3s ease, box-shadow 0.3s ease",
@@ -408,7 +408,7 @@ export default function NewsFeed() {
               role="dialog"
               aria-modal="true"
               style={{
-                borderRadius: "32px",
+                borderRadius: "var(--radius-xl)",
                 width: "100%",
                 maxWidth: "650px",
                 maxHeight: "90vh",
@@ -473,7 +473,7 @@ export default function NewsFeed() {
                   style={{
                     width: "100%",
                     padding: "12px 16px",
-                    borderRadius: "12px",
+                    borderRadius: "var(--radius-sm)",
                     border: "2px solid var(--surface-light)",
                     backgroundColor: "var(--surface-light)",
                     fontSize: "15px",
@@ -511,7 +511,7 @@ export default function NewsFeed() {
                   style={{
                     width: "100%",
                     padding: "12px 16px",
-                    borderRadius: "12px",
+                    borderRadius: "var(--radius-sm)",
                     border: "2px solid var(--surface-light)",
                     backgroundColor: "var(--surface-light)",
                     fontSize: "15px",
@@ -528,9 +528,9 @@ export default function NewsFeed() {
                 <div
                   style={{
                     padding: "12px 16px",
-                    borderRadius: "12px",
-                    border: "2px solid #fecaca",
-                    backgroundColor: "#fef2f2",
+                    borderRadius: "var(--radius-sm)",
+                    border: "2px solid var(--danger-border)",
+                    backgroundColor: "var(--danger-surface)",
                     color: "var(--danger)",
                     fontSize: "13px",
                     fontWeight: "600",
@@ -559,7 +559,7 @@ export default function NewsFeed() {
                 }}
                 style={{
                   padding: "12px 24px",
-                  borderRadius: "12px",
+                  borderRadius: "var(--radius-sm)",
                   border: "2px solid var(--surface-light)",
                   backgroundColor: "transparent",
                   fontSize: "15px",
@@ -585,7 +585,7 @@ export default function NewsFeed() {
                 disabled={saving}
                 style={{
                   padding: "12px 24px",
-                  borderRadius: "12px",
+                  borderRadius: "var(--radius-sm)",
                   border: "2px solid var(--primary-dark)",
                   backgroundColor: "var(--primary)",
                   color: "white",

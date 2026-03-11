@@ -2222,7 +2222,7 @@ export default function JobCardDetailPage() {
             height: "60px",
             border: "4px solid var(--surface)",
             borderTop: "4px solid var(--primary)",
-            borderRadius: "50%",
+            borderRadius: "var(--radius-full)",
             animation: "spin 1s linear infinite"
           }}></div>
           <p style={{ color: "var(--grey-accent)" }}>Loading job card #{jobNumber}...</p>
@@ -2265,7 +2265,7 @@ export default function JobCardDetailPage() {
                 backgroundColor: "var(--primary)",
                 color: "white",
                 border: "none",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
                 cursor: "pointer",
                 fontWeight: "600",
                 fontSize: "14px",
@@ -2422,7 +2422,7 @@ export default function JobCardDetailPage() {
           <section
             style={{
               padding: "12px 16px",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               border: "1px solid var(--danger-surface)",
               backgroundColor: "var(--surface-light)",
               color: "var(--danger-dark)",
@@ -2441,8 +2441,7 @@ export default function JobCardDetailPage() {
           alignItems: "center",
           padding: "20px",
           backgroundColor: "var(--surface)",
-          borderRadius: "12px",
-          boxShadow: "none",
+          borderRadius: "var(--radius-sm)",
           border: "1px solid var(--surface-muted)",
           flexShrink: 0
         }}>
@@ -2466,7 +2465,7 @@ export default function JobCardDetailPage() {
                   overallStatusLabel === "Open" ? "var(--success-dark)" : 
                   overallStatusLabel === "Complete" ? "var(--info)" : 
                   "var(--danger)",
-                borderRadius: "20px",
+                borderRadius: "var(--radius-lg)",
                 fontWeight: "600",
                 fontSize: "13px"
               }}>
@@ -2477,7 +2476,7 @@ export default function JobCardDetailPage() {
                   padding: "6px 14px",
                   backgroundColor: "var(--warning-surface)",
                   color: "var(--danger)",
-                  borderRadius: "20px",
+                  borderRadius: "var(--radius-lg)",
                   fontWeight: "600",
                   fontSize: "13px"
                 }}>
@@ -2496,7 +2495,7 @@ export default function JobCardDetailPage() {
                       jobDivisionLower === "sales"
                         ? "var(--info)"
                         : "var(--success-dark)",
-                    borderRadius: "20px",
+                    borderRadius: "var(--radius-lg)",
                     fontWeight: "600",
                     fontSize: "13px",
                   }}
@@ -2511,7 +2510,7 @@ export default function JobCardDetailPage() {
                     padding: "6px 14px",
                     backgroundColor: "var(--primary-surface)",
                     color: "var(--primary)",
-                    borderRadius: "20px",
+                    borderRadius: "var(--radius-lg)",
                     fontWeight: "600",
                     fontSize: "13px",
                     display: "flex",
@@ -2528,7 +2527,7 @@ export default function JobCardDetailPage() {
                     padding: "6px 14px",
                     backgroundColor: "var(--primary-surface)",
                     color: "var(--primary)",
-                    borderRadius: "20px",
+                    borderRadius: "var(--radius-lg)",
                     fontWeight: "600",
                     fontSize: "13px",
                     cursor: "pointer",
@@ -2556,7 +2555,7 @@ export default function JobCardDetailPage() {
                   backgroundColor: "var(--primary)",
                   color: "white",
                   border: "none",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   fontWeight: "600",
                   fontSize: "13px",
                   cursor: "pointer",
@@ -2577,7 +2576,7 @@ export default function JobCardDetailPage() {
                   backgroundColor: isCheckedIn ? "var(--success-surface)" : "var(--success)",
                   color: isCheckedIn ? "var(--success-dark)" : "var(--info-dark)",
                   border: "none",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   cursor: checkingIn || !canEdit || isCheckedIn ? "not-allowed" : "pointer",
                   fontWeight: "600",
                   fontSize: "14px",
@@ -2607,7 +2606,7 @@ export default function JobCardDetailPage() {
                   backgroundColor: "var(--info-dark)",
                   color: "white",
                   border: "none",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   cursor: creatingInvoice ? "not-allowed" : "pointer",
                   fontWeight: "600",
                   fontSize: "14px",
@@ -2635,7 +2634,7 @@ export default function JobCardDetailPage() {
                 backgroundColor: "var(--grey-accent)",
                 color: "white",
                 border: "none",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
                 cursor: "pointer",
                 fontWeight: "600",
                 fontSize: "14px",
@@ -2655,7 +2654,7 @@ export default function JobCardDetailPage() {
             style={{
               padding: "12px 20px",
               backgroundColor: "var(--primary-surface)",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               border: "1px solid var(--primary-light)",
               marginBottom: "0",
             }}
@@ -2676,7 +2675,7 @@ export default function JobCardDetailPage() {
                     padding: "4px 12px",
                     backgroundColor: "var(--primary)",
                     color: "white",
-                    borderRadius: "16px",
+                    borderRadius: "var(--radius-md)",
                     fontSize: "12px",
                     fontWeight: "600",
                   }}
@@ -2692,7 +2691,7 @@ export default function JobCardDetailPage() {
                       padding: "4px 12px",
                       backgroundColor: "var(--surface)",
                       color: "var(--text-primary)",
-                      borderRadius: "16px",
+                      borderRadius: "var(--radius-md)",
                       fontSize: "12px",
                       fontWeight: "500",
                       border: "1px solid var(--border)",
@@ -2707,7 +2706,7 @@ export default function JobCardDetailPage() {
                       style={{
                         fontSize: "10px",
                         padding: "2px 6px",
-                        borderRadius: "4px",
+                        borderRadius: "var(--radius-xs)",
                         backgroundColor:
                           rJob.status === "Open" ? "var(--success-surface)" :
                           rJob.status === "Complete" ? "var(--info-surface)" :
@@ -2729,7 +2728,7 @@ export default function JobCardDetailPage() {
                       padding: "4px 12px",
                       backgroundColor: "var(--primary)",
                       color: "white",
-                      borderRadius: "16px",
+                      borderRadius: "var(--radius-md)",
                       fontSize: "12px",
                       fontWeight: "600",
                       border: "none",
@@ -2754,8 +2753,7 @@ export default function JobCardDetailPage() {
           <div style={{
             padding: "16px 20px",
             backgroundColor: "var(--surface)",
-            borderRadius: "12px",
-            boxShadow: "none",
+            borderRadius: "var(--radius-sm)",
             border: "1px solid var(--surface-muted)"
           }}>
             <div
@@ -2785,7 +2783,7 @@ export default function JobCardDetailPage() {
                   style={{
                     width: "86px",
                     padding: "6px 8px",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     border: "1px solid var(--surface-light)",
                     backgroundColor: "var(--surface)",
                     color: "var(--text-primary)",
@@ -2799,7 +2797,7 @@ export default function JobCardDetailPage() {
                   disabled={vehicleMileageSaveDisabled}
                   style={{
                     padding: "6px 10px",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     border: "none",
                     backgroundColor: vehicleMileageSaveDisabled ? "var(--surface-light)" : "var(--primary)",
                     color: vehicleMileageSaveDisabled ? "var(--grey-accent)" : "var(--text-inverse)",
@@ -2856,9 +2854,8 @@ export default function JobCardDetailPage() {
             style={{
               padding: "16px 20px",
               backgroundColor: "var(--surface)",
-              borderRadius: "12px",
-              boxShadow: "none",
-              border: "1px solid var(--surface-muted)",
+              borderRadius: "var(--radius-sm)",
+                border: "1px solid var(--surface-muted)",
               cursor:
                 jobData.customerId || jobData.customerFirstName || jobData.customerLastName || jobData.customer
                   ? "pointer"
@@ -2877,8 +2874,7 @@ export default function JobCardDetailPage() {
           <div style={{
             padding: "16px 20px",
             backgroundColor: "var(--surface)",
-            borderRadius: "12px",
-            boxShadow: "none",
+            borderRadius: "var(--radius-sm)",
             border: "1px solid var(--surface-muted)"
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
@@ -2909,9 +2905,8 @@ export default function JobCardDetailPage() {
             style={{
               padding: "16px 20px",
               backgroundColor: "var(--surface)",
-              borderRadius: "12px",
-              boxShadow: "none",
-              border: "1px solid var(--surface-muted)",
+              borderRadius: "var(--radius-sm)",
+                border: "1px solid var(--surface-muted)",
               display: "flex",
               flexDirection: "column",
               gap: "12px",
@@ -2940,7 +2935,7 @@ export default function JobCardDetailPage() {
         {/* ✅ Tabs Navigation */}
         <section
           style={{
-            borderRadius: "999px",
+            borderRadius: "var(--radius-pill)",
             border: "1px solid var(--surface-light)",
             background: "var(--surface)",
             padding: "6px",
@@ -3029,7 +3024,7 @@ export default function JobCardDetailPage() {
                   }}
                   style={{
                     flex: "0 0 auto",
-                    borderRadius: "999px",
+                    borderRadius: "var(--radius-pill)",
                     border: tabBorder,
                     padding: "10px 20px",
                     fontSize: "0.9rem",
@@ -3062,7 +3057,7 @@ export default function JobCardDetailPage() {
                             ? "rgba(255, 255, 255, 0.3)"
                             : "var(--primary)",
                         color: "var(--text-inverse)",
-                        borderRadius: "8px",
+                        borderRadius: "var(--radius-xs)",
                         fontSize: "11px",
                         fontWeight: "600",
                       }}
@@ -3107,33 +3102,12 @@ export default function JobCardDetailPage() {
             -moz-appearance: textfield;
             appearance: textfield;
           }
-          .edit-requests-payment-dropdown .dropdown-api__control {
-            min-height: 38px;
-            height: 38px;
-            border-radius: 8px;
-            border: 1px solid var(--surface-light);
-            background: var(--surface);
-            padding: 6px 10px;
-          }
-          .edit-requests-payment-dropdown .dropdown-api__value {
-            font-size: 14px;
-            color: var(--text-secondary);
-            font-weight: 500;
-          }
-          .edit-requests-payment-dropdown .dropdown-api__menu {
-            border-radius: 8px;
-          }
-          .edit-requests-payment-dropdown.dropdown-api.is-open .dropdown-api__control,
-          .edit-requests-payment-dropdown .dropdown-api__control:focus-visible {
-            border-color: var(--primary);
-          }
         `}</style>
 
         {/* ✅ Tab Content */}
         <section style={{
           backgroundColor: "var(--layer-section-level-2)",
-          borderRadius: "12px",
-          boxShadow: "none",
+          borderRadius: "var(--radius-sm)",
           border: "1px solid var(--surface-light)",
           padding: "24px"
         }}>
@@ -3285,7 +3259,7 @@ export default function JobCardDetailPage() {
                 style={{
                   padding: "24px",
                   border: "1px dashed var(--warning)",
-                  borderRadius: "16px",
+                  borderRadius: "var(--radius-md)",
                   backgroundColor: "var(--warning-surface)",
                   color: "var(--warning-dark)",
                   marginBottom: "16px",
@@ -3664,7 +3638,7 @@ function CustomerRequestsTab({
 
     const statusBadgeStyle = {
       padding: "4px 10px",
-      borderRadius: "12px",
+      borderRadius: "var(--radius-sm)",
       fontSize: "12px",
       fontWeight: "600",
       whiteSpace: "nowrap",
@@ -4056,14 +4030,13 @@ function CustomerRequestsTab({
               onClick={() => onToggleVhcRequired(!jobData.vhcRequired)}
               style={{
                 padding: "8px 16px",
-                borderRadius: "10px",
+                borderRadius: "var(--radius-sm)",
                 border: jobData.vhcRequired ? "1px solid rgba(var(--danger-rgb), 0.45)" : "1px solid rgba(var(--success-rgb), 0.45)",
                 fontSize: "14px",
                 fontWeight: "600",
                 cursor: "pointer",
                 backgroundColor: jobData.vhcRequired ? "rgba(var(--danger-rgb), 0.14)" : "rgba(var(--success-rgb), 0.14)",
                 color: jobData.vhcRequired ? "var(--danger)" : "var(--success)",
-                boxShadow: "none"
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.opacity = "0.9";
@@ -4083,7 +4056,7 @@ function CustomerRequestsTab({
                 backgroundColor: "var(--primary)",
                 color: "var(--text-inverse)",
                 border: "none",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
                 cursor: "pointer",
                 fontWeight: "600",
                 fontSize: "14px"
@@ -4102,7 +4075,7 @@ function CustomerRequestsTab({
                 backgroundColor: "var(--primary)",
                 color: "var(--text-inverse)",
                 border: "none",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
                 cursor: "pointer",
                 fontWeight: "600",
                 fontSize: "14px"
@@ -4121,7 +4094,7 @@ function CustomerRequestsTab({
                 backgroundColor: "var(--surface-light)",
                 color: "var(--text-primary)",
                 border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
                 cursor: "pointer",
                 fontWeight: "600",
                 fontSize: "14px"
@@ -4142,7 +4115,7 @@ function CustomerRequestsTab({
                 padding: "14px",
                 backgroundColor: "var(--surface)",
                 borderLeft: "4px solid var(--primary)",
-                borderRadius: "6px",
+                borderRadius: "var(--radius-xs)",
                 marginBottom: "12px",
                 display: "flex",
                 alignItems: "center",
@@ -4191,10 +4164,10 @@ function CustomerRequestsTab({
                   className="edit-requests-hours-input"
                   style={{
                     width: "100%",
-                    height: "38px",
+                    height: "var(--control-height-sm)",
                     padding: "8px 10px",
                     border: "1px solid var(--surface-light)",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     fontSize: "14px",
                     backgroundColor: "var(--surface)",
                     color: "var(--text-secondary)",
@@ -4229,13 +4202,13 @@ function CustomerRequestsTab({
                 onClick={() => handleRemoveRequest(index)}
                 style={{
                   marginLeft: "auto",
-                  height: "38px",
+                  height: "var(--control-height-sm)",
                   minWidth: "86px",
                   padding: "0 14px",
                   backgroundColor: "var(--danger)",
                   color: "var(--text-inverse)",
                   border: "none",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   cursor: "pointer",
                   fontSize: "12px",
                   fontWeight: "600",
@@ -4253,7 +4226,7 @@ function CustomerRequestsTab({
               backgroundColor: "var(--primary)",
               color: "var(--text-inverse)",
               border: "none",
-              borderRadius: "8px",
+              borderRadius: "var(--radius-xs)",
               cursor: "pointer",
               fontWeight: "600",
               fontSize: "14px"
@@ -4274,7 +4247,7 @@ function CustomerRequestsTab({
                     padding: "14px",
                     backgroundColor: "var(--surface)",
                     borderLeft: "4px solid var(--success)",
-                    borderRadius: "6px",
+                    borderRadius: "var(--radius-xs)",
                     marginBottom: "12px",
                     display: "flex",
                     alignItems: "center",
@@ -4324,10 +4297,10 @@ function CustomerRequestsTab({
                       className="edit-requests-hours-input"
                       style={{
                         width: "100%",
-                        height: "38px",
+                        height: "var(--control-height-sm)",
                         padding: "8px 10px",
                         border: "1px solid var(--surface-light)",
-                        borderRadius: "8px",
+                        borderRadius: "var(--radius-xs)",
                         fontSize: "14px",
                         backgroundColor: "var(--surface-light)",
                         color: "var(--text-secondary)",
@@ -4378,7 +4351,7 @@ function CustomerRequestsTab({
                 padding: "14px",
                 backgroundColor: "var(--surface)",
                 borderLeft: "4px solid var(--primary)",
-                borderRadius: "6px",
+                borderRadius: "var(--radius-xs)",
                 marginBottom: "12px",
               }}>
                 <div
@@ -4444,7 +4417,7 @@ function CustomerRequestsTab({
                       padding: "4px 10px",
                       backgroundColor: "var(--info-surface)",
                       color: "var(--info)",
-                      borderRadius: "12px",
+                      borderRadius: "var(--radius-sm)",
                       fontSize: "12px",
                       fontWeight: "600"
                     }}>
@@ -4461,7 +4434,7 @@ function CustomerRequestsTab({
                           req.jobType === "Warranty" ? "var(--warning-dark)" :
                           req.jobType === "Customer" ? "var(--success-dark)" :
                           "var(--danger-dark)",
-                        borderRadius: "12px",
+                        borderRadius: "var(--radius-sm)",
                         fontSize: "12px",
                         fontWeight: "600"
                       }}>
@@ -4513,7 +4486,7 @@ function CustomerRequestsTab({
                   padding: "14px",
                   backgroundColor: "var(--surface)",
                   borderLeft: "4px solid var(--success)",
-                  borderRadius: "6px",
+                  borderRadius: "var(--radius-xs)",
                   marginBottom: "12px",
                 }}>
                   <div
@@ -4570,7 +4543,7 @@ function CustomerRequestsTab({
                         padding: "4px 10px",
                         backgroundColor: "var(--info-surface)",
                         color: "var(--info)",
-                        borderRadius: "12px",
+                        borderRadius: "var(--radius-sm)",
                         fontSize: "12px",
                         fontWeight: "600"
                       }}>
@@ -4587,7 +4560,7 @@ function CustomerRequestsTab({
                             row.jobType === "Warranty" ? "var(--warning-dark)" :
                             row.jobType === "Customer" ? "var(--success-dark)" :
                             "var(--danger-dark)",
-                          borderRadius: "12px",
+                          borderRadius: "var(--radius-sm)",
                           fontSize: "12px",
                           fontWeight: "600"
                         }}>
@@ -4621,7 +4594,7 @@ function CustomerRequestsTab({
                               <td style={{ padding: "4px 8px", textAlign: "right" }}>
                                 <span style={{
                                   padding: "2px 8px",
-                                  borderRadius: "8px",
+                                  borderRadius: "var(--radius-xs)",
                                   fontSize: "11px",
                                   fontWeight: "600",
                                   backgroundColor:
@@ -4665,7 +4638,7 @@ function CustomerRequestsTab({
               padding: "12px",
               backgroundColor: "var(--warning-surface)",
               borderLeft: "4px solid var(--warning)",
-              borderRadius: "6px"
+              borderRadius: "var(--radius-xs)"
             }}>
               <p style={{ margin: 0, fontSize: "14px", color: "var(--text-secondary)" }}>
                 {jobData.cosmeticNotes}
@@ -4710,7 +4683,7 @@ function LocationUpdateModal({ entry, onClose, onSave }) {
         onSubmit={handleSubmit}
         className="popup-card"
         style={{
-          borderRadius: "32px",
+          borderRadius: "var(--radius-xl)",
           width: "100%",
           maxWidth: "460px",
           maxHeight: "96vh",
@@ -4764,7 +4737,7 @@ function LocationUpdateModal({ entry, onClose, onSave }) {
             onClick={onClose}
             style={{
               padding: "10px 16px",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               border: "1px solid var(--accent-purple-surface)",
               backgroundColor: "transparent",
               cursor: "pointer",
@@ -4778,7 +4751,7 @@ function LocationUpdateModal({ entry, onClose, onSave }) {
             type="submit"
             style={{
               padding: "10px 16px",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               border: "none",
               background: "var(--primary)",
               color: "white",
@@ -4855,9 +4828,9 @@ function LocationEntryModal({ context, entry, mode = "edit", onClose, onSave }) 
             type="button"
             onClick={onClose}
             style={{
-              width: "38px",
-              height: "38px",
-              borderRadius: "50%",
+              width: "var(--control-height-sm)",
+              height: "var(--control-height-sm)",
+              borderRadius: "var(--radius-full)",
               border: "none",
               backgroundColor: "var(--surface)",
               color: "var(--text-primary)",
@@ -4898,7 +4871,7 @@ function LocationEntryModal({ context, entry, mode = "edit", onClose, onSave }) 
                 placeholder={input.placeholder}
                 style={{
                   padding: "10px 12px",
-                  borderRadius: "12px",
+                  borderRadius: "var(--radius-sm)",
                   border: "1px solid var(--accent-purple-surface)",
                   fontSize: "0.95rem",
                 }}
@@ -4949,7 +4922,7 @@ function LocationEntryModal({ context, entry, mode = "edit", onClose, onSave }) 
           type="submit"
           style={{
             padding: "12px 20px",
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             border: "none",
             background: "var(--success)",
             color: "white",
@@ -5031,7 +5004,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
   const inputStyle = {
     width: "100%",
     padding: "8px 10px",
-    borderRadius: "8px",
+    borderRadius: "var(--radius-xs)",
     border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
     backgroundColor: "var(--surface)",
     color: "var(--text-secondary)",
@@ -5040,7 +5013,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
   const readOnlyStyle = {
     padding: "8px 10px",
     backgroundColor: "var(--surface)",
-    borderRadius: "8px",
+    borderRadius: "var(--radius-xs)",
     border: "1px solid var(--surface-light)",
     fontSize: "13px",
     color: "var(--text-secondary)",
@@ -5049,7 +5022,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
   const panelStyle = {
     background: "var(--surface)",
     border: "1px solid var(--surface-light)",
-    borderRadius: "16px",
+    borderRadius: "var(--radius-md)",
     padding: "18px",
   };
   const panelHeaderStyle = {
@@ -5065,7 +5038,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
     alignItems: "center",
     gap: "8px",
     padding: "4px 10px",
-    borderRadius: "999px",
+    borderRadius: "var(--radius-pill)",
     background: "var(--surface-light)",
     border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
     color: "var(--text-secondary)",
@@ -5079,7 +5052,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
     backgroundColor: "var(--primary)",
     color: "var(--text-inverse)",
     border: "none",
-    borderRadius: "10px",
+    borderRadius: "var(--radius-sm)",
     cursor: disabled ? "not-allowed" : "pointer",
     fontWeight: "700",
     fontSize: "13px",
@@ -5090,7 +5063,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
     backgroundColor: "var(--surface-light)",
     color: "var(--text-primary)",
     border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
-    borderRadius: "10px",
+    borderRadius: "var(--radius-sm)",
     cursor: disabled ? "not-allowed" : "pointer",
     fontWeight: "700",
     fontSize: "13px",
@@ -5256,7 +5229,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
               style={{
                 width: "100%",
                 padding: "10px",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
                 border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
                 backgroundColor: "var(--surface)",
                 color: "var(--text-secondary)",
@@ -5278,7 +5251,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
           marginTop: "20px",
           padding: "16px",
           backgroundColor: "var(--layer-section-level-2)",
-          borderRadius: "12px",
+          borderRadius: "var(--radius-sm)",
           border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
           borderLeft: `4px solid ${approvalChecked ? "var(--success)" : "var(--warning)"}`
         }}>
@@ -5299,7 +5272,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
       )}
 
       {saveError && (
-        <div style={{ marginTop: "12px", padding: "10px", borderRadius: "6px", backgroundColor: "var(--danger-surface)", color: "var(--danger)", fontSize: "13px" }}>
+        <div style={{ marginTop: "12px", padding: "10px", borderRadius: "var(--radius-xs)", backgroundColor: "var(--danger-surface)", color: "var(--danger)", fontSize: "13px" }}>
           {saveError}
         </div>
       )}
@@ -5579,7 +5552,7 @@ function SchedulingTab({
   const panelStyle = {
     background: "var(--surface)",
     border: "1px solid var(--surface-light)",
-    borderRadius: "16px",
+    borderRadius: "var(--radius-md)",
     padding: "18px",
   };
   const panelHeaderStyle = {
@@ -5592,7 +5565,7 @@ function SchedulingTab({
   };
   const headerBadgeStyle = {
     padding: "4px 10px",
-    borderRadius: "999px",
+    borderRadius: "var(--radius-pill)",
     background: "var(--surface-light)",
     border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
     color: "var(--text-secondary)",
@@ -5603,13 +5576,13 @@ function SchedulingTab({
   const cardStyle = {
     padding: "18px",
     backgroundColor: "var(--surface)",
-    borderRadius: "16px",
+    borderRadius: "var(--radius-md)",
     border: "1px solid var(--surface-light)"
   };
   const subPanelStyle = {
     padding: "12px",
     backgroundColor: "var(--surface)",
-    borderRadius: "12px",
+    borderRadius: "var(--radius-sm)",
     border: "1px solid var(--surface-light)",
   };
   const cardTitleStyle = {
@@ -5626,7 +5599,7 @@ function SchedulingTab({
   const inputStyle = {
     width: "100%",
     padding: "8px 10px",
-    borderRadius: "8px",
+    borderRadius: "var(--radius-xs)",
     border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
     fontSize: "13px",
     backgroundColor: "var(--surface)",
@@ -5667,7 +5640,7 @@ function SchedulingTab({
             disabled={!jobData.customerFirstName && !jobData.customerLastName && !jobData.customerId}
             style={{
               padding: "7px 12px",
-              borderRadius: "8px",
+              borderRadius: "var(--radius-xs)",
               border: "none",
               backgroundColor: "var(--layer-section-level-1)",
               color: "var(--primary-dark)",
@@ -5717,7 +5690,7 @@ function SchedulingTab({
             marginTop: "16px",
             padding: "14px",
             backgroundColor: "var(--surface-light)",
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             border: "1px solid var(--surface-light)",
             borderLeft: `4px solid ${confirmCustomerDetails ? "var(--success)" : "var(--warning)"}`,
           }}
@@ -5790,7 +5763,7 @@ function SchedulingTab({
                     <span style={{
                       width: "6px",
                       height: "6px",
-                      borderRadius: "50%",
+                      borderRadius: "var(--radius-full)",
                       background: "var(--warning)",
                       flexShrink: 0,
                       marginTop: "8px",
@@ -5818,7 +5791,7 @@ function SchedulingTab({
               onClick={() => router.push(`/appointments?job=${jobData.jobNumber}`)}
               style={{
                 padding: "7px 12px",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
                 border: "none",
                 backgroundColor: "var(--layer-section-level-1)",
                 color: "var(--primary-dark)",
@@ -5878,7 +5851,7 @@ function SchedulingTab({
               padding: "10px 12px",
               backgroundColor: "var(--surface-light)",
               border: "1px solid var(--surface-light)",
-              borderRadius: "10px",
+              borderRadius: "var(--radius-sm)",
               fontSize: "12px",
               color: "var(--grey-accent)",
             }}
@@ -5899,7 +5872,7 @@ function SchedulingTab({
             gridTemplateColumns: "repeat(4, 1fr)",
             gap: "0",
             border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
-            borderRadius: "10px",
+            borderRadius: "var(--radius-sm)",
             overflow: "hidden",
           }}
         >
@@ -5953,7 +5926,7 @@ function SchedulingTab({
             backgroundColor: bookingButtonDisabled ? "var(--grey-accent)" : "var(--primary)",
             color: "var(--text-inverse)",
             border: "none",
-            borderRadius: "8px",
+            borderRadius: "var(--radius-xs)",
             cursor: bookingButtonDisabled ? "not-allowed" : "pointer",
             fontWeight: "600",
             fontSize: "14px",
@@ -5974,7 +5947,7 @@ function SchedulingTab({
               backgroundColor: appointmentDirty ? "var(--layer-section-level-1)" : "var(--surface-light)",
               color: appointmentDirty ? "var(--primary-dark)" : "var(--grey-accent)",
               border: "none",
-              borderRadius: "8px",
+              borderRadius: "var(--radius-xs)",
               fontWeight: "600",
               fontSize: "14px",
               cursor: appointmentDirty && !appointmentSaving ? "pointer" : "not-allowed",
@@ -6032,7 +6005,7 @@ function ServiceHistoryTab({ vehicleJobHistory }) {
                 padding: "16px",
                 backgroundColor: "var(--surface)",
                 border: "1px solid var(--accent-purple-surface)",
-                borderRadius: "10px",
+                borderRadius: "var(--radius-sm)",
                 cursor: job.invoiceAvailable ? "pointer" : "default",
                 transition: "all 0.2s"
               }}
@@ -6053,7 +6026,7 @@ function ServiceHistoryTab({ vehicleJobHistory }) {
                   <span style={{
                     padding: "4px 10px",
                     backgroundColor: "var(--info-surface)",
-                    borderRadius: "999px",
+                    borderRadius: "var(--radius-pill)",
                     fontSize: "11px",
                     fontWeight: "600",
                     color: "var(--info-dark)"
@@ -6105,7 +6078,7 @@ function ServiceHistoryTab({ vehicleJobHistory }) {
           padding: "40px",
           textAlign: "center",
           backgroundColor: "var(--surface)",
-          borderRadius: "8px"
+          borderRadius: "var(--radius-xs)"
         }}>
           <div style={{ fontSize: "48px", marginBottom: "16px" }}>📋</div>
           <p style={{ fontSize: "14px", color: "var(--grey-accent)" }}>
@@ -6160,7 +6133,7 @@ function GoodsInPartsPanel({ goodsInParts = [], onAllocateParts, canAllocate }) 
           }
           style={{
             padding: "8px 16px",
-            borderRadius: "8px",
+            borderRadius: "var(--radius-xs)",
             border: "1px solid var(--accent-purple)",
             background: !canAllocate || allocateDisabled ? "var(--surface-light)" : "var(--accent-purple)",
             color: !canAllocate || allocateDisabled ? "var(--text-secondary)" : "#fff",
@@ -6179,7 +6152,7 @@ function GoodsInPartsPanel({ goodsInParts = [], onAllocateParts, canAllocate }) 
         <div
           style={{
             padding: "20px",
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             border: "1px dashed var(--surface-light)",
             background: "var(--layer-section-level-1)",
             color: "var(--text-secondary)",
@@ -6192,7 +6165,7 @@ function GoodsInPartsPanel({ goodsInParts = [], onAllocateParts, canAllocate }) 
       ) : (
         <div
           style={{
-            borderRadius: "16px",
+            borderRadius: "var(--radius-md)",
             border: "1px solid var(--surface-light)",
             background: "var(--surface)",
             overflowX: "auto",
@@ -6523,7 +6496,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
         style={{
           background: "var(--surface)",
           border: "1px solid var(--surface-light)",
-          borderRadius: "14px",
+          borderRadius: "var(--control-radius)",
           padding: "16px",
           display: "flex",
           flexDirection: "column",
@@ -6582,7 +6555,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
               maxHeight: "220px",
               overflowY: "auto",
               border: "1px solid var(--surface-light)",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
             }}
           >
             {catalogResults.map((part) => {
@@ -6618,7 +6591,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
           <div
             style={{
               border: "1px solid var(--accent-purple-surface)",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               padding: "12px",
               background: "var(--accent-purple-surface)",
             }}
@@ -6665,7 +6638,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
                   style={{
                     width: "100%",
                     padding: "8px",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     border: "1px solid var(--surface-light)",
                     marginTop: "4px",
                   }}
@@ -6695,12 +6668,12 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
               </div>
             </div>
             {catalogSubmitError && (
-              <div style={{ marginTop: "10px", padding: "10px", borderRadius: "8px", background: "var(--warning-surface)", color: "var(--danger)" }}>
+              <div style={{ marginTop: "10px", padding: "10px", borderRadius: "var(--radius-xs)", background: "var(--warning-surface)", color: "var(--danger)" }}>
                 {catalogSubmitError}
               </div>
             )}
             {catalogSuccessMessage && (
-              <div style={{ marginTop: "10px", padding: "10px", borderRadius: "8px", background: "var(--success-surface)", color: "var(--success-dark)" }}>
+              <div style={{ marginTop: "10px", padding: "10px", borderRadius: "var(--radius-xs)", background: "var(--success-surface)", color: "var(--success-dark)" }}>
                 {catalogSuccessMessage}
               </div>
             )}
@@ -6711,7 +6684,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
               style={{
                 marginTop: "12px",
                 padding: "12px",
-                borderRadius: "10px",
+                borderRadius: "var(--radius-sm)",
                 border: "none",
                 background: !canAllocateParts ? "var(--surface-light)" : "var(--primary)",
                 color: !canAllocateParts ? "var(--info)" : "var(--surface)",
@@ -6730,10 +6703,9 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
             style={{
               background: "var(--surface)",
               border: "1px solid var(--surface-light)",
-              borderRadius: "14px",
+              borderRadius: "var(--control-radius)",
               padding: "16px",
-              boxShadow: "none",
-            }}
+              }}
           >
             <div
               style={{
@@ -6759,7 +6731,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
                   key={stage.id}
                   style={{
                     padding: "10px",
-                    borderRadius: "10px",
+                    borderRadius: "var(--radius-sm)",
                     border: "1px solid rgba(var(--primary-rgb),0.3)",
                     background: stage.count > 0 ? "var(--surface-light)" : "var(--info-surface)",
                   }}
@@ -6786,7 +6758,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
             {vhcParts.length === 0 ? (
               <div style={{
                 padding: "20px",
-                borderRadius: "10px",
+                borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--accent-purple-surface)",
                 backgroundColor: "var(--accent-purple-surface)",
                 fontSize: "14px",
@@ -6803,10 +6775,9 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
                       key={part.id}
                       style={{
                         padding: "16px",
-                        borderRadius: "12px",
+                        borderRadius: "var(--radius-sm)",
                         border: "1px solid var(--accent-purple-surface)",
                         backgroundColor: "var(--surface)",
-                        boxShadow: "none"
                       }}
                     >
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
@@ -6822,7 +6793,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
                         <span
                           style={{
                             padding: "6px 12px",
-                            borderRadius: "999px",
+                            borderRadius: "var(--radius-pill)",
                             fontSize: "12px",
                             fontWeight: "600",
                             color: statusMeta.color,
@@ -6876,7 +6847,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
                         <div style={{
                           marginTop: "12px",
                           padding: "10px 12px",
-                          borderRadius: "8px",
+                          borderRadius: "var(--radius-xs)",
                           backgroundColor: "var(--warning-surface)",
                           color: "var(--danger-dark)",
                           fontSize: "13px"
@@ -6899,7 +6870,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
             {manualRequests.length === 0 ? (
               <div style={{
                 padding: "20px",
-                borderRadius: "10px",
+                borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--accent-purple-surface)",
                 backgroundColor: "var(--accent-purple-surface)",
                 fontSize: "14px",
@@ -6916,10 +6887,9 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
                       key={request.requestId}
                       style={{
                         padding: "16px",
-                        borderRadius: "12px",
+                        borderRadius: "var(--radius-sm)",
                         border: "1px solid var(--accent-purple-surface)",
                         backgroundColor: "var(--surface)",
-                        boxShadow: "none"
                       }}
                     >
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
@@ -6935,7 +6905,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
                         <span
                           style={{
                             padding: "6px 12px",
-                            borderRadius: "999px",
+                            borderRadius: "var(--radius-pill)",
                             fontSize: "12px",
                             fontWeight: "600",
                             color: statusMeta.color,
@@ -6991,7 +6961,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
             padding: "40px",
             textAlign: "center",
             backgroundColor: "var(--info-surface)",
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             border: "1px solid var(--accent-purple-surface)"
           }}>
             <div style={{ fontSize: "48px", marginBottom: "12px" }}>🧰</div>
@@ -7029,9 +6999,8 @@ function NotesTab({ value, onChange, canEdit, saving, meta }) {
       <div style={{
         padding: "20px",
         backgroundColor: "var(--surface)",
-        borderRadius: "12px",
+        borderRadius: "var(--radius-sm)",
         border: "1px solid var(--accent-purple-surface)",
-        boxShadow: "none"
       }}>
         <textarea
           value={value}
@@ -7043,7 +7012,7 @@ function NotesTab({ value, onChange, canEdit, saving, meta }) {
             minHeight: "360px",
             maxHeight: "65vh",
             padding: "18px",
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             border: canEdit ? "1px solid var(--info)" : "1px solid var(--accent-purple-surface)",
             fontSize: "16px",
             lineHeight: 1.7,
@@ -7189,7 +7158,7 @@ function VHCTab({
         disabled={!actionsEnabled}
         style={{
           padding: "8px 16px",
-          borderRadius: "8px",
+          borderRadius: "var(--radius-xs)",
           border: `1px solid ${actionsEnabled ? "var(--primary)" : "var(--grey-accent)"}`,
           backgroundColor: actionsEnabled ? "var(--primary)" : "var(--surface-light)",
           color: actionsEnabled ? "var(--surface)" : "var(--grey-accent)",
@@ -7208,7 +7177,7 @@ function VHCTab({
         disabled={!actionsEnabled || generatingLink}
         style={{
           padding: "8px 12px",
-          borderRadius: "8px",
+          borderRadius: "var(--radius-xs)",
           border: `1px solid ${actionsEnabled ? "var(--info)" : "var(--grey-accent)"}`,
           backgroundColor: actionsEnabled ? (copied ? "var(--success)" : "var(--info)") : "var(--surface-light)",
           color: actionsEnabled ? "var(--surface)" : "var(--grey-accent)",
@@ -7229,7 +7198,7 @@ function VHCTab({
           disabled={!actionsEnabled || sendingVhc}
           style={{
             padding: "8px 12px",
-            borderRadius: "8px",
+            borderRadius: "var(--radius-xs)",
             border: `1px solid ${actionsEnabled ? "var(--success)" : "var(--grey-accent)"}`,
             backgroundColor: actionsEnabled ? "var(--success)" : "var(--surface-light)",
             color: actionsEnabled ? "var(--surface)" : "var(--grey-accent)",
@@ -7395,7 +7364,7 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
       {!thread ? (
         <div style={{
           padding: "28px",
-          borderRadius: "12px",
+          borderRadius: "var(--radius-sm)",
           border: "1px dashed var(--danger-surface)",
           backgroundColor: "var(--danger-surface)",
           textAlign: "center"
@@ -7411,7 +7380,7 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
             onClick={handleOpenMessagingHub}
             style={{
               padding: "10px 18px",
-              borderRadius: "8px",
+              borderRadius: "var(--radius-xs)",
               border: "none",
               backgroundColor: "var(--primary)",
               color: "white",
@@ -7426,11 +7395,10 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
         <>
           <div style={{
             padding: "20px",
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             border: "1px solid var(--accent-purple-surface)",
             backgroundColor: "var(--surface)",
             marginBottom: "16px",
-            boxShadow: "none"
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
@@ -7448,7 +7416,7 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
                   backgroundColor: "var(--primary)",
                   color: "white",
                   border: "none",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   fontSize: "13px",
                   fontWeight: "600",
                   cursor: "pointer"
@@ -7463,7 +7431,7 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
                   key={member.userId || `staff-${index}`}
                   style={{
                     padding: "6px 12px",
-                    borderRadius: "999px",
+                    borderRadius: "var(--radius-pill)",
                     fontSize: "12px",
                     backgroundColor: "var(--info-surface)",
                     color: "var(--info-dark)"
@@ -7476,7 +7444,7 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
                 <span
                   style={{
                     padding: "6px 12px",
-                    borderRadius: "999px",
+                    borderRadius: "var(--radius-pill)",
                     fontSize: "12px",
                     backgroundColor: "var(--info-surface)",
                     color: "var(--accent-purple)"
@@ -7490,11 +7458,10 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
 
           <div style={{
             padding: "16px",
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             border: "1px solid var(--accent-purple-surface)",
             backgroundColor: "var(--surface)",
             marginBottom: "16px",
-            boxShadow: "none"
           }}>
             <h4 style={{ margin: 0, fontSize: "14px", fontWeight: "600", color: "var(--accent-purple)" }}>
               Customer delivery status
@@ -7513,12 +7480,11 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
 
           <div style={{
             padding: "0 0 4px 0",
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             border: "1px solid var(--accent-purple-surface)",
             backgroundColor: "var(--surface)",
             maxHeight: "360px",
             overflowY: "auto",
-            boxShadow: "none"
           }}>
             {messages.length === 0 ? (
               <div style={{ padding: "24px", textAlign: "center", color: "var(--info)", fontSize: "14px" }}>
@@ -7558,7 +7524,7 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
                       <span
                         style={{
                           padding: "4px 10px",
-                          borderRadius: "999px",
+                          borderRadius: "var(--radius-pill)",
                           fontSize: "11px",
                           fontWeight: "600",
                           color: isStaffOnly ? "var(--danger)" : "var(--info-dark)",
@@ -7865,18 +7831,17 @@ function ClockingTab({ jobData, canEdit }) {
 
   const inputControlStyle = {
     width: "100%",
-    borderRadius: "14px",
+    borderRadius: "var(--control-radius)",
     border: "1px solid var(--surface-light)",
     backgroundColor: "var(--surface-light)",
     padding: "12px 14px",
     fontSize: "0.95rem",
     color: "var(--text-primary)",
-    boxShadow: "none",
   };
 
   const infoPillStyle = {
     padding: "8px 14px",
-    borderRadius: "999px",
+    borderRadius: "var(--radius-pill)",
     backgroundColor: "var(--info-surface)",
     color: "var(--info-dark)",
     fontWeight: 600,
@@ -7890,7 +7855,7 @@ function ClockingTab({ jobData, canEdit }) {
     <div
       style={{
         padding: "20px",
-        borderRadius: "12px",
+        borderRadius: "var(--radius-sm)",
         border: "1px solid var(--accent-purple-surface)",
         backgroundColor: "var(--surface)",
         display: "flex",
@@ -7901,7 +7866,7 @@ function ClockingTab({ jobData, canEdit }) {
       {techniciansError && (
         <div
           style={{
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             border: "1px solid var(--danger)",
             backgroundColor: "var(--danger-surface)",
             padding: "12px 14px",
@@ -7916,7 +7881,7 @@ function ClockingTab({ jobData, canEdit }) {
       {disabledMessage && (
         <div
           style={{
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             border: "1px solid var(--warning)",
             backgroundColor: "var(--warning-surface)",
             padding: "12px 14px",
@@ -7931,7 +7896,7 @@ function ClockingTab({ jobData, canEdit }) {
       {formError && (
         <div
           style={{
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             border: "1px solid var(--danger)",
             backgroundColor: "var(--danger-surface)",
             padding: "12px 14px",
@@ -7946,7 +7911,7 @@ function ClockingTab({ jobData, canEdit }) {
       {formSuccess && (
         <div
           style={{
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             border: "1px solid var(--success)",
             backgroundColor: "var(--success-surface)",
             padding: "12px 14px",
@@ -8067,7 +8032,7 @@ function ClockingTab({ jobData, canEdit }) {
               type="submit"
               disabled={!canEdit || submitting}
               style={{
-                borderRadius: "12px",
+                borderRadius: "var(--radius-sm)",
                 border: "none",
                 backgroundColor: "var(--primary)",
                 color: "white",
@@ -8085,7 +8050,7 @@ function ClockingTab({ jobData, canEdit }) {
               onClick={handleReset}
               disabled={submitting}
               style={{
-                borderRadius: "12px",
+                borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--info)",
                 backgroundColor: "transparent",
                 color: "var(--info)",
@@ -8286,7 +8251,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
           style={{
             marginTop: "16px",
             padding: "10px 18px",
-            borderRadius: "10px",
+            borderRadius: "var(--radius-sm)",
             border: "none",
             backgroundColor: "var(--primary)",
             color: "white",
@@ -8304,7 +8269,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
         style={{
           marginTop: "20px",
           padding: "16px",
-          borderRadius: "12px",
+          borderRadius: "var(--radius-sm)",
           border: "1px solid var(--accent-purple-surface)",
           backgroundColor: "var(--warning-surface)",
           display: "flex",
@@ -8331,7 +8296,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
             style={{
               width: "100%",
               padding: "10px 14px",
-              borderRadius: "8px",
+              borderRadius: "var(--radius-xs)",
               border: "1px solid var(--info)",
               fontSize: "14px",
               backgroundColor: "var(--surface)"
@@ -8362,7 +8327,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
             disabled={linking || !selectedJobId}
             style={{
               padding: "10px 18px",
-              borderRadius: "10px",
+              borderRadius: "var(--radius-sm)",
               border: "none",
               backgroundColor: linking ? "var(--accent-purple)" : "var(--info)",
               color: "white",
@@ -8379,7 +8344,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
             disabled={linking}
             style={{
               padding: "10px 18px",
-              borderRadius: "10px",
+              borderRadius: "var(--radius-sm)",
               border: "1px solid var(--info)",
               backgroundColor: "var(--surface)",
               fontWeight: "600",
@@ -8398,7 +8363,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
       <div
         style={{
           padding: "18px",
-          borderRadius: "12px",
+          borderRadius: "var(--radius-sm)",
           border: "1px solid var(--surface-muted)",
           backgroundColor: "var(--surface)",
           marginBottom: "16px"
@@ -8418,7 +8383,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
                 onClick={handleOpenLinkedJob}
                 style={{
                   padding: "8px 14px",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   border: "1px solid var(--info)",
                   backgroundColor: "var(--surface)",
                   cursor: "pointer",
@@ -8440,7 +8405,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
       <div
         style={{
           padding: "18px",
-          borderRadius: "12px",
+          borderRadius: "var(--radius-sm)",
           border: "1px solid var(--surface-muted)",
           backgroundColor: "var(--surface)"
         }}
@@ -8513,7 +8478,7 @@ function DocumentsTab({
             onClick={onManageDocuments}
             style={{
               padding: "10px 18px",
-              borderRadius: "10px",
+              borderRadius: "var(--radius-sm)",
               border: "none",
               backgroundColor: "var(--primary)",
               color: "white",
@@ -8531,7 +8496,7 @@ function DocumentsTab({
         <div
           style={{
             padding: "28px",
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             border: "1px dashed var(--accent-purple-surface)",
             textAlign: "center",
             color: "var(--info)",
@@ -8544,7 +8509,7 @@ function DocumentsTab({
       ) : (
         <div
           style={{
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             border: "1px solid var(--accent-purple-surface)",
             overflow: "hidden"
           }}
@@ -8601,7 +8566,7 @@ function DocumentsTab({
                   onClick={() => handlePreview(doc)}
                   style={{
                     padding: "6px 10px",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     border: "1px solid var(--info)",
                     backgroundColor: "var(--surface)",
                     fontSize: "12px",
@@ -8617,7 +8582,7 @@ function DocumentsTab({
                     onClick={() => typeof onDelete === "function" && onDelete(doc)}
                     style={{
                       padding: "6px 10px",
-                      borderRadius: "8px",
+                      borderRadius: "var(--radius-xs)",
                       border: "1px solid var(--danger-surface)",
                       backgroundColor: "var(--danger-surface)",
                       color: "var(--danger)",

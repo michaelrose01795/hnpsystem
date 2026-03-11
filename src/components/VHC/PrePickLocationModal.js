@@ -110,7 +110,7 @@ export default function PrePickLocationModal({
             style={{
               width: "100%",
               padding: "12px",
-              borderRadius: "8px",
+              borderRadius: "var(--radius-xs)",
               border: `1px solid ${error ? "var(--danger)" : "var(--accent-purple-surface)"}`,
               background: "var(--surface)",
               color: "var(--accent-purple)",
@@ -141,7 +141,7 @@ export default function PrePickLocationModal({
         <div
           style={{
             padding: "12px",
-            borderRadius: "8px",
+            borderRadius: "var(--radius-xs)",
             background: "var(--info-surface)",
             fontSize: "13px",
             color: "var(--info-dark)",

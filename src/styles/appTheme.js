@@ -21,11 +21,12 @@ const palette = {
 };
 
 const radii = {
-  sm: "6px",
-  md: "10px",
-  lg: "16px",
-  xl: "24px",
-  pill: "999px",
+  xs: "var(--radius-xs)",
+  sm: "var(--radius-sm)",
+  md: "var(--radius-md)",
+  lg: "var(--radius-lg)",
+  xl: "var(--radius-xl)",
+  pill: "var(--radius-pill)",
 };
 
 const shadows = {
@@ -190,7 +191,7 @@ export const vhcLayoutStyles = {
     flexDirection: "column",
     gap: "24px",
     padding: "24px",
-    borderRadius: "24px",
+    borderRadius: radii.xl,
     border: `1px solid ${palette.border}`,
     background: "var(--surface)",
     boxShadow: "none",

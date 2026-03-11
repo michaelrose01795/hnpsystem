@@ -52,7 +52,7 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, inval
   const containerStyle = {
     width: "100%",
     background: palette.surface,
-    borderRadius: "24px",
+    borderRadius: "var(--radius-xl)",
     padding: "24px",
     display: "flex",
     flexDirection: "column",
@@ -78,7 +78,7 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, inval
           backgroundPosition: "50% 50%",
           backgroundRepeat: "no-repeat",
           backgroundSize: "118% auto",
-          borderRadius: "16px",
+          borderRadius: "var(--radius-md)",
         }}
       >
         {isFrontActive ? (

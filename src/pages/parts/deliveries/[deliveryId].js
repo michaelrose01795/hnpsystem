@@ -26,15 +26,14 @@ const formatCurrency = (value) => {
 };
 
 const stopCardStyle = {
-  borderRadius: "18px",
+  borderRadius: "var(--radius-md)",
   border: "1px solid var(--surface-light)",
   background: "var(--surface)",
   padding: "18px",
-  boxShadow: "none",
-};
+  };
 
 const buttonStyle = {
-  borderRadius: "12px",
+  borderRadius: "var(--radius-sm)",
   padding: "10px 16px",
   border: "none",
   fontWeight: 600,
@@ -725,12 +724,11 @@ export default function DeliveryRoutePage() {
 
         <section
           style={{
-            borderRadius: "20px",
+            borderRadius: "var(--radius-lg)",
             border: "1px solid var(--surface-light)",
             background: "var(--surface)",
             padding: "22px",
-            boxShadow: "none",
-            display: "flex",
+                        display: "flex",
             flexDirection: "column",
             gap: "10px",
           }}
@@ -777,7 +775,7 @@ export default function DeliveryRoutePage() {
                   onChange={(event) => setMpgDraft(event.target.value)}
                   placeholder="e.g. 28"
                   style={{
-                    borderRadius: "10px",
+                    borderRadius: "var(--radius-sm)",
                     border: "1px solid var(--surface-light)",
                     padding: "8px 10px",
                     width: "100px",
@@ -862,13 +860,12 @@ export default function DeliveryRoutePage() {
               <div
                 style={{
                   background: "var(--surface)",
-                  borderRadius: "18px",
+                  borderRadius: "var(--radius-md)",
                   width: "min(540px, 100%)",
                   maxHeight: "90vh",
                   overflowY: "auto",
                   padding: "24px",
-                  boxShadow: "none",
-                  display: "flex",
+                                    display: "flex",
                   flexDirection: "column",
                   gap: "16px",
                 }}
@@ -903,7 +900,7 @@ export default function DeliveryRoutePage() {
                 value={customerQuery}
                 onChange={(event) => setCustomerQuery(event.target.value)}
                 style={{
-                  borderRadius: "12px",
+                  borderRadius: "var(--radius-sm)",
                   border: "1px solid var(--surface-light)",
                   padding: "10px 12px",
                 }}
@@ -926,7 +923,7 @@ export default function DeliveryRoutePage() {
                             textAlign: "left",
                             background: "var(--danger-surface)",
                             border: "1px solid var(--surface-light)",
-                            borderRadius: "10px",
+                            borderRadius: "var(--radius-sm)",
                             padding: "10px 12px",
                             cursor: "pointer",
                             fontWeight: 600,
@@ -957,7 +954,7 @@ export default function DeliveryRoutePage() {
                 onChange={(event) => setJobNumberInput(event.target.value)}
                 placeholder="e.g. 00001"
                 style={{
-                  borderRadius: "12px",
+                  borderRadius: "var(--radius-sm)",
                   border: "1px solid var(--surface-light)",
                   padding: "10px 12px",
                 }}
@@ -969,7 +966,7 @@ export default function DeliveryRoutePage() {
                 onChange={(event) => setAddressInput(event.target.value)}
                 placeholder="Customer address…"
                 style={{
-                  borderRadius: "12px",
+                  borderRadius: "var(--radius-sm)",
                   border: "1px solid var(--surface-light)",
                   padding: "10px 12px",
                   resize: "vertical",
@@ -982,7 +979,7 @@ export default function DeliveryRoutePage() {
                 onChange={(event) => setPostcodeInput(event.target.value)}
                 placeholder="Postcode"
                 style={{
-                  borderRadius: "12px",
+                  borderRadius: "var(--radius-sm)",
                   border: "1px solid var(--surface-light)",
                   padding: "10px 12px",
                 }}
@@ -1122,7 +1119,7 @@ export default function DeliveryRoutePage() {
                         <span
                           style={{
                             padding: "6px 14px",
-                            borderRadius: "999px",
+                            borderRadius: "var(--radius-pill)",
                             background: statusMeta.background,
                             color: statusMeta.color,
                             fontWeight: 600,
@@ -1135,7 +1132,7 @@ export default function DeliveryRoutePage() {
                           type="button"
                           onClick={() => handleDeleteStop(stop.id)}
                           style={{
-                            borderRadius: "8px",
+                            borderRadius: "var(--radius-xs)",
                             border: "1px solid var(--surface-light)",
                             padding: "6px 10px",
                             background: "var(--surface)",
@@ -1164,7 +1161,7 @@ export default function DeliveryRoutePage() {
                         value={stop.status || "planned"}
                         onChange={(event) => handleStatusUpdate([stop.id], event.target.value)}
                         style={{
-                          borderRadius: "10px",
+                          borderRadius: "var(--radius-sm)",
                           border: "1px solid var(--surface-light)",
                           padding: "8px 12px",
                           fontWeight: 600,
@@ -1183,7 +1180,7 @@ export default function DeliveryRoutePage() {
                         type="button"
                         onClick={() => handleStatusUpdate([stop.id], "delivered")}
                         style={{
-                          borderRadius: "8px",
+                          borderRadius: "var(--radius-xs)",
                           border: "1px solid var(--surface-light)",
                           background: "var(--primary)",
                           color: "var(--surface)",
@@ -1198,7 +1195,7 @@ export default function DeliveryRoutePage() {
                         type="button"
                         onClick={() => startNoteEditing(stop)}
                         style={{
-                          borderRadius: "8px",
+                          borderRadius: "var(--radius-xs)",
                           border: "1px solid var(--surface-light)",
                           background: "var(--surface)",
                           color: "var(--primary-dark)",
@@ -1215,7 +1212,7 @@ export default function DeliveryRoutePage() {
                           onClick={() => handleConfirmDelivery(stop)}
                           disabled={stop.status === "delivered" || actionLoading}
                           style={{
-                            borderRadius: "8px",
+                            borderRadius: "var(--radius-xs)",
                             border: "1px solid var(--accent-purple)",
                             background: "var(--accent-purple)",
                             color: "var(--surface)",
@@ -1270,7 +1267,7 @@ export default function DeliveryRoutePage() {
                           rows={3}
                           placeholder="Capture delivery notes…"
                           style={{
-                            borderRadius: "12px",
+                            borderRadius: "var(--radius-sm)",
                             border: "1px solid var(--surface-light)",
                             padding: "10px",
                             resize: "vertical",

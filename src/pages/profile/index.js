@@ -92,7 +92,7 @@ function SkeletonMetricCard() {
     <div
       style={{
         background: "var(--surface)",
-        borderRadius: "16px",
+        borderRadius: "var(--radius-md)",
         padding: "16px",
         display: "flex",
         flexDirection: "column",
@@ -129,13 +129,13 @@ function ProfileCard({ title, action, children, style, headerStyle }) {
     <div
       style={{
         background: "var(--surface)",
-        borderRadius: "18px",
+        borderRadius: "var(--radius-md)",
         border: "1px solid rgba(var(--accent-purple-rgb), 0.28)",
         padding: "16px",
         display: "flex",
         flexDirection: "column",
         gap: "12px",
-        boxShadow: "0 0 0 1px rgba(124,58,237,0.04), 0 10px 24px rgba(15,23,42,0.08)",
+        boxShadow: "var(--shadow-lg)",
         ...style,
       }}
     >
@@ -165,7 +165,7 @@ function KpiCard({ label, primary, secondary, accentColor }) {
     <div
       style={{
         background: "var(--surface)",
-        borderRadius: "16px",
+        borderRadius: "var(--radius-md)",
         border: "1px solid rgba(var(--accent-purple-rgb), 0.28)",
         padding: "14px",
         display: "flex",
@@ -269,14 +269,14 @@ function LeaveRequestModal({ isOpen, onClose, onSubmit, isSubmitting }) {
       <div
         style={{
           background: "var(--surface)",
-          borderRadius: "16px",
+          borderRadius: "var(--radius-md)",
           padding: "28px",
           width: "100%",
           maxWidth: "460px",
           display: "flex",
           flexDirection: "column",
           gap: "18px",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+          boxShadow: "var(--shadow-lg)",
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -308,8 +308,6 @@ function LeaveRequestModal({ isOpen, onClose, onSubmit, isSubmitting }) {
                 value={form.type}
                 onChange={handleChange}
                 className="leave-modal-field"
-                controlStyle={modalControlStyle}
-                labelStyle={modalLabelStyle}
                 options={[
                   { label: "Holiday", value: "Holiday" },
                   { label: "Sickness", value: "Sickness" },
@@ -325,8 +323,6 @@ function LeaveRequestModal({ isOpen, onClose, onSubmit, isSubmitting }) {
                 value={form.startDate}
                 onChange={handleChange}
                 className="leave-modal-field"
-                controlStyle={modalControlStyle}
-                labelStyle={modalLabelStyle}
                 required
               />
             </div>
@@ -354,8 +350,6 @@ function LeaveRequestModal({ isOpen, onClose, onSubmit, isSubmitting }) {
                 value={form.halfDay}
                 onChange={handleChange}
                 className="leave-modal-field"
-                controlStyle={modalControlStyle}
-                labelStyle={modalLabelStyle}
                 options={[
                   { label: "None", value: "None" },
                   { label: "Half Day (AM)", value: "AM" },
@@ -368,7 +362,7 @@ function LeaveRequestModal({ isOpen, onClose, onSubmit, isSubmitting }) {
           {computedEndDate && form.startDate && (
             <div style={{
               padding: "10px 12px",
-              borderRadius: "10px",
+              borderRadius: "var(--radius-sm)",
               background: "rgba(var(--accent-purple-rgb), 0.08)",
               fontSize: "0.85rem",
               color: "var(--text-secondary)",
@@ -438,7 +432,7 @@ const modalLabelStyle = {
 
 const modalInputStyle = {
   padding: "10px 12px",
-  borderRadius: "10px",
+  borderRadius: "var(--radius-sm)",
   border: "1px solid var(--border, #ccc)",
   background: "var(--background)",
   color: "var(--text-primary)",
@@ -446,20 +440,9 @@ const modalInputStyle = {
   fontWeight: 500,
 };
 
-// Same as modalInputStyle but with extra resets for dropdown/calendar API button controls
-const modalControlStyle = {
-  ...modalInputStyle,
-  minHeight: "unset",
-  height: "auto",
-  boxShadow: "none",
-  backdropFilter: "none",
-  WebkitBackdropFilter: "none",
-  transition: "none",
-};
-
 const modalCancelBtnStyle = {
   padding: "10px 18px",
-  borderRadius: "10px",
+  borderRadius: "var(--radius-sm)",
   border: "1px solid var(--border, #ccc)",
   background: "transparent",
   color: "var(--text-secondary)",
@@ -469,7 +452,7 @@ const modalCancelBtnStyle = {
 
 const modalSubmitBtnStyle = {
   padding: "10px 18px",
-  borderRadius: "10px",
+  borderRadius: "var(--radius-sm)",
   border: "none",
   background: "var(--accent-purple)",
   color: "white",
@@ -492,7 +475,7 @@ function AccentOptionContent({ label, light, dark }) {
         style={{
           width: "12px",
           height: "12px",
-          borderRadius: "999px",
+          borderRadius: "var(--radius-pill)",
           border: "1px solid rgba(var(--text-primary-rgb), 0.2)",
           background: `linear-gradient(90deg, ${light} 0 50%, ${dark} 50% 100%)`,
           flexShrink: 0,
@@ -594,13 +577,13 @@ function OvertimeLogForm({ onSessionSaved = () => {}, userId = null }) {
           disabled={isSaving}
           style={{
             padding: "10px 12px",
-            borderRadius: "10px",
+            borderRadius: "var(--radius-sm)",
             border: "none",
             background: "var(--accent-purple)",
             color: "white",
             fontWeight: 600,
             cursor: "pointer",
-            height: "44px",
+            height: "var(--control-height)",
             width: "100%",
             opacity: isSaving ? 0.7 : 1,
           }}
@@ -778,32 +761,19 @@ export function ProfilePage({
   const themeButtonStyle = useMemo(
     () => ({
       padding: "8px 16px",
-      borderRadius: "999px",
+      borderRadius: "var(--radius-pill)",
       border: `1px solid ${isDark ? "var(--border)" : "var(--primary)"}`,
       background: isDark ? "var(--surface-light)" : "var(--primary)",
       color: isDark ? "var(--text-primary)" : "var(--text-inverse)",
       fontWeight: 600,
       fontSize: "0.82rem",
       transition: "background 0.2s ease, color 0.2s ease",
-      height: "38px",
+      height: "var(--control-height-sm)",
       display: "inline-flex",
       alignItems: "center",
       lineHeight: 1,
     }),
     [isDark]
-  );
-
-  const accentDropdownControlStyle = useMemo(
-    () => ({
-      ...themeButtonStyle,
-      width: "100%",
-      justifyContent: "space-between",
-      padding: "8px 12px",
-      background: isDark ? "var(--surface-light)" : "var(--surface)",
-      color: "var(--text-primary)",
-      border: `1px solid ${isDark ? "var(--border)" : "var(--primary)"}`,
-    }),
-    [isDark, themeButtonStyle]
   );
 
   const aggregatedStats = useMemo(() => {
@@ -1051,9 +1021,6 @@ export function ProfilePage({
                   onValueChange={setAccent}
                   options={accentOptions}
                   className="profile-accent-dropdown"
-                  controlStyle={accentDropdownControlStyle}
-                  valueStyle={{ display: "inline-flex", alignItems: "center", minWidth: 0 }}
-                  optionStyle={{ padding: "10px 12px" }}
                 />
               </div>
               <button
@@ -1072,7 +1039,7 @@ export function ProfilePage({
                 background: "rgba(var(--info-rgb), 0.08)",
                 color: "var(--text-primary)",
                 padding: "10px 14px",
-                borderRadius: "12px",
+                borderRadius: "var(--radius-sm)",
                 fontWeight: 600,
               }}
             >
@@ -1132,7 +1099,7 @@ export function ProfilePage({
               {/* Total Hours (logged) card with 3 sub-columns + grand total */}
               <div style={{
                 background: "var(--surface)",
-                borderRadius: "16px",
+                borderRadius: "var(--radius-md)",
                 border: "1px solid rgba(var(--accent-purple-rgb), 0.28)",
                 overflow: "hidden",
                 display: "flex",
@@ -1191,7 +1158,7 @@ export function ProfilePage({
               {isAdminOrManager && (
                 <div style={{
                   background: "var(--surface)",
-                  borderRadius: "16px",
+                  borderRadius: "var(--radius-md)",
                   border: "1px solid rgba(var(--accent-purple-rgb), 0.28)",
                   overflow: "hidden",
                   display: "flex",
@@ -1406,7 +1373,7 @@ export function ProfilePage({
                     color: "var(--accent-purple)",
                     background: "rgba(var(--accent-purple-rgb), 0.12)",
                     padding: "6px 10px",
-                    borderRadius: "999px",
+                    borderRadius: "var(--radius-pill)",
                   }}
                 >
                   Log Overtime
@@ -1416,7 +1383,7 @@ export function ProfilePage({
               <div
                 style={{
                   background: "rgba(var(--accent-purple-rgb), 0.08)",
-                  borderRadius: "14px",
+                  borderRadius: "var(--radius-md)",
                   padding: "14px",
                   border: "1px solid rgba(var(--accent-purple-rgb), 0.2)",
                 }}
@@ -1461,7 +1428,7 @@ export function ProfilePage({
                           <td style={{ textAlign: "center", padding: "12px 0" }}>{formatTime(entry.clockIn)}</td>
                           <td style={{ textAlign: "center", padding: "12px 0" }}>
                             {entry.clockOut ? formatTime(entry.clockOut) : (
-                              <span style={{ fontSize: "0.72rem", fontWeight: 600, color: "var(--success)", background: "rgba(var(--success-rgb, 67,160,71), 0.12)", padding: "2px 8px", borderRadius: "999px" }}>Active</span>
+                              <span style={{ fontSize: "0.72rem", fontWeight: 600, color: "var(--success)", background: "rgba(var(--success-rgb, 67,160,71), 0.12)", padding: "2px 8px", borderRadius: "var(--radius-pill)" }}>Active</span>
                             )}
                             {nextDay && (
                               <span style={{ fontSize: "0.7rem", color: "var(--warning)", marginLeft: "4px" }}>+1d</span>
@@ -1527,7 +1494,7 @@ export default function ProfilePageWrapper(props) {
 
 const buttonStyleLeaveRequest = {
   padding: "8px 14px",
-  borderRadius: "10px",
+  borderRadius: "var(--radius-sm)",
   border: "1px solid var(--accent-purple)",
   background: "var(--accent-purple)",
   color: "white",
@@ -1538,7 +1505,7 @@ const buttonStyleLeaveRequest = {
 
 const secondaryButtonStyle = {
   padding: "6px 14px",
-  borderRadius: "10px",
+  borderRadius: "var(--radius-sm)",
   border: "1px solid var(--accent-purple)",
   background: "transparent",
   color: "var(--accent-purple)",
@@ -1549,7 +1516,7 @@ const secondaryButtonStyle = {
 
 const primaryButtonStyle = {
   padding: "8px 16px",
-  borderRadius: "10px",
+  borderRadius: "var(--radius-sm)",
   border: "none",
   background: "var(--accent-purple)",
   color: "white",
@@ -1560,7 +1527,7 @@ const primaryButtonStyle = {
 
 const ghostButtonStyle = {
   padding: "8px 16px",
-  borderRadius: "10px",
+  borderRadius: "var(--radius-sm)",
   border: "1px solid var(--border, #ccc)",
   background: "transparent",
   color: "var(--text-secondary)",
@@ -1571,7 +1538,7 @@ const ghostButtonStyle = {
 
 const inputStyle = {
   padding: "10px 12px",
-  borderRadius: "10px",
+  borderRadius: "var(--radius-sm)",
   border: "1px solid var(--border, #ccc)",
   background: "var(--background)",
   color: "var(--text-primary)",

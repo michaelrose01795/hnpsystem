@@ -34,7 +34,7 @@ function LeaveContent() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
+    <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <p style={{ color: "var(--info)", marginTop: "6px" }}>
@@ -105,7 +105,7 @@ function LeaveContent() {
                 key={absence.id}
                 style={{
                   border: "1px solid var(--accent-purple-surface)",
-                  borderRadius: "12px",
+                  borderRadius: "var(--radius-sm)",
                   padding: "12px",
                   display: "flex",
                   flexDirection: "column",
@@ -186,8 +186,8 @@ export default function HrLeaveManagement({ embedded = false } = {}) {
 }
 
 const buttonStylePrimary = {
-  padding: "10px 18px",
-  borderRadius: "10px",
+  padding: "var(--control-padding)",
+  borderRadius: "var(--input-radius)",
   border: "none",
   background: "var(--danger)",
   color: "white",
@@ -196,8 +196,8 @@ const buttonStylePrimary = {
 };
 
 const buttonStyleSecondary = {
-  padding: "8px 14px",
-  borderRadius: "10px",
+  padding: "var(--control-padding)",
+  borderRadius: "var(--input-radius)",
   border: "1px solid var(--warning)",
   background: "var(--surface)",
   color: "var(--danger)",
@@ -206,8 +206,8 @@ const buttonStyleSecondary = {
 };
 
 const buttonStyleGhost = {
-  padding: "8px 14px",
-  borderRadius: "10px",
+  padding: "var(--control-padding)",
+  borderRadius: "var(--input-radius)",
   border: "1px solid transparent",
   background: "transparent",
   color: "var(--danger)",

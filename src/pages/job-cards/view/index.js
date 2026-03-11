@@ -118,7 +118,7 @@ const renderVhcBadge = (job) => {
           style={{
             width: "10px",
             height: "10px",
-            borderRadius: "50%",
+            borderRadius: "var(--radius-full)",
             backgroundColor: "var(--info)",
           }}
         />
@@ -141,7 +141,7 @@ const renderVhcBadge = (job) => {
         style={{
           width: "10px",
           height: "10px",
-          borderRadius: "50%",
+          borderRadius: "var(--radius-full)",
     backgroundColor: completed ? "var(--success)" : "var(--primary)",
         }}
       />
@@ -564,66 +564,11 @@ export default function ViewJobCards() {
   return (
     <Layout>
       <style>{`
-        .job-cards-filter .dropdown-api {
-          width: 100%;
-          gap: 0;
-        }
-
         .job-cards-filter.dropdown-api {
-          height: 100%;
-        }
-
-        .job-cards-filter .dropdown-api__control {
-          min-height: 100%;
-          height: 100%;
-          padding: 10px 14px;
-          border-radius: 14px;
-          border: 1px solid var(--search-surface-muted);
-          background: var(--search-surface);
-          color: var(--search-text);
-          font-size: 14px;
-          box-shadow: none;
-        }
-
-        .job-cards-filter.dropdown-api.is-open .dropdown-api__control,
-        .job-cards-filter .dropdown-api__control:focus-visible {
-          border: 1px solid var(--search-surface-muted);
-          background: var(--search-surface);
-          outline: none;
-        }
-
-        .job-cards-filter .dropdown-api__value {
-          color: var(--search-text);
-          font-size: 14px;
-          font-weight: 500;
-        }
-
-        .job-cards-filter .dropdown-api__chevron {
-          color: var(--search-text);
+          width: 100%;
         }
       `}</style>
-      {
-        // bottom-layer
-      }
-      <div
-        style={{
-          minHeight: "100vh",
-          width: "100%",
-          padding: "16px 12px 24px",
-          background: "var(--surface)",
-          display: "flex",
-          justifyContent: "center",
-        }}
-      >
-        <div
-          style={{
-            width: "100%",
-            maxWidth: "100%",
-            display: "flex",
-            flexDirection: "column",
-            gap: "16px",
-          }}
-        >
+      <div className="app-page-stack">
         {
           // middle-layer
         }
@@ -638,7 +583,7 @@ export default function ViewJobCards() {
           >
             <div
               style={{
-                borderRadius: "999px",
+                borderRadius: "var(--radius-pill)",
                 border: "1px solid var(--surface-light)",
                 background: "var(--surface)",
                 padding: "6px",
@@ -662,7 +607,7 @@ export default function ViewJobCards() {
                     onClick={() => setActiveTab(tab.value)}
                     style={{
                       flex: "0 0 auto",
-                      borderRadius: "999px",
+                      borderRadius: "var(--radius-pill)",
                       border: "1px solid transparent",
                       padding: "10px 20px",
                       fontSize: "0.9rem",
@@ -690,10 +635,9 @@ export default function ViewJobCards() {
               display: "flex",
               flexDirection: "column",
             background: "var(--surface)",
-            borderRadius: "20px",
+            borderRadius: "var(--radius-lg)",
             border: "1px solid var(--info-surface)",
-            boxShadow: "none",
-            padding: "16px",
+            padding: "var(--section-card-padding)",
             minHeight: "0",
           }}
         >
@@ -717,10 +661,9 @@ export default function ViewJobCards() {
                   alignItems: "center",
                   gap: "10px",
                   padding: "10px 14px",
-                  borderRadius: "14px",
+                  borderRadius: "var(--radius-md)",
                   border: "1px solid var(--search-surface-muted)",
                   background: "var(--search-surface)",
-                  boxShadow: "none",
                   color: "var(--search-text)",
                 }}
               >
@@ -789,7 +732,7 @@ export default function ViewJobCards() {
               style={{
                 flex: 1,
                 overflow: "hidden",
-                borderRadius: "16px",
+                borderRadius: "var(--radius-md)",
                 border: "1px solid var(--info-surface)",
                 background: "var(--surface)",
                 padding: "12px",
@@ -811,7 +754,7 @@ export default function ViewJobCards() {
                       textAlign: "center",
                       color: "var(--info)",
                       border: "1px dashed var(--accent-purple-surface)",
-                      borderRadius: "12px",
+                      borderRadius: "var(--radius-sm)",
                       background: "var(--info-surface)",
                     }}
                   >
@@ -824,7 +767,7 @@ export default function ViewJobCards() {
                       textAlign: "center",
                       color: "var(--info)",
                       border: "1px dashed var(--accent-purple-surface)",
-                      borderRadius: "12px",
+                      borderRadius: "var(--radius-sm)",
                       background: "var(--info-surface)",
                     }}
                   >
@@ -870,12 +813,11 @@ export default function ViewJobCards() {
                 onClick={(e) => e.stopPropagation()}
                 style={{
                   ...popupCardStyles,
-                  padding: "32px",
+                  padding: "var(--page-card-padding)",
                   maxWidth: "700px",
                   width: "90%",
                   maxHeight: "85vh",
                   overflowY: "auto",
-                  boxShadow: "none",
                 }}
               >
               {/* Popup Header */}
@@ -911,7 +853,7 @@ export default function ViewJobCards() {
                               ? "var(--info)"
                               : "var(--success-dark)",
                           padding: "8px 16px",
-                          borderRadius: "8px",
+                          borderRadius: "var(--radius-xs)",
                           fontSize: "12px",
                           fontWeight: "600",
                         }}
@@ -924,7 +866,7 @@ export default function ViewJobCards() {
                         backgroundColor: popupJob.jobSource === "Warranty" ? "var(--warning)" : "var(--success)",
                         color: "white",
                         padding: "8px 16px",
-                        borderRadius: "8px",
+                        borderRadius: "var(--radius-xs)",
                         fontSize: "12px",
                         fontWeight: "600",
                       }}
@@ -938,7 +880,7 @@ export default function ViewJobCards() {
                           backgroundColor: "var(--primary-surface)",
                           color: "var(--primary)",
                           padding: "8px 16px",
-                          borderRadius: "8px",
+                          borderRadius: "var(--radius-xs)",
                           fontSize: "12px",
                           fontWeight: "600",
                         }}
@@ -951,11 +893,7 @@ export default function ViewJobCards() {
               </div>
 
               {/* ✅ Job Details - Enhanced */}
-              <div style={{ 
-                background: "var(--surface)",
-                border: "1px solid var(--surface-light)",
-                borderRadius: "12px",
-                padding: "16px",
+              <div className="app-section-card" style={{
                 marginBottom: "20px"
               }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
@@ -1002,7 +940,7 @@ export default function ViewJobCards() {
                             backgroundColor: "var(--surface-light)",
                             color: "var(--text-secondary)",
                             padding: "4px 10px",
-                            borderRadius: "6px",
+                            borderRadius: "var(--radius-xs)",
                             fontSize: "12px",
                             fontWeight: "600"
                           }}
@@ -1028,7 +966,7 @@ export default function ViewJobCards() {
                               marginLeft: "8px", 
                               backgroundColor: "var(--warning-surface)", 
                               padding: "2px 6px", 
-                              borderRadius: "4px",
+                              borderRadius: "var(--radius-xs)",
                               fontSize: "11px"
                             }}>
                               {req.paymentType}
@@ -1057,7 +995,7 @@ export default function ViewJobCards() {
                   backgroundColor: "var(--info-surface)",
                   color: "var(--info-dark)",
                   padding: "8px 16px",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   fontSize: "13px",
                   fontWeight: "600"
                 }}>
@@ -1067,7 +1005,7 @@ export default function ViewJobCards() {
                   backgroundColor: "var(--warning-surface)",
                   color: "var(--accent-purple)",
                   padding: "8px 16px",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   fontSize: "13px",
                   fontWeight: "600"
                 }}>
@@ -1077,7 +1015,7 @@ export default function ViewJobCards() {
                   backgroundColor: "var(--success-surface)",
                   color: "var(--success-dark)",
                   padding: "8px 16px",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   fontSize: "13px",
                   fontWeight: "600"
                 }}>
@@ -1089,7 +1027,7 @@ export default function ViewJobCards() {
                     backgroundColor: "var(--accent-purple-surface)",
                     color: "var(--accent-purple)",
                     padding: "8px 16px",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     fontSize: "13px",
                     fontWeight: "600"
                   }}>
@@ -1102,7 +1040,7 @@ export default function ViewJobCards() {
                     backgroundColor: "var(--surface-light)",
                     color: "var(--accent-purple)",
                     padding: "8px 16px",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     fontSize: "13px",
                     fontWeight: "600"
                   }}>
@@ -1123,7 +1061,7 @@ export default function ViewJobCards() {
                     width: "100%",
                     padding: "10px 12px",
                     fontSize: "14px",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     border: "1px solid var(--surface-light)",
                     backgroundColor: "var(--surface)",
                     cursor: "pointer",
@@ -1147,7 +1085,7 @@ export default function ViewJobCards() {
                     backgroundColor: "var(--primary)",
                     color: "white",
                     border: "none",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     cursor: "pointer",
                     fontSize: "14px",
                     fontWeight: "600",
@@ -1167,7 +1105,7 @@ export default function ViewJobCards() {
                     backgroundColor: "var(--primary)",
                     color: "white",
                     border: "none",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     cursor: "pointer",
                     fontSize: "14px",
                     fontWeight: "600",
@@ -1187,7 +1125,7 @@ export default function ViewJobCards() {
                     backgroundColor: "var(--info)",
                     color: "white",
                     border: "none",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     cursor: "pointer",
                     fontSize: "14px",
                     fontWeight: "600",
@@ -1210,7 +1148,7 @@ export default function ViewJobCards() {
                   backgroundColor: "var(--surface)",
                   color: "var(--grey-accent)",
                   border: "none",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   cursor: "pointer",
                   fontSize: "14px",
                   fontWeight: "600",
@@ -1226,8 +1164,7 @@ export default function ViewJobCards() {
             </>
         )}
       </div>
-    </div>
-  </Layout>
+    </Layout>
   );
 }
 
@@ -1269,9 +1206,8 @@ const JobListCard = ({ job, onNavigate, onQuickView, index = 0 }) => {
       style={{
         border: "1px solid var(--surface-light)",
         padding: "14px 16px",
-        borderRadius: "12px",
+        borderRadius: "var(--radius-sm)",
         backgroundColor: rowBackground,
-        boxShadow: "none",
         display: "flex",
         flexDirection: "column",
         gap: "10px",
@@ -1310,7 +1246,7 @@ const JobListCard = ({ job, onNavigate, onQuickView, index = 0 }) => {
               style={{
                 fontSize: "10px",
                 padding: "2px 8px",
-                borderRadius: "4px",
+                borderRadius: "var(--radius-xs)",
                 backgroundColor: "var(--primary-surface)",
                 color: "var(--primary)",
                 fontWeight: "600",
@@ -1335,7 +1271,7 @@ const JobListCard = ({ job, onNavigate, onQuickView, index = 0 }) => {
           <span
             style={{
               padding: "4px 10px",
-              borderRadius: "999px",
+              borderRadius: "var(--radius-pill)",
               fontWeight: 600,
               fontSize: "12px",
               textTransform: "capitalize",
@@ -1347,7 +1283,7 @@ const JobListCard = ({ job, onNavigate, onQuickView, index = 0 }) => {
           <span
             style={{
               padding: "4px 10px",
-              borderRadius: "999px",
+              borderRadius: "var(--radius-pill)",
               backgroundColor: "var(--accent-purple-surface)",
               color: "var(--accent-purple)",
               fontWeight: 600,
@@ -1400,7 +1336,7 @@ const JobListCard = ({ job, onNavigate, onQuickView, index = 0 }) => {
         <div
           style={{
             padding: "8px 10px",
-            borderRadius: "8px",
+            borderRadius: "var(--radius-xs)",
             backgroundColor: "var(--info-surface)",
             border: "1px solid var(--surface-light)",
           }}
@@ -1437,9 +1373,8 @@ const OrderListCard = ({ order, onNavigate, index = 0 }) => {
       style={{
         border: "1px solid var(--surface-light)",
         padding: "14px 16px",
-        borderRadius: "12px",
+        borderRadius: "var(--radius-sm)",
         backgroundColor: rowBackground,
-        boxShadow: "none",
         display: "flex",
         flexDirection: "column",
         gap: "10px",
@@ -1483,7 +1418,7 @@ const OrderListCard = ({ order, onNavigate, index = 0 }) => {
         <span
           style={{
             padding: "4px 10px",
-            borderRadius: "999px",
+            borderRadius: "var(--radius-pill)",
             backgroundColor: "var(--accent-purple-surface)",
             color: "var(--accent-purple)",
             fontWeight: 600,
@@ -1539,7 +1474,7 @@ const OrderListCard = ({ order, onNavigate, index = 0 }) => {
         <div
           style={{
             padding: "8px 10px",
-            borderRadius: "8px",
+            borderRadius: "var(--radius-xs)",
             backgroundColor: "var(--info-surface)",
             border: "1px solid var(--surface-light)",
           }}

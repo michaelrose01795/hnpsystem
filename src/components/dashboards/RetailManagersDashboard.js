@@ -20,8 +20,7 @@ const LinearTrend = ({ data, accent = "var(--primary)" }) => (
           style={{
             height: `${Math.max(8, point.jobs * 3)}px`,
             background: accent,
-            borderRadius: "8px 8px 4px 4px",
-            boxShadow: "none",
+            borderRadius: "var(--radius-xs) var(--radius-xs) 4px 4px",
           }}
         />
         <small style={{ color: "var(--info)" }}>{point.label}</small>
@@ -337,16 +336,11 @@ export default function RetailManagersDashboard({ user }) {
   }, [snapshot.metrics, snapshot.redJobs.length, usersByRole]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       <header
+        className="app-section-card"
         style={{
-          background: "var(--surface)",
-          borderRadius: "18px",
-          padding: "24px",
-          display: "flex",
-          flexDirection: "column",
           gap: "8px",
-          border: "1px solid var(--surface-light)",
         }}
       >
         <span style={{ textTransform: "uppercase", letterSpacing: "0.1em", fontSize: "0.8rem", color: "var(--primary-dark)" }}>
@@ -394,7 +388,7 @@ export default function RetailManagersDashboard({ user }) {
               key={panel.role}
               style={{
                 border: "1px solid var(--surface-light)",
-                borderRadius: "16px",
+                borderRadius: "var(--radius-md)",
                 padding: "18px",
                 display: "flex",
                 flexDirection: "column",
@@ -461,7 +455,7 @@ export default function RetailManagersDashboard({ user }) {
                 <div
                   style={{
                     height: "10px",
-                    borderRadius: "999px",
+                    borderRadius: "var(--radius-pill)",
                     background: "var(--surface-light)",
                     overflow: "hidden",
                   }}
@@ -492,7 +486,7 @@ export default function RetailManagersDashboard({ user }) {
                 key={job.jobNumber}
                 style={{
                   border: "1px solid var(--danger)",
-                  borderRadius: "12px",
+                  borderRadius: "var(--radius-sm)",
                   padding: "12px",
                   background: "var(--surface-light)",
                 }}

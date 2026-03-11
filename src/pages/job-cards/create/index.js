@@ -1372,7 +1372,7 @@ export default function CreateJobCardPage() {
             <span
               style={{
                 padding: "8px 16px",
-                borderRadius: "999px",
+                borderRadius: "var(--radius-pill)",
                 backgroundColor: jobSource === "Warranty" ? "var(--warning-surface)" : "var(--success-surface)",
                 color: jobSource === "Warranty" ? "var(--danger)" : "var(--success-dark)",
                 fontSize: "13px",
@@ -1388,11 +1388,10 @@ export default function CreateJobCardPage() {
                 backgroundColor: "var(--primary)",
                 color: "white",
                 border: "none",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
                 fontWeight: "600",
                 fontSize: "15px",
                 cursor: "pointer",
-                boxShadow: "none",
                 transition: "all 0.2s",
               }}
               onMouseEnter={(e) => {
@@ -1419,7 +1418,7 @@ export default function CreateJobCardPage() {
               marginBottom: "12px",
               padding: "8px 12px",
               backgroundColor: "var(--surface)",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               border: "1px solid var(--surface-light)",
             }}
           >
@@ -1432,7 +1431,7 @@ export default function CreateJobCardPage() {
                   alignItems: "center",
                   gap: "8px",
                   padding: "8px 16px",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   backgroundColor: activeTabIndex === index ? "var(--primary)" : "var(--surface-light)",
                   color: activeTabIndex === index ? "white" : "var(--text-primary)",
                   cursor: "pointer",
@@ -1451,7 +1450,7 @@ export default function CreateJobCardPage() {
                     style={{
                       width: "18px",
                       height: "18px",
-                      borderRadius: "50%",
+                      borderRadius: "var(--radius-full)",
                       border: "none",
                       backgroundColor: activeTabIndex === index ? "rgba(255,255,255,0.3)" : "var(--text-secondary)",
                       color: activeTabIndex === index ? "white" : "var(--surface)",
@@ -1472,9 +1471,9 @@ export default function CreateJobCardPage() {
             <button
               onClick={addNewJobTab}
               style={{
-                width: "36px",
-                height: "36px",
-                borderRadius: "8px",
+                width: "var(--control-height-xs)",
+                height: "var(--control-height-xs)",
+                borderRadius: "var(--radius-xs)",
                 border: "2px dashed var(--primary)",
                 backgroundColor: "transparent",
                 color: "var(--primary)",
@@ -1508,7 +1507,7 @@ export default function CreateJobCardPage() {
             style={{
               padding: "12px 16px",
               backgroundColor: "var(--primary-surface)",
-              borderRadius: "8px",
+              borderRadius: "var(--radius-xs)",
               marginBottom: "8px",
               display: "flex",
               alignItems: "center",
@@ -1533,7 +1532,7 @@ export default function CreateJobCardPage() {
                 backgroundColor: "var(--primary)",
                 color: "white",
                 border: "none",
-                borderRadius: "6px",
+                borderRadius: "var(--radius-xs)",
                 cursor: "pointer",
               }}
             >
@@ -1558,9 +1557,8 @@ export default function CreateJobCardPage() {
               style={{
                 flex: 1,
                 minWidth: 0,
-                padding: "20px",
-                borderRadius: "16px",
-                boxShadow: "none",
+                padding: "var(--section-card-padding)",
+                borderRadius: "var(--radius-md)",
                 ...sectionCardStyle,
                 display: "flex",
                 flexDirection: "column",
@@ -1601,7 +1599,7 @@ export default function CreateJobCardPage() {
                     gap: "8px",
                     flexWrap: "wrap",
                     padding: "6px",
-                    borderRadius: "999px",
+                    borderRadius: "var(--radius-pill)",
                     backgroundColor: "var(--surface-light)",
                     border: "1px solid var(--surface-light)",
                     width: "fit-content",
@@ -1616,7 +1614,7 @@ export default function CreateJobCardPage() {
                         gap: "8px",
                         cursor: "pointer",
                         padding: "8px 14px",
-                        borderRadius: "999px",
+                        borderRadius: "var(--radius-pill)",
                         border: waitingStatus === status ? "1px solid var(--primary)" : "1px solid transparent",
                         backgroundColor: waitingStatus === status ? "var(--surface)" : "transparent",
                         color: waitingStatus === status ? "var(--text-primary)" : "var(--text-secondary)",
@@ -1655,7 +1653,7 @@ export default function CreateJobCardPage() {
                     display: "flex",
                     gap: "8px",
                     padding: "6px",
-                    borderRadius: "999px",
+                    borderRadius: "var(--radius-pill)",
                     backgroundColor: "var(--surface-light)",
                     border: "1px solid var(--surface-light)",
                     width: "fit-content",
@@ -1670,7 +1668,7 @@ export default function CreateJobCardPage() {
                         gap: "8px",
                         cursor: "pointer",
                         padding: "8px 16px",
-                        borderRadius: "999px",
+                        borderRadius: "var(--radius-pill)",
                         border: jobSource === src ? "1px solid var(--primary)" : "1px solid transparent",
                         backgroundColor: jobSource === src ? "var(--surface)" : "transparent",
                         color: jobSource === src ? "var(--text-primary)" : "var(--text-secondary)",
@@ -1709,7 +1707,7 @@ export default function CreateJobCardPage() {
                     display: "flex",
                     gap: "8px",
                     padding: "6px",
-                    borderRadius: "999px",
+                    borderRadius: "var(--radius-pill)",
                     backgroundColor: "var(--surface-light)",
                     border: "1px solid var(--surface-light)",
                     width: "fit-content",
@@ -1724,7 +1722,7 @@ export default function CreateJobCardPage() {
                         gap: "8px",
                         cursor: "pointer",
                         padding: "8px 16px",
-                        borderRadius: "999px",
+                        borderRadius: "var(--radius-pill)",
                         border: jobDivision === division ? "1px solid var(--primary)" : "1px solid transparent",
                         backgroundColor: jobDivision === division ? "var(--surface)" : "transparent",
                         color: jobDivision === division ? "var(--text-primary)" : "var(--text-secondary)",
@@ -1769,7 +1767,7 @@ export default function CreateJobCardPage() {
                           key={`${detection.requestIndex}-${index}`}
                           style={{
                             border: "1px solid var(--surface-light)",
-                            borderRadius: "12px",
+                            borderRadius: "var(--radius-sm)",
                             padding: "10px 12px",
                             backgroundColor: "var(--surface-light)",
                             display: "flex",
@@ -1800,9 +1798,8 @@ export default function CreateJobCardPage() {
               style={{
                 flex: 1,
                 minWidth: 0,
-                padding: "20px",
-                borderRadius: "16px",
-                boxShadow: "none",
+                padding: "var(--section-card-padding)",
+                borderRadius: "var(--radius-md)",
                 ...sectionCardStyle,
                 display: "flex",
                 flexDirection: "column",
@@ -1831,7 +1828,7 @@ export default function CreateJobCardPage() {
                       fontSize: "11px",
                       fontWeight: "500",
                       padding: "2px 8px",
-                      borderRadius: "4px",
+                      borderRadius: "var(--radius-xs)",
                       backgroundColor: "var(--primary-surface)",
                       color: "var(--primary)",
                     }}
@@ -1846,7 +1843,7 @@ export default function CreateJobCardPage() {
                   style={{
                     padding: "12px 16px",
                     marginBottom: "16px",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     backgroundColor: vehicleNotification.type === "success" ? "var(--success)" : "var(--danger-surface)",
                     border: `1px solid ${vehicleNotification.type === "success" ? "var(--success)" : "var(--danger)"}`,
                     color: vehicleNotification.type === "success" ? "var(--success-dark)" : "var(--danger-dark)",
@@ -1896,7 +1893,7 @@ export default function CreateJobCardPage() {
                       flex: 1,
                       padding: "10px 12px",
                       border: "1px solid var(--surface-light)",
-                      borderRadius: "8px",
+                      borderRadius: "var(--radius-xs)",
                       fontSize: "14px",
                       textTransform: "uppercase",
                       outline: "none",
@@ -1917,7 +1914,7 @@ export default function CreateJobCardPage() {
                       backgroundColor: isLoadingVehicle ? "var(--background)" : "var(--primary)",
                       color: "white",
                       border: "none",
-                      borderRadius: "8px",
+                      borderRadius: "var(--radius-xs)",
                       fontWeight: "600",
                       fontSize: "13px",
                       cursor: isLoadingVehicle ? "not-allowed" : "pointer",
@@ -1943,7 +1940,7 @@ export default function CreateJobCardPage() {
                     marginBottom: "12px",
                     padding: "10px 12px",
                     backgroundColor: "var(--danger-surface)",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     border: "1px solid var(--danger)",
                   }}
                 >
@@ -1976,7 +1973,7 @@ export default function CreateJobCardPage() {
                         style={{
                           padding: "10px 12px",
                           backgroundColor: "var(--surface-light)",
-                          borderRadius: "8px",
+                          borderRadius: "var(--radius-xs)",
                           fontSize: "14px",
                           color: vehicle[key] ? "var(--text-primary)" : "var(--grey-accent-light)",
                         }}
@@ -2008,7 +2005,7 @@ export default function CreateJobCardPage() {
                       width: "100%",
                       padding: "10px 12px",
                       border: "1px solid var(--surface-light)",
-                      borderRadius: "8px",
+                      borderRadius: "var(--radius-xs)",
                       fontSize: "14px",
                       outline: "none",
                       transition: "border-color 0.2s",
@@ -2029,9 +2026,8 @@ export default function CreateJobCardPage() {
               style={{
                 flex: 1,
                 minWidth: 0,
-                padding: "20px",
-                borderRadius: "16px",
-                boxShadow: "none",
+                padding: "var(--section-card-padding)",
+                borderRadius: "var(--radius-md)",
                 ...sectionCardStyle,
                 display: "flex",
                 flexDirection: "column",
@@ -2059,7 +2055,7 @@ export default function CreateJobCardPage() {
                       fontSize: "11px",
                       fontWeight: "500",
                       padding: "2px 8px",
-                      borderRadius: "4px",
+                      borderRadius: "var(--radius-xs)",
                       backgroundColor: "var(--primary-surface)",
                       color: "var(--primary)",
                     }}
@@ -2074,7 +2070,7 @@ export default function CreateJobCardPage() {
                   style={{
                     padding: "12px 16px",
                     marginBottom: "16px",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     backgroundColor: customerNotification.type === "success" ? "var(--success)" : "var(--danger-surface)",
                     border: `1px solid ${customerNotification.type === "success" ? "var(--success)" : "var(--danger)"}`,
                     color: customerNotification.type === "success" ? "var(--success-dark)" : "var(--danger-dark)",
@@ -2142,7 +2138,7 @@ export default function CreateJobCardPage() {
                             width: "100%",
                             padding: "10px 12px",
                             border: "1px solid var(--surface-light)",
-                            borderRadius: "8px",
+                            borderRadius: "var(--radius-xs)",
                             fontSize: "14px",
                             outline: "none",
                             transition: "border-color 0.2s",
@@ -2165,7 +2161,7 @@ export default function CreateJobCardPage() {
                             gap: "8px",
                             flexWrap: "wrap",
                             padding: "6px",
-                            borderRadius: "999px",
+                            borderRadius: "var(--radius-pill)",
                             backgroundColor: "var(--surface-light)",
                             border: "1px solid var(--surface-light)",
                             width: "fit-content",
@@ -2181,7 +2177,7 @@ export default function CreateJobCardPage() {
                                 onClick={() => toggleContactPreference(pref)}
                                 style={{
                                   padding: "8px 14px",
-                                  borderRadius: "999px",
+                                  borderRadius: "var(--radius-pill)",
                                   border: active ? "1px solid var(--primary)" : "1px solid transparent",
                                   backgroundColor: active ? "var(--surface)" : "transparent",
                                   color: active ? "var(--text-primary)" : "var(--text-secondary)",
@@ -2209,7 +2205,7 @@ export default function CreateJobCardPage() {
                             width: "100%",
                             padding: "10px 12px",
                             border: "1px solid var(--surface-light)",
-                            borderRadius: "8px",
+                            borderRadius: "var(--radius-xs)",
                             fontSize: "14px",
                             outline: "none",
                             transition: "border-color 0.2s",
@@ -2240,7 +2236,7 @@ export default function CreateJobCardPage() {
                             backgroundColor: "var(--primary)",
                             color: "var(--text-inverse)",
                             border: "none",
-                            borderRadius: "8px",
+                            borderRadius: "var(--radius-xs)",
                             cursor: isSavingCustomer ? "not-allowed" : "pointer",
                             fontWeight: "600",
                             transition: "all 0.2s",
@@ -2267,7 +2263,7 @@ export default function CreateJobCardPage() {
                             backgroundColor: "var(--surface-light)",
                             color: "var(--text-primary)",
                             border: "1px solid var(--surface-light)",
-                            borderRadius: "8px",
+                            borderRadius: "var(--radius-xs)",
                             cursor: isSavingCustomer ? "not-allowed" : "pointer",
                             fontWeight: "600",
                             transition: "all 0.2s",
@@ -2296,7 +2292,7 @@ export default function CreateJobCardPage() {
                           backgroundColor: "var(--primary)",
                           color: "var(--text-inverse)",
                           border: "none",
-                          borderRadius: "8px",
+                          borderRadius: "var(--radius-xs)",
                           cursor: "pointer",
                           fontWeight: "600",
                           transition: "all 0.2s",
@@ -2325,7 +2321,7 @@ export default function CreateJobCardPage() {
                       backgroundColor: "var(--surface-light)",
                       color: "var(--text-primary)",
                       border: "1px solid var(--surface-light)",
-                      borderRadius: "8px",
+                      borderRadius: "var(--radius-xs)",
                       cursor: isSavingCustomer ? "not-allowed" : "pointer",
                       fontWeight: "600",
                       transition: "all 0.2s",
@@ -2356,7 +2352,7 @@ export default function CreateJobCardPage() {
                       backgroundColor: "var(--primary)",
                       color: "var(--text-inverse)",
                       border: "none",
-                      borderRadius: "8px",
+                      borderRadius: "var(--radius-xs)",
                       cursor: "pointer",
                       fontWeight: "600",
                       transition: "all 0.2s",
@@ -2380,7 +2376,7 @@ export default function CreateJobCardPage() {
                       backgroundColor: "var(--surface-light)",
                       color: "var(--text-primary)",
                       border: "1px solid var(--surface-light)",
-                      borderRadius: "8px",
+                      borderRadius: "var(--radius-xs)",
                       cursor: "pointer",
                       fontWeight: "600",
                       transition: "all 0.2s",
@@ -2402,9 +2398,8 @@ export default function CreateJobCardPage() {
           {/* ✅ Job Requests Section - Full Width */}
           <div
             style={{
-              padding: "20px",
-              borderRadius: "16px",
-              boxShadow: "none",
+              padding: "var(--section-card-padding)",
+              borderRadius: "var(--radius-md)",
               ...sectionCardStyle,
             }}
           >
@@ -2425,7 +2420,7 @@ export default function CreateJobCardPage() {
                   key={i}
                   style={{
                     border: "1px solid var(--surface-light)",
-                    borderRadius: "12px",
+                    borderRadius: "var(--radius-sm)",
                     marginBottom: "12px",
                     padding: "16px",
                     backgroundColor: "var(--surface-light)",
@@ -2452,7 +2447,7 @@ export default function CreateJobCardPage() {
                         minWidth: "250px",
                         padding: "10px 12px",
                         border: "1px solid var(--surface-light)",
-                        borderRadius: "8px",
+                        borderRadius: "var(--radius-xs)",
                         fontSize: "14px",
                         outline: "none",
                         transition: "border-color 0.2s",
@@ -2477,7 +2472,7 @@ export default function CreateJobCardPage() {
                           width: "90px",
                           padding: "10px 12px",
                           border: "1px solid var(--surface-light)",
-                          borderRadius: "8px",
+                          borderRadius: "var(--radius-xs)",
                           fontSize: "14px",
                           outline: "none",
                           transition: "border-color 0.2s",
@@ -2513,7 +2508,7 @@ export default function CreateJobCardPage() {
                         backgroundColor: "var(--danger)",
                         color: "white",
                         border: "none",
-                        borderRadius: "8px",
+                        borderRadius: "var(--radius-xs)",
                         padding: "10px 16px",
                         cursor: "pointer",
                         fontWeight: "600",
@@ -2539,7 +2534,7 @@ export default function CreateJobCardPage() {
                 backgroundColor: "var(--primary)",
                 color: "white",
                 border: "none",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
                 padding: "12px 20px",
                 cursor: "pointer",
                 fontWeight: "600",
@@ -2562,9 +2557,8 @@ export default function CreateJobCardPage() {
             <div
               style={{
                 flex: 1,
-                padding: "16px",
-                borderRadius: "16px",
-                boxShadow: "none",
+                padding: "var(--section-card-padding)",
+                borderRadius: "var(--radius-md)",
                 ...sectionCardStyle,
               }}
             >
@@ -2584,7 +2578,7 @@ export default function CreateJobCardPage() {
                     display: "flex",
                     gap: "8px",
                     padding: "6px",
-                    borderRadius: "999px",
+                    borderRadius: "var(--radius-pill)",
                     backgroundColor: "var(--surface-light)",
                     border: "1px solid var(--surface-light)",
                     width: "fit-content",
@@ -2597,7 +2591,7 @@ export default function CreateJobCardPage() {
                       type="button"
                       style={{
                         padding: "6px 14px",
-                        borderRadius: "999px",
+                        borderRadius: "var(--radius-pill)",
                         border: cosmeticDamagePresent === choice ? "1px solid var(--primary)" : "1px solid transparent",
                         backgroundColor: cosmeticDamagePresent === choice ? "var(--surface)" : "transparent",
                         color: cosmeticDamagePresent === choice ? "var(--text-primary)" : "var(--text-secondary)",
@@ -2623,7 +2617,7 @@ export default function CreateJobCardPage() {
                     height: "80px",
                     padding: "10px 12px",
                     border: "1px solid var(--surface-light)",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     resize: "none",
                     fontFamily: "inherit",
                     fontSize: "13px",
@@ -2644,9 +2638,8 @@ export default function CreateJobCardPage() {
             <div
               style={{
                 flex: 1,
-                padding: "16px",
-                borderRadius: "16px",
-                boxShadow: "none",
+                padding: "var(--section-card-padding)",
+                borderRadius: "var(--radius-md)",
                 ...sectionCardStyle,
                 display: "flex",
                 flexDirection: "column",
@@ -2669,7 +2662,7 @@ export default function CreateJobCardPage() {
                     display: "flex",
                     gap: "8px",
                     padding: "6px",
-                    borderRadius: "999px",
+                    borderRadius: "var(--radius-pill)",
                     backgroundColor: "var(--surface-light)",
                     border: "1px solid var(--surface-light)",
                     width: "fit-content",
@@ -2682,7 +2675,7 @@ export default function CreateJobCardPage() {
                       onClick={() => setVhcRequired(choice)}
                       style={{
                         padding: "6px 14px",
-                        borderRadius: "999px",
+                        borderRadius: "var(--radius-pill)",
                         border: vhcRequired === choice ? "1px solid var(--primary)" : "1px solid transparent",
                         backgroundColor: vhcRequired === choice ? "var(--surface)" : "transparent",
                         color: vhcRequired === choice ? "var(--text-primary)" : "var(--text-secondary)",
@@ -2701,9 +2694,8 @@ export default function CreateJobCardPage() {
             <div
               style={{
                 flex: 1,
-                padding: "16px",
-                borderRadius: "16px",
-                boxShadow: "none",
+                padding: "var(--section-card-padding)",
+                borderRadius: "var(--radius-md)",
                 ...sectionCardStyle,
                 display: "flex",
                 flexDirection: "column",
@@ -2727,7 +2719,7 @@ export default function CreateJobCardPage() {
                   onClick={() => setShowDocumentsPopup(true)}
                   style={{
                     padding: "10px 18px",
-                    borderRadius: "10px",
+                    borderRadius: "var(--radius-sm)",
                     border: "none",
                     backgroundColor: "var(--primary)",
                     color: "white",
@@ -2735,8 +2727,7 @@ export default function CreateJobCardPage() {
                     fontSize: "14px",
                     cursor: "pointer",
                     transition: "background-color 0.2s, transform 0.2s",
-                    boxShadow: "none",
-                  }}
+                      }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.backgroundColor = "var(--primary-dark)";
                     e.currentTarget.style.transform = "translateY(-1px)";
@@ -2802,32 +2793,6 @@ export default function CreateJobCardPage() {
 
         .job-request-payment-dropdown {
           width: 160px;
-        }
-
-        .job-request-payment-dropdown .dropdown-api__control {
-          min-height: 40px;
-          padding: 10px 12px;
-          border-radius: 8px;
-          font-size: 14px;
-          border: 1px solid var(--surface-light);
-          background: var(--surface);
-          gap: 8px;
-        }
-
-        .job-request-payment-dropdown .dropdown-api__value {
-          font-size: 14px;
-          font-weight: 500;
-        }
-
-        .job-request-payment-dropdown.dropdown-api.is-open .dropdown-api__control,
-        .job-request-payment-dropdown .dropdown-api__control:focus-visible {
-          border-color: var(--primary);
-          background: var(--surface);
-        }
-
-        .job-request-payment-dropdown .dropdown-api__chevron {
-          width: 16px;
-          height: 16px;
         }
       `}</style>
     </Layout>

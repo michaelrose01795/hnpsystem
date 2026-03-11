@@ -289,10 +289,10 @@ export default function NotesTabNew({
   }
 
   const panelStyle = {
-    background: "var(--surface)",
+    background: "var(--section-card-bg)",
     border: "1px solid var(--surface-light)",
-    borderRadius: "16px",
-    padding: "18px",
+    borderRadius: "var(--radius-md)",
+    padding: "var(--section-card-padding)",
   };
   return (
     <div style={panelStyle}>
@@ -301,7 +301,7 @@ export default function NotesTabNew({
           style={{
             padding: "12px",
             marginBottom: "16px",
-            borderRadius: "8px",
+            borderRadius: "var(--radius-xs)",
             backgroundColor: "var(--warning-surface)",
             color: "var(--danger)",
             fontSize: "14px",
@@ -325,7 +325,7 @@ export default function NotesTabNew({
                 backgroundColor: "var(--primary)",
                 color: "var(--text-inverse)",
                 border: "1px solid var(--primary)",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
                 cursor: "pointer",
                 fontSize: "14px",
                 fontWeight: "600",
@@ -341,7 +341,7 @@ export default function NotesTabNew({
               style={{
                 padding: "20px",
                 backgroundColor: "var(--layer-section-level-3)",
-                borderRadius: "12px",
+                borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--surface-light)",
                 marginBottom: "20px",
               }}
@@ -364,7 +364,7 @@ export default function NotesTabNew({
                   minHeight: "56px",
                   maxHeight: "220px",
                   padding: "12px",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
                   fontSize: "14px",
                   lineHeight: 1.6,
@@ -396,7 +396,7 @@ export default function NotesTabNew({
                       backgroundColor: "var(--surface)",
                       color: "var(--info)",
                       border: "1px solid var(--info)",
-                      borderRadius: "8px",
+                      borderRadius: "var(--radius-xs)",
                       cursor: "pointer",
                       fontSize: "14px",
                       fontWeight: "500"
@@ -412,7 +412,7 @@ export default function NotesTabNew({
                       backgroundColor: !newNoteText.trim() || savingNewNote ? "var(--surface-light)" : "var(--primary)",
                       color: !newNoteText.trim() || savingNewNote ? "var(--text-secondary)" : "white",
                       border: "1px solid var(--primary-dark)",
-                      borderRadius: "8px",
+                      borderRadius: "var(--radius-xs)",
                       cursor: !newNoteText.trim() || savingNewNote ? "not-allowed" : "pointer",
                       fontSize: "14px",
                       fontWeight: "600",
@@ -442,7 +442,7 @@ export default function NotesTabNew({
               padding: "40px",
               textAlign: "center",
               backgroundColor: "var(--layer-section-level-1)",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
             }}
           >
@@ -466,7 +466,7 @@ export default function NotesTabNew({
                 style={{
                   padding: "14px",
                   backgroundColor: isHighlighted ? "var(--success-surface)" : "var(--layer-section-level-1)",
-                  borderRadius: "12px",
+                  borderRadius: "var(--radius-sm)",
                   border: `1px solid ${note.hiddenFromCustomer ? "var(--warning)" : "var(--success)"}`,
                   transition: "background-color 0.2s ease",
                 }}
@@ -478,7 +478,7 @@ export default function NotesTabNew({
                       <span
                         style={{
                           padding: "3px 8px",
-                          borderRadius: "999px",
+                          borderRadius: "var(--radius-pill)",
                           backgroundColor: "var(--surface-light)",
                           color: "var(--text-primary)",
                           fontSize: "10px",
@@ -491,7 +491,7 @@ export default function NotesTabNew({
                         <span
                           style={{
                             padding: "3px 8px",
-                            borderRadius: "999px",
+                            borderRadius: "var(--radius-pill)",
                             backgroundColor: "var(--accent-purple-surface)",
                             color: "var(--accent-purple)",
                             fontSize: "10px",
@@ -523,7 +523,7 @@ export default function NotesTabNew({
                       <span
                         style={{
                           padding: "3px 8px",
-                          borderRadius: "999px",
+                          borderRadius: "var(--radius-pill)",
                           backgroundColor: note.hiddenFromCustomer ? "var(--warning-surface)" : "var(--success-surface)",
                           color: note.hiddenFromCustomer ? "var(--warning)" : "var(--success-dark)",
                           fontSize: "10px",
@@ -552,7 +552,7 @@ export default function NotesTabNew({
                         minHeight: "80px",
                         maxHeight: "260px",
                         padding: "12px",
-                        borderRadius: "8px",
+                        borderRadius: "var(--radius-xs)",
                         border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
                         fontSize: "14px",
                         lineHeight: 1.6,
@@ -568,7 +568,7 @@ export default function NotesTabNew({
                         onClick={() => handleSaveEdit(note.noteId)}
                         style={{
                           padding: "8px 16px",
-                          borderRadius: "6px",
+                          borderRadius: "var(--radius-xs)",
                           border: "none",
                           backgroundColor: "var(--primary)",
                           color: "var(--text-inverse)",
@@ -583,7 +583,7 @@ export default function NotesTabNew({
                         onClick={handleCancelEdit}
                         style={{
                           padding: "8px 16px",
-                          borderRadius: "6px",
+                          borderRadius: "var(--radius-xs)",
                           border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
                           backgroundColor: "var(--surface-light)",
                           color: "var(--text-primary)",
@@ -617,7 +617,7 @@ export default function NotesTabNew({
                       onClick={() => handleEditNote(note)}
                       style={{
                         padding: "6px 12px",
-                        borderRadius: "6px",
+                        borderRadius: "var(--radius-xs)",
                         border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
                         backgroundColor: "var(--surface-light)",
                         color: "var(--primary)",
@@ -632,7 +632,7 @@ export default function NotesTabNew({
                       onClick={() => setLinkingNote(note)}
                       style={{
                         padding: "6px 12px",
-                        borderRadius: "6px",
+                        borderRadius: "var(--radius-xs)",
                         border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
                         backgroundColor: "var(--surface-light)",
                         color: "var(--text-primary)",
@@ -647,7 +647,7 @@ export default function NotesTabNew({
                       onClick={() => handleToggleHiddenFromCustomer(note)}
                       style={{
                         padding: "6px 12px",
-                        borderRadius: "6px",
+                        borderRadius: "var(--radius-xs)",
                         border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
                         backgroundColor: "var(--surface-light)",
                         color: "var(--text-primary)",
@@ -662,7 +662,7 @@ export default function NotesTabNew({
                       onClick={() => handleDeleteNote(note.noteId)}
                       style={{
                         padding: "6px 12px",
-                        borderRadius: "6px",
+                        borderRadius: "var(--radius-xs)",
                         border: "1px solid var(--danger-surface)",
                         backgroundColor: "var(--warning-surface)",
                         color: "var(--danger)",
@@ -698,8 +698,8 @@ export default function NotesTabNew({
             <div
               style={{
                 backgroundColor: "var(--surface)",
-                borderRadius: "16px",
-                padding: "20px",
+                borderRadius: "var(--radius-md)",
+                padding: "var(--section-card-padding)",
                 width: "min(520px, 100%)",
                 border: "1px solid var(--surface-light)",
                 display: "flex",
@@ -718,7 +718,7 @@ export default function NotesTabNew({
                   border: "1px solid var(--surface-light)",
                   backgroundColor: "var(--surface)",
                   color: "var(--info)",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   padding: "6px 10px",
                   cursor: "pointer",
                   fontWeight: 600,
@@ -733,7 +733,7 @@ export default function NotesTabNew({
                 onClick={() => handleLinkNote(linkingNote, { clear: true })}
                 style={{
                   padding: "8px 12px",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   border: "1px solid var(--surface-light)",
                   backgroundColor: "var(--surface)",
                   color: "var(--info-dark)",
@@ -765,7 +765,7 @@ export default function NotesTabNew({
                         onClick={() => handleLinkNote(activeNote, { linkedRequestIndex: index + 1 })}
                         style={{
                           padding: "10px 12px",
-                          borderRadius: "10px",
+                          borderRadius: "var(--radius-sm)",
                           border: isSelected ? "1px solid var(--success)" : "1px solid var(--surface-light)",
                           backgroundColor: isSelected ? "var(--success-surface)" : "var(--layer-section-level-3)",
                           textAlign: "left",
@@ -811,7 +811,7 @@ export default function NotesTabNew({
                         onClick={() => handleLinkNote(activeNote, { linkedVhcId: itemId })}
                         style={{
                           padding: "10px 12px",
-                          borderRadius: "10px",
+                          borderRadius: "var(--radius-sm)",
                           border: isSelected ? "1px solid var(--success)" : "1px solid var(--surface-light)",
                           backgroundColor: isSelected ? "var(--success-surface)" : "var(--layer-section-level-3)",
                           textAlign: "left",
@@ -863,7 +863,7 @@ export default function NotesTabNew({
                           onClick={() => handleLinkNote(activeNote, { linkedPartId: partId })}
                           style={{
                             padding: "10px 12px",
-                            borderRadius: "10px",
+                            borderRadius: "var(--radius-sm)",
                             border: isSelected ? "1px solid var(--success)" : "1px solid var(--surface-light)",
                             backgroundColor: isSelected ? "var(--success-surface)" : "var(--layer-section-level-3)",
                             textAlign: "left",

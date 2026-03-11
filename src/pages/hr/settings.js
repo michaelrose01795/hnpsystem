@@ -6,7 +6,7 @@ import { SectionCard } from "@/components/HR/MetricCard";
 
 function SettingsContent() {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
+    <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
         <header>
           <p style={{ color: "var(--info)", marginTop: "6px" }}>
             Upload policy documents, configure shift patterns, and manage role-based access for HR tools.
@@ -118,7 +118,7 @@ function ToggleSetting({ label, defaultChecked }) {
         alignItems: "center",
         gap: "10px",
         padding: "12px",
-        borderRadius: "12px",
+        borderRadius: "var(--radius-sm)",
         border: "1px solid var(--accent-purple-surface)",
         background: "var(--surface)",
         fontWeight: 600,
@@ -132,8 +132,8 @@ function ToggleSetting({ label, defaultChecked }) {
 }
 
 const buttonStylePrimary = {
-  padding: "8px 14px",
-  borderRadius: "10px",
+  padding: "var(--control-padding)",
+  borderRadius: "var(--input-radius)",
   border: "none",
   background: "var(--accent-purple)",
   color: "white",
@@ -142,8 +142,8 @@ const buttonStylePrimary = {
 };
 
 const buttonStyleGhost = {
-  padding: "8px 14px",
-  borderRadius: "10px",
+  padding: "var(--control-padding)",
+  borderRadius: "var(--input-radius)",
   border: "1px dashed var(--info)",
   background: "transparent",
   color: "var(--info)",
@@ -161,9 +161,9 @@ const labelStyle = {
 };
 
 const inputStyle = {
-  borderRadius: "10px",
+  borderRadius: "var(--input-radius)",
   border: "1px solid var(--accent-purple-surface)",
-  padding: "10px 12px",
+  padding: "var(--control-padding)",
   fontWeight: 500,
   color: "var(--accent-purple)",
   background: "var(--surface)",

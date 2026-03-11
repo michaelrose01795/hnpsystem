@@ -60,7 +60,7 @@ export default function VhcCustomerViewPage() {
               onClick={handleBack}
               style={{
                 border: "1px solid var(--accent-purple-surface)",
-                borderRadius: "10px",
+                borderRadius: "var(--radius-sm)",
                 padding: "8px 16px",
                 background: "var(--surface)",
                 fontWeight: 600,

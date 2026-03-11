@@ -25,10 +25,9 @@ function ChecksheetRenderer({ sections, onSave }) {
         <div
           key={idx}
           style={{
-            backgroundColor: "var(--surface)",
-            padding: "16px",
-            borderRadius: "8px",
-            boxShadow: "none",
+            backgroundColor: "var(--section-card-bg)",
+            padding: "var(--section-card-padding)",
+            borderRadius: "var(--radius-xs)",
           }}
         >
           <h2
@@ -70,7 +69,7 @@ function ChecksheetRenderer({ sections, onSave }) {
                   style={{
                     flex: 1,
                     border: "1px solid var(--background)",
-                    borderRadius: "4px",
+                    borderRadius: "var(--radius-xs)",
                     padding: "6px 8px",
                   }}
                 />
@@ -87,7 +86,7 @@ function ChecksheetRenderer({ sections, onSave }) {
           backgroundColor: "var(--primary)",
           color: "white",
           border: "none",
-          borderRadius: "6px",
+          borderRadius: "var(--radius-xs)",
           fontWeight: "bold",
         }}
       >
@@ -165,7 +164,7 @@ export default function AddChecksheet() {
             backgroundColor: "var(--primary)",
             color: "white",
             border: "none",
-            borderRadius: "6px",
+            borderRadius: "var(--radius-xs)",
             fontWeight: "bold",
           }}
         >
@@ -182,7 +181,7 @@ export default function AddChecksheet() {
               backgroundColor: "black",
               color: "var(--success)",
               padding: "12px",
-              borderRadius: "8px",
+              borderRadius: "var(--radius-xs)",
             }}
           >
             {JSON.stringify(savedData, null, 2)}

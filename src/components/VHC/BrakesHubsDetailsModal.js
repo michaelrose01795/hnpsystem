@@ -206,7 +206,7 @@ const tabGroupShellStyle = {
   display: "inline-flex",
   gap: "6px",
   padding: "6px",
-  borderRadius: "999px",
+  borderRadius: "var(--radius-pill)",
   border: "1px solid var(--surface-light)",
   background: "var(--surface)",
   alignItems: "center",
@@ -215,7 +215,7 @@ const tabGroupShellStyle = {
 
 const buildTabPillStyle = (active = false) => ({
   flex: "0 0 auto",
-  borderRadius: "999px",
+  borderRadius: "var(--radius-pill)",
   border: "1px solid transparent",
   padding: "10px 16px",
   fontSize: "0.9rem",
@@ -240,7 +240,6 @@ const PadsSection = ({
   fieldLabelStyle,
   inputStyle,
   dropdownFieldStyle,
-  dropdownControlStyle,
   enhanceFocus,
   resetFocus,
   panelStyle,
@@ -270,7 +269,6 @@ const PadsSection = ({
         value={padData.status || "Green"}
         onChange={(e) => onStatusChange?.(e.target.value)}
         style={{ ...dropdownFieldStyle, width: "11ch", minWidth: "11ch" }}
-        controlStyle={dropdownControlStyle}
         onFocus={enhanceFocus}
         onBlur={resetFocus}
       >
@@ -296,7 +294,6 @@ const DiscsSection = ({
   fieldLabelStyle,
   inputStyle,
   dropdownFieldStyle,
-  dropdownControlStyle,
   enhanceFocus,
   resetFocus,
   panelStyle,
@@ -353,7 +350,6 @@ const DiscsSection = ({
               value={discData.measurements?.status || "Green"}
               onChange={(e) => onMeasurementStatusChange?.(e.target.value)}
               style={{ ...dropdownFieldStyle, width: "11ch", minWidth: "11ch" }}
-              controlStyle={dropdownControlStyle}
               onFocus={enhanceFocus}
               onBlur={resetFocus}
             >
@@ -372,7 +368,6 @@ const DiscsSection = ({
             value={discData.visual?.status || "Green"}
             onChange={(e) => onVisualStatusChange?.(e.target.value)}
             style={{ ...dropdownFieldStyle, width: "11ch", minWidth: "11ch" }}
-            controlStyle={dropdownControlStyle}
             onFocus={enhanceFocus}
             onBlur={resetFocus}
           >
@@ -544,7 +539,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
 
   const severityBadgeStyle = (status) => ({
     padding: "4px 10px",
-    borderRadius: "999px",
+    borderRadius: "var(--radius-pill)",
     fontSize: "12px",
     fontWeight: 700,
     background:
@@ -652,7 +647,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
 
   const selectBaseStyle = {
     padding: "10px 12px",
-    borderRadius: "12px",
+    borderRadius: "var(--radius-sm)",
     border: `1px solid ${palette.border}`,
     backgroundColor: palette.surface,
     color: palette.textPrimary,
@@ -664,23 +659,10 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
     width: "100%",
   };
 
-  const dropdownControlStyle = {
-    width: "100%",
-    padding: "10px 12px",
-    borderRadius: "12px",
-    border: `1px solid ${palette.border}`,
-    backgroundColor: palette.surface,
-    color: palette.textPrimary,
-    fontSize: "14px",
-    fontWeight: 600,
-    outline: "none",
-    boxShadow: "none",
-  };
-
   const inputStyle = {
     width: "100%",
     padding: "10px 12px",
-    borderRadius: "12px",
+    borderRadius: "var(--radius-sm)",
     border: `1px solid ${palette.border}`,
     backgroundColor: palette.surface,
     color: palette.textPrimary,
@@ -1110,7 +1092,6 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                     fieldLabelStyle={fieldLabelStyle}
                     inputStyle={inputStyle}
                     dropdownFieldStyle={dropdownFieldStyle}
-                    dropdownControlStyle={dropdownControlStyle}
                     enhanceFocus={enhanceFocus}
                     resetFocus={resetFocus}
                     panelStyle={showValidation && missingSections.frontPads ? requiredPanelStyle : null}
@@ -1132,7 +1113,6 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                     fieldLabelStyle={fieldLabelStyle}
                     inputStyle={inputStyle}
                     dropdownFieldStyle={dropdownFieldStyle}
-                    dropdownControlStyle={dropdownControlStyle}
                     enhanceFocus={enhanceFocus}
                     resetFocus={resetFocus}
                     panelStyle={showValidation && missingSections.frontDiscs ? requiredPanelStyle : null}
@@ -1151,7 +1131,6 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                     fieldLabelStyle={fieldLabelStyle}
                     inputStyle={inputStyle}
                     dropdownFieldStyle={dropdownFieldStyle}
-                    dropdownControlStyle={dropdownControlStyle}
                     enhanceFocus={enhanceFocus}
                     resetFocus={resetFocus}
                     panelStyle={showValidation && missingSections.rearPads ? requiredPanelStyle : null}
@@ -1174,7 +1153,6 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                     fieldLabelStyle={fieldLabelStyle}
                     inputStyle={inputStyle}
                     dropdownFieldStyle={dropdownFieldStyle}
-                    dropdownControlStyle={dropdownControlStyle}
                     enhanceFocus={enhanceFocus}
                     resetFocus={resetFocus}
                     panelStyle={showValidation && missingSections.rearDiscs ? requiredPanelStyle : null}
@@ -1228,7 +1206,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                           display: "flex",
                           justifyContent: "space-between",
                           alignItems: "center",
-                          borderRadius: "12px",
+                          borderRadius: "var(--radius-sm)",
                           border: `1px solid ${palette.border}`,
                           padding: "10px 12px",
                           background: palette.surface,

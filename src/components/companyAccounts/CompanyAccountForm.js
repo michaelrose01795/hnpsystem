@@ -211,7 +211,7 @@ export default function CompanyAccountForm({
             "Address Line 1, Address Line 2, City, Postcode.",
           ].join(" ")}
           style={{
-            borderRadius: "10px",
+            borderRadius: "var(--control-radius-xs)",
             border: "1px solid var(--surface-light)",
             padding: "12px 14px",
             resize: "vertical",
@@ -223,9 +223,9 @@ export default function CompanyAccountForm({
             onClick={applyBulkInput}
             style={{
               padding: "8px 14px",
-              borderRadius: "8px",
+              borderRadius: "var(--radius-xs)",
               border: "1px solid var(--surface-light)",
-              background: "white",
+              background: "var(--surface)",
               fontWeight: 600,
             }}
           >
@@ -273,7 +273,7 @@ export default function CompanyAccountForm({
           onChange={handleChange}
           rows={5}
           style={{
-            borderRadius: "10px",
+            borderRadius: "var(--control-radius-xs)",
             border: "1px solid var(--surface-light)",
             padding: "10px 14px",
             resize: "vertical",
@@ -289,7 +289,7 @@ export default function CompanyAccountForm({
           onClick={onCancel}
           style={{
             padding: "10px 16px",
-            borderRadius: "10px",
+            borderRadius: "var(--control-radius-xs)",
             border: "1px solid var(--surface-border, var(--surface-light))",
             background: "var(--surface-light)",
             color: "var(--text-primary)",
@@ -302,7 +302,7 @@ export default function CompanyAccountForm({
           disabled={disabled}
           style={{
             padding: "10px 20px",
-            borderRadius: "10px",
+            borderRadius: "var(--control-radius-xs)",
             border: "none",
             background: "var(--primary)",
             color: "white",

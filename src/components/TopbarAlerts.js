@@ -23,12 +23,12 @@ export function AlertBadge() {
         bottom: "-12px",
         left: "16px",
         padding: "4px 10px",
-        borderRadius: "999px",
+        borderRadius: "var(--radius-pill)",
         background: tone.bg,
         color: tone.text,
         fontSize: "0.75rem",
         fontWeight: 600,
-        boxShadow: "none",
+
         maxWidth: "220px",
         whiteSpace: "nowrap",
         overflow: "hidden",
@@ -66,11 +66,11 @@ export default function TopbarAlerts() {
           <div
             key={alert.id}
             style={{
-              borderRadius: "16px",
+              borderRadius: "var(--radius-md)",
               padding: "12px 14px",
               background: tone.bg,
               color: tone.text,
-              boxShadow: "none",
+      
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
@@ -85,7 +85,7 @@ export default function TopbarAlerts() {
                 border: "none",
                 background: "transparent",
                 color: closeButtonColor,
-                borderRadius: "999px",
+                borderRadius: "var(--radius-pill)",
                 padding: "4px 8px",
                 cursor: "pointer",
                 fontWeight: 700,

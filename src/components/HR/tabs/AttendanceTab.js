@@ -5,8 +5,8 @@ import { useHrAttendanceData } from "@/hooks/useHrData";
 import { SectionCard, StatusTag } from "@/components/HR/MetricCard";
 
 const buttonStyleSecondary = {
-  padding: "8px 14px",
-  borderRadius: "10px",
+  padding: "var(--control-padding)",
+  borderRadius: "var(--input-radius)",
   border: "1px solid var(--warning)",
   background: "var(--surface)",
   color: "var(--danger)",

@@ -15,12 +15,6 @@ import { TimePickerField } from "@/components/timePickerAPI";
 import { SearchBar } from "@/components/searchBarAPI";
 
 const cardStyle = {
-  borderRadius: "20px",
-  border: "1px solid var(--surface-light)",
-  background: "var(--surface)",
-  padding: "20px",
-  display: "flex",
-  flexDirection: "column",
   gap: "18px",
 };
 
@@ -37,22 +31,21 @@ const fieldStyle = {
 };
 
 const inputStyle = {
-  borderRadius: "10px",
+  borderRadius: "var(--radius-sm)",
   border: "1px solid var(--surface-light)",
-  padding: "10px 12px",
+  padding: "var(--control-padding)",
   fontSize: "0.95rem",
   fontFamily: "inherit",
 };
 
 const sectionCardStyle = {
-  borderRadius: "16px",
+  borderRadius: "var(--radius-md)",
   border: "1px solid rgba(var(--primary-rgb), 0.08)",
   background: "rgba(var(--surface-rgb), 0.9)",
-  padding: "16px",
+  padding: "var(--section-card-padding)",
   display: "flex",
   flexDirection: "column",
   gap: "12px",
-  boxShadow: "0 12px 30px rgba(15, 23, 42, 0.08)",
 };
 
 const sectionHeaderStyle = {
@@ -76,8 +69,8 @@ const partLookupOverlayStyle = {
 
 const partLookupContentStyle = {
   background: "var(--surface)",
-  borderRadius: "18px",
-  padding: "20px",
+  borderRadius: "var(--radius-md)",
+  padding: "var(--section-card-padding)",
   width: "min(640px, 100%)",
   maxHeight: "85vh",
   overflowY: "auto",
@@ -575,9 +568,9 @@ export default function PartsJobCardPage() {
     <>
       <Layout>
         <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
-        <section style={cardStyle}>
+        <section className="app-section-card" style={cardStyle}>
           {errorMessage && (
-            <div style={{ padding: "10px", borderRadius: "10px", background: "var(--danger-surface)", color: "var(--danger)" }}>
+            <div style={{ padding: "10px", borderRadius: "var(--radius-sm)", background: "var(--danger-surface)", color: "var(--danger)" }}>
               {errorMessage}
             </div>
           )}
@@ -596,7 +589,7 @@ export default function PartsJobCardPage() {
                           onClick={handleSaveCustomerDetails}
                           disabled={savingCustomerDetails}
                           style={{
-                            borderRadius: "10px",
+                            borderRadius: "var(--radius-sm)",
                             border: "1px solid var(--primary)",
                             background: "var(--primary)",
                             color: "var(--surface)",
@@ -613,7 +606,7 @@ export default function PartsJobCardPage() {
                           onClick={handleCancelCustomerEdit}
                           disabled={savingCustomerDetails}
                           style={{
-                            borderRadius: "10px",
+                            borderRadius: "var(--radius-sm)",
                             border: "1px solid var(--surface-light)",
                             background: "var(--surface)",
                             color: "var(--primary-dark)",
@@ -631,7 +624,7 @@ export default function PartsJobCardPage() {
                         type="button"
                         onClick={handleStartCustomerEdit}
                         style={{
-                          borderRadius: "10px",
+                          borderRadius: "var(--radius-sm)",
                           border: "1px solid var(--primary)",
                           background: "var(--primary)",
                           color: "var(--surface)",
@@ -648,7 +641,7 @@ export default function PartsJobCardPage() {
                       onClick={handleCustomerCleared}
                       disabled={savingCustomerDetails}
                       style={{
-                        borderRadius: "10px",
+                        borderRadius: "var(--radius-sm)",
                         border: "1px solid var(--danger)",
                         background: "var(--danger-surface)",
                         color: "var(--danger)",
@@ -680,7 +673,7 @@ export default function PartsJobCardPage() {
                         type="button"
                         onClick={() => setShowExistingCustomer(true)}
                         style={{
-                          borderRadius: "10px",
+                          borderRadius: "var(--radius-sm)",
                           border: "1px solid transparent",
                           background: isDarkMode ? "#7D3FFF" : "#E53935",
                           color: "#ffffff",
@@ -695,7 +688,7 @@ export default function PartsJobCardPage() {
                         type="button"
                         onClick={() => setShowNewCustomer(true)}
                         style={{
-                          borderRadius: "10px",
+                          borderRadius: "var(--radius-sm)",
                           border: "1px solid var(--primary)",
                           background: "var(--primary)",
                           color: "var(--surface)",
@@ -715,7 +708,7 @@ export default function PartsJobCardPage() {
                     <div
                       style={{
                         border: "1px solid var(--surface-light)",
-                        borderRadius: "14px",
+                        borderRadius: "var(--radius-md)",
                         padding: "12px",
                         background: "var(--surface)",
                       }}
@@ -876,7 +869,7 @@ export default function PartsJobCardPage() {
                     flexDirection: "column",
                     gap: "8px",
                     border: "1px solid var(--surface-light)",
-                    borderRadius: "14px",
+                    borderRadius: "var(--radius-md)",
                     padding: "12px",
                   }}
                 >
@@ -920,7 +913,7 @@ export default function PartsJobCardPage() {
                   type="button"
                   onClick={handleAddPart}
                   style={{
-                    borderRadius: "10px",
+                    borderRadius: "var(--radius-sm)",
                     border: "1px solid transparent",
                     background: "var(--accent-purple)",
                     padding: "8px 14px",
@@ -938,7 +931,7 @@ export default function PartsJobCardPage() {
                     key={`part-line-${index}`}
                     style={{
                       border: "1px solid var(--surface-light)",
-                      borderRadius: "12px",
+                      borderRadius: "var(--radius-sm)",
                       padding: "12px",
                       display: "grid",
                       gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
@@ -959,7 +952,7 @@ export default function PartsJobCardPage() {
                           type="button"
                           onClick={() => openPartSearch(index)}
                           style={{
-                            borderRadius: "10px",
+                            borderRadius: "var(--radius-sm)",
                             border: "1px solid var(--surface-light)",
                             background: "var(--primary)",
                             color: "var(--surface)",
@@ -975,7 +968,7 @@ export default function PartsJobCardPage() {
                             type="button"
                             onClick={() => handleClearPartLink(index)}
                             style={{
-                              borderRadius: "10px",
+                              borderRadius: "var(--radius-sm)",
                               border: "1px solid var(--surface-light)",
                               background: "var(--danger-surface)",
                               color: "var(--danger)",
@@ -1047,7 +1040,7 @@ export default function PartsJobCardPage() {
                         style={{
                           gridColumn: "1 / -1",
                           border: "1px solid var(--danger)",
-                          borderRadius: "10px",
+                          borderRadius: "var(--radius-sm)",
                           background: "var(--danger-surface)",
                           color: "var(--danger)",
                           padding: "8px 12px",
@@ -1069,7 +1062,7 @@ export default function PartsJobCardPage() {
                 onClick={handleClearForm}
                 disabled={saving}
                 style={{
-                  borderRadius: "12px",
+                  borderRadius: "var(--radius-sm)",
                   border: "1px solid var(--surface-light)",
                   background: "var(--surface)",
                   padding: "10px 18px",
@@ -1084,7 +1077,7 @@ export default function PartsJobCardPage() {
                 type="submit"
                 disabled={saving}
                 style={{
-                  borderRadius: "12px",
+                  borderRadius: "var(--radius-sm)",
                   border: "none",
                   background: "var(--primary)",
                   color: "var(--surface)",
@@ -1184,7 +1177,7 @@ export default function PartsJobCardPage() {
                     type="button"
                     onClick={() => handlePartSelected(part)}
                     style={{
-                      borderRadius: "12px",
+                      borderRadius: "var(--radius-sm)",
                       border: "1px solid var(--surface-light)",
                       padding: "10px 12px",
                       textAlign: "left",

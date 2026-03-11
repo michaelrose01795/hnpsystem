@@ -10,7 +10,7 @@ const DISPLAY_LIMIT = 12;
 const baseInputStyle = {
   width: "100%",
   padding: "10px 12px",
-  borderRadius: "12px",
+  borderRadius: "var(--radius-sm)",
   border: "1px solid var(--border)",
   backgroundColor: "var(--surface)",
   fontSize: "14px",
@@ -29,7 +29,7 @@ const dropdownStyle = {
   top: "calc(100% + 6px)",
   left: 0,
   right: 0,
-  borderRadius: "12px",
+  borderRadius: "var(--radius-sm)",
   border: "1px solid var(--border)",
   background: "var(--surface)",
   boxShadow: "0 8px 24px rgba(var(--shadow-rgb), 0.12)",

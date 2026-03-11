@@ -14,21 +14,9 @@ const pageStyles = {
     gap: "20px",
   },
   headerCard: {
-    background: "var(--surface)",
-    border: "1px solid var(--surface-light)",
-    borderRadius: "20px",
-    padding: "20px",
-    display: "flex",
-    flexDirection: "column",
     gap: "16px",
   },
   listCard: {
-    background: "var(--surface)",
-    border: "1px solid var(--surface-light)",
-    borderRadius: "20px",
-    padding: "18px",
-    display: "flex",
-    flexDirection: "column",
     gap: "14px",
   },
   controls: {
@@ -46,8 +34,8 @@ const pageStyles = {
   },
   jobRow: (isCompleted) => ({
     border: "1px solid rgba(var(--primary-rgb),0.15)",
-    borderRadius: "18px",
-    padding: "16px",
+    borderRadius: "var(--radius-md)",
+    padding: "var(--section-card-padding)",
     display: "flex",
     flexDirection: "column",
     gap: "12px",
@@ -88,7 +76,7 @@ const statusChipStyle = (status) => {
   };
   return {
     padding: "4px 12px",
-    borderRadius: "999px",
+    borderRadius: "var(--radius-pill)",
     fontSize: "0.75rem",
     fontWeight: 600,
     letterSpacing: "0.04em",
@@ -98,9 +86,9 @@ const statusChipStyle = (status) => {
 };
 
 const markButtonStyle = (isCompleted) => ({
-  borderRadius: "12px",
+  borderRadius: "var(--radius-sm)",
   border: "none",
-  padding: "10px 16px",
+  padding: "var(--control-padding)",
   fontWeight: 600,
   cursor: isCompleted ? "default" : "pointer",
   background: isCompleted ? "rgba(var(--success-rgb,34,139,34),0.2)" : "var(--primary)",
@@ -110,7 +98,7 @@ const markButtonStyle = (isCompleted) => ({
 });
 
 const arrowButtonStyle = {
-  borderRadius: "10px",
+  borderRadius: "var(--radius-sm)",
   border: "1px solid var(--surface-light)",
   background: "var(--danger-surface)",
   padding: "6px 10px",
@@ -131,8 +119,8 @@ const modalOverlayStyle = {
 
 const modalContentStyle = {
   background: "var(--surface)",
-  borderRadius: "20px",
-  padding: "24px",
+  borderRadius: "var(--radius-lg)",
+  padding: "var(--page-card-padding)",
   width: "min(780px, 100%)",
   maxHeight: "90vh",
   overflowY: "auto",
@@ -326,7 +314,7 @@ export default function PartsDeliveriesPage() {
   return (
     <Layout>
       <div style={pageStyles.container}>
-        <section style={pageStyles.headerCard}>
+        <section className="app-section-card" style={pageStyles.headerCard}>
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
             <p
               style={{
@@ -355,11 +343,11 @@ export default function PartsDeliveriesPage() {
                 type="button"
                 onClick={() => setSelectedDate((prev) => adjustIsoDate(prev, -1))}
                 style={{
-                  borderRadius: "10px",
+                  borderRadius: "var(--radius-sm)",
                   border: "1px solid var(--surface-light)",
                   background: "var(--surface)",
                   color: "var(--primary-dark)",
-                  padding: "10px 14px",
+                  padding: "var(--control-padding)",
                   cursor: "pointer",
                   fontWeight: 600,
                 }}
@@ -375,11 +363,11 @@ export default function PartsDeliveriesPage() {
                 type="button"
                 onClick={() => setSelectedDate((prev) => adjustIsoDate(prev, 1))}
                 style={{
-                  borderRadius: "10px",
+                  borderRadius: "var(--radius-sm)",
                   border: "1px solid var(--surface-light)",
                   background: "var(--primary-dark)",
                   color: "var(--surface)",
-                  padding: "10px 14px",
+                  padding: "var(--control-padding)",
                   cursor: "pointer",
                   fontWeight: 600,
                 }}
@@ -401,7 +389,7 @@ export default function PartsDeliveriesPage() {
           </div>
         </section>
 
-        <section style={pageStyles.listCard}>
+        <section className="app-section-card" style={pageStyles.listCard}>
           <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
             <h2 style={{ margin: 0, color: "var(--primary-dark)" }}>Delivery list</h2>
             <p style={{ margin: 0, color: "var(--grey-accent-dark)" }}>
@@ -465,7 +453,7 @@ function DeliveryJobRow({ job, index, total, onView, onMove, onMarkDelivered, ac
         <span
           style={{
             padding: "4px 10px",
-            borderRadius: "999px",
+            borderRadius: "var(--radius-pill)",
             fontSize: "0.75rem",
             fontWeight: 600,
             alignSelf: "flex-start",
@@ -605,7 +593,7 @@ function DeliveryJobViewModal({ job, onClose }) {
               <span
                 style={{
                   padding: "2px 8px",
-                  borderRadius: "999px",
+                  borderRadius: "var(--radius-pill)",
                   fontSize: "0.7rem",
                   background: job.is_paid ? "rgba(var(--success-rgb,34,139,34),0.18)" : "rgba(var(--warning-rgb),0.2)",
                   color: job.is_paid ? "var(--success, #297C3B)" : "var(--danger-dark)",
@@ -642,10 +630,10 @@ function DeliveryJobViewModal({ job, onClose }) {
             type="button"
             onClick={onClose}
             style={{
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               border: "1px solid var(--surface-light)",
               background: "var(--surface)",
-              padding: "10px 18px",
+              padding: "var(--control-padding)",
               fontWeight: 600,
               cursor: "pointer",
             }}

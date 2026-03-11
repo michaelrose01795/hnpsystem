@@ -6,7 +6,7 @@ import PopupModal from "@/components/popups/popupStyleApi";
 export default function CheckSheetPopup({ onClose, onAddCheckSheet, onAddDealerDetails }) {
   // Render overlay + options
   return (
-    <PopupModal onClose={onClose} cardStyle={{ padding: "24px", borderRadius: "8px", width: "420px", maxWidth: "420px" }}>
+    <PopupModal onClose={onClose} cardStyle={{ padding: "var(--page-card-padding)", borderRadius: "var(--radius-xs)", width: "420px", maxWidth: "420px" }}>
       {/* Title */}
       <h3 style={{ marginTop: 0 }}>Next Step</h3> {/* Heading */}
       {/* Explanation */}

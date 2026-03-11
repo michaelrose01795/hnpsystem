@@ -65,7 +65,7 @@ export default function AccountForm({ initialValues, onSubmit, isSubmitting, rea
           <textarea name="notes" style={textareaStyles} value={formValues.notes || ""} onChange={handleChange} disabled={readOnly} placeholder="Credit control notes, reminders, or manual adjustments." />
         </label>
         {isFrozen && (
-          <div style={{ flexBasis: "100%", background: "rgba(var(--warning-rgb), 0.15)", border: "1px solid rgba(var(--warning-rgb), 0.4)", borderRadius: "12px", padding: "14px" }}>
+          <div style={{ flexBasis: "100%", background: "rgba(var(--warning-rgb), 0.15)", border: "1px solid rgba(var(--warning-rgb), 0.4)", borderRadius: "var(--radius-sm)", padding: "14px" }}>
             <strong style={{ display: "block", color: "var(--warning-text)", marginBottom: "4px" }}>Frozen Account</strong>
             <p style={{ margin: 0, color: "var(--warning-text)", fontSize: "0.9rem" }}>New invoices cannot be assigned to frozen accounts until status changes back to Active.</p>
           </div>
@@ -86,11 +86,11 @@ export default function AccountForm({ initialValues, onSubmit, isSubmitting, rea
       {!readOnly && (
         <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
           {onCancel && (
-            <button type="button" onClick={onCancel} style={{ borderRadius: "10px", padding: "10px 16px", border: "1px solid var(--surface-light)", background: "var(--surface-light)", color: "var(--text-secondary)", fontWeight: 600 }}>
+            <button type="button" onClick={onCancel} style={{ borderRadius: "var(--control-radius-xs)", padding: "10px 16px", border: "1px solid var(--surface-light)", background: "var(--surface-light)", color: "var(--text-secondary)", fontWeight: 600 }}>
               Cancel
             </button>
           )}
-          <button type="submit" disabled={isSubmitting} style={{ borderRadius: "10px", padding: "10px 18px", border: "none", background: "var(--primary)", color: "white", fontWeight: 700, minWidth: "160px", cursor: isSubmitting ? "not-allowed" : "pointer", opacity: isSubmitting ? 0.7 : 1 }}>
+          <button type="submit" disabled={isSubmitting} style={{ borderRadius: "var(--control-radius-xs)", padding: "10px 18px", border: "none", background: "var(--primary)", color: "white", fontWeight: 700, minWidth: "160px", cursor: isSubmitting ? "not-allowed" : "pointer", opacity: isSubmitting ? 0.7 : 1 }}>
             {isSubmitting ? "Saving…" : "Save Account"}
           </button>
         </div>

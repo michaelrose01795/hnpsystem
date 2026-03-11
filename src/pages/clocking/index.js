@@ -433,7 +433,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
       <section
         style={{
           background: "var(--surface)",
-          borderRadius: "18px",
+          borderRadius: "var(--radius-md)",
           padding: "24px",
           border: "1px solid var(--surface-light)",
           boxShadow: "none",
@@ -463,7 +463,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
           >
             <div
               style={{
-                borderRadius: "18px",
+                borderRadius: "var(--radius-md)",
                 padding: "16px",
                 background: "var(--danger-surface)",
                 border: "1px solid var(--surface-light)",
@@ -493,7 +493,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
 
             <div
               style={{
-                borderRadius: "18px",
+                borderRadius: "var(--radius-md)",
                 padding: "16px",
                 background: "var(--danger-surface)",
                 border: "1px solid var(--success)22",
@@ -523,7 +523,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
 
             <div
               style={{
-                borderRadius: "18px",
+                borderRadius: "var(--radius-md)",
                 padding: "16px",
                 background: "var(--danger-surface)",
                 border: "1px solid var(--info)22",
@@ -553,7 +553,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
 
             <div
               style={{
-                borderRadius: "18px",
+                borderRadius: "var(--radius-md)",
                 padding: "16px",
                 background: "var(--danger-surface)",
                 border: "1px solid var(--accent-purple)22",
@@ -583,7 +583,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
 
             <div
               style={{
-                borderRadius: "18px",
+                borderRadius: "var(--radius-md)",
                 padding: "16px",
                 background: "var(--danger-surface)",
                 border: "1px solid var(--primary)22",
@@ -613,7 +613,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
 
             <div
               style={{
-                borderRadius: "18px",
+                borderRadius: "var(--radius-md)",
                 padding: "16px",
                 background: "var(--danger-surface)",
                 border: "1px solid var(--grey-accent)22",
@@ -648,7 +648,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
       {error && (
         <div
           style={{
-            borderRadius: "14px",
+            borderRadius: "var(--radius-md)",
             padding: "14px 18px",
             background: "var(--danger-surface)",
             border: "1px solid var(--danger)",
@@ -664,7 +664,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
       <section
         style={{
           background: "var(--surface)",
-          borderRadius: "18px",
+          borderRadius: "var(--radius-md)",
           padding: "24px",
           border: "1px solid var(--surface-light)",
           boxShadow: "none",
@@ -684,7 +684,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
         ) : teamStatus.length === 0 ? (
           <div
             style={{
-              borderRadius: "14px",
+              borderRadius: "var(--radius-md)",
               padding: "32px",
               background: "var(--danger-surface)",
               border: "1px solid var(--surface-light)",
@@ -736,7 +736,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                 >
                   <article
                     style={{
-                      borderRadius: "18px",
+                      borderRadius: "var(--radius-md)",
                       padding: "20px",
                       background: "var(--background)",
                       border: "1px solid var(--surface-light)",
@@ -784,7 +784,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                             display: "inline-block",
                             marginTop: "8px",
                             padding: "6px 12px",
-                            borderRadius: "999px",
+                            borderRadius: "var(--radius-pill)",
                             border: "1px solid var(--surface-light)",
                             fontSize: "0.7rem",
                             fontWeight: 600,
@@ -805,7 +805,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                               onClick={handleClockButtonClick}
                               style={{
                                 padding: "8px 16px",
-                                borderRadius: "12px",
+                                borderRadius: "var(--radius-sm)",
                                 fontSize: "0.75rem",
                                 fontWeight: 600,
                                 textTransform: "uppercase",
@@ -826,14 +826,14 @@ function ClockingOverviewTab({ onSummaryChange }) {
                           <span
                             style={{
                               padding: "6px 12px",
-                              borderRadius: "10px",
+                              borderRadius: "var(--radius-sm)",
                               fontSize: "0.75rem",
                               fontWeight: 600,
-                              background: "#f1f5f9",
-                              border: "1px solid #cbd5e1",
+                              background: "var(--surface-light)",
+                              border: "var(--control-border)",
                               color: "#334155",
                               ...(tech.status === "Tea Break" && {
-                                background: "#fef3c7",
+                                background: "var(--warning-surface)",
                                 border: "1px solid var(--warning-surface)",
                                 color: "var(--warning-text)",
                               }),
@@ -854,7 +854,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                   >
                     <div
                       style={{
-                        borderRadius: "12px",
+                        borderRadius: "var(--radius-sm)",
                         padding: "12px",
                         background: "var(--surface)",
                         border: "1px solid var(--surface-light)",
@@ -887,7 +887,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
 
                     <div
                       style={{
-                        borderRadius: "12px",
+                        borderRadius: "var(--radius-sm)",
                         padding: "12px",
                         background: "var(--surface)",
                         border: "1px solid var(--surface-light)",
@@ -944,7 +944,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                         alignItems: "center",
                         gap: "6px",
                         padding: "8px 14px",
-                        borderRadius: "999px",
+                        borderRadius: "var(--radius-pill)",
                         background: "var(--primary)",
                         color: "var(--surface)",
                         fontSize: "0.75rem",
@@ -985,10 +985,10 @@ function ClockingOverviewTab({ onSummaryChange }) {
             <div
               style={{
                 width: "min(460px, 100%)",
-                borderRadius: "22px",
+                borderRadius: "var(--radius-lg)",
                 background: "var(--surface)",
                 border: "1px solid var(--surface-light)",
-                boxShadow: "0 25px 60px rgba(15, 15, 15, 0.25)",
+                boxShadow: "var(--shadow-xl)",
                 padding: "24px",
                 display: "flex",
                 flexDirection: "column",
@@ -1008,7 +1008,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
             {modalError && (
               <div
                 style={{
-                  borderRadius: "14px",
+                  borderRadius: "var(--radius-md)",
                   padding: "10px 14px",
                   border: "1px solid var(--danger)",
                   background: "var(--danger-surface)",
@@ -1023,7 +1023,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
             {modalTechClockedIn ? (
               <div
                 style={{
-                  borderRadius: "16px",
+                  borderRadius: "var(--radius-md)",
                   border: "1px solid var(--surface-light)",
                   background: "var(--surface-light)",
                   padding: "16px",
@@ -1057,7 +1057,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                   placeholder="job number"
                   style={{
                     width: "100%",
-                    borderRadius: "14px",
+                    borderRadius: "var(--radius-md)",
                     border: "1px solid var(--surface-light)",
                     background: "var(--surface-light)",
                     padding: "12px",
@@ -1074,7 +1074,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                 onClick={closeClockModal}
                 style={{
                   padding: "10px 18px",
-                  borderRadius: "12px",
+                  borderRadius: "var(--radius-sm)",
                   border: "1px solid var(--surface-light)",
                   background: "var(--surface)",
                   color: "var(--info)",
@@ -1090,7 +1090,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                 disabled={modalActionDisabled}
                 style={{
                   padding: "10px 18px",
-                  borderRadius: "12px",
+                  borderRadius: "var(--radius-sm)",
                   border: "none",
                   background: "var(--primary)",
                   color: "var(--surface)",
@@ -1128,7 +1128,7 @@ export default function ClockingPage() {
 
   const pageTabStyle = (isActive) => ({
     padding: "12px 24px",
-    borderRadius: "12px",
+    borderRadius: "var(--radius-sm)",
     border: "none",
     background: isActive ? "var(--primary)" : "transparent",
     color: isActive ? "var(--surface)" : "var(--primary-dark)",
@@ -1147,7 +1147,7 @@ export default function ClockingPage() {
             display: "flex",
             gap: "4px",
             padding: "4px",
-            borderRadius: "14px",
+            borderRadius: "var(--radius-md)",
             background: "var(--surface)",
             border: "1px solid var(--surface-light)",
             width: "fit-content",

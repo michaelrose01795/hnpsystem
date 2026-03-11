@@ -124,7 +124,7 @@ const SignaturePad = React.forwardRef(function SignaturePad(
       width={canvasProps.width || 600}
       height={canvasProps.height || 150}
       className={canvasProps.className || "sigCanvas"}
-      style={canvasProps.style || { border: "1px solid var(--text-primary)", borderRadius: "8px" }}
+      style={canvasProps.style || { border: "1px solid var(--text-primary)", borderRadius: "var(--radius-xs)" }}
     />
   );
 });
@@ -252,7 +252,7 @@ export default function CheckBoxPage() {
             width: 600,
             height: 150,
             className: "sigCanvas",
-            style: { border: "1px solid var(--text-primary)", borderRadius: "8px" },
+            style: { border: "1px solid var(--text-primary)", borderRadius: "var(--radius-xs)" },
           }}
         />
 
@@ -264,7 +264,7 @@ export default function CheckBoxPage() {
               padding: "8px 16px",
               backgroundColor: "var(--background)",
               border: "none",
-              borderRadius: "6px",
+              borderRadius: "var(--radius-xs)",
             }}
           >
             Clear
@@ -278,7 +278,7 @@ export default function CheckBoxPage() {
               backgroundColor: "var(--primary)",
               color: "white",
               border: "none",
-              borderRadius: "6px",
+              borderRadius: "var(--radius-xs)",
             }}
           >
             Save Check Sheet
@@ -291,7 +291,7 @@ export default function CheckBoxPage() {
               backgroundColor: "var(--primary)",
               color: "white",
               border: "none",
-              borderRadius: "6px",
+              borderRadius: "var(--radius-xs)",
             }}
           >
             Check All
@@ -308,7 +308,7 @@ export default function CheckBoxPage() {
               backgroundColor: "var(--primary)",
               color: "white",
               border: "none",
-              borderRadius: "6px",
+              borderRadius: "var(--radius-xs)",
             }}
           >
             Back to Job Card
@@ -323,7 +323,7 @@ export default function CheckBoxPage() {
               backgroundColor: "var(--primary)",
               color: "white",
               border: "none",
-              borderRadius: "6px",
+              borderRadius: "var(--radius-xs)",
             }}
           >
             Write-Up
@@ -337,7 +337,7 @@ export default function CheckBoxPage() {
               backgroundColor: "var(--primary)",
               color: "white",
               border: "none",
-              borderRadius: "6px",
+              borderRadius: "var(--radius-xs)",
             }}
           >
             Vehicle Details

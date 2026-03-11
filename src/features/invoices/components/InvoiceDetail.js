@@ -710,7 +710,7 @@ export default function InvoiceDetail({ data, onPrint, onEmail, emailStatus, cus
             <div style={{
               fontSize: "12px",
               padding: "4px 10px",
-              borderRadius: "6px",
+              borderRadius: "var(--radius-xs)",
               backgroundColor: emailStatus.includes("success") ? "var(--success-surface)" : "var(--danger-surface)",
               color: emailStatus.includes("success") ? "var(--success-dark)" : "var(--danger-dark)",
             }}>
@@ -847,7 +847,7 @@ export default function InvoiceDetail({ data, onPrint, onEmail, emailStatus, cus
                 maxHeight: "90vh",
                 overflowY: "auto",
                 backgroundColor: "var(--surface)",
-                borderRadius: "14px",
+                borderRadius: "var(--control-radius)",
                 border: "1px solid var(--surface-light)",
                 padding: "18px",
                 display: "grid",
@@ -915,7 +915,7 @@ export default function InvoiceDetail({ data, onPrint, onEmail, emailStatus, cus
                       style={{
                         padding: "6px 8px",
                         fontSize: "0.85rem",
-                        borderRadius: "7px",
+                        borderRadius: "var(--radius-xs)",
                         border: "1px solid var(--surface-light)",
                         appearance: "textfield",
                         MozAppearance: "textfield",

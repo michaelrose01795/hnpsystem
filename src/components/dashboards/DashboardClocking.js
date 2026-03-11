@@ -35,7 +35,7 @@ export default function DashboardClocking() {
             style={{
               backgroundColor: "var(--surface-light)",
               border: "1px solid var(--danger)",
-              borderRadius: "8px",
+              borderRadius: "var(--radius-xs)",
               padding: "16px",
               textAlign: "center",
               minHeight: "100px",

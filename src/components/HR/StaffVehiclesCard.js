@@ -431,15 +431,15 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
         >
           <div
             style={{
-              background: "var(--surface)",
-              borderRadius: "16px",
-              padding: "20px",
+              background: "var(--section-card-bg)",
+              borderRadius: "var(--radius-md)",
+              padding: "var(--section-card-padding)",
               width: "100%",
               maxWidth: "360px",
               display: "flex",
               flexDirection: "column",
               gap: "12px",
-              boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
+              boxShadow: "var(--shadow-lg)",
             }}
           >
             <div style={{ fontWeight: 700, color: "var(--text-primary)" }}>
@@ -454,8 +454,8 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
                 onClick={() => setConfirmRemoveId(null)}
                 style={{
                   border: "1px solid var(--accent-purple-surface)",
-                  borderRadius: "10px",
-                  padding: "8px 14px",
+                  borderRadius: "var(--input-radius)",
+                  padding: "var(--control-padding)",
                   background: "transparent",
                   fontWeight: 600,
                   color: "var(--text-secondary)",
@@ -470,8 +470,8 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
                 disabled={deletingVehicle[confirmRemoveId]}
                 style={{
                   border: "none",
-                  borderRadius: "10px",
-                  padding: "8px 14px",
+                  borderRadius: "var(--input-radius)",
+                  padding: "var(--control-padding)",
                   background: "var(--danger)",
                   color: "white",
                   fontWeight: 600,
@@ -485,31 +485,6 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
           </div>
         </div>
       )}
-      <style jsx global>{`
-        .history-reg-dropdown .dropdown-api__control {
-          padding: 10px 12px;
-          border-radius: 10px;
-          border: 1px solid var(--accent-purple-surface);
-          background: var(--surface);
-          font-size: 0.9rem;
-          font-weight: 500;
-          color: var(--text-primary);
-          min-height: 42px;
-        }
-        .history-reg-dropdown .dropdown-api__value {
-          font-size: 0.9rem;
-          font-weight: 500;
-          color: var(--text-primary);
-        }
-        .history-reg-dropdown .dropdown-api__value.is-placeholder {
-          color: var(--text-secondary);
-        }
-        .history-reg-dropdown.dropdown-api.is-open .dropdown-api__control,
-        .history-reg-dropdown .dropdown-api__control:focus-visible {
-          border-color: var(--accent-purple);
-          box-shadow: 0 0 0 2px rgba(var(--accent-purple-rgb), 0.15);
-        }
-      `}</style>
       {error && (
         <div
           className="mb-4 rounded-2xl px-3 py-2 text-sm"
@@ -528,8 +503,8 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
           <div
             style={{
               border: "1px dashed var(--accent-purple-surface)",
-              borderRadius: "16px",
-              padding: "24px",
+              borderRadius: "var(--radius-md)",
+              padding: "var(--page-card-padding)",
               textAlign: "center",
               color: "var(--text-secondary)",
               fontSize: "0.95rem",
@@ -554,7 +529,7 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
               key={vehicle.id}
               style={{
                 padding: "14px 16px",
-                borderRadius: "14px",
+                borderRadius: "var(--radius-sm)",
                 border: "1px solid rgba(var(--accent-purple-rgb), 0.2)",
                 background: "rgba(var(--accent-purple-rgb), 0.06)",
                 width: "100%",
@@ -595,7 +570,7 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
                   <span
                     style={{
                       padding: "6px 12px",
-                      borderRadius: "999px",
+                      borderRadius: "var(--radius-pill)",
                       fontSize: "0.72rem",
                       fontWeight: 700,
                       color: vehicle.payrollDeductionEnabled ? "var(--success)" : "var(--text-secondary)",
@@ -891,7 +866,7 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
             <div
               style={{
                 border: "1px solid rgba(var(--accent-purple-rgb), 0.18)",
-                borderRadius: "12px",
+                borderRadius: "var(--radius-sm)",
                 padding: "18px",
                 textAlign: "center",
                 color: "var(--text-secondary)",
@@ -950,7 +925,7 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
           style={{
             marginTop: "22px",
             padding: "16px",
-            borderRadius: "14px",
+            borderRadius: "var(--radius-sm)",
             border: "1px solid rgba(var(--accent-purple-rgb), 0.2)",
             background: "rgba(var(--accent-purple-rgb), 0.06)",
           }}
@@ -1079,8 +1054,8 @@ const historyLabelStyle = {
 };
 
 const historyInputStyle = {
-  padding: "10px 12px",
-  borderRadius: "10px",
+  padding: "var(--control-padding)",
+  borderRadius: "var(--input-radius)",
   border: "1px solid var(--accent-purple-surface)",
   fontSize: "0.9rem",
   fontWeight: 500,
@@ -1090,8 +1065,8 @@ const historyInputStyle = {
 
 const primaryActionButton = {
   border: "1px solid var(--accent-purple)",
-  borderRadius: "10px",
-  padding: "8px 14px",
+  borderRadius: "var(--input-radius)",
+  padding: "var(--control-padding)",
   background: "var(--accent-purple)",
   color: "white",
   fontWeight: 600,
@@ -1101,8 +1076,8 @@ const primaryActionButton = {
 
 const secondaryActionButton = {
   border: "1px solid rgba(var(--accent-purple-rgb), 0.4)",
-  borderRadius: "10px",
-  padding: "8px 14px",
+  borderRadius: "var(--input-radius)",
+  padding: "var(--control-padding)",
   background: "transparent",
   color: "var(--accent-purple)",
   fontWeight: 600,
@@ -1112,8 +1087,8 @@ const secondaryActionButton = {
 
 const dangerActionButton = {
   border: "1px solid rgba(var(--danger-rgb), 0.5)",
-  borderRadius: "10px",
-  padding: "8px 14px",
+  borderRadius: "var(--input-radius)",
+  padding: "var(--control-padding)",
   background: "rgba(var(--danger-rgb), 0.12)",
   color: "var(--danger)",
   fontWeight: 600,

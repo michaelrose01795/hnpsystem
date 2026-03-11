@@ -16,11 +16,6 @@ const containerStyle = {
 };
 
 const sectionCardStyle = {
-  borderRadius: "16px",
-  background: "var(--surface)",
-  border: "1px solid var(--surface-light)",
-  padding: "20px",
-  boxShadow: "none",
   height: "100%",
 };
 
@@ -88,7 +83,7 @@ const SourceBadge = ({ label, background, color }) => (
       display: "inline-flex",
       alignItems: "center",
       padding: "2px 10px",
-      borderRadius: "999px",
+      borderRadius: "var(--radius-pill)",
       fontSize: "0.75rem",
       fontWeight: 600,
       background,
@@ -408,7 +403,7 @@ export default function PartsManagerDashboard() {
             data={dashboardData}
           />
 
-          <div style={sectionCardStyle}>
+          <div className="app-section-card" style={sectionCardStyle}>
             <div style={sectionTitleStyle}>Parts Pipeline</div>
             <div
               style={{
@@ -422,7 +417,7 @@ export default function PartsManagerDashboard() {
                   key={stage.id}
                   style={{
                     padding: "10px 12px",
-                    borderRadius: "12px",
+                    borderRadius: "var(--radius-sm)",
                     border: "1px solid rgba(var(--primary-rgb),0.2)",
                     background: "rgba(var(--danger-rgb), 0.4)",
                     minHeight: "100px",
@@ -446,7 +441,7 @@ export default function PartsManagerDashboard() {
 
           <div style={containerStyle}>
             <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 2fr) minmax(280px, 1fr)", gap: "20px" }}>
-              <div style={sectionCardStyle}>
+              <div className="app-section-card" style={sectionCardStyle}>
                 <div style={sectionTitleStyle}>Queue Snapshot</div>
                 <table style={performanceTableStyle}>
                   <thead>
@@ -487,7 +482,7 @@ export default function PartsManagerDashboard() {
                                 onClick={() => openScheduleModalForRow(row)}
                                 style={{
                                   marginTop: "6px",
-                                  borderRadius: "8px",
+                                  borderRadius: "var(--radius-xs)",
                                   border: "1px solid var(--accent-purple)",
                                   background: "var(--surface)",
                                   color: "var(--accent-purple)",
@@ -513,7 +508,7 @@ export default function PartsManagerDashboard() {
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-                <div style={sectionCardStyle}>
+                <div className="app-section-card" style={sectionCardStyle}>
                   <div style={sectionTitleStyle}>Status Buckets</div>
                   {dashboardData.teamAvailability.map((bucket) => (
                     <div
@@ -527,7 +522,7 @@ export default function PartsManagerDashboard() {
                   ))}
                 </div>
 
-                <div style={sectionCardStyle}>
+                <div className="app-section-card" style={sectionCardStyle}>
                   <div style={sectionTitleStyle}>Focus Items</div>
                   {dashboardData.focusItems.map((item) => (
                     <div key={item.title} style={{ padding: "10px 0", borderBottom: "1px solid rgba(var(--shadow-rgb),0.06)" }}>
@@ -540,7 +535,7 @@ export default function PartsManagerDashboard() {
               </div>
             </div>
 
-            <div style={sectionCardStyle}>
+            <div className="app-section-card" style={sectionCardStyle}>
               <div style={sectionTitleStyle}>Top Queue Lines</div>
               <table style={performanceTableStyle}>
                 <thead>
@@ -564,7 +559,7 @@ export default function PartsManagerDashboard() {
               </table>
             </div>
 
-            <div style={sectionCardStyle}>
+            <div className="app-section-card" style={sectionCardStyle}>
               <div style={sectionTitleStyle}>Low Stock Parts Overview</div>
               {lowStockRows.length === 0 ? (
                 <div style={{ color: "var(--grey-accent)" }}>No low stock parts currently.</div>
@@ -606,7 +601,7 @@ export default function PartsManagerDashboard() {
               )}
             </div>
 
-          <div style={sectionCardStyle}>
+          <div className="app-section-card" style={sectionCardStyle}>
             <div style={sectionTitleStyle}>Tech Requests</div>
             {techRequests.length === 0 ? (
               <div style={{ color: "var(--grey-accent)" }}>No open technician requests.</div>
@@ -651,7 +646,7 @@ export default function PartsManagerDashboard() {
                                 display: "inline-flex",
                                 alignItems: "center",
                                 padding: "2px 10px",
-                                borderRadius: "999px",
+                                borderRadius: "var(--radius-pill)",
                                 fontSize: "0.75rem",
                                 fontWeight: 600,
                                 background: statusMeta.background,

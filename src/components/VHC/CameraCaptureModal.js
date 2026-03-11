@@ -328,7 +328,7 @@ export default function CameraCaptureModal({ isOpen, onClose, onCapture, initial
               disabled={isRecording}
               style={{
                 padding: "8px 12px",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
                 border: "1px solid var(--accent-purple-surface)",
                 background: "var(--surface)",
                 color: "var(--text)",
@@ -348,7 +348,7 @@ export default function CameraCaptureModal({ isOpen, onClose, onCapture, initial
         <div style={{
           flex: 1,
           background: "var(--background)",
-          borderRadius: "12px",
+          borderRadius: "var(--radius-sm)",
           overflow: "hidden",
           display: "flex",
           alignItems: "center",
@@ -402,7 +402,7 @@ export default function CameraCaptureModal({ isOpen, onClose, onCapture, initial
                   background: "rgba(var(--danger-rgb), 0.9)",
                   color: "white",
                   padding: "8px 16px",
-                  borderRadius: "20px",
+                  borderRadius: "var(--radius-lg)",
                   fontSize: "14px",
                   fontWeight: 600,
                   display: "flex",
@@ -412,8 +412,8 @@ export default function CameraCaptureModal({ isOpen, onClose, onCapture, initial
                   <div style={{
                     width: "8px",
                     height: "8px",
-                    background: "white",
-                    borderRadius: "50%",
+                    background: "var(--surface)",
+                    borderRadius: "var(--radius-full)",
                     animation: "pulse 1s infinite",
                   }} />
                   REC {formatDuration(recordingDuration)}

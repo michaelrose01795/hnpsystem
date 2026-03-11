@@ -9,8 +9,8 @@ export default function Popup({ isOpen, onClose, children }) {
       onClose={onClose}
       backdropStyle={{ zIndex: 1100 }}
       cardStyle={{
-        padding: "20px",
-        borderRadius: "12px",
+        padding: "var(--section-card-padding)",
+        borderRadius: "var(--radius-sm)",
         minWidth: "300px",
         maxWidth: "90%",
       }}
@@ -20,8 +20,8 @@ export default function Popup({ isOpen, onClose, children }) {
         onClick={onClose}
         style={{
           marginTop: "10px",
-          padding: "10px 14px",
-          borderRadius: "10px",
+          padding: "var(--control-padding)",
+          borderRadius: "var(--input-radius)",
           backgroundColor: "var(--primary)",
           color: "white",
           border: "1px solid var(--primary-light)",

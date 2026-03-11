@@ -333,7 +333,7 @@ export default function InternalElectricsDetailsModal({ isOpen, onClose, onCompl
                 <div
                   style={{
                     padding: "16px",
-                    borderRadius: "16px",
+                    borderRadius: "var(--radius-md)",
                     border: `1px dashed ${palette.border}`,
                     backgroundColor: palette.accentSurface,
                     color: palette.textMuted,
@@ -356,10 +356,9 @@ export default function InternalElectricsDetailsModal({ isOpen, onClose, onCompl
                         flexDirection: "column",
                         gap: "10px",
                         padding: "14px",
-                        borderRadius: "16px",
+                        borderRadius: "var(--radius-md)",
                         border: `1px solid ${palette.border}`,
                         background: palette.surface,
-                        boxShadow: "none",
                       }}
                     >
                       {rowLocked && lockReason && (

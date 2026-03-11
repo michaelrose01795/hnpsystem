@@ -7,12 +7,8 @@ import { getWorkshopDashboardData } from "@/lib/database/dashboard/workshop";
 
 const MetricCard = ({ label, value, helper }) => (
   <div
+    className="app-section-card"
     style={{
-      background: "var(--surface)",
-      borderRadius: "16px",
-      padding: "16px",
-      border: "1px solid var(--surface-light)",
-      boxShadow: "none",
       minWidth: "140px",
       flex: "1 1 140px",
     }}
@@ -27,14 +23,8 @@ const MetricCard = ({ label, value, helper }) => (
 
 const Section = ({ title, subtitle, children, style }) => (
   <section
+    className="app-section-card"
     style={{
-      background: "var(--surface)",
-      borderRadius: "18px",
-      padding: "24px",
-      border: "1px solid var(--surface-light)",
-      boxShadow: "none",
-      display: "flex",
-      flexDirection: "column",
       gap: "12px",
       ...style,
     }}
@@ -53,7 +43,7 @@ const TrendBlock = ({ title, data }) => {
     <div
       style={{
         border: "1px solid var(--danger-surface)",
-        borderRadius: "12px",
+        borderRadius: "var(--radius-sm)",
         padding: "16px",
         background: "var(--surface)",
         display: "flex",
@@ -172,7 +162,7 @@ export default function WorkshopDashboard() {
 
   return (
     <Layout>
-      <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "20px" }}>
+      <div>
         <Section title="Daily checkpoints">
           {loading ? (
             <p style={{ color: "var(--info)" }}>Loading today's metrics...</p>
@@ -227,7 +217,7 @@ export default function WorkshopDashboard() {
                       key={job.job_number}
                       style={{
                         padding: "12px",
-                        borderRadius: "10px",
+                        borderRadius: "var(--radius-sm)",
                         background: "var(--danger-surface)",
                         border: "1px solid var(--surface-light)",
                         display: "flex",
@@ -269,7 +259,7 @@ export default function WorkshopDashboard() {
                       flexDirection: "column",
                       gap: "8px",
                       background: "var(--surface)",
-                      borderRadius: "10px",
+                      borderRadius: "var(--radius-sm)",
                       border: "1px solid var(--surface-light)",
                       padding: "12px",
                       minHeight: "84px",

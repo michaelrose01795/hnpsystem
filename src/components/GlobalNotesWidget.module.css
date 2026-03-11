@@ -9,7 +9,7 @@
   position: fixed;
   width: 56px;
   height: 56px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid var(--primary-dark);
   background: var(--primary);
   color: var(--text-inverse);
@@ -54,9 +54,9 @@
 .panel {
   position: fixed;
   pointer-events: auto;
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   border: 1px solid var(--border);
-  background: linear-gradient(165deg, var(--surface) 0%, var(--surface-light) 100%);
+  background: var(--surface);
   box-shadow:
     0 28px 52px -18px rgba(0, 0, 0, 0.34),
     0 14px 28px -14px rgba(0, 0, 0, 0.22),
@@ -120,7 +120,7 @@
 .dragHandleGrip {
   width: 42px;
   height: 5px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgba(var(--primary-rgb), 0.35);
 }
 
@@ -144,7 +144,7 @@
   width: 100%;
   min-width: 0;
   padding: 4px 6px;
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   background: transparent;
 }
 
@@ -175,7 +175,7 @@
   border: 1px solid rgba(var(--primary-rgb), 0.35);
   background: var(--surface-light);
   color: var(--text-primary);
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   padding: 7px 10px;
   cursor: pointer;
   font-size: 12px;
@@ -212,7 +212,7 @@
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text-primary);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 6px 10px;
   font-size: 12px;
   cursor: pointer;
@@ -262,7 +262,7 @@
 
 .tabBadge {
   font-size: 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 2px 6px;
   border: 1px solid rgba(var(--primary-rgb), 0.45);
   background: rgba(var(--primary-rgb), 0.13);
@@ -465,7 +465,7 @@
 .visibilitySwitch {
   width: 44px;
   height: 24px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid var(--border);
   background: var(--surface-light);
   position: relative;
@@ -484,7 +484,7 @@
   left: 2px;
   width: 18px;
   height: 18px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: #fff;
   transition: transform 0.16s ease;
 }
@@ -526,7 +526,7 @@
 .emptyState {
   height: 100%;
   border: 1px dashed var(--border);
-  border-radius: 14px;
+  border-radius: var(--control-radius);
   background: rgba(var(--primary-rgb), 0.05);
   display: grid;
   align-content: center;
@@ -581,7 +581,7 @@
   width: 360px;
   max-width: calc(100vw - 28px);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   background: var(--surface);
   box-shadow: 0 24px 46px rgba(0, 0, 0, 0.28);
   display: grid;
@@ -633,7 +633,7 @@
 
 .shareUserList {
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   background: var(--surface-light);
   overflow-y: auto;
   max-height: 230px;
@@ -680,7 +680,7 @@
 
 @media (max-width: 640px) {
   .panel {
-    border-radius: 16px;
+    border-radius: var(--radius-md);
   }
 
   .header {

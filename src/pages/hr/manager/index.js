@@ -130,7 +130,7 @@ export default function HRManagerDashboard() {
           <pre
             style={{
               padding: "16px 20px",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               background: "var(--surface-light)",
               border: "1px dashed var(--primary-light)",
               fontSize: "0.95rem",
@@ -171,11 +171,10 @@ NEXT_PUBLIC_HR_MANAGER_SAFE_MODE=false`}
           }}
         >
           <div
+            className="app-section-card"
             style={{
               width: "100%",
               maxWidth: "none",
-              background: "var(--surface)",
-              borderRadius: "16px",
               padding: "20px 24px 28px",
               position: "relative",
             }}
@@ -205,7 +204,7 @@ NEXT_PUBLIC_HR_MANAGER_SAFE_MODE=false`}
                     onClick={() => setActiveTab(tab.id)}
                     style={{
                       flex: "0 0 auto",
-                      borderRadius: "999px",
+                      borderRadius: "var(--radius-pill)",
                       border: isActive ? "1px solid rgba(var(--primary-rgb), 0.45)" : "1px solid var(--surface-light)",
                       padding: "10px 20px",
                       fontSize: "0.9rem",

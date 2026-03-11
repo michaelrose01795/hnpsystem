@@ -70,7 +70,7 @@ export default function AdminUserForm({ onCreated }) {
     <div
       style={{
         background: "var(--surface)",
-        borderRadius: "16px",
+        borderRadius: "var(--radius-md)",
         padding: "24px",
         boxShadow: "none",
         display: "flex",
@@ -158,7 +158,7 @@ export default function AdminUserForm({ onCreated }) {
                 : message.type === "success"
                 ? "1px solid rgba(var(--info-rgb), 0.3)"
                 : "1px solid rgba(var(--accent-purple-rgb), 0.2)",
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             padding: "12px",
             color:
               message.type === "error"
@@ -195,7 +195,7 @@ const labelStyle = {
 };
 
 const inputStyle = {
-  borderRadius: "10px",
+  borderRadius: "var(--control-radius-xs)",
   border: "1px solid var(--accent-purple-surface)",
   padding: "10px 12px",
   fontWeight: 500,
@@ -205,7 +205,7 @@ const inputStyle = {
 
 const primaryButtonStyle = {
   padding: "10px 16px",
-  borderRadius: "10px",
+  borderRadius: "var(--control-radius-xs)",
   border: "none",
   background: "var(--accent-purple)",
   color: "white",
@@ -215,7 +215,7 @@ const primaryButtonStyle = {
 
 const secondaryButtonStyle = {
   padding: "10px 16px",
-  borderRadius: "10px",
+  borderRadius: "var(--control-radius-xs)",
   border: "1px solid var(--accent-purple)",
   background: "var(--surface)",
   color: "var(--accent-purple)",

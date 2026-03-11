@@ -506,7 +506,7 @@ export default function MyJobsPage() {
             height: "60px",
             border: "4px solid var(--surface)",
             borderTop: "4px solid var(--primary)",
-            borderRadius: "50%",
+            borderRadius: "var(--radius-full)",
             animation: "spin 1s linear infinite"
           }}></div>
           <p style={{ color: "var(--grey-accent)", fontSize: "16px" }}>Loading your jobs...</p>
@@ -523,15 +523,7 @@ export default function MyJobsPage() {
 
   return (
     <Layout>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "16px",
-          padding: "8px 16px",
-          minHeight: "100vh"
-        }}
-      >
+      <div className="app-page-stack" style={{ minHeight: "100%" }}>
         {/* Header */}
         <div style={{
           display: "flex",
@@ -547,9 +539,6 @@ export default function MyJobsPage() {
             }}>
               My Assigned Jobs
             </h1>
-            <p style={{ color: "var(--grey-accent)", fontSize: "14px", margin: 0 }}>
-              {filteredJobs.length} job{filteredJobs.length !== 1 ? "s" : ""} assigned to you
-            </p>
           </div>
 
         </div>
@@ -559,7 +548,7 @@ export default function MyJobsPage() {
           <div style={{
             backgroundColor: "var(--success-surface)",
             border: "1px solid var(--success)",
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             padding: "16px 24px",
             display: "flex",
             justifyContent: "space-between",
@@ -569,7 +558,7 @@ export default function MyJobsPage() {
               <div style={{
                 width: "12px",
                 height: "12px",
-                borderRadius: "50%",
+                borderRadius: "var(--radius-full)",
                 backgroundColor: "var(--info)",
                 animation: "pulse 2s infinite"
               }}></div>
@@ -602,7 +591,7 @@ export default function MyJobsPage() {
           flexWrap: "wrap",
           padding: "12px",
           backgroundColor: "var(--search-surface)",
-          borderRadius: "12px",
+          borderRadius: "var(--radius-sm)",
           color: "var(--search-text)"
         }}>
           {/* Search Input */}
@@ -633,7 +622,7 @@ export default function MyJobsPage() {
                   backgroundColor: filter === value ? "var(--primary)" : "var(--surface)",
                   color: filter === value ? "var(--surface)" : "var(--primary)",
                   border: "1px solid var(--primary)",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   cursor: "pointer",
                   fontSize: "14px",
                   fontWeight: filter === value ? "600" : "500",
@@ -663,10 +652,10 @@ export default function MyJobsPage() {
             flex: 1,
             display: "flex",
             flexDirection: "column",
-            borderRadius: "24px",
+            borderRadius: "var(--radius-xl)",
             border: "1px solid var(--surface-light)",
             background: "var(--surface)",
-            padding: "24px",
+            padding: "var(--page-card-padding)",
             overflow: "hidden",
             minHeight: 0
           }}
@@ -675,7 +664,7 @@ export default function MyJobsPage() {
             <div style={{
               backgroundColor: "transparent",
               padding: "60px",
-              borderRadius: "16px",
+              borderRadius: "var(--radius-md)",
               border: "1px dashed var(--danger)",
               textAlign: "center",
               margin: "auto",
@@ -712,7 +701,7 @@ export default function MyJobsPage() {
                   alignItems: "center",
                   gap: "12px",
                   padding: "8px 16px",
-                  borderRadius: "10px",
+                  borderRadius: "var(--radius-sm)",
                   backgroundColor: "var(--surface-light)",
                   border: "1px solid var(--surface-light)",
                   fontSize: "12px",
@@ -778,7 +767,7 @@ export default function MyJobsPage() {
                     style={{
                       border: "1px solid var(--border)",
                       padding: "12px 16px",
-                      borderRadius: "10px",
+                      borderRadius: "var(--radius-sm)",
                       backgroundColor: "var(--surface)",
                       cursor: "pointer",
                       transition: "all 0.2s ease",
@@ -807,7 +796,7 @@ export default function MyJobsPage() {
                         backgroundColor: statusStyle.background,
                         color: statusStyle.color,
                         padding: "6px 12px",
-                        borderRadius: "6px",
+                        borderRadius: "var(--radius-xs)",
                         fontSize: "11px",
                         fontWeight: "700",
                         whiteSpace: "nowrap",
@@ -890,10 +879,7 @@ export default function MyJobsPage() {
         </div>
 
         {/* Job Count Summary */}
-        <div style={{
-          backgroundColor: "var(--surface)",
-          padding: "20px",
-          borderRadius: "16px",
+        <div className="app-section-card" style={{
           border: "1px solid var(--surface-light)"
         }}>
           <div style={{

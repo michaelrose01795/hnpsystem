@@ -20,11 +20,10 @@ const pageWrapperStyle = {
 };
 
 const cardStyle = {
-  backgroundColor: "var(--surface)", // White card background for clarity
-  borderRadius: "16px", // Rounded corners for modern design
-  padding: "20px", // Interior spacing for content
-  boxShadow: "none", // Soft red to match brand
-  border: "1px solid var(--surface-light)", // Subtle red border accent
+  backgroundColor: "var(--section-card-bg)",
+  borderRadius: "var(--section-card-radius)",
+  padding: "var(--section-card-padding)",
+  border: "var(--section-card-border)",
 };
 
 const inputStyle = {
@@ -496,7 +495,7 @@ const TechConsumableRequestPage = () => {
                           alignItems: "center",
                           gap: "6px",
                           padding: "4px 10px",
-                          borderRadius: "999px",
+                          borderRadius: "var(--radius-pill)",
                           fontWeight: 600,
                           fontSize: "0.75rem",
                           ...(statusBadgeStyles[request.status] || statusBadgeStyles.pending),

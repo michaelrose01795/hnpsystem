@@ -45,22 +45,18 @@ export default function ArchivedJobsPage() {
 
   return (
     <Layout>
-      <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "16px" }}>
+      <div className="app-page-stack" style={{ gap: "24px" }}>
 
         <form
           onSubmit={(event) => {
             event.preventDefault();
             runSearch(query);
           }}
+          className="app-section-card"
           style={{
             display: "flex",
             flexWrap: "wrap",
             gap: "12px",
-            background: "var(--search-surface)",
-            borderRadius: "12px",
-            padding: "16px",
-            boxShadow: "none",
-            border: "1px solid var(--search-surface-muted)",
             color: "var(--search-text)",
           }}
         >
@@ -78,7 +74,7 @@ export default function ArchivedJobsPage() {
             disabled={isSearching}
             style={{
               padding: "12px 20px",
-              borderRadius: "10px",
+              borderRadius: "var(--radius-sm)",
               border: "none",
               background: "var(--primary)",
               color: "white",
@@ -93,7 +89,7 @@ export default function ArchivedJobsPage() {
         </form>
 
         {error && (
-          <div style={{ borderRadius: "12px", border: "1px solid var(--danger-surface)", background: "var(--danger-surface)", padding: "12px" }}>
+          <div style={{ borderRadius: "var(--radius-sm)", border: "1px solid var(--danger-surface)", background: "var(--danger-surface)", padding: "12px" }}>
             <p style={{ margin: 0, color: "var(--danger)" }}>{error}</p>
           </div>
         )}
@@ -101,9 +97,8 @@ export default function ArchivedJobsPage() {
         <section
           style={{
             background: "var(--surface)",
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             border: "1px solid var(--info-surface)",
-            boxShadow: "none",
           }}
         >
           <div style={{ padding: "16px 24px", borderBottom: "1px solid var(--info-surface)" }}>
@@ -142,7 +137,7 @@ export default function ArchivedJobsPage() {
                             display: "inline-flex",
                             alignItems: "center",
                             padding: "4px 12px",
-                            borderRadius: "999px",
+                            borderRadius: "var(--radius-pill)",
                             background: badge.bg,
                             color: badge.color,
                             fontSize: "0.85rem",
@@ -161,7 +156,7 @@ export default function ArchivedJobsPage() {
                           style={{
                             textDecoration: "none",
                             padding: "8px 14px",
-                            borderRadius: "10px",
+                            borderRadius: "var(--radius-sm)",
                             border: "1px solid var(--info)",
                             color: "var(--accent-purple)",
                             fontWeight: 600,

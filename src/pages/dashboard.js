@@ -146,16 +146,14 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      <div style={{ padding: "0", display: "flex", flexDirection: "column", gap: "20px" }}> {/* outer container for dashboard */}
+      <div> {/* outer container for dashboard */}
         <div
+          className="app-section-card"
           style={{
             display: "flex",
             justifyContent: "flex-end",
             alignItems: "center",
-            backgroundColor: "var(--surface)",
             padding: "12px 20px",
-            borderRadius: "8px",
-            boxShadow: "none",
           }}
         >
           <button
@@ -165,7 +163,7 @@ export default function Dashboard() {
               backgroundColor: "var(--primary)",
               color: "white",
               border: "none",
-              borderRadius: "6px",
+              borderRadius: "var(--radius-xs)",
               fontSize: "0.9rem",
               fontWeight: "600",
               cursor: "pointer",
@@ -178,8 +176,8 @@ export default function Dashboard() {
         <div
           style={{
             backgroundColor: "var(--danger-surface)",
-            padding: "20px",
-            borderRadius: "8px",
+            padding: "var(--section-card-padding)",
+            borderRadius: "var(--radius-xs)",
             minHeight: "70vh",
           }}
         >
@@ -248,7 +246,7 @@ export default function Dashboard() {
                 backgroundColor: "var(--primary)",
                 color: "white",
                 border: "none",
-                borderRadius: "6px",
+                borderRadius: "var(--radius-xs)",
                 marginBottom: "12px",
                 cursor: "pointer",
                 fontWeight: 600,
@@ -264,7 +262,7 @@ export default function Dashboard() {
                 backgroundColor: "var(--info-surface)",
                 color: "var(--text-secondary)",
                 border: "none",
-                borderRadius: "6px",
+                borderRadius: "var(--radius-xs)",
                 cursor: "pointer",
               }}
             >

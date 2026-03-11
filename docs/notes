@@ -4,51 +4,17 @@ TO DO:
 
 Continue flow with job number 56.
 
-
+check
 lot of pages miss matched with first card starting position etc fix this deep dive so all pages follow the same background colour theme, page set up (with individual sections etc)
 
 
-WHAT IS THIS SYMBOLE FOR "⚲" remove it from the app
+
+check
+The background colour of the top bar and main page is differnt to the background (BEHIND THE TOPBAR AND PAGE AND SIDEBAR) behind the sidebar, make sure this is all the same accent colours 
 
 
-API STYLE SYSTEM UPDATE
 
-Create one shared UI control style system so all interactive components use the same base design language as the current dropdown style shown in the UI.
 
-Goal:
-Make the whole interface feel consistent, clean, modern, and matching. All controls should follow the same height, corner radius, border weight, spacing, typography, and interaction states. Use the existing dropdown as the main visual reference. Keep the accent colour usage subtle and tidy, not overused.
-
-Apply this shared design system to all current and future controls across the app:
-- Calendar
-- Dropdown
-- Time picker
-- Tabs
-- Search bar
-- Input fields
-- Buttons
-
-Rules:
-- All controls should share the same base height unless there is a clear reason not to
-- All controls should have matching border radius and padding
-- All controls should use the same font size, font weight, and internal alignment style
-- Buttons should visually match the dropdown size and shape
-- Input fields should match the same size, styling, and layout language
-- Search bars should feel like part of the same control family
-- Tabs should follow the same shape language and spacing
-- Calendar and time picker triggers should match the same control appearance
-- Use accent colours lightly for active, selected, focused, and hover states
-- Keep default surfaces neutral and clean
-- Make all states consistent, including default, hover, active, focus, disabled, and selected
-- Improve visual balance so controls look aligned when placed beside each other in rows
-
-Implementation:
-- Build a reusable shared control styling system that is used everywhere instead of separate one-off styles
-- Refactor existing components to use this shared style system
-- Make this the default standard for all future UI controls and sections
-- Keep light and dark theme support fully consistent
-
-Result:
-The whole page should feel like every dropdown, button, search bar, input, tab, calendar, and time picker belongs to the same design family, with matching size, shape, spacing, and behaviour.
 
 
 
@@ -293,3 +259,5 @@ Add any database tables / columns to file location: src/lib/database/schema/addt
 
 npm i next@latest
 npm i -g vercel@latest
+
+sudo apt install ripgrep mums and dads (done ipad)

@@ -223,11 +223,17 @@ const GlobalSearch = ({
       const anchor = controlRef.current || containerRef.current;
       if (!anchor) return;
       const rect = anchor.getBoundingClientRect();
-      const width = rect.width;
+      const viewportPadding = 16;
+      const maxWidth = Math.min(520, window.innerWidth - viewportPadding * 2);
+      const width = Math.min(Math.max(rect.width, 320), maxWidth);
+      const left = Math.min(
+        Math.max(rect.left, viewportPadding),
+        window.innerWidth - viewportPadding - width
+      );
       setDropdownStyle({
         position: "fixed",
         top: rect.bottom + 12,
-        left: rect.left,
+        left,
         width,
         right: "auto",
         margin: 0,
@@ -320,7 +326,7 @@ const GlobalSearch = ({
               borderRadius: "var(--control-radius)",
               backgroundColor: dropdownBackground,
               border: `1px solid ${drawerBorderColor}`,
-              boxShadow: "none",
+
               color: textColor,
               fontSize: "0.85rem",
             }}
@@ -333,8 +339,8 @@ const GlobalSearch = ({
           <div
             style={{
               backgroundColor: dropdownBackground,
-              borderRadius: "16px",
-              boxShadow: "none",
+              borderRadius: "var(--radius-md)",
+
               border: `1px solid ${drawerBorderColor}`,
               overflow: "hidden",
               maxHeight: "280px",
@@ -391,7 +397,7 @@ const GlobalSearch = ({
                     style={{
                       fontSize: "0.7rem",
                       padding: "4px 8px",
-                      borderRadius: "999px",
+                      borderRadius: "var(--radius-pill)",
                       backgroundColor: active ? accentColor : "rgba(var(--primary-rgb), 0.12)",
                       color: active ? "var(--text-inverse)" : "var(--primary-dark)",
                       textTransform: "uppercase",
@@ -414,7 +420,7 @@ const GlobalSearch = ({
               borderRadius: "var(--control-radius)",
               backgroundColor: dropdownBackground,
               border: `1px solid ${drawerBorderColor}`,
-              boxShadow: "none",
+
               color: textColor,
               fontSize: "0.85rem",
             }}
@@ -435,17 +441,7 @@ const GlobalSearch = ({
     >
       <div
         ref={controlRef}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "6px",
-          background: "var(--control-bg)",
-          border: "var(--control-border)",
-          borderRadius: "var(--control-radius)",
-          padding: "var(--control-padding)",
-          boxShadow: "none",
-          transition: "var(--control-transition)",
-        }}
+        className="searchbar-api"
       >
         <input
           type="search"
@@ -461,14 +457,7 @@ const GlobalSearch = ({
           onBlur={() => setIsFocused(false)}
           onKeyDown={handleKeyDown}
           placeholder="Global Search"
-          style={{
-            flex: 1,
-            border: "none",
-            outline: "none",
-            backgroundColor: "transparent",
-            color: textColor,
-            fontSize: "var(--control-font-size)",
-          }}
+          className="searchbar-api__input"
         />
 
         {query && (
@@ -480,16 +469,10 @@ const GlobalSearch = ({
               setNavResults([]);
               setFeedback("Search job numbers, customers, registrations…");
             }}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              fontSize: "0.8rem",
-              color: placeholderColor,
-            }}
+            className="searchbar-api__clear"
             aria-label="Clear search"
           >
-            Clear
+            &times;
           </button>
         )}
       </div>

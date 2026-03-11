@@ -957,14 +957,14 @@ export default function CustomerPreviewPage() {
                 width: "80px",
                 height: "8px",
                 background: "var(--info-surface)",
-                borderRadius: "4px",
+                borderRadius: "var(--radius-xs)",
                 overflow: "hidden"
               }}>
                 <div style={{
                   width: `${wearPercent}%`,
                   height: "100%",
                   background: getWearColor(wearPercent),
-                  borderRadius: "4px",
+                  borderRadius: "var(--radius-xs)",
                   transition: "width 0.3s ease"
                 }} />
               </div>
@@ -1056,7 +1056,7 @@ export default function CustomerPreviewPage() {
       <div
         style={{
           border: `1px solid ${theme.border || "var(--info-surface)"}`,
-          borderRadius: "16px",
+          borderRadius: "var(--radius-md)",
           background: (severity === "authorized" || severity === "declined") ? "var(--surface)" : (theme.background || "var(--surface)"),
           overflow: "hidden",
           marginBottom: "18px",
@@ -1153,7 +1153,7 @@ export default function CustomerPreviewPage() {
             style={{
               padding: "12px",
               border: `1px solid ${item.color}33`,
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               background: `${item.color}11`,
             }}
           >
@@ -1202,7 +1202,7 @@ export default function CustomerPreviewPage() {
           style={{
             padding: "18px",
             border: "1px solid var(--info-surface)",
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             background: "var(--info-surface)",
             color: "var(--info)",
             fontSize: "13px",
@@ -1223,7 +1223,7 @@ export default function CustomerPreviewPage() {
               key={file.file_id}
               style={{
                 background: "var(--surface)",
-                borderRadius: "12px",
+                borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--info-surface)",
                 overflow: "hidden",
               }}
@@ -1268,7 +1268,7 @@ export default function CustomerPreviewPage() {
           style={{
             padding: "18px",
             border: "1px solid var(--info-surface)",
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             background: "var(--info-surface)",
             color: "var(--info)",
             fontSize: "13px",
@@ -1289,7 +1289,7 @@ export default function CustomerPreviewPage() {
               key={file.file_id}
               style={{
                 background: "var(--surface)",
-                borderRadius: "12px",
+                borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--info-surface)",
                 overflow: "hidden",
               }}
@@ -1350,7 +1350,7 @@ export default function CustomerPreviewPage() {
               background: "var(--primary)",
               color: "var(--surface)",
               border: "none",
-              borderRadius: "10px",
+              borderRadius: "var(--radius-sm)",
               fontWeight: 600,
               cursor: "pointer",
             }}
@@ -1434,7 +1434,7 @@ export default function CustomerPreviewPage() {
                 background: "var(--surface)",
                 color: "var(--accent-purple)",
                 border: "1px solid var(--accent-purple-surface)",
-                borderRadius: "10px",
+                borderRadius: "var(--radius-sm)",
                 fontWeight: 600,
                 cursor: "pointer",
                 fontSize: "14px",
@@ -1468,12 +1468,12 @@ export default function CustomerPreviewPage() {
                 >
                   {tab.label}
                   {tab.id === "photos" && photoFiles.length > 0 && (
-                    <span style={{ marginLeft: "8px", background: "var(--info-surface)", padding: "2px 8px", borderRadius: "12px", fontSize: "12px" }}>
+                    <span style={{ marginLeft: "8px", background: "var(--info-surface)", padding: "2px 8px", borderRadius: "var(--radius-sm)", fontSize: "12px" }}>
                       {photoFiles.length}
                     </span>
                   )}
                   {tab.id === "videos" && videoFiles.length > 0 && (
-                    <span style={{ marginLeft: "8px", background: "var(--info-surface)", padding: "2px 8px", borderRadius: "12px", fontSize: "12px" }}>
+                    <span style={{ marginLeft: "8px", background: "var(--info-surface)", padding: "2px 8px", borderRadius: "var(--radius-sm)", fontSize: "12px" }}>
                       {videoFiles.length}
                     </span>
                   )}

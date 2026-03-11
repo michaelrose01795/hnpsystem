@@ -19,14 +19,13 @@ export const popupStyleApi = {
   card: {
     backgroundColor: "var(--surface)",
     border: "1px solid var(--surface-light)",
-    borderRadius: "32px",
+    borderRadius: "var(--radius-xl)",
     width: "100%",
     maxWidth: "650px",
     maxHeight: "90vh",
     overflowY: "auto",
     position: "relative",
     margin: "auto",
-    boxShadow: "none",
   },
 };
 

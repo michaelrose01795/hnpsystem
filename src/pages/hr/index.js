@@ -42,10 +42,8 @@ export default function HrDashboard() {
   return (
     <Layout>
       <div
+        className="app-page-stack"
         style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "24px",
           padding: "8px 8px 32px",
         }}
       >

@@ -805,7 +805,7 @@ export default function EfficiencyTab({
 
   const monthBtnStyle = {
     padding: "8px 14px",
-    borderRadius: "10px",
+    borderRadius: "var(--input-radius)",
     border: "1px solid var(--surface-light)",
     background: "var(--surface)",
     color: "var(--primary-dark)",
@@ -816,7 +816,7 @@ export default function EfficiencyTab({
 
   const sectionStyle = {
     background: "var(--surface)",
-    borderRadius: "18px",
+    borderRadius: "var(--radius-lg)",
     padding: "24px",
     border: "1px solid var(--surface-light)",
     display: "flex",
@@ -825,7 +825,7 @@ export default function EfficiencyTab({
   };
 
   const statCardStyle = {
-    borderRadius: "14px",
+    borderRadius: "var(--radius-md)",
     padding: "16px",
     background: "var(--accent-purple-surface)",
     border: "1px solid rgba(var(--accent-purple-rgb), 0.22)",
@@ -835,7 +835,7 @@ export default function EfficiencyTab({
   };
 
   const tableWrapperStyle = {
-    borderRadius: "14px",
+    borderRadius: "var(--radius-md)",
     border: "1px solid var(--surface-light)",
     overflow: "hidden",
   };
@@ -1077,7 +1077,7 @@ export default function EfficiencyTab({
               onClick={handleDownload}
               style={{
                 padding: "10px 16px",
-                borderRadius: "12px",
+                borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--surface-light)",
                 background: "var(--surface)",
                 color: "var(--primary-dark)",
@@ -1098,7 +1098,7 @@ export default function EfficiencyTab({
               onClick={openAddModal}
               style={{
                 padding: "10px 20px",
-                borderRadius: "12px",
+                borderRadius: "var(--radius-sm)",
                 border: "none",
                 background: "var(--primary)",
                 color: "var(--surface)",
@@ -1123,44 +1123,17 @@ export default function EfficiencyTab({
             justifyContent: "center",
           }}
         >
-          <div
-            className="efficiency-period-toggle"
-            style={{
-              display: "flex",
-              gap: "8px",
-              padding: "6px",
-              borderRadius: "999px",
-              backgroundColor: "var(--surface-light)",
-              border: "1px solid var(--surface-light)",
-              flex: "0 0 auto",
-            }}
-          >
-            {["day", "week", "month"].map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => setPeriodFilter(mode)}
-                style={{
-                  padding: "8px 14px",
-                  borderRadius: "999px",
-                  border:
-                    periodFilter === mode
-                      ? "1px solid var(--primary)"
-                      : "1px solid transparent",
-                  backgroundColor: periodFilter === mode ? "var(--surface)" : "transparent",
-                  color:
-                    periodFilter === mode
-                      ? "var(--text-primary)"
-                      : "var(--text-secondary)",
-                  fontSize: "0.82rem",
-                  fontWeight: periodFilter === mode ? 600 : 500,
-                  cursor: "pointer",
-                  textTransform: "capitalize",
-                }}
-              >
-                {mode}
-              </button>
-            ))}
+          <div className="efficiency-period-toggle" style={{ flex: "0 0 auto" }}>
+            <TabGroup
+              value={periodFilter}
+              onChange={setPeriodFilter}
+              items={[
+                { value: "day", label: "Day" },
+                { value: "week", label: "Week" },
+                { value: "month", label: "Month" },
+              ]}
+              ariaLabel="Efficiency period"
+            />
           </div>
           <div style={{ width: "fit-content", flex: "0 0 auto" }}>
             <CalendarField
@@ -1175,6 +1148,7 @@ export default function EfficiencyTab({
               <DropdownField
                 id="efficiencyOverviewTech"
                 className="compact-picker efficiency-tech-filter-dropdown"
+                style={{ width: "17ch" }}
                 value={overviewTechFilter}
                 onChange={(event) => setOverviewTechFilter(event.target.value)}
                 placeholder="All technicians"
@@ -1204,7 +1178,7 @@ export default function EfficiencyTab({
       {/* Error */}
       {error && (
         <div style={{
-          borderRadius: "14px",
+          borderRadius: "var(--radius-md)",
           padding: "14px 18px",
           background: "var(--danger-surface)",
           border: "1px solid var(--danger)",
@@ -1490,7 +1464,7 @@ export default function EfficiencyTab({
                           <td style={tdStyle}>
                             <span style={{
                               padding: "4px 10px",
-                              borderRadius: "8px",
+                              borderRadius: "var(--radius-xs)",
                               fontSize: "0.75rem",
                               fontWeight: 600,
                               textTransform: "capitalize",
@@ -1526,7 +1500,7 @@ export default function EfficiencyTab({
             <div
               className="popup-card"
               style={{
-                borderRadius: "32px",
+                borderRadius: "var(--radius-xl)",
                 width: "100%",
                 maxWidth: "820px",
                 maxHeight: "90vh",
@@ -1555,7 +1529,7 @@ export default function EfficiencyTab({
                       onClick={() => openAddModalForTech(detailPopupTechId)}
                       style={{
                         padding: "8px 16px",
-                        borderRadius: "10px",
+                        borderRadius: "var(--input-radius)",
                         border: "none",
                         background: "var(--primary)",
                         color: "var(--surface)",
@@ -1573,9 +1547,9 @@ export default function EfficiencyTab({
                       onClick={detailEditMode ? cancelDetailEdit : startDetailEdit}
                       aria-label={detailEditMode ? "Cancel edit" : "Edit details"}
                       style={{
-                        width: "36px",
-                        height: "36px",
-                        borderRadius: "10px",
+                        width: "var(--control-height-xs)",
+                        height: "var(--control-height-xs)",
+                        borderRadius: "var(--input-radius)",
                         border: detailEditMode ? "1px solid var(--primary)" : "1px solid var(--surface-light)",
                         background: detailEditMode ? "var(--primary)" : "var(--surface)",
                         color: detailEditMode ? "var(--surface)" : "var(--primary)",
@@ -1596,9 +1570,9 @@ export default function EfficiencyTab({
                     onClick={closeDetailPopup}
                     aria-label="Close"
                     style={{
-                      width: "36px",
-                      height: "36px",
-                      borderRadius: "10px",
+                      width: "var(--control-height-xs)",
+                      height: "var(--control-height-xs)",
+                      borderRadius: "var(--input-radius)",
                       border: "1px solid var(--surface-light)",
                       background: "var(--surface)",
                       color: "var(--info)",
@@ -1618,7 +1592,7 @@ export default function EfficiencyTab({
               {/* Edit target & weight inline form */}
               {detailEditMode && (
                 <div style={{
-                  borderRadius: "14px",
+                  borderRadius: "var(--radius-md)",
                   padding: "16px 20px",
                   background: "var(--danger-surface)",
                   border: "1px solid var(--surface-light)",
@@ -1631,7 +1605,7 @@ export default function EfficiencyTab({
                   </span>
                   {detailEditError && (
                     <div style={{
-                      borderRadius: "10px",
+                      borderRadius: "var(--input-radius)",
                       padding: "8px 12px",
                       border: "1px solid var(--danger)",
                       background: "var(--danger-surface)",
@@ -1653,7 +1627,7 @@ export default function EfficiencyTab({
                         value={detailEditTargetHours}
                         readOnly
                         style={{
-                          borderRadius: "10px",
+                          borderRadius: "var(--input-radius)",
                           border: "1px solid var(--surface-light)",
                           background: "var(--surface-light)",
                           padding: "10px 12px",
@@ -1677,7 +1651,7 @@ export default function EfficiencyTab({
                         value={detailEditWeight}
                         onChange={(e) => setDetailEditWeight(e.target.value)}
                         style={{
-                          borderRadius: "10px",
+                          borderRadius: "var(--input-radius)",
                           border: "1px solid var(--surface-light)",
                           background: "var(--surface)",
                           padding: "10px 12px",
@@ -1693,7 +1667,7 @@ export default function EfficiencyTab({
                       disabled={detailEditSubmitting}
                       style={{
                         padding: "10px 20px",
-                        borderRadius: "10px",
+                        borderRadius: "var(--input-radius)",
                         border: "none",
                         background: "var(--primary)",
                         color: "var(--surface)",
@@ -1791,7 +1765,7 @@ export default function EfficiencyTab({
                             <td style={tdStyle}>
                               <span style={{
                                 padding: "4px 10px",
-                                borderRadius: "8px",
+                                borderRadius: "var(--radius-xs)",
                                 fontSize: "0.75rem",
                                 fontWeight: 600,
                                 textTransform: "capitalize",
@@ -1841,10 +1815,10 @@ export default function EfficiencyTab({
                 width: "min(580px, 100%)",
                 maxHeight: "90vh",
                 overflowY: "auto",
-                borderRadius: "22px",
+                borderRadius: "var(--radius-lg)",
                 background: "var(--surface)",
                 border: "1px solid var(--surface-light)",
-                boxShadow: "0 25px 60px rgba(15, 15, 15, 0.25)",
+                boxShadow: "var(--shadow-xl)",
                 padding: "28px 32px",
                 display: "flex",
                 flexDirection: "column",
@@ -1866,9 +1840,9 @@ export default function EfficiencyTab({
                   onClick={closeModal}
                   aria-label="Close"
                   style={{
-                    width: "36px",
-                    height: "36px",
-                    borderRadius: "10px",
+                    width: "var(--control-height-xs)",
+                    height: "var(--control-height-xs)",
+                    borderRadius: "var(--input-radius)",
                     border: "1px solid var(--surface-light)",
                     background: "var(--surface)",
                     color: "var(--grey-accent)",
@@ -1886,7 +1860,7 @@ export default function EfficiencyTab({
 
               {formError && (
                 <div style={{
-                  borderRadius: "14px",
+                  borderRadius: "var(--radius-md)",
                   padding: "12px 16px",
                   border: "1px solid var(--danger)",
                   background: "var(--danger-surface)",
@@ -1940,7 +1914,7 @@ export default function EfficiencyTab({
                       }}
                       placeholder="Job no. optional"
                       style={{
-                        borderRadius: "16px",
+                        borderRadius: "var(--radius-md)",
                         border: "1px solid var(--surface-light)",
                         background: "var(--surface-light)",
                         padding: "12px 14px",
@@ -2010,7 +1984,7 @@ export default function EfficiencyTab({
                       }}
                       placeholder="Allocated hours"
                       style={{
-                        borderRadius: "16px",
+                        borderRadius: "var(--radius-md)",
                         border: "1px solid var(--surface-light)",
                         background: "var(--surface-light)",
                         padding: "12px 14px",
@@ -2041,7 +2015,7 @@ export default function EfficiencyTab({
                       placeholder="Clocked hours"
                       required
                       style={{
-                        borderRadius: "16px",
+                        borderRadius: "var(--radius-md)",
                         border: "1px solid var(--surface-light)",
                         background: "var(--surface-light)",
                         padding: "12px 14px",
@@ -2070,7 +2044,7 @@ export default function EfficiencyTab({
                       placeholder="Job description"
                       rows={2}
                       style={{
-                        borderRadius: "16px",
+                        borderRadius: "var(--radius-md)",
                         border: "1px solid var(--surface-light)",
                         background: "var(--surface-light)",
                         padding: "12px 14px",
@@ -2097,7 +2071,7 @@ export default function EfficiencyTab({
                       placeholder="Notes"
                       rows={2}
                       style={{
-                        borderRadius: "16px",
+                        borderRadius: "var(--radius-md)",
                         border: "1px solid var(--surface-light)",
                         background: "var(--surface-light)",
                         padding: "12px 14px",
@@ -2122,7 +2096,7 @@ export default function EfficiencyTab({
                         disabled={deleteSubmitting}
                         style={{
                           padding: "12px 20px",
-                          borderRadius: "14px",
+                          borderRadius: "var(--radius-md)",
                           border: "1px solid var(--danger)33",
                           background: "var(--danger-surface)",
                           color: "var(--danger)",
@@ -2142,7 +2116,7 @@ export default function EfficiencyTab({
                     onClick={closeModal}
                     style={{
                       padding: "12px 20px",
-                      borderRadius: "14px",
+                      borderRadius: "var(--radius-md)",
                       border: "1px solid var(--surface-light)",
                       background: "var(--surface)",
                       color: "var(--info)",
@@ -2158,7 +2132,7 @@ export default function EfficiencyTab({
                     disabled={formSubmitting}
                     style={{
                       padding: "12px 24px",
-                      borderRadius: "14px",
+                      borderRadius: "var(--radius-md)",
                       border: "none",
                       background: "var(--primary)",
                       color: "var(--surface)",
@@ -2179,9 +2153,6 @@ export default function EfficiencyTab({
             :global(.efficiency-page) {
               min-width: 0;
             }
-            :global(.efficiency-page .tab-api__item) {
-              min-height: 40px;
-            }
             :global([data-theme="dark"]) .efficiency-modal-overlay {
               background: rgba(10, 10, 10, 0.8);
             }
@@ -2190,39 +2161,6 @@ export default function EfficiencyTab({
             }
             :global(.efficiency-request-dropdown) {
               width: 100%;
-            }
-            :global(.efficiency-request-dropdown .dropdown-api__control) {
-              min-height: 44px;
-              padding: 12px;
-              border-radius: 16px;
-              border: 1px solid var(--surface-light);
-              font-size: 14px;
-              background: var(--surface-light);
-              gap: 8px;
-            }
-            :global(.efficiency-request-dropdown .dropdown-api__value) {
-              font-size: 14px;
-              font-weight: 500;
-            }
-            :global(.efficiency-job-modal input::placeholder),
-            :global(.efficiency-job-modal textarea::placeholder) {
-              color: var(--grey-accent);
-              opacity: 1;
-            }
-            :global(.efficiency-job-modal .calendar-api__value.is-placeholder),
-            :global(.efficiency-job-modal .dropdown-api__value.is-placeholder),
-            :global(.efficiency-job-modal .calendar-api__helper),
-            :global(.efficiency-job-modal .dropdown-api__helper) {
-              color: var(--grey-accent) !important;
-            }
-            :global(.efficiency-job-modal .calendar-api__label),
-            :global(.efficiency-job-modal .dropdown-api__label) {
-              color: var(--text-primary) !important;
-            }
-            :global(.efficiency-request-dropdown.dropdown-api.is-open .dropdown-api__control),
-            :global(.efficiency-request-dropdown .dropdown-api__control:focus-visible) {
-              border-color: var(--primary);
-              background: var(--surface);
             }
             :global(.efficiency-request-dropdown .dropdown-api__menu) {
               max-height: 144px !important;
@@ -2233,7 +2171,7 @@ export default function EfficiencyTab({
               align-items: center;
               width: fit-content;
               padding: 2px 8px;
-              border-radius: 999px;
+              border-radius: var(--radius-pill);
               border: 1px solid var(--success);
               color: var(--success);
               background: rgba(var(--success-rgb), 0.08);
@@ -2248,52 +2186,8 @@ export default function EfficiencyTab({
             :global(.efficiency-filter-calendar .calendar-api__field) {
               width: fit-content;
             }
-            :global(.efficiency-filter-calendar .calendar-api__label),
-            :global(.efficiency-tech-filter-dropdown .dropdown-api__label) {
-              display: none;
-            }
-            :global(.efficiency-filter-calendar .calendar-api__control),
-            :global(.efficiency-tech-filter-dropdown .dropdown-api__control) {
-              width: fit-content !important;
-              min-width: 0 !important;
-              min-height: unset !important;
-              padding: 10px 14px !important;
-              border-radius: 999px !important;
-              border: 1px solid rgba(var(--primary-rgb), 0.22) !important;
-              background: linear-gradient(
-                180deg,
-                rgba(var(--primary-rgb), 0.12),
-                rgba(var(--primary-rgb), 0.06)
-              ) !important;
-              color: var(--text-primary) !important;
-              box-shadow: inset 0 1px 0 rgba(var(--surface-rgb), 0.45) !important;
-              backdrop-filter: blur(10px);
-              -webkit-backdrop-filter: blur(10px);
-            }
-            :global(.efficiency-filter-calendar .calendar-api__value),
-            :global(.efficiency-tech-filter-dropdown .dropdown-api__value) {
-              flex: 0 0 auto !important;
-              white-space: nowrap;
-              font-size: 0.86rem !important;
-              font-weight: 600 !important;
-              color: var(--text-primary) !important;
-            }
             :global(.efficiency-tech-filter-dropdown) {
               width: fit-content;
-            }
-            :global(.efficiency-tech-filter-dropdown .dropdown-api__control) {
-              max-width: 17ch;
-            }
-            :global(.efficiency-filter-calendar .calendar-api__control:hover:not(:disabled)),
-            :global(.efficiency-tech-filter-dropdown .dropdown-api__control:hover:not(:disabled)),
-            :global(.efficiency-tech-filter-dropdown.dropdown-api.is-open .dropdown-api__control),
-            :global(.efficiency-tech-filter-dropdown .dropdown-api__control:focus-visible) {
-              border-color: rgba(var(--primary-rgb), 0.45) !important;
-              background: linear-gradient(
-                180deg,
-                rgba(var(--primary-rgb), 0.18),
-                rgba(var(--primary-rgb), 0.1)
-              ) !important;
             }
             :global(.efficiency-tech-filter-dropdown .dropdown-api__menu) {
               min-width: 100%;
@@ -2339,9 +2233,11 @@ export default function EfficiencyTab({
               }
               :global(.efficiency-period-toggle) {
                 width: 100%;
-                justify-content: space-between;
               }
-              :global(.efficiency-period-toggle button) {
+              :global(.efficiency-period-toggle .tab-api) {
+                width: 100%;
+              }
+              :global(.efficiency-period-toggle .tab-api__item) {
                 flex: 1 1 0;
                 font-size: 0.75rem !important;
                 padding: 8px 10px !important;
@@ -2349,15 +2245,6 @@ export default function EfficiencyTab({
               :global(.efficiency-search-wrap) {
                 flex-basis: 100% !important;
                 width: 100% !important;
-              }
-              :global(.efficiency-search-wrap input) {
-                font-size: 0.8rem !important;
-                padding: 9px 13px !important;
-              }
-              :global(.efficiency-filter-calendar .calendar-api__control),
-              :global(.efficiency-tech-filter-dropdown .dropdown-api__control) {
-                font-size: 0.8rem !important;
-                padding: 8px 11px !important;
               }
               :global(.efficiency-summary-grid) {
                 grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -2400,13 +2287,6 @@ export default function EfficiencyTab({
               :global(.efficiency-job-modal form > div[style*="grid-template-columns: 1fr 1fr"]) {
                 grid-template-columns: 1fr !important;
                 gap: 12px !important;
-              }
-              :global(.efficiency-job-modal input),
-              :global(.efficiency-job-modal textarea),
-              :global(.efficiency-job-modal .dropdown-api__control),
-              :global(.efficiency-job-modal .calendar-api__control) {
-                font-size: 0.9rem !important;
-                padding: 10px 12px !important;
               }
               :global(.efficiency-job-modal button) {
                 font-size: 0.82rem !important;

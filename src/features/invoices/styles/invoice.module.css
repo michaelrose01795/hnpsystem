@@ -2,7 +2,7 @@
 .invoiceShell { /* // outer container with padding and print friendly background */
   background: var(--surface); /* // match app surface color */
   border: 1px solid var(--surface-light); /* // subtle border for print feel */
-  border-radius: 16px; /* // soften corners */
+  border-radius: var(--radius-md); /* // soften corners */
   padding: 24px; /* // internal spacing */
   color: var(--text-primary); /* // ensure readable text */
   display: flex; /* // use flex for vertical layout */
@@ -37,7 +37,7 @@
 .printButton { /* // print button style */
   align-self: flex-start; /* // align to top */
   padding: 10px 18px; /* // comfortable touch target */
-  border-radius: 999px; /* // pill shape */
+  border-radius: var(--radius-pill); /* // pill shape */
   border: 1px solid var(--primary-dark); /* // accent border */
   background: var(--primary-dark); /* // accent background */
   color: #fff; /* // white text */
@@ -53,7 +53,7 @@
 
 .headerBox { /* // shared header card */
   border: 1px solid var(--surface-light); /* // subtle border */
-  border-radius: 12px; /* // soft corners */
+  border-radius: var(--radius-sm); /* // soft corners */
   padding: 16px; /* // internal spacing */
   background: var(--surface-secondary, var(--surface)); /* // support dark mode tokens */
 } /* // end headerBox */
@@ -81,7 +81,7 @@
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* // responsive columns */
   gap: 12px; /* // spacing between columns */
   border: 1px solid var(--surface-light); /* // border for emphasis */
-  border-radius: 12px; /* // soft corners */
+  border-radius: var(--radius-sm); /* // soft corners */
   padding: 12px; /* // internal spacing */
 } /* // end vehicleRow */
 
@@ -99,7 +99,7 @@
 
 .requestBlock { /* // container for each request section */
   border: 1px solid var(--surface-light); /* // border to separate requests */
-  border-radius: 14px; /* // soft corners */
+  border-radius: var(--control-radius); /* // soft corners */
   padding: 16px; /* // internal spacing */
   display: flex; /* // flex column reflow */
   flex-direction: column; /* // stack elements */
@@ -209,7 +209,7 @@
 
 .totalCard { /* // individual total card */
   background: var(--surface-secondary, var(--surface)); /* // subtle background */
-  border-radius: 10px; /* // soft corners */
+  border-radius: var(--control-radius-xs); /* // soft corners */
   padding: 12px; /* // spacing */
   border: 1px solid var(--surface-light); /* // border */
 } /* // end totalCard */
@@ -228,9 +228,9 @@
 
 .paymentDetails { /* // payment/bank detail box */
   border: 1px solid var(--surface-light); /* // subtle border */
-  border-radius: 12px; /* // corners */
+  border-radius: var(--radius-sm); /* // corners */
   padding: 16px; /* // spacing */
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0.02)); /* // soft gradient for depth */
+  background: var(--surface); /* // solid surface background */
 } /* // end paymentDetails */
 
 .paymentDetails h3 { /* // payment heading */
@@ -248,7 +248,7 @@
 
 .statusMessage { /* // shared style for error/empty states */
   border: 1px solid var(--surface-light); /* // border */
-  border-radius: 12px; /* // corners */
+  border-radius: var(--radius-sm); /* // corners */
   padding: 18px; /* // spacing */
   text-align: center; /* // center text */
 } /* // end statusMessage */
@@ -273,7 +273,7 @@
   height: 16px; /* // row height */
   background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.4), rgba(255,255,255,0)); /* // shimmer gradient */
   animation: shimmer 1.4s infinite; /* // animate shimmer */
-  border-radius: 999px; /* // pill shape */
+  border-radius: var(--radius-pill); /* // pill shape */
 } /* // end skeletonRow */
 
 @keyframes shimmer { /* // shimmer animation keyframes */

@@ -56,7 +56,7 @@ export default function StatusSnapshotDevPage() {
           placeholder="Job number or id"
           style={{
             padding: "10px 12px",
-            borderRadius: "8px",
+            borderRadius: "var(--radius-xs)",
             border: "1px solid var(--surface-light)",
             minWidth: "240px",
           }}
@@ -67,7 +67,7 @@ export default function StatusSnapshotDevPage() {
           disabled={loading}
           style={{
             padding: "10px 16px",
-            borderRadius: "8px",
+            borderRadius: "var(--radius-xs)",
             border: "none",
             background: "var(--primary)",
             color: "var(--text-inverse)",
@@ -86,7 +86,7 @@ export default function StatusSnapshotDevPage() {
           style={{
             background: "var(--surface-light)",
             padding: "16px",
-            borderRadius: "8px",
+            borderRadius: "var(--radius-xs)",
             overflowX: "auto",
           }}
         >

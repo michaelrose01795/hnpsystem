@@ -74,7 +74,7 @@ const styles = {
     borderLeft: "3px solid var(--danger)",
     backgroundColor: "var(--text-primary)",
     color: "var(--surface)",
-    borderRadius: "6px",
+    borderRadius: "var(--radius-xs)",
     marginTop: "10px",
   },
   header: {
@@ -88,7 +88,7 @@ const styles = {
     width: "10px",
     height: "10px",
     backgroundColor: "var(--danger)",
-    borderRadius: "50%",
+    borderRadius: "var(--radius-full)",
     position: "absolute",
     left: 0,
     top: "5px",

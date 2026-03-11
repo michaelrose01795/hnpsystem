@@ -22,7 +22,7 @@ export default function AccountSummary({ summary, onRefresh, showRefreshButton =
       style={{
         background: "var(--surface)",
         border: "1px solid var(--surface-light)",
-        borderRadius: "16px",
+        borderRadius: "var(--radius-md)",
         padding: "20px",
         display: "flex",
         flexWrap: "wrap",
@@ -71,7 +71,7 @@ export default function AccountSummary({ summary, onRefresh, showRefreshButton =
             onClick={onRefresh}
             style={{
               padding: "10px 16px",
-              borderRadius: "999px",
+              borderRadius: "var(--radius-pill)",
               border: "1px solid var(--primary)",
               background: "var(--primary)",
               color: "white",
@@ -91,7 +91,7 @@ export default function AccountSummary({ summary, onRefresh, showRefreshButton =
             key={card.key}
             style={{
               flex: "1 1 180px",
-              borderRadius: "14px",
+              borderRadius: "var(--control-radius)",
               border: "1px solid rgba(0,0,0,0.05)",
               padding: "16px",
               background: "var(--surface-light)",

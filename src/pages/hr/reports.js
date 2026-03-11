@@ -6,7 +6,7 @@ import { SectionCard } from "@/components/HR/MetricCard";
 
 function ReportsContent() {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "8px 8px 32px" }}>
+    <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
         <header>
           <p style={{ color: "var(--info)", marginTop: "6px" }}>
             Generate HR analytics, download data sets, and schedule automated exports.

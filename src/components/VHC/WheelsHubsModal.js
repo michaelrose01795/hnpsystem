@@ -96,7 +96,7 @@ export default function WheelsHubsModal({
             gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
             gap: "16px",
             backgroundColor: "var(--surface-light)",
-            borderRadius: "14px",
+            borderRadius: "var(--control-radius)",
             border: "1px solid var(--surface-light)",
             padding: "16px",
           }}
@@ -118,7 +118,7 @@ export default function WheelsHubsModal({
             style={{
               width: "100%",
               padding: "12px 14px",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               border: `1px solid ${palette.border}`,
               backgroundColor: "var(--surface)",
               fontSize: "14px",
@@ -142,7 +142,7 @@ export default function WheelsHubsModal({
               gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
               gap: "16px",
               border: `1px solid ${palette.border}`,
-              borderRadius: "14px",
+              borderRadius: "var(--control-radius)",
               padding: "16px",
               background: "var(--info-surface)",
             }}
@@ -163,7 +163,7 @@ export default function WheelsHubsModal({
             onClick={onClose}
             style={{
               padding: "12px 18px",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               border: `1px solid ${palette.border}`,
               backgroundColor: "var(--surface)",
               color: palette.textPrimary,
@@ -178,7 +178,7 @@ export default function WheelsHubsModal({
             onClick={handleOrderTyre}
             style={{
               padding: "12px 24px",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               border: "none",
               backgroundColor: palette.accent,
               color: "var(--surface)",

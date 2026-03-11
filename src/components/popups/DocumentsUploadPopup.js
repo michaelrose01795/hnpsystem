@@ -278,7 +278,7 @@ export default function DocumentsUploadPopup({
             flexDirection: "column",
             gap: "16px",
             transition: "width 0.3s ease",
-            borderRadius: "32px",
+            borderRadius: "var(--radius-xl)",
             border: "1px solid var(--surface-light)"
           }}
         >
@@ -297,7 +297,7 @@ export default function DocumentsUploadPopup({
               htmlFor="documents-input"
               style={{
                 border: "2px dashed var(--primary)",
-                borderRadius: "16px",
+                borderRadius: "var(--radius-md)",
                 padding: "28px",
                 textAlign: "center",
                 cursor: "pointer",
@@ -324,7 +324,7 @@ export default function DocumentsUploadPopup({
                   maxHeight: "220px",
                   overflowY: "auto",
                   border: "1px solid var(--surface-light)",
-                  borderRadius: "12px",
+                  borderRadius: "var(--radius-sm)",
                   padding: "12px"
                 }}
               >
@@ -368,7 +368,7 @@ export default function DocumentsUploadPopup({
                 style={{
                   flex: 1,
                   padding: "12px",
-                  borderRadius: "10px",
+                  borderRadius: "var(--input-radius)",
                   border: "1px solid var(--surface-light)",
                   backgroundColor: "var(--surface-light)",
                   color: "var(--text-primary)",
@@ -384,13 +384,12 @@ export default function DocumentsUploadPopup({
                 style={{
                   flex: 1,
                   padding: "12px",
-                  borderRadius: "10px",
+                  borderRadius: "var(--input-radius)",
                   border: "none",
                   background: "var(--primary)",
                   color: "var(--text-inverse)",
                   fontWeight: "600",
                   cursor: isUploading ? "not-allowed" : "pointer",
-                  boxShadow: "none",
                   opacity: isUploading ? 0.7 : 1
                 }}
               >
@@ -408,7 +407,7 @@ export default function DocumentsUploadPopup({
                 gap: "12px",
                 backgroundColor: "var(--surface)",
                 padding: "16px",
-                borderRadius: "12px",
+                borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--surface-light)",
                 maxHeight: "70vh",
                 overflowY: "auto"
@@ -426,7 +425,7 @@ export default function DocumentsUploadPopup({
                         disabled={isUploading}
                         style={{
                           padding: "6px 12px",
-                          borderRadius: "8px",
+                          borderRadius: "var(--radius-xs)",
                           border: "none",
                           background: "var(--danger)",
                           color: "white",
@@ -457,7 +456,7 @@ export default function DocumentsUploadPopup({
                         style={{
                           padding: "12px",
                           backgroundColor: "var(--info-surface)",
-                          borderRadius: "10px",
+                          borderRadius: "var(--input-radius)",
                           border: `1px solid ${statusColor}`
                         }}
                       >
@@ -486,7 +485,7 @@ export default function DocumentsUploadPopup({
                             width: "100%",
                             height: "8px",
                             backgroundColor: "var(--surface)",
-                            borderRadius: "4px",
+                            borderRadius: "var(--radius-xs)",
                             overflow: "hidden",
                             marginBottom: "8px"
                           }}
@@ -568,7 +567,7 @@ export default function DocumentsUploadPopup({
                             alignItems: "center",
                             gap: "10px",
                             padding: "8px",
-                            borderRadius: "10px",
+                            borderRadius: "var(--input-radius)",
                             border: "1px solid var(--surface-light)",
                             backgroundColor: "var(--info-surface)"
                           }}
@@ -581,7 +580,7 @@ export default function DocumentsUploadPopup({
                                 width: "48px",
                                 height: "48px",
                                 objectFit: "cover",
-                                borderRadius: "6px",
+                                borderRadius: "var(--radius-xs)",
                                 flexShrink: 0,
                                 border: "1px solid var(--surface-light)"
                               }}
@@ -591,7 +590,7 @@ export default function DocumentsUploadPopup({
                               style={{
                                 width: "48px",
                                 height: "48px",
-                                borderRadius: "6px",
+                                borderRadius: "var(--radius-xs)",
                                 flexShrink: 0,
                                 backgroundColor: "var(--surface-light)",
                                 display: "flex",

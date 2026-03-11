@@ -24,14 +24,13 @@ const INACTIVE_JOB_STATUSES = new Set(["complete", "collected", "cancelled", "in
 
 const detailCardStyles = {
   container: {
-    borderRadius: "24px",
-    border: "1px solid var(--surface-light)",
-    background: "var(--surface)",
-    padding: "28px",
+    borderRadius: "var(--radius-xl)",
+    border: "var(--section-card-border)",
+    background: "var(--section-card-bg)",
+    padding: "var(--page-card-padding)",
     display: "flex",
     flexDirection: "column",
     gap: "24px",
-    boxShadow: "none",
   },
   identityBlock: {
     display: "flex",
@@ -47,7 +46,7 @@ const detailCardStyles = {
     wordBreak: "break-word",
   },
   metaItem: {
-    borderRadius: "16px",
+    borderRadius: "var(--radius-md)",
     border: "1px solid var(--surface-light)",
     background: "var(--surface-light)",
     padding: "12px 14px",
@@ -70,7 +69,7 @@ const detailCardStyles = {
 
 const tabsStyles = {
   container: {
-    borderRadius: "999px",
+    borderRadius: "var(--radius-pill)",
     border: "1px solid var(--surface-light)",
     background: "var(--surface)",
     padding: "6px",
@@ -81,7 +80,7 @@ const tabsStyles = {
   },
   pill: (active) => ({
     flex: "0 0 auto",
-    borderRadius: "999px",
+    borderRadius: "var(--radius-pill)",
     border: "1px solid transparent",
     padding: "10px 20px",
     fontSize: "0.9rem",
@@ -95,7 +94,7 @@ const tabsStyles = {
 
 const tabPanelStyles = {
   container: {
-    borderRadius: "24px",
+    borderRadius: "var(--radius-xl)",
     border: "1px solid var(--surface-light)",
     background: "var(--surface)",
     padding: "24px",
@@ -112,7 +111,7 @@ const detailGridStyles = {
     gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
   },
   item: {
-    borderRadius: "16px",
+    borderRadius: "var(--radius-md)",
     border: "1px solid var(--surface-light)",
     background: "var(--surface-light)",
     padding: "14px",
@@ -290,7 +289,7 @@ const VehiclesTab = ({ vehicles, customerId, onVehicleAdded }) => {
             onClick={() => setShowForm(true)}
             style={{
               padding: "8px 16px",
-              borderRadius: "8px",
+              borderRadius: "var(--radius-xs)",
               border: "none",
               backgroundColor: "var(--primary)",
               color: "var(--text-inverse)",
@@ -305,7 +304,7 @@ const VehiclesTab = ({ vehicles, customerId, onVehicleAdded }) => {
       ) : (
         <div
           style={{
-            borderRadius: "16px",
+            borderRadius: "var(--radius-md)",
             border: "1px solid var(--surface-light)",
             background: "var(--surface-light)",
             padding: "20px",
@@ -325,7 +324,7 @@ const VehiclesTab = ({ vehicles, customerId, onVehicleAdded }) => {
               onKeyDown={(e) => { if (e.key === "Enter") handleLookup(); }}
               style={{
                 padding: "8px 12px",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
                 border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
                 fontSize: "13px",
                 backgroundColor: "var(--surface)",
@@ -339,7 +338,7 @@ const VehiclesTab = ({ vehicles, customerId, onVehicleAdded }) => {
               disabled={looking || saving || !newReg.trim()}
               style={{
                 padding: "8px 16px",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
                 border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
                 backgroundColor: "var(--surface)",
                 color: looking || !newReg.trim() ? "var(--grey-accent)" : "var(--text-primary)",
@@ -355,7 +354,7 @@ const VehiclesTab = ({ vehicles, customerId, onVehicleAdded }) => {
               disabled={saving}
               style={{
                 padding: "8px 12px",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
                 border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
                 backgroundColor: "var(--surface)",
                 color: "var(--grey-accent-dark)",
@@ -376,7 +375,7 @@ const VehiclesTab = ({ vehicles, customerId, onVehicleAdded }) => {
           {dvlaData && (
             <div
               style={{
-                borderRadius: "12px",
+                borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--surface-light)",
                 background: "var(--surface)",
                 padding: "16px",
@@ -413,7 +412,7 @@ const VehiclesTab = ({ vehicles, customerId, onVehicleAdded }) => {
                 disabled={saving || !newReg.trim()}
                 style={{
                   padding: "8px 16px",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   border: "none",
                   backgroundColor: saving || !newReg.trim() ? "var(--grey-accent)" : "var(--primary)",
                   color: "var(--text-inverse)",
@@ -436,7 +435,7 @@ const VehiclesTab = ({ vehicles, customerId, onVehicleAdded }) => {
         <div
           style={{
             border: "1px dashed var(--surface-light)",
-            borderRadius: "18px",
+            borderRadius: "var(--radius-md)",
             padding: "24px",
             textAlign: "center",
             color: "var(--grey-accent)",
@@ -463,7 +462,7 @@ const VehiclesTab = ({ vehicles, customerId, onVehicleAdded }) => {
               <div
                 key={vehicle.vehicle_id}
                 style={{
-                  borderRadius: "20px",
+                  borderRadius: "var(--radius-lg)",
                   border: "1px solid var(--surface-light)",
                   background: "var(--surface-light)",
                   padding: "20px",
@@ -553,7 +552,7 @@ const HistoryTab = ({ jobs }) => {
       <div
         style={{
           border: "1px dashed var(--surface-light)",
-          borderRadius: "18px",
+          borderRadius: "var(--radius-md)",
           padding: "24px",
           textAlign: "center",
           color: "var(--grey-accent)",
@@ -572,7 +571,7 @@ const HistoryTab = ({ jobs }) => {
           <div
             key={job.id}
             style={{
-              borderRadius: "18px",
+              borderRadius: "var(--radius-md)",
               border: "1px solid var(--surface-light)",
               background: "var(--surface-light)",
               padding: "20px",
@@ -607,7 +606,7 @@ const HistoryTab = ({ jobs }) => {
               </div>
               <span
                 style={{
-                  borderRadius: "999px",
+                  borderRadius: "var(--radius-pill)",
                   padding: "6px 16px",
                   border: "1px solid var(--surface)",
                   background: "var(--surface)",
@@ -648,7 +647,7 @@ const HistoryTab = ({ jobs }) => {
               <Link
                 href={`/job-cards/${encodeURIComponent(job.job_number)}`}
                 style={{
-                  borderRadius: "999px",
+                  borderRadius: "var(--radius-pill)",
                   padding: "10px 18px",
                   background: "var(--primary)",
                   color: "var(--text-inverse)",
@@ -661,7 +660,7 @@ const HistoryTab = ({ jobs }) => {
               {job.vehicle_reg && (
                 <span
                   style={{
-                    borderRadius: "999px",
+                    borderRadius: "var(--radius-pill)",
                     padding: "10px 18px",
                     border: "1px solid var(--surface)",
                     color: "var(--text-secondary)",
@@ -838,7 +837,7 @@ export default function CustomerDetailWorkspace() {
         {isLoading && (
           <div
             style={{
-              borderRadius: "18px",
+              borderRadius: "var(--radius-md)",
               padding: "18px",
               textAlign: "center",
               border: "1px solid var(--surface-light)",
@@ -852,7 +851,7 @@ export default function CustomerDetailWorkspace() {
         {error && (
           <div
             style={{
-              borderRadius: "18px",
+              borderRadius: "var(--radius-md)",
               padding: "16px",
               border: "1px solid rgba(var(--danger-rgb), 0.35)",
               background: "var(--danger-surface)",

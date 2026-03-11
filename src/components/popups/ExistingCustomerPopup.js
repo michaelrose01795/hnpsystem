@@ -87,7 +87,7 @@ export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }
               overflowY: "auto",
               marginBottom: "16px",
               border: "1px solid var(--surface-light)",
-              borderRadius: "10px",
+              borderRadius: "var(--input-radius)",
               backgroundColor: "var(--surface)",
             }}
           >
@@ -119,7 +119,7 @@ export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }
               backgroundColor: "var(--surface-light)",
               color: "var(--text-primary)",
               padding: "16px",
-              borderRadius: "10px",
+              borderRadius: "var(--input-radius)",
               border: "1px solid var(--surface-light)",
               fontSize: "14px",
               lineHeight: 1.5,
@@ -153,7 +153,7 @@ export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }
               backgroundColor: "var(--surface-light)",
               color: "var(--text-primary)",
               border: "1px solid var(--surface-light)",
-              borderRadius: "8px",
+              borderRadius: "var(--radius-xs)",
               cursor: "pointer",
               fontWeight: "600",
             }}
@@ -169,7 +169,7 @@ export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }
               backgroundColor: "var(--primary)",
               color: "var(--text-inverse)",
               border: "none",
-              borderRadius: "8px",
+              borderRadius: "var(--radius-xs)",
               cursor: canUsePrimary ? "pointer" : "not-allowed",
               fontWeight: "600",
               opacity: canUsePrimary ? 1 : 0.6,

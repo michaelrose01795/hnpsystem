@@ -1027,7 +1027,7 @@ export default function NextJobsPage() {
             style={{
               background: "var(--surface)",
               border: dragOverTarget === assignee.name ? "3px solid var(--primary)" : "1px solid var(--surface-light)",
-              borderRadius: "8px",
+              borderRadius: "var(--radius-xs)",
               padding: "16px",
               display: "flex",
               flexDirection: "column",
@@ -1059,7 +1059,7 @@ export default function NextJobsPage() {
         style={{
           marginBottom: "12px",
           padding: "12px",
-          borderRadius: "8px",
+          borderRadius: "var(--radius-xs)",
           border: currentClocking ? "1px solid var(--success)" : "1px dashed var(--accent-purple)",
           backgroundColor: currentClocking ? "var(--success-surface)" : "var(--layer-section-level-1)",
           cursor: currentClocking ? "pointer" : "default",
@@ -1147,8 +1147,7 @@ export default function NextJobsPage() {
                   height: "3px",
                   backgroundColor: "var(--primary)",
                   marginBottom: "8px",
-                  borderRadius: "2px",
-                  boxShadow: "none"
+                  borderRadius: "var(--radius-xs)",
                 }} />
               )}
 
@@ -1166,7 +1165,7 @@ export default function NextJobsPage() {
                 onClick={() => handleOpenJobDetails(job)}
                 style={{
                   border: "1px solid var(--surface-light)",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   padding: "10px",
                   marginBottom: "8px",
                   backgroundColor:
@@ -1214,9 +1213,8 @@ export default function NextJobsPage() {
                     backgroundColor: "var(--primary)",
                     marginTop: "-8px",
                     marginBottom: "8px",
-                    borderRadius: "2px",
-                    boxShadow: "none"
-                  }} />
+                    borderRadius: "var(--radius-xs)",
+                    }} />
                 )}
             </React.Fragment>
           ))
@@ -1228,8 +1226,7 @@ export default function NextJobsPage() {
             <div style={{
               height: "3px",
               backgroundColor: "var(--primary)",
-              borderRadius: "2px",
-              boxShadow: "none"
+              borderRadius: "var(--radius-xs)",
             }} />
           )}
       </div>
@@ -1276,7 +1273,7 @@ export default function NextJobsPage() {
             height: "60px",
             border: "4px solid var(--surface)",
             borderTop: "4px solid var(--primary)",
-            borderRadius: "50%",
+            borderRadius: "var(--radius-full)",
             animation: "spin 1s linear infinite"
           }}></div>
           <p style={{ color: "var(--grey-accent)" }}>Loading jobs...</p>
@@ -1307,7 +1304,7 @@ export default function NextJobsPage() {
               style={{
                 marginBottom: "12px",
                 background: "var(--layer-section-level-3)",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
             border: dragOverTarget === "outstanding" ? "3px solid var(--primary)" : "1px solid var(--surface-light)",
             boxShadow: dragOverTarget === "outstanding" ? "0 4px 12px rgba(0, 0, 0, 0.2)" : "0 2px 4px rgba(var(--shadow-rgb),0.08)",
             padding: "16px",
@@ -1385,7 +1382,7 @@ export default function NextJobsPage() {
                           flexDirection: "column",
                           gap: "8px",
                           padding: "14px",
-                          borderRadius: "16px",
+                          borderRadius: "var(--radius-md)",
                           border:
                             draggingJob?.jobNumber === job.jobNumber
                               ? "2px dashed var(--primary)"
@@ -1393,8 +1390,7 @@ export default function NextJobsPage() {
                           backgroundColor:
                             draggingJob?.jobNumber === job.jobNumber ? "var(--surface-light)" : "var(--surface)",
                           cursor: hasAccess ? "grab" : "pointer",
-                          boxShadow: "none",
-                          transition: "border 0.2s, background-color 0.2s, transform 0.2s",
+                                      transition: "border 0.2s, background-color 0.2s, transform 0.2s",
                         }}
                         title={`${job.jobNumber} – ${job.customer || "Unknown customer"}`}
                       >
@@ -1423,7 +1419,7 @@ export default function NextJobsPage() {
                           <span
                             style={{
                               padding: "4px 10px",
-                              borderRadius: "999px",
+                              borderRadius: "var(--radius-pill)",
                               backgroundColor: "var(--danger-surface)",
                               color: "var(--danger)",
                               fontSize: "12px",
@@ -1466,7 +1462,7 @@ export default function NextJobsPage() {
                           <span
                             style={{
                               padding: "4px 10px",
-                              borderRadius: "12px",
+                              borderRadius: "var(--radius-sm)",
                               fontSize: "11px",
                               fontWeight: 600,
                               backgroundColor: "var(--surface-light)",
@@ -1491,8 +1487,7 @@ export default function NextJobsPage() {
         {/* ✅ Technicians Grid Section */}
             <div style={{
               flex: "1 0 auto",
-              borderRadius: "8px",
-              boxShadow: "none",
+              borderRadius: "var(--radius-xs)",
               border: "1px solid var(--surface-light)",
               background: "var(--layer-section-level-3)",
               padding: "24px",
@@ -1539,7 +1534,7 @@ export default function NextJobsPage() {
             <div
               className="popup-card"
               style={{
-                borderRadius: "32px",
+                borderRadius: "var(--radius-xl)",
                 width: "100%",
                 maxWidth: "500px",
                 maxHeight: "90vh",
@@ -1560,13 +1555,12 @@ export default function NextJobsPage() {
                   backgroundColor: "var(--danger)",
                   color: "white",
                   padding: "8px 16px",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   cursor: "pointer",
                   border: "none",
                   fontSize: "13px",
                   fontWeight: "600",
                   transition: "background-color 0.2s",
-                  boxShadow: "none"
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--danger-hover)"}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "var(--danger)"}
@@ -1589,7 +1583,7 @@ export default function NextJobsPage() {
                   style={{
                     marginBottom: "16px",
                     padding: "12px 14px",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     backgroundColor:
                       feedbackMessage.type === "error" ? "var(--danger-surface)" : "var(--success)",
                     color: feedbackMessage.type === "error" ? "var(--danger)" : "var(--text-primary)",
@@ -1640,7 +1634,7 @@ export default function NextJobsPage() {
                     backgroundColor: "var(--grey-accent)",
                     color: "white",
                     padding: "12px 16px",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     cursor: "pointer",
                     border: "none",
                     fontSize: "14px",
@@ -1658,7 +1652,7 @@ export default function NextJobsPage() {
                     backgroundColor: "var(--accent-purple)",
                     color: "white",
                     padding: "12px 16px",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     cursor: "pointer",
                     border: "none",
                     fontSize: "14px",
@@ -1677,7 +1671,7 @@ export default function NextJobsPage() {
                       backgroundColor: "var(--warning)",
                       color: "white",
                       padding: "12px 16px",
-                      borderRadius: "8px",
+                      borderRadius: "var(--radius-xs)",
                       cursor: "pointer",
                       border: "none",
                       fontSize: "14px",
@@ -1696,7 +1690,7 @@ export default function NextJobsPage() {
                     backgroundColor: "var(--primary)",
                     color: "white",
                     padding: "12px 16px",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     cursor: "pointer",
                     border: "none",
                     fontSize: "14px",
@@ -1752,7 +1746,7 @@ export default function NextJobsPage() {
                 style={{
                   width: "100%",
                   padding: "12px",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   border: "1px solid var(--surface-light)",
                   fontSize: "14px",
                   marginBottom: "16px",
@@ -1783,7 +1777,7 @@ export default function NextJobsPage() {
                   backgroundColor: "var(--primary)",
                   color: "white",
                   padding: "12px 16px",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   cursor: "pointer",
                   border: "none",
                   fontSize: "14px",

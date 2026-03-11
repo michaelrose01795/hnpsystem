@@ -15,13 +15,6 @@ const GOODS_IN_ROLES = new Set([
 ]);
 
 const sectionCardStyle = {
-  background: "var(--layer-section-level-1)",
-  borderRadius: "20px",
-  border: "1px solid var(--surface-light)",
-  padding: "24px",
-  boxShadow: "none",
-  display: "flex",
-  flexDirection: "column",
   gap: "18px",
 };
 
@@ -66,8 +59,8 @@ const invoiceCellStyle = {
 
 const invoiceRowStyle = {
   background: "var(--layer-section-level-1)",
-  borderRadius: "16px",
-  boxShadow: "0 10px 25px rgba(15, 23, 42, 0.08)",
+  borderRadius: "var(--radius-md)",
+  boxShadow: "var(--shadow-lg)",
 };
 
 const currencyFormatter = new Intl.NumberFormat("en-GB", {
@@ -158,7 +151,7 @@ function GoodsInDetailPage() {
   return (
     <Layout>
       <div style={{ display: "flex", flexDirection: "column", gap: "18px", padding: "12px" }}>
-        <section style={sectionCardStyle}>
+        <section className="app-section-card" style={sectionCardStyle}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
             <div>
               <div style={labelStyle}>Goods In</div>
@@ -195,7 +188,7 @@ function GoodsInDetailPage() {
           )}
         </section>
 
-        <section style={sectionCardStyle}>
+        <section className="app-section-card" style={sectionCardStyle}>
           <h3 style={{ margin: 0 }}>Invoice lines</h3>
           {items.length === 0 ? (
             <div style={{ padding: "24px", textAlign: "center", color: "var(--text-secondary)" }}>
@@ -205,7 +198,7 @@ function GoodsInDetailPage() {
             <ScrollArea
               maxHeight="420px"
               style={{
-                borderRadius: "20px",
+                borderRadius: "var(--radius-lg)",
                 border: "1px solid var(--surface-light)",
                 overflowX: "hidden",
                 background: "var(--layer-section-level-2)",
@@ -245,7 +238,7 @@ function GoodsInDetailPage() {
           )}
         </section>
 
-        <section style={sectionCardStyle}>
+        <section className="app-section-card" style={sectionCardStyle}>
           <h3 style={{ margin: 0 }}>Totals</h3>
           <div style={fieldGridStyle}>
             <div>
@@ -259,7 +252,7 @@ function GoodsInDetailPage() {
           </div>
         </section>
 
-        <section style={sectionCardStyle}>
+        <section className="app-section-card" style={sectionCardStyle}>
           <h3 style={{ margin: 0 }}>History</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             <div>

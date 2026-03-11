@@ -1,5 +1,34 @@
 import React, { forwardRef } from "react";
 
+const pickStyleKeys = (style, keys) => {
+  if (!style) return undefined;
+  return keys.reduce((acc, key) => {
+    if (style[key] !== undefined) {
+      acc[key] = style[key];
+    }
+    return acc;
+  }, {});
+};
+
+const WRAPPER_STYLE_KEYS = [
+  "width",
+  "minWidth",
+  "maxWidth",
+  "flex",
+  "flexGrow",
+  "flexShrink",
+  "flexBasis",
+  "margin",
+  "marginTop",
+  "marginRight",
+  "marginBottom",
+  "marginLeft",
+  "alignSelf",
+  "justifySelf",
+];
+
+const INPUT_LAYOUT_STYLE_KEYS = ["textAlign"];
+
 const SearchBar = forwardRef(function SearchBar(
   {
     value,
@@ -17,12 +46,11 @@ const SearchBar = forwardRef(function SearchBar(
   ref
 ) {
   const hasValue = String(value ?? "").length > 0;
+  const wrapperStyle = pickStyleKeys(style, WRAPPER_STYLE_KEYS);
+  const mergedInputStyle = pickStyleKeys(inputStyle, INPUT_LAYOUT_STYLE_KEYS);
 
   return (
-    <div className={["searchbar-api", className].filter(Boolean).join(" ")} style={style}>
-      <span className="searchbar-api__icon" aria-hidden="true">
-        &#9906;
-      </span>
+    <div className={["searchbar-api", className].filter(Boolean).join(" ")} style={wrapperStyle}>
       <input
         {...rest}
         ref={ref}
@@ -33,7 +61,7 @@ const SearchBar = forwardRef(function SearchBar(
         aria-label={ariaLabel}
         disabled={disabled}
         className={["searchbar-api__input", inputClassName].filter(Boolean).join(" ")}
-        style={inputStyle}
+        style={mergedInputStyle}
       />
       {hasValue && (
         <button

@@ -250,7 +250,7 @@ export default function ClockingHistorySection({
     <section
       style={{
         padding: "20px",
-        borderRadius: "12px",
+        borderRadius: "var(--radius-sm)",
         border: "1px solid var(--surface-light)",
         backgroundColor: "var(--surface-light)",
         display: "flex",
@@ -275,7 +275,7 @@ export default function ClockingHistorySection({
       {error && (
         <div
           style={{
-            borderRadius: "10px",
+            borderRadius: "var(--control-radius-xs)",
             border: "1px solid var(--danger)",
             backgroundColor: "var(--danger-surface)",
             color: "var(--danger-dark)",
@@ -289,7 +289,7 @@ export default function ClockingHistorySection({
 
       <div
         style={{
-          borderRadius: "10px",
+          borderRadius: "var(--control-radius-xs)",
           border: "1px solid var(--surface-light)",
           overflow: "hidden"
         }}

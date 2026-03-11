@@ -164,7 +164,7 @@ const buildNormalizedTyres = (source = {}) => {
 const baseInputStyle = {
   width: "100%",
   padding: "10px 12px",
-  borderRadius: "12px",
+  borderRadius: "var(--radius-sm)",
   border: `1px solid ${palette.border}`,
   backgroundColor: palette.surface,
   fontSize: "14px",
@@ -179,21 +179,9 @@ const dropdownFieldStyle = {
   backgroundColor: "transparent",
 };
 
-const repairKitDropdownControlStyle = {
-  minHeight: "48px",
-  padding: "13px 12px",
-  borderRadius: "12px",
-  fontSize: "15px",
-};
-
-const repairKitDropdownOptionStyle = {
-  padding: "12px 10px",
-  fontSize: "0.95rem",
-};
-
 const pillButton = ({ active = false } = {}) => ({
   padding: "10px 18px",
-  borderRadius: "999px",
+  borderRadius: "var(--radius-pill)",
   border: `1px solid ${active ? palette.accent : palette.border}`,
   background: active ? palette.accent : palette.surface,
   color: active ? "var(--surface)" : palette.textPrimary,
@@ -269,7 +257,7 @@ function AutoCompleteInput({ value, onChange, options, placeholder }) {
             top: "calc(100% + 6px)",
             left: 0,
             right: 0,
-            borderRadius: "14px",
+            borderRadius: "var(--radius-md)",
             border: `1px solid ${palette.border}`,
             background: palette.surface,
             maxHeight: "160px",
@@ -821,7 +809,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
             {activeWheel === "Spare" && (
               <div
                 style={{
-                  borderRadius: "999px",
+                  borderRadius: "var(--radius-pill)",
                   border: `1px solid ${palette.border}`,
                   background: palette.surface,
                   padding: "6px",
@@ -855,7 +843,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                         }
                         style={{
                           flex: "0 0 auto",
-                          borderRadius: "999px",
+                          borderRadius: "var(--radius-pill)",
                           border: "1px solid transparent",
                           padding: "10px 16px",
                           fontSize: "0.85rem",
@@ -1068,8 +1056,6 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                             }))
                           }
                           style={dropdownFieldStyle}
-                          controlStyle={repairKitDropdownControlStyle}
-                          optionStyle={repairKitDropdownOptionStyle}
                         >
                           <option value="">Month</option>
                           {months.map((month) => (
@@ -1087,8 +1073,6 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                             }))
                           }
                           style={dropdownFieldStyle}
-                          controlStyle={repairKitDropdownControlStyle}
-                          optionStyle={repairKitDropdownOptionStyle}
                         >
                           <option value="">Year</option>
                           {years.map((year) => (
@@ -1201,7 +1185,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                     <div
                       style={{
                         padding: "16px",
-                        borderRadius: "16px",
+                        borderRadius: "var(--radius-md)",
                         border: `1px dashed ${palette.border}`,
                         backgroundColor: palette.accentSurface,
                         color: palette.textMuted,
@@ -1218,7 +1202,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                           display: "flex",
                           justifyContent: "space-between",
                           alignItems: "center",
-                          borderRadius: "16px",
+                          borderRadius: "var(--radius-md)",
                           border: `1px solid ${palette.border}`,
                           padding: "12px 16px",
                           background: palette.surface,

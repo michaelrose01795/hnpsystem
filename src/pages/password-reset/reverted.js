@@ -85,17 +85,17 @@ export default function PasswordRevertedPage() {
           background: "#0f172a",
           border: "1px solid #374151",
           borderTop: "4px solid #b91c1c",
-          borderRadius: "16px",
+          borderRadius: "var(--radius-md)",
           padding: "26px",
           textAlign: "center",
-          boxShadow: "0 20px 45px rgba(0,0,0,0.5)",
+          boxShadow: "var(--shadow-xl)",
         }}
       >
         <h1 style={{ margin: "0 0 10px", fontSize: "1.5rem", color: "#ffffff" }}>
           {status === "success" ? "Password Reverted" : status === "error" ? "Revert Failed" : "Working..."}
         </h1>
         <p style={{ margin: "0 0 18px", color: "#d1d5db", lineHeight: 1.5 }}>{message}</p>
-        <div style={{ width: "72px", height: "3px", background: statusColor, margin: "0 auto 20px", borderRadius: "999px" }} />
+        <div style={{ width: "72px", height: "3px", background: statusColor, margin: "0 auto 20px", borderRadius: "var(--radius-pill)" }} />
 
         {status === "success" && (
           <div
@@ -105,7 +105,7 @@ export default function PasswordRevertedPage() {
               maxWidth: "420px",
               background: "#111827",
               border: "1px solid #374151",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               padding: "14px",
               display: "flex",
               flexDirection: "column",
@@ -120,7 +120,7 @@ export default function PasswordRevertedPage() {
                 width: "100%",
                 maxWidth: "360px",
                 border: "1px solid #4b5563",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
                 background: "#030712",
                 color: "#f9fafb",
                 padding: "10px 12px",
@@ -138,7 +138,7 @@ export default function PasswordRevertedPage() {
               style={{
                 marginTop: "10px",
                 border: "none",
-                borderRadius: "8px",
+                borderRadius: "var(--radius-xs)",
                 background: "#b91c1c",
                 color: "#ffffff",
                 padding: "9px 12px",

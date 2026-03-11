@@ -1569,30 +1569,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
   return (
     <>
       <style>{`
-        /* Make compact calendar and time picker controls smaller */
-        .compact-input .calendar-api__control,
-        .compact-input .timepicker-api__control,
-        .compact-input .dropdown-api__control {
-          padding: 2px 6px !important;
-          font-size: 10px !important;
-          min-height: auto !important;
-          border-radius: 6px !important;
-          gap: 4px !important;
-        }
-
-        .compact-input .calendar-api__icon,
-        .compact-input .timepicker-api__icon,
-        .compact-input .dropdown-api__chevron {
-          width: 12px !important;
-          height: 12px !important;
-        }
-
-        .compact-input .calendar-api__value,
-        .compact-input .timepicker-api__value,
-        .compact-input .dropdown-api__value {
-          font-size: 10px !important;
-        }
-
         /* ========================================
            On-Order Section Picker Centering
            ========================================
@@ -1752,19 +1728,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         .on-order-table td:nth-child(7) {
           width: 130px;
         }
-        .prepick-popup-dropdown .dropdown-api__control {
-          min-height: 42px;
-          border-radius: 10px;
-          border: 1px solid var(--surface-light);
-          background: var(--surface);
-        }
-        .prepick-popup-dropdown .dropdown-api__value {
-          font-size: 14px;
-          color: var(--text-primary);
-        }
-        .prepick-popup-dropdown .dropdown-api__menu {
-          border-radius: 10px;
-        }
         .catalog-qty-input::placeholder {
           color: var(--grey-accent);
           opacity: 0.75;
@@ -1780,14 +1743,14 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             style={{
               background: "var(--surface)",
               border: "1px solid var(--surface-light)",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               padding: "16px",
             }}
           >
         <div style={{ marginBottom: "12px" }}>
           <div
             style={{
-              fontSize: "14px",
+              fontSize: "var(--text-body-sm)",
               fontWeight: 600,
               color: "var(--primary)",
               letterSpacing: "0.05em",
@@ -1796,7 +1759,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           >
             Search Parts Stock
           </div>
-          <p style={{ margin: "4px 0 0", fontSize: "13px", color: "var(--info-dark)" }}>
+          <p style={{ margin: "4px 0 0", fontSize: "var(--text-label)", color: "var(--info-dark)" }}>
             Search and add parts to this job
           </p>
         </div>
@@ -1819,9 +1782,9 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             opacity: canAllocateParts ? 1 : 0.7,
           }}
         />
-        {catalogLoading && <div style={{ fontSize: "13px", color: "var(--info)", marginTop: "8px" }}>Searching...</div>}
+        {catalogLoading && <div style={{ fontSize: "var(--text-label)", color: "var(--info)", marginTop: "8px" }}>Searching...</div>}
         {!catalogLoading && catalogError && (
-          <div style={{ fontSize: "12px", color: "var(--danger)", marginTop: "8px" }}>{catalogError}</div>
+          <div style={{ fontSize: "var(--text-caption)", color: "var(--danger)", marginTop: "8px" }}>{catalogError}</div>
         )}
         {canAllocateParts && !catalogLoading && catalogResults.length > 0 && (
           <div
@@ -1829,7 +1792,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
               maxHeight: "200px",
               overflowY: "auto",
               border: "1px solid var(--surface-light)",
-              borderRadius: "10px",
+              borderRadius: "var(--radius-sm)",
               marginTop: "12px",
             }}
           >
@@ -1850,11 +1813,11 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                     cursor: "pointer",
                   }}
                 >
-                  <div style={{ fontWeight: 600, color: "var(--accent-purple)", fontSize: "14px" }}>{part.name}</div>
-                  <div style={{ fontSize: "12px", color: "var(--info-dark)" }}>
+                  <div style={{ fontWeight: 600, color: "var(--accent-purple)", fontSize: "var(--text-body-sm)" }}>{part.name}</div>
+                  <div style={{ fontSize: "var(--text-caption)", color: "var(--info-dark)" }}>
                     Part #: {part.part_number} · Supplier: {part.supplier || "Unknown"}
                   </div>
-                  <div style={{ fontSize: "11px", color: "var(--info)" }}>
+                  <div style={{ fontSize: "var(--text-caption)", color: "var(--info)" }}>
                     Stock: {part.qty_in_stock ?? 0} · £{Number(part.unit_price || 0).toFixed(2)}
                   </div>
                 </button>
@@ -1866,7 +1829,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           <div
             style={{
               border: "1px solid var(--accent-purple)",
-              borderRadius: "10px",
+              borderRadius: "var(--radius-sm)",
               padding: "12px",
               background: "var(--accent-purple-surface)",
               marginTop: "12px",
@@ -1874,8 +1837,8 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
               <div>
-                <div style={{ fontWeight: 700, color: "var(--accent-purple)", fontSize: "14px" }}>{selectedCatalogPart.name}</div>
-                <div style={{ fontSize: "12px", color: "var(--info-dark)" }}>
+                <div style={{ fontWeight: 700, color: "var(--accent-purple)", fontSize: "var(--text-body-sm)" }}>{selectedCatalogPart.name}</div>
+                <div style={{ fontSize: "var(--text-caption)", color: "var(--info-dark)" }}>
                   Part #: {selectedCatalogPart.part_number} · Location: {selectedCatalogPart.storage_location || "Unassigned"}
                 </div>
               </div>
@@ -1888,7 +1851,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   color: "var(--info)",
                   cursor: "pointer",
                   fontWeight: 600,
-                  fontSize: "13px",
+                  fontSize: "var(--text-label)",
                 }}
               >
                 Clear
@@ -1896,7 +1859,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px", marginBottom: "10px" }}>
               <div>
-                <label style={{ fontSize: "11px", color: "var(--info-dark)", display: "block", marginBottom: "4px" }}>
+                <label style={{ fontSize: "var(--text-caption)", color: "var(--info-dark)", display: "block", marginBottom: "4px" }}>
                   Quantity
                 </label>
                 <input
@@ -1915,32 +1878,32 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   style={{
                     width: "100%",
                     padding: "6px",
-                    borderRadius: "6px",
+                    borderRadius: "var(--radius-xs)",
                     border: "1px solid var(--surface-light)",
-                    fontSize: "13px",
+                    fontSize: "var(--text-label)",
                   }}
                 />
               </div>
               <div>
-                <div style={{ fontSize: "11px", color: "var(--info-dark)", marginBottom: "4px" }}>Available</div>
-                <div style={{ fontWeight: 700, fontSize: "16px", color: "var(--accent-purple)" }}>
+                <div style={{ fontSize: "var(--text-caption)", color: "var(--info-dark)", marginBottom: "4px" }}>Available</div>
+                <div style={{ fontWeight: 700, fontSize: "var(--text-body)", color: "var(--accent-purple)" }}>
                   {selectedCatalogPart.qty_in_stock ?? 0}
                 </div>
               </div>
               <div>
-                <div style={{ fontSize: "11px", color: "var(--info-dark)", marginBottom: "4px" }}>Sell Price</div>
-                <div style={{ fontWeight: 700, fontSize: "16px", color: "var(--accent-purple)" }}>
+                <div style={{ fontSize: "var(--text-caption)", color: "var(--info-dark)", marginBottom: "4px" }}>Sell Price</div>
+                <div style={{ fontWeight: 700, fontSize: "var(--text-body)", color: "var(--accent-purple)" }}>
                   £{Number(selectedCatalogPart.unit_price || 0).toFixed(2)}
                 </div>
               </div>
             </div>
             {catalogSubmitError && (
-              <div style={{ padding: "8px", borderRadius: "6px", background: "var(--warning-surface)", color: "var(--danger)", fontSize: "12px", marginBottom: "8px" }}>
+              <div style={{ padding: "8px", borderRadius: "var(--radius-xs)", background: "var(--warning-surface)", color: "var(--danger)", fontSize: "var(--text-caption)", marginBottom: "8px" }}>
                 {catalogSubmitError}
               </div>
             )}
             {catalogSuccessMessage && (
-              <div style={{ padding: "8px", borderRadius: "6px", background: "var(--success-surface)", color: "var(--success-dark)", fontSize: "12px", marginBottom: "8px" }}>
+              <div style={{ padding: "8px", borderRadius: "var(--radius-xs)", background: "var(--success-surface)", color: "var(--success-dark)", fontSize: "var(--text-caption)", marginBottom: "8px" }}>
                 {catalogSuccessMessage}
               </div>
             )}
@@ -1952,13 +1915,13 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 style={{
                   width: "100%",
                   padding: "10px",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   border: "none",
                   background: !canAllocateParts ? "var(--surface-light)" : "var(--accent-purple)",
                   color: "white",
                   fontWeight: 600,
                   cursor: !canAllocateParts ? "not-allowed" : "pointer",
-                  fontSize: "14px",
+                  fontSize: "var(--text-body-sm)",
                 }}
               >
                 {allocatingPart ? "Adding..." : "Add to Job"}
@@ -1970,13 +1933,13 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 style={{
                   width: "100%",
                   padding: "10px",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   border: "1px solid var(--accent-purple)",
                   background: !canAllocateParts ? "var(--surface-light)" : "var(--surface)",
                   color: !canAllocateParts ? "var(--text-secondary)" : "var(--accent-purple)",
                   fontWeight: 600,
                   cursor: !canAllocateParts ? "not-allowed" : "pointer",
-                  fontSize: "14px",
+                  fontSize: "var(--text-body-sm)",
                 }}
               >
                 {allocatingPart ? "Adding..." : "Add to Order"}
@@ -1986,12 +1949,12 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         )}
         {/* Success/Error messages - shown outside selectedCatalogPart block so they remain visible */}
         {catalogSuccessMessage && !selectedCatalogPart && (
-          <div style={{ padding: "10px", borderRadius: "8px", background: "var(--success-surface)", color: "var(--success-dark)", fontSize: "13px", marginTop: "12px", textAlign: "center" }}>
+          <div style={{ padding: "10px", borderRadius: "var(--radius-xs)", background: "var(--success-surface)", color: "var(--success-dark)", fontSize: "var(--text-label)", marginTop: "12px", textAlign: "center" }}>
             {catalogSuccessMessage}
           </div>
         )}
         {catalogSubmitError && !selectedCatalogPart && (
-          <div style={{ padding: "10px", borderRadius: "8px", background: "var(--warning-surface)", color: "var(--danger)", fontSize: "13px", marginTop: "12px", textAlign: "center" }}>
+          <div style={{ padding: "10px", borderRadius: "var(--radius-xs)", background: "var(--warning-surface)", color: "var(--danger)", fontSize: "var(--text-label)", marginTop: "12px", textAlign: "center" }}>
             {catalogSubmitError}
           </div>
         )}
@@ -2013,7 +1976,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           style={{
             background: "var(--surface)",
             border: "1px solid var(--surface-light)",
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             padding: "16px",
             minHeight: "400px",
             overflow: "hidden",
@@ -2031,7 +1994,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             <div>
               <div
                 style={{
-                  fontSize: "14px",
+                  fontSize: "var(--text-body-sm)",
                   fontWeight: 600,
                   color: "var(--primary)",
                   letterSpacing: "0.05em",
@@ -2040,7 +2003,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
               >
                 Parts Added to Job
               </div>
-              <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--info)" }}>
+              <p style={{ margin: "4px 0 0", fontSize: "var(--text-caption)", color: "var(--info)" }}>
                 {unallocatedParts.length} unallocated · {bookedParts.length} total
               </p>
             </div>
@@ -2052,11 +2015,11 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 disabled={!canEdit || prePickPartOptions.length === 0}
                 style={{
                   padding: "6px 12px",
-                  borderRadius: "6px",
+                  borderRadius: "var(--radius-xs)",
                   border: "1px solid transparent",
                   background: "var(--info-surface)",
                   color: "var(--info-dark)",
-                  fontSize: "11px",
+                  fontSize: "var(--text-caption)",
                   fontWeight: 600,
                   cursor: !canEdit || prePickPartOptions.length === 0 ? "not-allowed" : "pointer",
                   transition: "all 0.15s ease",
@@ -2071,11 +2034,11 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 onClick={toggleBookPartPanel}
                 style={{
                   padding: "6px 12px",
-                  borderRadius: "6px",
+                  borderRadius: "var(--radius-xs)",
                   border: "1px solid transparent",
                   background: showBookPartPanel ? "var(--danger)" : "var(--danger-surface)",
                   color: showBookPartPanel ? "var(--text-inverse)" : "var(--danger)",
-                  fontSize: "11px",
+                  fontSize: "var(--text-caption)",
                   fontWeight: 600,
                   cursor: "pointer",
                   transition: "all 0.15s ease",
@@ -2090,11 +2053,11 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 title="Show allocate-to-request panel"
                 style={{
                   padding: "6px 12px",
-                  borderRadius: "6px",
+                  borderRadius: "var(--radius-xs)",
                   border: "1px solid transparent",
                   background: showAllocatePanel ? "var(--accent-purple)" : "var(--accent-purple-surface)",
                   color: showAllocatePanel ? "var(--text-inverse)" : "var(--accent-purple)",
-                  fontSize: "11px",
+                  fontSize: "var(--text-caption)",
                   fontWeight: 600,
                   cursor: "pointer",
                   transition: "all 0.15s ease",
@@ -2112,16 +2075,16 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   padding: "20px",
                   textAlign: "center",
                   color: "var(--info)",
-                  fontSize: "13px",
+                  fontSize: "var(--text-label)",
                   border: "1px dashed var(--surface-light)",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                 }}
               >
                 No unallocated parts. Add parts using the search above.
               </div>
             ) : (
               <div style={{ overflowX: "auto", overflowY: "auto", maxHeight: "600px" }}>
-                <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 8px", fontSize: "12px" }}>
+                <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 8px", fontSize: "var(--text-caption)" }}>
                   <thead>
                     <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
                       {assignMode && (
@@ -2220,10 +2183,10 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                     display: "inline-flex",
                                     alignItems: "center",
                                     padding: "2px 8px",
-                                    borderRadius: "999px",
+                                    borderRadius: "var(--radius-pill)",
                                     background: "var(--success-surface)",
                                     color: "var(--success)",
-                                    fontSize: "10px",
+                                    fontSize: "var(--text-caption)",
                                     fontWeight: 700,
                                     textTransform: "uppercase",
                                     letterSpacing: "0.06em",
@@ -2238,10 +2201,10 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                     display: "inline-flex",
                                     alignItems: "center",
                                     padding: "2px 8px",
-                                    borderRadius: "999px",
+                                    borderRadius: "var(--radius-pill)",
                                     background: "var(--info-surface)",
                                     color: "var(--info-dark)",
-                                    fontSize: "10px",
+                                    fontSize: "var(--text-caption)",
                                     fontWeight: 700,
                                     textTransform: "uppercase",
                                     letterSpacing: "0.06em",
@@ -2252,7 +2215,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                               )}
                             </div>
                             <div style={{
-                              fontSize: "0.85rem",
+                              fontSize: "var(--text-body-sm)",
                               color: isRemoved ? "var(--text-inverse)" : "var(--info-dark)",
                               textDecoration: isRemoved ? "line-through" : "none",
                             }}>
@@ -2292,7 +2255,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             style={{
               background: "var(--surface)",
               border: "1px solid var(--surface-light)",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               padding: "16px",
               minHeight: "400px",
               overflow: "hidden",
@@ -2301,7 +2264,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           <div style={{ marginBottom: "12px" }}>
             <div
               style={{
-                fontSize: "14px",
+                fontSize: "var(--text-body-sm)",
                 fontWeight: 600,
                 color: "var(--primary)",
                 letterSpacing: "0.05em",
@@ -2319,9 +2282,9 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   padding: "20px",
                   textAlign: "center",
                   color: "var(--info)",
-                  fontSize: "13px",
+                  fontSize: "var(--text-label)",
                   border: "1px dashed var(--surface-light)",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                 }}
               >
                 No customer requests or authorised work found for this job.
@@ -2333,11 +2296,11 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   const customerRequests = allRequests.filter((r) => r.type === "customer");
                   return (
                     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                      <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                      <div style={{ fontSize: "var(--text-caption)", fontWeight: 700, color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
                         Customer Requests
                       </div>
                       {customerRequests.length === 0 ? (
-                        <div style={{ padding: "10px", fontSize: "12px", color: "var(--info)", border: "1px dashed var(--surface-light)", borderRadius: "8px", textAlign: "center" }}>
+                        <div style={{ padding: "10px", fontSize: "var(--text-caption)", color: "var(--info)", border: "1px dashed var(--surface-light)", borderRadius: "var(--radius-xs)", textAlign: "center" }}>
                           No customer requests reported.
                         </div>
                       ) : (
@@ -2351,14 +2314,14 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                               key={request.id}
                               style={{
                                 padding: "12px",
-                                borderRadius: "10px",
+                                borderRadius: "var(--radius-sm)",
                                 border: "1px solid var(--surface-light)",
                                 background: "var(--surface-muted)",
                               }}
                             >
                               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
                                 <div>
-                                  <div style={{ fontSize: "13px", color: "var(--info-dark)" }}>
+                                  <div style={{ fontSize: "var(--text-label)", color: "var(--info-dark)" }}>
                                     {request.description}
                                   </div>
                                 </div>
@@ -2368,7 +2331,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                   onClick={() => handleAssignSelectedToRequest(request.id)}
                                   style={{
                                     padding: "6px 10px",
-                                    borderRadius: "6px",
+                                    borderRadius: "var(--radius-xs)",
                                     border: !canEdit || !request.canAllocate
                                       ? "1px solid var(--surface-light)"
                                       : assignMode && assignTargetRequestId === request.id
@@ -2384,7 +2347,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                         : "var(--warning)"
                                       : "var(--accent-purple)",
                                     color: !canEdit || !request.canAllocate ? "var(--text-secondary)" : "white",
-                                    fontSize: "11px",
+                                    fontSize: "var(--text-caption)",
                                     fontWeight: 600,
                                     cursor: !canEdit || !request.canAllocate ? "not-allowed" : "pointer",
                                   }}
@@ -2405,7 +2368,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                     borderLeft: "2px solid var(--surface-light)",
                                   }}
                                 >
-                                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "var(--text-caption)" }}>
                                     <thead>
                                       <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
                                         <th style={{ textAlign: "left", padding: "6px" }}>Part number</th>
@@ -2433,11 +2396,11 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                               disabled={!canEdit}
                                               style={{
                                                 padding: "4px 8px",
-                                                borderRadius: "6px",
+                                                borderRadius: "var(--radius-xs)",
                                                 border: "1px solid var(--danger)",
                                                 background: !canEdit ? "var(--surface-light)" : "var(--danger-surface)",
                                                 color: !canEdit ? "var(--text-secondary)" : "var(--danger)",
-                                                fontSize: "10px",
+                                                fontSize: "var(--text-caption)",
                                                 fontWeight: 600,
                                                 cursor: !canEdit ? "not-allowed" : "pointer",
                                               }}
@@ -2477,11 +2440,11 @@ const PartsTabNew = forwardRef(function PartsTabNew(
 
                   return (
                     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                      <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                      <div style={{ fontSize: "var(--text-caption)", fontWeight: 700, color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
                         VHC Requests
                       </div>
                       {vhcRequests.length === 0 ? (
-                        <div style={{ padding: "10px", fontSize: "12px", color: "var(--info)", border: "1px dashed var(--surface-light)", borderRadius: "8px", textAlign: "center" }}>
+                        <div style={{ padding: "10px", fontSize: "var(--text-caption)", color: "var(--info)", border: "1px dashed var(--surface-light)", borderRadius: "var(--radius-xs)", textAlign: "center" }}>
                           No VHC requests reported.
                         </div>
                       ) : (
@@ -2489,7 +2452,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                           <div key={`vhc-group-${group.section}`} style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                             <div
                               style={{
-                                fontSize: "11px",
+                                fontSize: "var(--text-caption)",
                                 fontWeight: 700,
                                 color: "var(--accent-purple)",
                                 textTransform: "uppercase",
@@ -2513,23 +2476,23 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                   key={request.id}
                                   style={{
                                     padding: "12px",
-                                    borderRadius: "10px",
+                                    borderRadius: "var(--radius-sm)",
                                     border: "1px solid var(--surface-light)",
                                     background: "var(--surface-muted)",
                                   }}
                                 >
                                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
                                     <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "2px" }}>
-                                      <div style={{ fontSize: "13px", color: "var(--info-dark)" }}>
+                                      <div style={{ fontSize: "var(--text-label)", color: "var(--info-dark)" }}>
                                         {request.displayText || request.description}
                                       </div>
                                       {(request.expectedPartNumberDisplay || request.expectedPartNumber) && (
-                                        <div style={{ fontSize: "11px", color: "var(--info)" }}>
+                                        <div style={{ fontSize: "var(--text-caption)", color: "var(--info)" }}>
                                           Part No: {request.expectedPartNumberDisplay || request.expectedPartNumber}
                                         </div>
                                       )}
                                       {request.detailText && (
-                                        <div style={{ fontSize: "11px", color: "var(--info)" }}>
+                                        <div style={{ fontSize: "var(--text-caption)", color: "var(--info)" }}>
                                           {request.detailText}
                                         </div>
                                       )}
@@ -2540,7 +2503,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                       onClick={() => handleAssignSelectedToRequest(request.id)}
                                       style={{
                                         padding: "6px 10px",
-                                        borderRadius: "6px",
+                                        borderRadius: "var(--radius-xs)",
                                         border: !canEdit || !request.canAllocate
                                           ? "1px solid var(--surface-light)"
                                           : assignMode && assignTargetRequestId === request.id
@@ -2556,7 +2519,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                             : "var(--warning)"
                                           : "var(--accent-purple)",
                                         color: !canEdit || !request.canAllocate ? "var(--text-secondary)" : "white",
-                                        fontSize: "11px",
+                                        fontSize: "var(--text-caption)",
                                         fontWeight: 600,
                                         cursor: !canEdit || !request.canAllocate ? "not-allowed" : "pointer",
                                       }}
@@ -2577,7 +2540,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                         borderLeft: "2px solid var(--surface-light)",
                                       }}
                                     >
-                                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "var(--text-caption)" }}>
                                         <thead>
                                           <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
                                             <th style={{ textAlign: "left", padding: "6px" }}>Part number</th>
@@ -2605,11 +2568,11 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                                   disabled={!canEdit}
                                                   style={{
                                                     padding: "4px 8px",
-                                                    borderRadius: "6px",
+                                                    borderRadius: "var(--radius-xs)",
                                                     border: "1px solid var(--danger)",
                                                     background: !canEdit ? "var(--surface-light)" : "var(--danger-surface)",
                                                     color: !canEdit ? "var(--text-secondary)" : "var(--danger)",
-                                                    fontSize: "10px",
+                                                    fontSize: "var(--text-caption)",
                                                     fontWeight: 600,
                                                     cursor: !canEdit ? "not-allowed" : "pointer",
                                                   }}
@@ -2642,7 +2605,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             style={{
               background: "var(--surface)",
               border: "1px solid var(--surface-light)",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               padding: "16px",
               minHeight: "400px",
               overflow: "hidden",
@@ -2651,7 +2614,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             <div style={{ marginBottom: "12px" }}>
               <div
                 style={{
-                  fontSize: "14px",
+                  fontSize: "var(--text-body-sm)",
                   fontWeight: 600,
                   color: "var(--primary)",
                   letterSpacing: "0.05em",
@@ -2660,7 +2623,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
               >
                 On Order
               </div>
-              <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--info)" }}>
+              <p style={{ margin: "4px 0 0", fontSize: "var(--text-caption)", color: "var(--info)" }}>
                 {partsOnOrderFromDB.length > 0
                   ? `${partsOnOrderFromDB.length} part${partsOnOrderFromDB.length !== 1 ? "s" : ""} on order`
                   : "No parts currently on order"}
@@ -2751,7 +2714,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                 }}
                                 disabled={!canEdit || isArrived}
                                 style={{
-                                  borderRadius: "6px",
+                                  borderRadius: "var(--radius-xs)",
                                   border: "none",
                                   background: !canEdit
                                     ? "var(--surface-light)"
@@ -2797,23 +2760,22 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             <div
               className="popup-card"
               style={{
-                borderRadius: "24px",
+                borderRadius: "var(--radius-xl)",
                 width: "100%",
                 maxWidth: "560px",
                 border: "1px solid var(--surface-light)",
                 background: "var(--surface)",
-                boxShadow: "none",
-                padding: "24px",
+                padding: "var(--page-card-padding)",
                 display: "flex",
                 flexDirection: "column",
                 gap: "16px",
               }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div style={{ fontSize: "16px", fontWeight: 700, color: "var(--primary)" }}>
+              <div style={{ fontSize: "var(--text-body)", fontWeight: 700, color: "var(--primary)" }}>
                 Set Pre-Picked Location
               </div>
-              <div style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
+              <div style={{ fontSize: "var(--text-label)", color: "var(--text-secondary)" }}>
                 Choose a part already added to this job and assign its pre-pick location.
               </div>
 
@@ -2845,11 +2807,11 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   }}
                   style={{
                     padding: "10px 16px",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     border: "1px solid var(--surface-light)",
                     background: "var(--surface)",
                     color: "var(--text-primary)",
-                    fontSize: "13px",
+                    fontSize: "var(--text-label)",
                     fontWeight: 600,
                     cursor: "pointer",
                   }}
@@ -2862,11 +2824,11 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   disabled={!selectedPrePickPartId || savingPrePick}
                   style={{
                     padding: "10px 16px",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     border: "none",
                     background: !selectedPrePickPartId || savingPrePick ? "var(--surface-light)" : "var(--primary)",
                     color: !selectedPrePickPartId || savingPrePick ? "var(--text-secondary)" : "var(--text-inverse)",
-                    fontSize: "13px",
+                    fontSize: "var(--text-label)",
                     fontWeight: 600,
                     cursor: !selectedPrePickPartId || savingPrePick ? "not-allowed" : "pointer",
                   }}
@@ -2899,18 +2861,18 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             <div
               style={{
                 background: "var(--surface)",
-                borderRadius: "12px",
+                borderRadius: "var(--radius-sm)",
                 padding: "20px",
                 minWidth: "300px",
                 maxWidth: "400px",
-                boxShadow: "0 25px 50px rgba(0, 0, 0, 0.3)",
+                boxShadow: "var(--shadow-xl)",
               }}
               onClick={(e) => e.stopPropagation()}
             >
             <div style={{ marginBottom: "16px" }}>
               <div
                 style={{
-                  fontSize: "16px",
+                  fontSize: "var(--text-body)",
                   fontWeight: 600,
                   color: "var(--primary)",
                   marginBottom: "8px",
@@ -2922,16 +2884,16 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 style={{
                   padding: "12px",
                   background: "var(--info-surface)",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                 }}
               >
                 <div style={{ fontWeight: 600, color: "var(--accent-purple)", marginBottom: "4px" }}>
                   {partPopup.part.partNumber}
                 </div>
-                <div style={{ fontSize: "13px", color: "var(--info-dark)", marginBottom: "4px" }}>
+                <div style={{ fontSize: "var(--text-label)", color: "var(--info-dark)", marginBottom: "4px" }}>
                   {partPopup.part.description || partPopup.part.name}
                 </div>
-                <div style={{ fontSize: "12px", color: "var(--info)" }}>
+                <div style={{ fontSize: "var(--text-caption)", color: "var(--info)" }}>
                   Quantity: {partPopup.part.quantity}
                 </div>
               </div>
@@ -2940,7 +2902,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
               <div style={{ marginBottom: "12px" }}>
                 <label
                   style={{
-                    fontSize: "12px",
+                    fontSize: "var(--text-caption)",
                     color: "var(--info-dark)",
                     fontWeight: 600,
                     display: "block",
@@ -2964,9 +2926,9 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   style={{
                     width: "100%",
                     padding: "8px 10px",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     border: "1px solid var(--surface-light)",
-                    fontSize: "13px",
+                    fontSize: "var(--text-label)",
                     background: "var(--surface)",
                     color: "var(--text-primary)",
                   }}
@@ -2979,11 +2941,11 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 onClick={() => setPartPopup({ open: false, part: null })}
                 style={{
                   padding: "10px 16px",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-xs)",
                   border: "1px solid var(--surface-light)",
                   background: "var(--surface)",
                   color: "var(--info-dark)",
-                  fontSize: "13px",
+                  fontSize: "var(--text-label)",
                   fontWeight: 600,
                   cursor: "pointer",
                 }}
@@ -2996,11 +2958,11 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   onClick={() => handleRemovePartFromPopup("partial")}
                   style={{
                     padding: "10px 16px",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     border: "1px solid var(--danger)",
                     background: "var(--danger-surface)",
                     color: "var(--danger)",
-                    fontSize: "13px",
+                    fontSize: "var(--text-label)",
                     fontWeight: 600,
                     cursor: "pointer",
                   }}
@@ -3012,11 +2974,11 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   onClick={() => handleRemovePartFromPopup("all")}
                   style={{
                     padding: "10px 16px",
-                    borderRadius: "8px",
+                    borderRadius: "var(--radius-xs)",
                     border: "none",
                     background: "var(--danger)",
                     color: "white",
-                    fontSize: "13px",
+                    fontSize: "var(--text-label)",
                     fontWeight: 600,
                     cursor: "pointer",
                   }}

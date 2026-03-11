@@ -786,15 +786,16 @@ export default function Layout({
       )}
 
       <div
+        className="app-layout-main-column"
         style={{
           flex: hideSidebar ? "none" : 1,
           maxWidth: mainColumnMaxWidth,
           width: hideSidebar ? "100%" : "100%",
           display: "flex",
           flexDirection: "column",
-          gap: hideSidebar ? 0 : isTablet ? "16px" : "20px",
-          padding: hideSidebar ? "0" : isTablet ? "16px 12px" : "16px 16px",
-          background: hideSidebar ? "transparent" : colors.mainBg,
+          gap: hideSidebar ? 0 : undefined,
+          padding: hideSidebar ? "0" : undefined,
+          background: hideSidebar ? "transparent" : undefined,
           height: "auto",
           maxHeight: "none",
           overflowY: "visible", // allow full page scroll across breakpoints
@@ -819,7 +820,7 @@ export default function Layout({
                 style={{
                   flex: 1,
                   padding: "12px 14px",
-                  borderRadius: "12px",
+                  borderRadius: "var(--radius-sm)",
                   border: isSidebarOpen ? `2px solid ${colors.accent}` : "1px solid var(--surface-light)",
                   background: isSidebarOpen ? "var(--primary)" : "var(--surface)",
                   fontWeight: 600,
@@ -841,7 +842,7 @@ export default function Layout({
                   style={{
                     flex: 1,
                     padding: "12px 14px",
-                    borderRadius: "12px",
+                    borderRadius: "var(--radius-sm)",
                     border: isStatusSidebarOpen ? `2px solid ${colors.accent}` : "1px solid var(--surface-light)",
                     background: isStatusSidebarOpen ? "var(--primary)" : "var(--surface)",
                     fontWeight: 600,
@@ -925,9 +926,10 @@ export default function Layout({
 
         {!hideSidebar && (
           <section
+            className="app-topbar-shell"
             style={{
               background: "rgba(var(--surface-rgb), 0.92)",
-              borderRadius: "16px",
+              borderRadius: "var(--radius-md)",
               border: "1px solid rgba(var(--primary-rgb),0.12)",
               boxShadow: "none",
               padding: isMobile ? "10px 12px" : "0 16px",
@@ -941,14 +943,13 @@ export default function Layout({
           >
             <div
               style={{
-                display: "flex",
-                flexWrap: "nowrap",
+                display: "grid",
+                gridTemplateColumns: !isTablet ? "minmax(0, 1fr) auto minmax(0, 1fr)" : "1fr",
                 alignItems: "center",
                 gap: isMobile ? "10px" : "14px",
-                justifyContent: "space-between",
                 overflowX: "auto",
                 overflowY: "visible",
-                position: "relative",
+                width: "100%",
               }}
             >
               {/* Hide Welcome back and mode section on tablet/mobile */}
@@ -999,7 +1000,7 @@ export default function Layout({
                             value={selectedMode || activeModeLabel || ""}
                             onChange={(event) => handleModeSelect(event.target.value)}
                             style={{
-                              borderRadius: "999px",
+                              borderRadius: "var(--radius-pill)",
                               border: "none",
                               padding: "2px 8px",
                               background: "var(--surface-light)",
@@ -1034,15 +1035,13 @@ export default function Layout({
               {(isTech || canUseServiceActions || hasPartsAccess) && (
                 <div
                   style={{
-                    position: "absolute",
-                    left: "50%",
-                    transform: "translateX(-50%)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     gap: "12px",
                     whiteSpace: "nowrap",
                     zIndex: 2,
+                    justifySelf: "center",
                   }}
                 >
                   {isTech && (
@@ -1074,38 +1073,14 @@ export default function Layout({
                         onClick={() =>
                           currentJob?.jobNumber && router.push(`/job-cards/myjobs/${currentJob.jobNumber}`)
                         }
-                        style={{
-                          padding: "6px 12px",
-                          borderRadius: "10px",
-                          border: "none",
-                          background: currentJob?.jobNumber
-                            ? "var(--primary)"
-                            : "var(--info-surface)",
-                          color: currentJob?.jobNumber ? "var(--surface)" : "var(--info)",
-                          fontWeight: 600,
-                          cursor: currentJob?.jobNumber ? "pointer" : "not-allowed",
-                          boxShadow: "none",
-                          transition: "all 0.2s ease",
-                          whiteSpace: "nowrap",
-                        }}
+                        className={`app-topbar-button${currentJob?.jobNumber ? " app-topbar-button--primary" : ""}`}
                       >
                         {currentJob?.jobNumber ? `Open Job ${currentJob.jobNumber}` : "No Current Job"}
                       </button>
                       <button
                         type="button"
                         onClick={() => setIsModalOpen(true)}
-                        style={{
-                          padding: "6px 12px",
-                          borderRadius: "10px",
-                          border: "1px solid var(--primary)",
-                          background: "var(--surface)",
-                          color: "var(--primary)",
-                          fontWeight: 600,
-                          cursor: "pointer",
-                          boxShadow: "none",
-                          transition: "all 0.2s ease",
-                          whiteSpace: "nowrap",
-                        }}
+                        className="app-topbar-button app-topbar-button--secondary"
                       >
                         Start Job
                       </button>
@@ -1130,24 +1105,7 @@ export default function Layout({
                           <Link
                             key={action.href}
                             href={action.href}
-                            style={{
-                              padding: "0 14px",
-                              height: "34px",
-                              borderRadius: "999px",
-                              border: active ? "1px solid var(--primary-dark)" : "1px solid var(--surface-light)",
-                              backgroundColor: active ? "var(--primary-dark)" : "var(--surface-light)",
-                              color: active ? "var(--surface)" : "var(--primary-dark)",
-                              fontWeight: 600,
-                              fontSize: "0.85rem",
-                              lineHeight: 1,
-                              textDecoration: "none",
-                              boxShadow: "none",
-                              display: "inline-flex",
-                              alignItems: "center",
-                              transition:
-                                "background-color 0.2s ease, color 0.2s ease",
-                              whiteSpace: "nowrap",
-                            }}
+                            className={`app-topbar-button app-topbar-button--secondary${active ? " is-active" : ""}`}
                           >
                             {action.label}
                           </Link>
@@ -1175,23 +1133,7 @@ export default function Layout({
                           <Link
                             key={action.href}
                             href={action.href}
-                            style={{
-                              padding: isMobile ? "0 14px" : "0 14px",
-                              height: "34px",
-                              borderRadius: "999px",
-                              border: active ? "1px solid var(--primary-dark)" : "1px solid rgba(var(--primary-rgb),0.35)",
-                              backgroundColor: active ? "var(--primary-dark)" : "rgba(var(--primary-rgb),0.08)",
-                              color: active ? "var(--surface)" : "var(--primary-dark)",
-                              fontWeight: 700,
-                              fontSize: "0.9rem",
-                              lineHeight: 1,
-                              textDecoration: "none",
-                              boxShadow: "none",
-                              display: "inline-flex",
-                              alignItems: "center",
-                              transition: "background-color 0.2s ease, color 0.2s ease",
-                              whiteSpace: "nowrap",
-                            }}
+                            className={`app-topbar-button app-topbar-button--secondary${active ? " is-active" : ""}`}
                           >
                             {action.label}
                           </Link>
@@ -1208,19 +1150,19 @@ export default function Layout({
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: "12px",
-                    flex: "0 0 auto",
-                    minWidth: "auto",
+                    gap: "24px",
+                    minWidth: 0,
                     justifyContent: "flex-end",
                     marginLeft: "auto",
+                    justifySelf: "end",
                   }}
                 >
                   <div
                     style={{
-                      flex: "0 0 auto",
-                      minWidth: "23ch",
-                      width: "23ch",
-                      maxWidth: "23ch",
+                      flex: "0 1 auto",
+                      minWidth: "22ch",
+                      width: "clamp(18rem, 20vw, 24rem)",
+                      maxWidth: "24rem",
                       position: "relative",
                     }}
                   >
@@ -1239,17 +1181,7 @@ export default function Layout({
                   {userRoles.includes("admin manager") && (
                     <Link
                       href="/admin/users"
-                      style={{
-                        padding: "8px 14px",
-                        borderRadius: "14px",
-                        background: "var(--primary)",
-                        color: "var(--surface)",
-                        fontWeight: 600,
-                        textDecoration: "none",
-                        boxShadow: "none",
-                        whiteSpace: "nowrap",
-                        flexShrink: 0,
-                      }}
+                      className="app-topbar-button app-topbar-button--primary"
                     >
                       Create User
                     </Link>
@@ -1261,29 +1193,35 @@ export default function Layout({
         )}
 
         <main
+          className="app-page-shell"
           style={{
             flex: 1,
-            minHeight: 0,
-            height: "auto",
-            overflow: "visible",
           }}
         >
           <div
+            className="app-page-content"
             key={contentKey}
             style={{
+              maxWidth: hideSidebar ? "100%" : undefined,
               minHeight: "100%",
-              background: disableContentCard
-                ? "transparent"
-                : contentBackground || "var(--surface)",
-              borderRadius: disableContentCard ? "0px" : hideSidebar ? "0px" : "28px",
-              border: disableContentCard ? "none" : hideSidebar ? "none" : "1px solid var(--surface-light)",
-              boxShadow: "none",
-              padding: disableContentCard ? "0" : hideSidebar ? "0" : isMobile ? "18px 14px" : "32px",
               overflow: "visible",
             }}
           >
-            {showHrTabs && <HrTabsBar />}
-            {children}
+            <div
+              className={disableContentCard || hideSidebar ? "app-page-card app-page-card--bare" : "app-page-card"}
+              style={
+                disableContentCard || hideSidebar
+                  ? undefined
+                  : contentBackground
+                    ? { background: contentBackground }
+                    : undefined
+              }
+            >
+              <div className="app-page-stack">
+                {showHrTabs && <HrTabsBar />}
+                {children}
+              </div>
+            </div>
           </div>
         </main>
       </div>
@@ -1299,7 +1237,7 @@ export default function Layout({
             transform: "translateY(-50%)",
             width: isMobile ? "16px" : isTablet ? "18px" : "20px",
             height: isMobile ? "48px" : isTablet ? "52px" : "56px",
-            borderRadius: "0 999px 999px 0",
+            borderRadius: "0 var(--radius-pill) var(--radius-pill) 0",
             border: "none",
             background: isSidebarOpen
               ? "var(--primary)"
@@ -1331,7 +1269,7 @@ export default function Layout({
               transform: "translateY(-50%)",
               width: isMobile ? "16px" : isTablet ? "18px" : "20px",
               height: isMobile ? "48px" : isTablet ? "52px" : "56px",
-              borderRadius: "999px 0 0 999px",
+              borderRadius: "var(--radius-pill) 0 0 var(--radius-pill)",
               border: "none",
               background: isStatusSidebarOpen
                 ? "var(--primary)"

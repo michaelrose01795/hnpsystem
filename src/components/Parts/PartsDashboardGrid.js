@@ -17,19 +17,10 @@ const summaryGridStyle = {
 };
 
 const summaryCardStyle = {
-  borderRadius: "16px",
   padding: "18px",
-  background: "var(--surface)",
-  border: "1px solid var(--surface-light)",
-  boxShadow: "none",
 };
 
 const sectionCardStyle = {
-  borderRadius: "16px",
-  background: "var(--surface)",
-  border: "1px solid var(--surface-light)",
-  padding: "20px",
-  boxShadow: "none",
   height: "100%",
 };
 
@@ -101,7 +92,7 @@ export default function PartsDashboardGrid({
 
       <div style={summaryGridStyle}>
         {summaryCards.map((card) => (
-          <div key={card.label} style={summaryCardStyle}>
+          <div key={card.label} className="app-section-card" style={summaryCardStyle}>
             <div style={{ fontSize: "0.85rem", color: "var(--primary-dark)", fontWeight: 600 }}>{card.label}</div>
             <div style={{ fontSize: "1.9rem", fontWeight: 700, color: "var(--primary)", margin: "8px 0" }}>
               {card.value}
@@ -113,7 +104,7 @@ export default function PartsDashboardGrid({
 
       <div style={splitGridStyle}>
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          <div style={sectionCardStyle}>
+          <div className="app-section-card" style={sectionCardStyle}>
             <div style={sectionTitleStyle}>Active Job Queue</div>
             <table style={tableStyle}>
               <thead>
@@ -128,7 +119,7 @@ export default function PartsDashboardGrid({
               <tbody>
                 {workload.map((job) => (
                   <tr key={job.jobNumber} style={{ background: "var(--danger-surface)" }}>
-                    <td style={{ padding: "12px", borderRadius: "10px 0 0 10px" }}>
+                    <td style={{ padding: "12px", borderRadius: "var(--radius-xs) 0 0 var(--radius-xs)" }}>
                       <div style={{ fontWeight: 600 }}>{job.jobNumber}</div>
                       <div style={{ color: "var(--grey-accent)", fontSize: "0.85rem" }}>{job.reg}</div>
                     </td>
@@ -140,7 +131,7 @@ export default function PartsDashboardGrid({
                           display: "inline-flex",
                           alignItems: "center",
                           padding: "4px 10px",
-                          borderRadius: "999px",
+                          borderRadius: "var(--radius-pill)",
                           fontSize: "0.8rem",
                           fontWeight: 600,
                           background: job.statusColor || "rgba(var(--primary-rgb),0.08)",
@@ -150,7 +141,7 @@ export default function PartsDashboardGrid({
                         {job.status}
                       </span>
                     </td>
-                    <td style={{ padding: "12px", textAlign: "right", borderRadius: "0 10px 10px 0" }}>
+                    <td style={{ padding: "12px", textAlign: "right", borderRadius: "0 var(--radius-xs) var(--radius-xs) 0" }}>
                       {job.value}
                     </td>
                   </tr>
@@ -160,7 +151,7 @@ export default function PartsDashboardGrid({
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "20px" }}>
-            <div style={sectionCardStyle}>
+            <div className="app-section-card" style={sectionCardStyle}>
               <div style={sectionTitleStyle}>Inventory Alerts</div>
               {inventoryAlerts.map((alert) => {
                 const statusLabel =
@@ -177,7 +168,7 @@ export default function PartsDashboardGrid({
                     style={{
                       padding: "12px 14px",
                       marginBottom: "12px",
-                      borderRadius: "10px",
+                      borderRadius: "var(--radius-sm)",
                       border: "1px dashed rgba(var(--primary-rgb),0.3)",
                       background: "rgba(var(--primary-rgb),0.03)",
                     }}
@@ -201,7 +192,7 @@ export default function PartsDashboardGrid({
                 );
               })}
             </div>
-            <div style={sectionCardStyle}>
+            <div className="app-section-card" style={sectionCardStyle}>
               <div style={sectionTitleStyle}>Team Focus</div>
               {focusItems.map((item) => (
                 <div
@@ -221,14 +212,14 @@ export default function PartsDashboardGrid({
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          <div style={sectionCardStyle}>
+          <div className="app-section-card" style={sectionCardStyle}>
             <div style={sectionTitleStyle}>Team Availability</div>
             {teamAvailability.map((entry) => (
               <div
                 key={entry.name}
                 style={{
                   padding: "12px",
-                  borderRadius: "12px",
+                  borderRadius: "var(--radius-sm)",
                   border: "1px solid rgba(var(--danger-rgb), 0.1)",
                   marginBottom: "12px",
                   background: "rgba(var(--primary-rgb),0.02)",
@@ -242,7 +233,7 @@ export default function PartsDashboardGrid({
               </div>
             ))}
           </div>
-          <div style={sectionCardStyle}>
+          <div className="app-section-card" style={sectionCardStyle}>
             <div style={sectionTitleStyle}>Inbound Deliveries</div>
             {deliveries.map((delivery) => (
               <div

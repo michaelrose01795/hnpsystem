@@ -200,7 +200,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                   style={{
                     width: "100%",
                     padding: "12px 16px",
-                    borderRadius: "12px",
+                    borderRadius: "var(--input-radius)",
                     border: "2px solid var(--surface-light)",
                     backgroundColor: "var(--surface-light)",
                     fontSize: "15px",
@@ -230,7 +230,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                   style={{
                     width: "100%",
                     padding: "12px 16px",
-                    borderRadius: "12px",
+                    borderRadius: "var(--input-radius)",
                     border: "2px solid var(--surface-light)",
                     backgroundColor: "var(--surface-light)",
                     fontSize: "15px",
@@ -279,7 +279,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                     style={{
                       width: "100%",
                       padding: "12px 16px",
-                      borderRadius: "12px",
+                      borderRadius: "var(--input-radius)",
                       border: "2px solid var(--surface-light)",
                       backgroundColor: "var(--surface-light)",
                       fontSize: "15px",
@@ -309,7 +309,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                     style={{
                       width: "100%",
                       padding: "12px 16px",
-                      borderRadius: "12px",
+                      borderRadius: "var(--input-radius)",
                       border: "2px solid var(--surface-light)",
                       backgroundColor: "var(--surface-light)",
                       fontSize: "15px",
@@ -341,7 +341,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                     style={{
                       width: "100%",
                       padding: "12px 16px",
-                      borderRadius: "12px",
+                      borderRadius: "var(--input-radius)",
                       border: "2px solid var(--surface-light)",
                       backgroundColor: "var(--surface-light)",
                       fontSize: "15px",
@@ -371,7 +371,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                     style={{
                       width: "100%",
                       padding: "12px 16px",
-                      borderRadius: "12px",
+                      borderRadius: "var(--input-radius)",
                       border: "2px solid var(--surface-light)",
                       backgroundColor: "var(--surface-light)",
                       fontSize: "15px",
@@ -402,7 +402,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                   style={{
                     width: "100%",
                     padding: "12px 16px",
-                    borderRadius: "12px",
+                    borderRadius: "var(--input-radius)",
                     border: "2px solid var(--surface-light)",
                     backgroundColor: "var(--surface-light)",
                     fontSize: "15px",
@@ -433,7 +433,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                     style={{
                       flex: 1,
                       padding: "12px 16px",
-                      borderRadius: "12px",
+                      borderRadius: "var(--input-radius)",
                       border: "2px solid var(--surface-light)",
                       backgroundColor: "var(--surface-light)",
                       fontSize: "15px",
@@ -448,7 +448,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                     disabled={lookupState.loading}
                     style={{
                       padding: "12px 24px",
-                      borderRadius: "12px",
+                      borderRadius: "var(--input-radius)",
                       border: "2px solid var(--primary)",
                       backgroundColor: "var(--primary)",
                       color: "white",
@@ -469,9 +469,9 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                 <div
                   style={{
                     padding: "12px 16px",
-                    borderRadius: "12px",
-                    border: "2px solid #fecaca",
-                    backgroundColor: "#fef2f2",
+                    borderRadius: "var(--input-radius)",
+                    border: "2px solid var(--danger-border)",
+                    backgroundColor: "var(--danger-surface)",
                     color: "var(--danger)",
                     fontSize: "13px",
                     fontWeight: "600",
@@ -485,7 +485,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                 <div
                   style={{
                     border: "2px solid var(--surface-light)",
-                    borderRadius: "12px",
+                    borderRadius: "var(--input-radius)",
                     maxHeight: "200px",
                     overflowY: "auto",
                     backgroundColor: "var(--surface)",
@@ -553,7 +553,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                   style={{
                     width: "100%",
                     padding: "12px 16px",
-                    borderRadius: "12px",
+                    borderRadius: "var(--input-radius)",
                     border: "2px solid var(--surface-light)",
                     backgroundColor: "var(--surface-light)",
                     fontSize: "15px",
@@ -584,7 +584,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                     style={{
                       width: "100%",
                       padding: "12px 16px",
-                      borderRadius: "12px",
+                      borderRadius: "var(--input-radius)",
                       border: "2px solid var(--surface-light)",
                       backgroundColor: "var(--surface-light)",
                       fontSize: "15px",
@@ -614,7 +614,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                     style={{
                       width: "100%",
                       padding: "12px 16px",
-                      borderRadius: "12px",
+                      borderRadius: "var(--input-radius)",
                       border: "2px solid var(--surface-light)",
                       backgroundColor: "var(--surface-light)",
                       fontSize: "15px",
@@ -644,7 +644,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
             type="button"
             style={{
               padding: "12px 24px",
-              borderRadius: "12px",
+              borderRadius: "var(--input-radius)",
               border: "2px solid var(--surface-light)",
               backgroundColor: "transparent",
               fontSize: "15px",
@@ -670,7 +670,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
             type="button"
             style={{
               padding: "12px 24px",
-              borderRadius: "12px",
+              borderRadius: "var(--input-radius)",
               border: "2px solid var(--primary-dark)",
               backgroundColor: "var(--primary)",
               color: "white",
@@ -679,7 +679,6 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
               cursor: loading ? "not-allowed" : "pointer",
               opacity: loading ? 0.6 : 1,
               transition: "all 0.2s",
-              boxShadow: "none",
             }}
             onMouseEnter={(e) => {
               if (!loading) {

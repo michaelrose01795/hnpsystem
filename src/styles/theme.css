@@ -80,7 +80,7 @@
   --calendar-saturday-row-bg: #fff8ed;
   --calendar-amber-selected-bg: #ffe2c4;
   --calendar-red-selected-bg: #ffd6d6;
-  --calendar-today-row-bg: linear-gradient(90deg, rgba(var(--primary-rgb), 0.08), rgba(var(--primary-rgb), 0.03));
+  --calendar-today-row-bg: rgba(var(--primary-rgb), 0.06);
   --calendar-today-row-border: rgba(var(--primary-rgb), 0.35);
   --calendar-today-pill-bg: rgba(var(--primary-rgb), 0.16);
   --calendar-today-pill-text: var(--text-primary);
@@ -108,14 +108,141 @@
   --section-gradient-center: #ffffff;
   --layer-gradient: var(--layer-section-level-3);
 
-  /* Shared design tokens */
-  --radius-card: 26px;
-  --radius-panel: 22px;
-  --radius-control: 18px;
+  /* Shared design tokens — radius scale */
+  --radius-xs: 8px;
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
   --radius-pill: 999px;
+  --radius-full: 50%;
+
+  /* Legacy radius aliases (mapped to scale) */
+  --radius-card: var(--radius-xl);
+  --radius-panel: var(--radius-lg);
+  --radius-control: var(--radius-sm);
+
+  /* Section card tokens */
+  --section-card-radius: var(--radius-md);
+  --section-card-padding: 20px;
+  --section-card-padding-sm: 16px;
+  --section-card-bg: var(--surface);
+  --section-card-border: 1px solid rgba(var(--primary-rgb), 0.12);
+
+  /* Input tokens */
+  --input-radius: var(--radius-sm);
+  --input-padding: var(--control-padding);
+  --input-bg: var(--control-bg);
+  --input-border: var(--control-border);
+
+  --page-max-width: 1680px;
+  --page-content-max-width: 1440px;
+  --page-gutter-x: 20px;
+  --page-gutter-y: 18px;
+  --page-gutter-x-mobile: 12px;
+  --page-gutter-y-mobile: 14px;
+  --page-stack-gap: 20px;
+  --page-stack-gap-mobile: 16px;
+  --page-card-radius: var(--radius-xl);
+  --page-card-padding: 24px;
+  --page-card-padding-mobile: 16px;
+  --page-card-border: 1px solid rgba(var(--primary-rgb), 0.12);
+  --page-card-bg: rgba(var(--surface-rgb), 0.94);
+  --page-card-bg-alt: rgba(var(--surface-rgb), 0.88);
+  --page-accent-layer: rgba(var(--primary-rgb), 0.05);
+  --page-shell-bg: var(--layer-gradient);
+  --nav-shell-bg: rgba(var(--surface-rgb), 0.92);
+  --nav-shell-border: 1px solid rgba(var(--primary-rgb), 0.12);
+  --nav-link-bg: rgba(var(--surface-rgb), 0.92);
+  --nav-link-bg-hover: rgba(var(--primary-rgb), 0.08);
+  --nav-link-bg-active: var(--primary);
+  --nav-link-border: 1px solid rgba(var(--text-primary-rgb), 0.1);
+  --nav-link-border-active: 1px solid var(--primary);
+  --control-height: 44px;
+  --control-height-sm: 40px;
+  --control-height-xs: 34px;
+  --control-radius: 14px;
+  --control-radius-sm: var(--radius-sm);
+  --control-radius-xs: 10px;
+  --control-menu-radius: var(--radius-md);
+  --control-padding: 10px 14px;
+  --control-padding-sm: 8px 12px;
+  --control-padding-xs: 5px 9px;
+  --control-font-size: 0.92rem;
+  --control-font-weight: 500;
+  --control-label-size: 0.82rem;
+  --control-label-weight: 600;
+  --control-gap: 10px;
+  --control-border-color: rgba(var(--text-primary-rgb), 0.12);
+  --control-border: 1px solid var(--control-border-color);
+  --control-border-hover: rgba(var(--primary-rgb), 0.2);
+  --control-border-focus: rgba(var(--primary-rgb), 0.34);
+  --control-bg: rgba(var(--surface-rgb), 0.92);
+  --control-bg-hover: rgba(var(--surface-rgb), 0.98);
+  --control-bg-active: rgba(var(--primary-rgb), 0.08);
+  --control-muted-text: rgba(var(--text-secondary-rgb), 0.78);
+  --control-icon: rgba(var(--text-secondary-rgb), 0.82);
+  --control-menu-bg: rgba(var(--surface-rgb), 0.98);
+  --control-menu-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+  --control-ring: 0 0 0 3px rgba(var(--primary-rgb), 0.12);
+  --control-transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease;
   --layout-card-padding: 24px;
   --layout-card-gap: 20px;
   --layout-stack-gap: 20px;
+
+  /* ── Spacing scale ── */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* ── Typography scale ── */
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+    Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  --text-h1: 1.75rem;
+  --text-h2: 1.35rem;
+  --text-h3: 1.1rem;
+  --text-h4: 1rem;
+  --text-body: 0.95rem;
+  --text-body-sm: 0.88rem;
+  --text-label: 0.82rem;
+  --text-caption: 0.75rem;
+  --text-control: var(--control-font-size);
+  --leading-tight: 1.2;
+  --leading-normal: 1.35;
+  --leading-relaxed: 1.5;
+  --tracking-tight: -0.01em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.04em;
+  --tracking-caps: 0.06em;
+
+  /* ── Z-index scale ── */
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-overlay: 500;
+  --z-modal: 1000;
+  --z-popover: 1500;
+  --z-toast: 2000;
+
+  /* ── Shadow / elevation scale ── */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 48px rgba(0, 0, 0, 0.14);
+
+  /* ── Transition durations ── */
+  --duration-fast: 0.12s;
+  --duration-normal: 0.18s;
+  --duration-slow: 0.3s;
+  --ease-default: ease;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
   /* Scrollbar colors */
   --scrollbar-thumb: var(--primary);
@@ -204,7 +331,7 @@
   --calendar-saturday-row-bg: #1c1a27;
   --calendar-amber-selected-bg: #3a2614;
   --calendar-red-selected-bg: #321616;
-  --calendar-today-row-bg: linear-gradient(90deg, rgba(var(--primary-rgb), 0.22), rgba(var(--primary-rgb), 0.12));
+  --calendar-today-row-bg: rgba(var(--primary-rgb), 0.16);
   --calendar-today-row-border: rgba(var(--primary-rgb), 0.55);
   --calendar-today-pill-bg: rgba(var(--primary-rgb), 0.26);
   --calendar-today-pill-text: var(--text-primary);
@@ -235,4 +362,33 @@
   /* Scrollbar colors */
   --scrollbar-thumb: var(--primary);
   --scrollbar-thumb-hover: var(--primary-light);
+  --control-border-color: rgba(var(--text-primary-rgb), 0.18);
+  --control-border: 1px solid var(--control-border-color);
+  --control-border-hover: rgba(var(--primary-rgb), 0.28);
+  --control-border-focus: rgba(var(--primary-rgb), 0.44);
+  --control-bg: rgba(var(--surface-rgb), 0.92);
+  --control-bg-hover: rgba(var(--surface-rgb), 0.98);
+  --control-bg-active: rgba(var(--primary-rgb), 0.14);
+  --control-muted-text: rgba(var(--text-secondary-rgb), 0.76);
+  --control-icon: rgba(var(--text-secondary-rgb), 0.84);
+  --control-menu-bg: rgba(var(--surface-rgb), 0.98);
+  --control-menu-shadow: 0 22px 48px rgba(0, 0, 0, 0.34);
+  --control-ring: 0 0 0 3px rgba(var(--primary-rgb), 0.18);
+  --page-card-border: 1px solid rgba(var(--primary-rgb), 0.16);
+  --page-card-bg: rgba(var(--surface-rgb), 0.92);
+  --page-card-bg-alt: rgba(var(--surface-rgb), 0.86);
+  --page-accent-layer: rgba(var(--primary-rgb), 0.08);
+  --nav-shell-bg: rgba(var(--surface-rgb), 0.9);
+  --nav-shell-border: 1px solid rgba(var(--primary-rgb), 0.16);
+  --nav-link-bg: rgba(var(--surface-rgb), 0.88);
+  --nav-link-bg-hover: rgba(var(--primary-rgb), 0.14);
+  --nav-link-bg-active: var(--primary);
+  --nav-link-border: 1px solid rgba(var(--text-primary-rgb), 0.14);
+  --nav-link-border-active: 1px solid var(--primary);
+
+  /* Dark mode shadow overrides */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.18);
+  --shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.24);
+  --shadow-xl: 0 20px 52px rgba(0, 0, 0, 0.32);
 }

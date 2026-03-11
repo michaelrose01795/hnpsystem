@@ -226,8 +226,8 @@ export default function AdminUserManagement() {
               onClick={handleCompanySave}
               disabled={companySaving}
               style={{
-                padding: "10px 16px",
-                borderRadius: "10px",
+                padding: "var(--control-padding)",
+                borderRadius: "var(--radius-sm)",
                 border: "none",
                 background: "var(--primary-dark)",
                 color: "#fff",
@@ -243,8 +243,8 @@ export default function AdminUserManagement() {
           {companyMessage && (
             <div
               style={{
-                padding: "10px 12px",
-                borderRadius: "10px",
+                padding: "var(--control-padding)",
+                borderRadius: "var(--radius-sm)",
                 marginBottom: "12px",
                 background: companyMessage.includes("saved") ? "rgba(var(--success-rgb), 0.15)" : "rgba(var(--danger-rgb), 0.12)",
                 color: companyMessage.includes("saved") ? "var(--success-text)" : "var(--danger-dark)",
@@ -268,73 +268,73 @@ export default function AdminUserManagement() {
                 value={companyProfile.company_name}
                 onChange={(event) => handleCompanyInputChange("company_name", event.target.value)}
                 placeholder="Company name"
-                style={{ padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)" }}
+                className="app-input"
               />
               <input
                 value={companyProfile.address_line1}
                 onChange={(event) => handleCompanyInputChange("address_line1", event.target.value)}
                 placeholder="Address line 1"
-                style={{ padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)" }}
+                className="app-input"
               />
               <input
                 value={companyProfile.address_line2}
                 onChange={(event) => handleCompanyInputChange("address_line2", event.target.value)}
                 placeholder="Address line 2"
-                style={{ padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)" }}
+                className="app-input"
               />
               <input
                 value={companyProfile.city}
                 onChange={(event) => handleCompanyInputChange("city", event.target.value)}
                 placeholder="City"
-                style={{ padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)" }}
+                className="app-input"
               />
               <input
                 value={companyProfile.postcode}
                 onChange={(event) => handleCompanyInputChange("postcode", event.target.value)}
                 placeholder="Postcode"
-                style={{ padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)" }}
+                className="app-input"
               />
               <input
                 value={companyProfile.phone_service}
                 onChange={(event) => handleCompanyInputChange("phone_service", event.target.value)}
                 placeholder="Service phone"
-                style={{ padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)" }}
+                className="app-input"
               />
               <input
                 value={companyProfile.phone_parts}
                 onChange={(event) => handleCompanyInputChange("phone_parts", event.target.value)}
                 placeholder="Parts phone"
-                style={{ padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)" }}
+                className="app-input"
               />
               <input
                 value={companyProfile.website}
                 onChange={(event) => handleCompanyInputChange("website", event.target.value)}
                 placeholder="Website"
-                style={{ padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)" }}
+                className="app-input"
               />
               <input
                 value={companyProfile.bank_name}
                 onChange={(event) => handleCompanyInputChange("bank_name", event.target.value)}
                 placeholder="Bank name"
-                style={{ padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)" }}
+                className="app-input"
               />
               <input
                 value={companyProfile.sort_code}
                 onChange={(event) => handleCompanyInputChange("sort_code", event.target.value)}
                 placeholder="Sort code"
-                style={{ padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)" }}
+                className="app-input"
               />
               <input
                 value={companyProfile.account_number}
                 onChange={(event) => handleCompanyInputChange("account_number", event.target.value)}
                 placeholder="Account number"
-                style={{ padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)" }}
+                className="app-input"
               />
               <input
                 value={companyProfile.account_name}
                 onChange={(event) => handleCompanyInputChange("account_name", event.target.value)}
                 placeholder="Account name"
-                style={{ padding: "10px 12px", borderRadius: "10px", border: "1px solid var(--surface-light)" }}
+                className="app-input"
               />
               <textarea
                 value={companyProfile.payment_reference_hint}
@@ -342,9 +342,9 @@ export default function AdminUserManagement() {
                 placeholder="Payment reference hint"
                 rows={3}
                 style={{
-                  padding: "10px 12px",
-                  borderRadius: "10px",
-                  border: "1px solid var(--surface-light)",
+                  padding: "var(--input-padding)",
+                  borderRadius: "var(--input-radius)",
+                  border: "var(--input-border)",
                   gridColumn: "1 / -1",
                 }}
               />
@@ -484,7 +484,7 @@ export default function AdminUserManagement() {
                                 onClick={() => handleProfileView(member)}
                                 style={{
                                   padding: "6px 10px",
-                                  borderRadius: "999px",
+                                  borderRadius: "var(--radius-pill)",
                                   border: "1px solid var(--accent-purple-surface)",
                                   background: activeUser === member.displayName ? "var(--accent-purple)" : "white",
                                   color: activeUser === member.displayName ? "white" : "var(--info-dark)",
@@ -524,7 +524,7 @@ export default function AdminUserManagement() {
               <iframe
                 title={`${previewMember.displayName} profile`}
                 src={`/admin/profiles/${encodeURIComponent(previewMember.key || previewMember.displayName)}`}
-                style={{ width: "100%", height: "500px", border: "1px solid var(--accent-purple-surface)", borderRadius: "12px" }}
+                style={{ width: "100%", height: "500px", border: "1px solid var(--accent-purple-surface)", borderRadius: "var(--radius-sm)" }}
               />
               <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
                 <button type="button" style={secondaryButtonStyle} disabled>
@@ -543,8 +543,8 @@ export default function AdminUserManagement() {
 }
 
 const refreshButtonStyle = {
-  padding: "8px 14px",
-  borderRadius: "10px",
+  padding: "var(--control-padding)",
+  borderRadius: "var(--radius-sm)",
   border: "1px solid var(--info-surface)",
   background: "var(--surface)",
   color: "var(--accent-purple)",
@@ -554,7 +554,7 @@ const refreshButtonStyle = {
 
 const dangerButtonStyle = {
   padding: "6px 12px",
-  borderRadius: "8px",
+  borderRadius: "var(--radius-xs)",
   border: "1px solid var(--danger-surface)",
   background: "var(--danger-surface)",
   color: "var(--danger)",
@@ -574,7 +574,7 @@ const modalContentStyle = {
   display: "flex",
   flexDirection: "column",
   gap: "12px",
-  padding: "24px",
+  padding: "var(--page-card-padding)",
 };
 
 const modalCloseButtonStyle = {
@@ -586,8 +586,8 @@ const modalCloseButtonStyle = {
 };
 
 const secondaryButtonStyle = {
-  padding: "8px 14px",
-  borderRadius: "10px",
+  padding: "var(--control-padding)",
+  borderRadius: "var(--radius-sm)",
   border: "1px solid var(--accent-purple-surface)",
   background: "var(--surface)",
   color: "var(--info-dark)",
@@ -597,8 +597,8 @@ const secondaryButtonStyle = {
 };
 
 const primaryActionButtonStyle = {
-  padding: "8px 14px",
-  borderRadius: "10px",
+  padding: "var(--control-padding)",
+  borderRadius: "var(--radius-sm)",
   border: "none",
   background: "var(--accent-purple)",
   color: "white",

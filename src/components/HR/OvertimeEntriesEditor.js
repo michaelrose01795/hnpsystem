@@ -219,20 +219,20 @@ const labelStyle = {
 };
 
 const inputStyle = {
-  padding: "8px 10px",
-  borderRadius: "8px",
+  padding: "var(--control-padding)",
+  borderRadius: "var(--radius-xs)",
   border: "1px solid var(--accent-purple-surface)",
   fontWeight: 500,
 };
 
 const buttonStyle = {
   alignSelf: "end",
-  padding: "10px 12px",
-  borderRadius: "10px",
+  padding: "var(--control-padding)",
+  borderRadius: "var(--input-radius)",
   border: "none",
   background: "var(--accent-purple)",
   color: "white",
   fontWeight: 600,
   cursor: "pointer",
-  height: "42px",
+  height: "var(--control-height)",
 };

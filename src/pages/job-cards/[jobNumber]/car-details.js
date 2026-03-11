@@ -63,10 +63,9 @@ export default function CarDetailsPage() {
   const handleCheckBox = () => router.push(`/job-cards/${jobNumber}/check-box`);
 
   const sectionStyle = {
-    backgroundColor: "var(--surface)",
-    padding: "16px",
-    borderRadius: "8px",
-    boxShadow: "none"
+    backgroundColor: "var(--section-card-bg)",
+    padding: "var(--section-card-padding)",
+    borderRadius: "var(--radius-xs)",
   };
 
   const gridStyle = {
@@ -83,7 +82,7 @@ export default function CarDetailsPage() {
     backgroundColor: "var(--primary)",
     color: "white",
     border: "none",
-    borderRadius: "6px",
+    borderRadius: "var(--radius-xs)",
     cursor: "pointer",
     fontWeight: "bold",
     fontSize: "1rem"
@@ -104,7 +103,7 @@ export default function CarDetailsPage() {
             padding: "8px 16px",
             backgroundColor: "var(--background)",
             border: "none",
-            borderRadius: "6px",
+            borderRadius: "var(--radius-xs)",
             cursor: "pointer"
           }}
         >

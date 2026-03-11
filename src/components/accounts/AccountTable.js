@@ -32,7 +32,7 @@ const renderStatusBadge = (status) => {
     <span
       style={{
         padding: "4px 10px",
-        borderRadius: "999px",
+        borderRadius: "var(--radius-pill)",
         fontSize: "0.75rem",
         fontWeight: 700,
         textTransform: "uppercase",
@@ -60,7 +60,7 @@ export default function AccountTable({ accounts, loading, pagination, onPageChan
   return (
     <div
       style={{
-        borderRadius: "16px",
+        borderRadius: "var(--radius-md)",
         border: "1px solid var(--surface-light)",
         background: "var(--surface)",
         boxShadow: "none",
@@ -194,7 +194,7 @@ export default function AccountTable({ accounts, loading, pagination, onPageChan
                       background: "rgba(var(--primary-rgb),0.08)",
                       color: "var(--primary)",
                       fontWeight: 600,
-                      borderRadius: "8px",
+                      borderRadius: "var(--radius-xs)",
                       padding: "6px 12px",
                       cursor: "pointer",
                     }}
@@ -235,7 +235,7 @@ export default function AccountTable({ accounts, loading, pagination, onPageChan
             disabled={pagination.page <= 1}
             style={{
               padding: "8px 14px",
-              borderRadius: "999px",
+              borderRadius: "var(--radius-pill)",
               border: "1px solid var(--surface-light)",
               background: pagination.page <= 1 ? "var(--surface-light)" : "var(--surface)",
               color: "var(--text-secondary)",
@@ -250,7 +250,7 @@ export default function AccountTable({ accounts, loading, pagination, onPageChan
             disabled={pagination.page >= Math.ceil((pagination.total || 0) / pagination.pageSize)}
             style={{
               padding: "8px 14px",
-              borderRadius: "999px",
+              borderRadius: "var(--radius-pill)",
               border: "1px solid var(--surface-light)",
               background: pagination.page >= Math.ceil((pagination.total || 0) / pagination.pageSize) ? "var(--surface-light)" : "var(--surface)",
               color: "var(--text-secondary)",

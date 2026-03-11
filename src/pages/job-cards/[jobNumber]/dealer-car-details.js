@@ -68,7 +68,7 @@ export default function DealerCarDetailsPage() {
         </h1>
 
         {/* Display basic job/vehicle info */}
-        <div style={{ marginBottom: "16px", padding: "12px", backgroundColor: "var(--surface)", borderRadius: "8px" }}>
+        <div className="app-section-card" style={{ marginBottom: "16px" }}>
           <p><strong>Vehicle Registration:</strong> {jobData.reg}</p>
           <p><strong>Make & Model:</strong> {jobData.vehicle?.make} {jobData.vehicle?.model}</p>
           <p><strong>Customer:</strong> {jobData.customer}</p>
@@ -84,7 +84,7 @@ export default function DealerCarDetailsPage() {
               backgroundColor: "var(--primary)",
               color: "white",
               border: "none",
-              borderRadius: "6px",
+              borderRadius: "var(--radius-xs)",
             }}
           >
             Upload File
@@ -97,7 +97,7 @@ export default function DealerCarDetailsPage() {
               backgroundColor: "var(--accent-purple)",
               color: "white",
               border: "none",
-              borderRadius: "6px",
+              borderRadius: "var(--radius-xs)",
             }}
           >
             Go To Appointment

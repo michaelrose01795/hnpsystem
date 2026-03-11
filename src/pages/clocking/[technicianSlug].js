@@ -623,7 +623,7 @@ export default function UserClockingHistory() {
 
   const contentShellStyle = {
     background: "var(--layer-section-level-3)",
-    borderRadius: "36px",
+    borderRadius: "var(--radius-xl)",
     border: "1px solid rgba(var(--text-primary-rgb), 0.08)",
     padding: "32px",
     display: "flex",
@@ -632,7 +632,7 @@ export default function UserClockingHistory() {
   };
 
   const basePanelStyle = {
-    borderRadius: "28px",
+    borderRadius: "var(--radius-xl)",
     border: "1px solid var(--surface-light)",
     background: "var(--layer-section-level-2)",
     padding: "32px",
@@ -647,7 +647,7 @@ export default function UserClockingHistory() {
     alignItems: "center",
     gap: "8px",
     padding: "8px 18px",
-    borderRadius: "999px",
+    borderRadius: "var(--radius-pill)",
     fontSize: "0.75rem",
     fontWeight: 600,
     letterSpacing: "0.08em",
@@ -665,7 +665,7 @@ export default function UserClockingHistory() {
   };
 
   const statCardStyle = {
-    borderRadius: "20px",
+    borderRadius: "var(--radius-lg)",
     border: "1px solid var(--border)",
     background: "var(--layer-section-level-1)",
     padding: "18px",
@@ -675,7 +675,7 @@ export default function UserClockingHistory() {
   };
 
   const tableWrapperStyle = {
-    borderRadius: "24px",
+    borderRadius: "var(--radius-xl)",
     border: "1px solid var(--surface-light)",
     overflow: "hidden",
   };
@@ -711,7 +711,7 @@ export default function UserClockingHistory() {
   };
 
   const inputStyle = {
-    borderRadius: "16px",
+    borderRadius: "var(--radius-md)",
     border: "1px solid var(--surface-light)",
     background: "var(--surface-light)",
     padding: "12px 14px",
@@ -721,7 +721,7 @@ export default function UserClockingHistory() {
   };
 
   const buttonPrimaryStyle = {
-    borderRadius: "16px",
+    borderRadius: "var(--radius-md)",
     border: "none",
     background: "var(--primary)",
     color: "var(--surface)",
@@ -732,7 +732,7 @@ export default function UserClockingHistory() {
   };
 
   const buttonSecondaryStyle = {
-    borderRadius: "16px",
+    borderRadius: "var(--radius-md)",
     border: "1px solid var(--surface-light)",
     background: "transparent",
     color: "var(--info)",
@@ -811,7 +811,7 @@ export default function UserClockingHistory() {
           {error && (
             <div
               style={{
-                borderRadius: "18px",
+                borderRadius: "var(--radius-md)",
                 border: "1px solid var(--danger)",
                 background: "var(--danger-surface)",
                 padding: "14px 18px",
@@ -928,7 +928,7 @@ export default function UserClockingHistory() {
               {formError && (
                 <div
                   style={{
-                    borderRadius: "16px",
+                    borderRadius: "var(--radius-md)",
                     border: "1px solid var(--danger)",
                     background: "var(--danger-surface)",
                     padding: "12px 14px",
@@ -942,7 +942,7 @@ export default function UserClockingHistory() {
               {formSuccess && (
                 <div
                   style={{
-                    borderRadius: "16px",
+                    borderRadius: "var(--radius-md)",
                     border: "1px solid var(--success)",
                     background: "var(--success-surface)",
                     padding: "12px 14px",

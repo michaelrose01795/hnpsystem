@@ -1112,8 +1112,8 @@ export default function CustomerMessagesPage() {
                         overflowY: "auto",
                         backgroundColor: "var(--surface)",
                         border: "1px solid var(--surface-light)",
-                        borderRadius: "16px",
-                        boxShadow: "0 10px 40px rgba(0, 0, 0, 0.15)",
+                        borderRadius: "var(--radius-md)",
+                        boxShadow: "var(--shadow-lg)",
                         zIndex: 1000,
                       }}
                     >

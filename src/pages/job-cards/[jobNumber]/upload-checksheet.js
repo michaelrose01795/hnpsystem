@@ -91,7 +91,7 @@ export default function UploadChecksheet() {
               backgroundColor: "var(--primary)",
               color: "white",
               border: "none",
-              borderRadius: "6px",
+              borderRadius: "var(--radius-xs)",
               cursor: loading ? "not-allowed" : "pointer",
               opacity: loading ? 0.6 : 1,
             }}
@@ -109,7 +109,7 @@ export default function UploadChecksheet() {
               color: "black",
               fontWeight: "bold",
               border: "2px solid black",
-              borderRadius: "6px",
+              borderRadius: "var(--radius-xs)",
               cursor: loading ? "not-allowed" : "pointer",
               opacity: loading ? 0.6 : 1,
             }}
@@ -148,7 +148,7 @@ export default function UploadChecksheet() {
                   backgroundColor: "green",
                   color: "white",
                   border: "none",
-                  borderRadius: "6px",
+                  borderRadius: "var(--radius-xs)",
                   cursor: loading ? "not-allowed" : "pointer",
                   width: "100%",
                 }}
@@ -164,7 +164,7 @@ export default function UploadChecksheet() {
                   backgroundColor: "grey",
                   color: "white",
                   border: "none",
-                  borderRadius: "6px",
+                  borderRadius: "var(--radius-xs)",
                   cursor: "pointer",
                   width: "100%",
                 }}

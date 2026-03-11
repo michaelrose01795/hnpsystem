@@ -228,8 +228,8 @@ export default function Sidebar({
 
   return (
     <aside
+      className="app-sidebar"
       style={{
-        background: "var(--surface)",
         padding: "0",
         width: isCondensed ? "100%" : "260px",
         minWidth: isCondensed ? "auto" : "220px",
@@ -238,9 +238,8 @@ export default function Sidebar({
         maxHeight: isCondensed ? "100%" : "none",
         display: "flex",
         flexDirection: "column",
-        borderRadius: "16px",
+        borderRadius: "var(--page-card-radius)",
         boxShadow: "none",
-        border: "1px solid var(--surface-light)",
         position: isCondensed ? "relative" : "sticky",
         top: isCondensed ? "auto" : "10px",
         overflowX: "hidden",
@@ -251,17 +250,13 @@ export default function Sidebar({
       {/* Header */}
       {/* Brand logo replaces the old Navigation/Workspace labels while keeping header spacing consistent. Background now follows the sidebar theme for both light/dark modes. */}
       <div
-        className="sidebar-logo-header"
+        className="sidebar-logo-header app-sidebar__header"
         style={{
-          background: "var(--surface)", // match sidebar surface so the header blends with the current theme (light or dark)
-          padding: "16px 18px",
-          color: "var(--text-primary)",
           position: "relative",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           height: isCondensed ? "60px" : "75px", // fix the height so the oversized logo crops vertically
-          borderBottom: "1px solid var(--surface-light)",
           overflow: "hidden",
         }}
       >
@@ -285,7 +280,7 @@ export default function Sidebar({
       </div>
 
       {/* Navigation Content */}
-      <div style={{ padding: "20px" }}>
+      <div className="app-sidebar__body">
         {dashboardShortcuts.length > 0 && (
           <>
             <div
@@ -296,33 +291,20 @@ export default function Sidebar({
                 marginBottom: "10px",
               }}
             >
-              <div
-                style={{
-                  color: "var(--primary-dark)",
-                  fontWeight: 700,
-                  fontSize: "0.85rem",
-                  letterSpacing: "0.05em",
-                  textTransform: "uppercase",
-                }}
-              >
+              <div className="app-sidebar__section-title">
                 My Dashboard
               </div>
               {onToggle && (
                 <button
+                  className="app-topbar-button app-topbar-button--secondary"
                   type="button"
                   onClick={onToggle}
                   aria-label="Close sidebar"
                   style={{
-                    padding: "4px 10px",
-                    borderRadius: "8px",
-                    border: "1px solid rgba(var(--primary-rgb), 0.35)",
-                    backgroundColor: "rgba(var(--primary-rgb), 0.12)",
-                    color: "var(--primary)",
-                    fontWeight: 600,
                     fontSize: "0.75rem",
-                    cursor: "pointer",
                     boxShadow: "none",
-                    transition: "all 0.2s ease",
+                    minHeight: "32px",
+                    padding: "4px 10px",
                   }}
                 >
                   Close
@@ -334,25 +316,11 @@ export default function Sidebar({
                 pathname === shortcut.href || (pathname && pathname.startsWith(`${shortcut.href}/`));
               return (
                 <Link
+                  className={`app-sidebar__link${isActive ? " is-active" : ""}`}
                   key={shortcut.href}
                   href={shortcut.href}
                   title={shortcut.description}
                   onClick={(event) => handleNavLinkClick(event, shortcut.href)}
-                  style={{
-                    display: "block",
-                    padding: "10px 14px",
-                    marginBottom: "10px",
-                    background: isActive
-                      ? "var(--primary)"
-                      : "var(--surface)",
-                    color: isActive ? "var(--surface)" : "var(--primary-dark)",
-                    borderRadius: "10px",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    border: isActive ? "none" : "1px solid var(--surface-light)",
-                    boxShadow: "none",
-                    textDecoration: "none",
-                  }}
                 >
                   {shortcut.label}
                 </Link>
@@ -372,16 +340,7 @@ export default function Sidebar({
         {/* General Section */}
         {generalSections.length > 0 && (
           <>
-            <div
-              style={{
-                color: "var(--primary-dark)",
-                fontWeight: 700,
-                fontSize: "0.85rem",
-                letterSpacing: "0.05em",
-                textTransform: "uppercase",
-                marginBottom: "10px",
-              }}
-            >
+            <div className="app-sidebar__section-title" style={{ marginBottom: "10px" }}>
               General
             </div>
             {generalSections.flatMap((section) => section.items).map((item) => {
@@ -389,24 +348,10 @@ export default function Sidebar({
               const isActive = pathname === item.href;
               return (
                 <Link
+                  className={`app-sidebar__link${isActive ? " is-active" : ""}`}
                   key={item.href}
                   href={item.href}
                   onClick={(event) => handleNavLinkClick(event, item.href)}
-                  style={{
-                    display: "block",
-                    padding: "10px 14px",
-                    marginBottom: "10px",
-                    background: isActive
-                      ? "var(--primary)"
-                      : "var(--surface)",
-                    color: isActive ? "var(--surface)" : "var(--primary-dark)",
-                    borderRadius: "10px",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    border: isActive ? "none" : "1px solid var(--surface-light)",
-                    boxShadow: "none",
-                    textDecoration: "none",
-                  }}
                 >
                   {renderLinkLabel(item.label, item.href)}
                 </Link>
@@ -418,17 +363,7 @@ export default function Sidebar({
         {/* Department Sections - NO COLLAPSE, just headers */}
         {departmentSections.map((section) => (
           <Fragment key={section.label}>
-            <div
-              style={{
-                color: "var(--primary-dark)",
-                fontWeight: 700,
-                fontSize: "0.85rem",
-                letterSpacing: "0.05em",
-                textTransform: "uppercase",
-                marginTop: "16px",
-                marginBottom: "10px",
-              }}
-            >
+            <div className="app-sidebar__section-title" style={{ marginTop: "16px", marginBottom: "10px" }}>
               {section.label}
             </div>
             {section.items.map((item) => {
@@ -436,24 +371,10 @@ export default function Sidebar({
               const isActive = pathname === item.href;
               return (
                 <Link
+                  className={`app-sidebar__link${isActive ? " is-active" : ""}`}
                   key={item.href}
                   href={item.href}
                   onClick={(event) => handleNavLinkClick(event, item.href)}
-                  style={{
-                    display: "block",
-                    padding: "10px 14px",
-                    marginBottom: "10px",
-                    background: isActive
-                      ? "var(--primary)"
-                      : "var(--surface)",
-                    color: isActive ? "var(--surface)" : "var(--primary-dark)",
-                    borderRadius: "10px",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    border: isActive ? "none" : "1px solid var(--surface-light)",
-                    boxShadow: "none",
-                    textDecoration: "none",
-                  }}
                 >
                   {renderLinkLabel(item.label, item.href)}
                 </Link>
@@ -465,17 +386,7 @@ export default function Sidebar({
         {/* Account Section */}
         {accountSections.length > 0 && (
           <>
-            <div
-              style={{
-                color: "var(--primary-dark)",
-                fontWeight: 700,
-                fontSize: "0.85rem",
-                letterSpacing: "0.05em",
-                textTransform: "uppercase",
-                marginTop: "16px",
-                marginBottom: "10px",
-              }}
-            >
+            <div className="app-sidebar__section-title" style={{ marginTop: "16px", marginBottom: "10px" }}>
               Account
             </div>
             {accountSections.flatMap((section) => section.items).map((item) => {
@@ -484,21 +395,18 @@ export default function Sidebar({
                   <Fragment key="clock-logout-row">
                     <div style={{ display: "flex", gap: "8px", width: "100%" }}>
                       <button
+                        className="app-topbar-button"
                         type="button"
                         onClick={handleClockToggle}
                         disabled={clockLoading}
                         style={{
                           flex: 1,
-                          padding: "10px 8px",
-                          borderRadius: "10px",
                           background: isClockedIn
                             ? "var(--danger, #e53935)"
                             : "var(--success, #43a047)",
                           color: "#fff",
                           fontWeight: 700,
                           fontSize: "0.82rem",
-                          border: "none",
-                          cursor: clockLoading ? "not-allowed" : "pointer",
                           opacity: clockLoading ? 0.6 : 1,
                           transition: "background 0.2s, opacity 0.2s",
                         }}
@@ -506,18 +414,13 @@ export default function Sidebar({
                         {clockLoading ? "..." : isClockedIn ? "Clock Out" : "Clock In"}
                       </button>
                       <button
+                        className="app-topbar-button app-topbar-button--primary"
                         type="button"
                         onClick={handleLogout}
                         style={{
                           flex: 1,
-                          padding: "10px 8px",
-                          borderRadius: "10px",
-                          background: "var(--primary)",
-                          color: "var(--surface)",
                           fontWeight: 700,
                           fontSize: "0.82rem",
-                          border: "none",
-                          cursor: "pointer",
                         }}
                       >
                         Logout
@@ -525,21 +428,15 @@ export default function Sidebar({
                     </div>
                     {process.env.NODE_ENV !== "production" && (
                       <Link
+                        className="app-sidebar__link"
                         href="/dev/user-diagnostic"
                         style={{
-                          display: "block",
                           width: "100%",
-                          padding: "8px 8px",
                           marginTop: "8px",
-                          borderRadius: "10px",
-                          border: "1px solid var(--surface-light)",
                           background: "transparent",
                           color: "var(--text-secondary)",
-                          fontWeight: 600,
                           fontSize: "0.78rem",
                           textAlign: "center",
-                          textDecoration: "none",
-                          cursor: "pointer",
                         }}
                       >
                         Diagnostics
@@ -552,24 +449,13 @@ export default function Sidebar({
               if (item.href) {
                 const isActive = pathname === item.href;
                 return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={(event) => handleNavLinkClick(event, item.href)}
+                <Link
+                  className={`app-sidebar__link${isActive ? " is-active" : ""}`}
+                  key={item.href}
+                  href={item.href}
+                  onClick={(event) => handleNavLinkClick(event, item.href)}
                     style={{
-                      display: "block",
-                      padding: "10px 14px",
                       marginBottom: "10px",
-                      background: isActive
-                        ? "var(--primary)"
-                        : "var(--surface)",
-                      color: isActive ? "var(--surface)" : "var(--primary-dark)",
-                      borderRadius: "10px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      border: isActive ? "none" : "1px solid var(--surface-light)",
-                      boxShadow: "none",
-                      textDecoration: "none",
                     }}
                 >
                   {renderLinkLabel(item.label, item.href)}

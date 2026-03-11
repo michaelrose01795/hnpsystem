@@ -323,11 +323,10 @@ const nextDueFrom = (reference, intervalDays = 7) => {
 const cloneList = (list) => list.map((entry) => ({ ...entry }));
 
 const SECTION_STYLE = {
-  padding: "24px",
-  borderRadius: "24px",
-  background: "var(--surface)",
-  border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
-  boxShadow: "none",
+  padding: "var(--page-card-padding)",
+  borderRadius: "var(--radius-xl)",
+  background: "var(--section-card-bg)",
+  border: "var(--section-card-border)",
   display: "flex",
   flexDirection: "column",
   gap: "18px",
@@ -365,7 +364,7 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick }) => {
       onClick={onClick}
       style={{
         padding: "16px 18px",
-        borderRadius: "16px",
+        borderRadius: "var(--radius-md)",
         border: isHighlighted ? "2px solid var(--danger)" : "1px solid rgba(var(--grey-accent-rgb), 0.3)",
         background: isHighlighted ? "rgba(var(--danger-rgb), 0.05)" : "var(--surface)",
         boxShadow: isHighlighted ? "0 4px 12px rgba(var(--danger-rgb), 0.2)" : "none",
@@ -388,7 +387,7 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick }) => {
       }}
     >
       <div>
-        <strong style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text)" }}>
+        <strong style={{ fontSize: "var(--text-h3)", fontWeight: 700, color: "var(--text)" }}>
           {entry.jobNumber || "Unknown job"} • {entry.reg || "Unknown reg"} • {entry.customer || "Customer pending"}
         </strong>
         <div
@@ -403,7 +402,7 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick }) => {
           <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--info-dark)" }}>
             {vehicleMeta || "Make/Model/Colour pending"}
           </p>
-          <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--info)", whiteSpace: "nowrap" }}>
+          <p style={{ margin: 0, fontSize: "var(--text-caption)", color: "var(--info)", whiteSpace: "nowrap" }}>
             Last moved {formatRelativeTime(entry.updatedAt)}
           </p>
         </div>
@@ -419,13 +418,13 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick }) => {
       >
         <div>
           <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--info)" }}>Key location</p>
-          <strong style={{ fontSize: "0.95rem", color: "var(--accent-purple)" }}>
+          <strong style={{ fontSize: "var(--text-body)", color: "var(--accent-purple)" }}>
             {normalizeKeyLocationLabel(entry.keyLocation) || "Pending"}
           </strong>
         </div>
         <div>
           <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--info)" }}>Car location</p>
-          <strong style={{ fontSize: "0.95rem", color: "var(--success-dark)" }}>{entry.vehicleLocation || "Unallocated"}</strong>
+          <strong style={{ fontSize: "var(--text-body)", color: "var(--success-dark)" }}>{entry.vehicleLocation || "Unallocated"}</strong>
         </div>
       </div>
     </div>
@@ -462,7 +461,7 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--info)", letterSpacing: "0.08em" }}>
+            <p style={{ margin: 0, fontSize: "var(--text-caption)", color: "var(--info)", letterSpacing: "0.08em" }}>
               {type === "car" ? "Parking library" : "Key hook library"}
             </p>
             <h2 style={{ margin: "4px 0 0" }}>Search location</h2>
@@ -471,9 +470,9 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
             type="button"
             onClick={onClose}
             style={{
-              width: "38px",
-              height: "38px",
-              borderRadius: "50%",
+              width: "var(--control-height-sm)",
+              height: "var(--control-height-sm)",
+              borderRadius: "var(--radius-full)",
               border: "none",
               backgroundColor: "var(--search-surface)",
               color: "var(--search-text)",
@@ -498,7 +497,7 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
               key={option.id}
               style={{
                 padding: "14px",
-                borderRadius: "16px",
+                borderRadius: "var(--radius-md)",
                 border: "1px solid var(--search-surface-muted)",
                 background: "var(--search-surface)",
                 color: "var(--search-text)",
@@ -515,7 +514,7 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
                 onClick={() => onSelect(option)}
                 style={{
                   padding: "8px 12px",
-                  borderRadius: "10px",
+                  borderRadius: "var(--radius-sm)",
                   border: "1px solid rgba(var(--primary-rgb),0.3)",
                   backgroundColor: "var(--surface)",
                   color: "var(--primary-dark)",
@@ -532,7 +531,7 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
             <div
               style={{
                 padding: "18px",
-                borderRadius: "16px",
+                borderRadius: "var(--radius-md)",
                 border: "1px dashed var(--search-surface-muted)",
                 textAlign: "center",
                 color: "var(--search-text)",
@@ -652,9 +651,9 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
             type="button"
             onClick={onClose}
             style={{
-              width: "38px",
-              height: "38px",
-              borderRadius: "50%",
+              width: "var(--control-height-sm)",
+              height: "var(--control-height-sm)",
+              borderRadius: "var(--radius-full)",
               border: "none",
               backgroundColor: "var(--surface)",
               color: "var(--text-primary)",
@@ -667,7 +666,7 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+          <label style={{ fontSize: "var(--text-body-sm)", color: "var(--info)", fontWeight: 600 }}>
             Name *
           </label>
           <input
@@ -677,15 +676,15 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
             placeholder="Equipment name"
             style={{
               padding: "10px 12px",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               border: "1px solid var(--accent-purple-surface)",
-              fontSize: "0.95rem",
+              fontSize: "var(--text-body)",
             }}
           />
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+          <label style={{ fontSize: "var(--text-body-sm)", color: "var(--info)", fontWeight: 600 }}>
             Last Checked
           </label>
           <CalendarField
@@ -697,7 +696,7 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+          <label style={{ fontSize: "var(--text-body-sm)", color: "var(--info)", fontWeight: 600 }}>
             Duration until next check *
           </label>
           <DropdownField
@@ -713,7 +712,7 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+          <label style={{ fontSize: "var(--text-body-sm)", color: "var(--info)", fontWeight: 600 }}>
             Next Due
           </label>
           <CalendarField
@@ -738,7 +737,7 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
                 }}
                 style={{
                   padding: "10px 16px",
-                  borderRadius: "12px",
+                  borderRadius: "var(--radius-sm)",
                   border: "1px solid rgba(var(--danger-rgb), 0.4)",
                   backgroundColor: "transparent",
                   color: "var(--danger)",
@@ -754,7 +753,7 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
               onClick={onClose}
               style={{
                 padding: "10px 16px",
-                borderRadius: "12px",
+                borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--accent-purple-surface)",
                 backgroundColor: "transparent",
                 color: "var(--text)",
@@ -768,7 +767,7 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
               type="submit"
               style={{
                 padding: "10px 16px",
-                borderRadius: "12px",
+                borderRadius: "var(--radius-sm)",
                 border: "none",
                 background: "var(--primary)",
                 color: "white",
@@ -869,9 +868,9 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
             type="button"
             onClick={onClose}
             style={{
-              width: "38px",
-              height: "38px",
-              borderRadius: "50%",
+              width: "var(--control-height-sm)",
+              height: "var(--control-height-sm)",
+              borderRadius: "var(--radius-full)",
               border: "none",
               backgroundColor: "var(--surface)",
               color: "var(--text-primary)",
@@ -884,7 +883,7 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+          <label style={{ fontSize: "var(--text-body-sm)", color: "var(--info)", fontWeight: 600 }}>
             Title *
           </label>
           <input
@@ -894,15 +893,15 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
             placeholder="Oil/Stock title"
             style={{
               padding: "10px 12px",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               border: "1px solid var(--accent-purple-surface)",
-              fontSize: "0.95rem",
+              fontSize: "var(--text-body)",
             }}
           />
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+          <label style={{ fontSize: "var(--text-body-sm)", color: "var(--info)", fontWeight: 600 }}>
             Stock
           </label>
           <input
@@ -911,15 +910,15 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
             placeholder="e.g., 18 × 5L cans"
             style={{
               padding: "10px 12px",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               border: "1px solid var(--accent-purple-surface)",
-              fontSize: "0.95rem",
+              fontSize: "var(--text-body)",
             }}
           />
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+          <label style={{ fontSize: "var(--text-body-sm)", color: "var(--info)", fontWeight: 600 }}>
             Last Check
           </label>
           <CalendarField
@@ -931,7 +930,7 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+          <label style={{ fontSize: "var(--text-body-sm)", color: "var(--info)", fontWeight: 600 }}>
             Duration until next check *
           </label>
           <DropdownField
@@ -947,7 +946,7 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+          <label style={{ fontSize: "var(--text-body-sm)", color: "var(--info)", fontWeight: 600 }}>
             Next Check
           </label>
           <CalendarField
@@ -971,7 +970,7 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
               }}
               style={{
                 padding: "10px 16px",
-                borderRadius: "12px",
+                borderRadius: "var(--radius-sm)",
                 border: "1px solid rgba(var(--danger-rgb), 0.4)",
                 backgroundColor: "transparent",
                 color: "var(--danger)",
@@ -988,7 +987,7 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
               onClick={onClose}
               style={{
                 padding: "10px 16px",
-                borderRadius: "12px",
+                borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--accent-purple-surface)",
                 backgroundColor: "transparent",
                 color: "var(--text)",
@@ -1002,7 +1001,7 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
               type="submit"
               style={{
                 padding: "10px 16px",
-                borderRadius: "12px",
+                borderRadius: "var(--radius-sm)",
                 border: "none",
                 background: "var(--primary)",
                 color: "white",
@@ -1116,7 +1115,7 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <h2 style={{ margin: "0 0 4px 0" }}>Vehicle & Key Tracking</h2>
-            <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--info)" }}>
+            <p style={{ margin: 0, fontSize: "var(--text-body-sm)", color: "var(--info)" }}>
               Track vehicle and key locations
             </p>
           </div>
@@ -1124,9 +1123,9 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
             type="button"
             onClick={onClose}
             style={{
-              width: "38px",
-              height: "38px",
-              borderRadius: "50%",
+              width: "var(--control-height-sm)",
+              height: "var(--control-height-sm)",
+              borderRadius: "var(--radius-full)",
               border: "none",
               backgroundColor: "var(--surface)",
               color: "var(--text-primary)",
@@ -1146,39 +1145,39 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
             gap: "12px",
             padding: "16px",
             backgroundColor: "var(--surface-light)",
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             border: "1px solid var(--accent-purple-surface)",
           }}
         >
           <div>
-            <div style={{ fontSize: "0.75rem", color: "var(--info)", marginBottom: "4px" }}>Job Number</div>
-            <div style={{ fontSize: "0.95rem", fontWeight: 600 }}>{form.jobNumber || "—"}</div>
+            <div style={{ fontSize: "var(--text-caption)", color: "var(--info)", marginBottom: "4px" }}>Job Number</div>
+            <div style={{ fontSize: "var(--text-body)", fontWeight: 600 }}>{form.jobNumber || "—"}</div>
           </div>
           <div>
-            <div style={{ fontSize: "0.75rem", color: "var(--info)", marginBottom: "4px" }}>Registration</div>
-            <div style={{ fontSize: "0.95rem", fontWeight: 600 }}>{form.reg || "—"}</div>
+            <div style={{ fontSize: "var(--text-caption)", color: "var(--info)", marginBottom: "4px" }}>Registration</div>
+            <div style={{ fontSize: "var(--text-body)", fontWeight: 600 }}>{form.reg || "—"}</div>
           </div>
           <div>
-            <div style={{ fontSize: "0.75rem", color: "var(--info)", marginBottom: "4px" }}>Make & Model</div>
-            <div style={{ fontSize: "0.95rem", fontWeight: 600 }}>{form.makeModel || "—"}</div>
+            <div style={{ fontSize: "var(--text-caption)", color: "var(--info)", marginBottom: "4px" }}>Make & Model</div>
+            <div style={{ fontSize: "var(--text-body)", fontWeight: 600 }}>{form.makeModel || "—"}</div>
           </div>
           <div>
-            <div style={{ fontSize: "0.75rem", color: "var(--info)", marginBottom: "4px" }}>Colour</div>
-            <div style={{ fontSize: "0.95rem", fontWeight: 600 }}>{form.colour || "—"}</div>
+            <div style={{ fontSize: "var(--text-caption)", color: "var(--info)", marginBottom: "4px" }}>Colour</div>
+            <div style={{ fontSize: "var(--text-body)", fontWeight: 600 }}>{form.colour || "—"}</div>
           </div>
           <div>
-            <div style={{ fontSize: "0.75rem", color: "var(--info)", marginBottom: "4px" }}>Customer</div>
-            <div style={{ fontSize: "0.95rem", fontWeight: 600 }}>{form.customer || "—"}</div>
+            <div style={{ fontSize: "var(--text-caption)", color: "var(--info)", marginBottom: "4px" }}>Customer</div>
+            <div style={{ fontSize: "var(--text-body)", fontWeight: 600 }}>{form.customer || "—"}</div>
           </div>
         </div>
 
         {/* Add Location Section */}
         <form onSubmit={handleAddLocation} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-          <h3 style={{ margin: "0", fontSize: "1rem", fontWeight: 600 }}>Add Location</h3>
+          <h3 style={{ margin: "0", fontSize: "var(--text-h4)", fontWeight: 600 }}>Add Location</h3>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
             <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--info)" }}>
+              <span style={{ fontSize: "var(--text-body-sm)", fontWeight: 600, color: "var(--info)" }}>
                 Job Number / Reg / Customer
               </span>
               <input
@@ -1200,9 +1199,9 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
                 placeholder="Enter job number, reg, or customer name"
                 style={{
                   padding: "10px 12px",
-                  borderRadius: "12px",
+                  borderRadius: "var(--radius-sm)",
                   border: "1px solid var(--accent-purple-surface)",
-                  fontSize: "0.95rem",
+                  fontSize: "var(--text-body)",
                 }}
                 disabled={isSearching}
               />
@@ -1211,7 +1210,7 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--info)" }}>
+              <label style={{ fontSize: "var(--text-body-sm)", fontWeight: 600, color: "var(--info)" }}>
                 Vehicle Location
               </label>
               <DropdownField
@@ -1224,7 +1223,7 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--info)" }}>
+              <label style={{ fontSize: "var(--text-body-sm)", fontWeight: 600, color: "var(--info)" }}>
                 Key Location
               </label>
               <DropdownField
@@ -1241,13 +1240,13 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
             type="submit"
             style={{
               padding: "12px 20px",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               border: "none",
               background: "var(--primary)",
               color: "white",
               fontWeight: 600,
               cursor: "pointer",
-              fontSize: "0.95rem",
+              fontSize: "var(--text-body)",
             }}
           >
             Add Location
@@ -1263,13 +1262,13 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
           onClick={() => setShowUpdate(!showUpdate)}
           style={{
             padding: "12px 20px",
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             border: "1px solid var(--info)",
             background: showUpdate ? "var(--info)" : "transparent",
             color: showUpdate ? "white" : "var(--info)",
             fontWeight: 600,
             cursor: "pointer",
-            fontSize: "0.95rem",
+            fontSize: "var(--text-body)",
           }}
         >
           {showUpdate ? "Hide Update Section" : "Update Existing Location"}
@@ -1278,11 +1277,11 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
         {/* Update Location Section */}
         {showUpdate && (
           <form onSubmit={handleUpdateLocation} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            <h3 style={{ margin: "0", fontSize: "1rem", fontWeight: 600 }}>Update Location</h3>
+            <h3 style={{ margin: "0", fontSize: "var(--text-h4)", fontWeight: 600 }}>Update Location</h3>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--info)" }}>
+                <label style={{ fontSize: "var(--text-body-sm)", fontWeight: 600, color: "var(--info)" }}>
                   Vehicle Location
                 </label>
                 <DropdownField
@@ -1295,7 +1294,7 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--info)" }}>
+                <label style={{ fontSize: "var(--text-body-sm)", fontWeight: 600, color: "var(--info)" }}>
                   Key Location
                 </label>
                 <DropdownField
@@ -1312,13 +1311,13 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
               type="submit"
               style={{
                 padding: "12px 20px",
-                borderRadius: "12px",
+                borderRadius: "var(--radius-sm)",
                 border: "none",
                 background: "var(--success)",
                 color: "white",
                 fontWeight: 600,
                 cursor: "pointer",
-                fontSize: "0.95rem",
+                fontSize: "var(--text-body)",
               }}
             >
               Update
@@ -1376,7 +1375,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
         onSubmit={handleSubmit}
         className="popup-card"
         style={{
-          borderRadius: "32px",
+          borderRadius: "var(--radius-xl)",
           width: "100%",
           maxWidth: "640px",
           maxHeight: "90vh",
@@ -1406,10 +1405,10 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
             { label: "Service Type", field: "serviceType", placeholder: "MOT, Service...", required: false },
           ].map((input) => (
             <div key={input.field} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+              <label style={{ fontSize: "var(--text-body-sm)", color: "var(--info)", fontWeight: 600 }}>
                 {input.label}
                 {["jobNumber", "reg", "customer"].includes(input.field) && (
-                  <span style={{ fontSize: "0.75rem", color: "var(--info)", fontWeight: 400 }}> (at least one required)</span>
+                  <span style={{ fontSize: "var(--text-caption)", color: "var(--info)", fontWeight: 400 }}> (at least one required)</span>
                 )}
               </label>
               <input
@@ -1418,9 +1417,9 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
                 placeholder={input.placeholder}
                 style={{
                   padding: "10px 12px",
-                  borderRadius: "12px",
+                  borderRadius: "var(--radius-sm)",
                   border: "1px solid var(--accent-purple-surface)",
-                  fontSize: "0.95rem",
+                  fontSize: "var(--text-body)",
                 }}
               />
             </div>
@@ -1435,7 +1434,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
           }}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+            <label style={{ fontSize: "var(--text-body-sm)", color: "var(--info)", fontWeight: 600 }}>
               Vehicle Location
             </label>
             <DropdownField
@@ -1448,7 +1447,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+            <label style={{ fontSize: "var(--text-body-sm)", color: "var(--info)", fontWeight: 600 }}>
               Key Location
             </label>
             <DropdownField
@@ -1468,7 +1467,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
             onClick={onClose}
             style={{
               padding: "10px 16px",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               border: "1px solid var(--accent-purple-surface)",
               backgroundColor: "transparent",
               cursor: "pointer",
@@ -1482,7 +1481,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
             type="submit"
             style={{
               padding: "10px 16px",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               border: "none",
               background: "var(--primary)",
               color: "white",
@@ -2033,7 +2032,7 @@ export default function TrackingDashboard() {
         }}
       >
         <div>
-          <h1 style={{ margin: "6px 0 0", fontSize: "1.5rem", color: "var(--accent-purple)" }}>Active jobs</h1>
+          <h1 style={{ margin: "6px 0 0", fontSize: "var(--text-h1)", color: "var(--accent-purple)" }}>Active jobs</h1>
         </div>
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
           <button
@@ -2041,7 +2040,7 @@ export default function TrackingDashboard() {
             onClick={loadEntries}
             style={{
               padding: "8px 16px",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               border: "none",
               background: "var(--accent-purple)",
               color: "white",
@@ -2060,7 +2059,7 @@ export default function TrackingDashboard() {
             onClick={() => openEntryModal("car")}
             style={{
               padding: "8px 12px",
-              borderRadius: "10px",
+              borderRadius: "var(--radius-sm)",
               border: "none",
               background: "var(--primary)",
               color: "white",
@@ -2087,7 +2086,7 @@ export default function TrackingDashboard() {
             style={{
               gridColumn: "1 / -1",
               padding: "12px",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
               textAlign: "center",
               color: "var(--info-dark)",
@@ -2101,7 +2100,7 @@ export default function TrackingDashboard() {
             style={{
               gridColumn: "1 / -1",
               padding: "12px",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
               textAlign: "center",
               color: "var(--info-dark)",
@@ -2150,7 +2149,7 @@ export default function TrackingDashboard() {
         }}
       >
         <div>
-          <h1 style={{ margin: "6px 0 0", fontSize: "1.5rem", color: "var(--accent-purple)" }}>
+          <h1 style={{ margin: "6px 0 0", fontSize: "var(--text-h1)", color: "var(--accent-purple)" }}>
             Equipment &amp; tools
           </h1>
         </div>
@@ -2159,7 +2158,7 @@ export default function TrackingDashboard() {
           onClick={() => setEquipmentModal({ open: true, item: null })}
           style={{
             padding: "10px 18px",
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             border: "none",
             background: "var(--primary)",
             color: "white",
@@ -2185,7 +2184,7 @@ export default function TrackingDashboard() {
             style={{
               gridColumn: "1 / -1",
               padding: "12px",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
               textAlign: "center",
               color: "var(--info-dark)",
@@ -2214,7 +2213,7 @@ export default function TrackingDashboard() {
               }}
               style={{
                 padding: "18px",
-                borderRadius: "16px",
+                borderRadius: "var(--radius-md)",
                 border: "1px solid rgba(var(--grey-accent-rgb), 0.3)",
                 background: "var(--surface)",
                 display: "flex",
@@ -2235,7 +2234,7 @@ export default function TrackingDashboard() {
                 <div style={{ flex: 1 }}>
                   <strong style={{ display: "block", fontSize: "1.05rem" }}>{check.name}</strong>
                 </div>
-                <span style={{ fontSize: "0.75rem", fontWeight: 600, color: badgeColor, flexShrink: 0 }}>
+                <span style={{ fontSize: "var(--text-caption)", fontWeight: 600, color: badgeColor, flexShrink: 0 }}>
                   {check.status || dueLabel}
                 </span>
               </div>
@@ -2244,7 +2243,7 @@ export default function TrackingDashboard() {
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
-                    fontSize: "0.85rem",
+                    fontSize: "var(--text-body-sm)",
                     color: "var(--info-dark)",
                   }}
                 >
@@ -2255,7 +2254,7 @@ export default function TrackingDashboard() {
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
-                    fontSize: "0.85rem",
+                    fontSize: "var(--text-body-sm)",
                     color: "var(--info-dark)",
                   }}
                 >
@@ -2266,7 +2265,7 @@ export default function TrackingDashboard() {
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
-                    fontSize: "0.85rem",
+                    fontSize: "var(--text-body-sm)",
                     color: "var(--info-dark)",
                   }}
                 >
@@ -2283,7 +2282,7 @@ export default function TrackingDashboard() {
                 style={{
                   marginTop: "auto",
                   padding: "8px 14px",
-                  borderRadius: "10px",
+                  borderRadius: "var(--radius-sm)",
                   border: "none",
                   background: "var(--primary)",
                   color: "white",
@@ -2313,7 +2312,7 @@ export default function TrackingDashboard() {
         }}
       >
         <div>
-          <h1 style={{ margin: "6px 0 0", fontSize: "1.5rem", color: "var(--accent-purple)" }}>
+          <h1 style={{ margin: "6px 0 0", fontSize: "var(--text-h1)", color: "var(--accent-purple)" }}>
             Oil / Stock
           </h1>
         </div>
@@ -2322,7 +2321,7 @@ export default function TrackingDashboard() {
           onClick={() => setOilStockModal({ open: true, item: null })}
           style={{
             padding: "10px 18px",
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             border: "none",
             background: "var(--primary)",
             color: "white",
@@ -2348,7 +2347,7 @@ export default function TrackingDashboard() {
             style={{
               gridColumn: "1 / -1",
               padding: "12px",
-              borderRadius: "12px",
+              borderRadius: "var(--radius-sm)",
               border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
               textAlign: "center",
               color: "var(--info-dark)",
@@ -2377,7 +2376,7 @@ export default function TrackingDashboard() {
               }}
               style={{
                 padding: "18px",
-                borderRadius: "16px",
+                borderRadius: "var(--radius-md)",
                 border: "1px solid rgba(var(--grey-accent-rgb), 0.3)",
                 background: "var(--surface)",
                 display: "flex",
@@ -2398,7 +2397,7 @@ export default function TrackingDashboard() {
                 <div style={{ flex: 1 }}>
                   <strong style={{ display: "block", fontSize: "1.05rem" }}>{item.title}</strong>
                 </div>
-                <span style={{ fontSize: "0.75rem", fontWeight: 600, color: badgeColor, flexShrink: 0 }}>
+                <span style={{ fontSize: "var(--text-caption)", fontWeight: 600, color: badgeColor, flexShrink: 0 }}>
                   {dueLabel}
                 </span>
               </div>
@@ -2407,7 +2406,7 @@ export default function TrackingDashboard() {
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
-                    fontSize: "0.85rem",
+                    fontSize: "var(--text-body-sm)",
                     color: "var(--info-dark)",
                   }}
                 >
@@ -2418,7 +2417,7 @@ export default function TrackingDashboard() {
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
-                    fontSize: "0.85rem",
+                    fontSize: "var(--text-body-sm)",
                     color: "var(--info-dark)",
                   }}
                 >
@@ -2429,7 +2428,7 @@ export default function TrackingDashboard() {
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
-                    fontSize: "0.85rem",
+                    fontSize: "var(--text-body-sm)",
                     color: "var(--info-dark)",
                   }}
                 >
@@ -2440,7 +2439,7 @@ export default function TrackingDashboard() {
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
-                    fontSize: "0.85rem",
+                    fontSize: "var(--text-body-sm)",
                     color: "var(--info-dark)",
                   }}
                 >
@@ -2450,7 +2449,7 @@ export default function TrackingDashboard() {
               </div>
               {isTopUpActive && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
+                  <label style={{ fontSize: "var(--text-body-sm)", color: "var(--info)", fontWeight: 600 }}>
                     Top up stock amount
                   </label>
                   <input
@@ -2461,9 +2460,9 @@ export default function TrackingDashboard() {
                     placeholder="e.g., 18 × 5L cans"
                     style={{
                       padding: "8px 10px",
-                      borderRadius: "10px",
+                      borderRadius: "var(--radius-sm)",
                       border: "1px solid var(--accent-purple-surface)",
-                      fontSize: "0.9rem",
+                      fontSize: "var(--text-body)",
                     }}
                   />
                   <button
@@ -2474,7 +2473,7 @@ export default function TrackingDashboard() {
                     }}
                     style={{
                       padding: "8px 14px",
-                      borderRadius: "10px",
+                      borderRadius: "var(--radius-sm)",
                       border: "none",
                       background: "var(--success)",
                       color: "white",
@@ -2498,7 +2497,7 @@ export default function TrackingDashboard() {
                   style={{
                     marginTop: "auto",
                     padding: "8px 14px",
-                    borderRadius: "10px",
+                    borderRadius: "var(--radius-sm)",
                     border: "none",
                     background: "var(--primary)",
                     color: "white",
@@ -2530,8 +2529,8 @@ export default function TrackingDashboard() {
   return (
     <Layout>
       <div
+        className="app-page-stack"
         style={{
-          padding: "32px",
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
           gap: "24px",
@@ -2548,7 +2547,7 @@ export default function TrackingDashboard() {
           {tabs.length > 1 && (
             <div
               style={{
-                borderRadius: "999px",
+                borderRadius: "var(--radius-pill)",
                 border: "1px solid var(--surface-light)",
                 background: "var(--surface)",
                 padding: "6px",
@@ -2572,10 +2571,10 @@ export default function TrackingDashboard() {
                     onClick={() => setActiveTab(tab.id)}
                     style={{
                       flex: "0 0 auto",
-                      borderRadius: "999px",
+                      borderRadius: "var(--radius-pill)",
                       border: "1px solid transparent",
                       padding: "10px 20px",
-                      fontSize: "0.9rem",
+                      fontSize: "var(--text-body)",
                       fontWeight: 600,
                       cursor: "pointer",
                       background: isActive ? "var(--primary)" : "transparent",
@@ -2597,7 +2596,7 @@ export default function TrackingDashboard() {
             <div
               style={{
                 padding: "12px 16px",
-                borderRadius: "16px",
+                borderRadius: "var(--radius-md)",
                 border: "1px solid rgba(var(--danger-rgb), 0.25)",
                 background: "rgba(var(--danger-rgb), 0.8)",
                 color: "var(--danger)",

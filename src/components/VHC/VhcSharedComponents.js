@@ -7,7 +7,7 @@ export const EmptyStateMessage = ({ message }) => (
     style={{
       padding: "18px",
       border: "1px solid var(--info-surface)",
-      borderRadius: "12px",
+      borderRadius: "var(--radius-sm)",
       background: "var(--info-surface)",
       color: "var(--info)",
       fontSize: "13px",
@@ -22,7 +22,7 @@ export const SeverityBadge = ({ severity, label, style = {} }) => {
   const getSeverityStyles = (severity) => {
     const baseStyles = {
       padding: "4px 10px",
-      borderRadius: "999px",
+      borderRadius: "var(--radius-pill)",
       fontSize: "12px",
       fontWeight: 600,
       textTransform: "uppercase",
@@ -189,7 +189,7 @@ export const FinancialTotalsGrid = ({ totals }) => {
           style={{
             padding: "12px",
             border: `1px solid ${item.color}33`,
-            borderRadius: "12px",
+            borderRadius: "var(--radius-sm)",
             background: `${item.color}11`,
           }}
         >
@@ -248,7 +248,7 @@ export const StockStatusBadge = ({ stockStatus }) => {
     <span
       style={{
         padding: "4px 10px",
-        borderRadius: "999px",
+        borderRadius: "var(--radius-pill)",
         fontSize: "11px",
         fontWeight: 600,
         background: status.background,
