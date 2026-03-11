@@ -155,8 +155,8 @@ for (const file of files) {
   const relativePath = path.relative(ROOT, file);
 
   if (
-    /<div[^>]+style=\{\{[^}]*\b(?:padding|maxWidth|background|borderRadius)\b/s.test(content) ||
-    /className="[^"]*(?:max-w-|rounded-|bg-\[var\(--surface|p-\d|px-\d|py-\d)/.test(content)
+    /style=\{\{[^}]*\b(?:padding|maxWidth|background|borderRadius|height|width|gap)\b[^}]*["'`](?!var\(--)/s.test(content) ||
+    /className="[^"]*(?:rounded-(?!\[var)|max-w-(?!\[var)|p-(?:\d)|px-(?:\d)|py-(?:\d)|gap-(?:\d)|bg-white|bg-gray-100|border-gray-(?:200|300))/.test(content)
   ) {
     pageOverrides.add(relativePath);
   }
