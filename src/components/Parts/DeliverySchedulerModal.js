@@ -201,7 +201,7 @@ export default function DeliverySchedulerModal({
               style={{
                 width: "100%",
                 borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--surface-light)",
+                border: "none",
                 padding: "10px 12px",
                 fontWeight: 600,
                 color: "var(--primary-dark)",
@@ -235,7 +235,7 @@ export default function DeliverySchedulerModal({
                       width: "100%",
                       marginTop: "4px",
                       borderRadius: "var(--radius-sm)",
-                      border: "1px solid var(--surface-light)",
+                      border: "none",
                       padding: "8px 10px",
                     }}
                   />
@@ -251,7 +251,7 @@ export default function DeliverySchedulerModal({
                       width: "100%",
                       marginTop: "4px",
                       borderRadius: "var(--radius-sm)",
-                      border: "1px solid var(--surface-light)",
+                      border: "none",
                       padding: "8px 10px",
                     }}
                   />
@@ -270,7 +270,7 @@ export default function DeliverySchedulerModal({
                 width: "100%",
                 marginTop: "4px",
                 borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--surface-light)",
+                border: "none",
                 padding: "10px",
                 resize: "vertical",
               }}
@@ -287,7 +287,7 @@ export default function DeliverySchedulerModal({
                 width: "100%",
                 marginTop: "4px",
                 borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--surface-light)",
+                border: "none",
                 padding: "8px 10px",
               }}
             />
@@ -303,7 +303,7 @@ export default function DeliverySchedulerModal({
                 width: "100%",
                 marginTop: "4px",
                 borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--surface-light)",
+                border: "none",
                 padding: "10px",
                 resize: "vertical",
               }}
@@ -330,7 +330,7 @@ export default function DeliverySchedulerModal({
               onClick={onClose}
               style={{
                 ...buttonStyle,
-                border: "1px solid var(--surface-light)",
+                border: "none",
                 background: "var(--surface)",
                 color: "var(--primary-dark)",
                 flex: "1 1 140px",

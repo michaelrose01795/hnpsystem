@@ -116,7 +116,7 @@ export default function AccountsSettingsPage() {
     }
   };
   const settingRow = (label, description, control) => (
-    <div style={{ border: "1px solid var(--surface-light)", borderRadius: "var(--radius-md)", padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+    <div style={{ border: "none", borderRadius: "var(--radius-md)", padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
       <div style={{ flex: "1 1 280px" }}>
         <h3 style={{ margin: 0, fontSize: "1rem", color: "var(--text-primary)" }}>{label}</h3>
         <p style={{ margin: "4px 0 0", color: "var(--text-secondary)", fontSize: "0.9rem" }}>{description}</p>

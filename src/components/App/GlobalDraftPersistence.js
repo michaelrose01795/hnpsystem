@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 
 const STORAGE_PREFIX = "hnp:drafts:v1:";
+const DRAFTABLE_SELECTOR = "input, textarea, select, [contenteditable]";
 
 const buildStorageKey = (routeKey = "") => `${STORAGE_PREFIX}${routeKey}`;
 
@@ -36,6 +37,34 @@ const isDraftableElement = (element) => {
   );
 };
 
+const isLikelyAppApiUrl = (url) => {
+  try {
+    if (!url) return false;
+    const parsed = new URL(String(url), window.location.origin);
+    return parsed.origin === window.location.origin && parsed.pathname.startsWith("/api/");
+  } catch (_error) {
+    return false;
+  }
+};
+
+const getElementDomPathKey = (element) => {
+  if (!(element instanceof HTMLElement)) return null;
+  const segments = [];
+  let current = element;
+  while (current && current !== document.body && segments.length < 8) {
+    const parent = current.parentElement;
+    if (!parent) break;
+    const tag = current.tagName.toLowerCase();
+    const siblingIndex = Array.from(parent.children)
+      .filter((node) => node.tagName === current.tagName)
+      .indexOf(current);
+    segments.push(`${tag}:${siblingIndex}`);
+    current = parent;
+  }
+  if (!segments.length) return null;
+  return `path:${segments.reverse().join(">")}`;
+};
+
 const getElementKey = (element) => {
   if (!(element instanceof HTMLElement)) return null;
 
@@ -54,7 +83,7 @@ const getElementKey = (element) => {
     return `name:${element.name}`;
   }
 
-  return null;
+  return getElementDomPathKey(element);
 };
 
 const readElementValue = (element) => {
@@ -134,7 +163,7 @@ const applyElementValue = (element, entry) => {
 
 const collectRouteDraftSnapshot = () => {
   const entries = {};
-  const controls = document.querySelectorAll("input, textarea, select, [contenteditable='true']");
+  const controls = document.querySelectorAll(DRAFTABLE_SELECTOR);
   controls.forEach((node) => {
     const element = node;
     if (!isDraftableElement(element)) return;
@@ -171,7 +200,8 @@ const restoreRouteDraftSnapshot = (routeKey) => {
   const values = parsed?.values;
   if (!values || typeof values !== "object") return;
 
-  const controls = document.querySelectorAll("input, textarea, select, [contenteditable='true']");
+  const controls = document.querySelectorAll(DRAFTABLE_SELECTOR);
+  let restoredCount = 0;
   controls.forEach((node) => {
     const element = node;
     if (!isDraftableElement(element)) return;
@@ -179,12 +209,20 @@ const restoreRouteDraftSnapshot = (routeKey) => {
     if (!elementKey) return;
     if (!(elementKey in values)) return;
     applyElementValue(element, values[elementKey]);
+    restoredCount += 1;
   });
+  return restoredCount;
 };
 
 export default function GlobalDraftPersistence() {
   const router = useRouter();
   const saveTimeoutRef = useRef(null);
+  const restoreTimerRef = useRef(null);
+  const restoreObserverRef = useRef(null);
+  const fetchRestoreRef = useRef(null);
+  const lastInputAtRef = useRef(0);
+  const pendingSubmitRouteRef = useRef(null);
+  const pendingSubmitUntilRef = useRef(0);
   const routeKeyRef = useRef("/");
 
   useEffect(() => {
@@ -195,9 +233,37 @@ export default function GlobalDraftPersistence() {
     const routeKey = getRouteKey(router);
     routeKeyRef.current = routeKey;
 
-    const restoreTimeout = setTimeout(() => {
-      restoreRouteDraftSnapshot(routeKey);
-    }, 0);
+    const runRestore = () => {
+      restoreRouteDraftSnapshot(routeKeyRef.current);
+    };
+    runRestore();
+
+    // Some pages render form fields after async data/loaders.
+    // Retry restore for a short window so late-mount controls also recover draft text.
+    let restoreAttempts = 0;
+    restoreTimerRef.current = setInterval(() => {
+      restoreAttempts += 1;
+      runRestore();
+      if (restoreAttempts >= 12) {
+        clearInterval(restoreTimerRef.current);
+        restoreTimerRef.current = null;
+      }
+    }, 400);
+
+    const observer = new MutationObserver((mutations) => {
+      const hasPotentialDraftableNode = mutations.some((mutation) =>
+        Array.from(mutation.addedNodes || []).some((addedNode) => {
+          if (!(addedNode instanceof Element)) return false;
+          if (addedNode.matches?.(DRAFTABLE_SELECTOR)) return true;
+          return Boolean(addedNode.querySelector?.(DRAFTABLE_SELECTOR));
+        })
+      );
+      if (hasPotentialDraftableNode) {
+        runRestore();
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    restoreObserverRef.current = observer;
 
     const queueSave = () => {
       if (saveTimeoutRef.current) {
@@ -212,7 +278,14 @@ export default function GlobalDraftPersistence() {
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
       if (!isDraftableElement(target)) return;
+      lastInputAtRef.current = Date.now();
       queueSave();
+    };
+
+    const handleFormSubmit = () => {
+      pendingSubmitRouteRef.current = routeKeyRef.current;
+      pendingSubmitUntilRef.current = Date.now() + 15000;
+      persistRouteDraftSnapshot(routeKeyRef.current);
     };
 
     const handleBeforeUnload = () => {
@@ -231,25 +304,77 @@ export default function GlobalDraftPersistence() {
       localStorage.removeItem(buildStorageKey(targetRoute));
     };
 
+    if (typeof window !== "undefined" && !fetchRestoreRef.current) {
+      const originalFetch = window.fetch.bind(window);
+      const wrappedFetch = async (...args) => {
+        const [resource, init] = args;
+        const method = String(init?.method || "GET").toUpperCase();
+        const isMutation = method !== "GET" && method !== "HEAD";
+        const url = typeof resource === "string" ? resource : resource?.url;
+        const relevantApiCall = isMutation && isLikelyAppApiUrl(url);
+        const routeAtCall = routeKeyRef.current;
+        let response;
+        try {
+          response = await originalFetch(...args);
+        } catch (error) {
+          throw error;
+        }
+
+        const withinSubmitWindow = Date.now() <= pendingSubmitUntilRef.current;
+        const matchingRoute = pendingSubmitRouteRef.current === routeAtCall;
+        const userStoppedTyping = Date.now() - lastInputAtRef.current > 900;
+        if (relevantApiCall && response?.ok && withinSubmitWindow && matchingRoute && userStoppedTyping) {
+          localStorage.removeItem(buildStorageKey(routeAtCall));
+          pendingSubmitRouteRef.current = null;
+          pendingSubmitUntilRef.current = 0;
+        }
+        return response;
+      };
+
+      window.fetch = wrappedFetch;
+      fetchRestoreRef.current = originalFetch;
+    }
+
     document.addEventListener("input", handleInput, true);
     document.addEventListener("change", handleInput, true);
+    document.addEventListener("submit", handleFormSubmit, true);
     window.addEventListener("beforeunload", handleBeforeUnload);
     document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("app:drafts:clear-route", clearRouteDraft);
+    router.events?.on("routeChangeStart", handleBeforeUnload);
 
     return () => {
-      clearTimeout(restoreTimeout);
+      handleBeforeUnload();
+      if (restoreTimerRef.current) {
+        clearInterval(restoreTimerRef.current);
+        restoreTimerRef.current = null;
+      }
+      if (restoreObserverRef.current) {
+        restoreObserverRef.current.disconnect();
+        restoreObserverRef.current = null;
+      }
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
         saveTimeoutRef.current = null;
       }
       document.removeEventListener("input", handleInput, true);
       document.removeEventListener("change", handleInput, true);
+      document.removeEventListener("submit", handleFormSubmit, true);
       window.removeEventListener("beforeunload", handleBeforeUnload);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("app:drafts:clear-route", clearRouteDraft);
+      router.events?.off("routeChangeStart", handleBeforeUnload);
     };
-  }, [router.asPath]);
+  }, [router.asPath, router.events]);
+
+  useEffect(() => {
+    return () => {
+      if (typeof window !== "undefined" && fetchRestoreRef.current) {
+        window.fetch = fetchRestoreRef.current;
+        fetchRestoreRef.current = null;
+      }
+    };
+  }, []);
 
   return null;
 }

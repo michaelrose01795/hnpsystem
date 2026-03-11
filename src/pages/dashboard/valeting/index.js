@@ -62,7 +62,7 @@ const QueueList = ({ queue }) => (
       display: "flex",
       flexDirection: "column",
       gap: "10px",
-      border: "1px solid var(--surface-light)",
+      border: "none",
       borderRadius: "var(--radius-sm)",
       padding: "12px",
       background: "var(--surface)",

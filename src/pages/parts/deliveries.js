@@ -33,7 +33,7 @@ const pageStyles = {
     alignItems: "center",
   },
   jobRow: (isCompleted) => ({
-    border: "1px solid rgba(var(--primary-rgb),0.15)",
+    border: "none",
     borderRadius: "var(--radius-md)",
     padding: "var(--section-card-padding)",
     display: "flex",
@@ -99,7 +99,7 @@ const markButtonStyle = (isCompleted) => ({
 
 const arrowButtonStyle = {
   borderRadius: "var(--radius-sm)",
-  border: "1px solid var(--surface-light)",
+  border: "none",
   background: "var(--danger-surface)",
   padding: "6px 10px",
   fontWeight: 700,
@@ -124,7 +124,7 @@ const modalContentStyle = {
   width: "min(780px, 100%)",
   maxHeight: "90vh",
   overflowY: "auto",
-  border: "1px solid var(--surface-light)",
+  border: "none",
   display: "flex",
   flexDirection: "column",
   gap: "16px",
@@ -344,7 +344,7 @@ export default function PartsDeliveriesPage() {
                 onClick={() => setSelectedDate((prev) => adjustIsoDate(prev, -1))}
                 style={{
                   borderRadius: "var(--radius-sm)",
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                   background: "var(--surface)",
                   color: "var(--primary-dark)",
                   padding: "var(--control-padding)",
@@ -364,7 +364,7 @@ export default function PartsDeliveriesPage() {
                 onClick={() => setSelectedDate((prev) => adjustIsoDate(prev, 1))}
                 style={{
                   borderRadius: "var(--radius-sm)",
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                   background: "var(--primary-dark)",
                   color: "var(--surface)",
                   padding: "var(--control-padding)",
@@ -631,7 +631,7 @@ function DeliveryJobViewModal({ job, onClose }) {
             onClick={onClose}
             style={{
               borderRadius: "var(--radius-sm)",
-              border: "1px solid var(--surface-light)",
+              border: "none",
               background: "var(--surface)",
               padding: "var(--control-padding)",
               fontWeight: 600,

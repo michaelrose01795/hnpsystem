@@ -1568,7 +1568,7 @@ export default function Appointments() {
         <div style={{ 
           flex: "0 0 40%", 
           marginBottom: "8px", 
-          border: "1px solid var(--surface-light)", 
+          border: "none", 
           borderRadius: "var(--radius-sm)", 
           padding: "16px", 
           backgroundColor: "var(--surface)", 
@@ -1751,7 +1751,7 @@ export default function Appointments() {
                           padding: "10px 12px",
                           background: "var(--surface)",
                           borderRadius: "var(--radius-xs)",
-                          border: "1px solid var(--surface-light)",
+                          border: "none",
                           boxShadow: "none"
                         }}
                       >
@@ -1805,7 +1805,7 @@ export default function Appointments() {
                               width: "80px",
                               padding: "6px 8px",
                               borderRadius: "var(--radius-xs)",
-                              border: "1px solid var(--surface-light)",
+                              border: "none",
                               fontSize: "14px",
                               textAlign: "right",
                               fontFamily: "inherit",
@@ -2041,7 +2041,7 @@ export default function Appointments() {
               height: "120px", 
               padding: "12px", 
               borderRadius: "var(--radius-xs)", 
-              border: "1px solid var(--surface-light)",
+              border: "none",
               fontSize: "14px",
               fontFamily: "inherit",
               resize: "vertical",
@@ -2111,7 +2111,7 @@ export default function Appointments() {
                     padding: "12px",
                     borderRadius: "var(--radius-sm)",
                     backgroundColor: "var(--surface)",
-                    border: "1px solid var(--surface-light)",
+                    border: "none",
                     boxShadow: "none"
                   }}
                 >

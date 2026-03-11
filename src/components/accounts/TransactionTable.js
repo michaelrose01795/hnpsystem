@@ -14,7 +14,7 @@ export default function TransactionTable({ transactions, loading, filters, onFil
       style={{
         background: "var(--surface)",
         borderRadius: "var(--radius-md)",
-        border: "1px solid var(--surface-light)",
+        border: "none",
         padding: "20px",
         display: "flex",
         flexDirection: "column",
@@ -31,13 +31,13 @@ export default function TransactionTable({ transactions, loading, filters, onFil
       >
         <h3 style={{ margin: 0, fontSize: "1.1rem", color: "var(--primary)" }}>Transactions</h3>
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-          <select name="type" value={filters.type} onChange={handleFilterChange} style={{ padding: "8px 12px", borderRadius: "var(--radius-pill)", border: "1px solid var(--surface-light)", background: "var(--surface-light)" }}>
+          <select name="type" value={filters.type} onChange={handleFilterChange} style={{ padding: "8px 12px", borderRadius: "var(--radius-pill)", border: "none", background: "var(--surface-light)" }}>
             <option value="">All Types</option>
             {TRANSACTION_TYPES.map((option) => (
               <option key={option} value={option}>{option}</option>
             ))}
           </select>
-          <select name="payment_method" value={filters.payment_method} onChange={handleFilterChange} style={{ padding: "8px 12px", borderRadius: "var(--radius-pill)", border: "1px solid var(--surface-light)", background: "var(--surface-light)" }}>
+          <select name="payment_method" value={filters.payment_method} onChange={handleFilterChange} style={{ padding: "8px 12px", borderRadius: "var(--radius-pill)", border: "none", background: "var(--surface-light)" }}>
             <option value="">All Methods</option>
             {PAYMENT_METHODS.map((method) => (
               <option key={method} value={method}>{method}</option>
@@ -51,7 +51,7 @@ export default function TransactionTable({ transactions, loading, filters, onFil
           </div>
         </div>
         <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
-          <button type="button" onClick={() => onFilterChange({ type: "", payment_method: "", from: "", to: "" })} style={{ padding: "8px 14px", borderRadius: "var(--control-radius-xs)", border: "1px solid var(--surface-light)", background: "var(--surface-light)", color: "var(--text-secondary)" }}>
+          <button type="button" onClick={() => onFilterChange({ type: "", payment_method: "", from: "", to: "" })} style={{ padding: "8px 14px", borderRadius: "var(--control-radius-xs)", border: "none", background: "var(--surface-light)", color: "var(--text-secondary)" }}>
             Clear Filters
           </button>
           <button type="button" onClick={onExport} style={{ padding: "8px 18px", borderRadius: "var(--control-radius-xs)", border: "none", background: "var(--primary)", color: "white", fontWeight: 600 }}>
@@ -100,8 +100,8 @@ export default function TransactionTable({ transactions, loading, filters, onFil
       <footer style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>Page {pagination.page} of {Math.max(1, Math.ceil((pagination.total || 0) / pagination.pageSize))}</span>
         <div style={{ display: "flex", gap: "10px" }}>
-          <button type="button" onClick={() => onPageChange(Math.max(1, pagination.page - 1))} disabled={pagination.page <= 1} style={{ padding: "8px 14px", borderRadius: "var(--radius-pill)", border: "1px solid var(--surface-light)", background: pagination.page <= 1 ? "var(--surface-light)" : "var(--surface)", cursor: pagination.page <= 1 ? "not-allowed" : "pointer" }}>Prev</button>
-          <button type="button" onClick={() => onPageChange(pagination.page + 1)} disabled={pagination.page >= Math.ceil((pagination.total || 0) / pagination.pageSize)} style={{ padding: "8px 14px", borderRadius: "var(--radius-pill)", border: "1px solid var(--surface-light)", background: pagination.page >= Math.ceil((pagination.total || 0) / pagination.pageSize) ? "var(--surface-light)" : "var(--surface)", cursor: pagination.page >= Math.ceil((pagination.total || 0) / pagination.pageSize) ? "not-allowed" : "pointer" }}>Next</button>
+          <button type="button" onClick={() => onPageChange(Math.max(1, pagination.page - 1))} disabled={pagination.page <= 1} style={{ padding: "8px 14px", borderRadius: "var(--radius-pill)", border: "none", background: pagination.page <= 1 ? "var(--surface-light)" : "var(--surface)", cursor: pagination.page <= 1 ? "not-allowed" : "pointer" }}>Prev</button>
+          <button type="button" onClick={() => onPageChange(pagination.page + 1)} disabled={pagination.page >= Math.ceil((pagination.total || 0) / pagination.pageSize)} style={{ padding: "8px 14px", borderRadius: "var(--radius-pill)", border: "none", background: pagination.page >= Math.ceil((pagination.total || 0) / pagination.pageSize) ? "var(--surface-light)" : "var(--surface)", cursor: pagination.page >= Math.ceil((pagination.total || 0) / pagination.pageSize) ? "not-allowed" : "pointer" }}>Next</button>
         </div>
       </footer>
     </section>

@@ -143,8 +143,9 @@ const setDragSelectionLock = (isLocked) => {
 
 export default function GlobalNotesWidget() {
   const { dbUserId, user } = useUser() || {};
-  const [bubblePosition, setBubblePosition] = useState(getDefaultBubblePosition);
-  const [panelRect, setPanelRect] = useState(getDefaultPanelRect);
+  const [hasHydrated, setHasHydrated] = useState(false);
+  const [bubblePosition, setBubblePosition] = useState({ x: 0, y: 0 });
+  const [panelRect, setPanelRect] = useState(PANEL_DEFAULT);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPanelVisible, setIsPanelVisible] = useState(false);
   const [isPanelMounted, setIsPanelMounted] = useState(false);
@@ -202,6 +203,10 @@ export default function GlobalNotesWidget() {
 
   const activeNoteOwnedByUser = Boolean(activeNote && Number(activeNote.userId) === Number(dbUserId));
   const activeNoteReadOnly = !activeNoteOwnedByUser;
+
+  useEffect(() => {
+    setHasHydrated(true);
+  }, []);
 
   useEffect(() => {
     notesRef.current = notes;
@@ -932,7 +937,7 @@ export default function GlobalNotesWidget() {
     }
   };
 
-  if (!Number.isInteger(Number(dbUserId)) || isModalOpen) {
+  if (!hasHydrated || !Number.isInteger(Number(dbUserId)) || isModalOpen) {
     return null;
   }
 
@@ -1053,7 +1058,7 @@ export default function GlobalNotesWidget() {
                         onClick={() => onToggleGlobal(!activeNote.isGlobal)}
                         disabled={!activeNoteOwnedByUser}
                       >
-                        <span className={styles.visibilityThumb} />
+                        {activeNote.isGlobal ? "ON" : "OFF"}
                       </button>
                     </div>
                   </div>

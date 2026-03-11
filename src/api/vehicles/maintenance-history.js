@@ -83,7 +83,7 @@ export default async function handler(req, res) {
         workPerformed: job.job_writeups?.[0]?.fault || '',
         partsUsed: job.job_writeups?.[0]?.task_checklist?.meta?.additionalParts || '',
         recommendations: job.job_writeups?.[0]?.task_checklist?.meta?.caused || '',
-        mileageAtService: null // TODO: Add mileage tracking to jobs
+        milage: null // TODO: Add mileage tracking to jobs
       }))
     });
 

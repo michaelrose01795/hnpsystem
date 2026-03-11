@@ -584,7 +584,7 @@ export default function WorkshopManagerDashboard() {
                 maxWidth: "960px",
                 maxHeight: "90vh",
                 overflowY: "auto",
-                border: "1px solid var(--surface-light)",
+                border: "none",
               }}
             >
               <div style={{ padding: "32px", display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -641,7 +641,7 @@ export default function WorkshopManagerDashboard() {
                 style={{
                   padding: "8px 12px",
                   borderRadius: "var(--control-radius-xs)",
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                   fontSize: "0.95rem",
                   background: "var(--surface-light)",
                 }}

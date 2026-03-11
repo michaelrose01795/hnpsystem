@@ -1,0 +1,418 @@
+{
+  "base": "http://127.0.0.1:3000",
+  "testedRoutes": [
+    "/",
+    "/login",
+    "/dashboard",
+    "/appointments",
+    "/clocking",
+    "/customers",
+    "/job-cards",
+    "/messages",
+    "/parts",
+    "/profile",
+    "/tracking",
+    "/vhc",
+    "/workshop",
+    "/newsfeed",
+    "/stock-catalogue",
+    "/unauthorized"
+  ],
+  "results": [
+    {
+      "route": "/",
+      "status": 200,
+      "finalPath": "/",
+      "title": "",
+      "h1": ""
+    },
+    {
+      "route": "/login",
+      "status": 200,
+      "finalPath": "/login",
+      "title": "",
+      "h1": ""
+    },
+    {
+      "route": "/dashboard",
+      "status": 200,
+      "finalPath": "/dashboard",
+      "title": "",
+      "h1": "Redirecting to login..."
+    },
+    {
+      "route": "/appointments",
+      "status": 200,
+      "finalPath": "/appointments",
+      "title": "",
+      "h1": "Welcome Guest"
+    },
+    {
+      "route": "/clocking",
+      "status": 200,
+      "finalPath": "/clocking",
+      "title": "",
+      "h1": "Welcome Guest"
+    },
+    {
+      "route": "/customers",
+      "status": 200,
+      "finalPath": "/customers",
+      "title": "",
+      "h1": ""
+    },
+    {
+      "route": "/job-cards",
+      "status": 200,
+      "finalPath": "/job-cards",
+      "title": "",
+      "h1": ""
+    },
+    {
+      "route": "/messages",
+      "status": 200,
+      "finalPath": "/messages",
+      "title": "",
+      "h1": "Welcome Guest"
+    },
+    {
+      "route": "/parts",
+      "status": 200,
+      "finalPath": "/parts",
+      "title": "",
+      "h1": "Welcome Guest"
+    },
+    {
+      "route": "/profile",
+      "status": 200,
+      "finalPath": "/profile",
+      "title": "",
+      "h1": "Welcome Guest"
+    },
+    {
+      "route": "/tracking",
+      "status": 200,
+      "finalPath": "/tracking",
+      "title": "",
+      "h1": "Welcome Guest"
+    },
+    {
+      "route": "/vhc",
+      "status": 200,
+      "finalPath": "/vhc",
+      "title": "",
+      "h1": "Welcome Guest"
+    },
+    {
+      "route": "/workshop",
+      "status": 200,
+      "finalPath": "/workshop",
+      "title": "",
+      "h1": ""
+    },
+    {
+      "route": "/newsfeed",
+      "status": 200,
+      "finalPath": "/newsfeed",
+      "title": "",
+      "h1": "Welcome Guest"
+    },
+    {
+      "route": "/stock-catalogue",
+      "status": 200,
+      "finalPath": "/stock-catalogue",
+      "title": "",
+      "h1": "Welcome Guest"
+    },
+    {
+      "route": "/unauthorized",
+      "status": 200,
+      "finalPath": "/unauthorized",
+      "title": "",
+      "h1": "Unauthorized"
+    }
+  ],
+  "redirectedToLogin": [],
+  "issues": [
+    {
+      "type": "requestfailed",
+      "at": "/dashboard",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/%5Broot-of-the-server%5D__3c2f0ebd._.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/dashboard",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/src_pages_login_2da965e7._.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/dashboard",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/node_modules_d2d738a6._.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/dashboard",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/turbopack-src_pages_login_fe18d5b3._.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/appointments",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/%5Broot-of-the-server%5D__3c2f0ebd._.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/job-cards/view",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/src_pages_login_2da965e7._.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/job-cards/view",
+      "message": "GET http://127.0.0.1:3000/api/parts/orders -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/job-cards/view",
+      "message": "GET http://127.0.0.1:3000/api/parts/orders -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/job-cards/view",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/turbopack-src_pages_login_fe18d5b3._.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/job-cards/view",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/%5Broot-of-the-server%5D__3c2f0ebd._.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/job-cards/view",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/node_modules_next_c0c652ec._.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "console.error",
+      "at": "/job-cards/view",
+      "message": "Failed to fetch parts orders TypeError: Failed to fetch\n    at GlobalDraftPersistence.useEffect.wrappedFetch (http://127.0.0.1:3000/_next/static/chunks/%5Broot-of-the-server%5D__4618b14a._.js:12539:46)\n    at ViewJobCards.useCallback[fetchOrders] (http://127.0.0.1:3000/_next/static/chunks/%5Broot-of-the-server%5D__db90e7dd._.js:19029:40)\n    at ViewJobCards.useEffect (http://127.0.0.1:3000/_next/static/chunks/%5Broot-of-the-server%5D__db90e7dd._.js:19045:13)\n    at Object.react_stack_bottom_frame (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:13850:22)\n    at runWithFiberInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:886:74)\n    at commitHookEffectListMount (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:7027:167)\n    at commitHookPassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:7062:60)\n    at reconnectPassiveEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8136:17)\n    at doubleInvokeEffectsOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9396:133)\n    at runWithFiberInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:886:74)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:78)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at commitDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9404:9)\n    at flushPassiveEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9280:13)\n    at http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9028:17\n    at MessagePort.performWorkUntilDeadline (http://127.0.0.1:3000/_next/static/chunks/node_modules_20fa8b5b._.js:1335:64)"
+    },
+    {
+      "type": "console.error",
+      "at": "/job-cards/view",
+      "message": "Failed to fetch parts orders TypeError: Failed to fetch\n    at GlobalDraftPersistence.useEffect.wrappedFetch (http://127.0.0.1:3000/_next/static/chunks/%5Broot-of-the-server%5D__4618b14a._.js:12539:46)\n    at ViewJobCards.useCallback[fetchOrders] (http://127.0.0.1:3000/_next/static/chunks/%5Broot-of-the-server%5D__db90e7dd._.js:19029:40)\n    at ViewJobCards.useEffect (http://127.0.0.1:3000/_next/static/chunks/%5Broot-of-the-server%5D__db90e7dd._.js:19045:13)\n    at Object.react_stack_bottom_frame (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:13850:22)\n    at runWithFiberInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:886:74)\n    at commitHookEffectListMount (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:7027:167)\n    at commitHookPassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:7062:60)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8051:33)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/messages",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/turbopack-src_pages_login_fe18d5b3._.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/messages",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/%5Broot-of-the-server%5D__3c2f0ebd._.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/messages",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/src_pages_login_2da965e7._.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/messages",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/node_modules_next_c0c652ec._.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/stock-catalogue",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/turbopack-src_pages_login_fe18d5b3._.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/stock-catalogue",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/src_pages_login_2da965e7._.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/stock-catalogue",
+      "message": "GET http://127.0.0.1:3000/api/parts/inventory?search=&includeInactive=false&limit=100 -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/stock-catalogue",
+      "message": "GET http://127.0.0.1:3000/api/parts/inventory?search=&includeInactive=false&limit=100 -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/stock-catalogue",
+      "message": "GET http://127.0.0.1:3000/api/parts/inventory?search=&includeInactive=false&limit=100 -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/stock-catalogue",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/%5Broot-of-the-server%5D__3c2f0ebd._.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/profile",
+      "message": "GET http://127.0.0.1:3000/api/hr/operations -> net::ERR_ABORTED"
+    },
+    {
+      "type": "console.error",
+      "at": "/profile",
+      "message": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/profile",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/%5Broot-of-the-server%5D__3c2f0ebd._.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/profile",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/src_pages_login_2da965e7._.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/profile",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/turbopack-src_pages_login_fe18d5b3._.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/tracking",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/turbopack-src_pages_login_fe18d5b3._.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/tracking",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/%5Broot-of-the-server%5D__3c2f0ebd._.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/tracking",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/src_pages_login_2da965e7._.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/tracking",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/node_modules_d2d738a6._.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/job-cards/view",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/node_modules_next_c0c652ec._.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/job-cards/view",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/%5Broot-of-the-server%5D__3c2f0ebd._.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/job-cards/view",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/src_pages_login_2da965e7._.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/job-cards/view",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/turbopack-src_pages_login_fe18d5b3._.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/job-cards/view",
+      "message": "GET http://127.0.0.1:3000/api/parts/orders -> net::ERR_ABORTED"
+    },
+    {
+      "type": "console.error",
+      "at": "/job-cards/view",
+      "message": "Failed to fetch parts orders TypeError: Failed to fetch\n    at GlobalDraftPersistence.useEffect.wrappedFetch (http://127.0.0.1:3000/_next/static/chunks/%5Broot-of-the-server%5D__4618b14a._.js:12539:46)\n    at ViewJobCards.useCallback[fetchOrders] (http://127.0.0.1:3000/_next/static/chunks/%5Broot-of-the-server%5D__db90e7dd._.js:19029:40)\n    at ViewJobCards.useEffect (http://127.0.0.1:3000/_next/static/chunks/%5Broot-of-the-server%5D__db90e7dd._.js:19045:13)\n    at Object.react_stack_bottom_frame (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:13850:22)\n    at runWithFiberInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:886:74)\n    at commitHookEffectListMount (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:7027:167)\n    at commitHookPassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:7062:60)\n    at reconnectPassiveEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8136:17)\n    at doubleInvokeEffectsOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9396:133)\n    at runWithFiberInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:886:74)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:78)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at commitDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9404:9)\n    at flushPassiveEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9280:13)\n    at http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9028:17\n    at MessagePort.performWorkUntilDeadline (http://127.0.0.1:3000/_next/static/chunks/node_modules_20fa8b5b._.js:1335:64)"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/workshop/consumables-tracker",
+      "message": "GET http://127.0.0.1:3000/api/workshop/consumables/requests -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/workshop/consumables-tracker",
+      "message": "GET http://127.0.0.1:3000/api/workshop/consumables/requests -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/workshop/consumables-tracker",
+      "message": "GET http://127.0.0.1:3000/api/workshop/consumables/logs?year=2026&month=3 -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/workshop/consumables-tracker",
+      "message": "GET http://127.0.0.1:3000/api/workshop/consumables/financials?year=2026&month=3 -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/workshop/consumables-tracker",
+      "message": "GET http://127.0.0.1:3000/api/workshop/consumables/financials?year=2026&month=3 -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/workshop/consumables-tracker",
+      "message": "GET http://127.0.0.1:3000/api/workshop/consumables/logs?year=2026&month=3 -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/workshop/consumables-tracker",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/pages/login.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "console.error",
+      "at": "/workshop/consumables-tracker",
+      "message": "❌ Failed to load consumable requests TypeError: Failed to fetch\n    at GlobalDraftPersistence.useEffect.wrappedFetch (http://127.0.0.1:3000/_next/static/chunks/%5Broot-of-the-server%5D__4618b14a._.js:12539:46)\n    at ConsumablesTrackerPage.useCallback[fetchTechRequests] (http://127.0.0.1:3000/_next/static/chunks/src_pages_workshop_consumables-tracker_5b0492a3.js:531:40)\n    at ConsumablesTrackerPage.useEffect (http://127.0.0.1:3000/_next/static/chunks/src_pages_workshop_consumables-tracker_5b0492a3.js:555:13)\n    at Object.react_stack_bottom_frame (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:13850:22)\n    at runWithFiberInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:886:74)\n    at commitHookEffectListMount (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:7027:167)\n    at commitHookPassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:7062:60)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8051:33)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)"
+    },
+    {
+      "type": "console.error",
+      "at": "/workshop/consumables-tracker",
+      "message": "❌ Failed to load consumable requests TypeError: Failed to fetch\n    at GlobalDraftPersistence.useEffect.wrappedFetch (http://127.0.0.1:3000/_next/static/chunks/%5Broot-of-the-server%5D__4618b14a._.js:12539:46)\n    at ConsumablesTrackerPage.useCallback[fetchTechRequests] (http://127.0.0.1:3000/_next/static/chunks/src_pages_workshop_consumables-tracker_5b0492a3.js:531:40)\n    at ConsumablesTrackerPage.useEffect (http://127.0.0.1:3000/_next/static/chunks/src_pages_workshop_consumables-tracker_5b0492a3.js:555:13)\n    at Object.react_stack_bottom_frame (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:13850:22)\n    at runWithFiberInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:886:74)\n    at commitHookEffectListMount (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:7027:167)\n    at commitHookPassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:7062:60)\n    at reconnectPassiveEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8136:17)\n    at doubleInvokeEffectsOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9396:133)\n    at runWithFiberInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:886:74)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:78)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at commitDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9404:9)\n    at flushPassiveEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9280:13)\n    at http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9028:17\n    at MessagePort.performWorkUntilDeadline (http://127.0.0.1:3000/_next/static/chunks/node_modules_20fa8b5b._.js:1335:64)"
+    },
+    {
+      "type": "console.error",
+      "at": "/workshop/consumables-tracker",
+      "message": "❌ Failed to load monthly logs TypeError: Failed to fetch\n    at GlobalDraftPersistence.useEffect.wrappedFetch (http://127.0.0.1:3000/_next/static/chunks/%5Broot-of-the-server%5D__4618b14a._.js:12539:46)\n    at ConsumablesTrackerPage.useCallback[fetchMonthlyLogs] (http://127.0.0.1:3000/_next/static/chunks/src_pages_workshop_consumables-tracker_5b0492a3.js:720:40)\n    at ConsumablesTrackerPage.useEffect (http://127.0.0.1:3000/_next/static/chunks/src_pages_workshop_consumables-tracker_5b0492a3.js:753:13)\n    at Object.react_stack_bottom_frame (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:13850:22)\n    at runWithFiberInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:886:74)\n    at commitHookEffectListMount (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:7027:167)\n    at commitHookPassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:7062:60)\n    at reconnectPassiveEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8136:17)\n    at doubleInvokeEffectsOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9396:133)\n    at runWithFiberInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:886:74)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:78)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at commitDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9404:9)\n    at flushPassiveEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9280:13)\n    at http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9028:17\n    at MessagePort.performWorkUntilDeadline (http://127.0.0.1:3000/_next/static/chunks/node_modules_20fa8b5b._.js:1335:64)"
+    },
+    {
+      "type": "console.error",
+      "at": "/workshop/consumables-tracker",
+      "message": "❌ Failed to load financial summary TypeError: Failed to fetch\n    at GlobalDraftPersistence.useEffect.wrappedFetch (http://127.0.0.1:3000/_next/static/chunks/%5Broot-of-the-server%5D__4618b14a._.js:12539:46)\n    at ConsumablesTrackerPage.useCallback[fetchFinancialSummary] (http://127.0.0.1:3000/_next/static/chunks/src_pages_workshop_consumables-tracker_5b0492a3.js:676:40)\n    at ConsumablesTrackerPage.useEffect (http://127.0.0.1:3000/_next/static/chunks/src_pages_workshop_consumables-tracker_5b0492a3.js:709:13)\n    at Object.react_stack_bottom_frame (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:13850:22)\n    at runWithFiberInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:886:74)\n    at commitHookEffectListMount (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:7027:167)\n    at commitHookPassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:7062:60)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8051:33)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)"
+    },
+    {
+      "type": "console.error",
+      "at": "/workshop/consumables-tracker",
+      "message": "❌ Failed to load financial summary TypeError: Failed to fetch\n    at GlobalDraftPersistence.useEffect.wrappedFetch (http://127.0.0.1:3000/_next/static/chunks/%5Broot-of-the-server%5D__4618b14a._.js:12539:46)\n    at ConsumablesTrackerPage.useCallback[fetchFinancialSummary] (http://127.0.0.1:3000/_next/static/chunks/src_pages_workshop_consumables-tracker_5b0492a3.js:676:40)\n    at ConsumablesTrackerPage.useEffect (http://127.0.0.1:3000/_next/static/chunks/src_pages_workshop_consumables-tracker_5b0492a3.js:709:13)\n    at Object.react_stack_bottom_frame (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:13850:22)\n    at runWithFiberInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:886:74)\n    at commitHookEffectListMount (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:7027:167)\n    at commitHookPassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:7062:60)\n    at reconnectPassiveEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8136:17)\n    at doubleInvokeEffectsOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9396:133)\n    at runWithFiberInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:886:74)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:78)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at recursivelyTraverseAndDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9389:146)\n    at commitDoubleInvokeEffectsInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9404:9)\n    at flushPassiveEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9280:13)\n    at http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:9028:17\n    at MessagePort.performWorkUntilDeadline (http://127.0.0.1:3000/_next/static/chunks/node_modules_20fa8b5b._.js:1335:64)"
+    },
+    {
+      "type": "console.error",
+      "at": "/workshop/consumables-tracker",
+      "message": "❌ Failed to load monthly logs TypeError: Failed to fetch\n    at GlobalDraftPersistence.useEffect.wrappedFetch (http://127.0.0.1:3000/_next/static/chunks/%5Broot-of-the-server%5D__4618b14a._.js:12539:46)\n    at ConsumablesTrackerPage.useCallback[fetchMonthlyLogs] (http://127.0.0.1:3000/_next/static/chunks/src_pages_workshop_consumables-tracker_5b0492a3.js:720:40)\n    at ConsumablesTrackerPage.useEffect (http://127.0.0.1:3000/_next/static/chunks/src_pages_workshop_consumables-tracker_5b0492a3.js:753:13)\n    at Object.react_stack_bottom_frame (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:13850:22)\n    at runWithFiberInDEV (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:886:74)\n    at commitHookEffectListMount (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:7027:167)\n    at commitHookPassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:7062:60)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8051:33)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8050:17)\n    at recursivelyTraversePassiveMountEffects (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8039:13)\n    at commitPassiveMountOnFiber (http://127.0.0.1:3000/_next/static/chunks/node_modules_react-dom_4411d9bd._.js:8107:17)"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/newsfeed",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/%5Broot-of-the-server%5D__3c2f0ebd._.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/newsfeed",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/turbopack-src_pages_login_fe18d5b3._.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/stock-catalogue",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/src_pages_login_2da965e7._.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/stock-catalogue",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/%5Broot-of-the-server%5D__3c2f0ebd._.js -> net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "at": "/stock-catalogue",
+      "message": "GET http://127.0.0.1:3000/_next/static/chunks/turbopack-src_pages_login_fe18d5b3._.js -> net::ERR_ABORTED"
+    }
+  ]
+}

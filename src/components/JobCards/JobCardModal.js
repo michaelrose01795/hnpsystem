@@ -348,7 +348,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
           maxWidth: "600px",
           maxHeight: "90vh",
           overflowY: "auto",
-          border: "1px solid var(--surface-light)",
+          border: "none",
           padding: "32px",
         }}
         onClick={(e) => e.stopPropagation()} // Prevent overlay close when clicking inside
@@ -482,7 +482,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
               padding: "12px", // Comfortable size
               marginBottom: "12px", // Gap below
               borderRadius: "var(--radius-xs)", // Rounded
-              border: "1px solid var(--surface-light)", // Subtle border
+              border: "none", // Subtle border
               fontSize: "16px", // Readable size
               outline: "none" // No outline
             }}

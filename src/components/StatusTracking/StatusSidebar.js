@@ -276,7 +276,7 @@ export default function StatusSidebar({
         backgroundColor: 'var(--surface)',
 
         borderRadius: 'var(--radius-md)',
-        border: '1px solid var(--surface-light)',
+        border: 'none',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden'

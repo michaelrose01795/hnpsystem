@@ -207,7 +207,7 @@ const tabGroupShellStyle = {
   gap: "6px",
   padding: "6px",
   borderRadius: "var(--radius-pill)",
-  border: "1px solid var(--surface-light)",
+  border: "none",
   background: "var(--surface)",
   alignItems: "center",
   flexWrap: "nowrap",

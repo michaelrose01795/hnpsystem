@@ -387,7 +387,7 @@ export default function RetailManagersDashboard({ user }) {
             <div
               key={panel.role}
               style={{
-                border: "1px solid var(--surface-light)",
+                border: "none",
                 borderRadius: "var(--radius-md)",
                 padding: "18px",
                 display: "flex",

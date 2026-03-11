@@ -8,7 +8,7 @@ import DeliverySchedulerModal from "@/components/Parts/DeliverySchedulerModal";
 
 const containerStyle = {
   padding: "0 24px 48px",
-  maxWidth: "1400px",
+  maxWidth: "100%",
   margin: "0 auto",
   display: "flex",
   flexDirection: "column",
@@ -418,7 +418,7 @@ export default function PartsManagerDashboard() {
                   style={{
                     padding: "10px 12px",
                     borderRadius: "var(--radius-sm)",
-                    border: "1px solid rgba(var(--primary-rgb),0.2)",
+                    border: "none",
                     background: "rgba(var(--danger-rgb), 0.4)",
                     minHeight: "100px",
                   }}

@@ -32,7 +32,7 @@ const fieldStyle = {
 
 const inputStyle = {
   borderRadius: "var(--radius-sm)",
-  border: "1px solid var(--surface-light)",
+  border: "none",
   padding: "var(--control-padding)",
   fontSize: "0.95rem",
   fontFamily: "inherit",
@@ -40,7 +40,7 @@ const inputStyle = {
 
 const sectionCardStyle = {
   borderRadius: "var(--radius-md)",
-  border: "1px solid rgba(var(--primary-rgb), 0.08)",
+  border: "none",
   background: "rgba(var(--surface-rgb), 0.9)",
   padding: "var(--section-card-padding)",
   display: "flex",
@@ -74,7 +74,7 @@ const partLookupContentStyle = {
   width: "min(640px, 100%)",
   maxHeight: "85vh",
   overflowY: "auto",
-  border: "1px solid var(--surface-light)",
+  border: "none",
   display: "flex",
   flexDirection: "column",
   gap: "14px",
@@ -607,7 +607,7 @@ export default function PartsJobCardPage() {
                           disabled={savingCustomerDetails}
                           style={{
                             borderRadius: "var(--radius-sm)",
-                            border: "1px solid var(--surface-light)",
+                            border: "none",
                             background: "var(--surface)",
                             color: "var(--primary-dark)",
                             padding: "8px 14px",
@@ -707,7 +707,7 @@ export default function PartsJobCardPage() {
                   {customerRecord && (
                     <div
                       style={{
-                        border: "1px solid var(--surface-light)",
+                        border: "none",
                         borderRadius: "var(--radius-md)",
                         padding: "12px",
                         background: "var(--surface)",
@@ -868,7 +868,7 @@ export default function PartsJobCardPage() {
                     display: "flex",
                     flexDirection: "column",
                     gap: "8px",
-                    border: "1px solid var(--surface-light)",
+                    border: "none",
                     borderRadius: "var(--radius-md)",
                     padding: "12px",
                   }}
@@ -930,7 +930,7 @@ export default function PartsJobCardPage() {
                   <div
                     key={`part-line-${index}`}
                     style={{
-                      border: "1px solid var(--surface-light)",
+                      border: "none",
                       borderRadius: "var(--radius-sm)",
                       padding: "12px",
                       display: "grid",
@@ -953,7 +953,7 @@ export default function PartsJobCardPage() {
                           onClick={() => openPartSearch(index)}
                           style={{
                             borderRadius: "var(--radius-sm)",
-                            border: "1px solid var(--surface-light)",
+                            border: "none",
                             background: "var(--primary)",
                             color: "var(--surface)",
                             padding: "8px 12px",
@@ -969,7 +969,7 @@ export default function PartsJobCardPage() {
                             onClick={() => handleClearPartLink(index)}
                             style={{
                               borderRadius: "var(--radius-sm)",
-                              border: "1px solid var(--surface-light)",
+                              border: "none",
                               background: "var(--danger-surface)",
                               color: "var(--danger)",
                               padding: "8px 12px",
@@ -1063,7 +1063,7 @@ export default function PartsJobCardPage() {
                 disabled={saving}
                 style={{
                   borderRadius: "var(--radius-sm)",
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                   background: "var(--surface)",
                   padding: "10px 18px",
                   fontWeight: 600,
@@ -1178,7 +1178,7 @@ export default function PartsJobCardPage() {
                     onClick={() => handlePartSelected(part)}
                     style={{
                       borderRadius: "var(--radius-sm)",
-                      border: "1px solid var(--surface-light)",
+                      border: "none",
                       padding: "10px 12px",
                       textAlign: "left",
                       cursor: "pointer",

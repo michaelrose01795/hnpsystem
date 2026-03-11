@@ -806,7 +806,7 @@ export default function EfficiencyTab({
   const monthBtnStyle = {
     padding: "8px 14px",
     borderRadius: "var(--input-radius)",
-    border: "1px solid var(--surface-light)",
+    border: "none",
     background: "var(--surface)",
     color: "var(--primary-dark)",
     fontWeight: 600,
@@ -818,7 +818,7 @@ export default function EfficiencyTab({
     background: "var(--surface)",
     borderRadius: "var(--radius-lg)",
     padding: "24px",
-    border: "1px solid var(--surface-light)",
+    border: "none",
     display: "flex",
     flexDirection: "column",
     gap: "16px",
@@ -836,7 +836,7 @@ export default function EfficiencyTab({
 
   const tableWrapperStyle = {
     borderRadius: "var(--radius-md)",
-    border: "1px solid var(--surface-light)",
+    border: "none",
     overflow: "hidden",
   };
 
@@ -1071,7 +1071,7 @@ export default function EfficiencyTab({
               style={{
                 padding: "10px 16px",
                 borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--surface-light)",
+                border: "none",
                 background: "var(--surface)",
                 color: "var(--primary-dark)",
                 fontWeight: 600,
@@ -1417,19 +1417,30 @@ export default function EfficiencyTab({
                     ) : (
                       activeSummary.entries.map((entry) => {
                         const isFromClocking = entry._source === "job_clocking";
+                        const canOpenEditModal = isTabEditable && !isFromClocking;
                         const logged = Number(entry.hours_spent || 0);
                         const allocated = Number(entry.allocated_hours || 0);
                         const rowDifference = Number((logged - allocated).toFixed(2));
                         return (
                         <tr
                           key={entry.id}
-                          onClick={() => {
-                            if (!isTabEditable || isFromClocking) return;
+                          role={canOpenEditModal ? "button" : undefined}
+                          tabIndex={canOpenEditModal ? 0 : -1}
+                          onPointerUp={(event) => {
+                            if (!canOpenEditModal) return;
+                            if (event.pointerType === "mouse" && event.button !== 0) return;
                             openEditModal(entry);
                           }}
+                          onKeyDown={(event) => {
+                            if (!canOpenEditModal) return;
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              openEditModal(entry);
+                            }
+                          }}
                           style={{
-                            cursor: isTabEditable && !isFromClocking ? "pointer" : "default",
-                            backgroundColor: isTabEditable && !isFromClocking ? "transparent" : undefined,
+                            cursor: canOpenEditModal ? "pointer" : "default",
+                            backgroundColor: canOpenEditModal ? "transparent" : undefined,
                           }}
                         >
                           <td style={tdStyle}>
@@ -1495,7 +1506,7 @@ export default function EfficiencyTab({
                 maxWidth: "820px",
                 maxHeight: "90vh",
                 overflowY: "auto",
-                border: "1px solid var(--surface-light)",
+                border: "none",
                 padding: "32px",
                 display: "flex",
                 flexDirection: "column",
@@ -1563,7 +1574,7 @@ export default function EfficiencyTab({
                       width: "var(--control-height-xs)",
                       height: "var(--control-height-xs)",
                       borderRadius: "var(--input-radius)",
-                      border: "1px solid var(--surface-light)",
+                      border: "none",
                       background: "var(--surface)",
                       color: "var(--info)",
                       fontSize: "1.1rem",
@@ -1585,7 +1596,7 @@ export default function EfficiencyTab({
                   borderRadius: "var(--radius-md)",
                   padding: "16px 20px",
                   background: "var(--danger-surface)",
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                   display: "flex",
                   flexDirection: "column",
                   gap: "12px",
@@ -1618,7 +1629,7 @@ export default function EfficiencyTab({
                         readOnly
                         style={{
                           borderRadius: "var(--input-radius)",
-                          border: "1px solid var(--surface-light)",
+                          border: "none",
                           background: "var(--surface-light)",
                           padding: "10px 12px",
                           fontSize: "0.9rem",
@@ -1642,7 +1653,7 @@ export default function EfficiencyTab({
                         onChange={(e) => setDetailEditWeight(e.target.value)}
                         style={{
                           borderRadius: "var(--input-radius)",
-                          border: "1px solid var(--surface-light)",
+                          border: "none",
                           background: "var(--surface)",
                           padding: "10px 12px",
                           fontSize: "0.9rem",
@@ -1733,15 +1744,26 @@ export default function EfficiencyTab({
                       ) : (
                         detailPopupSummary.entries.map((entry) => {
                           const isFromClocking = entry._source === "job_clocking";
+                          const canOpenEditModal = isDetailPopupEditable && !isFromClocking;
                           return (
                           <tr
                             key={entry.id}
-                            onClick={() => {
-                              if (!isDetailPopupEditable || isFromClocking) return;
+                            role={canOpenEditModal ? "button" : undefined}
+                            tabIndex={canOpenEditModal ? 0 : -1}
+                            onPointerUp={(event) => {
+                              if (!canOpenEditModal) return;
+                              if (event.pointerType === "mouse" && event.button !== 0) return;
                               openEditModal(entry);
                             }}
+                            onKeyDown={(event) => {
+                              if (!canOpenEditModal) return;
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                openEditModal(entry);
+                              }
+                            }}
                             style={{
-                              cursor: isDetailPopupEditable && !isFromClocking ? "pointer" : "default",
+                              cursor: canOpenEditModal ? "pointer" : "default",
                             }}
                           >
                             <td style={tdStyle}>
@@ -1807,7 +1829,7 @@ export default function EfficiencyTab({
                 overflowY: "auto",
                 borderRadius: "var(--radius-lg)",
                 background: "var(--surface)",
-                border: "1px solid var(--surface-light)",
+                border: "none",
                 boxShadow: "var(--shadow-xl)",
                 padding: "28px 32px",
                 display: "flex",
@@ -1833,7 +1855,7 @@ export default function EfficiencyTab({
                     width: "var(--control-height-xs)",
                     height: "var(--control-height-xs)",
                     borderRadius: "var(--input-radius)",
-                    border: "1px solid var(--surface-light)",
+                    border: "none",
                     background: "var(--surface)",
                     color: "var(--grey-accent)",
                     fontSize: "1.1rem",
@@ -1905,7 +1927,7 @@ export default function EfficiencyTab({
                       placeholder="Job no. optional"
                       style={{
                         borderRadius: "var(--radius-md)",
-                        border: "1px solid var(--surface-light)",
+                        border: "none",
                         background: "var(--surface-light)",
                         padding: "12px 14px",
                         fontSize: "0.95rem",
@@ -1975,7 +1997,7 @@ export default function EfficiencyTab({
                       placeholder="Allocated hours"
                       style={{
                         borderRadius: "var(--radius-md)",
-                        border: "1px solid var(--surface-light)",
+                        border: "none",
                         background: "var(--surface-light)",
                         padding: "12px 14px",
                         fontSize: "0.95rem",
@@ -2006,7 +2028,7 @@ export default function EfficiencyTab({
                       required
                       style={{
                         borderRadius: "var(--radius-md)",
-                        border: "1px solid var(--surface-light)",
+                        border: "none",
                         background: "var(--surface-light)",
                         padding: "12px 14px",
                         fontSize: "0.95rem",
@@ -2035,7 +2057,7 @@ export default function EfficiencyTab({
                       rows={2}
                       style={{
                         borderRadius: "var(--radius-md)",
-                        border: "1px solid var(--surface-light)",
+                        border: "none",
                         background: "var(--surface-light)",
                         padding: "12px 14px",
                         fontSize: "0.95rem",
@@ -2062,7 +2084,7 @@ export default function EfficiencyTab({
                       rows={2}
                       style={{
                         borderRadius: "var(--radius-md)",
-                        border: "1px solid var(--surface-light)",
+                        border: "none",
                         background: "var(--surface-light)",
                         padding: "12px 14px",
                         fontSize: "0.95rem",
@@ -2107,7 +2129,7 @@ export default function EfficiencyTab({
                     style={{
                       padding: "12px 20px",
                       borderRadius: "var(--radius-md)",
-                      border: "1px solid var(--surface-light)",
+                      border: "none",
                       background: "var(--surface)",
                       color: "var(--info)",
                       fontSize: "0.9rem",

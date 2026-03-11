@@ -98,6 +98,12 @@ const buildRequestList = (rawRequests) => {
 
 // ✅ Compose a unique key for checklist items
 const composeTaskKey = (task) => `${task.source}:${task.sourceKey}`;
+const isTaskChecked = (task = {}) =>
+  typeof task?.checked === "boolean" ? task.checked : task?.status === "complete";
+const withTaskChecked = (task = {}) => ({
+  ...task,
+  checked: isTaskChecked(task),
+});
 
 const toPastTenseRequest = (value = "") => {
   if (!value) return value;
@@ -416,6 +422,7 @@ const buildTaskChecklistSnapshot = (tasks = []) =>
     sourceKey: task?.sourceKey || composeTaskKey(task),
     label: task?.label || "",
     status: task?.status === "complete" ? "complete" : "additional_work",
+    checked: isTaskChecked(task),
     ...(task?.vhcItemId ? { vhcItemId: task.vhcItemId } : {}),
   }));
 
@@ -543,6 +550,7 @@ const computeTaskSignature = (tasks = [], completionStatus = "") => {
     source: task?.source || "",
     key: task?.sourceKey || "",
     status: task?.status || "",
+    checked: isTaskChecked(task),
     label: task?.label || "",
     originalLabel: task?.originalLabel || "",
   }));
@@ -633,9 +641,9 @@ const statusBadgeStyle = {
 };
 
 const addSectionButtonStyle = {
-  width: "30px",
-  height: "30px",
-  borderRadius: "var(--radius-pill)",
+  width: "46px",
+  height: "28px",
+  borderRadius: "8px",
   border: "1px solid var(--accent-purple)",
   backgroundColor: "var(--surface)",
   color: "var(--accent-purple)",
@@ -789,7 +797,7 @@ export default function WriteUpForm({
   const closeButtonColor = "var(--accent-purple)";
 
   const [jobData, setJobData] = useState(jobCardData);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !Boolean(jobCardData?.jobCard));
   const [saving, setSaving] = useState(false);
   const [writeUpData, setWriteUpData] = useState({
     fault: "",
@@ -839,6 +847,8 @@ export default function WriteUpForm({
     signature: "",
   });
   const [writeUpMeta, setWriteUpMeta] = useState({ jobId: null, writeupId: null });
+  const warmHydratedJobRef = useRef(null);
+  const warmStartReadyRef = useRef(Boolean(jobCardData?.jobCard));
 
   // When the parent job card refreshes, keep Rectification in sync immediately (no tab-local refetch required).
   useEffect(() => {
@@ -880,7 +890,7 @@ export default function WriteUpForm({
       if (tasksAreEqual(prev.tasks, mergedTasks)) {
         return prev;
       }
-      return { ...prev, tasks: mergedTasks };
+      return { ...prev, tasks: mergedTasks.map((task) => withTaskChecked(task)) };
     });
   }, [jobCardData?.jobCard?.authorizedVhcItems, jobCardData?.jobCard?.id]);
   const markFieldsSynced = useCallback((fields) => {
@@ -898,6 +908,85 @@ export default function WriteUpForm({
       signature: signature || "",
     };
   }, []);
+
+  useEffect(() => {
+    if (!jobNumber) return;
+    if (warmHydratedJobRef.current === jobNumber) return;
+
+    const jobPayload = jobCardData?.jobCard || null;
+    if (!jobPayload) return;
+
+    const writeUp = jobPayload?.writeUp || null;
+    const checklistRaw = writeUp?.task_checklist;
+    const fallbackDescription = formatNoteValue(jobPayload?.description || "");
+    const fallbackRequests = buildRequestList(jobPayload?.jobRequests || jobPayload?.requests);
+    const canonicalAuthorised = Array.isArray(jobPayload?.authorizedVhcItems)
+      ? jobPayload.authorizedVhcItems
+      : [];
+    const canonicalEntries = canonicalAuthorised.map((item, index) => {
+      const description = (item?.label || item?.description || item?.issueDescription || item?.issue_description || "").toString().trim();
+      return {
+        ...item,
+        source: "vhc",
+        sourceKey: createAuthorizedSourceKey(item || {}, index, jobPayload?.id),
+        label: description || `Authorised item ${index + 1}`,
+        status: item?.status === "complete" ? "complete" : "additional_work",
+      };
+    });
+
+    const mergedTasks = ensureAuthorizedTasks(
+      extractTasksFromChecklist(checklistRaw) || fallbackRequests.map((item) => ({
+        taskId: null,
+        source: item.source,
+        sourceKey: item.sourceKey,
+        label: item.label,
+        status: "additional_work",
+        checked: false,
+      })),
+      canonicalEntries
+    );
+    const completionStatusValue = writeUp?.completion_status || "additional_work";
+    const normalizedEditors = sanitizeSectionEditors(deriveSectionEditorsFromChecklist(checklistRaw));
+    const incomingCauseEntries = hydrateCauseEntries(writeUp?.cause_entries || []);
+
+    setWriteUpData((prev) => ({
+      ...prev,
+      fault: writeUp?.fault || fallbackDescription,
+      caused: extractChecklistMeta(checklistRaw)?.caused || "",
+      rectification: writeUp?.rectification || "",
+      warrantyClaim: writeUp?.warranty_claim || "",
+      tsrNumber: writeUp?.tsr_number || "",
+      pwaNumber: writeUp?.pwa_number || "",
+      technicalBulletins: writeUp?.technical_bulletins || "",
+      technicalSignature: writeUp?.technical_signature || "",
+      qualityControl: writeUp?.quality_control || "",
+      additionalParts: extractChecklistMeta(checklistRaw)?.additionalParts || "",
+      qty: writeUp?.qty || createCheckboxArray(),
+      booked: writeUp?.booked || createCheckboxArray(),
+      tasks: (Array.isArray(mergedTasks) ? mergedTasks : []).map((task) => withTaskChecked(task)),
+      completionStatus: completionStatusValue,
+      jobDescription: writeUp?.fault || fallbackDescription,
+      vhcAuthorizationId: extractChecklistMeta(checklistRaw)?.vhcAuthorizationId || null,
+      causeEntries: incomingCauseEntries,
+      sectionEditors: normalizedEditors,
+    }));
+
+    setWriteUpMeta((prev) => ({
+      jobId: jobPayload?.id ?? prev.jobId,
+      writeupId: writeUp?.writeup_id ?? prev.writeupId,
+    }));
+    markFieldsSynced({
+      fault: writeUp?.fault || fallbackDescription,
+      caused: extractChecklistMeta(checklistRaw)?.caused || "",
+      rectification: writeUp?.rectification || "",
+      causeSignature: buildCauseSignature(incomingCauseEntries),
+      sectionEditorsSignature: computeSectionEditorsSignature(normalizedEditors),
+    });
+    markTasksSynced(computeTaskSignature(mergedTasks, completionStatusValue));
+    warmHydratedJobRef.current = jobNumber;
+    warmStartReadyRef.current = true;
+    setLoading(false);
+  }, [jobNumber, jobCardData?.jobCard, markFieldsSynced, markTasksSynced]);
 
   const techsList = usersByRole?.["Techs"] || [];
   const isTech = techsList.includes(username);
@@ -940,7 +1029,7 @@ export default function WriteUpForm({
     [writeUpData.tasks]
   );
   const totalTasks = writeUpData.tasks.length;
-  const completedTasks = writeUpData.tasks.filter((task) => task.status === "complete").length;
+  const completedTasks = writeUpData.tasks.filter((task) => isTaskChecked(task)).length;
 
   // ✅ Fetch job + write-up data whenever the job number changes
   const performWriteUpSave = useCallback(
@@ -1046,7 +1135,9 @@ export default function WriteUpForm({
 
     const fetchData = async () => {
       try {
-        setLoading(true);
+        if (!warmStartReadyRef.current) {
+          setLoading(true);
+        }
 
         // Prefer job payload passed down from the job card page to avoid re-loading per tab.
         const jobPayload = jobCardData?.jobCard ? jobCardData : (await getJobByNumber(jobNumber))?.data || null;
@@ -1094,7 +1185,7 @@ export default function WriteUpForm({
             additionalParts: writeUpResponse.additionalParts || "",
             qty: writeUpResponse.qty || createCheckboxArray(),
             booked: writeUpResponse.booked || createCheckboxArray(),
-            tasks: mergedTasks,
+            tasks: (Array.isArray(mergedTasks) ? mergedTasks : []).map((task) => withTaskChecked(task)),
             completionStatus: completionStatusValue,
             jobDescription: writeUpResponse.jobDescription || writeUpResponse.fault || "",
             vhcAuthorizationId: writeUpResponse.vhcAuthorizationId || null,
@@ -1136,9 +1227,10 @@ export default function WriteUpForm({
                       sourceKey: item.sourceKey,
                       label: item.label,
                       status: "additional_work",
+                      checked: false,
                     })),
                     []
-                  ),
+                  ).map((task) => withTaskChecked(task)),
             completionStatus: "additional_work",
             jobDescription: fallbackDescription,
             vhcAuthorizationId: null,
@@ -1222,7 +1314,7 @@ export default function WriteUpForm({
           return task;
         }
         updated = true;
-        if (task.status === "complete" && task.source === "request") {
+        if (isTaskChecked(task) && task.source === "request") {
           return {
             ...task,
             label: toPastTenseRequest(value),
@@ -1252,6 +1344,7 @@ export default function WriteUpForm({
             sourceKey: buildManualTaskSourceKey("fault-item"),
             label: `Added item ${existingFaultItems + 1}`,
             status: "additional_work",
+            checked: false,
           },
         ],
       };
@@ -1274,6 +1367,7 @@ export default function WriteUpForm({
             sourceKey: buildManualTaskSourceKey("rectification-item"),
             label: `Added item ${existingRectificationItems + 1}`,
             status: "additional_work",
+            checked: false,
           },
         ],
       };
@@ -1508,22 +1602,23 @@ export default function WriteUpForm({
         if (!toggledSection) {
           toggledSection = isFaultTaskSource(task?.source) ? "fault" : "rectification";
         }
-        const nextStatus = task.status === "complete" ? "inprogress" : "complete";
+        const nextChecked = !isTaskChecked(task);
+        const nextStatus = nextChecked ? "complete" : "inprogress";
         if (!isFaultTaskSource(task?.source)) {
-          return { ...task, status: task.status === "complete" ? "additional_work" : "complete" };
+          return { ...task, status: nextChecked ? "complete" : "additional_work", checked: nextChecked };
         }
 
-        if (task?.source === "request" && nextStatus === "complete") {
+        if (task?.source === "request" && nextChecked) {
           const originalLabel = task.originalLabel || task.label || "";
           const nextLabel = toPastTenseRequest(originalLabel);
-          return { ...task, status: nextStatus, label: nextLabel, originalLabel };
+          return { ...task, status: nextStatus, checked: nextChecked, label: nextLabel, originalLabel };
         }
 
         if (task.originalLabel) {
-          return { ...task, status: nextStatus, label: task.originalLabel, originalLabel: "" };
+          return { ...task, status: nextStatus, checked: nextChecked, label: task.originalLabel, originalLabel: "" };
         }
 
-        return { ...task, status: nextStatus };
+        return { ...task, status: nextStatus, checked: nextChecked };
       });
 
       const requestList = updatedTasks.filter((task) => task && task.source === "request");
@@ -1534,7 +1629,7 @@ export default function WriteUpForm({
       const authorisedList = updatedTasks.filter((task) => task && task.source === "vhc");
       const toggledTask = updatedTasks.find((task) => composeTaskKey(task) === taskKey);
       if (toggledTask) {
-        const isComplete = toggledTask.status === "complete";
+        const isComplete = isTaskChecked(toggledTask);
         if (toggledTask.source === "request") {
           const requestIndex =
             requestList.findIndex((task) => composeTaskKey(task) === taskKey) + 1;
@@ -1566,7 +1661,7 @@ export default function WriteUpForm({
       const hasAdditionalWork = updatedTasks.some((task) => task && !isFaultTaskSource(task.source));
 
       // Check if all checkboxes are complete
-      const allCheckboxesComplete = updatedTasks.every((task) => task.status === "complete");
+      const allCheckboxesComplete = updatedTasks.every((task) => isTaskChecked(task));
 
       // Smart completion logic:
       // - If NO additional work authorized AND all checkboxes complete → "complete"
@@ -1958,8 +2053,8 @@ export default function WriteUpForm({
     if (remaining <= 0) return `${total} complete`;
     return `${remaining} outstanding`;
   };
-  const faultCompletedCount = requestTasks.filter((task) => task?.status === "complete").length;
-  const rectificationCompletedCount = rectificationTasks.filter((task) => task?.status === "complete").length;
+  const faultCompletedCount = requestTasks.filter((task) => isTaskChecked(task)).length;
+  const rectificationCompletedCount = rectificationTasks.filter((task) => isTaskChecked(task)).length;
   const causeCompletedCount = writeUpData.causeEntries.filter(
     (entry) => (entry?.text || "").toString().trim().length > 0
   ).length;
@@ -2165,7 +2260,7 @@ export default function WriteUpForm({
                   gap: "6px",
                   padding: "6px",
                   borderRadius: "var(--radius-pill)",
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                   backgroundColor: "var(--layer-section-level-3)",
                 }}
               >
@@ -2247,7 +2342,7 @@ export default function WriteUpForm({
                 >
                   {requestSlots.map((task, index) => {
                     const slotKey = composeTaskKey(task);
-                    const isComplete = task?.status === "complete";
+                    const isComplete = isTaskChecked(task);
                     const slotMeta = requestOrderByKey.get(slotKey);
                     const isAddedRow = task?.source === MANUAL_FAULT_SOURCE;
                     return (
@@ -2394,7 +2489,7 @@ export default function WriteUpForm({
                   ) : (
                     rectificationTasks.map((task, index) => {
                       const taskKey = composeTaskKey(task);
-                      const isComplete = task.status === "complete";
+                      const isComplete = isTaskChecked(task);
                       const rowMeta = rectificationOrderByKey.get(taskKey);
                       const isAddedRow = task?.source === MANUAL_RECTIFICATION_SOURCE;
                       return (
@@ -2450,7 +2545,7 @@ export default function WriteUpForm({
                     backgroundColor: "var(--layer-section-level-3)",
                     padding: "16px",
                     borderRadius: "var(--radius-xs)",
-                    border: "1px solid var(--surface-light)",
+                    border: "none",
                                       display: "flex",
                     flexDirection: "column",
                     minHeight: "140px",

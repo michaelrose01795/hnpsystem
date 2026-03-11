@@ -57,7 +57,7 @@ export default function StatusSnapshotDevPage() {
           style={{
             padding: "10px 12px",
             borderRadius: "var(--radius-xs)",
-            border: "1px solid var(--surface-light)",
+            border: "none",
             minWidth: "240px",
           }}
         />

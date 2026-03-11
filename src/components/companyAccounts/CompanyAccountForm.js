@@ -212,7 +212,7 @@ export default function CompanyAccountForm({
           ].join(" ")}
           style={{
             borderRadius: "var(--control-radius-xs)",
-            border: "1px solid var(--surface-light)",
+            border: "none",
             padding: "12px 14px",
             resize: "vertical",
           }}
@@ -224,7 +224,7 @@ export default function CompanyAccountForm({
             style={{
               padding: "8px 14px",
               borderRadius: "var(--radius-xs)",
-              border: "1px solid var(--surface-light)",
+              border: "none",
               background: "var(--surface)",
               fontWeight: 600,
             }}
@@ -274,7 +274,7 @@ export default function CompanyAccountForm({
           rows={5}
           style={{
             borderRadius: "var(--control-radius-xs)",
-            border: "1px solid var(--surface-light)",
+            border: "none",
             padding: "10px 14px",
             resize: "vertical",
           }}

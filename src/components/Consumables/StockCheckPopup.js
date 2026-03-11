@@ -14,7 +14,7 @@ const modalStyle = {
   maxWidth: "960px",
   maxHeight: "calc(100vh - 32px)",
   overflow: "hidden",
-  border: "1px solid var(--surface-light)",
+  border: "none",
   padding: "clamp(16px, 3vw, 32px)",
   display: "flex",
   flexDirection: "column",
@@ -24,7 +24,7 @@ const modalStyle = {
 
 const sectionCardStyle = {
   background: "var(--surface)",
-  border: "1px solid var(--surface-light)",
+  border: "none",
   borderRadius: "var(--radius-md)",
   padding: "16px",
 
@@ -52,7 +52,7 @@ const buttonPrimaryStyle = {
 const buttonSecondaryStyle = {
   padding: "8px 14px",
   borderRadius: "var(--input-radius)",
-  border: "1px solid var(--surface-light)",
+  border: "none",
   background: "var(--surface)",
   color: "var(--primary-dark)",
   fontWeight: 600,
@@ -478,7 +478,7 @@ function StockCheckPopup({
           flexDirection: "column",
           gap: "8px",
           padding: "12px",
-          border: "1px solid var(--surface-light)",
+          border: "none",
           borderRadius: "var(--radius-sm)",
           background: "var(--surface-light)",
         }}
@@ -539,7 +539,7 @@ function StockCheckPopup({
               style={{
                 padding: "8px 10px",
                 borderRadius: "var(--radius-xs)",
-                border: "1px solid var(--surface-light)",
+                border: "none",
                 flex: "1 1 220px",
               }}
             />
@@ -644,7 +644,7 @@ function StockCheckPopup({
                       style={{
                         padding: "8px 10px",
                         borderRadius: "var(--input-radius)",
-                        border: "1px solid var(--surface-light)",
+                        border: "none",
                       }}
                       required
                     />
@@ -659,7 +659,7 @@ function StockCheckPopup({
                       style={{
                         padding: "8px 10px",
                         borderRadius: "var(--input-radius)",
-                        border: "1px solid var(--surface-light)",
+                        border: "none",
                       }}
                     />
                   </label>
@@ -675,7 +675,7 @@ function StockCheckPopup({
                       style={{
                         padding: "8px 10px",
                         borderRadius: "var(--input-radius)",
-                        border: "1px solid var(--surface-light)",
+                        border: "none",
                       }}
                     />
                   </label>

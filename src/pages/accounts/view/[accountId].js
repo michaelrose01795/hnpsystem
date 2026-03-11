@@ -94,8 +94,8 @@ export default function ViewAccountPage() {
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                  <button type="button" onClick={handleTransactionsPage} style={{ padding: "10px 16px", borderRadius: "var(--radius-sm)", border: "1px solid var(--surface-light)", background: "var(--surface-light)", fontWeight: 600 }}>Transactions</button>
-                  <button type="button" onClick={handleInvoicesPage} style={{ padding: "10px 16px", borderRadius: "var(--radius-sm)", border: "1px solid var(--surface-light)", background: "var(--surface-light)", fontWeight: 600 }}>Invoices</button>
+                  <button type="button" onClick={handleTransactionsPage} style={{ padding: "10px 16px", borderRadius: "var(--radius-sm)", border: "none", background: "var(--surface-light)", fontWeight: 600 }}>Transactions</button>
+                  <button type="button" onClick={handleInvoicesPage} style={{ padding: "10px 16px", borderRadius: "var(--radius-sm)", border: "none", background: "var(--surface-light)", fontWeight: 600 }}>Invoices</button>
                   {permissions.canEditAccount && <button type="button" onClick={handleEdit} style={{ padding: "10px 18px", borderRadius: "var(--radius-sm)", border: "1px solid var(--primary)", background: "transparent", color: "var(--primary)", fontWeight: 600 }}>Edit</button>}
                   {permissions.canFreezeAccount && <button type="button" onClick={handleFreezeToggle} style={{ padding: "10px 18px", borderRadius: "var(--radius-sm)", border: "none", background: account.status === "Frozen" ? "var(--surface-light)" : "var(--primary)", color: account.status === "Frozen" ? "var(--text-secondary)" : "white", fontWeight: 700 }}>{account.status === "Frozen" ? "Unfreeze" : "Freeze"}</button>}
                 </div>

@@ -143,6 +143,15 @@ const isStatusReadyForInvoicing = (status, statusId) => {
   return normalizeStatusId(status) === JOB_STATUSES.IN_PROGRESS;
 };
 
+const pickMileageValue = (...values) => {
+  for (const value of values) {
+    if (value === null || value === undefined) continue;
+    if (typeof value === "string" && value.trim() === "") continue;
+    return value;
+  }
+  return null;
+};
+
 const arePartsPricedAndAssigned = (allocations = []) => {
   const parts = Array.isArray(allocations) ? allocations : [];
   if (parts.length === 0) {
@@ -374,6 +383,8 @@ export default function JobCardDetailPage() {
   const [pendingNewNoteIds, setPendingNewNoteIds] = useState([]);
   const [highlightedNoteIds, setHighlightedNoteIds] = useState([]);
   const sharedNoteSaveRef = useRef(null);
+  const mileageAutoSaveRef = useRef(null);
+  const mileageInputDirtyRef = useRef(false);
   const notesHighlightTimeoutRef = useRef(null);
   const jobRealtimeRefreshRef = useRef(null);
   const lastRealtimeFetchAtRef = useRef(0);
@@ -385,9 +396,7 @@ export default function JobCardDetailPage() {
   const [customerSaving, setCustomerSaving] = useState(false);
   const [appointmentSaving, setAppointmentSaving] = useState(false);
   const [bookingFlowSaving, setBookingFlowSaving] = useState(false);
-  const [mileageSaving, setMileageSaving] = useState(false);
   const [vehicleMileageInput, setVehicleMileageInput] = useState("");
-  const [vehicleMileageMessage, setVehicleMileageMessage] = useState("");
   const [bookingApprovalSaving, setBookingApprovalSaving] = useState(false);
   const [jobDocuments, setJobDocuments] = useState([]);
   const [creatingInvoice, setCreatingInvoice] = useState(false);
@@ -610,12 +619,27 @@ export default function JobCardDetailPage() {
 
   // Sync active tab from query parameter, default to customer-requests
   useEffect(() => {
-    const tabParam = router.query.tab;
-    if (tabParam === "invoice" || tabParam === "clocking" || tabParam === "vhc") {
+    const tabParam = String(router.query.tab || "").trim();
+    const allowedTabIds = new Set([
+      "customer-requests",
+      "contact",
+      "scheduling",
+      "service-history",
+      "parts",
+      "notes",
+      "write-up",
+      "vhc",
+      "warranty",
+      "clocking",
+      "messages",
+      "documents",
+      "invoice",
+    ]);
+    if (allowedTabIds.has(tabParam)) {
       setActiveTab(tabParam);
-    } else {
-      setActiveTab("customer-requests");
+      return;
     }
+    setActiveTab("customer-requests");
   }, [router.query.tab]);
 
   useEffect(() => {
@@ -810,7 +834,12 @@ export default function JobCardDetailPage() {
         jobFetchInFlightRef.current = true;
         setError(null);
 
-        const { data, error } = await getJobByNumber(jobNumber, { archive: isArchiveMode, force: true });
+        const shouldForceFresh = Boolean(force);
+        const { data, error } = await getJobByNumber(jobNumber, {
+          archive: isArchiveMode,
+          force: shouldForceFresh,
+          noCache: shouldForceFresh,
+        });
 
         if (error || !data?.jobCard) {
           setError(error?.message || "Job card not found");
@@ -820,7 +849,17 @@ export default function JobCardDetailPage() {
         const jobCard = data.jobCard;
         console.log("🔍 jobCard.jobRequests hours:", (jobCard.jobRequests || []).map((r) => ({ desc: (r.description || "").slice(0, 30), hours: r.hours })));
         const mappedFiles = (jobCard.files || []).map(mapJobFileRecord);
-        const hydratedJobCard = { ...jobCard, files: mappedFiles };
+        const resolvedHydratedMileage = pickMileageValue(
+          jobCard?.mileage,
+          jobCard?.milage,
+          data?.vehicle?.mileage
+        );
+        const hydratedJobCard = {
+          ...jobCard,
+          files: mappedFiles,
+          mileage: resolvedHydratedMileage ?? "",
+          milage: pickMileageValue(jobCard?.milage, resolvedHydratedMileage),
+        };
         setJobData(hydratedJobCard);
         setJobDocuments(mappedFiles);
 
@@ -1187,17 +1226,28 @@ export default function JobCardDetailPage() {
     refreshCustomerVehicles(jobData.customerId);
   }, [jobData?.customerId, refreshCustomerVehicles]);
 
+  const linkedVehicleMileage = useMemo(() => {
+    const targetVehicleId = Number(jobData?.vehicleId);
+    if (!Number.isFinite(targetVehicleId)) return null;
+    const match = (Array.isArray(customerVehicles) ? customerVehicles : []).find(
+      (vehicle) => Number(vehicle?.vehicle_id) === targetVehicleId
+    );
+    return match?.mileage ?? null;
+  }, [customerVehicles, jobData?.vehicleId]);
+
   useEffect(() => {
+    const resolvedMileage = pickMileageValue(jobData?.mileage, jobData?.milage, linkedVehicleMileage);
     const nextMileage =
-      jobData?.mileage === null || jobData?.mileage === undefined
-        ? ""
-        : String(jobData.mileage);
+      resolvedMileage === null || resolvedMileage === undefined ? "" : String(resolvedMileage);
+    mileageInputDirtyRef.current = false;
     setVehicleMileageInput(nextMileage);
-    setVehicleMileageMessage("");
-  }, [jobData?.mileage, jobData?.vehicleId]);
+  }, [jobData?.mileage, jobData?.milage, jobData?.vehicleId, linkedVehicleMileage]);
 
   useEffect(() => {
     return () => {
+      if (mileageAutoSaveRef.current) {
+        clearTimeout(mileageAutoSaveRef.current);
+      }
       if (sharedNoteSaveRef.current) {
         clearTimeout(sharedNoteSaveRef.current);
       }
@@ -1341,7 +1391,6 @@ export default function JobCardDetailPage() {
         }
 
         await fetchJobData({ silent: true, force: true });
-
         return { success: true };
       } catch (saveError) {
         console.error("❌ Failed to update customer:", saveError);
@@ -1578,13 +1627,20 @@ export default function JobCardDetailPage() {
         };
       }
 
-      setMileageSaving(true);
-
       try {
         const normalizedInput =
           mileage === null || mileage === undefined
             ? ""
             : String(mileage).trim();
+        const resolvedCurrentMileage = pickMileageValue(jobData?.mileage, jobData?.milage, linkedVehicleMileage);
+        const currentDbMileageValue =
+          resolvedCurrentMileage === null || resolvedCurrentMileage === undefined
+            ? ""
+            : String(resolvedCurrentMileage).trim();
+
+        if (normalizedInput === currentDbMileageValue) {
+          return { success: true, skipped: true };
+        }
 
         let normalizedMileage = null;
         if (normalizedInput !== "") {
@@ -1593,84 +1649,163 @@ export default function JobCardDetailPage() {
             throw new Error("Mileage must be a whole number greater than or equal to 0.");
           }
           normalizedMileage = parsedMileage;
+
+          const resolvedRegRaw =
+            jobData?.reg ||
+            jobData?.vehicleReg ||
+            jobData?.vehicle_reg ||
+            "";
+          const resolvedReg = String(resolvedRegRaw).trim().toUpperCase();
+          const compactReg = resolvedReg.replace(/\s+/g, "");
+          let historicalMaxMileage = null;
+
+          if (compactReg) {
+            const regCandidates = Array.from(
+              new Set([resolvedReg, compactReg].map((value) => String(value || "").trim()).filter(Boolean))
+            );
+            const { data: historicalRows, error: historicalError } = await supabase
+              .from("jobs")
+              .select("vehicle_reg, milage")
+              .in("vehicle_reg", regCandidates)
+              .not("milage", "is", null);
+
+            if (historicalError) {
+              throw historicalError;
+            }
+
+            const matchedRows = (Array.isArray(historicalRows) ? historicalRows : []).filter((row) => {
+              const rowReg = String(row?.vehicle_reg || "").replace(/\s+/g, "").toUpperCase();
+              return rowReg === compactReg;
+            });
+
+            for (const row of matchedRows) {
+              const parsed = Number(row?.milage);
+              if (!Number.isFinite(parsed)) continue;
+              historicalMaxMileage =
+                historicalMaxMileage === null ? parsed : Math.max(historicalMaxMileage, parsed);
+            }
+          }
+
+          const currentVehicleMileageNumeric =
+            resolvedCurrentMileage === null || resolvedCurrentMileage === undefined
+              ? null
+              : Number(resolvedCurrentMileage);
+          const minimumAllowedMileage = [historicalMaxMileage, currentVehicleMileageNumeric]
+            .filter((value) => Number.isFinite(value))
+            .reduce((maxValue, value) => (maxValue === null ? value : Math.max(maxValue, value)), null);
+
+          if (minimumAllowedMileage !== null && normalizedMileage < minimumAllowedMileage) {
+            return {
+              success: false,
+              error: new Error(
+                `Mileage cannot be lower than the last recorded mileage (${minimumAllowedMileage}) for this registration.`
+              ),
+              minimumMileage: minimumAllowedMileage,
+            };
+          }
         }
 
-        const { error: vehicleUpdateError } = await supabase
+        const { data: updatedVehicleRow, error: vehicleUpdateError } = await supabase
           .from("vehicles")
           .update({
             mileage: normalizedMileage,
             updated_at: new Date().toISOString(),
           })
-          .eq("vehicle_id", targetVehicleId);
+          .eq("vehicle_id", targetVehicleId)
+          .select("mileage")
+          .single();
 
         if (vehicleUpdateError) {
           throw vehicleUpdateError;
         }
 
+        const persistedMileage =
+          updatedVehicleRow?.mileage === null || updatedVehicleRow?.mileage === undefined
+            ? null
+            : Number(updatedVehicleRow.mileage);
+
         const { error: jobMileageError } = await supabase
           .from("jobs")
-          .update({ mileage_at_service: normalizedMileage })
+          .update({ milage: persistedMileage })
           .eq("id", jobData.id);
 
         if (jobMileageError) {
-          console.error("Failed to update mileage_at_service on job:", jobMileageError);
+          console.error("Failed to update milage on job:", jobMileageError);
         }
 
         setJobData((prev) =>
           prev
-            ? { ...prev, mileage: normalizedMileage ?? "", mileageAtService: normalizedMileage }
+            ? { ...prev, mileage: persistedMileage ?? "", milage: persistedMileage }
             : prev
         );
 
         setCustomerVehicles((prev) =>
           (Array.isArray(prev) ? prev : []).map((vehicle) =>
             vehicle?.vehicle_id === targetVehicleId
-              ? { ...vehicle, mileage: normalizedMileage }
+              ? { ...vehicle, mileage: persistedMileage }
               : vehicle
           )
         );
 
-        await fetchJobData({ silent: true, force: true });
+        setVehicleMileageInput(persistedMileage === null ? "" : String(persistedMileage));
+
         return { success: true };
       } catch (mileageError) {
         console.error("❌ Failed to save mileage:", mileageError);
-        alert(mileageError?.message || "Failed to save mileage");
         return { success: false, error: mileageError };
-      } finally {
-        setMileageSaving(false);
       }
     },
-    [canEdit, jobData?.id, jobData?.vehicleId, fetchJobData]
+    [
+      canEdit,
+      jobData?.id,
+      jobData?.vehicleId,
+      jobData?.reg,
+      jobData?.vehicleReg,
+      jobData?.vehicle_reg,
+      linkedVehicleMileage,
+    ]
   );
 
-  const handleVehicleMileageSubmit = useCallback(async () => {
-    if (!canEdit || mileageSaving) return;
+  useEffect(() => {
+    if (!canEdit || !jobData?.vehicleId) return;
+    if (!mileageInputDirtyRef.current) return;
 
     const trimmed = vehicleMileageInput.trim();
+    const resolvedSavedMileage = pickMileageValue(jobData?.mileage, jobData?.milage, linkedVehicleMileage);
+    const savedMileageValue =
+      resolvedSavedMileage === null || resolvedSavedMileage === undefined
+        ? ""
+        : String(resolvedSavedMileage).trim();
+
+    if (trimmed === savedMileageValue) return;
+
     if (trimmed !== "") {
       const parsedMileage = Number(trimmed);
       if (!Number.isInteger(parsedMileage) || parsedMileage < 0) {
-        setVehicleMileageMessage("Mileage must be a whole number 0 or above.");
         return;
       }
     }
 
-    const result = await handleMileageSave({
-      vehicleId: jobData?.vehicleId || null,
-      mileage: trimmed,
-    });
-
-    if (result?.success) {
-      setVehicleMileageMessage("Mileage saved");
-      setTimeout(() => setVehicleMileageMessage(""), 3000);
+    if (mileageAutoSaveRef.current) {
+      clearTimeout(mileageAutoSaveRef.current);
     }
-  }, [
-    canEdit,
-    mileageSaving,
-    vehicleMileageInput,
-    handleMileageSave,
-    jobData?.vehicleId,
-  ]);
+
+    mileageAutoSaveRef.current = setTimeout(async () => {
+      const result = await handleMileageSave({
+        vehicleId: jobData?.vehicleId || null,
+        mileage: trimmed,
+      });
+      if (result?.success) {
+        mileageInputDirtyRef.current = false;
+        return;
+      }
+      if (result?.minimumMileage !== undefined && result?.minimumMileage !== null) {
+        alert(result?.error?.message || "Mileage cannot be lower than the last recorded value.");
+        setVehicleMileageInput(String(result.minimumMileage));
+        mileageInputDirtyRef.current = false;
+      }
+    }, 450);
+  }, [canEdit, vehicleMileageInput, jobData?.mileage, jobData?.milage, jobData?.vehicleId, linkedVehicleMileage, handleMileageSave]);
 
   const handleBookingApproval = useCallback(
     async ({
@@ -2209,29 +2344,23 @@ export default function JobCardDetailPage() {
   if (loading) {
     return (
       <Layout>
-        <div style={{ 
-          display: "flex", 
-          alignItems: "center", 
-          justifyContent: "center", 
-          height: "80vh",
-          flexDirection: "column",
-          gap: "16px"
-        }}>
-          <div style={{
-            width: "60px",
-            height: "60px",
-            border: "4px solid var(--surface)",
-            borderTop: "4px solid var(--primary)",
-            borderRadius: "var(--radius-full)",
-            animation: "spin 1s linear infinite"
-          }}></div>
-          <p style={{ color: "var(--grey-accent)" }}>Loading job card #{jobNumber}...</p>
-          <style jsx>{`
-            @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-          `}</style>
+        <div className="redirect-screen" role="status" aria-live="polite">
+          <div className="redirect-card">
+            <div className="login-brand redirect-brand" aria-hidden="true">
+              <img src="/logo.png" alt="H&P logo" className="login-logo" />
+            </div>
+            <div className="redirect-spinner" aria-hidden="true"></div>
+            <div className="redirect-copy">
+              <p className="redirect-kicker">Page Load</p>
+              <h2 className="redirect-title">Loading job card #{jobNumber}...</h2>
+              <p className="redirect-sub">Preparing page data and tabs.</p>
+            </div>
+            <div className="redirect-dots" aria-hidden="true">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
         </div>
       </Layout>
     );
@@ -2261,14 +2390,15 @@ export default function JobCardDetailPage() {
             <button
               onClick={() => router.push("/job-cards/view")}
               style={{
-                padding: "12px 24px",
+                padding: "var(--control-padding)",
                 backgroundColor: "var(--primary)",
-                color: "white",
+                color: "var(--text-inverse)",
                 border: "none",
-                borderRadius: "var(--radius-xs)",
+                borderRadius: "var(--control-radius)",
                 cursor: "pointer",
                 fontWeight: "600",
-                fontSize: "14px",
+                fontSize: "var(--control-font-size)",
+                minHeight: "var(--control-height)",
                 transition: "background-color 0.2s"
               }}
               onMouseEnter={(e) => e.target.style.backgroundColor = "var(--primary-dark)"}
@@ -2290,28 +2420,11 @@ export default function JobCardDetailPage() {
     .toLowerCase();
   const writeUpComplete =
     writeUpCompletionStatus === "complete" ||
-    writeUpCompletionStatus === "waiting_additional_work";
+    writeUpCompletionStatus === "waiting_additional_work" ||
+    writeUpCompletionStatus === "completed" ||
+    writeUpCompletionStatus === "done";
   const vhcQualified = !jobData.vhcRequired || Boolean(jobData.vhcCompletedAt);
-  const mileageRecorded =
-    jobData.mileage !== null &&
-    jobData.mileage !== undefined &&
-    String(jobData.mileage).trim() !== "";
-  const savedMileageValue =
-    jobData.mileage === null || jobData.mileage === undefined
-      ? ""
-      : String(jobData.mileage).trim();
-  const pendingMileageValue = vehicleMileageInput.trim();
-  const pendingMileageNumber =
-    pendingMileageValue === "" ? null : Number(pendingMileageValue);
-  const vehicleMileageInputValid =
-    pendingMileageNumber === null ||
-    (Number.isInteger(pendingMileageNumber) && pendingMileageNumber >= 0);
-  const vehicleMileageDirty = pendingMileageValue !== savedMileageValue;
-  const vehicleMileageSaveDisabled =
-    !canEdit ||
-    mileageSaving ||
-    !vehicleMileageInputValid ||
-    !vehicleMileageDirty;
+  const mileageRecorded = pickMileageValue(jobData.mileage, jobData.milage) !== null;
   const partsReadyBase = arePartsPricedAndAssigned(jobData.partsAllocations);
   const partsAllocatedBase = areAllPartsAllocated(jobData.partsAllocations);
   const partsAddedRowsForTab = Array.isArray(jobData.parts_job_items) ? jobData.parts_job_items : [];
@@ -2321,6 +2434,15 @@ export default function JobCardDetailPage() {
     activePartsAddedRows.length > 0 && activePartsAddedRows.every((item) => isPartsRowAllocated(item));
   const partsAllocated = partsTabComplete || partsAllocatedBase;
   const partsReady = partsTabComplete || partsReadyBase;
+  const partsTabCompleteInstant =
+    partsTabComplete ||
+    (Array.isArray(jobData.partsAllocations) &&
+      jobData.partsAllocations.length > 0 &&
+      partsAllocatedBase &&
+      partsReadyBase);
+  const writeUpCompleteInstant = writeUpComplete;
+  const vhcTabCompleteInstant = vhcTabComplete || Boolean(jobData.vhcCompletedAt);
+  const vhcTabAmberReadyInstant = hasRedAmberRepairRows && !vhcTabCompleteInstant;
   const statusReadyForInvoicing = isStatusReadyForInvoicing(
     jobData.status,
     overallStatusId
@@ -2442,7 +2564,7 @@ export default function JobCardDetailPage() {
           padding: "20px",
           backgroundColor: "var(--surface)",
           borderRadius: "var(--radius-sm)",
-          border: "1px solid var(--surface-muted)",
+          border: "none",
           flexShrink: 0
         }}>
           <div>
@@ -2551,13 +2673,14 @@ export default function JobCardDetailPage() {
               <button
                 onClick={() => router.push(`/job-cards/create?primeJob=${jobData.jobNumber}`)}
                 style={{
-                  padding: "10px 20px",
+                  padding: "var(--control-padding)",
                   backgroundColor: "var(--primary)",
-                  color: "white",
+                  color: "var(--text-inverse)",
                   border: "none",
-                  borderRadius: "var(--radius-xs)",
+                  borderRadius: "var(--control-radius)",
                   fontWeight: "600",
-                  fontSize: "13px",
+                  fontSize: "var(--control-font-size)",
+                  minHeight: "var(--control-height)",
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
@@ -2572,25 +2695,26 @@ export default function JobCardDetailPage() {
                 onClick={handleCheckIn}
                 disabled={checkingIn || !canEdit || isCheckedIn}
                 style={{
-                  padding: "10px 20px",
-                  backgroundColor: isCheckedIn ? "var(--success-surface)" : "var(--success)",
-                  color: isCheckedIn ? "var(--success-dark)" : "var(--info-dark)",
+                  padding: "var(--control-padding)",
+                  backgroundColor: isCheckedIn ? "rgba(var(--primary-rgb), 0.12)" : "var(--primary)",
+                  color: isCheckedIn ? "var(--primary-dark)" : "var(--text-inverse)",
                   border: "none",
-                  borderRadius: "var(--radius-xs)",
+                  borderRadius: "var(--control-radius)",
                   cursor: checkingIn || !canEdit || isCheckedIn ? "not-allowed" : "pointer",
                   fontWeight: "600",
-                  fontSize: "14px",
+                  fontSize: "var(--control-font-size)",
+                  minHeight: "var(--control-height)",
                   transition: "background-color 0.2s",
                   opacity: checkingIn || !canEdit || isCheckedIn ? 0.7 : 1
                 }}
                 onMouseEnter={(e) => {
                   if (!checkingIn && canEdit && !isCheckedIn) {
-                    e.target.style.backgroundColor = "var(--success-dark)";
+                    e.target.style.backgroundColor = "var(--primary-light)";
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!checkingIn && canEdit && !isCheckedIn) {
-                    e.target.style.backgroundColor = "var(--success)";
+                    e.target.style.backgroundColor = "var(--primary)";
                   }
                 }}
               >
@@ -2602,25 +2726,26 @@ export default function JobCardDetailPage() {
                 onClick={() => setInvoicePopupOpen(true)}
                 disabled={creatingInvoice}
                 style={{
-                  padding: "10px 20px",
-                  backgroundColor: "var(--info-dark)",
-                  color: "white",
+                  padding: "var(--control-padding)",
+                  backgroundColor: "var(--primary)",
+                  color: "var(--text-inverse)",
                   border: "none",
-                  borderRadius: "var(--radius-xs)",
+                  borderRadius: "var(--control-radius)",
                   cursor: creatingInvoice ? "not-allowed" : "pointer",
                   fontWeight: "600",
-                  fontSize: "14px",
+                  fontSize: "var(--control-font-size)",
+                  minHeight: "var(--control-height)",
                   transition: "background-color 0.2s, transform 0.2s",
                   opacity: creatingInvoice ? 0.7 : 1
                 }}
                 onMouseEnter={(e) => {
                   if (!creatingInvoice) {
-                    e.target.style.backgroundColor = "var(--info-dark)";
+                    e.target.style.backgroundColor = "var(--primary-light)";
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!creatingInvoice) {
-                    e.target.style.backgroundColor = "var(--info-dark)";
+                    e.target.style.backgroundColor = "var(--primary)";
                   }
                 }}
               >
@@ -2628,20 +2753,40 @@ export default function JobCardDetailPage() {
               </button>
             )}
             <button
-              onClick={() => router.push("/job-cards/view")}
+              onClick={() => fetchJobData({ silent: false, force: true })}
               style={{
-                padding: "10px 20px",
-                backgroundColor: "var(--grey-accent)",
-                color: "white",
+                padding: "var(--control-padding)",
+                backgroundColor: "rgba(var(--primary-rgb), 0.08)",
+                color: "var(--primary-dark)",
                 border: "none",
-                borderRadius: "var(--radius-xs)",
+                borderRadius: "var(--control-radius)",
                 cursor: "pointer",
                 fontWeight: "600",
-                fontSize: "14px",
+                fontSize: "var(--control-font-size)",
+                minHeight: "var(--control-height)",
                 transition: "background-color 0.2s"
               }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = "var(--grey-accent)"}
-              onMouseLeave={(e) => e.target.style.backgroundColor = "var(--grey-accent)"}
+              onMouseEnter={(e) => e.target.style.backgroundColor = "rgba(var(--primary-rgb), 0.14)"}
+              onMouseLeave={(e) => e.target.style.backgroundColor = "rgba(var(--primary-rgb), 0.08)"}
+            >
+              Reload
+            </button>
+            <button
+              onClick={() => router.push("/job-cards/view")}
+              style={{
+                padding: "var(--control-padding)",
+                backgroundColor: "rgba(var(--primary-rgb), 0.08)",
+                color: "var(--primary-dark)",
+                border: "none",
+                borderRadius: "var(--control-radius)",
+                cursor: "pointer",
+                fontWeight: "600",
+                fontSize: "var(--control-font-size)",
+                minHeight: "var(--control-height)",
+                transition: "background-color 0.2s"
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = "rgba(var(--primary-rgb), 0.14)"}
+              onMouseLeave={(e) => e.target.style.backgroundColor = "rgba(var(--primary-rgb), 0.08)"}
             >
               Back
             </button>
@@ -2655,7 +2800,7 @@ export default function JobCardDetailPage() {
               padding: "12px 20px",
               backgroundColor: "var(--primary-surface)",
               borderRadius: "var(--radius-sm)",
-              border: "1px solid var(--primary-light)",
+              border: "none",
               marginBottom: "0",
             }}
           >
@@ -2674,7 +2819,7 @@ export default function JobCardDetailPage() {
                   style={{
                     padding: "4px 12px",
                     backgroundColor: "var(--primary)",
-                    color: "white",
+                    color: "var(--text-inverse)",
                     borderRadius: "var(--radius-md)",
                     fontSize: "12px",
                     fontWeight: "600",
@@ -2689,12 +2834,12 @@ export default function JobCardDetailPage() {
                     onClick={() => router.push(`/job-cards/${rJob.jobNumber}`)}
                     style={{
                       padding: "4px 12px",
-                      backgroundColor: "var(--surface)",
-                      color: "var(--text-primary)",
-                      borderRadius: "var(--radius-md)",
+                      backgroundColor: "rgba(var(--primary-rgb), 0.06)",
+                      color: "var(--primary-dark)",
+                      borderRadius: "var(--control-radius)",
                       fontSize: "12px",
                       fontWeight: "500",
-                      border: "1px solid var(--border)",
+                      border: "none",
                       cursor: "pointer",
                       display: "flex",
                       alignItems: "center",
@@ -2706,7 +2851,7 @@ export default function JobCardDetailPage() {
                       style={{
                         fontSize: "10px",
                         padding: "2px 6px",
-                        borderRadius: "var(--radius-xs)",
+                        borderRadius: "var(--control-radius)",
                         backgroundColor:
                           rJob.status === "Open" ? "var(--success-surface)" :
                           rJob.status === "Complete" ? "var(--info-surface)" :
@@ -2727,8 +2872,8 @@ export default function JobCardDetailPage() {
                     style={{
                       padding: "4px 12px",
                       backgroundColor: "var(--primary)",
-                      color: "white",
-                      borderRadius: "var(--radius-md)",
+                      color: "var(--text-inverse)",
+                      borderRadius: "var(--control-radius)",
                       fontSize: "12px",
                       fontWeight: "600",
                       border: "none",
@@ -2754,19 +2899,21 @@ export default function JobCardDetailPage() {
             padding: "16px 20px",
             backgroundColor: "var(--surface)",
             borderRadius: "var(--radius-sm)",
-            border: "1px solid var(--surface-muted)"
+            border: "none"
           }}>
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                gap: "8px",
+                gap: "10px",
                 marginBottom: "4px",
               }}
             >
-              <div style={{ fontSize: "12px", color: "var(--grey-accent)" }}>VEHICLE</div>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <div style={{ fontSize: "20px", fontWeight: "700", color: "var(--primary)" }}>
+                {jobData.reg || "N/A"}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
                 <input
                   type="text"
                   inputMode="numeric"
@@ -2774,63 +2921,28 @@ export default function JobCardDetailPage() {
                   value={vehicleMileageInput}
                   onChange={(event) => {
                     const digitsOnly = (event.target.value || "").replace(/\D/g, "").slice(0, 7);
+                    mileageInputDirtyRef.current = true;
                     setVehicleMileageInput(digitsOnly);
-                    setVehicleMileageMessage("");
                   }}
                   disabled={!canEdit}
-                  placeholder="Current Mileage"
+                  aria-label="Vehicle mileage"
                   className="vehicle-mileage-input"
                   style={{
                     width: "86px",
                     padding: "6px 8px",
-                    borderRadius: "var(--radius-xs)",
-                    border: "1px solid var(--surface-light)",
+                    borderRadius: "var(--control-radius)",
+                    border: "none",
                     backgroundColor: "var(--surface)",
                     color: "var(--text-primary)",
                     fontSize: "12px",
                     lineHeight: 1.2,
                   }}
                 />
-                <button
-                  type="button"
-                  onClick={handleVehicleMileageSubmit}
-                  disabled={vehicleMileageSaveDisabled}
-                  style={{
-                    padding: "6px 10px",
-                    borderRadius: "var(--radius-xs)",
-                    border: "none",
-                    backgroundColor: vehicleMileageSaveDisabled ? "var(--surface-light)" : "var(--primary)",
-                    color: vehicleMileageSaveDisabled ? "var(--grey-accent)" : "var(--text-inverse)",
-                    fontSize: "12px",
-                    fontWeight: "600",
-                    cursor: vehicleMileageSaveDisabled ? "not-allowed" : "pointer",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {mileageSaving ? "Saving..." : "Save"}
-                </button>
               </div>
-            </div>
-            <div style={{ fontSize: "20px", fontWeight: "700", color: "var(--primary)", marginBottom: "4px" }}>
-              {jobData.reg || "N/A"}
             </div>
             <div style={{ fontSize: "14px", color: "var(--text-secondary)" }}>
               {jobData.makeModel || `${jobData.make} ${jobData.model}`}
             </div>
-            {vehicleMileageMessage ? (
-              <div
-                style={{
-                  marginTop: "6px",
-                  fontSize: "11px",
-                  color: vehicleMileageMessage.includes("saved")
-                    ? "var(--success)"
-                    : "var(--danger)",
-                  fontWeight: "600",
-                }}
-              >
-                {vehicleMileageMessage}
-              </div>
-            ) : null}
           </div>
 
           <div
@@ -2855,14 +2967,13 @@ export default function JobCardDetailPage() {
               padding: "16px 20px",
               backgroundColor: "var(--surface)",
               borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--surface-muted)",
+                border: "none",
               cursor:
                 jobData.customerId || jobData.customerFirstName || jobData.customerLastName || jobData.customer
                   ? "pointer"
                   : "default",
             }}
           >
-            <div style={{ fontSize: "12px", color: "var(--grey-accent)", marginBottom: "4px" }}>CUSTOMER</div>
             <div style={{ fontSize: "18px", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "4px" }}>
               {jobData.customer || "N/A"}
             </div>
@@ -2875,7 +2986,7 @@ export default function JobCardDetailPage() {
             padding: "16px 20px",
             backgroundColor: "var(--surface)",
             borderRadius: "var(--radius-sm)",
-            border: "1px solid var(--surface-muted)"
+            border: "none"
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
               <div style={{ flex: 1 }}>
@@ -2883,18 +2994,12 @@ export default function JobCardDetailPage() {
                 <div style={{ fontSize: "18px", fontWeight: "700", color: "var(--danger)", marginBottom: "4px" }}>
                   {formatCurrency(vhcFinancialTotals.declined)}
                 </div>
-                <div style={{ fontSize: "11px", color: "var(--grey-accent)" }}>
-                  VHC Total
-                </div>
               </div>
               <div style={{ width: "1px", backgroundColor: "var(--surface-light)" }} />
               <div style={{ flex: 1, textAlign: "right" }}>
                 <div style={{ fontSize: "12px", color: "var(--success)", marginBottom: "4px" }}>AUTHORISED</div>
                 <div style={{ fontSize: "18px", fontWeight: "700", color: "var(--success)", marginBottom: "4px" }}>
                   {formatCurrency(vhcFinancialTotals.authorized)}
-                </div>
-                <div style={{ fontSize: "11px", color: "var(--grey-accent)" }}>
-                  VHC Total
                 </div>
               </div>
             </div>
@@ -2906,26 +3011,27 @@ export default function JobCardDetailPage() {
               padding: "16px 20px",
               backgroundColor: "var(--surface)",
               borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--surface-muted)",
+                border: "none",
               display: "flex",
-              flexDirection: "column",
-              gap: "12px",
+              flexDirection: "row",
+              alignItems: "stretch",
               cursor: "pointer"
             }}
           >
-            <div>
-              <div style={{ fontSize: "14px", fontWeight: "700", color: "var(--text-primary)", marginBottom: "4px" }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "4px" }}>
                 Key location
               </div>
-              <div style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
+              <div style={{ fontSize: "14px", fontWeight: "700", color: "var(--text-primary)" }}>
                 {normalizeKeyLocationLabel(trackerEntry?.keyLocation) || KEY_LOCATIONS[0].label}
               </div>
             </div>
-            <div>
-              <div style={{ fontSize: "14px", fontWeight: "700", color: "var(--text-primary)", marginBottom: "4px" }}>
+            <div style={{ width: "1px", backgroundColor: "var(--surface-light)" }} />
+            <div style={{ flex: 1, minWidth: 0, textAlign: "right" }}>
+              <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "4px" }}>
                 Car location
               </div>
-              <div style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
+              <div style={{ fontSize: "14px", fontWeight: "700", color: "var(--text-primary)" }}>
                 {trackerEntry?.vehicleLocation || CAR_LOCATIONS[0].label}
               </div>
             </div>
@@ -2947,11 +3053,11 @@ export default function JobCardDetailPage() {
               const isPartsTab = tab.id === "parts";
               const isWriteUpTab = tab.id === "write-up";
               const isVhcTab = tab.id === "vhc";
-              const isVhcCompleteHighlight = isVhcTab && vhcTabComplete;
-              const isVhcAmberHighlight = isVhcTab && vhcTabAmberReady;
+              const isVhcCompleteHighlight = isVhcTab && vhcTabCompleteInstant;
+              const isVhcAmberHighlight = isVhcTab && vhcTabAmberReadyInstant;
               const isCompleteHighlight =
-                (isPartsTab && partsTabComplete) ||
-                (isWriteUpTab && writeUpComplete) ||
+                (isPartsTab && partsTabCompleteInstant) ||
+                (isWriteUpTab && writeUpCompleteInstant) ||
                 isVhcCompleteHighlight;
               const tabTone = isCompleteHighlight
                 ? "success"
@@ -3930,14 +4036,15 @@ function CustomerRequestsTab({
             <button
               onClick={() => onToggleVhcRequired(!jobData.vhcRequired)}
               style={{
-                padding: "8px 16px",
-                borderRadius: "var(--radius-sm)",
-                border: jobData.vhcRequired ? "1px solid rgba(var(--danger-rgb), 0.45)" : "1px solid rgba(var(--success-rgb), 0.45)",
-                fontSize: "14px",
+                padding: "var(--control-padding)",
+                borderRadius: "var(--control-radius)",
+                border: "none",
+                fontSize: "var(--control-font-size)",
                 fontWeight: "600",
                 cursor: "pointer",
-                backgroundColor: jobData.vhcRequired ? "rgba(var(--danger-rgb), 0.14)" : "rgba(var(--success-rgb), 0.14)",
-                color: jobData.vhcRequired ? "var(--danger)" : "var(--success)",
+                minHeight: "var(--control-height)",
+                backgroundColor: "rgba(var(--primary-rgb), 0.08)",
+                color: "var(--primary-dark)",
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.opacity = "0.9";
@@ -3953,14 +4060,15 @@ function CustomerRequestsTab({
             <button
               onClick={() => setEditing(true)}
               style={{
-                padding: "8px 16px",
+                padding: "var(--control-padding)",
                 backgroundColor: "var(--primary)",
                 color: "var(--text-inverse)",
                 border: "none",
-                borderRadius: "var(--radius-xs)",
+                borderRadius: "var(--control-radius)",
                 cursor: "pointer",
                 fontWeight: "600",
-                fontSize: "14px"
+                fontSize: "var(--control-font-size)",
+                minHeight: "var(--control-height)",
               }}
             >
               Edit Requests
@@ -3972,14 +4080,15 @@ function CustomerRequestsTab({
             <button
               onClick={handleSave}
               style={{
-                padding: "8px 16px",
+                padding: "var(--control-padding)",
                 backgroundColor: "var(--primary)",
                 color: "var(--text-inverse)",
                 border: "none",
-                borderRadius: "var(--radius-xs)",
+                borderRadius: "var(--control-radius)",
                 cursor: "pointer",
                 fontWeight: "600",
-                fontSize: "14px"
+                fontSize: "var(--control-font-size)",
+                minHeight: "var(--control-height)",
               }}
             >
               Save
@@ -3991,14 +4100,15 @@ function CustomerRequestsTab({
                 setEditing(false);
               }}
               style={{
-                padding: "8px 16px",
-                backgroundColor: "var(--surface-light)",
-                color: "var(--text-primary)",
-                border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
-                borderRadius: "var(--radius-xs)",
+                padding: "var(--control-padding)",
+                backgroundColor: "rgba(var(--primary-rgb), 0.08)",
+                color: "var(--primary-dark)",
+                border: "none",
+                borderRadius: "var(--control-radius)",
                 cursor: "pointer",
                 fontWeight: "600",
-                fontSize: "14px"
+                fontSize: "var(--control-font-size)",
+                minHeight: "var(--control-height)",
               }}
             >
               Cancel
@@ -4016,7 +4126,7 @@ function CustomerRequestsTab({
                 padding: "14px",
                 backgroundColor: "var(--surface)",
                 borderLeft: "4px solid var(--primary)",
-                borderRadius: "var(--radius-xs)",
+                borderRadius: "var(--control-radius)",
                 marginBottom: "12px",
                 display: "flex",
                 alignItems: "center",
@@ -4067,8 +4177,8 @@ function CustomerRequestsTab({
                     width: "100%",
                     height: "var(--control-height-sm)",
                     padding: "8px 10px",
-                    border: "1px solid var(--surface-light)",
-                    borderRadius: "var(--radius-xs)",
+                    border: "none",
+                    borderRadius: "var(--control-radius)",
                     fontSize: "14px",
                     backgroundColor: "var(--surface)",
                     color: "var(--text-secondary)",
@@ -4103,15 +4213,15 @@ function CustomerRequestsTab({
                 onClick={() => handleRemoveRequest(index)}
                 style={{
                   marginLeft: "auto",
-                  height: "var(--control-height-sm)",
+                  minHeight: "var(--control-height)",
                   minWidth: "86px",
-                  padding: "0 14px",
+                  padding: "var(--control-padding)",
                   backgroundColor: "var(--danger)",
                   color: "var(--text-inverse)",
                   border: "none",
-                  borderRadius: "var(--radius-xs)",
+                  borderRadius: "var(--control-radius)",
                   cursor: "pointer",
-                  fontSize: "12px",
+                  fontSize: "var(--control-font-size)",
                   fontWeight: "600",
                   alignSelf: "flex-end",
                 }}
@@ -4123,14 +4233,15 @@ function CustomerRequestsTab({
           <button
             onClick={handleAddRequest}
             style={{
-              padding: "10px 20px",
+              padding: "var(--control-padding)",
               backgroundColor: "var(--primary)",
               color: "var(--text-inverse)",
               border: "none",
-              borderRadius: "var(--radius-xs)",
+              borderRadius: "var(--control-radius)",
               cursor: "pointer",
               fontWeight: "600",
-              fontSize: "14px"
+              fontSize: "var(--control-font-size)",
+              minHeight: "var(--control-height)",
             }}
           >
             Add Request
@@ -4148,7 +4259,7 @@ function CustomerRequestsTab({
                     padding: "14px",
                     backgroundColor: "var(--surface)",
                     borderLeft: "4px solid var(--success)",
-                    borderRadius: "var(--radius-xs)",
+                    borderRadius: "var(--control-radius)",
                     marginBottom: "12px",
                     display: "flex",
                     alignItems: "center",
@@ -4200,8 +4311,8 @@ function CustomerRequestsTab({
                         width: "100%",
                         height: "var(--control-height-sm)",
                         padding: "8px 10px",
-                        border: "1px solid var(--surface-light)",
-                        borderRadius: "var(--radius-xs)",
+                        border: "none",
+                        borderRadius: "var(--control-radius)",
                         fontSize: "14px",
                         backgroundColor: "var(--surface-light)",
                         color: "var(--text-secondary)",
@@ -4252,7 +4363,7 @@ function CustomerRequestsTab({
                 padding: "14px",
                 backgroundColor: "var(--surface)",
                 borderLeft: "4px solid var(--primary)",
-                borderRadius: "var(--radius-xs)",
+                borderRadius: "var(--control-radius)",
                 marginBottom: "12px",
               }}>
                 <div
@@ -4387,7 +4498,7 @@ function CustomerRequestsTab({
                   padding: "14px",
                   backgroundColor: "var(--surface)",
                   borderLeft: "4px solid var(--success)",
-                  borderRadius: "var(--radius-xs)",
+                  borderRadius: "var(--control-radius)",
                   marginBottom: "12px",
                 }}>
                   <div
@@ -4495,7 +4606,7 @@ function CustomerRequestsTab({
                               <td style={{ padding: "4px 8px", textAlign: "right" }}>
                                 <span style={{
                                   padding: "2px 8px",
-                                  borderRadius: "var(--radius-xs)",
+                                  borderRadius: "var(--control-radius)",
                                   fontSize: "11px",
                                   fontWeight: "600",
                                   backgroundColor:
@@ -4539,7 +4650,7 @@ function CustomerRequestsTab({
               padding: "12px",
               backgroundColor: "var(--warning-surface)",
               borderLeft: "4px solid var(--warning)",
-              borderRadius: "var(--radius-xs)"
+              borderRadius: "var(--control-radius)"
             }}>
               <p style={{ margin: 0, fontSize: "14px", color: "var(--text-secondary)" }}>
                 {jobData.cosmeticNotes}
@@ -4589,7 +4700,7 @@ function LocationUpdateModal({ entry, onClose, onSave }) {
           maxWidth: "460px",
           maxHeight: "96vh",
           overflowY: "visible",
-          border: "1px solid var(--surface-light)",
+          border: "none",
           padding: "22px",
           display: "flex",
           flexDirection: "column",
@@ -4637,13 +4748,15 @@ function LocationUpdateModal({ entry, onClose, onSave }) {
             type="button"
             onClick={onClose}
             style={{
-              padding: "10px 16px",
-              borderRadius: "var(--radius-sm)",
-              border: "1px solid var(--accent-purple-surface)",
-              backgroundColor: "transparent",
+              padding: "var(--control-padding)",
+              borderRadius: "var(--control-radius)",
+              border: "none",
+              backgroundColor: "rgba(var(--primary-rgb), 0.08)",
               cursor: "pointer",
               fontWeight: 600,
-              color: "var(--text)",
+              color: "var(--primary-dark)",
+              fontSize: "var(--control-font-size)",
+              minHeight: "var(--control-height)",
             }}
           >
             Close
@@ -4651,12 +4764,14 @@ function LocationUpdateModal({ entry, onClose, onSave }) {
           <button
             type="submit"
             style={{
-              padding: "10px 16px",
-              borderRadius: "var(--radius-sm)",
+              padding: "var(--control-padding)",
+              borderRadius: "var(--control-radius)",
               border: "none",
               background: "var(--primary)",
-              color: "white",
+              color: "var(--text-inverse)",
               fontWeight: 600,
+              fontSize: "var(--control-font-size)",
+              minHeight: "var(--control-height)",
               cursor: "pointer",
             }}
           >
@@ -4771,10 +4886,11 @@ function LocationEntryModal({ context, entry, mode = "edit", onClose, onSave }) 
                 onChange={(event) => handleChange(input.field, event.target.value)}
                 placeholder={input.placeholder}
                 style={{
-                  padding: "10px 12px",
-                  borderRadius: "var(--radius-sm)",
-                  border: "1px solid var(--accent-purple-surface)",
-                  fontSize: "0.95rem",
+                  padding: "var(--control-padding)",
+                  borderRadius: "var(--control-radius)",
+                  border: "none",
+                  fontSize: "var(--control-font-size)",
+                  minHeight: "var(--control-height)",
                 }}
               />
             </div>
@@ -4822,14 +4938,15 @@ function LocationEntryModal({ context, entry, mode = "edit", onClose, onSave }) 
         <button
           type="submit"
           style={{
-            padding: "12px 20px",
-            borderRadius: "var(--radius-sm)",
+            padding: "var(--control-padding)",
+            borderRadius: "var(--control-radius)",
             border: "none",
-            background: "var(--success)",
-            color: "white",
+            background: "var(--primary)",
+            color: "var(--text-inverse)",
             fontWeight: 600,
             cursor: "pointer",
-            fontSize: "0.95rem",
+            fontSize: "var(--control-font-size)",
+            minHeight: "var(--control-height)",
           }}
         >
           Update
@@ -4904,25 +5021,27 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
   const labelStyle = { fontSize: "12px", color: "var(--grey-accent)", display: "block", marginBottom: "6px", fontWeight: "600" };
   const inputStyle = {
     width: "100%",
-    padding: "8px 10px",
-    borderRadius: "var(--radius-xs)",
-    border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
-    backgroundColor: "var(--surface)",
-    color: "var(--text-secondary)",
-    fontSize: "13px",
+    padding: "var(--control-padding)",
+    borderRadius: "var(--control-radius)",
+    border: "none",
+    backgroundColor: "var(--control-bg)",
+    color: "var(--text-primary)",
+    fontSize: "var(--control-font-size)",
+    minHeight: "var(--control-height)",
   };
   const readOnlyStyle = {
-    padding: "8px 10px",
-    backgroundColor: "var(--surface)",
-    borderRadius: "var(--radius-xs)",
-    border: "1px solid var(--surface-light)",
-    fontSize: "13px",
+    padding: "var(--control-padding)",
+    backgroundColor: "var(--control-bg)",
+    borderRadius: "var(--control-radius)",
+    border: "none",
+    fontSize: "var(--control-font-size)",
     color: "var(--text-secondary)",
     fontWeight: "500",
+    minHeight: "var(--control-height)",
   };
   const panelStyle = {
     background: "var(--surface)",
-    border: "1px solid var(--surface-light)",
+    border: "none",
     borderRadius: "var(--radius-md)",
     padding: "18px",
   };
@@ -4939,35 +5058,37 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
     alignItems: "center",
     gap: "8px",
     padding: "4px 10px",
-    borderRadius: "var(--radius-pill)",
-    background: "var(--surface-light)",
-    border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
-    color: "var(--text-secondary)",
+    borderRadius: "var(--control-radius)",
+    background: "rgba(var(--primary-rgb), 0.08)",
+    border: "none",
+    color: "var(--primary-dark)",
     fontSize: "12px",
     fontWeight: "600",
     width: "fit-content",
   };
   const actionsStyle = { display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" };
   const primaryButtonStyle = (disabled) => ({
-    padding: "10px 16px",
+    padding: "var(--control-padding)",
     backgroundColor: "var(--primary)",
     color: "var(--text-inverse)",
     border: "none",
-    borderRadius: "var(--radius-sm)",
+    borderRadius: "var(--control-radius)",
     cursor: disabled ? "not-allowed" : "pointer",
-    fontWeight: "700",
-    fontSize: "13px",
+    fontWeight: "600",
+    fontSize: "var(--control-font-size)",
+    minHeight: "var(--control-height)",
     opacity: disabled ? 0.6 : 1,
   });
   const secondaryButtonStyle = (disabled) => ({
-    padding: "10px 16px",
-    backgroundColor: "var(--surface-light)",
-    color: "var(--text-primary)",
-    border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
-    borderRadius: "var(--radius-sm)",
+    padding: "var(--control-padding)",
+    backgroundColor: "rgba(var(--primary-rgb), 0.08)",
+    color: "var(--primary-dark)",
+    border: "none",
+    borderRadius: "var(--control-radius)",
     cursor: disabled ? "not-allowed" : "pointer",
-    fontWeight: "700",
-    fontSize: "13px",
+    fontWeight: "600",
+    fontSize: "var(--control-font-size)",
+    minHeight: "var(--control-height)",
     opacity: disabled ? 0.7 : 1,
   });
   const isSaveDisabled = customerSaving || !approvalChecked;
@@ -5129,12 +5250,12 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
               rows={3}
               style={{
                 width: "100%",
-                padding: "10px",
-                borderRadius: "var(--radius-xs)",
-                border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
+                padding: "var(--control-padding)",
+                borderRadius: "var(--control-radius)",
+                border: "none",
                 backgroundColor: "var(--surface)",
-                color: "var(--text-secondary)",
-                fontSize: "13px",
+                color: "var(--text-primary)",
+                fontSize: "var(--control-font-size)",
                 resize: "vertical"
               }}
               disabled={customerSaving}
@@ -5153,7 +5274,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
           padding: "16px",
           backgroundColor: "var(--layer-section-level-2)",
           borderRadius: "var(--radius-sm)",
-          border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
+          border: "none",
           borderLeft: `4px solid ${approvalChecked ? "var(--success)" : "var(--warning)"}`
         }}>
           <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "14px", color: "var(--text-primary)", fontWeight: "700" }}>
@@ -5173,7 +5294,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
       )}
 
       {saveError && (
-        <div style={{ marginTop: "12px", padding: "10px", borderRadius: "var(--radius-xs)", backgroundColor: "var(--danger-surface)", color: "var(--danger)", fontSize: "13px" }}>
+        <div style={{ marginTop: "12px", padding: "10px", borderRadius: "var(--control-radius)", backgroundColor: "var(--danger-surface)", color: "var(--danger)", fontSize: "13px" }}>
           {saveError}
         </div>
       )}
@@ -5296,6 +5417,7 @@ function SchedulingTab({
         make: jobData.make,
         model: jobData.model,
         mileage: jobData.mileage
+          || jobData.milage
       });
     }
 
@@ -5309,6 +5431,7 @@ function SchedulingTab({
     jobData.make,
     jobData.model,
     jobData.mileage,
+    jobData.milage,
     customerVehicles
   ]);
 
@@ -5452,7 +5575,7 @@ function SchedulingTab({
 
   const panelStyle = {
     background: "var(--surface)",
-    border: "1px solid var(--surface-light)",
+    border: "none",
     borderRadius: "var(--radius-md)",
     padding: "18px",
   };
@@ -5468,7 +5591,7 @@ function SchedulingTab({
     padding: "4px 10px",
     borderRadius: "var(--radius-pill)",
     background: "var(--surface-light)",
-    border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
+    border: "none",
     color: "var(--text-secondary)",
     fontSize: "12px",
     fontWeight: "700",
@@ -5478,13 +5601,13 @@ function SchedulingTab({
     padding: "18px",
     backgroundColor: "var(--surface)",
     borderRadius: "var(--radius-md)",
-    border: "1px solid var(--surface-light)"
+    border: "none"
   };
   const subPanelStyle = {
     padding: "12px",
     backgroundColor: "var(--surface)",
     borderRadius: "var(--radius-sm)",
-    border: "1px solid var(--surface-light)",
+    border: "none",
   };
   const cardTitleStyle = {
     margin: 0,
@@ -5499,12 +5622,13 @@ function SchedulingTab({
   };
   const inputStyle = {
     width: "100%",
-    padding: "8px 10px",
-    borderRadius: "var(--radius-xs)",
-    border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
-    fontSize: "13px",
-    backgroundColor: "var(--surface)",
-    color: "var(--text-secondary)"
+    padding: "var(--control-padding)",
+    borderRadius: "var(--control-radius)",
+    border: "none",
+    fontSize: "var(--control-font-size)",
+    backgroundColor: "var(--control-bg)",
+    color: "var(--text-primary)",
+    minHeight: "var(--control-height)",
   };
 
   const sectionCardStyle = {
@@ -5540,13 +5664,14 @@ function SchedulingTab({
             }}
             disabled={!jobData.customerFirstName && !jobData.customerLastName && !jobData.customerId}
             style={{
-              padding: "7px 12px",
-              borderRadius: "var(--radius-xs)",
+              padding: "var(--control-padding)",
+              borderRadius: "var(--control-radius)",
               border: "none",
-              backgroundColor: "var(--layer-section-level-1)",
+              backgroundColor: "rgba(var(--primary-rgb), 0.08)",
               color: "var(--primary-dark)",
-              fontSize: "12px",
+              fontSize: "var(--control-font-size)",
               fontWeight: "600",
+              minHeight: "var(--control-height)",
               cursor: jobData.customerFirstName || jobData.customerLastName || jobData.customerId ? "pointer" : "not-allowed",
               whiteSpace: "nowrap",
               opacity: !jobData.customerFirstName && !jobData.customerLastName && !jobData.customerId ? 0.5 : 1,
@@ -5592,7 +5717,7 @@ function SchedulingTab({
             padding: "14px",
             backgroundColor: "var(--surface-light)",
             borderRadius: "var(--radius-sm)",
-            border: "1px solid var(--surface-light)",
+            border: "none",
             borderLeft: `4px solid ${confirmCustomerDetails ? "var(--success)" : "var(--warning)"}`,
           }}
         >
@@ -5691,13 +5816,14 @@ function SchedulingTab({
             <button
               onClick={() => router.push(`/appointments?job=${jobData.jobNumber}`)}
               style={{
-                padding: "7px 12px",
-                borderRadius: "var(--radius-xs)",
+                padding: "var(--control-padding)",
+                borderRadius: "var(--control-radius)",
                 border: "none",
-                backgroundColor: "var(--layer-section-level-1)",
+                backgroundColor: "rgba(var(--primary-rgb), 0.08)",
                 color: "var(--primary-dark)",
-                fontSize: "12px",
+                fontSize: "var(--control-font-size)",
                 fontWeight: "600",
+                minHeight: "var(--control-height)",
                 cursor: "pointer",
                 whiteSpace: "nowrap",
               }}
@@ -5751,7 +5877,7 @@ function SchedulingTab({
               marginTop: "14px",
               padding: "10px 12px",
               backgroundColor: "var(--surface-light)",
-              border: "1px solid var(--surface-light)",
+              border: "none",
               borderRadius: "var(--radius-sm)",
               fontSize: "12px",
               color: "var(--grey-accent)",
@@ -5772,7 +5898,7 @@ function SchedulingTab({
             display: "grid",
             gridTemplateColumns: "repeat(4, 1fr)",
             gap: "0",
-            border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
+            border: "none",
             borderRadius: "var(--radius-sm)",
             overflow: "hidden",
           }}
@@ -5789,11 +5915,11 @@ function SchedulingTab({
                 style={{
                   padding: "14px 8px",
                   border: "none",
-                  borderRight: idx < waitingOptions.length - 1 ? "1px solid rgba(var(--grey-accent-rgb), 0.35)" : "none",
-                  backgroundColor: isActive ? "var(--primary)" : "var(--surface)",
-                  color: isActive ? "var(--text-inverse)" : "var(--text-primary)",
+                  borderRight: "none",
+                  backgroundColor: isActive ? "var(--primary)" : "rgba(var(--primary-rgb), 0.04)",
+                  color: isActive ? "var(--text-inverse)" : "var(--primary-dark)",
                   fontWeight: "600",
-                  fontSize: "13px",
+                  fontSize: "var(--control-font-size)",
                   cursor: canEdit ? "pointer" : "default",
                   transition: "background-color 0.15s, color 0.15s",
                 }}
@@ -5823,14 +5949,15 @@ function SchedulingTab({
                   : undefined
           }
           style={{
-            padding: "10px 24px",
-            backgroundColor: bookingButtonDisabled ? "var(--grey-accent)" : "var(--primary)",
-            color: "var(--text-inverse)",
+            padding: "var(--control-padding)",
+            backgroundColor: bookingButtonDisabled ? "rgba(var(--primary-rgb), 0.08)" : "var(--primary)",
+            color: bookingButtonDisabled ? "var(--primary-dark)" : "var(--text-inverse)",
             border: "none",
-            borderRadius: "var(--radius-xs)",
+            borderRadius: "var(--control-radius)",
             cursor: bookingButtonDisabled ? "not-allowed" : "pointer",
             fontWeight: "600",
-            fontSize: "14px",
+            fontSize: "var(--control-font-size)",
+            minHeight: "var(--control-height)",
             opacity: bookingButtonDisabled ? 0.65 : 1,
             transition: "opacity 0.15s, background-color 0.15s",
           }}
@@ -5844,13 +5971,14 @@ function SchedulingTab({
             onClick={handleAppointmentSubmit}
             disabled={!appointmentDirty || appointmentSaving}
             style={{
-              padding: "10px 20px",
-              backgroundColor: appointmentDirty ? "var(--layer-section-level-1)" : "var(--surface-light)",
-              color: appointmentDirty ? "var(--primary-dark)" : "var(--grey-accent)",
+              padding: "var(--control-padding)",
+              backgroundColor: appointmentDirty ? "rgba(var(--primary-rgb), 0.12)" : "rgba(var(--primary-rgb), 0.04)",
+              color: appointmentDirty ? "var(--primary-dark)" : "var(--text-secondary)",
               border: "none",
-              borderRadius: "var(--radius-xs)",
+              borderRadius: "var(--control-radius)",
               fontWeight: "600",
-              fontSize: "14px",
+              fontSize: "var(--control-font-size)",
+              minHeight: "var(--control-height)",
               cursor: appointmentDirty && !appointmentSaving ? "pointer" : "not-allowed",
               opacity: !appointmentDirty ? 0.6 : 1,
               transition: "opacity 0.15s, background-color 0.15s, color 0.15s",
@@ -5979,7 +6107,7 @@ function ServiceHistoryTab({ vehicleJobHistory }) {
           padding: "40px",
           textAlign: "center",
           backgroundColor: "var(--surface)",
-          borderRadius: "var(--radius-xs)"
+          borderRadius: "var(--control-radius)"
         }}>
           <div style={{ fontSize: "48px", marginBottom: "16px" }}>📋</div>
           <p style={{ fontSize: "14px", color: "var(--grey-accent)" }}>
@@ -6033,15 +6161,16 @@ function GoodsInPartsPanel({ goodsInParts = [], onAllocateParts, canAllocate }) 
               : ""
           }
           style={{
-            padding: "8px 16px",
-            borderRadius: "var(--radius-xs)",
-            border: "1px solid var(--accent-purple)",
-            background: !canAllocate || allocateDisabled ? "var(--surface-light)" : "var(--accent-purple)",
-            color: !canAllocate || allocateDisabled ? "var(--text-secondary)" : "#fff",
-            fontSize: "12px",
+            padding: "var(--control-padding)",
+            borderRadius: "var(--control-radius)",
+            border: "none",
+            background: !canAllocate || allocateDisabled ? "rgba(var(--primary-rgb), 0.06)" : "var(--primary)",
+            color: !canAllocate || allocateDisabled ? "var(--text-secondary)" : "var(--text-inverse)",
+            fontSize: "var(--control-font-size)",
             fontWeight: 600,
             textTransform: "uppercase",
             letterSpacing: "0.05em",
+            minHeight: "var(--control-height)",
             cursor: !canAllocate || allocateDisabled ? "not-allowed" : "pointer",
             transition: "background 0.2s ease, color 0.2s ease",
           }}
@@ -6067,7 +6196,7 @@ function GoodsInPartsPanel({ goodsInParts = [], onAllocateParts, canAllocate }) 
         <div
           style={{
             borderRadius: "var(--radius-md)",
-            border: "1px solid var(--surface-light)",
+            border: "none",
             background: "var(--surface)",
             overflowX: "auto",
             overflowY: "auto",
@@ -6396,7 +6525,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
       <div
         style={{
           background: "var(--surface)",
-          border: "1px solid var(--surface-light)",
+          border: "none",
           borderRadius: "var(--control-radius)",
           padding: "16px",
           display: "flex",
@@ -6455,7 +6584,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
             style={{
               maxHeight: "220px",
               overflowY: "auto",
-              border: "1px solid var(--surface-light)",
+              border: "none",
               borderRadius: "var(--radius-sm)",
             }}
           >
@@ -6538,10 +6667,12 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
                   }
                   style={{
                     width: "100%",
-                    padding: "8px",
-                    borderRadius: "var(--radius-xs)",
-                    border: "1px solid var(--surface-light)",
+                    padding: "var(--control-padding)",
+                    borderRadius: "var(--control-radius)",
+                    border: "none",
                     marginTop: "4px",
+                    minHeight: "var(--control-height)",
+                    fontSize: "var(--control-font-size)",
                   }}
                 />
               </label>
@@ -6569,12 +6700,12 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
               </div>
             </div>
             {catalogSubmitError && (
-              <div style={{ marginTop: "10px", padding: "10px", borderRadius: "var(--radius-xs)", background: "var(--warning-surface)", color: "var(--danger)" }}>
+              <div style={{ marginTop: "10px", padding: "10px", borderRadius: "var(--control-radius)", background: "var(--warning-surface)", color: "var(--danger)" }}>
                 {catalogSubmitError}
               </div>
             )}
             {catalogSuccessMessage && (
-              <div style={{ marginTop: "10px", padding: "10px", borderRadius: "var(--radius-xs)", background: "var(--success-surface)", color: "var(--success-dark)" }}>
+              <div style={{ marginTop: "10px", padding: "10px", borderRadius: "var(--control-radius)", background: "var(--success-surface)", color: "var(--success-dark)" }}>
                 {catalogSuccessMessage}
               </div>
             )}
@@ -6584,12 +6715,14 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
               disabled={!canAllocateParts || allocatingPart}
               style={{
                 marginTop: "12px",
-                padding: "12px",
-                borderRadius: "var(--radius-sm)",
+                padding: "var(--control-padding)",
+                borderRadius: "var(--control-radius)",
                 border: "none",
-                background: !canAllocateParts ? "var(--surface-light)" : "var(--primary)",
-                color: !canAllocateParts ? "var(--info)" : "var(--surface)",
+                background: !canAllocateParts ? "rgba(var(--primary-rgb), 0.08)" : "var(--primary)",
+                color: !canAllocateParts ? "var(--primary-dark)" : "var(--text-inverse)",
                 fontWeight: 600,
+                fontSize: "var(--control-font-size)",
+                minHeight: "var(--control-height)",
                 cursor: !canAllocateParts ? "not-allowed" : "pointer",
               }}
             >
@@ -6603,7 +6736,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
           <div
             style={{
               background: "var(--surface)",
-              border: "1px solid var(--surface-light)",
+              border: "none",
               borderRadius: "var(--control-radius)",
               padding: "16px",
               }}
@@ -6633,7 +6766,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
                   style={{
                     padding: "10px",
                     borderRadius: "var(--radius-sm)",
-                    border: "1px solid rgba(var(--primary-rgb),0.3)",
+                    border: "none",
                     background: stage.count > 0 ? "var(--surface-light)" : "var(--info-surface)",
                   }}
                 >
@@ -6748,7 +6881,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
                         <div style={{
                           marginTop: "12px",
                           padding: "10px 12px",
-                          borderRadius: "var(--radius-xs)",
+                          borderRadius: "var(--control-radius)",
                           backgroundColor: "var(--warning-surface)",
                           color: "var(--danger-dark)",
                           fontSize: "13px"
@@ -6913,12 +7046,12 @@ function NotesTab({ value, onChange, canEdit, saving, meta }) {
             minHeight: "360px",
             maxHeight: "65vh",
             padding: "18px",
-            borderRadius: "var(--radius-sm)",
-            border: canEdit ? "1px solid var(--info)" : "1px solid var(--accent-purple-surface)",
+            borderRadius: "var(--control-radius)",
+            border: "none",
             fontSize: "16px",
             lineHeight: 1.7,
             resize: "vertical",
-            backgroundColor: canEdit ? "var(--surface)" : "var(--info-surface)",
+            backgroundColor: canEdit ? "var(--surface)" : "rgba(var(--primary-rgb), 0.04)",
             color: "var(--info-dark)"
           }}
         />
@@ -7059,7 +7192,7 @@ function VHCTab({
         disabled={!actionsEnabled}
         style={{
           padding: "8px 16px",
-          borderRadius: "var(--radius-xs)",
+          borderRadius: "var(--control-radius)",
           border: `1px solid ${actionsEnabled ? "var(--primary)" : "var(--grey-accent)"}`,
           backgroundColor: actionsEnabled ? "var(--primary)" : "var(--surface-light)",
           color: actionsEnabled ? "var(--surface)" : "var(--grey-accent)",
@@ -7078,7 +7211,7 @@ function VHCTab({
         disabled={!actionsEnabled || generatingLink}
         style={{
           padding: "8px 12px",
-          borderRadius: "var(--radius-xs)",
+          borderRadius: "var(--control-radius)",
           border: `1px solid ${actionsEnabled ? "var(--info)" : "var(--grey-accent)"}`,
           backgroundColor: actionsEnabled ? (copied ? "var(--success)" : "var(--info)") : "var(--surface-light)",
           color: actionsEnabled ? "var(--surface)" : "var(--grey-accent)",
@@ -7099,7 +7232,7 @@ function VHCTab({
           disabled={!actionsEnabled || sendingVhc}
           style={{
             padding: "8px 12px",
-            borderRadius: "var(--radius-xs)",
+            borderRadius: "var(--control-radius)",
             border: `1px solid ${actionsEnabled ? "var(--success)" : "var(--grey-accent)"}`,
             backgroundColor: actionsEnabled ? "var(--success)" : "var(--surface-light)",
             color: actionsEnabled ? "var(--surface)" : "var(--grey-accent)",
@@ -7281,10 +7414,10 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
             onClick={handleOpenMessagingHub}
             style={{
               padding: "10px 18px",
-              borderRadius: "var(--radius-xs)",
+              borderRadius: "var(--control-radius)",
               border: "none",
               backgroundColor: "var(--primary)",
-              color: "white",
+              color: "var(--text-inverse)",
               fontWeight: "600",
               cursor: "pointer"
             }}
@@ -7315,9 +7448,9 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
                 style={{
                   padding: "8px 14px",
                   backgroundColor: "var(--primary)",
-                  color: "white",
+                  color: "var(--text-inverse)",
                   border: "none",
-                  borderRadius: "var(--radius-xs)",
+                  borderRadius: "var(--control-radius)",
                   fontSize: "13px",
                   fontWeight: "600",
                   cursor: "pointer"
@@ -7733,7 +7866,7 @@ function ClockingTab({ jobData, canEdit }) {
   const inputControlStyle = {
     width: "100%",
     borderRadius: "var(--control-radius)",
-    border: "1px solid var(--surface-light)",
+    border: "none",
     backgroundColor: "var(--surface-light)",
     padding: "12px 14px",
     fontSize: "0.95rem",
@@ -7936,7 +8069,7 @@ function ClockingTab({ jobData, canEdit }) {
                 borderRadius: "var(--radius-sm)",
                 border: "none",
                 backgroundColor: "var(--primary)",
-                color: "white",
+                color: "var(--text-inverse)",
                 padding: "12px 20px",
                 fontSize: "0.95rem",
                 fontWeight: 600,
@@ -8155,7 +8288,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
             borderRadius: "var(--radius-sm)",
             border: "none",
             backgroundColor: "var(--primary)",
-            color: "white",
+            color: "var(--text-inverse)",
             fontWeight: "600",
             cursor: "pointer"
           }}
@@ -8196,10 +8329,11 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
             disabled={loadingJobs || linking}
             style={{
               width: "100%",
-              padding: "10px 14px",
-              borderRadius: "var(--radius-xs)",
-              border: "1px solid var(--info)",
-              fontSize: "14px",
+              padding: "var(--control-padding)",
+              borderRadius: "var(--control-radius)",
+              border: "none",
+              fontSize: "var(--control-font-size)",
+              minHeight: "var(--control-height)",
               backgroundColor: "var(--surface)"
             }}
           >
@@ -8231,7 +8365,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
               borderRadius: "var(--radius-sm)",
               border: "none",
               backgroundColor: linking ? "var(--accent-purple)" : "var(--info)",
-              color: "white",
+              color: "var(--text-inverse)",
               fontWeight: "600",
               cursor: linking ? "not-allowed" : "pointer",
               minWidth: "140px"
@@ -8265,7 +8399,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
         style={{
           padding: "18px",
           borderRadius: "var(--radius-sm)",
-          border: "1px solid var(--surface-muted)",
+          border: "none",
           backgroundColor: "var(--surface)",
           marginBottom: "16px"
         }}
@@ -8284,7 +8418,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
                 onClick={handleOpenLinkedJob}
                 style={{
                   padding: "8px 14px",
-                  borderRadius: "var(--radius-xs)",
+                  borderRadius: "var(--control-radius)",
                   border: "1px solid var(--info)",
                   backgroundColor: "var(--surface)",
                   cursor: "pointer",
@@ -8307,7 +8441,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
         style={{
           padding: "18px",
           borderRadius: "var(--radius-sm)",
-          border: "1px solid var(--surface-muted)",
+          border: "none",
           backgroundColor: "var(--surface)"
         }}
       >
@@ -8382,7 +8516,7 @@ function DocumentsTab({
               borderRadius: "var(--radius-sm)",
               border: "none",
               backgroundColor: "var(--primary)",
-              color: "white",
+              color: "var(--text-inverse)",
               fontWeight: "600",
               fontSize: "14px",
               cursor: "pointer"
@@ -8467,7 +8601,7 @@ function DocumentsTab({
                   onClick={() => handlePreview(doc)}
                   style={{
                     padding: "6px 10px",
-                    borderRadius: "var(--radius-xs)",
+                    borderRadius: "var(--control-radius)",
                     border: "1px solid var(--info)",
                     backgroundColor: "var(--surface)",
                     fontSize: "12px",
@@ -8483,7 +8617,7 @@ function DocumentsTab({
                     onClick={() => typeof onDelete === "function" && onDelete(doc)}
                     style={{
                       padding: "6px 10px",
-                      borderRadius: "var(--radius-xs)",
+                      borderRadius: "var(--control-radius)",
                       border: "1px solid var(--danger-surface)",
                       backgroundColor: "var(--danger-surface)",
                       color: "var(--danger)",

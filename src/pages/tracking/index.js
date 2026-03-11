@@ -515,7 +515,7 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
                 style={{
                   padding: "8px 12px",
                   borderRadius: "var(--radius-sm)",
-                  border: "1px solid rgba(var(--primary-rgb),0.3)",
+                  border: "none",
                   backgroundColor: "var(--surface)",
                   color: "var(--primary-dark)",
                   fontWeight: 600,
@@ -1380,7 +1380,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
           maxWidth: "640px",
           maxHeight: "90vh",
           overflowY: "auto",
-          border: "1px solid var(--surface-light)",
+          border: "none",
           padding: "32px",
           display: "flex",
           flexDirection: "column",
@@ -2214,7 +2214,7 @@ export default function TrackingDashboard() {
               style={{
                 padding: "18px",
                 borderRadius: "var(--radius-md)",
-                border: "1px solid rgba(var(--grey-accent-rgb), 0.3)",
+                border: "none",
                 background: "var(--surface)",
                 display: "flex",
                 flexDirection: "column",
@@ -2377,7 +2377,7 @@ export default function TrackingDashboard() {
               style={{
                 padding: "18px",
                 borderRadius: "var(--radius-md)",
-                border: "1px solid rgba(var(--grey-accent-rgb), 0.3)",
+                border: "none",
                 background: "var(--surface)",
                 display: "flex",
                 flexDirection: "column",
@@ -2548,7 +2548,7 @@ export default function TrackingDashboard() {
             <div
               style={{
                 borderRadius: "var(--radius-pill)",
-                border: "1px solid var(--surface-light)",
+                border: "none",
                 background: "var(--surface)",
                 padding: "6px",
                 display: "flex",

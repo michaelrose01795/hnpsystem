@@ -241,7 +241,7 @@ export const getCustomerJobs = async (customerId) => {
       status,
       vehicle_reg,
       vehicle_make_model,
-      mileage_at_service,
+      milage,
       requests,
       job_source,
       waiting_status,

@@ -34,7 +34,7 @@ export default function TechEfficiencyPage() {
               background: "var(--surface)",
               borderRadius: "var(--radius-md)",
               padding: "32px",
-              border: "1px solid var(--surface-light)",
+              border: "none",
               textAlign: "center",
               color: "var(--info)",
             }}

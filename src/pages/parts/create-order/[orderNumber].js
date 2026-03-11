@@ -407,7 +407,7 @@ function SummaryPill({ label, value }) {
   return (
     <div
       style={{
-        border: "1px solid var(--surface-light)",
+        border: "none",
         borderRadius: "var(--radius-md)",
         padding: "10px 14px",
         minWidth: "140px",
@@ -577,7 +577,7 @@ function PartsTab({ items, orderNotes }) {
         <div
           key={item.id}
           style={{
-            border: "1px solid var(--surface-light)",
+            border: "none",
             borderRadius: "var(--radius-md)",
             padding: "14px",
             display: "grid",
@@ -600,7 +600,7 @@ function PartsTab({ items, orderNotes }) {
         <div
           style={{
             borderRadius: "var(--radius-md)",
-            border: "1px solid var(--surface-light)",
+            border: "none",
             padding: "12px",
           }}
         >
@@ -633,7 +633,7 @@ function DeliveryTab({ order }) {
 function InvoiceTab({ orderNumber }) {
   if (!orderNumber) {
     return (
-      <div style={{ border: "1px solid var(--surface-light)", borderRadius: "var(--radius-md)", padding: "12px" }}>
+      <div style={{ border: "none", borderRadius: "var(--radius-md)", padding: "12px" }}>
         <p style={{ margin: 0, color: "var(--danger-dark)" }}>Order number missing — cannot render invoice.</p>
       </div>
     );

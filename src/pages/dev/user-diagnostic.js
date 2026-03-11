@@ -549,7 +549,7 @@ export default function UserDiagnosticDevPage() {
           padding: "6px 14px",
           marginBottom: "16px",
           borderRadius: "var(--radius-xs)",
-          border: "1px solid var(--surface-light)",
+          border: "none",
           background: "transparent",
           color: "var(--text-secondary)",
           fontWeight: 600,
@@ -628,7 +628,7 @@ export default function UserDiagnosticDevPage() {
                       onClick={() => setExpanded((prev) => ({ ...prev, [result._index]: !prev[result._index] }))}
                       style={{
                         background: "none",
-                        border: "1px solid var(--surface-light)",
+                        border: "none",
                         borderRadius: "var(--radius-xs)",
                         padding: "4px 10px",
                         cursor: "pointer",

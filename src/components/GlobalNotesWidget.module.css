@@ -10,7 +10,7 @@
   width: 56px;
   height: 56px;
   border-radius: var(--radius-pill);
-  border: 1px solid var(--primary-dark);
+  border: none;
   background: var(--primary);
   color: var(--text-inverse);
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
@@ -42,7 +42,6 @@
 
 .bubbleOpen {
   background: var(--primary);
-  border-color: var(--primary-dark);
   color: var(--text-inverse);
 }
 
@@ -55,7 +54,7 @@
   position: fixed;
   pointer-events: auto;
   border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
+  border: none;
   background: var(--surface);
   box-shadow:
     0 28px 52px -18px rgba(0, 0, 0, 0.34),
@@ -172,10 +171,10 @@
 
 .headerButton,
 .primaryAction {
-  border: 1px solid rgba(var(--primary-rgb), 0.35);
-  background: var(--surface-light);
+  border: none;
+  background: var(--control-bg);
   color: var(--text-primary);
-  border-radius: var(--radius-sm);
+  border-radius: var(--control-radius);
   padding: 7px 10px;
   cursor: pointer;
   font-size: 12px;
@@ -184,7 +183,6 @@
 
 .primaryAction {
   background: rgba(var(--primary-rgb), 0.14);
-  border-color: rgba(var(--primary-rgb), 0.5);
 }
 
 .tabBarScroller {
@@ -209,8 +207,8 @@
 }
 
 .tab {
-  border: 1px solid var(--border);
-  background: var(--surface);
+  border: none;
+  background: var(--control-bg);
   color: var(--text-primary);
   border-radius: var(--radius-pill);
   padding: 6px 10px;
@@ -224,7 +222,7 @@
   max-width: 190px;
   position: relative;
   z-index: 1;
-  transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
+  transition: background-color 0.14s ease, color 0.14s ease;
 }
 
 .tab:hover,
@@ -234,9 +232,8 @@
 }
 
 .tabActive {
-  background: rgba(var(--primary-rgb), 0.15);
-  border-color: var(--primary);
-  box-shadow: inset 0 0 0 1px rgba(var(--primary-rgb), 0.15);
+  background: var(--primary);
+  color: var(--text-inverse);
 }
 
 .tabAdd {
@@ -251,7 +248,6 @@
   line-height: 1;
   background: var(--primary);
   color: var(--text-inverse);
-  border-color: var(--primary-dark);
 }
 
 .tabTitle {
@@ -264,7 +260,7 @@
   font-size: 10px;
   border-radius: var(--radius-pill);
   padding: 2px 6px;
-  border: 1px solid rgba(var(--primary-rgb), 0.45);
+  border: none;
   background: rgba(var(--primary-rgb), 0.13);
 }
 
@@ -337,8 +333,8 @@
 .textarea {
   width: 100%;
   border-radius: var(--control-radius);
-  border: 1px solid var(--border);
-  background: var(--surface);
+  border: none;
+  background: var(--control-bg);
   color: var(--text-primary);
   padding: var(--control-padding);
   outline: none;
@@ -347,8 +343,8 @@
 
 .input:focus,
 .textarea:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.18);
+  background: var(--control-bg-hover);
+  box-shadow: var(--control-ring);
 }
 
 .textarea {
@@ -366,8 +362,8 @@
   height: 100%;
   flex: 1 1 auto;
   border-radius: var(--control-radius);
-  border: 1px solid var(--border);
-  background: var(--surface);
+  border: none;
+  background: var(--control-bg);
   color: var(--text-primary);
   padding: 9px 11px;
   font-family: inherit;
@@ -380,8 +376,8 @@
 }
 
 .richEditor:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.18);
+  background: var(--control-bg-hover);
+  box-shadow: var(--control-ring);
 }
 
 .richEditor:empty::before {
@@ -420,7 +416,7 @@
   z-index: 6;
   min-width: 220px;
   max-width: min(320px, calc(100% - 20px));
-  border: 1px solid var(--border);
+  border: none;
   background: var(--surface);
   border-radius: var(--control-radius);
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
@@ -448,7 +444,7 @@
 }
 
 .shareButton {
-  border: 1px solid rgba(var(--primary-rgb), 0.5);
+  border: none;
   background: rgba(var(--primary-rgb), 0.14);
   color: var(--text-primary);
   border-radius: var(--control-radius);
@@ -463,39 +459,46 @@
 }
 
 .visibilitySwitch {
-  width: 44px;
-  height: 24px;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--border);
-  background: var(--surface-light);
+  min-width: 48px;
+  min-height: var(--control-height);
+  height: auto;
+  border-radius: var(--control-radius);
+  border: none !important;
+  background: var(--control-bg) !important;
+  color: var(--text-secondary) !important;
   position: relative;
   cursor: pointer;
-  padding: 0;
+  padding: var(--control-padding);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--control-font-size);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transform: none !important;
+  box-shadow: none !important;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.visibilitySwitch:hover {
+  background: var(--control-bg-hover) !important;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 .visibilitySwitchOn {
-  background: rgba(var(--primary-rgb), 0.85);
-  border-color: var(--primary-dark);
+  background: var(--primary) !important;
+  color: var(--text-inverse) !important;
 }
 
-.visibilityThumb {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 18px;
-  height: 18px;
-  border-radius: var(--radius-pill);
-  background: #fff;
-  transition: transform 0.16s ease;
-}
-
-.visibilitySwitchOn .visibilityThumb {
-  transform: translateX(20px);
+.visibilitySwitchOn:hover {
+  background: var(--primary-light) !important;
 }
 
 .visibilitySwitch:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none !important;
 }
 
 .meta {
@@ -580,7 +583,7 @@
 .shareModal {
   width: 360px;
   max-width: calc(100vw - 28px);
-  border: 1px solid var(--border);
+  border: none;
   border-radius: var(--radius-md);
   background: var(--surface);
   box-shadow: 0 24px 46px rgba(0, 0, 0, 0.28);
@@ -602,9 +605,9 @@
 
 .shareSearch {
   width: 100%;
-  border: 1px solid var(--border);
+  border: none;
   border-radius: var(--control-radius);
-  background: var(--surface-light);
+  background: var(--control-bg);
   color: var(--text-primary);
   padding: 8px 126px 8px 10px;
   font-size: var(--control-font-size);
@@ -622,8 +625,8 @@
 }
 
 .shareCloseButton {
-  border: 1px solid var(--border);
-  background: var(--surface-light);
+  border: none;
+  background: var(--control-bg);
   color: var(--text-primary);
   border-radius: var(--control-radius);
   padding: 8px 10px;
@@ -632,9 +635,9 @@
 }
 
 .shareUserList {
-  border: 1px solid var(--border);
+  border: none;
   border-radius: var(--radius-sm);
-  background: var(--surface-light);
+  background: var(--control-bg);
   overflow-y: auto;
   max-height: 230px;
 }
@@ -645,7 +648,7 @@
   gap: 2px 8px;
   align-items: center;
   padding: 9px 10px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid rgba(var(--primary-rgb), 0.06);
   min-height: 44px;
 }
 

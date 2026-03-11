@@ -131,7 +131,7 @@ const QueueItem = ({ job }) => (
       display: "flex",
       justifyContent: "space-between",
       alignItems: "center",
-      border: "1px solid var(--surface-light)",
+      border: "none",
       borderRadius: "var(--radius-sm)",
       padding: "12px 14px",
       background: "var(--surface)",

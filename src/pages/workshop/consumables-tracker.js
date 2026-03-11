@@ -82,7 +82,7 @@ const orderHistoryGridTemplate = "minmax(150px, 2fr) repeat(5, minmax(90px, 1fr)
 const orderHistoryContainerStyle = {
   marginTop: "12px",
   borderRadius: "var(--radius-sm)",
-  border: "1px solid var(--surface-light)",
+  border: "none",
   background: "var(--surface-light)",
   padding: "12px",
   maxHeight: "190px",
@@ -105,7 +105,7 @@ const orderHistoryHeaderStyle = {
   marginBottom: "8px",
 };
 
-const orderHistoryRowBorder = "1px solid rgba(var(--primary-rgb),0.1)";
+const orderHistoryRowBorder = "none";
 
 const orderModalOverlayStyle = {
   ...popupOverlayStyles,
@@ -152,7 +152,7 @@ const orderModalButtonStyle = {
 const orderModalSecondaryButtonStyle = {
   ...orderModalButtonStyle,
   background: "var(--surface)",
-  border: "1px solid var(--surface-light)",
+  border: "none",
   color: "var(--text-primary)",
   boxShadow: "none",
 };
@@ -167,7 +167,7 @@ const orderModalFormGroupStyle = {
 const orderModalInputStyle = {
   padding: "10px 14px",
   borderRadius: "var(--radius-xs)",
-  border: "1px solid var(--surface-light)",
+  border: "none",
 };
 
 const orderButtonStyle = {
@@ -278,7 +278,7 @@ function toneToStyles(tone) {
       ...badgeBaseStyle,
       backgroundColor: "rgba(var(--primary-rgb),0.12)",
       color: "var(--text-primary)",
-      border: "1px solid rgba(var(--primary-rgb),0.35)",
+      border: "none",
     };
   }
   if (tone === "warning") {
@@ -320,7 +320,7 @@ const statusBadgeStyles = {
   urgent: {
     backgroundColor: "rgba(var(--primary-rgb),0.12)",
     color: "var(--text-primary)",
-    border: "1px solid rgba(var(--primary-rgb),0.35)",
+    border: "none",
   },
   ordered: {
     backgroundColor: "rgba(var(--success-rgb), 0.12)",
@@ -1338,7 +1338,7 @@ function ConsumablesTrackerPage() {
                 style={{
                   background: "var(--layer-section-level-1)",
                   borderRadius: "var(--radius-md)",
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                   padding: "14px",
                   marginBottom: "12px",
                 }}

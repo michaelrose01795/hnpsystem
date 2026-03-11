@@ -158,7 +158,7 @@ export default function TyresSection({
             padding: "12px",
             borderRadius: "var(--radius-sm)",
             backgroundColor: "var(--surface-light)",
-            border: "1px solid var(--surface-light)",
+            border: "none",
           }}
         >
           <DetailTile label="Make" value={selectedDetails.make} />

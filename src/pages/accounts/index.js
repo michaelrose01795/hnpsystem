@@ -115,7 +115,7 @@ export default function AccountsListPage() {
           flex: "0 0 200px",
           padding: "10px 12px",
           borderRadius: "var(--radius-pill)",
-          border: "1px solid var(--surface-light)",
+          border: "none",
           background: "var(--surface-light)",
         }}
       >
@@ -132,7 +132,7 @@ export default function AccountsListPage() {
           flex: "0 0 200px",
           padding: "10px 12px",
           borderRadius: "var(--radius-pill)",
-          border: "1px solid var(--surface-light)",
+          border: "none",
           background: "var(--surface-light)",
         }}
       >
@@ -147,8 +147,8 @@ export default function AccountsListPage() {
       <div style={{ flex: "0 0 180px" }}>
         <CalendarField name="dateTo" placeholder="To date" value={filters.dateTo} onChange={(event) => setFilters((prev) => ({ ...prev, dateTo: event.target.value }))} />
       </div>
-      <input type="number" name="minBalance" value={filters.minBalance} placeholder="Min Balance" onChange={(event) => setFilters((prev) => ({ ...prev, minBalance: event.target.value }))} style={{ flex: "0 0 140px", padding: "10px 12px", borderRadius: "var(--radius-sm)", border: "1px solid var(--surface-light)", background: "var(--surface-light)" }} />
-      <input type="number" name="maxBalance" value={filters.maxBalance} placeholder="Max Balance" onChange={(event) => setFilters((prev) => ({ ...prev, maxBalance: event.target.value }))} style={{ flex: "0 0 140px", padding: "10px 12px", borderRadius: "var(--radius-sm)", border: "1px solid var(--surface-light)", background: "var(--surface-light)" }} />
+      <input type="number" name="minBalance" value={filters.minBalance} placeholder="Min Balance" onChange={(event) => setFilters((prev) => ({ ...prev, minBalance: event.target.value }))} style={{ flex: "0 0 140px", padding: "10px 12px", borderRadius: "var(--radius-sm)", border: "none", background: "var(--surface-light)" }} />
+      <input type="number" name="maxBalance" value={filters.maxBalance} placeholder="Max Balance" onChange={(event) => setFilters((prev) => ({ ...prev, maxBalance: event.target.value }))} style={{ flex: "0 0 140px", padding: "10px 12px", borderRadius: "var(--radius-sm)", border: "none", background: "var(--surface-light)" }} />
     </div>
   );
   const handlePageChange = (nextPage) => {

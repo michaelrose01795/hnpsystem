@@ -534,23 +534,21 @@ export default function ViewJobCards() {
   if (loading) {
     return (
       <Layout>
-        <div style={{ 
-          display: "flex", 
-          justifyContent: "center", 
-          alignItems: "center", 
-          height: "100vh" 
-        }}>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ 
-              fontSize: "18px", 
-              fontWeight: "600", 
-              color: "var(--primary)",
-              marginBottom: "12px"
-            }}>
-              Loading Job Cards...
+        <div className="redirect-screen" role="status" aria-live="polite">
+          <div className="redirect-card">
+            <div className="login-brand redirect-brand" aria-hidden="true">
+              <img src="/logo.png" alt="H&P logo" className="login-logo" />
             </div>
-            <div style={{ fontSize: "14px", color: "var(--grey-accent)" }}>
-              Please wait while we fetch your data
+            <div className="redirect-spinner" aria-hidden="true"></div>
+            <div className="redirect-copy">
+              <p className="redirect-kicker">Page Load</p>
+              <h2 className="redirect-title">Loading job cards...</h2>
+              <p className="redirect-sub">Please wait while we fetch your data.</p>
+            </div>
+            <div className="redirect-dots" aria-hidden="true">
+              <span></span>
+              <span></span>
+              <span></span>
             </div>
           </div>
         </div>
@@ -584,7 +582,7 @@ export default function ViewJobCards() {
             <div
               style={{
                 borderRadius: "var(--radius-pill)",
-                border: "1px solid var(--surface-light)",
+                border: "none",
                 background: "var(--surface)",
                 padding: "6px",
                 display: "flex",
@@ -1062,7 +1060,7 @@ export default function ViewJobCards() {
                     padding: "10px 12px",
                     fontSize: "14px",
                     borderRadius: "var(--radius-xs)",
-                    border: "1px solid var(--surface-light)",
+                    border: "none",
                     backgroundColor: "var(--surface)",
                     cursor: "pointer",
                   }}
@@ -1204,7 +1202,7 @@ const JobListCard = ({ job, onNavigate, onQuickView, index = 0 }) => {
     <div
       onClick={onNavigate}
       style={{
-        border: "1px solid var(--surface-light)",
+        border: "none",
         padding: "14px 16px",
         borderRadius: "var(--radius-sm)",
         backgroundColor: rowBackground,
@@ -1338,7 +1336,7 @@ const JobListCard = ({ job, onNavigate, onQuickView, index = 0 }) => {
             padding: "8px 10px",
             borderRadius: "var(--radius-xs)",
             backgroundColor: "var(--info-surface)",
-            border: "1px solid var(--surface-light)",
+            border: "none",
           }}
         >
           <div style={{ fontSize: "10px", color: "var(--warning)", textTransform: "uppercase", fontWeight: 600, marginBottom: "4px" }}>
@@ -1371,7 +1369,7 @@ const OrderListCard = ({ order, onNavigate, index = 0 }) => {
     <div
       onClick={onNavigate}
       style={{
-        border: "1px solid var(--surface-light)",
+        border: "none",
         padding: "14px 16px",
         borderRadius: "var(--radius-sm)",
         backgroundColor: rowBackground,
@@ -1476,7 +1474,7 @@ const OrderListCard = ({ order, onNavigate, index = 0 }) => {
             padding: "8px 10px",
             borderRadius: "var(--radius-xs)",
             backgroundColor: "var(--info-surface)",
-            border: "1px solid var(--surface-light)",
+            border: "none",
           }}
         >
           <div style={{ fontSize: "10px", color: "var(--warning)", textTransform: "uppercase", fontWeight: 600, marginBottom: "4px" }}>

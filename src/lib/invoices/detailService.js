@@ -61,7 +61,7 @@ async function fetchJobSnapshot(jobNumber, jobId) { // fetch job, customer, and 
   }
   let jobQuery = supabase // start job query
     .from("jobs") // target jobs table
-    .select("id, job_number, job_source, status, created_at, completed_at, mileage_at_service, customer_id, customer, vehicle_reg, vehicle_make_model, vehicle_id, account_number") // fetch needed columns
+    .select("id, job_number, job_source, status, created_at, completed_at, milage, customer_id, customer, vehicle_reg, vehicle_make_model, vehicle_id, account_number") // fetch needed columns
     .limit(1); // limit to one row
   if (jobId) { // filter by job id when provided
     jobQuery = jobQuery.eq("id", jobId); // apply filter
@@ -339,7 +339,7 @@ function buildVehicleDetails(invoice, job, vehicle) { // build vehicle row snaps
     chassis: vehicle?.chassis || "",
     engine: vehicle?.engine || vehicle?.engine_number || "",
     reg_date: vehicle?.month_of_first_registration || "",
-    mileage: job?.mileage_at_service || vehicle?.mileage || "",
+    mileage: job?.milage || vehicle?.mileage || "",
     delivery_date: job?.completed_at || "",
     engine_no: vehicle?.engine_number || vehicle?.engine || ""
   }; // return detail object

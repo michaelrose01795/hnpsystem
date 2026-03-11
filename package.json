@@ -39,8 +39,10 @@
     "tailwindcss": "^4.1.17"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@types/node": "24.10.0",
     "baseline-browser-mapping": "^2.9.17",
+    "playwright": "^1.58.2",
     "typescript": "5.9.3"
   }
 }

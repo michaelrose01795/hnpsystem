@@ -144,7 +144,7 @@ export default function TechsDashboard() {
     <Layout>
       <div
         style={{
-          maxWidth: "1400px",
+          maxWidth: "100%",
           margin: "0 auto",
           padding: "24px",
           display: "flex",
@@ -165,7 +165,7 @@ export default function TechsDashboard() {
               padding: "24px",
               borderRadius: "var(--radius-md)",
               boxShadow: "none",
-              border: "1px solid rgba(var(--primary-rgb),0.25)",
+              border: "none",
             }}
           >
             <div style={{ fontSize: "36px", fontWeight: "700", color: "var(--primary)", marginBottom: "8px" }}>
@@ -209,7 +209,7 @@ export default function TechsDashboard() {
               padding: "24px",
               borderRadius: "var(--radius-md)",
               boxShadow: "none",
-              border: "1px solid rgba(var(--primary-rgb),0.2)",
+              border: "none",
             }}
           >
             <div style={{ fontSize: "16px", fontWeight: "600", color: "var(--text-primary)", marginBottom: "8px" }}>
@@ -226,7 +226,7 @@ export default function TechsDashboard() {
               padding: "24px",
               borderRadius: "var(--radius-md)",
               boxShadow: "none",
-              border: "1px solid rgba(var(--primary-rgb),0.2)",
+              border: "none",
             }}
           >
             <div style={{ fontSize: "36px", fontWeight: "700", color: "var(--primary)", marginBottom: "8px" }}>
@@ -310,7 +310,7 @@ export default function TechsDashboard() {
               padding: "24px",
               borderRadius: "var(--radius-md)",
               boxShadow: "none",
-              border: "1px solid var(--surface-light)",
+              border: "none",
             }}
           >
             <h2
@@ -376,7 +376,7 @@ export default function TechsDashboard() {
             padding: "24px",
             borderRadius: "var(--radius-md)",
             boxShadow: "none",
-            border: "1px solid var(--surface-light)",
+            border: "none",
           }}
         >
           <div
@@ -416,7 +416,7 @@ export default function TechsDashboard() {
                   key={job.id}
                   onClick={() => handleStartJob(job)}
                   style={{
-                    border: "1px solid var(--surface-light)",
+                    border: "none",
                     borderRadius: "var(--radius-xs)",
                     padding: "16px",
                     cursor: "pointer",
@@ -466,7 +466,7 @@ export default function TechsDashboard() {
                               : "var(--warning-text)",
                         border:
                           job.status === "In Progress"
-                            ? "1px solid rgba(var(--primary-rgb), 0.25)"
+                            ? "none"
                             : job.status === "Complete"
                               ? "1px solid var(--success-border)"
                               : "1px solid var(--warning-border)",
@@ -483,7 +483,7 @@ export default function TechsDashboard() {
               {myJobs.length > 3 && (
                 <div
                   style={{
-                    border: "1px solid rgba(var(--primary-rgb), 0.2)",
+                    border: "none",
                     backgroundColor: "rgba(var(--primary-rgb), 0.08)",
                     borderRadius: "var(--radius-xs)",
                     padding: "12px 16px",
@@ -511,7 +511,7 @@ export default function TechsDashboard() {
             style={{
               padding: "20px",
               backgroundColor: "rgba(var(--primary-rgb), 0.08)",
-              border: "1px solid rgba(var(--primary-rgb), 0.25)",
+              border: "none",
               borderRadius: "var(--radius-sm)",
               cursor: "pointer",
               textAlign: "center",
@@ -537,7 +537,7 @@ export default function TechsDashboard() {
             style={{
               padding: "20px",
               backgroundColor: "rgba(var(--primary-rgb), 0.08)",
-              border: "1px solid rgba(var(--primary-rgb), 0.25)",
+              border: "none",
               borderRadius: "var(--radius-sm)",
               cursor: "pointer",
               textAlign: "center",
@@ -563,7 +563,7 @@ export default function TechsDashboard() {
             style={{
               padding: "20px",
               backgroundColor: "rgba(var(--primary-rgb), 0.08)",
-              border: "1px solid rgba(var(--primary-rgb), 0.25)",
+              border: "none",
               borderRadius: "var(--radius-sm)",
               cursor: "pointer",
               textAlign: "center",

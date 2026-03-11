@@ -160,7 +160,7 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving }) => {
   return (
     <div
       style={{
-        border: "1px solid var(--surface-light)",
+        border: "none",
         padding: "16px 20px",
         borderRadius: "var(--radius-sm)",
         backgroundColor: "var(--surface)",

@@ -199,7 +199,7 @@ function GoodsInDetailPage() {
               maxHeight="420px"
               style={{
                 borderRadius: "var(--radius-lg)",
-                border: "1px solid var(--surface-light)",
+                border: "none",
                 overflowX: "hidden",
                 background: "var(--layer-section-level-2)",
               }}

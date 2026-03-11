@@ -290,7 +290,7 @@ export default function ClockingHistorySection({
       <div
         style={{
           borderRadius: "var(--control-radius-xs)",
-          border: "1px solid var(--surface-light)",
+          border: "none",
           overflow: "hidden"
         }}
       >

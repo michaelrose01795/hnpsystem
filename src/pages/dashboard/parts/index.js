@@ -60,7 +60,7 @@ const TrendBlock = ({ data }) => {
 const ListBlock = ({ title, items }) => (
   <div
     style={{
-      border: "1px solid var(--surface-light)",
+      border: "none",
       borderRadius: "var(--radius-sm)",
       padding: "12px",
       background: "var(--surface)",
@@ -199,7 +199,7 @@ export default function PartsDashboard() {
                     justifyContent: "space-between",
                     padding: "10px 12px",
                     borderRadius: "var(--radius-sm)",
-                    border: "1px solid var(--surface-light)",
+                    border: "none",
                     background: "var(--surface)",
                   }}
                 >
@@ -232,7 +232,7 @@ export default function PartsDashboard() {
                   style={{
                     padding: "10px 14px",
                     borderRadius: "var(--radius-sm)",
-                    border: "1px solid var(--surface-light)",
+                    border: "none",
                     background: "var(--surface)",
                     minWidth: 150,
                   }}

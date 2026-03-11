@@ -47,7 +47,7 @@ const detailCardStyles = {
   },
   metaItem: {
     borderRadius: "var(--radius-md)",
-    border: "1px solid var(--surface-light)",
+    border: "none",
     background: "var(--surface-light)",
     padding: "12px 14px",
     display: "flex",
@@ -70,7 +70,7 @@ const detailCardStyles = {
 const tabsStyles = {
   container: {
     borderRadius: "var(--radius-pill)",
-    border: "1px solid var(--surface-light)",
+    border: "none",
     background: "var(--surface)",
     padding: "6px",
     display: "flex",
@@ -95,7 +95,7 @@ const tabsStyles = {
 const tabPanelStyles = {
   container: {
     borderRadius: "var(--radius-xl)",
-    border: "1px solid var(--surface-light)",
+    border: "none",
     background: "var(--surface)",
     padding: "24px",
     display: "flex",
@@ -112,7 +112,7 @@ const detailGridStyles = {
   },
   item: {
     borderRadius: "var(--radius-md)",
-    border: "1px solid var(--surface-light)",
+    border: "none",
     background: "var(--surface-light)",
     padding: "14px",
     display: "flex",
@@ -305,7 +305,7 @@ const VehiclesTab = ({ vehicles, customerId, onVehicleAdded }) => {
         <div
           style={{
             borderRadius: "var(--radius-md)",
-            border: "1px solid var(--surface-light)",
+            border: "none",
             background: "var(--surface-light)",
             padding: "20px",
             display: "flex",
@@ -325,7 +325,7 @@ const VehiclesTab = ({ vehicles, customerId, onVehicleAdded }) => {
               style={{
                 padding: "8px 12px",
                 borderRadius: "var(--radius-xs)",
-                border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
+                border: "none",
                 fontSize: "13px",
                 backgroundColor: "var(--surface)",
                 color: "var(--text-secondary)",
@@ -339,7 +339,7 @@ const VehiclesTab = ({ vehicles, customerId, onVehicleAdded }) => {
               style={{
                 padding: "8px 16px",
                 borderRadius: "var(--radius-xs)",
-                border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
+                border: "none",
                 backgroundColor: "var(--surface)",
                 color: looking || !newReg.trim() ? "var(--grey-accent)" : "var(--text-primary)",
                 fontSize: "13px",
@@ -355,7 +355,7 @@ const VehiclesTab = ({ vehicles, customerId, onVehicleAdded }) => {
               style={{
                 padding: "8px 12px",
                 borderRadius: "var(--radius-xs)",
-                border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
+                border: "none",
                 backgroundColor: "var(--surface)",
                 color: "var(--grey-accent-dark)",
                 fontSize: "13px",
@@ -376,7 +376,7 @@ const VehiclesTab = ({ vehicles, customerId, onVehicleAdded }) => {
             <div
               style={{
                 borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--surface-light)",
+                border: "none",
                 background: "var(--surface)",
                 padding: "16px",
                 display: "flex",
@@ -463,7 +463,7 @@ const VehiclesTab = ({ vehicles, customerId, onVehicleAdded }) => {
                 key={vehicle.vehicle_id}
                 style={{
                   borderRadius: "var(--radius-lg)",
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                   background: "var(--surface-light)",
                   padding: "20px",
                   display: "flex",
@@ -572,7 +572,7 @@ const HistoryTab = ({ jobs }) => {
             key={job.id}
             style={{
               borderRadius: "var(--radius-md)",
-              border: "1px solid var(--surface-light)",
+              border: "none",
               background: "var(--surface-light)",
               padding: "20px",
               display: "flex",
@@ -631,8 +631,8 @@ const HistoryTab = ({ jobs }) => {
                 value={job.vehicle_make_model || job.vehicle_reg}
               />
               <VehicleField
-                label="Mileage at service"
-                value={job.mileage_at_service ? `${job.mileage_at_service} miles` : null}
+                label="Milage"
+                value={job.milage ? `${job.milage} miles` : null}
               />
               <VehicleField label="Created" value={formatDate(job.created_at)} />
               <VehicleField label="Updated" value={formatDate(job.updated_at)} />
@@ -840,7 +840,7 @@ export default function CustomerDetailWorkspace() {
               borderRadius: "var(--radius-md)",
               padding: "18px",
               textAlign: "center",
-              border: "1px solid var(--surface-light)",
+              border: "none",
               background: "var(--surface)",
             }}
           >

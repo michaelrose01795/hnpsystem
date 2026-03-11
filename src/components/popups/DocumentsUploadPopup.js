@@ -279,7 +279,7 @@ export default function DocumentsUploadPopup({
             gap: "16px",
             transition: "width 0.3s ease",
             borderRadius: "var(--radius-xl)",
-            border: "1px solid var(--surface-light)"
+            border: "none"
           }}
         >
         <div>
@@ -323,7 +323,7 @@ export default function DocumentsUploadPopup({
                 style={{
                   maxHeight: "220px",
                   overflowY: "auto",
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                   borderRadius: "var(--radius-sm)",
                   padding: "12px"
                 }}
@@ -369,7 +369,7 @@ export default function DocumentsUploadPopup({
                   flex: 1,
                   padding: "12px",
                   borderRadius: "var(--input-radius)",
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                   backgroundColor: "var(--surface-light)",
                   color: "var(--text-primary)",
                   fontWeight: "600",
@@ -408,7 +408,7 @@ export default function DocumentsUploadPopup({
                 backgroundColor: "var(--surface)",
                 padding: "16px",
                 borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--surface-light)",
+                border: "none",
                 maxHeight: "70vh",
                 overflowY: "auto"
               }}
@@ -568,7 +568,7 @@ export default function DocumentsUploadPopup({
                             gap: "10px",
                             padding: "8px",
                             borderRadius: "var(--input-radius)",
-                            border: "1px solid var(--surface-light)",
+                            border: "none",
                             backgroundColor: "var(--info-surface)"
                           }}
                         >
@@ -582,7 +582,7 @@ export default function DocumentsUploadPopup({
                                 objectFit: "cover",
                                 borderRadius: "var(--radius-xs)",
                                 flexShrink: 0,
-                                border: "1px solid var(--surface-light)"
+                                border: "none"
                               }}
                             />
                           ) : (

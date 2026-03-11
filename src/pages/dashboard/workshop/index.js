@@ -219,7 +219,7 @@ export default function WorkshopDashboard() {
                         padding: "12px",
                         borderRadius: "var(--radius-sm)",
                         background: "var(--danger-surface)",
-                        border: "1px solid var(--surface-light)",
+                        border: "none",
                         display: "flex",
                         flexDirection: "column",
                         gap: "8px",
@@ -260,7 +260,7 @@ export default function WorkshopDashboard() {
                       gap: "8px",
                       background: "var(--surface)",
                       borderRadius: "var(--radius-sm)",
-                      border: "1px solid var(--surface-light)",
+                      border: "none",
                       padding: "12px",
                       minHeight: "84px",
                     }}

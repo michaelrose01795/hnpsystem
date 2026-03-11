@@ -82,7 +82,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
 .app-layout-main-column {
   flex: 1;
   width: 100%;
-  max-width: min(100%, var(--page-max-width));
+  max-width: 100%;
   display: flex;
   flex-direction: column;
   gap: var(--page-stack-gap);
@@ -108,7 +108,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
 
 .app-page-content {
   width: 100%;
-  max-width: var(--page-content-max-width);
+  max-width: 100%;
   min-height: 100%;
   margin: 0;
 }
@@ -195,13 +195,13 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
 }
 
 .app-topbar-toggle {
-  border: 1px solid var(--nav-link-border);
+  border: none;
   background: var(--nav-link-bg);
   color: var(--primary);
 }
 
 .app-topbar-toggle.is-active {
-  border: var(--nav-link-border-active);
+  border: none;
   background: var(--nav-link-bg-active);
   color: var(--text-inverse);
 }
@@ -215,14 +215,12 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
 .app-topbar-link.app-topbar-button--secondary:hover,
 .app-topbar-link.app-topbar-button--secondary:focus-visible {
   background: var(--nav-link-bg-hover);
-  border-color: rgba(var(--primary-rgb), 0.24);
   color: var(--primary-dark);
 }
 
 .app-topbar-link.is-active,
 .app-topbar-button.is-active,
 .app-topbar-button--secondary.is-active {
-  border-color: var(--primary-dark);
   background: var(--primary-dark);
   color: var(--text-inverse);
 }
@@ -230,20 +228,19 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
 .app-topbar-button--primary {
   background: var(--primary);
   color: var(--text-inverse);
-  border: 1px solid var(--primary);
+  border: none;
 }
 
 .app-topbar-button--primary:hover,
 .app-topbar-button--primary:focus-visible {
   background: var(--primary-dark);
-  border-color: var(--primary-dark);
   color: var(--text-inverse);
 }
 
 .app-topbar-button--secondary {
   background: var(--nav-link-bg);
   color: var(--primary);
-  border: 1px solid var(--primary);
+  border: none;
 }
 
 .app-topbar-button:disabled {
@@ -650,22 +647,16 @@ button {
   font-size: var(--control-font-size);
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, opacity 0.18s ease;
   position: relative;
   z-index: 0;
 }
 button:hover {
-  background: var(--primary-light);
-  transform: translateY(-1px);
-  z-index: var(--hover-surface-z);
-}
-button:active {
-  transform: translateY(0);
+  filter: brightness(1.06);
 }
 button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  transform: none;
 }
 
 /* Inputs, Textareas & Selects — base resets only; sizing handled by Shared Field Surface below */
@@ -688,7 +679,7 @@ input[type="search"] {
   appearance: none;
   min-height: var(--control-height);
   border-radius: var(--control-radius);
-  border: 1px solid var(--control-border-color);
+  border: none;
   background: var(--control-bg);
   box-shadow: none;
   color: var(--text-primary);
@@ -700,14 +691,14 @@ input[type="search"]::placeholder {
 input:hover,
 textarea:hover,
 select:hover {
-  border-color: var(--control-border-hover);
+  background-color: var(--control-bg-hover);
   z-index: var(--hover-surface-z);
 }
 input:focus,
 textarea:focus,
 select:focus {
-  border-color: var(--control-border-focus);
   background-color: var(--control-bg-hover);
+  box-shadow: var(--control-ring);
   z-index: var(--hover-surface-z);
 }
 
@@ -750,19 +741,18 @@ textarea::placeholder {
 .app-btn--secondary {
   background: var(--control-bg);
   color: var(--primary);
-  border: 1px solid var(--primary);
+  border: none;
 }
 .app-btn--secondary:hover {
-  background: rgba(var(--primary-rgb), 0.08);
+  background: var(--control-bg-hover);
 }
 .app-btn--ghost {
   background: transparent;
   color: var(--primary);
-  border: var(--control-border);
+  border: none;
 }
 .app-btn--ghost:hover {
-  background: rgba(var(--primary-rgb), 0.06);
-  border-color: var(--control-border-hover);
+  background: var(--control-bg);
 }
 .app-btn--pill { border-radius: var(--radius-pill); }
 .app-btn--sm {
@@ -797,12 +787,11 @@ textarea::placeholder {
   transition: var(--control-transition);
 }
 .app-input:hover {
-  border-color: var(--control-border-hover);
+  background: var(--control-bg-hover);
 }
 .app-input:focus {
-  border-color: var(--control-border-focus);
-  box-shadow: var(--control-ring);
   background: var(--control-bg-hover);
+  box-shadow: var(--control-ring);
 }
 .app-input::placeholder {
   color: var(--control-muted-text);
@@ -992,7 +981,7 @@ section {
   padding: var(--layout-card-padding);
   margin-bottom: var(--layout-card-gap);
   background: var(--layer-section-level-2);
-  border: 1px solid var(--border);
+  border: none;
   transition: all 0.2s ease;
   position: relative;
   overflow: visible;
@@ -1005,7 +994,7 @@ div.news-card {
   padding: var(--layout-card-padding);
   margin-bottom: var(--layout-card-gap);
   background: var(--layer-section-level-1);
-  border: 1px solid var(--border);
+  border: none;
   transition: all 0.2s ease;
   position: relative;
   overflow: visible;
@@ -1015,7 +1004,6 @@ section:hover,
 div.card:hover,
 div.news-card:hover {
   transform: translateY(-2px);
-  border-color: var(--primary);
   z-index: var(--hover-surface-z);
 }
 
@@ -1135,7 +1123,7 @@ div#main-content {
   padding: 2.25rem;
   border-radius: var(--radius-xl);
   background: var(--surface);
-  border: 1px solid rgba(15, 23, 42, 0.08);
+  border: none;
   box-shadow: 0 30px 70px rgba(15, 23, 42, 0.15);
   display: flex;
   flex-direction: column;
@@ -1147,7 +1135,6 @@ div#main-content {
 
 [data-theme="dark"] .redirect-card {
   background: rgba(15, 23, 42, 0.7);
-  border-color: rgba(255, 255, 255, 0.18);
 }
 
 .redirect-brand {
@@ -1893,7 +1880,7 @@ select,
 textarea {
   min-height: var(--control-height);
   border-radius: var(--control-radius);
-  border: 1px solid var(--control-border-color);
+  border: none;
   background: var(--control-bg);
   color: var(--text-primary);
   font-size: var(--control-font-size);
@@ -1932,7 +1919,6 @@ textarea {
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):hover,
 select:hover,
 textarea:hover {
-  border-color: var(--control-border-hover);
   background: var(--control-bg-hover);
 }
 
@@ -1951,7 +1937,6 @@ select:focus-visible,
 textarea:focus,
 textarea:focus-visible {
   outline: none;
-  border-color: var(--control-border-focus);
   background: var(--control-bg-hover);
   box-shadow: var(--control-ring);
 }
@@ -2009,7 +1994,7 @@ textarea:disabled {
   top: calc(100% + 8px);
   left: 0;
   border-radius: var(--control-menu-radius);
-  border: 1px solid var(--control-border-color);
+  border: none;
   background: var(--control-menu-bg);
   box-shadow: var(--control-menu-shadow);
 }
@@ -2031,7 +2016,7 @@ textarea:disabled {
   min-height: var(--control-height-sm);
   padding: var(--control-padding-sm);
   border-radius: var(--control-radius-sm);
-  border: 1px solid var(--control-border-color);
+  border: none;
   background: var(--control-bg);
   color: var(--text-primary);
   font-size: var(--control-font-size);
@@ -2040,7 +2025,6 @@ textarea:disabled {
 }
 
 .dropdown-api__search-input:focus-visible {
-  border-color: var(--control-border-focus);
   box-shadow: var(--control-ring);
 }
 
@@ -2051,7 +2035,7 @@ textarea:disabled {
 .dropdown-api__option {
   width: 100%;
   padding: var(--control-padding-sm);
-  border: 1px solid transparent;
+  border: none;
   border-radius: var(--control-radius-sm);
   background: transparent;
   text-align: left;
@@ -2060,19 +2044,17 @@ textarea:disabled {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+  transition: background-color 0.18s ease, color 0.18s ease;
 }
 
 .dropdown-api__option:hover,
 .dropdown-api__option:focus-visible {
   background: var(--control-bg-active);
-  border-color: rgba(var(--primary-rgb), 0.14);
   outline: none;
 }
 
 .dropdown-api__option.is-selected {
   background: rgba(var(--primary-rgb), 0.12);
-  border-color: rgba(var(--primary-rgb), 0.18);
   color: var(--text-primary);
 }
 
@@ -2140,7 +2122,7 @@ textarea:disabled {
   padding: 10px 12px;
   border-radius: var(--control-radius);
   background: var(--control-bg);
-  border: 1px solid var(--control-border-color);
+  border: none;
   margin-bottom: 8px;
   min-height: var(--control-height);
   align-items: center;
@@ -2154,15 +2136,14 @@ textarea:disabled {
   border-radius: var(--control-radius-sm);
   background: rgba(var(--primary-rgb), 0.12);
   color: var(--text-primary);
-  border: 1px solid rgba(var(--primary-rgb), 0.18);
+  border: none;
   font-size: 0.85rem;
   font-weight: 600;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  transition: background-color 0.2s ease;
 }
 
 .multiselect-dropdown-api__tag:hover {
-  background: rgba(var(--primary-rgb), 0.16);
-  border-color: rgba(var(--primary-rgb), 0.24);
+  background: rgba(var(--primary-rgb), 0.18);
 }
 
 .multiselect-dropdown-api__tag-remove {
@@ -2239,7 +2220,7 @@ textarea:disabled {
   justify-content: space-between;
   margin-bottom: 12px;
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--control-border-color);
+  border-bottom: none;
 }
 
 .calendar-api__nav-button {
@@ -2251,16 +2232,15 @@ textarea:disabled {
   min-height: 32px;
   padding: 0;
   background: transparent;
-  border: 1px solid transparent;
+  border: none;
   border-radius: var(--control-radius-sm);
   color: var(--control-icon);
   cursor: pointer;
-  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+  transition: background-color 0.18s ease, color 0.18s ease;
 }
 
 .calendar-api__nav-button:hover {
   background: var(--control-bg-active);
-  border-color: rgba(var(--primary-rgb), 0.14);
   color: var(--primary);
 }
 
@@ -2283,12 +2263,12 @@ textarea:disabled {
   padding: var(--control-padding-sm);
   border-radius: var(--control-radius);
   background: rgba(var(--primary-rgb), 0.08);
-  border: 1px solid rgba(var(--primary-rgb), 0.18);
+  border: none;
   color: var(--primary);
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+  transition: background-color 0.18s ease, color 0.18s ease;
 }
 
 .calendar-api__today-button {
@@ -2300,7 +2280,6 @@ textarea:disabled {
 .calendar-api__today-button:hover,
 .timepicker-api__now-button:hover {
   background: rgba(var(--primary-rgb), 0.15);
-  border-color: rgba(var(--primary-rgb), 0.26);
 }
 
 .calendar-api__weekdays {
@@ -2334,13 +2313,13 @@ textarea:disabled {
   aspect-ratio: 1;
   padding: 0;
   background: transparent;
-  border: 1px solid transparent;
+  border: none;
   border-radius: var(--control-radius-sm);
   color: var(--text-primary);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+  transition: background-color 0.18s ease, color 0.18s ease;
 }
 
 .calendar-api__day--empty {
@@ -2350,7 +2329,6 @@ textarea:disabled {
 
 .calendar-api__day:hover:not(:disabled):not(.is-selected) {
   background: var(--control-bg-active);
-  border-color: rgba(var(--primary-rgb), 0.16);
   color: var(--primary);
 }
 
@@ -2358,13 +2336,12 @@ textarea:disabled {
 .timepicker-api__option.is-selected,
 .tab-api__item.is-active {
   background: var(--primary);
-  border-color: var(--primary);
   color: var(--surface);
   font-weight: 600;
 }
 
 .calendar-api__day.is-today:not(.is-selected) {
-  border-color: var(--primary);
+  background: rgba(var(--primary-rgb), 0.08);
   color: var(--primary);
   font-weight: 600;
 }
@@ -2447,18 +2424,17 @@ textarea:disabled {
   justify-content: center;
   padding: 8px;
   background: transparent;
-  border: 1px solid transparent;
+  border: none;
   border-radius: var(--control-radius-sm);
   color: var(--text-primary);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+  transition: background-color 0.18s ease, color 0.18s ease;
 }
 
 .timepicker-api__option:hover {
   background: var(--control-bg-active);
-  border-color: rgba(var(--primary-rgb), 0.14);
   color: var(--primary);
 }
 
@@ -2507,7 +2483,7 @@ input[type="search"]::-webkit-search-results-decoration {
   height: 22px;
   min-height: 22px;
   padding: 0;
-  border: 1px solid transparent;
+  border: none;
   border-radius: var(--radius-pill);
   background: rgba(var(--primary-rgb), 0.14);
   color: var(--text-primary);
@@ -2517,13 +2493,12 @@ input[type="search"]::-webkit-search-results-decoration {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+  transition: background-color 0.18s ease, color 0.18s ease;
 }
 
 .searchbar-api__clear:hover,
 .searchbar-api__clear:focus-visible {
-  background: rgba(var(--primary-rgb), 0.18);
-  border-color: rgba(var(--primary-rgb), 0.18);
+  background: rgba(var(--primary-rgb), 0.22);
   outline: none;
 }
 
@@ -2534,11 +2509,11 @@ input[type="search"]::-webkit-search-results-decoration {
 .tab-api {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  padding: 4px;
+  gap: 6px;
+  padding: 6px;
   border-radius: var(--control-radius);
-  background: rgba(var(--surface-rgb), 0.64);
-  border: 1px solid var(--control-border-color);
+  background: var(--tab-container-bg);
+  border: none;
 }
 
 .page-surface-plain {
@@ -2598,29 +2573,27 @@ input[type="search"]::-webkit-search-results-decoration {
 }
 
 .tab-api__item[data-tone="default"] {
-  border: 1px solid transparent;
+  border: none;
 }
 
 .tab-api__item[data-tone="success"] {
-  border: 1px solid var(--success);
+  border: none;
   background: var(--success-surface);
   color: var(--success-dark);
 }
 
 .tab-api__item[data-tone="success"].is-active {
-  border-color: var(--success);
   background: var(--success);
   color: var(--text-inverse);
 }
 
 .tab-api__item[data-tone="warning"] {
-  border: 1px solid var(--warning);
+  border: none;
   background: var(--warning-surface);
   color: var(--warning-dark);
 }
 
 .tab-api__item[data-tone="warning"].is-active {
-  border-color: var(--warning);
   background: var(--warning);
   color: var(--text-inverse);
 }

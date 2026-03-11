@@ -613,7 +613,7 @@ const getWearColor = (wornPercent) => {
 const PANEL_SECTION_STYLE = {
   background: "var(--surface)",
   borderRadius: "var(--radius-lg)",
-  border: "1px solid var(--surface-light)",
+  border: "none",
 
   padding: "24px",
   display: "flex",
@@ -4882,7 +4882,7 @@ export default function VhcDetailsPanel({
                               top: "-8px",
                               transform: "translate(-50%, -100%)",
                               background: "var(--surface)",
-                              border: "1px solid var(--surface-light)",
+                              border: "none",
                               borderRadius: "var(--radius-sm)",
                               padding: "10px 14px",
                               boxShadow: "0 8px 16px rgba(var(--text-primary-rgb), 0.12)",
@@ -7262,7 +7262,7 @@ export default function VhcDetailsPanel({
                           style={{
                             padding: "8px 16px",
                             borderRadius: "var(--radius-xs)",
-                            border: "1px solid var(--surface-light)",
+                            border: "none",
                             background: "var(--surface-light)",
                             color: "var(--info)",
                             fontWeight: 600,
@@ -7947,7 +7947,7 @@ export default function VhcDetailsPanel({
               <nav
                 style={{
                   borderRadius: "var(--radius-pill)",
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                   background: "var(--surface)",
                   padding: "6px",
                   display: "flex",
@@ -8170,7 +8170,7 @@ export default function VhcDetailsPanel({
                               style={{
                                 borderRadius: "var(--radius-md)",
                                 background: "var(--surface)",
-                                border: "1px solid var(--surface-light)",
+                                border: "none",
                                 padding: "14px",
                                 display: "flex",
                                 flexDirection: "column",
@@ -8470,7 +8470,7 @@ export default function VhcDetailsPanel({
                             style={{
                               borderRadius: "var(--radius-md)",
                               background: "var(--surface)",
-                              border: "1px solid var(--surface-light)",
+                              border: "none",
                               padding: "14px",
                               display: "flex",
                               flexDirection: "column",
@@ -9371,7 +9371,7 @@ export default function VhcDetailsPanel({
                     style={{
                       padding: "10px 18px",
                       borderRadius: "var(--input-radius)",
-                      border: "1px solid var(--surface-light)",
+                      border: "none",
                       background: "var(--surface)",
                       color: "var(--info-dark)",
                       fontWeight: 600,

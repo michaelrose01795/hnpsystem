@@ -5,6 +5,9 @@ import { themes } from "@/styles/theme";
 
 const STORAGE_KEY = "hp-dms-theme";
 const ACCENT_STORAGE_KEY = "hp-dms-accent";
+const THEME_COOKIE_KEY = "hp-dms-theme";
+const ACCENT_COOKIE_KEY = "hp-dms-accent";
+const PREFERENCE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 const THEME_SEQUENCE = ["system", "light", "dark"];
 const DEFAULT_ACCENT = "red";
 
@@ -130,6 +133,40 @@ const getSystemPreferredMode = () => {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 };
 
+const writePreferenceCookie = (key, value) => {
+  if (typeof document === "undefined") return;
+  const encodedValue = encodeURIComponent(String(value || ""));
+  document.cookie = `${key}=${encodedValue}; path=/; max-age=${PREFERENCE_COOKIE_MAX_AGE}; samesite=lax`;
+};
+
+const readCookieValue = (key) => {
+  if (typeof document === "undefined") return null;
+  const escaped = key.replace(/[.*+?^$()|[\]\\]/g, "\\$&");
+  const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${escaped}=([^;]+)`));
+  if (!match) return null;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
+};
+
+const readStoredMode = () => {
+  if (typeof window === "undefined") return "system";
+  const local = window.localStorage.getItem(STORAGE_KEY);
+  if (local === "light" || local === "dark" || local === "system") return local;
+  const cookieMode = readCookieValue(THEME_COOKIE_KEY);
+  return cookieMode === "light" || cookieMode === "dark" || cookieMode === "system" ? cookieMode : "system";
+};
+
+const readStoredAccent = () => {
+  if (typeof window === "undefined") return DEFAULT_ACCENT;
+  const local = window.localStorage.getItem(ACCENT_STORAGE_KEY);
+  if (local) return normalizeAccent(local);
+  const cookieAccent = readCookieValue(ACCENT_COOKIE_KEY);
+  return normalizeAccent(cookieAccent || DEFAULT_ACCENT);
+};
+
 const ThemeContext = createContext({
   mode: "system",
   resolvedMode: "light",
@@ -144,11 +181,32 @@ const ThemeContext = createContext({
 export function ThemeProvider({ children, defaultMode = "system" }) {
   const { dbUserId } = useUser() || {};
   const normalizedDefault = normalizeMode(defaultMode);
-  const [mode, setMode] = useState(normalizedDefault);
-  const [resolvedMode, setResolvedMode] = useState(() =>
-    normalizedDefault === "system" ? getSystemPreferredMode() : normalizedDefault
-  );
-  const [accent, setAccent] = useState(DEFAULT_ACCENT);
+  const [mode, setMode] = useState(() => {
+    if (typeof document !== "undefined") {
+      const docMode = document.documentElement.getAttribute("data-theme");
+      if (docMode === "dark" || docMode === "light") {
+        const storedMode = readStoredMode();
+        return storedMode === "system" ? "system" : docMode;
+      }
+    }
+    const storedMode = readStoredMode();
+    return storedMode === "light" || storedMode === "dark" || storedMode === "system"
+      ? storedMode
+      : normalizedDefault;
+  });
+  const [resolvedMode, setResolvedMode] = useState(() => {
+    if (typeof document !== "undefined") {
+      const docMode = document.documentElement.getAttribute("data-theme");
+      if (docMode === "dark" || docMode === "light") return docMode;
+    }
+    const storedMode = readStoredMode();
+    const initialMode =
+      storedMode === "light" || storedMode === "dark" || storedMode === "system"
+        ? storedMode
+        : normalizedDefault;
+    return initialMode === "system" ? getSystemPreferredMode() : initialMode;
+  });
+  const [accent, setAccent] = useState(() => readStoredAccent());
   const [loading, setLoading] = useState(true);
 
   const applyAccent = useCallback((nextAccent, modeOverride = null) => {
@@ -261,14 +319,15 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
   }, []);
 
   useEffect(() => {
-    const stored = typeof window !== "undefined" ? window.localStorage.getItem(STORAGE_KEY) : null;
-    const storedAccent =
-      dbUserId && typeof window !== "undefined" ? window.localStorage.getItem(ACCENT_STORAGE_KEY) : null;
+    const storedMode = readStoredMode();
+    const storedAccent = readStoredAccent();
     const initial =
-      stored === "light" || stored === "dark" || stored === "system" ? stored : normalizedDefault;
-    applyMode(initial);
-    applyAccent(storedAccent || DEFAULT_ACCENT);
-  }, [applyAccent, applyMode, dbUserId, normalizedDefault]);
+      storedMode === "light" || storedMode === "dark" || storedMode === "system" ? storedMode : normalizedDefault;
+    const { resolved } = applyMode(initial);
+    applyAccent(storedAccent, resolved);
+    writePreferenceCookie(THEME_COOKIE_KEY, initial);
+    writePreferenceCookie(ACCENT_COOKIE_KEY, storedAccent);
+  }, [applyAccent, applyMode, normalizedDefault]);
 
   useEffect(() => {
     applyAccent(accent, resolvedMode);
@@ -300,7 +359,12 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
     let cancelled = false;
     const fetchPreference = async () => {
       if (!dbUserId) {
-        applyAccent(DEFAULT_ACCENT);
+        const storedMode = readStoredMode();
+        const storedAccent = readStoredAccent();
+        const nextMode =
+          storedMode === "light" || storedMode === "dark" || storedMode === "system" ? storedMode : mode;
+        const { resolved } = applyMode(nextMode);
+        applyAccent(storedAccent, resolved);
         setLoading(false);
         return;
       }
@@ -338,6 +402,8 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
             window.localStorage.setItem(STORAGE_KEY, preference);
             window.localStorage.setItem(ACCENT_STORAGE_KEY, nextAccent);
           }
+          writePreferenceCookie(THEME_COOKIE_KEY, preference);
+          writePreferenceCookie(ACCENT_COOKIE_KEY, nextAccent);
         }
       } catch (err) {
         console.error("Failed to load theme preference", err.message || err);
@@ -417,6 +483,7 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
     if (typeof window !== "undefined") {
       window.localStorage.setItem(STORAGE_KEY, requested);
     }
+    writePreferenceCookie(THEME_COOKIE_KEY, requested);
     persistPreference(requested);
   }, [applyMode, mode, persistPreference]);
 
@@ -425,6 +492,7 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
     if (typeof window !== "undefined") {
       window.localStorage.setItem(ACCENT_STORAGE_KEY, normalizedAccent);
     }
+    writePreferenceCookie(ACCENT_COOKIE_KEY, normalizedAccent);
     persistAccentPreference(normalizedAccent);
   }, [applyAccent, persistAccentPreference]);
 

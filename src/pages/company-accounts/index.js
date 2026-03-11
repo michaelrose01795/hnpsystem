@@ -206,7 +206,7 @@ export default function CompanyAccountsIndexPage() {
               gap: "10px",
               padding: "18px",
               borderRadius: "var(--radius-md)",
-              border: "1px solid var(--surface-light)",
+              border: "none",
               background: "var(--surface)",
               textAlign: "left",
               boxShadow: "var(--shadow-md)",
@@ -311,7 +311,7 @@ export default function CompanyAccountsIndexPage() {
           <div
             style={{
               borderRadius: "var(--radius-pill)",
-              border: "1px solid var(--surface-light)",
+              border: "none",
               background: "var(--surface)",
               padding: "6px",
               display: "flex",
@@ -364,7 +364,7 @@ export default function CompanyAccountsIndexPage() {
                     alignSelf: "flex-start",
                     padding: "10px 18px",
                     borderRadius: "var(--radius-sm)",
-                    border: "1px solid var(--surface-light)",
+                    border: "none",
                     background: "transparent",
                     fontWeight: 600,
                   }}

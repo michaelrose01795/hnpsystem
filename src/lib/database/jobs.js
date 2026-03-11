@@ -344,6 +344,7 @@ const _getAllJobsUncached = async () => {
       vehicle_id,
       vehicle_reg,
       vehicle_make_model,
+      milage,
       waiting_status,
       job_source,
       job_division,
@@ -798,7 +799,7 @@ const _getJobByNumberUncached = async (jobNumber, options = {}) => {
       const response = await fetch(
         `/api/jobcards/${encodeURIComponent(jobNumber)}${query ? `?${query}` : ""}`,
         {
-          cache: "no-store",
+          cache: options?.force || options?.noCache ? "no-store" : "default",
         }
       );
       const payload = await response.json();
@@ -844,6 +845,7 @@ const _getJobByNumberUncached = async (jobNumber, options = {}) => {
       vehicle_id,
       vehicle_reg,
       vehicle_make_model,
+      milage,
       waiting_status,
       job_source,
       job_division,
@@ -1795,7 +1797,19 @@ const deriveAuthorisedWorkItems = (authorizationRows = []) => {
 
 // ✅ Normalise stored task status values
 const sanitiseTaskStatus = (status) =>
-  status === "complete" || status === "inprogress" ? status : "additional_work";
+  status === true
+    ? "complete"
+    : status === false
+    ? "additional_work"
+    : status === "complete" || status === "inprogress"
+    ? status
+    : "additional_work";
+
+const normalizeRequestTaskLabel = (value = "") =>
+  String(value || "")
+    .replace(/^Request\s*\d+\s*:\s*/i, "")
+    .trim()
+    .toLowerCase();
 
 // ✅ Merge stored tasks with live request/VHC sources
 const buildWriteUpTaskList = ({ storedTasks = [], requestItems = [], authorisedItems = [] }) => {
@@ -1807,12 +1821,17 @@ const buildWriteUpTaskList = ({ storedTasks = [], requestItems = [], authorisedI
     const sourceKey =
       task.sourceKey || task.source_key || `${source}-${task.label || "task"}`;
     const key = `${source}:${sourceKey}`;
+    const checked =
+      typeof task?.checked === "boolean"
+        ? task.checked
+        : sanitiseTaskStatus(task.status) === "complete";
     registry.set(key, {
       taskId: task.taskId || task.task_id || null,
       source,
       sourceKey,
       label: task.label,
-      status: sanitiseTaskStatus(task.status),
+      status: checked ? "complete" : "additional_work",
+      checked,
     });
   });
 
@@ -1822,7 +1841,7 @@ const buildWriteUpTaskList = ({ storedTasks = [], requestItems = [], authorisedI
     const key = `${item.source}:${item.sourceKey}`;
     const existing = registry.get(key);
     if (existing) {
-      merged.push({ ...existing, label: existing.label || item.label });
+      merged.push({ ...existing, label: existing.label || item.label, checked: existing.checked === true });
       registry.delete(key);
     } else {
       const legacyKey = `${item.source}:req-${index + 1}`;
@@ -1832,9 +1851,32 @@ const buildWriteUpTaskList = ({ storedTasks = [], requestItems = [], authorisedI
           ...legacyExisting,
           sourceKey: item.sourceKey,
           label: legacyExisting.label || item.label,
+          checked: legacyExisting.checked === true,
         });
         registry.delete(legacyKey);
         return;
+      }
+      const incomingLabelKey = normalizeRequestTaskLabel(item.label || item.raw || "");
+      if (incomingLabelKey) {
+        let matchedRegistryKey = null;
+        registry.forEach((candidate, candidateKey) => {
+          if (matchedRegistryKey || candidate?.source !== "request") return;
+          const candidateLabelKey = normalizeRequestTaskLabel(candidate.label || "");
+          if (candidateLabelKey && candidateLabelKey === incomingLabelKey) {
+            matchedRegistryKey = candidateKey;
+          }
+        });
+        if (matchedRegistryKey) {
+          const matchedExisting = registry.get(matchedRegistryKey);
+          merged.push({
+            ...matchedExisting,
+            sourceKey: item.sourceKey,
+            label: matchedExisting?.label || item.label,
+            checked: matchedExisting?.checked === true,
+          });
+          registry.delete(matchedRegistryKey);
+          return;
+        }
       }
       merged.push({
         taskId: null,
@@ -1842,6 +1884,7 @@ const buildWriteUpTaskList = ({ storedTasks = [], requestItems = [], authorisedI
         sourceKey: item.sourceKey,
         label: item.label,
         status: "additional_work",
+        checked: false,
       });
     }
   });
@@ -1850,7 +1893,7 @@ const buildWriteUpTaskList = ({ storedTasks = [], requestItems = [], authorisedI
     const key = `${item.source}:${item.sourceKey}`;
     const existing = registry.get(key);
     if (existing) {
-      merged.push({ ...existing, label: existing.label || item.label });
+      merged.push({ ...existing, label: existing.label || item.label, checked: existing.checked === true });
       registry.delete(key);
     } else {
       merged.push({
@@ -1859,6 +1902,7 @@ const buildWriteUpTaskList = ({ storedTasks = [], requestItems = [], authorisedI
         sourceKey: item.sourceKey,
         label: item.label,
         status: "additional_work",
+        checked: false,
       });
     }
   });
@@ -1921,6 +1965,7 @@ const buildTaskChecklistPayload = (
         : task?.status === "inprogress"
         ? "inprogress"
         : "additional_work",
+    checked: typeof task?.checked === "boolean" ? task.checked : task?.status === "complete",
     ...(task?.vhcItemId ? { vhcItemId: task.vhcItemId } : {}),
   })),
   meta: {
@@ -2255,8 +2300,11 @@ const formatJobData = (data) => {
     engine: data.vehicle?.engine || "",
     mileage:
       data.vehicle?.mileage === null || data.vehicle?.mileage === undefined
-        ? ""
+        ? data.milage === null || data.milage === undefined
+          ? ""
+          : data.milage
         : data.vehicle.mileage,
+    milage: data.milage === null || data.milage === undefined ? null : data.milage,
     fuelType: data.vehicle?.fuel_type || "",
     transmission: data.vehicle?.transmission || "",
     bodyStyle: data.vehicle?.body_style || "",
@@ -3487,16 +3535,18 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
       .map((task) => {
         const source = task?.source || "request";
         const normalizedStatus = sanitiseTaskStatus(task?.status);
-        const status =
-          source === "request" && normalizedStatus !== "complete"
-            ? "inprogress"
-            : normalizedStatus;
+        const checked =
+          typeof task?.checked === "boolean"
+            ? task.checked
+            : normalizedStatus === "complete";
+        const status = checked ? "complete" : source === "request" ? "inprogress" : "additional_work";
         return {
           taskId: task?.taskId || null,
           source,
           sourceKey: task?.sourceKey || `${source}-${task?.label || "task"}`,
           label: (task?.label || "").toString().trim(),
           status,
+          checked,
           ...(task?.vhcItemId ? { vhcItemId: task.vhcItemId } : {}),
         };
       })
@@ -3583,7 +3633,7 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
           return {
             requestId: Number(requestIdMatch[1]),
             sortOrder: null,
-            status: task.status === "complete" ? "complete" : "inprogress",
+            status: task.checked === true ? "complete" : "inprogress",
           };
         }
         const match = sourceKey.match(/^req-(\d+)$/i);
@@ -3591,7 +3641,7 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
         return {
           requestId: null,
           sortOrder: Number(match[1]),
-          status: task.status === "complete" ? "complete" : "inprogress",
+          status: task.checked === true ? "complete" : "inprogress",
         };
       })
       .filter(Boolean);

@@ -1111,7 +1111,7 @@ export default function CustomerMessagesPage() {
                         maxHeight: "240px",
                         overflowY: "auto",
                         backgroundColor: "var(--surface)",
-                        border: "1px solid var(--surface-light)",
+                        border: "none",
                         borderRadius: "var(--radius-md)",
                         boxShadow: "var(--shadow-lg)",
                         zIndex: 1000,

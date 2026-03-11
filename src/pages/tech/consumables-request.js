@@ -12,7 +12,7 @@ import { SearchBar } from "@/components/searchBarAPI";
 
 const pageWrapperStyle = {
   padding: "24px", // Provide comfortable outer spacing
-  maxWidth: "1200px", // Limit page width for readability
+  maxWidth: "100%", // Fill full screen width
   margin: "0 auto", // Center the page content
   display: "flex", // Use flex layout for main content columns
   flexDirection: "column", // Stack sections vertically
@@ -30,7 +30,7 @@ const inputStyle = {
   width: "100%",
   padding: "12px 14px",
   borderRadius: "var(--control-radius)",
-  border: "1px solid var(--surface-light)",
+  border: "none",
   fontSize: "0.95rem",
 };
 
@@ -47,7 +47,7 @@ const statusBadgeStyles = {
   pending: {
     backgroundColor: "rgba(var(--primary-rgb),0.12)", // Pale red for pending requests
     color: "var(--primary-dark)", // Deep red text colour
-    border: "1px solid rgba(var(--primary-rgb),0.3)", // Border to define badge
+    border: "none", // Border to define badge
   },
   urgent: {
     backgroundColor: "rgba(var(--warning-rgb), 0.18)", // Amber background for urgent requests
@@ -358,7 +358,7 @@ const TechConsumableRequestPage = () => {
                 required
               />
               {requestForm.partName.trim() && (
-                <div style={{ marginTop: "4px", border: "1px solid var(--surface-light)", borderRadius: "var(--control-radius)", padding: "8px", background: "var(--surface-lightest)", display: "flex", flexDirection: "column", gap: "6px" }}>
+                <div style={{ marginTop: "4px", border: "none", borderRadius: "var(--control-radius)", padding: "8px", background: "var(--surface-lightest)", display: "flex", flexDirection: "column", gap: "6px" }}>
                   {stockLoading ? (
                     <span style={{ color: "var(--grey-accent-dark)", fontSize: "0.85rem" }}>Searching stock…</span>
                   ) : stockMatches.length > 0 ? (
@@ -372,7 +372,7 @@ const TechConsumableRequestPage = () => {
                             onClick={() => setRequestForm((previous) => ({ ...previous, partName: item.name }))}
                             style={{
                               textAlign: "left",
-                              border: "1px solid var(--surface-light)",
+                              border: "none",
                               borderRadius: "var(--control-radius)",
                               padding: "6px 10px",
                               background: "var(--surface)",

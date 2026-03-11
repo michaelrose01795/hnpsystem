@@ -551,7 +551,7 @@ export default function LoginPage() {
               maxWidth: "420px",
               background: "var(--surface)",
               borderRadius: "var(--radius-md)",
-              border: "1px solid var(--surface-light)",
+              border: "none",
               padding: "18px",
               boxShadow: "var(--shadow-xl)",
             }}
@@ -573,7 +573,7 @@ export default function LoginPage() {
                   width: "100%",
                   padding: "10px 12px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                 }}
               />
               <input
@@ -586,7 +586,7 @@ export default function LoginPage() {
                   width: "100%",
                   padding: "10px 12px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                 }}
               />
               {resetStatus && (
@@ -610,7 +610,7 @@ export default function LoginPage() {
                   type="button"
                   onClick={closeResetModal}
                   style={{
-                    border: "1px solid var(--border)",
+                    border: "none",
                     background: "var(--surface-light)",
                     color: "var(--text-primary)",
                     borderRadius: "var(--radius-xs)",
@@ -659,7 +659,7 @@ export default function LoginPage() {
               maxWidth: "460px",
               background: "var(--surface)",
               borderRadius: "var(--radius-md)",
-              border: "1px solid var(--surface-light)",
+              border: "none",
               padding: "18px",
               boxShadow: "var(--shadow-xl)",
             }}
@@ -676,7 +676,7 @@ export default function LoginPage() {
                 onClick={() => handlePasswordRevertDecision(false)}
                 disabled={isRevertingPassword}
                 style={{
-                  border: "1px solid var(--border)",
+                  border: "none",
                   background: "var(--surface-light)",
                   color: "var(--text-primary)",
                   borderRadius: "var(--radius-xs)",
@@ -725,7 +725,7 @@ export default function LoginPage() {
               maxWidth: "520px",
               background: "var(--surface)",
               borderRadius: "var(--radius-md)",
-              border: "1px solid var(--surface-light)",
+              border: "none",
               borderTop: "4px solid #b91c1c",
               padding: "22px",
               boxShadow: "var(--shadow-xl)",

@@ -350,6 +350,19 @@ export default function Layout({
     }
   }, [user, userLoading, hideSidebar, router]);
 
+  const shouldBlockForAuth = !hideSidebar && (userLoading || !user);
+  if (shouldBlockForAuth) {
+    return (
+      <div className="redirect-page-shell">
+        <div className="redirect-card" role="status" aria-live="polite">
+          <p className="redirect-kicker">SIGNING YOU IN</p>
+          <h1 className="redirect-title">Redirecting to login...</h1>
+          <p className="redirect-sub">Just a moment while we get things ready.</p>
+        </div>
+      </div>
+    );
+  }
+
   useEffect(() => {
     if (activeJobId) fetchCurrentJobStatus(activeJobId);
   }, [activeJobId, fetchCurrentJobStatus]);
@@ -930,7 +943,7 @@ export default function Layout({
             style={{
               background: "rgba(var(--surface-rgb), 0.92)",
               borderRadius: "var(--radius-md)",
-              border: "1px solid rgba(var(--primary-rgb),0.12)",
+              border: "none",
               boxShadow: "none",
               padding: isMobile ? "10px 12px" : "0 16px",
               display: "flex",

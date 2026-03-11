@@ -493,29 +493,23 @@ export default function MyJobsPage() {
   if (loading) {
     return (
       <Layout>
-        <div style={{ 
-          display: "flex", 
-          alignItems: "center", 
-          justifyContent: "center", 
-          height: "80vh",
-          flexDirection: "column",
-          gap: "16px"
-        }}>
-          <div style={{
-            width: "60px",
-            height: "60px",
-            border: "4px solid var(--surface)",
-            borderTop: "4px solid var(--primary)",
-            borderRadius: "var(--radius-full)",
-            animation: "spin 1s linear infinite"
-          }}></div>
-          <p style={{ color: "var(--grey-accent)", fontSize: "16px" }}>Loading your jobs...</p>
-          <style jsx>{`
-            @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-          `}</style>
+        <div className="redirect-screen" role="status" aria-live="polite">
+          <div className="redirect-card">
+            <div className="login-brand redirect-brand" aria-hidden="true">
+              <img src="/logo.png" alt="H&P logo" className="login-logo" />
+            </div>
+            <div className="redirect-spinner" aria-hidden="true"></div>
+            <div className="redirect-copy">
+              <p className="redirect-kicker">Page Load</p>
+              <h2 className="redirect-title">Loading your jobs...</h2>
+              <p className="redirect-sub">Preparing assigned jobs and status.</p>
+            </div>
+            <div className="redirect-dots" aria-hidden="true">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
         </div>
       </Layout>
     );
@@ -653,7 +647,7 @@ export default function MyJobsPage() {
             display: "flex",
             flexDirection: "column",
             borderRadius: "var(--radius-xl)",
-            border: "1px solid var(--surface-light)",
+            border: "none",
             background: "var(--surface)",
             padding: "var(--page-card-padding)",
             overflow: "hidden",
@@ -703,7 +697,7 @@ export default function MyJobsPage() {
                   padding: "8px 16px",
                   borderRadius: "var(--radius-sm)",
                   backgroundColor: "var(--surface-light)",
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                   fontSize: "12px",
                   fontWeight: "700",
                   color: "var(--info)",
@@ -765,7 +759,7 @@ export default function MyJobsPage() {
                     className="myjobs-row"
                     onClick={() => handleJobClick(job)}
                     style={{
-                      border: "1px solid var(--border)",
+                      border: "none",
                       padding: "12px 16px",
                       borderRadius: "var(--radius-sm)",
                       backgroundColor: "var(--surface)",
@@ -880,7 +874,7 @@ export default function MyJobsPage() {
 
         {/* Job Count Summary */}
         <div className="app-section-card" style={{
-          border: "1px solid var(--surface-light)"
+          border: "none"
         }}>
           <div style={{
             display: "grid",

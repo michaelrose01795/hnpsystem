@@ -29,7 +29,7 @@ export default function WorkshopTabsBar() {
         background: "var(--surface)",
         borderRadius: "var(--radius-md)",
         padding: "var(--space-5)",
-        border: "1px solid var(--surface-light)",
+        border: "none",
         boxShadow: "none",
         marginBottom: "var(--space-lg)",
       }}

@@ -76,7 +76,7 @@ const labelStyle = {
 
 const inputStyle = {
   borderRadius: "var(--radius-sm)",
-  border: "1px solid var(--surface-light)",
+  border: "none",
   padding: "var(--control-padding)",
   fontSize: "0.95rem",
   fontFamily: "inherit",
@@ -120,7 +120,7 @@ const notesTextareaStyle = {
 const addressFieldStyle = {
   padding: "var(--control-padding)",
   borderRadius: "var(--radius-sm)",
-  border: "1px solid var(--surface-light)",
+  border: "none",
   background: "var(--layer-section-level-1)",
   color: "var(--text-primary)",
   minHeight: "56px",
@@ -1585,7 +1585,7 @@ function GoodsInPage() {
               maxHeight="420px"
               style={{
                 borderRadius: "var(--radius-lg)",
-                border: "1px solid var(--surface-light)",
+                border: "none",
                 overflowX: "hidden",
                 background: "var(--layer-section-level-2)",
               }}
@@ -1810,7 +1810,7 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
               style={{
                 color: "var(--text-secondary)",
                 background: "var(--layer-section-level-1)",
-                border: "1px solid var(--surface-light)",
+                border: "none",
                 borderRadius: "var(--radius-pill)",
                 padding: "2px 8px",
               }}
@@ -1822,7 +1822,7 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
                 style={{
                   color: "var(--text-secondary)",
                   background: "var(--layer-section-level-1)",
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                   borderRadius: "var(--radius-pill)",
                   padding: "2px 8px",
                 }}
@@ -1863,7 +1863,7 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
           height: "620px",
           maxHeight: "90vh",
           padding: "24px",
-          border: "1px solid var(--surface-light)",
+          border: "none",
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
@@ -1894,7 +1894,7 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
         </div>
         <div
           style={{
-            border: "1px solid var(--surface-light)",
+            border: "none",
             borderRadius: "var(--radius-md)",
             background: "var(--layer-section-level-1)",
             padding: "10px",
@@ -2013,7 +2013,7 @@ function GoodsInPartSearchModal({ onClose, onSelect, initialQuery = "" }) {
                 width: "100%",
                 textAlign: "left",
                 padding: "12px",
-                border: "1px solid var(--surface-light)",
+                border: "none",
                 borderRadius: "var(--radius-sm)",
                 marginBottom: "8px",
                 cursor: "pointer",
@@ -2336,7 +2336,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
 
   const infoCalloutStyle = {
     background: "var(--layer-section-level-2)",
-    border: "1px solid var(--surface-light)",
+    border: "none",
     borderRadius: "var(--radius-sm)",
     padding: "10px 12px",
     color: "var(--text-secondary)",
@@ -2346,7 +2346,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
 
   const modalSectionStyle = {
     background: "var(--surface)",
-    border: "1px solid var(--surface-light)",
+    border: "none",
     borderRadius: "var(--radius-md)",
     padding: "16px",
     display: "flex",
@@ -2357,7 +2357,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
   const jobCardStyle = (isSelected) => ({
     width: "100%",
     textAlign: "left",
-    border: "1px solid var(--surface-light)",
+    border: "none",
     borderRadius: "var(--radius-sm)",
     padding: "12px",
     marginBottom: "8px",
@@ -2468,7 +2468,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
             ) : (
               <div
                 style={{
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                   borderRadius: "var(--radius-sm)",
                   overflow: "hidden",
                 }}
@@ -2520,7 +2520,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
             ) : (
               <div
                 style={{
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                   borderRadius: "var(--radius-sm)",
                   overflow: "hidden",
                 }}

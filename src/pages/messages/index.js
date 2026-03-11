@@ -2810,7 +2810,7 @@ function MessagesPage() {
                 maxWidth: "640px",
                 maxHeight: "90vh",
                 overflowY: "auto",
-                border: "1px solid var(--surface-light)",
+                border: "none",
               }}
             >
               <div style={{ padding: "32px", display: "flex", flexDirection: "column", gap: "16px" }}>

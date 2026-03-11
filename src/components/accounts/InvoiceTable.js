@@ -19,12 +19,12 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
     onFilterChange({ ...filters, [name]: value });
   };
   return (
-    <section style={{ background: "var(--surface)", borderRadius: "var(--radius-md)", border: "1px solid var(--surface-light)", padding: "20px", display: "flex", flexDirection: "column", gap: "16px" }}>
+    <section style={{ background: "var(--surface)", borderRadius: "var(--radius-md)", border: "none", padding: "20px", display: "flex", flexDirection: "column", gap: "16px" }}>
       <header style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center" }}>
         <h3 style={{ margin: 0, color: "var(--primary)" }}>Invoices</h3>
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-          <input type="text" name="search" value={filters.search} placeholder="Search invoice or job" onChange={handleFilterChange} style={{ padding: "8px 12px", borderRadius: "var(--control-radius-xs)", border: "1px solid var(--surface-light)", background: "var(--surface-light)" }} />
-          <select name="status" value={filters.status} onChange={handleFilterChange} style={{ padding: "8px 12px", borderRadius: "var(--radius-pill)", border: "1px solid var(--surface-light)", background: "var(--surface-light)" }}>
+          <input type="text" name="search" value={filters.search} placeholder="Search invoice or job" onChange={handleFilterChange} style={{ padding: "8px 12px", borderRadius: "var(--control-radius-xs)", border: "none", background: "var(--surface-light)" }} />
+          <select name="status" value={filters.status} onChange={handleFilterChange} style={{ padding: "8px 12px", borderRadius: "var(--radius-pill)", border: "none", background: "var(--surface-light)" }}>
             <option value="">All Statuses</option>
             {INVOICE_STATUSES.map((status) => (
               <option value={status} key={status}>{status}</option>
@@ -38,7 +38,7 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
           </div>
         </div>
         <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
-          <button type="button" onClick={() => onFilterChange({ search: "", status: "", from: "", to: "" })} style={{ padding: "8px 14px", borderRadius: "var(--control-radius-xs)", border: "1px solid var(--surface-light)", background: "var(--surface-light)", color: "var(--text-secondary)" }}>Clear</button>
+          <button type="button" onClick={() => onFilterChange({ search: "", status: "", from: "", to: "" })} style={{ padding: "8px 14px", borderRadius: "var(--control-radius-xs)", border: "none", background: "var(--surface-light)", color: "var(--text-secondary)" }}>Clear</button>
           <button type="button" onClick={onExport} style={{ padding: "8px 18px", borderRadius: "var(--control-radius-xs)", border: "none", background: "var(--primary)", color: "white", fontWeight: 600 }}>Export CSV</button>
         </div>
       </header>
@@ -91,8 +91,8 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
       <footer style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>Page {pagination.page} of {Math.max(1, Math.ceil((pagination.total || 0) / pagination.pageSize))}</span>
         <div style={{ display: "flex", gap: "10px" }}>
-          <button type="button" onClick={() => onPageChange(Math.max(1, pagination.page - 1))} disabled={pagination.page <= 1} style={{ padding: "8px 14px", borderRadius: "var(--radius-pill)", border: "1px solid var(--surface-light)", background: pagination.page <= 1 ? "var(--surface-light)" : "var(--surface)", cursor: pagination.page <= 1 ? "not-allowed" : "pointer" }}>Prev</button>
-          <button type="button" onClick={() => onPageChange(pagination.page + 1)} disabled={pagination.page >= Math.ceil((pagination.total || 0) / pagination.pageSize)} style={{ padding: "8px 14px", borderRadius: "var(--radius-pill)", border: "1px solid var(--surface-light)", background: pagination.page >= Math.ceil((pagination.total || 0) / pagination.pageSize) ? "var(--surface-light)" : "var(--surface)", cursor: pagination.page >= Math.ceil((pagination.total || 0) / pagination.pageSize) ? "not-allowed" : "pointer" }}>Next</button>
+          <button type="button" onClick={() => onPageChange(Math.max(1, pagination.page - 1))} disabled={pagination.page <= 1} style={{ padding: "8px 14px", borderRadius: "var(--radius-pill)", border: "none", background: pagination.page <= 1 ? "var(--surface-light)" : "var(--surface)", cursor: pagination.page <= 1 ? "not-allowed" : "pointer" }}>Prev</button>
+          <button type="button" onClick={() => onPageChange(pagination.page + 1)} disabled={pagination.page >= Math.ceil((pagination.total || 0) / pagination.pageSize)} style={{ padding: "8px 14px", borderRadius: "var(--radius-pill)", border: "none", background: pagination.page >= Math.ceil((pagination.total || 0) / pagination.pageSize) ? "var(--surface-light)" : "var(--surface)", cursor: pagination.page >= Math.ceil((pagination.total || 0) / pagination.pageSize) ? "not-allowed" : "pointer" }}>Next</button>
         </div>
       </footer>
     </section>

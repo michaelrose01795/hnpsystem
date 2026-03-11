@@ -848,7 +848,7 @@ export default function InvoiceDetail({ data, onPrint, onEmail, emailStatus, cus
                 overflowY: "auto",
                 backgroundColor: "var(--surface)",
                 borderRadius: "var(--control-radius)",
-                border: "1px solid var(--surface-light)",
+                border: "none",
                 padding: "18px",
                 display: "grid",
                 gap: "12px",
@@ -916,7 +916,7 @@ export default function InvoiceDetail({ data, onPrint, onEmail, emailStatus, cus
                         padding: "6px 8px",
                         fontSize: "0.85rem",
                         borderRadius: "var(--radius-xs)",
-                        border: "1px solid var(--surface-light)",
+                        border: "none",
                         appearance: "textfield",
                         MozAppearance: "textfield",
                       }}

@@ -86,7 +86,7 @@ export default function AccountForm({ initialValues, onSubmit, isSubmitting, rea
       {!readOnly && (
         <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
           {onCancel && (
-            <button type="button" onClick={onCancel} style={{ borderRadius: "var(--control-radius-xs)", padding: "10px 16px", border: "1px solid var(--surface-light)", background: "var(--surface-light)", color: "var(--text-secondary)", fontWeight: 600 }}>
+            <button type="button" onClick={onCancel} style={{ borderRadius: "var(--control-radius-xs)", padding: "10px 16px", border: "none", background: "var(--surface-light)", color: "var(--text-secondary)", fontWeight: 600 }}>
               Cancel
             </button>
           )}

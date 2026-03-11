@@ -42,7 +42,7 @@ const generateInvoiceNumber = async () => {
 const fetchJobContext = async (jobId) => {
   const { data: job, error: jobError } = await dbClient
     .from("jobs")
-    .select("id, job_number, customer_id, vehicle_id, account_id, vehicle_reg, vehicle_make_model, mileage_at_service")
+    .select("id, job_number, customer_id, vehicle_id, account_id, vehicle_reg, vehicle_make_model, milage")
     .eq("id", jobId)
     .maybeSingle();
   if (jobError) {
@@ -102,7 +102,7 @@ const fetchJobContext = async (jobId) => {
     chassis: vehicle?.chassis || "",
     engine: vehicle?.engine || vehicle?.engine_number || "",
     reg_date: vehicle?.month_of_first_registration || "",
-    mileage: job?.mileage_at_service || vehicle?.mileage || ""
+    mileage: job?.milage || vehicle?.mileage || ""
   });
   return {
     accountNumber: job?.account_id || null,

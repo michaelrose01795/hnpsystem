@@ -18,7 +18,7 @@ export const popupStyleApi = {
   },
   card: {
     backgroundColor: "var(--surface)",
-    border: "1px solid var(--surface-light)",
+    border: "none",
     borderRadius: "var(--radius-xl)",
     width: "100%",
     maxWidth: "650px",

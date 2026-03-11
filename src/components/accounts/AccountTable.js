@@ -61,7 +61,7 @@ export default function AccountTable({ accounts, loading, pagination, onPageChan
     <div
       style={{
         borderRadius: "var(--radius-md)",
-        border: "1px solid var(--surface-light)",
+        border: "none",
         background: "var(--surface)",
         boxShadow: "none",
       }}
@@ -236,7 +236,7 @@ export default function AccountTable({ accounts, loading, pagination, onPageChan
             style={{
               padding: "8px 14px",
               borderRadius: "var(--radius-pill)",
-              border: "1px solid var(--surface-light)",
+              border: "none",
               background: pagination.page <= 1 ? "var(--surface-light)" : "var(--surface)",
               color: "var(--text-secondary)",
               cursor: pagination.page <= 1 ? "not-allowed" : "pointer",
@@ -251,7 +251,7 @@ export default function AccountTable({ accounts, loading, pagination, onPageChan
             style={{
               padding: "8px 14px",
               borderRadius: "var(--radius-pill)",
-              border: "1px solid var(--surface-light)",
+              border: "none",
               background: pagination.page >= Math.ceil((pagination.total || 0) / pagination.pageSize) ? "var(--surface-light)" : "var(--surface)",
               color: "var(--text-secondary)",
               cursor: pagination.page >= Math.ceil((pagination.total || 0) / pagination.pageSize) ? "not-allowed" : "pointer",

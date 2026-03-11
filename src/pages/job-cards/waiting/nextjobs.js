@@ -1164,7 +1164,7 @@ export default function NextJobsPage() {
                 }}
                 onClick={() => handleOpenJobDetails(job)}
                 style={{
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                   borderRadius: "var(--radius-xs)",
                   padding: "10px",
                   marginBottom: "8px",
@@ -1260,29 +1260,23 @@ export default function NextJobsPage() {
   if (loading) {
     return (
       <Layout>
-        <div style={{ 
-          display: "flex", 
-          alignItems: "center", 
-          justifyContent: "center", 
-          height: "80vh",
-          flexDirection: "column",
-          gap: "16px"
-        }}>
-          <div style={{
-            width: "60px",
-            height: "60px",
-            border: "4px solid var(--surface)",
-            borderTop: "4px solid var(--primary)",
-            borderRadius: "var(--radius-full)",
-            animation: "spin 1s linear infinite"
-          }}></div>
-          <p style={{ color: "var(--grey-accent)" }}>Loading jobs...</p>
-          <style jsx>{`
-            @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-          `}</style>
+        <div className="redirect-screen" role="status" aria-live="polite">
+          <div className="redirect-card">
+            <div className="login-brand redirect-brand" aria-hidden="true">
+              <img src="/logo.png" alt="H&P logo" className="login-logo" />
+            </div>
+            <div className="redirect-spinner" aria-hidden="true"></div>
+            <div className="redirect-copy">
+              <p className="redirect-kicker">Page Load</p>
+              <h2 className="redirect-title">Loading jobs...</h2>
+              <p className="redirect-sub">Preparing next-jobs board data.</p>
+            </div>
+            <div className="redirect-dots" aria-hidden="true">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
         </div>
       </Layout>
     );
@@ -1488,7 +1482,7 @@ export default function NextJobsPage() {
             <div style={{
               flex: "1 0 auto",
               borderRadius: "var(--radius-xs)",
-              border: "1px solid var(--surface-light)",
+              border: "none",
               background: "var(--layer-section-level-3)",
               padding: "24px",
               display: "flex",
@@ -1539,7 +1533,7 @@ export default function NextJobsPage() {
                 maxWidth: "500px",
                 maxHeight: "90vh",
                 overflowY: "auto",
-                border: "1px solid var(--surface-light)",
+                border: "none",
                 padding: "32px",
                 position: "relative",
               }}
@@ -1747,7 +1741,7 @@ export default function NextJobsPage() {
                   width: "100%",
                   padding: "12px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                   fontSize: "14px",
                   marginBottom: "16px",
                   outline: "none",

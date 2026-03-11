@@ -1208,7 +1208,7 @@ useEffect(() => {
               marginTop: "12px",
               padding: "12px",
               borderRadius: "var(--radius-sm)",
-              border: "1px solid var(--surface-light)",
+              border: "none",
               background: "var(--surface)",
             }}
           >
@@ -1237,7 +1237,7 @@ useEffect(() => {
                     flex: 1,
                     padding: "10px",
                     borderRadius: "var(--radius-xs)",
-                    border: "1px solid var(--surface-light)",
+                    border: "none",
                   }}
                 />
                 <button
@@ -1265,7 +1265,7 @@ useEffect(() => {
             {addToJobResult && (
               <div
                 style={{
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                   borderRadius: "var(--radius-sm)",
                   padding: "12px",
                   marginBottom: "12px",
@@ -1299,7 +1299,7 @@ useEffect(() => {
                   width: "120px",
                   padding: "8px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                 }}
               />
             </label>
@@ -1359,7 +1359,7 @@ useEffect(() => {
                 width: "100%",
                 padding: "10px",
                 borderRadius: "var(--radius-xs)",
-                border: "1px solid var(--surface-light)",
+                border: "none",
               }}
             />
           </label>
@@ -1382,7 +1382,7 @@ useEffect(() => {
                 width: "100%",
                 padding: "10px",
                 borderRadius: "var(--radius-xs)",
-                border: "1px solid var(--surface-light)",
+                border: "none",
               }}
             />
           </label>
@@ -1400,13 +1400,13 @@ useEffect(() => {
                 width: "100%",
                 padding: "10px",
                 borderRadius: "var(--radius-xs)",
-                border: "1px solid var(--surface-light)",
+                border: "none",
               }}
             />
             {deliveryPartSearch.trim() && (
               <div
                 style={{
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                   borderRadius: "var(--radius-sm)",
                   marginTop: "8px",
                   maxHeight: "180px",
@@ -1485,7 +1485,7 @@ useEffect(() => {
           {showNewPartForm && (
             <div
               style={{
-                border: "1px solid var(--surface-light)",
+                border: "none",
                 borderRadius: "var(--radius-sm)",
                 padding: "16px",
                 marginBottom: "12px",
@@ -1526,7 +1526,7 @@ useEffect(() => {
                     width: "100%",
                     padding: "10px",
                     borderRadius: "var(--radius-xs)",
-                    border: "1px solid var(--surface-light)",
+                    border: "none",
                     resize: "vertical",
                     fontFamily: "monospace",
                     fontSize: "var(--text-caption)",
@@ -1549,7 +1549,7 @@ useEffect(() => {
                     width: "100%",
                     padding: "10px",
                     borderRadius: "var(--radius-xs)",
-                    border: "1px solid var(--surface-light)",
+                    border: "none",
                   }}
                 />
               </label>
@@ -1569,7 +1569,7 @@ useEffect(() => {
                     width: "100%",
                     padding: "10px",
                     borderRadius: "var(--radius-xs)",
-                    border: "1px solid var(--surface-light)",
+                    border: "none",
                   }}
                 />
               </label>
@@ -1608,13 +1608,13 @@ useEffect(() => {
                     width: "100%",
                     padding: "10px",
                     borderRadius: "var(--radius-xs)",
-                    border: "1px solid var(--surface-light)",
+                    border: "none",
                   }}
                 />
                 {categorySearch.trim() && (
                   <div
                     style={{
-                      border: "1px solid var(--surface-light)",
+                      border: "none",
                       borderRadius: "var(--radius-sm)",
                       marginTop: "6px",
                       maxHeight: "120px",
@@ -1708,7 +1708,7 @@ useEffect(() => {
                       width: "100%",
                       padding: "10px",
                       borderRadius: "var(--radius-xs)",
-                      border: "1px solid var(--surface-light)",
+                      border: "none",
                     }}
                   />
                 </label>
@@ -1737,13 +1737,13 @@ useEffect(() => {
                       width: "100%",
                       padding: "10px",
                       borderRadius: "var(--radius-xs)",
-                      border: "1px solid var(--surface-light)",
+                      border: "none",
                     }}
                   />
                   {newPartLocationSearch.trim() && (
                     <div
                       style={{
-                        border: "1px solid var(--surface-light)",
+                        border: "none",
                         borderRadius: "var(--radius-sm)",
                         marginTop: "6px",
                         maxHeight: "120px",
@@ -1810,7 +1810,7 @@ useEffect(() => {
                       width: "100%",
                       padding: "10px",
                       borderRadius: "var(--radius-xs)",
-                      border: "1px solid var(--surface-light)",
+                      border: "none",
                     }}
                   />
                 </label>
@@ -1831,7 +1831,7 @@ useEffect(() => {
                       width: "100%",
                       padding: "10px",
                       borderRadius: "var(--radius-xs)",
-                      border: "1px solid var(--surface-light)",
+                      border: "none",
                     }}
                   />
                 </label>
@@ -1904,7 +1904,7 @@ useEffect(() => {
                   width: "100%",
                   padding: "10px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                 }}
               />
             </label>
@@ -1927,7 +1927,7 @@ useEffect(() => {
                   width: "100%",
                   padding: "10px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                 }}
               />
             </label>
@@ -1953,7 +1953,7 @@ useEffect(() => {
                 width: "100%",
                 padding: "10px",
                 borderRadius: "var(--radius-xs)",
-                border: "1px solid var(--surface-light)",
+                border: "none",
               }}
             />
           </label>
@@ -1972,7 +1972,7 @@ useEffect(() => {
                 width: "100%",
                 padding: "10px",
                 borderRadius: "var(--radius-xs)",
-                border: "1px solid var(--surface-light)",
+                border: "none",
                 resize: "vertical",
               }}
             />
@@ -2005,7 +2005,7 @@ useEffect(() => {
 
   return (
     <Layout>
-      <div style={{ padding: "24px", maxWidth: "1400px", margin: "0 auto" }}>
+      <div style={{ padding: "24px", maxWidth: "100%", margin: "0 auto" }}>
         <div style={{ ...cardStyle, marginBottom: "20px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
             <h2 style={sectionTitleStyle}>Find Job Card</h2>
@@ -2035,7 +2035,7 @@ useEffect(() => {
                     flex: 1,
                     padding: "12px",
                     borderRadius: "var(--radius-xs)",
-                    border: "1px solid var(--surface-light)",
+                    border: "none",
                   }}
                 />
                 <button type="submit" style={buttonStyle} disabled={jobLoading}>
@@ -2064,7 +2064,7 @@ useEffect(() => {
                         background: "var(--surface-light)",
                         borderRadius: "var(--radius-sm)",
                         padding: "14px",
-                        border: "1px solid var(--surface-light)",
+                        border: "none",
                       }}
                     >
                       <div style={{ fontSize: "var(--text-label)", color: "var(--danger)" }}>JOB</div>
@@ -2078,7 +2078,7 @@ useEffect(() => {
                         background: "var(--surface-light)",
                         borderRadius: "var(--radius-sm)",
                         padding: "14px",
-                        border: "1px solid var(--surface-light)",
+                        border: "none",
                       }}
                     >
                       <div style={{ fontSize: "var(--text-label)", color: "var(--danger)" }}>VEHICLE</div>
@@ -2090,7 +2090,7 @@ useEffect(() => {
                         background: "var(--surface-light)",
                         borderRadius: "var(--radius-sm)",
                         padding: "14px",
-                        border: "1px solid var(--surface-light)",
+                        border: "none",
                       }}
                     >
                       <div style={{ fontSize: "var(--text-label)", color: "var(--danger)" }}>STATUS</div>
@@ -2129,7 +2129,7 @@ useEffect(() => {
                         aria-pressed={selectedPipelineStage === "all"}
                         style={{
                           borderRadius: "var(--radius-md)",
-                          border: "1px solid rgba(var(--primary-rgb),0.4)",
+                          border: "none",
                           backgroundColor:
                             selectedPipelineStage === "all" ? "var(--danger-surface)" : "var(--surface)",
                           padding: "8px 14px",
@@ -2155,7 +2155,7 @@ useEffect(() => {
                           aria-pressed={selectedPipelineStage === stage.id}
                           style={{
                             borderRadius: "var(--radius-md)",
-                            border: "1px solid rgba(var(--primary-rgb),0.4)",
+                            border: "none",
                             backgroundColor:
                               selectedPipelineStage === stage.id ? "var(--danger-surface)" : "var(--surface)",
                             padding: "8px 14px",
@@ -2183,7 +2183,7 @@ useEffect(() => {
                       style={{
                         background: "var(--warning-surface)",
                         borderRadius: "var(--radius-sm)",
-                        border: "1px solid var(--surface-light)",
+                        border: "none",
                         padding: "10px 14px",
                         marginBottom: "12px",
                         color: "var(--danger-dark)",
@@ -2308,7 +2308,7 @@ useEffect(() => {
                                     width: "170px",
                                     padding: "8px",
                                     borderRadius: "var(--radius-xs)",
-                                    border: "1px solid var(--surface-light)",
+                                    border: "none",
                                   }}
                                 >
                                   {JOB_PART_STATUSES.map((statusValue) => (
@@ -2330,7 +2330,7 @@ useEffect(() => {
                                     width: "170px",
                                     padding: "8px",
                                     borderRadius: "var(--radius-xs)",
-                                    border: "1px solid var(--surface-light)",
+                                    border: "none",
                                   }}
                                 >
                                   {PRE_PICK_OPTIONS.map((option) => (
@@ -2479,7 +2479,7 @@ useEffect(() => {
                 style={{
                   padding: "12px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                   background: "var(--layer-section-level-1)",
                   color: "var(--text-primary)",
                   fontSize: "var(--text-body)",
@@ -2497,7 +2497,7 @@ useEffect(() => {
                   style={{
                     padding: "12px",
                     borderRadius: "var(--radius-xs)",
-                    border: "1px solid var(--surface-light)",
+                    border: "none",
                     background: "var(--layer-section-level-1)",
                     color: "var(--text-primary)",
                     fontSize: "var(--text-body)",
@@ -2523,7 +2523,7 @@ useEffect(() => {
                     style={{
                       padding: "12px",
                       borderRadius: "var(--radius-xs)",
-                      border: "1px solid var(--surface-light)",
+                      border: "none",
                       background: "var(--layer-section-level-1)",
                       color: "var(--text-primary)",
                       fontSize: "var(--text-body)",
@@ -2541,7 +2541,7 @@ useEffect(() => {
                       right: 0,
                       marginTop: "4px",
                       background: "var(--surface)",
-                      border: "1px solid var(--surface-light)",
+                      border: "none",
                       borderRadius: "var(--radius-xs)",
                       maxHeight: "300px",
                       overflowY: "auto",
@@ -2805,7 +2805,7 @@ useEffect(() => {
                         style={{
                           background: "var(--surface-light)",
                           color: "var(--text-primary)",
-                          border: "1px solid var(--surface-light)",
+                          border: "none",
                           borderRadius: "var(--radius-xs)",
                           padding: "8px 16px",
                           cursor: isSavingPart ? "not-allowed" : "pointer",
@@ -2864,7 +2864,7 @@ useEffect(() => {
                       borderRadius: "var(--radius-sm)",
                       padding: "16px",
                       marginBottom: "16px",
-                      border: "1px solid var(--surface-light)",
+                      border: "none",
                     }}>
                       <h3 style={{ fontSize: "var(--text-body)", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                         Stock Overview
@@ -2880,7 +2880,7 @@ useEffect(() => {
                               style={{
                                 padding: "8px",
                                 borderRadius: "var(--radius-xs)",
-                                border: "1px solid var(--surface-light)",
+                                border: "none",
                                 background: "var(--surface)",
                                 color: "var(--text-primary)",
                                 fontSize: "var(--text-h4)",
@@ -2902,7 +2902,7 @@ useEffect(() => {
                               style={{
                                 padding: "8px",
                                 borderRadius: "var(--radius-xs)",
-                                border: "1px solid var(--surface-light)",
+                                border: "none",
                                 background: "var(--surface)",
                                 color: "var(--text-primary)",
                                 fontSize: "var(--text-h4)",
@@ -2924,7 +2924,7 @@ useEffect(() => {
                               style={{
                                 padding: "8px",
                                 borderRadius: "var(--radius-xs)",
-                                border: "1px solid var(--surface-light)",
+                                border: "none",
                                 background: "var(--surface)",
                                 color: "var(--text-primary)",
                                 fontSize: "var(--text-h4)",
@@ -2946,7 +2946,7 @@ useEffect(() => {
                               style={{
                                 padding: "8px",
                                 borderRadius: "var(--radius-xs)",
-                                border: "1px solid var(--surface-light)",
+                                border: "none",
                                 background: "var(--surface)",
                                 color: "var(--text-primary)",
                                 fontSize: "var(--text-h4)",
@@ -2994,7 +2994,7 @@ useEffect(() => {
                       background: "var(--layer-section-level-1)",
                       borderRadius: "var(--radius-sm)",
                       padding: "16px",
-                      border: "1px solid var(--surface-light)",
+                      border: "none",
                     }}>
                       <h3 style={{ fontSize: "var(--text-body)", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                         Pricing
@@ -3011,7 +3011,7 @@ useEffect(() => {
                               style={{
                                 padding: "8px",
                                 borderRadius: "var(--radius-xs)",
-                                border: "1px solid var(--surface-light)",
+                                border: "none",
                                 background: "var(--surface)",
                                 color: "var(--text-primary)",
                                 fontSize: "var(--text-h4)",
@@ -3034,7 +3034,7 @@ useEffect(() => {
                               style={{
                                 padding: "8px",
                                 borderRadius: "var(--radius-xs)",
-                                border: "1px solid var(--surface-light)",
+                                border: "none",
                                 background: "var(--surface)",
                                 color: "var(--text-primary)",
                                 fontSize: "var(--text-h4)",
@@ -3065,7 +3065,7 @@ useEffect(() => {
                       background: "var(--layer-section-level-1)",
                       borderRadius: "var(--radius-sm)",
                       padding: "16px",
-                      border: "1px solid var(--surface-light)",
+                      border: "none",
                       height: "100%",
                     }}>
                       <h3 style={{ fontSize: "var(--text-body)", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
@@ -3082,7 +3082,7 @@ useEffect(() => {
                               style={{
                                 padding: "8px",
                                 borderRadius: "var(--radius-xs)",
-                                border: "1px solid var(--surface-light)",
+                                border: "none",
                                 background: "var(--surface)",
                                 color: "var(--text-primary)",
                                 fontSize: "var(--text-h4)",
@@ -3104,7 +3104,7 @@ useEffect(() => {
                               style={{
                                 padding: "8px",
                                 borderRadius: "var(--radius-xs)",
-                                border: "1px solid var(--surface-light)",
+                                border: "none",
                                 background: "var(--surface)",
                                 color: "var(--text-primary)",
                                 fontSize: "var(--text-h4)",
@@ -3126,7 +3126,7 @@ useEffect(() => {
                               style={{
                                 padding: "8px",
                                 borderRadius: "var(--radius-xs)",
-                                border: "1px solid var(--surface-light)",
+                                border: "none",
                                 background: "var(--surface)",
                                 color: "var(--text-primary)",
                                 fontSize: "var(--text-h4)",
@@ -3148,7 +3148,7 @@ useEffect(() => {
                               style={{
                                 padding: "8px",
                                 borderRadius: "var(--radius-xs)",
-                                border: "1px solid var(--surface-light)",
+                                border: "none",
                                 background: "var(--surface)",
                                 color: "var(--text-primary)",
                                 fontSize: "var(--text-h4)",
@@ -3170,7 +3170,7 @@ useEffect(() => {
                               style={{
                                 padding: "8px",
                                 borderRadius: "var(--radius-xs)",
-                                border: "1px solid var(--surface-light)",
+                                border: "none",
                                 background: "var(--surface)",
                                 color: "var(--text-primary)",
                                 fontSize: "var(--text-h4)",
@@ -3192,7 +3192,7 @@ useEffect(() => {
                   background: "var(--layer-section-level-1)",
                   borderRadius: "var(--radius-sm)",
                   padding: "16px",
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                 }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", marginBottom: "12px" }}>
                     <h3 style={{ fontSize: "var(--text-body)", fontWeight: 600, color: "var(--text-secondary)", margin: 0, textTransform: "uppercase", letterSpacing: "0.5px" }}>

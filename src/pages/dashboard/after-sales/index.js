@@ -84,7 +84,7 @@ const TrendBlock = ({ data }) => {
 const FollowUpList = ({ items }) => (
   <div
     style={{
-      border: "1px solid var(--surface-light)",
+      border: "none",
       borderRadius: "var(--radius-sm)",
       padding: "12px",
       background: "var(--surface)",

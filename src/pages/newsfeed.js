@@ -305,7 +305,7 @@ export default function NewsFeed() {
           <div
             className="text-center py-16"
             style={{
-              border: "1px solid var(--border)",
+              border: "none",
               borderRadius: "var(--radius-md)",
               backgroundColor: "var(--layer-section-level-1)",
             }}
@@ -325,7 +325,7 @@ export default function NewsFeed() {
               key={update.id ?? update.title}
               style={{
                 padding: "20px 24px",
-                border: "1px solid var(--border)",
+                border: "none",
                 borderRadius: "var(--radius-sm)",
                 backgroundColor: "var(--layer-section-level-1)",
                 cursor: "pointer",
@@ -413,7 +413,7 @@ export default function NewsFeed() {
                 maxWidth: "650px",
                 maxHeight: "90vh",
                 overflowY: "auto",
-                border: "1px solid var(--surface-light)",
+                border: "none",
               }}
               onClick={(e) => e.stopPropagation()}
             >

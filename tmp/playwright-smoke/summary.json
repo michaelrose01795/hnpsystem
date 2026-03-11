@@ -1,0 +1,12 @@
+{
+  "base": "http://127.0.0.1:3000",
+  "visited": [
+    {
+      "path": "/",
+      "status": 200,
+      "title": ""
+    }
+  ],
+  "linkCandidates": [],
+  "issues": []
+}

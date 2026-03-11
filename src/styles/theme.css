@@ -127,7 +127,7 @@
   --section-card-padding: 20px;
   --section-card-padding-sm: 16px;
   --section-card-bg: var(--surface);
-  --section-card-border: 1px solid rgba(var(--primary-rgb), 0.12);
+  --section-card-border: none;
 
   /* Input tokens */
   --input-radius: var(--radius-sm);
@@ -146,18 +146,19 @@
   --page-card-radius: var(--radius-xl);
   --page-card-padding: 24px;
   --page-card-padding-mobile: 16px;
-  --page-card-border: 1px solid rgba(var(--primary-rgb), 0.12);
+  --page-card-border: none;
   --page-card-bg: rgba(var(--surface-rgb), 0.94);
   --page-card-bg-alt: rgba(var(--surface-rgb), 0.88);
   --page-accent-layer: rgba(var(--primary-rgb), 0.05);
   --page-shell-bg: var(--layer-gradient);
   --nav-shell-bg: rgba(var(--surface-rgb), 0.92);
-  --nav-shell-border: 1px solid rgba(var(--primary-rgb), 0.12);
-  --nav-link-bg: rgba(var(--surface-rgb), 0.92);
-  --nav-link-bg-hover: rgba(var(--primary-rgb), 0.08);
+  --nav-shell-border: none;
+  --tab-container-bg: rgba(var(--primary-rgb), 0.06);
+  --nav-link-bg: rgba(var(--primary-rgb), 0.07);
+  --nav-link-bg-hover: rgba(var(--primary-rgb), 0.12);
   --nav-link-bg-active: var(--primary);
-  --nav-link-border: 1px solid rgba(var(--text-primary-rgb), 0.1);
-  --nav-link-border-active: 1px solid var(--primary);
+  --nav-link-border: 1px solid transparent;
+  --nav-link-border-active: 1px solid transparent;
   --control-height: 44px;
   --control-height-sm: 40px;
   --control-height-xs: 34px;
@@ -173,13 +174,13 @@
   --control-label-size: 0.82rem;
   --control-label-weight: 600;
   --control-gap: 10px;
-  --control-border-color: rgba(var(--text-primary-rgb), 0.12);
-  --control-border: 1px solid var(--control-border-color);
-  --control-border-hover: rgba(var(--primary-rgb), 0.2);
+  --control-border-color: transparent;
+  --control-border: 1px solid transparent;
+  --control-border-hover: transparent;
   --control-border-focus: rgba(var(--primary-rgb), 0.34);
-  --control-bg: rgba(var(--surface-rgb), 0.92);
-  --control-bg-hover: rgba(var(--surface-rgb), 0.98);
-  --control-bg-active: rgba(var(--primary-rgb), 0.08);
+  --control-bg: rgba(var(--primary-rgb), 0.07);
+  --control-bg-hover: rgba(var(--primary-rgb), 0.11);
+  --control-bg-active: rgba(var(--primary-rgb), 0.14);
   --control-muted-text: rgba(var(--text-secondary-rgb), 0.78);
   --control-icon: rgba(var(--text-secondary-rgb), 0.82);
   --control-menu-bg: rgba(var(--surface-rgb), 0.98);
@@ -373,29 +374,30 @@
   /* Scrollbar colors */
   --scrollbar-thumb: var(--primary);
   --scrollbar-thumb-hover: var(--primary-light);
-  --control-border-color: rgba(var(--text-primary-rgb), 0.18);
-  --control-border: 1px solid var(--control-border-color);
-  --control-border-hover: rgba(var(--primary-rgb), 0.28);
+  --control-border-color: transparent;
+  --control-border: 1px solid transparent;
+  --control-border-hover: transparent;
   --control-border-focus: rgba(var(--primary-rgb), 0.44);
-  --control-bg: rgba(var(--surface-rgb), 0.92);
-  --control-bg-hover: rgba(var(--surface-rgb), 0.98);
-  --control-bg-active: rgba(var(--primary-rgb), 0.14);
+  --control-bg: rgba(var(--primary-rgb), 0.10);
+  --control-bg-hover: rgba(var(--primary-rgb), 0.16);
+  --control-bg-active: rgba(var(--primary-rgb), 0.20);
   --control-muted-text: rgba(var(--text-secondary-rgb), 0.76);
   --control-icon: rgba(var(--text-secondary-rgb), 0.84);
   --control-menu-bg: rgba(var(--surface-rgb), 0.98);
   --control-menu-shadow: 0 22px 48px rgba(0, 0, 0, 0.34);
   --control-ring: 0 0 0 3px rgba(var(--primary-rgb), 0.18);
-  --page-card-border: 1px solid rgba(var(--primary-rgb), 0.16);
+  --page-card-border: none;
   --page-card-bg: rgba(var(--surface-rgb), 0.92);
   --page-card-bg-alt: rgba(var(--surface-rgb), 0.86);
   --page-accent-layer: rgba(var(--primary-rgb), 0.08);
   --nav-shell-bg: rgba(var(--surface-rgb), 0.9);
-  --nav-shell-border: 1px solid rgba(var(--primary-rgb), 0.16);
-  --nav-link-bg: rgba(var(--surface-rgb), 0.88);
-  --nav-link-bg-hover: rgba(var(--primary-rgb), 0.14);
+  --nav-shell-border: none;
+  --tab-container-bg: rgba(var(--primary-rgb), 0.08);
+  --nav-link-bg: rgba(var(--primary-rgb), 0.10);
+  --nav-link-bg-hover: rgba(var(--primary-rgb), 0.18);
   --nav-link-bg-active: var(--primary);
-  --nav-link-border: 1px solid rgba(var(--text-primary-rgb), 0.14);
-  --nav-link-border-active: 1px solid var(--primary);
+  --nav-link-border: 1px solid transparent;
+  --nav-link-border-active: 1px solid transparent;
 
   /* Dark mode shadow overrides */
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12);

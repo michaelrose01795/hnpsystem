@@ -110,7 +110,7 @@ export default function ConfirmationDialog({
           style={{
             padding: "var(--control-padding)",
             borderRadius: "var(--radius-sm)",
-            border: "1px solid var(--border)",
+            border: "none",
             backgroundColor: "var(--surface)",
             color: "var(--text-primary)",
             cursor: "pointer",

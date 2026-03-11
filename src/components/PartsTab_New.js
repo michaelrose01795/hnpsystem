@@ -1742,7 +1742,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           <div
             style={{
               background: "var(--surface)",
-              border: "1px solid var(--surface-light)",
+              border: "none",
               borderRadius: "var(--radius-sm)",
               padding: "16px",
             }}
@@ -1791,7 +1791,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             style={{
               maxHeight: "200px",
               overflowY: "auto",
-              border: "1px solid var(--surface-light)",
+              border: "none",
               borderRadius: "var(--radius-sm)",
               marginTop: "12px",
             }}
@@ -1879,7 +1879,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                     width: "100%",
                     padding: "6px",
                     borderRadius: "var(--radius-xs)",
-                    border: "1px solid var(--surface-light)",
+                    border: "none",
                     fontSize: "var(--text-label)",
                   }}
                 />
@@ -1975,7 +1975,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         <div
           style={{
             background: "var(--surface)",
-            border: "1px solid var(--surface-light)",
+            border: "none",
             borderRadius: "var(--radius-sm)",
             padding: "16px",
             minHeight: "400px",
@@ -2132,7 +2132,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                           padding: "12px",
                           textAlign: "center",
                           verticalAlign: "top",
-                          border: "1px solid var(--surface-light)",
+                          border: "none",
                           borderRight: "none",
                           borderTopLeftRadius: "10px",
                           borderBottomLeftRadius: "10px",
@@ -2158,7 +2158,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                           <td style={{
                             padding: "12px",
                             verticalAlign: "top",
-                            border: "1px solid var(--surface-light)",
+                            border: "none",
                             borderRight: assignMode ? "none" : "none",
                             borderLeft: assignMode ? "none" : "1px solid var(--surface-light)",
                             borderTopLeftRadius: assignMode ? "0" : "10px",
@@ -2230,7 +2230,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             verticalAlign: "top",
                             color: isRemoved ? "var(--text-inverse)" : "var(--text-primary)",
                             textDecoration: isRemoved ? "line-through" : "none",
-                            border: "1px solid var(--surface-light)",
+                            border: "none",
                             borderLeft: "none",
                             borderTopRightRadius: "10px",
                             borderBottomRightRadius: "10px",
@@ -2254,7 +2254,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             className="on-order-section"
             style={{
               background: "var(--surface)",
-              border: "1px solid var(--surface-light)",
+              border: "none",
               borderRadius: "var(--radius-sm)",
               padding: "16px",
               minHeight: "400px",
@@ -2315,7 +2315,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                               style={{
                                 padding: "12px",
                                 borderRadius: "var(--radius-sm)",
-                                border: "1px solid var(--surface-light)",
+                                border: "none",
                                 background: "var(--surface-muted)",
                               }}
                             >
@@ -2477,7 +2477,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                   style={{
                                     padding: "12px",
                                     borderRadius: "var(--radius-sm)",
-                                    border: "1px solid var(--surface-light)",
+                                    border: "none",
                                     background: "var(--surface-muted)",
                                   }}
                                 >
@@ -2604,7 +2604,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             className="on-order-section"
             style={{
               background: "var(--surface)",
-              border: "1px solid var(--surface-light)",
+              border: "none",
               borderRadius: "var(--radius-sm)",
               padding: "16px",
               minHeight: "400px",
@@ -2763,7 +2763,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 borderRadius: "var(--radius-xl)",
                 width: "100%",
                 maxWidth: "560px",
-                border: "1px solid var(--surface-light)",
+                border: "none",
                 background: "var(--surface)",
                 padding: "var(--page-card-padding)",
                 display: "flex",
@@ -2808,7 +2808,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   style={{
                     padding: "10px 16px",
                     borderRadius: "var(--radius-xs)",
-                    border: "1px solid var(--surface-light)",
+                    border: "none",
                     background: "var(--surface)",
                     color: "var(--text-primary)",
                     fontSize: "var(--text-label)",
@@ -2927,7 +2927,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                     width: "100%",
                     padding: "8px 10px",
                     borderRadius: "var(--radius-xs)",
-                    border: "1px solid var(--surface-light)",
+                    border: "none",
                     fontSize: "var(--text-label)",
                     background: "var(--surface)",
                     color: "var(--text-primary)",
@@ -2942,7 +2942,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 style={{
                   padding: "10px 16px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                   background: "var(--surface)",
                   color: "var(--info-dark)",
                   fontSize: "var(--text-label)",

@@ -601,7 +601,7 @@ export default function EmployeesTab() {
                   width: "100%",
                   padding: "10px 120px 10px 14px",
                   borderRadius: "var(--input-radius)",
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                   background: "var(--surface-light)",
                   color: "var(--text-primary)",
                   fontSize: "0.9rem",
@@ -659,7 +659,7 @@ export default function EmployeesTab() {
                   textAlign: "left",
                   padding: "14px",
                   borderRadius: "var(--radius-sm)",
-                  border: isSelected ? "1px solid var(--accent-purple)" : "1px solid var(--surface-light)",
+                  border: isSelected ? "1px solid var(--accent-purple)" : "none",
                   background: isSelected ? "rgba(var(--accent-purple-rgb), 0.12)" : "var(--surface)",
                   display: "grid",
                   gridTemplateColumns: "46px 1fr auto",
@@ -728,7 +728,7 @@ export default function EmployeesTab() {
                         style={{
                           padding: "4px 8px",
                           borderRadius: "var(--radius-pill)",
-                          border: "1px solid rgba(var(--grey-accent-rgb), 0.4)",
+                          border: "none",
                           background: "rgba(var(--grey-accent-rgb), 0.15)",
                           color: "var(--text-primary)",
                           fontSize: "0.65rem",
@@ -824,7 +824,7 @@ export default function EmployeesTab() {
               key={index}
               style={{
                 borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--surface-light)",
+                border: "none",
                 background: "var(--surface)",
                 padding: "14px",
                 display: "grid",
@@ -839,7 +839,7 @@ export default function EmployeesTab() {
                   height: "46px",
                   borderRadius: "var(--radius-full)",
                   background: "var(--surface-light)",
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                 }}
               />
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -936,7 +936,7 @@ function EmployeeForm({
               style={{
                 padding: "var(--control-padding)",
                 borderRadius: "var(--radius-xs)",
-                border: "1px solid var(--surface-light)",
+                border: "none",
                 background: "var(--surface)",
                 fontWeight: 600,
                 color: "var(--text-primary)",
@@ -1059,7 +1059,7 @@ function SearchableListDropdown({
         style={{
           padding: "10px",
           borderRadius: "var(--radius-xs)",
-          border: hasError ? "1px solid var(--danger)" : "1px solid var(--surface-light)",
+          border: hasError ? "1px solid var(--danger)" : "none",
           boxShadow: hasError ? "0 0 0 2px rgba(var(--danger-rgb), 0.12)" : "none",
           width: "100%",
           cursor: "pointer",
@@ -1075,7 +1075,7 @@ function SearchableListDropdown({
             maxHeight: "200px",
             overflowY: "auto",
             background: "var(--surface)",
-            border: "1px solid var(--surface-light)",
+            border: "none",
             borderRadius: "var(--radius-xs)",
             marginTop: "4px",
             zIndex: 1000,
@@ -1168,7 +1168,7 @@ function EmployeeDetailsFields({
   availableJobTitles,
 }) {
   const update = (field) => (event) => onFieldChange(field, event.target.value);
-  const inputStyle = { padding: "10px", borderRadius: "var(--radius-xs)", border: "1px solid var(--surface-light)" };
+  const inputStyle = { padding: "10px", borderRadius: "var(--radius-xs)", border: "none" };
   const applyFieldErrorStyle = (field, baseStyle = inputStyle) =>
     fieldErrors[field]
       ? {
@@ -1428,7 +1428,7 @@ function AddressSearchField({ value, onChange }) {
   const inputStyle = {
     padding: "10px",
     borderRadius: "var(--radius-xs)",
-    border: "1px solid var(--surface-light)",
+    border: "none",
     fontSize: "0.9rem",
   };
 
@@ -1476,7 +1476,7 @@ function AddressSearchField({ value, onChange }) {
               right: 0,
               zIndex: 20,
               background: "var(--background, #fff)",
-              border: "1px solid var(--surface-light)",
+              border: "none",
               borderRadius: "var(--radius-xs)",
               marginTop: "4px",
               maxHeight: "200px",
@@ -1531,14 +1531,14 @@ function EmergencyContactSection({ value, onChange, userId }) {
   const inputStyle = {
     padding: "10px",
     borderRadius: "var(--radius-xs)",
-    border: "1px solid var(--surface-light)",
+    border: "none",
     fontSize: "0.9rem",
   };
 
   return (
     <div
       style={{
-        border: "1px solid var(--surface-light)",
+        border: "none",
         borderRadius: "var(--radius-sm)",
         padding: "16px",
         display: "flex",
@@ -1656,7 +1656,7 @@ function SampleAutofillBlock({ value, onChange, onApply, onClear }) {
         style={{
           padding: "12px",
           borderRadius: "var(--input-radius)",
-          border: "1px solid var(--surface-light)",
+          border: "none",
           resize: "vertical",
         }}
         placeholder="First Name: Soren&#10;Last Name: Sorensen&#10;Email: soren@example.com&#10;..."

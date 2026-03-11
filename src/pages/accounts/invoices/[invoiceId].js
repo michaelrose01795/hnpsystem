@@ -51,7 +51,7 @@ export default function InvoiceDetailPage() {
               <h1 style={{ margin: 0, fontSize: "2rem", color: "var(--primary)" }}>Invoice {invoiceId}</h1>
               <p style={{ margin: "4px 0 0", color: "var(--text-secondary)", fontSize: "0.95rem" }}>Review invoice balances, payments, and linked job card.</p>
             </div>
-            <button type="button" onClick={() => router.push("/accounts/invoices")} style={{ padding: "10px 16px", borderRadius: "var(--radius-sm)", border: "1px solid var(--surface-light)", background: "var(--surface-light)", fontWeight: 600 }}>All Invoices</button>
+            <button type="button" onClick={() => router.push("/accounts/invoices")} style={{ padding: "10px 16px", borderRadius: "var(--radius-sm)", border: "none", background: "var(--surface-light)", fontWeight: 600 }}>All Invoices</button>
           </div>
           {loading && <p style={{ color: "var(--text-secondary)" }}>Loading invoice…</p>}
           {!loading && invoice && (

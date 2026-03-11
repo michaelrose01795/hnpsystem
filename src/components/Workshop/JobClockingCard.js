@@ -244,7 +244,7 @@ export default function JobClockingCard() {
         borderRadius: "var(--radius-md)",
         padding: "24px",
         boxShadow: "none",
-        border: "1px solid var(--surface-light)"
+        border: "none"
       }}>
         <div style={{
           display: "flex",
@@ -340,7 +340,7 @@ export default function JobClockingCard() {
         borderRadius: "var(--radius-md)",
         padding: "24px",
         boxShadow: "none",
-        border: "1px solid var(--surface-light)"
+        border: "none"
       }}>
         <h3 style={{
           fontSize: "18px",
@@ -442,7 +442,7 @@ export default function JobClockingCard() {
         borderRadius: "var(--radius-md)",
         padding: "24px",
         boxShadow: "none",
-        border: "1px solid var(--surface-light)"
+        border: "none"
       }}>
         <div style={{
           display: "flex",
@@ -470,7 +470,7 @@ export default function JobClockingCard() {
               padding: "8px 16px",
               backgroundColor: showAvailableJobs ? "var(--primary)" : "var(--surface)",
               color: showAvailableJobs ? "white" : "var(--grey-accent)",
-              border: "1px solid var(--surface-light)",
+              border: "none",
               borderRadius: "var(--radius-xs)",
               cursor: "pointer",
               fontSize: "13px",
@@ -498,7 +498,7 @@ export default function JobClockingCard() {
             style={{
               padding: "12px 16px",
               borderRadius: "var(--radius-xs)",
-              border: "1px solid var(--surface-light)",
+              border: "none",
               fontSize: "14px",
               outline: "none"
             }}
@@ -513,7 +513,7 @@ export default function JobClockingCard() {
             style={{
               padding: "12px 16px",
               borderRadius: "var(--radius-xs)",
-              border: "1px solid var(--surface-light)",
+              border: "none",
               fontSize: "14px",
               cursor: "pointer",
               outline: "none"
@@ -563,7 +563,7 @@ export default function JobClockingCard() {
             <div style={{
               maxHeight: "400px",
               overflowY: "auto",
-              border: "1px solid var(--surface-light)",
+              border: "none",
               borderRadius: "var(--radius-xs)"
             }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>

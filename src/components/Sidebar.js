@@ -103,10 +103,29 @@ export default function Sidebar({
   const generalSections = filterAccessibleSections(groupedSections.general);
   const departmentSections = filterAccessibleSections(groupedSections.departments);
   const accountSections = filterAccessibleSections(groupedSections.account);
+  const prefetchRoutes = useMemo(() => {
+    const allRoutes = new Set(["/login"]);
+    const collect = (items = []) => {
+      items.forEach((item) => {
+        if (item?.href) allRoutes.add(item.href);
+      });
+    };
+
+    collect(dashboardShortcuts);
+    generalSections.forEach((section) => collect(section.items));
+    departmentSections.forEach((section) => collect(section.items));
+    accountSections.forEach((section) => collect(section.items));
+
+    return Array.from(allRoutes);
+  }, [dashboardShortcuts, generalSections, departmentSections, accountSections]);
 
   useEffect(() => {
-    void router.prefetch("/login");
-  }, [router]);
+    prefetchRoutes.forEach((route) => {
+      void router.prefetch(route).catch(() => {
+        // Ignore prefetch errors so navigation remains unaffected.
+      });
+    });
+  }, [router, prefetchRoutes]);
 
   const handleLogout = () => {
     if (typeof window !== "undefined") {
@@ -164,29 +183,9 @@ export default function Sidebar({
     }
   }, [isClockedIn, dbUserId]);
 
-  const shouldForceReloadNavigation = useMemo(() => {
-    const currentPath = (pathname || router?.asPath || router?.pathname || "").split("?")[0];
-    return /^\/job-cards\/[^/]+$/i.test(currentPath);
-  }, [pathname, router?.asPath, router?.pathname]);
-
-  const handleNavLinkClick = useCallback(
-    (event, href) => {
-      if (!href || !shouldForceReloadNavigation || typeof window === "undefined") return;
-      if (
-        event.defaultPrevented ||
-        event.metaKey ||
-        event.ctrlKey ||
-        event.shiftKey ||
-        event.altKey ||
-        event.button === 1
-      ) {
-        return;
-      }
-      event.preventDefault();
-      window.location.assign(href);
-    },
-    [shouldForceReloadNavigation]
-  );
+  const handleNavLinkClick = useCallback((_event, _href) => {
+    // Intentionally no-op: allow Next.js client-side routing to avoid hard app reloads.
+  }, []);
 
   const renderLinkLabel = (label, href) => {
     const isMessagesItem = href === "/messages";

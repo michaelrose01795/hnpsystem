@@ -26,7 +26,7 @@
   padding: var(--control-padding);
   margin: 6px 0;
   border-radius: var(--control-radius);
-  border: var(--control-border);
+  border: none;
   background: var(--control-bg);
 }
 
@@ -42,12 +42,12 @@
 }
 
 .closeButton {
-  background: var(--surface-light);
+  background: var(--control-bg);
   color: var(--text-primary);
   padding: var(--control-padding);
   min-height: var(--control-height);
   border-radius: var(--control-radius);
-  border: 1px solid var(--border);
+  border: none;
   cursor: pointer;
 }
 

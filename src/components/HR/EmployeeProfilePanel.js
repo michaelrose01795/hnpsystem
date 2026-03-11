@@ -6,7 +6,7 @@ import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
 
 const panelCardStyle = {
   borderRadius: "var(--radius-md)",
-  border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
+  border: "none",
   background: "var(--section-card-bg)",
   padding: "var(--section-card-padding)",
   display: "flex",
@@ -17,7 +17,7 @@ const panelCardStyle = {
 
 const sectionCardStyle = {
   borderRadius: "var(--radius-md)",
-  border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
+  border: "none",
   background: "var(--section-card-bg)",
   padding: "16px",
   display: "flex",
@@ -100,7 +100,7 @@ export default function EmployeeProfilePanel({ employee }) {
             right: "18px",
             padding: "10px 16px",
             borderRadius: "var(--radius-sm)",
-            border: "1px solid rgba(var(--primary-rgb), 0.4)",
+            border: "none",
             background: "rgba(var(--primary-rgb), 0.18)",
             fontWeight: 700,
             color: "var(--text-primary)",
@@ -132,7 +132,7 @@ export default function EmployeeProfilePanel({ employee }) {
                   style={{
                     padding: "6px 12px",
                     borderRadius: "var(--radius-pill)",
-                    border: "1px solid rgba(var(--primary-rgb), 0.35)",
+                    border: "none",
                     background: "rgba(var(--primary-rgb), 0.08)",
                     color: "var(--text-primary)",
                     fontSize: "0.75rem",
@@ -154,7 +154,7 @@ export default function EmployeeProfilePanel({ employee }) {
                 style={{
                   padding: "4px 10px",
                   borderRadius: "var(--radius-pill)",
-                  border: "1px solid rgba(var(--primary-rgb), 0.4)",
+                  border: "none",
                   background: "transparent",
                   color: "var(--primary)",
                   fontSize: "0.7rem",
@@ -200,7 +200,7 @@ export default function EmployeeProfilePanel({ employee }) {
             <div
               style={{
                 borderRadius: "var(--radius-md)",
-                border: "1px solid rgba(var(--primary-rgb), 0.35)",
+                border: "none",
                 background: "rgba(var(--primary-rgb), 0.1)",
                 padding: "14px",
               }}
@@ -276,7 +276,7 @@ export default function EmployeeProfilePanel({ employee }) {
             style={{
               padding: "var(--control-padding)",
               borderRadius: "var(--radius-sm)",
-              border: "1px solid rgba(var(--primary-rgb), 0.4)",
+              border: "none",
               background: "rgba(var(--primary-rgb), 0.12)",
               color: "var(--text-primary)",
               fontWeight: 600,
@@ -292,7 +292,7 @@ export default function EmployeeProfilePanel({ employee }) {
                   key={doc.id}
                   style={{
                     borderRadius: "var(--radius-sm)",
-                    border: "1px solid rgba(var(--grey-accent-rgb), 0.3)",
+                    border: "none",
                     background: "rgba(var(--grey-accent-rgb), 0.08)",
                     padding: "12px",
                     display: "flex",
@@ -314,7 +314,7 @@ export default function EmployeeProfilePanel({ employee }) {
                     style={{
                       padding: "6px 12px",
                       borderRadius: "var(--radius-pill)",
-                      border: "1px solid rgba(var(--primary-rgb), 0.35)",
+                      border: "none",
                       background: "transparent",
                       color: "var(--primary)",
                       fontSize: "0.75rem",
@@ -410,7 +410,7 @@ function ActionButton({ children, onClick }) {
       style={{
         padding: "4px 8px",
         borderRadius: "var(--radius-pill)",
-        border: "1px solid rgba(var(--primary-rgb), 0.35)",
+        border: "none",
         background: "transparent",
         color: "var(--primary)",
         fontSize: "0.65rem",

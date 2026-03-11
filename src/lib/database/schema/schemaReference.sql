@@ -690,7 +690,7 @@ CREATE TABLE public.jobs (
   warranty_parts_ordered_at timestamp with time zone,
   warranty_qc_started_at timestamp with time zone,
   warranty_ready_at timestamp with time zone,
-  mileage_at_service integer,
+  milage integer,
   completion_status text,
   rectification_notes text,
   job_description_snapshot text,

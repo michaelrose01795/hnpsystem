@@ -21,7 +21,7 @@ export default function AccountSummary({ summary, onRefresh, showRefreshButton =
     <section
       style={{
         background: "var(--surface)",
-        border: "1px solid var(--surface-light)",
+        border: "none",
         borderRadius: "var(--radius-md)",
         padding: "20px",
         display: "flex",

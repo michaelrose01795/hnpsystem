@@ -67,7 +67,7 @@ const mapCustomerJobsToHistory = (jobs = [], vehicleReg = "") => {
         jobNumber: job.job_number || job.jobNumber,
         serviceDate: requestedAt,
         serviceDateFormatted,
-        mileage: job.mileage_at_service ?? job.mileageAtService ?? null,
+        mileage: job.milage ?? job.mileage ?? null,
         requests,
         invoiceUrl: invoiceFile?.file_url || "",
         invoiceName: invoiceFile?.file_name || "",

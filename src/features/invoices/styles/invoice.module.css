@@ -38,7 +38,7 @@
   align-self: flex-start; /* // align to top */
   padding: 10px 18px; /* // comfortable touch target */
   border-radius: var(--radius-pill); /* // pill shape */
-  border: 1px solid var(--primary-dark); /* // accent border */
+  border: none; /* // borderless button */
   background: var(--primary-dark); /* // accent background */
   color: #fff; /* // white text */
   font-weight: 600; /* // bold text */

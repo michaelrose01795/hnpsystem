@@ -102,7 +102,7 @@ export default function VHCModalShell({
                 alignItems: "center",
                 gap: "8px",
                 background: "var(--surface-light)",
-                border: "1px solid var(--border)",
+                border: "none",
                 color: "var(--text-secondary)",
                 fontSize: "12px",
                 fontWeight: 600,

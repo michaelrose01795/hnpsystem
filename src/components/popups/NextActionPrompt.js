@@ -253,7 +253,7 @@ export default function NextActionPrompt() {
                   style={{
                     padding: "10px 12px",
                     borderRadius: "var(--input-radius)",
-                    border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
+                    border: "none",
                     resize: "vertical",
                     fontFamily: "inherit",
                   }}

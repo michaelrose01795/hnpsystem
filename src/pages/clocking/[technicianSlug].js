@@ -18,17 +18,17 @@ const STATUS_STATES = ["In Progress", "Tea Break", "Waiting for Job"];
 const STATUS_BADGE_STYLES = {
   "In Progress": {
     background: "var(--layer-section-level-1)",
-    border: "1px solid var(--surface-light)",
+    border: "none",
     color: "var(--success-dark)",
   },
   "Tea Break": {
     background: "var(--layer-section-level-1)",
-    border: "1px solid var(--surface-light)",
+    border: "none",
     color: "var(--warning-dark)",
   },
   "Waiting for Job": {
     background: "var(--layer-section-level-1)",
-    border: "1px solid var(--surface-light)",
+    border: "none",
     color: "var(--info)",
   },
 };
@@ -601,7 +601,7 @@ export default function UserClockingHistory() {
 
   const basePanelStyle = {
     borderRadius: "var(--radius-xl)",
-    border: "1px solid var(--surface-light)",
+    border: "none",
     background: "var(--layer-section-level-2)",
     padding: "32px",
     boxShadow: "none",
@@ -624,7 +624,7 @@ export default function UserClockingHistory() {
 
   const tableWrapperStyle = {
     borderRadius: "var(--radius-xl)",
-    border: "1px solid var(--surface-light)",
+    border: "none",
     overflow: "hidden",
   };
 
@@ -654,13 +654,13 @@ export default function UserClockingHistory() {
   const managerBadgeStyle = {
     ...badgeBaseStyle,
     background: "var(--layer-section-level-1)",
-    border: "1px solid var(--surface-light)",
+    border: "none",
     color: "var(--info)",
   };
 
   const inputStyle = {
     borderRadius: "var(--radius-md)",
-    border: "1px solid var(--surface-light)",
+    border: "none",
     background: "var(--surface-light)",
     padding: "12px 14px",
     fontSize: "0.95rem",
@@ -681,7 +681,7 @@ export default function UserClockingHistory() {
 
   const buttonSecondaryStyle = {
     borderRadius: "var(--radius-md)",
-    border: "1px solid var(--surface-light)",
+    border: "none",
     background: "transparent",
     color: "var(--info)",
     fontSize: "0.95rem",
@@ -725,7 +725,7 @@ export default function UserClockingHistory() {
                   Live technician activity
                 </h2>
               </div>
-              <span style={{ ...badgeBaseStyle, background: "var(--layer-section-level-1)", border: "1px solid var(--surface-light)", color: "var(--success-dark)" }}>
+              <span style={{ ...badgeBaseStyle, background: "var(--layer-section-level-1)", border: "none", color: "var(--success-dark)" }}>
                 {loading ? "Refreshing…" : "Live"}
               </span>
             </div>
@@ -763,7 +763,7 @@ export default function UserClockingHistory() {
                                   fontSize: "0.7rem",
                                   ...(chipStyle || {
                                     background: "var(--surface-light)",
-                                    border: "1px solid var(--surface-light)",
+                                    border: "none",
                                     color: "var(--grey-accent)",
                                   }),
                                 }}

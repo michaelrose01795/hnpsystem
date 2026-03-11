@@ -58,6 +58,8 @@ const loadArchivedJob = async (jobNumberIdentifier) => {
   };
 };
 
+const HOT_CACHE_HEADER = "private, max-age=10, stale-while-revalidate=60";
+
 export default async function handler(req, res) {
   const { jobNumber: rawJobNumber, archive, force } = req.query;
 
@@ -73,6 +75,7 @@ export default async function handler(req, res) {
   }
 
   try {
+    const requestForce = String(force || "") === "1";
     const requestArchive = String(archive || "") === "1";
     const identity = await resolveJobIdentity({
       client: supabaseService,
@@ -89,7 +92,7 @@ export default async function handler(req, res) {
           .json({ message: `Archived job card ${rawJobNumber} not found` });
       }
 
-      res.setHeader("Cache-Control", "no-store, max-age=0, must-revalidate");
+      res.setHeader("Cache-Control", requestForce ? "no-store, max-age=0, must-revalidate" : HOT_CACHE_HEADER);
       return res.status(200).json({
         job: data.jobCard,
         customer: data.customer || null,
@@ -99,13 +102,12 @@ export default async function handler(req, res) {
       });
     }
 
-    const requestForce = String(force || "") === "1";
     const { data, error } = await getJobByNumber(canonicalJobNumber, { noCache: requestForce });
 
     if (error || !data?.jobCard) {
       const archived = await loadArchivedJob(canonicalJobNumber);
       if (archived?.data?.jobCard) {
-        res.setHeader("Cache-Control", "no-store, max-age=0, must-revalidate");
+        res.setHeader("Cache-Control", requestForce ? "no-store, max-age=0, must-revalidate" : HOT_CACHE_HEADER);
         return res.status(200).json({
           job: archived.data.jobCard,
           customer: archived.data.customer || null,
@@ -128,8 +130,8 @@ export default async function handler(req, res) {
       vehicleJobHistory = mapCustomerJobsToHistory(customerJobs, jobCard.reg);
     }
 
-    // Prevent caching to ensure fresh data after mutations (parts allocation, etc.)
-    res.setHeader("Cache-Control", "no-store, max-age=0, must-revalidate");
+    // Serve hot cache for fast reloads; callers can bypass with force=1.
+    res.setHeader("Cache-Control", requestForce ? "no-store, max-age=0, must-revalidate" : HOT_CACHE_HEADER);
 
     return res.status(200).json({
       job: jobCard,

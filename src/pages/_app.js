@@ -33,6 +33,61 @@ function AppWrapper({ Component, pageProps }) {
   // Auto-hide scrollbar after 3 seconds of inactivity using delegated event listeners.
   // Uses event delegation on document (capturing phase) so we don't need to attach per-element.
   useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+    const hideBootLoader = () => {
+      document.documentElement.classList.remove("app-boot-loading");
+      document.documentElement.classList.remove("app-reloading");
+      const loader = document.getElementById("app-boot-loader");
+      if (loader) {
+        loader.style.opacity = "0";
+        loader.style.transition = "opacity 180ms ease";
+      }
+    };
+
+    if (document.readyState === "complete") {
+      hideBootLoader();
+      return undefined;
+    }
+
+    window.addEventListener("load", hideBootLoader, { once: true });
+    return () => window.removeEventListener("load", hideBootLoader);
+  }, []);
+
+  useEffect(() => {
+    if (typeof document === "undefined" || typeof window === "undefined") return undefined;
+
+    const isAuthenticated = () => {
+      const cookie = document.cookie || "";
+      return /(?:^|;\s*)(?:__Secure-next-auth\.session-token(?:\.\d+)?|next-auth\.session-token(?:\.\d+)?|hnp-dev-roles)=/.test(
+        cookie
+      );
+    };
+
+    const showReloadMask = () => {
+      if (!isAuthenticated()) return;
+      if (window.location.pathname === "/login") return;
+
+      const loader = document.getElementById("app-boot-loader");
+      document.documentElement.classList.add("app-reloading");
+      document.documentElement.classList.add("app-boot-loading");
+      document.documentElement.setAttribute("data-authenticated", "true");
+
+      if (!loader) return;
+      const bg = getComputedStyle(document.documentElement).getPropertyValue("--background").trim() || "#0f0f11";
+      loader.style.background = bg;
+      loader.style.transition = "none";
+      loader.style.opacity = "1";
+    };
+
+    window.addEventListener("beforeunload", showReloadMask);
+    window.addEventListener("pagehide", showReloadMask);
+    return () => {
+      window.removeEventListener("beforeunload", showReloadMask);
+      window.removeEventListener("pagehide", showReloadMask);
+    };
+  }, []);
+
+  useEffect(() => {
     const hideTimers = new WeakMap();
     const HIDE_DELAY = 3000;
 

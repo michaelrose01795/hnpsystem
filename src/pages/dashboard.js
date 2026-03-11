@@ -18,13 +18,21 @@ const retailManagerRoles = (roleCategories?.Retail || []) // build a list of ret
   .map((roleName) => roleName.toLowerCase()); // normalize to lowercase for comparison
 
 export default function Dashboard() {
-  const { user } = useUser(); // get current user information
+  const { user, loading } = useUser(); // get current user information
   const { jobs, setJobs } = useJobs(); // access shared jobs state
   const router = useRouter(); // initialize router for redirects
   const [showSearch, setShowSearch] = useState(false); // control visibility of search modal
   const [searchTerm, setSearchTerm] = useState(""); // store search term input
   const [searchResults, setSearchResults] = useState([]); // store filtered search results
   const [isRedirecting, setIsRedirecting] = useState(false); // avoid rendering content while routing users
+
+  useEffect(() => {
+    if (loading) return;
+    if (!user) {
+      setIsRedirecting(true);
+      router.replace("/login");
+    }
+  }, [loading, user, router]);
 
   useEffect(() => {
     if (!user) return; // stop if user data not ready
@@ -73,7 +81,17 @@ export default function Dashboard() {
     fetchJobs(); // execute fetch on mount
   }, [user, setJobs]); // re-run when user or setter changes
 
-  if (!user || isRedirecting) return null; // do not render until user data exists or when redirecting
+  if (loading || !user || isRedirecting) {
+    return (
+      <div className="redirect-page-shell">
+        <div className="redirect-card" role="status" aria-live="polite">
+          <p className="redirect-kicker">SIGNING YOU IN</p>
+          <h1 className="redirect-title">Redirecting to login...</h1>
+          <p className="redirect-sub">Just a moment while we get things ready.</p>
+        </div>
+      </div>
+    );
+  } // do not render until user data exists or when redirecting
 
   const normalizedRoles = user?.roles?.map((r) => r.toLowerCase()) || []; // normalize roles for checks
   const hasRole = (rolesToMatch = []) =>

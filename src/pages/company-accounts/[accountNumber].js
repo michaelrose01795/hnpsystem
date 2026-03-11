@@ -177,7 +177,7 @@ export default function CompanyAccountDetailPage() {
                   style={{
                     padding: "16px",
                     borderRadius: "var(--radius-sm)",
-                    border: "1px solid var(--surface-light)",
+                    border: "none",
                     background: "var(--surface)",
                     cursor: "pointer",
                     transition: "all 0.2s ease",
@@ -256,7 +256,7 @@ export default function CompanyAccountDetailPage() {
                   style={{
                     padding: "16px",
                     borderRadius: "var(--radius-sm)",
-                    border: "1px solid var(--surface-light)",
+                    border: "none",
                     background: "var(--surface)",
                     cursor: "pointer",
                     transition: "all 0.2s ease",
@@ -361,7 +361,7 @@ export default function CompanyAccountDetailPage() {
               alignSelf: "flex-start",
               padding: "8px 14px",
               borderRadius: "var(--radius-pill)",
-              border: "1px solid var(--surface-light)",
+              border: "none",
               background: "var(--surface)",
               color: "var(--text-primary)",
               cursor: "pointer",
@@ -397,7 +397,7 @@ export default function CompanyAccountDetailPage() {
               style={{
                 padding: "24px",
                 borderRadius: "var(--radius-md)",
-                border: "1px solid var(--surface-light)",
+                border: "none",
                 background: "var(--surface)",
                 display: "flex",
                 flexDirection: "column",
@@ -489,7 +489,7 @@ export default function CompanyAccountDetailPage() {
                       style={{
                         padding: "10px 18px",
                         borderRadius: "var(--radius-sm)",
-                        border: "1px solid var(--surface-light)",
+                        border: "none",
                         background: "var(--surface)",
                         color: "var(--text-primary)",
                         cursor: "pointer",

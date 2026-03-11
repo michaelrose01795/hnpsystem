@@ -97,7 +97,7 @@ export default function WheelsHubsModal({
             gap: "16px",
             backgroundColor: "var(--surface-light)",
             borderRadius: "var(--control-radius)",
-            border: "1px solid var(--surface-light)",
+            border: "none",
             padding: "16px",
           }}
         >

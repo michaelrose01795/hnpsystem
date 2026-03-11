@@ -290,7 +290,7 @@ export default function NotesTabNew({
 
   const panelStyle = {
     background: "var(--section-card-bg)",
-    border: "1px solid var(--surface-light)",
+    border: "none",
     borderRadius: "var(--radius-md)",
     padding: "var(--section-card-padding)",
   };
@@ -342,7 +342,7 @@ export default function NotesTabNew({
                 padding: "20px",
                 backgroundColor: "var(--layer-section-level-3)",
                 borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--surface-light)",
+                border: "none",
                 marginBottom: "20px",
               }}
             >
@@ -365,7 +365,7 @@ export default function NotesTabNew({
                   maxHeight: "220px",
                   padding: "12px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
+                  border: "none",
                   fontSize: "14px",
                   lineHeight: 1.6,
                   resize: "none",
@@ -443,7 +443,7 @@ export default function NotesTabNew({
               textAlign: "center",
               backgroundColor: "var(--layer-section-level-1)",
               borderRadius: "var(--radius-sm)",
-              border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
+              border: "none",
             }}
           >
             <div style={{ fontSize: "48px", marginBottom: "12px" }}>📝</div>
@@ -553,7 +553,7 @@ export default function NotesTabNew({
                         maxHeight: "260px",
                         padding: "12px",
                         borderRadius: "var(--radius-xs)",
-                        border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
+                        border: "none",
                         fontSize: "14px",
                         lineHeight: 1.6,
                         resize: "none",
@@ -584,7 +584,7 @@ export default function NotesTabNew({
                         style={{
                           padding: "8px 16px",
                           borderRadius: "var(--radius-xs)",
-                          border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
+                          border: "none",
                           backgroundColor: "var(--surface-light)",
                           color: "var(--text-primary)",
                           fontWeight: 700,
@@ -618,7 +618,7 @@ export default function NotesTabNew({
                       style={{
                         padding: "6px 12px",
                         borderRadius: "var(--radius-xs)",
-                        border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
+                        border: "none",
                         backgroundColor: "var(--surface-light)",
                         color: "var(--primary)",
                         fontWeight: 700,
@@ -633,7 +633,7 @@ export default function NotesTabNew({
                       style={{
                         padding: "6px 12px",
                         borderRadius: "var(--radius-xs)",
-                        border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
+                        border: "none",
                         backgroundColor: "var(--surface-light)",
                         color: "var(--text-primary)",
                         fontWeight: 700,
@@ -648,7 +648,7 @@ export default function NotesTabNew({
                       style={{
                         padding: "6px 12px",
                         borderRadius: "var(--radius-xs)",
-                        border: "1px solid rgba(var(--grey-accent-rgb), 0.45)",
+                        border: "none",
                         backgroundColor: "var(--surface-light)",
                         color: "var(--text-primary)",
                         fontWeight: 700,
@@ -701,7 +701,7 @@ export default function NotesTabNew({
                 borderRadius: "var(--radius-md)",
                 padding: "var(--section-card-padding)",
                 width: "min(520px, 100%)",
-                border: "1px solid var(--surface-light)",
+                border: "none",
                 display: "flex",
                 flexDirection: "column",
                 gap: "16px",
@@ -715,7 +715,7 @@ export default function NotesTabNew({
                 type="button"
                 onClick={() => setLinkingNote(null)}
                 style={{
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                   backgroundColor: "var(--surface)",
                   color: "var(--info)",
                   borderRadius: "var(--radius-xs)",
@@ -734,7 +734,7 @@ export default function NotesTabNew({
                 style={{
                   padding: "8px 12px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                   backgroundColor: "var(--surface)",
                   color: "var(--info-dark)",
                   fontWeight: 600,

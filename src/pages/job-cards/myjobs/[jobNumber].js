@@ -2042,29 +2042,23 @@ export default function TechJobDetailPage() {
   if (loading) {
     return (
       <Layout jobNumber={jobNumber}>
-        <div style={{ 
-          display: "flex", 
-          alignItems: "center", 
-          justifyContent: "center", 
-          height: "80vh",
-          flexDirection: "column",
-          gap: "16px"
-        }}>
-          <div style={{
-            width: "60px",
-            height: "60px",
-            border: "4px solid var(--surface)",
-            borderTop: "4px solid var(--primary)",
-            borderRadius: "var(--radius-full)",
-            animation: "spin 1s linear infinite"
-          }}></div>
-          <p style={{ color: "var(--grey-accent)" }}>Loading job...</p>
-          <style jsx>{`
-            @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-          `}</style>
+        <div className="redirect-screen" role="status" aria-live="polite">
+          <div className="redirect-card">
+            <div className="login-brand redirect-brand" aria-hidden="true">
+              <img src="/logo.png" alt="H&P logo" className="login-logo" />
+            </div>
+            <div className="redirect-spinner" aria-hidden="true"></div>
+            <div className="redirect-copy">
+              <p className="redirect-kicker">Page Load</p>
+              <h2 className="redirect-title">Loading job...</h2>
+              <p className="redirect-sub">Preparing technician job details.</p>
+            </div>
+            <div className="redirect-dots" aria-hidden="true">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
         </div>
       </Layout>
     );
@@ -2282,7 +2276,7 @@ export default function TechJobDetailPage() {
             alignItems: "center",
             justifyContent: "flex-start",
             backgroundColor: "var(--surface)",
-            border: "1px solid var(--surface-light)",
+            border: "none",
             borderRadius: "var(--radius-sm)",
             padding: "10px 14px",
             width: "fit-content",
@@ -2306,7 +2300,7 @@ export default function TechJobDetailPage() {
             justifyContent: "flex-end",
             marginLeft: "auto",
             backgroundColor: "var(--surface)",
-            border: "1px solid var(--surface-light)",
+            border: "none",
             borderRadius: "var(--radius-sm)",
             padding: "10px 14px"
           }}>
@@ -2438,7 +2432,7 @@ export default function TechJobDetailPage() {
                 }}
                 style={{
                   backgroundColor: "var(--layer-section-level-1)",
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                   borderRadius: "var(--radius-xs)",
                   padding: "16px",
                   display: "flex",
@@ -2473,7 +2467,7 @@ export default function TechJobDetailPage() {
         {/* Tabs Navigation */}
         <div style={{
           borderRadius: "var(--radius-pill)",
-          border: "1px solid var(--surface-light)",
+          border: "none",
           background: "var(--surface)",
           padding: "6px",
           display: "inline-flex",
@@ -2545,7 +2539,7 @@ export default function TechJobDetailPage() {
           style={{
             flex: 1,
             borderRadius: "var(--radius-xs)",
-            border: "1px solid var(--surface-light)",
+            border: "none",
             backgroundColor: "var(--layer-section-level-1)",
             padding: "24px",
             overflow: "hidden",
@@ -2565,7 +2559,7 @@ export default function TechJobDetailPage() {
                 backgroundColor: "var(--surface)",
                 padding: "24px",
                 borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--surface-light)"
+                border: "none"
               }}>
                 <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px" }}>
                   Job Details
@@ -2697,7 +2691,7 @@ export default function TechJobDetailPage() {
                   backgroundColor: "var(--surface)",
                   padding: "24px",
                   borderRadius: "var(--radius-sm)",
-                  border: "1px solid var(--surface-light)"
+                  border: "none"
                 }}>
                   <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px" }}>
                     Vehicle Information
@@ -2739,7 +2733,7 @@ export default function TechJobDetailPage() {
                   backgroundColor: "var(--surface)",
                   padding: "24px",
                   borderRadius: "var(--radius-sm)",
-                  border: "1px solid var(--surface-light)"
+                  border: "none"
                 }}>
                   <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px" }}>
                     Customer Information
@@ -2778,7 +2772,7 @@ export default function TechJobDetailPage() {
                 <div style={{
                   backgroundColor: "var(--layer-section-level-2)",
                   borderRadius: "var(--radius-sm)",
-                  border: "1px solid var(--surface-light)",
+                  border: "none",
                   padding: "20px",
                   display: "flex",
                   alignItems: "center",
@@ -3390,7 +3384,7 @@ export default function TechJobDetailPage() {
               backgroundColor: "var(--layer-section-level-2)",
               padding: "24px",
               borderRadius: "var(--radius-sm)",
-              border: "1px solid var(--surface-light)",
+              border: "none",
               display: "flex",
               flexDirection: "column",
               gap: "16px",
@@ -3399,7 +3393,7 @@ export default function TechJobDetailPage() {
               <div style={{
                 backgroundColor: "var(--layer-section-level-3)",
                 borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--surface-light)",
+                border: "none",
                 padding: "20px",
                 display: "flex",
                 flexDirection: "column",
@@ -3733,7 +3727,7 @@ export default function TechJobDetailPage() {
               backgroundColor: "var(--layer-section-level-2)",
               padding: "24px",
               borderRadius: "var(--radius-sm)",
-              border: "1px solid var(--surface-light)",
+              border: "none",
               display: "flex",
               flexDirection: "column",
               gap: "20px"
@@ -3767,7 +3761,7 @@ export default function TechJobDetailPage() {
                   padding: "20px",
                   backgroundColor: "var(--layer-section-level-3)",
                   borderRadius: "var(--radius-sm)",
-                  border: "1px solid var(--surface-light)"
+                  border: "none"
                 }}>
                   <textarea
                     value={newNote}
@@ -3836,7 +3830,7 @@ export default function TechJobDetailPage() {
                   color: "var(--info)",
                   backgroundColor: "var(--layer-section-level-3)",
                   borderRadius: "var(--radius-sm)",
-                  border: "1px solid var(--surface-light)"
+                  border: "none"
                 }}>
                   <p style={{ fontSize: "16px", fontWeight: "600", marginBottom: "4px" }}>No notes added yet</p>
                   <p style={{ fontSize: "14px", color: "var(--info)" }}>
@@ -3857,7 +3851,7 @@ export default function TechJobDetailPage() {
                       <div
                         key={noteId}
                         style={{
-                          border: "1px solid var(--surface-light)",
+                          border: "none",
                           borderRadius: "var(--control-radius-xs)",
                           padding: "16px",
                           backgroundColor: "var(--layer-section-level-3)"
@@ -3935,7 +3929,7 @@ export default function TechJobDetailPage() {
               backgroundColor: "var(--layer-section-level-2)",
               padding: "24px",
               borderRadius: "var(--radius-sm)",
-              border: "1px solid var(--surface-light)",
+              border: "none",
             }}>
               <DocumentsTab
                 documents={jobDocuments}
@@ -3976,7 +3970,7 @@ export default function TechJobDetailPage() {
                 maxWidth: "560px",
                 maxHeight: "88vh",
                 overflowY: "auto",
-                border: "1px solid var(--surface-light)",
+                border: "none",
               }}
               onClick={(event) => event.stopPropagation()}
             >
@@ -4026,7 +4020,7 @@ export default function TechJobDetailPage() {
                     <div
                       key={`${jobType}-${index}`}
                       style={{
-                        border: "1px solid var(--surface-light)",
+                        border: "none",
                         borderRadius: "var(--radius-sm)",
                         backgroundColor: "var(--surface-light)",
                         padding: "12px 14px",
