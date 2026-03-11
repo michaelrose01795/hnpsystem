@@ -2933,42 +2933,9 @@ export default function JobCardDetailPage() {
         </section>
 
         {/* ✅ Tabs Navigation */}
-        <section
-          style={{
-            borderRadius: "var(--radius-pill)",
-            border: "1px solid var(--surface-light)",
-            background: "var(--surface)",
-            padding: "6px",
-            width: "100%",
-            flexShrink: 0,
-            overflow: "hidden",
-            minHeight: "44px",
-            display: "flex",
-            alignItems: "center",
-            position: "sticky",
-            top: 0,
-            zIndex: 50,
-          }}
-        >
+        <section className="page-surface-plain">
           <div
-            style={{
-              display: "flex",
-              gap: "6px",
-              width: "100%",
-              overflowX: "auto",
-              overflowY: "hidden",
-              scrollbarWidth: "none",
-              msOverflowStyle: "none",
-              scrollBehavior: "smooth",
-              WebkitOverflowScrolling: "touch",
-              alignItems: "center",
-              justifyContent: tabsOverflowing ? "flex-start" : "center",
-              flexWrap: "nowrap",
-              flex: 1,
-              paddingBottom: tabsOverflowing ? "6px" : 0,
-              cursor: tabsOverflowing ? "grab" : "default",
-            }}
-            className="jobcard-tabs-scroll-container"
+            className={`tab-scroll-row${tabsOverflowing ? " is-overflowing" : ""}`}
             ref={tabsScrollRef}
             onMouseDown={tabsOverflowing ? handleTabsDragStart : undefined}
             onMouseMove={tabsOverflowing ? handleTabsDragMove : undefined}
@@ -2986,82 +2953,26 @@ export default function JobCardDetailPage() {
                 (isPartsTab && partsTabComplete) ||
                 (isWriteUpTab && writeUpComplete) ||
                 isVhcCompleteHighlight;
-              const tabBackground = isCompleteHighlight
-                ? isActive
-                  ? "var(--success)"
-                  : "var(--success-surface)"
+              const tabTone = isCompleteHighlight
+                ? "success"
                 : isVhcAmberHighlight
-                ? isActive
-                  ? "var(--warning)"
-                  : "var(--warning-surface)"
-                : isActive
-                ? "var(--primary)"
-                : "transparent";
-              const tabColor = isCompleteHighlight
-                ? isActive
-                  ? "var(--text-inverse)"
-                  : "var(--success-dark)"
-                : isVhcAmberHighlight
-                ? isActive
-                  ? "var(--text-inverse)"
-                  : "var(--warning-dark)"
-                : isActive
-                ? "var(--text-inverse)"
-                : "var(--text-primary)";
-              const tabBorder = isCompleteHighlight
-                ? "1px solid var(--success)"
-                : isVhcAmberHighlight
-                ? "1px solid var(--warning)"
-                : "1px solid transparent";
+                ? "warning"
+                : "default";
 
               return (
                 <button
                   key={tab.id}
-                  className="jobcard-tab-button"
+                  className={`tab-api__item${isActive ? " is-active" : ""}`}
+                  data-tone={tabTone}
                   onClick={(e) => {
                     handleTabClick(tab.id);
                     e.currentTarget.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-                  }}
-                  style={{
-                    flex: "0 0 auto",
-                    borderRadius: "var(--radius-pill)",
-                    border: tabBorder,
-                    padding: "10px 20px",
-                    fontSize: "0.9rem",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    background: tabBackground,
-                    color: tabColor,
-                    transition: "all 0.15s ease",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "6px",
-                    whiteSpace: "nowrap",
-                    height: "auto",
-                    minHeight: "38px",
                   }}
                 >
                   {tab.icon && <span>{tab.icon}</span>}
                   <span>{tab.label}</span>
                   {tab.badge && (
-                    <span
-                      style={{
-                        padding: "3px 8px",
-                        backgroundColor:
-                          tab.id === "notes"
-                            ? isActive
-                              ? "rgba(255, 255, 255, 0.28)"
-                              : "var(--danger)"
-                            : isActive
-                            ? "rgba(255, 255, 255, 0.3)"
-                            : "var(--primary)",
-                        color: "var(--text-inverse)",
-                        borderRadius: "var(--radius-xs)",
-                        fontSize: "11px",
-                        fontWeight: "600",
-                      }}
-                    >
+                    <span className="jobcard-tab-badge" data-tab-id={tab.id}>
                       {tab.badge}
                     </span>
                   )}
@@ -3071,13 +2982,8 @@ export default function JobCardDetailPage() {
           </div>
         </section>
         <style jsx global>{`
-          .jobcard-tabs-scroll-container::-webkit-scrollbar {
+          .tab-scroll-row::-webkit-scrollbar {
             display: none;
-          }
-          .jobcard-tab-button:hover,
-          .jobcard-tab-button:active,
-          .jobcard-tab-button:focus {
-            transform: none !important;
           }
           .vehicle-mileage-input::placeholder {
             color: var(--grey-accent);
@@ -3105,12 +3011,7 @@ export default function JobCardDetailPage() {
         `}</style>
 
         {/* ✅ Tab Content */}
-        <section style={{
-          backgroundColor: "var(--layer-section-level-2)",
-          borderRadius: "var(--radius-sm)",
-          border: "1px solid var(--surface-light)",
-          padding: "24px"
-        }}>
+        <section>
           {/* Preload all tabs on page load; switch by display only. */}
           <div style={{ display: activeTab === "customer-requests" ? "block" : "none" }}>
             <CustomerRequestsTab

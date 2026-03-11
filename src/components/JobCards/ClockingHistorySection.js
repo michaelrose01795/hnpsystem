@@ -249,13 +249,13 @@ export default function ClockingHistorySection({
   return (
     <section
       style={{
-        padding: "20px",
-        borderRadius: "var(--radius-sm)",
-        border: "1px solid var(--surface-light)",
-        backgroundColor: "var(--surface-light)",
+        padding: "32px",
+        borderRadius: "var(--radius-xl)",
+        border: "none",
+        backgroundColor: "var(--layer-section-level-2)",
         display: "flex",
         flexDirection: "column",
-        gap: "12px"
+        gap: "24px"
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
@@ -277,7 +277,7 @@ export default function ClockingHistorySection({
           style={{
             borderRadius: "var(--control-radius-xs)",
             border: "1px solid var(--danger)",
-            backgroundColor: "var(--danger-surface)",
+            backgroundColor: "var(--layer-section-level-1)",
             color: "var(--danger-dark)",
             padding: "10px 14px",
             fontSize: "0.9rem"

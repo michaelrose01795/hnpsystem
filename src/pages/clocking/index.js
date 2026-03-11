@@ -16,6 +16,67 @@ const TARGET_ROLES = [...new Set([...TECH_ROLES, ...MOT_ROLES])];
 const TARGET_ROLE_SET = new Set(TARGET_ROLES.map((role) => role.toLowerCase()));
 const MOT_ROLE_SET = new Set(MOT_ROLES.map((role) => role.toLowerCase()));
 
+const SUMMARY_CARD_STYLES = {
+  total: {
+    background: "rgba(var(--primary-rgb), 0.12)",
+    border: "1px solid rgba(var(--primary-rgb), 0.18)",
+    valueColor: "var(--primary-dark)",
+  },
+  inProgress: {
+    background: "rgba(var(--success-rgb), 0.14)",
+    border: "1px solid rgba(var(--success-rgb), 0.2)",
+    valueColor: "var(--success-dark)",
+  },
+  onMot: {
+    background: "rgba(var(--info-rgb), 0.14)",
+    border: "1px solid rgba(var(--info-rgb), 0.2)",
+    valueColor: "var(--info)",
+  },
+  teaBreak: {
+    background: "rgba(var(--warning-rgb), 0.16)",
+    border: "1px solid rgba(var(--warning-rgb), 0.24)",
+    valueColor: "var(--warning-dark)",
+  },
+  waiting: {
+    background: "rgba(var(--accent-purple-rgb), 0.12)",
+    border: "1px solid rgba(var(--accent-purple-rgb), 0.18)",
+    valueColor: "var(--accent-purple)",
+  },
+  notClocked: {
+    background: "rgba(var(--grey-accent-rgb), 0.16)",
+    border: "1px solid rgba(var(--grey-accent-rgb), 0.26)",
+    valueColor: "var(--text-secondary)",
+  },
+};
+
+const TECH_STATUS_STYLES = {
+  "Not Clocked In": {
+    background: "var(--layer-section-level-1)",
+    border: "1px solid var(--surface-light)",
+    color: "var(--text-secondary)",
+  },
+  "Waiting for Job": {
+    background: "var(--layer-section-level-1)",
+    border: "1px solid var(--surface-light)",
+    color: "var(--info)",
+  },
+  "Tea Break": {
+    background: "var(--layer-section-level-1)",
+    border: "1px solid var(--surface-light)",
+    color: "var(--warning-dark)",
+  },
+  "In Progress": {
+    background: "var(--layer-section-level-1)",
+    border: "1px solid var(--surface-light)",
+    color: "var(--success-dark)",
+  },
+  "On MOT": {
+    background: "var(--layer-section-level-1)",
+    border: "1px solid var(--surface-light)",
+    color: "var(--info)",
+  },
+};
+
 const formatTime = (value) => {
   if (!value) return "—";
   const date = new Date(value);
@@ -426,6 +487,17 @@ function ClockingOverviewTab({ onSummaryChange }) {
   const modalActionDisabled = modalSubmitting || (!modalTechClockedIn && !trimmedModalJobNumber);
   const modalActionLabel = modalTechClockedIn ? "Clock off" : "Clock in";
   const jobNumberInputId = "clocking-job-number-input";
+  const statusPillBaseStyle = {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "8px 16px",
+    borderRadius: "var(--radius-pill)",
+    fontSize: "0.75rem",
+    fontWeight: 600,
+    textTransform: "uppercase",
+    letterSpacing: "0.05em",
+  };
 
   return (
     <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "24px" }}>
@@ -465,8 +537,8 @@ function ClockingOverviewTab({ onSummaryChange }) {
               style={{
                 borderRadius: "var(--radius-md)",
                 padding: "16px",
-                background: "var(--danger-surface)",
-                border: "1px solid var(--surface-light)",
+                background: SUMMARY_CARD_STYLES.total.background,
+                border: SUMMARY_CARD_STYLES.total.border,
                 boxShadow: "none",
                 display: "flex",
                 flexDirection: "column",
@@ -483,7 +555,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
               >
                 Technicians Total
               </span>
-              <strong style={{ fontSize: "1.8rem", color: "var(--primary-dark)" }}>
+              <strong style={{ fontSize: "1.8rem", color: SUMMARY_CARD_STYLES.total.valueColor }}>
                 {summaryStats.total}
               </strong>
               <span style={{ color: "var(--info-dark)", fontSize: "0.85rem" }}>
@@ -495,8 +567,8 @@ function ClockingOverviewTab({ onSummaryChange }) {
               style={{
                 borderRadius: "var(--radius-md)",
                 padding: "16px",
-                background: "var(--danger-surface)",
-                border: "1px solid var(--success)22",
+                background: SUMMARY_CARD_STYLES.inProgress.background,
+                border: SUMMARY_CARD_STYLES.inProgress.border,
                 boxShadow: "none",
                 display: "flex",
                 flexDirection: "column",
@@ -513,7 +585,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
               >
                 In Progress
               </span>
-              <strong style={{ fontSize: "1.8rem", color: "var(--success)" }}>
+              <strong style={{ fontSize: "1.8rem", color: SUMMARY_CARD_STYLES.inProgress.valueColor }}>
                 {summaryStats.inProgress}
               </strong>
               <span style={{ color: "var(--info-dark)", fontSize: "0.85rem" }}>
@@ -525,8 +597,8 @@ function ClockingOverviewTab({ onSummaryChange }) {
               style={{
                 borderRadius: "var(--radius-md)",
                 padding: "16px",
-                background: "var(--danger-surface)",
-                border: "1px solid var(--info)22",
+                background: SUMMARY_CARD_STYLES.onMot.background,
+                border: SUMMARY_CARD_STYLES.onMot.border,
                 boxShadow: "none",
                 display: "flex",
                 flexDirection: "column",
@@ -543,7 +615,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
               >
                 MOT Count
               </span>
-              <strong style={{ fontSize: "1.8rem", color: "var(--info)" }}>
+              <strong style={{ fontSize: "1.8rem", color: SUMMARY_CARD_STYLES.onMot.valueColor }}>
                 {summaryStats.onMot}
               </strong>
               <span style={{ color: "var(--info-dark)", fontSize: "0.85rem" }}>
@@ -555,8 +627,8 @@ function ClockingOverviewTab({ onSummaryChange }) {
               style={{
                 borderRadius: "var(--radius-md)",
                 padding: "16px",
-                background: "var(--danger-surface)",
-                border: "1px solid var(--accent-purple)22",
+                background: SUMMARY_CARD_STYLES.teaBreak.background,
+                border: SUMMARY_CARD_STYLES.teaBreak.border,
                 boxShadow: "none",
                 display: "flex",
                 flexDirection: "column",
@@ -573,7 +645,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
               >
                 Tea Break
               </span>
-              <strong style={{ fontSize: "1.8rem", color: "var(--accent-purple)" }}>
+              <strong style={{ fontSize: "1.8rem", color: SUMMARY_CARD_STYLES.teaBreak.valueColor }}>
                 {summaryStats.teaBreak}
               </strong>
               <span style={{ color: "var(--info-dark)", fontSize: "0.85rem" }}>
@@ -585,8 +657,8 @@ function ClockingOverviewTab({ onSummaryChange }) {
               style={{
                 borderRadius: "var(--radius-md)",
                 padding: "16px",
-                background: "var(--danger-surface)",
-                border: "1px solid var(--primary)22",
+                background: SUMMARY_CARD_STYLES.waiting.background,
+                border: SUMMARY_CARD_STYLES.waiting.border,
                 boxShadow: "none",
                 display: "flex",
                 flexDirection: "column",
@@ -603,7 +675,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
               >
                 Waiting
               </span>
-              <strong style={{ fontSize: "1.8rem", color: "var(--primary)" }}>
+              <strong style={{ fontSize: "1.8rem", color: SUMMARY_CARD_STYLES.waiting.valueColor }}>
                 {summaryStats.waiting}
               </strong>
               <span style={{ color: "var(--info-dark)", fontSize: "0.85rem" }}>
@@ -615,8 +687,8 @@ function ClockingOverviewTab({ onSummaryChange }) {
               style={{
                 borderRadius: "var(--radius-md)",
                 padding: "16px",
-                background: "var(--danger-surface)",
-                border: "1px solid var(--grey-accent)22",
+                background: SUMMARY_CARD_STYLES.notClocked.background,
+                border: SUMMARY_CARD_STYLES.notClocked.border,
                 boxShadow: "none",
                 display: "flex",
                 flexDirection: "column",
@@ -633,7 +705,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
               >
                 Offline
               </span>
-              <strong style={{ fontSize: "1.8rem", color: "var(--grey-accent)" }}>
+              <strong style={{ fontSize: "1.8rem", color: SUMMARY_CARD_STYLES.notClocked.valueColor }}>
                 {summaryStats.notClocked}
               </strong>
               <span style={{ color: "var(--info-dark)", fontSize: "0.85rem" }}>
@@ -709,18 +781,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                 tech.status === "On MOT";
               const clockButtonLabel =
                 tech.status === "Not Clocked In" ? "Not clocked in" : "Clocked in";
-              const buttonPalette =
-                tech.status === "Not Clocked In"
-                  ? {
-                      background: "var(--danger-surface)",
-                      border: "1px solid var(--danger-dark)",
-                      color: "var(--danger-dark)",
-                    }
-                  : {
-                      background: "var(--success-surface)",
-                      border: "1px solid var(--success)",
-                      color: "var(--success-dark)",
-                    };
+              const statusStyle = TECH_STATUS_STYLES[tech.status] || TECH_STATUS_STYLES["Waiting for Job"];
 
               const handleClockButtonClick = (event) => {
                 event.preventDefault();
@@ -804,15 +865,10 @@ function ClockingOverviewTab({ onSummaryChange }) {
                               type="button"
                               onClick={handleClockButtonClick}
                               style={{
-                                padding: "8px 16px",
-                                borderRadius: "var(--radius-sm)",
-                                fontSize: "0.75rem",
-                                fontWeight: 600,
-                                textTransform: "uppercase",
-                                letterSpacing: "0.05em",
-                                background: buttonPalette.background,
-                                border: buttonPalette.border,
-                                color: buttonPalette.color,
+                                ...statusPillBaseStyle,
+                                background: statusStyle.background,
+                                border: statusStyle.border,
+                                color: statusStyle.color,
                                 cursor: "pointer",
                               }}
                             >
@@ -825,18 +881,11 @@ function ClockingOverviewTab({ onSummaryChange }) {
                         ) : (
                           <span
                             style={{
+                              ...statusPillBaseStyle,
                               padding: "6px 12px",
-                              borderRadius: "var(--radius-sm)",
-                              fontSize: "0.75rem",
-                              fontWeight: 600,
-                              background: "var(--surface-light)",
-                              border: "var(--control-border)",
-                              color: "#334155",
-                              ...(tech.status === "Tea Break" && {
-                                background: "var(--warning-surface)",
-                                border: "1px solid var(--warning-surface)",
-                                color: "var(--warning-text)",
-                              }),
+                              background: statusStyle.background,
+                              border: statusStyle.border,
+                              color: statusStyle.color,
                             }}
                           >
                             {tech.status}

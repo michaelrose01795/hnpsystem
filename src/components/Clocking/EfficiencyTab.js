@@ -720,8 +720,8 @@ export default function EfficiencyTab({
       return;
     }
     const hours = Number(formHours);
-    if (!formHours || Number.isNaN(hours) || hours < 0.1) {
-      setFormError("Total clocked must be at least 0.1 hours.");
+    if (!formHours || Number.isNaN(hours) || hours < 0.01) {
+      setFormError("Total clocked must be at least 0.01 hours.");
       return;
     }
     const allocatedHoursParsed =
@@ -879,13 +879,6 @@ export default function EfficiencyTab({
   const summaryValueStyle = (color) => ({
     fontSize: "1.6rem",
     color: statusTone(color).text,
-  });
-  const summarySplitTitleStyle = (color) => ({
-    fontSize: "0.62rem",
-    textTransform: "uppercase",
-    letterSpacing: "0.08em",
-    color: statusTone(color).label,
-    opacity: 0.85,
   });
   const currentMonthTargetHours = useMemo(() => {
     const monthStart = new Date(selectedYear, selectedMonth - 1, 1);
@@ -1352,9 +1345,6 @@ export default function EfficiencyTab({
                 </strong>
               </div>
               <div style={{ ...statCardStyle, gridColumn: "span 2", minWidth: "320px" }}>
-                <span style={statusLabelStyle(filteredSetStatusColor)}>
-                  Monthly Target
-                </span>
                 <div
                   style={{
                     display: "grid",
@@ -1373,13 +1363,13 @@ export default function EfficiencyTab({
                       borderRight: "1px solid rgba(var(--accent-purple-rgb), 0.22)",
                     }}
                   >
-                    <span style={summarySplitTitleStyle(filteredSetStatusColor)}>Current Target</span>
+                    <span style={statusLabelStyle(filteredSetStatusColor)}>Current Target</span>
                     <strong style={summaryValueStyle(filteredSetStatusColor)}>
                       {formatHours(currentMonthTargetHours)}h
                     </strong>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "4px", paddingLeft: "2px" }}>
-                    <span style={summarySplitTitleStyle(filteredSetStatusColor)}>Monthly Target</span>
+                    <span style={statusLabelStyle(filteredSetStatusColor)}>Full Month</span>
                     <strong style={summaryValueStyle(filteredSetStatusColor)}>
                       {formatHours(fullMonthTargetHours)}h
                     </strong>
@@ -2006,7 +1996,7 @@ export default function EfficiencyTab({
                       id="efficiencyHours"
                       type="number"
                       step="0.01"
-                      min="0.1"
+                      min="0.01"
                       value={formHours}
                       onChange={(e) => {
                         setFormHours(e.target.value);
@@ -2158,40 +2148,6 @@ export default function EfficiencyTab({
             }
             :global(:not([data-theme="dark"])) .efficiency-modal-overlay {
               background: rgba(50, 50, 50, 0.45);
-            }
-            :global(.efficiency-request-dropdown) {
-              width: 100%;
-            }
-            :global(.efficiency-request-dropdown .dropdown-api__menu) {
-              max-height: 144px !important;
-              overflow-y: auto !important;
-            }
-            :global(.efficiency-request-dropdown .dropdown-api__option-description) {
-              display: inline-flex;
-              align-items: center;
-              width: fit-content;
-              padding: 2px 8px;
-              border-radius: var(--radius-pill);
-              border: 1px solid var(--success);
-              color: var(--success);
-              background: rgba(var(--success-rgb), 0.08);
-              font-weight: 600;
-              font-size: 0.7rem;
-              text-transform: uppercase;
-              letter-spacing: 0.02em;
-            }
-            :global(.efficiency-filter-calendar) {
-              width: fit-content;
-            }
-            :global(.efficiency-filter-calendar .calendar-api__field) {
-              width: fit-content;
-            }
-            :global(.efficiency-tech-filter-dropdown) {
-              width: fit-content;
-            }
-            :global(.efficiency-tech-filter-dropdown .dropdown-api__menu) {
-              min-width: 100%;
-              width: max-content;
             }
             @media (max-width: 430px) {
               :global(.efficiency-page) {

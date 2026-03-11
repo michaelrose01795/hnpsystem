@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
+import { PageContainer, PageWrapper } from "@/components/ui";
 import { useUser } from "@/context/UserContext";
 import { supabase } from "@/lib/supabaseClient";
 import { generateTechnicianSlug } from "@/utils/technicianSlug";
@@ -16,18 +17,18 @@ const STATUS_STATES = ["In Progress", "Tea Break", "Waiting for Job"];
 
 const STATUS_BADGE_STYLES = {
   "In Progress": {
-    background: "var(--success-surface)",
-    border: "1px solid rgba(var(--success-rgb), 0.4)",
+    background: "var(--layer-section-level-1)",
+    border: "1px solid var(--surface-light)",
     color: "var(--success-dark)",
   },
   "Tea Break": {
-    background: "var(--warning-surface)",
-    border: "1px solid rgba(var(--warning-rgb), 0.35)",
+    background: "var(--layer-section-level-1)",
+    border: "1px solid var(--surface-light)",
     color: "var(--warning-dark)",
   },
   "Waiting for Job": {
-    background: "var(--info-surface)",
-    border: "1px solid rgba(var(--grey-accent-rgb), 0.4)",
+    background: "var(--layer-section-level-1)",
+    border: "1px solid var(--surface-light)",
     color: "var(--info)",
   },
 };
@@ -595,41 +596,8 @@ export default function UserClockingHistory() {
     ]
   );
 
-  const headerName = user
-    ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
-    : `ID ${technicianUserId || "?"}`;
   const liveRecord = entries.find((entry) => !entry.clock_out) || entries[0] || null;
   const currentStatus = liveRecord ? deriveStatus(liveRecord) : null;
-  const todayLabel = new Date().toLocaleDateString("en-GB");
-  const stats = [
-    { label: "Entries logged", value: entries.length, hint: "Captured today" },
-    { label: "Active jobs", value: activeJobs.length, hint: activeJobsLoading ? "Refreshing…" : "Live jobs" },
-    { label: "Current status", value: currentStatus?.status || "Waiting for Job", hint: "Live technician state" },
-    { label: "Live refresh", value: loading ? "Refreshing…" : "Live", hint: "Auto-updating feed" },
-  ];
-
-  const pageBackgroundStyle = {
-    background: "var(--layer-section-level-3)",
-    padding: "40px 0",
-  };
-
-  const containerStyle = {
-    width: "100%",
-    margin: "0",
-    padding: "0 40px",
-    display: "flex",
-    flexDirection: "column",
-  };
-
-  const contentShellStyle = {
-    background: "var(--layer-section-level-3)",
-    borderRadius: "var(--radius-xl)",
-    border: "1px solid rgba(var(--text-primary-rgb), 0.08)",
-    padding: "32px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "24px",
-  };
 
   const basePanelStyle = {
     borderRadius: "var(--radius-xl)",
@@ -652,26 +620,6 @@ export default function UserClockingHistory() {
     fontWeight: 600,
     letterSpacing: "0.08em",
     textTransform: "uppercase",
-  };
-
-  const statusChipStyle = currentStatus?.status
-    ? { ...badgeBaseStyle, ...STATUS_BADGE_STYLES[currentStatus.status] }
-    : null;
-
-  const statsGridStyle = {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-    gap: "16px",
-  };
-
-  const statCardStyle = {
-    borderRadius: "var(--radius-lg)",
-    border: "1px solid var(--border)",
-    background: "var(--layer-section-level-1)",
-    padding: "18px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "6px",
   };
 
   const tableWrapperStyle = {
@@ -705,8 +653,8 @@ export default function UserClockingHistory() {
 
   const managerBadgeStyle = {
     ...badgeBaseStyle,
-    background: "var(--info-surface)",
-    border: "1px solid rgba(var(--grey-accent-rgb), 0.4)",
+    background: "var(--layer-section-level-1)",
+    border: "1px solid var(--surface-light)",
     color: "var(--info)",
   };
 
@@ -744,76 +692,15 @@ export default function UserClockingHistory() {
 
   return (
     <Layout>
-      <div style={pageBackgroundStyle}>
-        <div style={containerStyle}>
-          <div style={contentShellStyle}>
-            <section style={basePanelStyle}>
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                justifyContent: "space-between",
-                gap: "20px",
-              }}
-            >
-              <div style={{ flex: 1, minWidth: "240px" }}>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: "0.75rem",
-                    letterSpacing: "0.08em",
-                    textTransform: "uppercase",
-                    color: "var(--grey-accent)",
-                  }}
-                >
-                  Clocking history · {todayLabel}
-                </p>
-                <h1 style={{ margin: "8px 0 4px", fontSize: "2.25rem", color: "var(--text-primary)" }}>
-                  {headerName}
-                </h1>
-                {user?.role && (
-                  <p style={{ margin: 0, fontSize: "1rem", color: "var(--grey-accent)" }}>{user.role}</p>
-                )}
-                {slugLookupPending && (
-                  <p style={{ marginTop: "6px", fontSize: "0.9rem", color: "var(--grey-accent)" }}>
-                    Resolving technician details…
-                  </p>
-                )}
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "12px" }}>
-                <span style={{ ...badgeBaseStyle, background: "var(--surface-light)", border: "1px solid var(--surface-light)", color: "var(--info)" }}>
-                  Today · {todayLabel}
-                </span>
-                {statusChipStyle && <span style={statusChipStyle}>{currentStatus?.status}</span>}
-              </div>
-            </div>
-
-            <div style={statsGridStyle}>
-              {stats.map((item) => (
-                <div key={item.label} style={statCardStyle}>
-                  <span
-                    style={{
-                      fontSize: "0.75rem",
-                      letterSpacing: "0.08em",
-                      textTransform: "uppercase",
-                      color: "var(--grey-accent)",
-                    }}
-                  >
-                    {item.label}
-                  </span>
-                  <strong style={{ fontSize: "1.8rem", color: "var(--text-primary)" }}>{item.value}</strong>
-                  <span style={{ fontSize: "0.85rem", color: "var(--grey-accent)" }}>{item.hint}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-
+      <PageWrapper>
+        <PageContainer>
+          <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
           {error && (
             <div
               style={{
                 borderRadius: "var(--radius-md)",
                 border: "1px solid var(--danger)",
-                background: "var(--danger-surface)",
+                background: "var(--layer-section-level-1)",
                 padding: "14px 18px",
                 color: "var(--danger-dark)",
                 fontSize: "0.9rem",
@@ -837,11 +724,8 @@ export default function UserClockingHistory() {
                 <h2 style={{ margin: 0, fontSize: "1.25rem", color: "var(--text-primary)" }}>
                   Live technician activity
                 </h2>
-                <p style={{ margin: "6px 0 0", fontSize: "0.95rem", color: "var(--grey-accent)" }}>
-                  Ordered by most recent clock-in · auto-refreshed from Supabase
-                </p>
               </div>
-              <span style={{ ...badgeBaseStyle, background: "var(--success-surface)", border: "1px solid rgba(var(--success-rgb),0.4)", color: "var(--success-dark)" }}>
+              <span style={{ ...badgeBaseStyle, background: "var(--layer-section-level-1)", border: "1px solid var(--surface-light)", color: "var(--success-dark)" }}>
                 {loading ? "Refreshing…" : "Live"}
               </span>
             </div>
@@ -916,9 +800,6 @@ export default function UserClockingHistory() {
                   <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--text-primary)" }}>
                     Manual clocking entry
                   </h2>
-                  <p style={{ margin: "6px 0 0", fontSize: "0.95rem", color: "var(--grey-accent)" }}>
-                    Log a correction or create an entry when the technician forgets to clock.
-                  </p>
                 </div>
                 <span style={managerBadgeStyle}>
                   {activeJobsLoading ? "Fetching jobs…" : `${activeJobs.length} active jobs`}
@@ -930,7 +811,7 @@ export default function UserClockingHistory() {
                   style={{
                     borderRadius: "var(--radius-md)",
                     border: "1px solid var(--danger)",
-                    background: "var(--danger-surface)",
+                    background: "var(--layer-section-level-1)",
                     padding: "12px 14px",
                     color: "var(--danger-dark)",
                     fontSize: "0.9rem",
@@ -944,7 +825,7 @@ export default function UserClockingHistory() {
                   style={{
                     borderRadius: "var(--radius-md)",
                     border: "1px solid var(--success)",
-                    background: "var(--success-surface)",
+                    background: "var(--layer-section-level-1)",
                     padding: "12px 14px",
                     color: "var(--success-dark)",
                     fontSize: "0.9rem",
@@ -1066,8 +947,8 @@ export default function UserClockingHistory() {
             />
           )}
           </div>
-        </div>
-      </div>
+        </PageContainer>
+      </PageWrapper>
     </Layout>
   );
 }

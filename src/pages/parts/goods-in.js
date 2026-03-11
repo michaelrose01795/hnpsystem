@@ -8,6 +8,7 @@ import { format, formatDistanceToNow } from "date-fns";
 import { DropdownField } from "@/components/dropdownAPI";
 import { CalendarField } from "@/components/calendarAPI";
 import { ScrollArea } from "@/components/scrollAPI";
+import { TabGroup } from "@/components/tabAPI/TabGroup";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
 
 const PRICE_LEVEL_OPTIONS = [
@@ -806,9 +807,6 @@ function GoodsInPage() {
   return (
     <Layout>
       <style jsx>{`
-        .compact-dropdown {
-          width: fit-content;
-        }
         .bin-suggestions {
           border: 1px solid var(--surface-light);
           background: rgba(var(--surface-rgb), 0.98);
@@ -829,9 +827,6 @@ function GoodsInPage() {
         }
         [data-theme="dark"] .bin-suggestion-button {
           color: var(--text-primary);
-        }
-        .compact-calendar {
-          width: fit-content;
         }
         .add-part-section {
           padding: 20px 22px;
@@ -937,51 +932,18 @@ function GoodsInPage() {
           </div>
         )}
 
-        <div
-          style={{
-            borderRadius: "var(--radius-pill)",
-            border: "1px solid var(--surface-light)",
-            background: "var(--surface)",
-            padding: "6px",
-            display: "flex",
-            gap: "6px",
-            width: "100%",
-            overflowX: "auto",
-            flexShrink: 0,
-            scrollbarWidth: "thin",
-            scrollbarColor: "var(--scrollbar-thumb) transparent",
-            scrollBehavior: "smooth",
-            WebkitOverflowScrolling: "touch",
+        <TabGroup
+          items={ADVANCED_TABS.map((tab) => ({
+            value: tab.id,
+            label: tab.label,
+          }))}
+          value={activeTab}
+          onChange={(value) => {
+            setActiveTab(value);
+            setIsAdvancedPanelOpen(true);
           }}
-        >
-          {ADVANCED_TABS.map((tab) => (
-            <button
-              key={`top-${tab.id}`}
-              onClick={() => {
-                setActiveTab(tab.id);
-                setIsAdvancedPanelOpen(true);
-              }}
-              style={{
-                flex: "0 0 auto",
-                borderRadius: "var(--radius-pill)",
-                border: "1px solid transparent",
-                padding: "10px 20px",
-                fontSize: "0.9rem",
-                fontWeight: 600,
-                cursor: "pointer",
-                background: activeTab === tab.id ? "var(--primary)" : "transparent",
-                color: activeTab === tab.id ? "var(--text-inverse)" : "var(--text-primary)",
-                transition: "all 0.15s ease",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+          ariaLabel="Part detail tabs"
+        />
 
         <section style={sectionCardStyle} className="app-section-card invoice-details-section">
           <div className="invoice-details-toolbar">

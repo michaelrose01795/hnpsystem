@@ -567,26 +567,6 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
           Cancel {/* Label */}
         </button>
       </div>
-      <style jsx global>{`
-        .start-job-request-dropdown {
-          width: 100%;
-        }
-
-        .start-job-request-dropdown .dropdown-api__option-description {
-          display: inline-flex;
-          align-items: center;
-          width: fit-content;
-          padding: 2px 8px;
-          border-radius: var(--radius-pill);
-          border: 1px solid var(--success);
-          color: var(--success);
-          background: rgba(var(--success-rgb), 0.08);
-          font-weight: 600;
-          font-size: 0.7rem;
-          text-transform: uppercase;
-          letter-spacing: 0.02em;
-        }
-      `}</style>
     </div>
   );
 }

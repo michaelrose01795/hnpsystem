@@ -8,12 +8,25 @@ check
 lot of pages miss matched with first card starting position etc fix this deep dive so all pages follow the same background colour theme, page set up (with individual sections etc)
 
 
-
-check
-The background colour of the top bar and main page is differnt to the background (BEHIND THE TOPBAR AND PAGE AND SIDEBAR) behind the sidebar, make sure this is all the same accent colours 
-
+CHECK
+Job card tab background 
 
 
+
+CHECK
+regarding this, make sure “are the api styles used anymore, if not then delete the files and the code within the file pages which uses the apis for calendar pciker, drop down etc all of those styles and then makle sure thats in the global file so that all current and new pages follow that design” make sure that the api styles arent used any more and anywhere they are active they deleted and uses the global.css instead 
+
+
+TODO
+have it so the "Summary Statistics" section doesnt use red background but uses accent colour background for each of the "" cards. have it so within the "Technician Status" section the not clocked in and waiting for job etc sections all follow the same gloabl style 
+
+
+CHECK
+fix these pages "/clocking/MichaelRose" so less accent colors are uses for the background cards, have it so that the first background card is removed. remove "Ordered by most recent clock-in · auto-refreshed from Supabase", "Log a correction or create an entry when the technician forgets to clock." text.
+
+
+CHECKKK info at the top
+Inside the job-cards/jobnumber page the tab group in there doesnt follow the gloabl tab style. check ever single page and make sure that no other pages are like this before moving on 
 
 
 

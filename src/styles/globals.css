@@ -2541,6 +2541,37 @@ input[type="search"]::-webkit-search-results-decoration {
   border: 1px solid var(--control-border-color);
 }
 
+.page-surface-plain {
+  background: var(--surface);
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+}
+
+.tab-scroll-row {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
+  flex: 1;
+  cursor: default;
+}
+
+.tab-scroll-row.is-overflowing {
+  justify-content: flex-start;
+  padding-bottom: 6px;
+  cursor: grab;
+}
+
 .tab-api--grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -2566,6 +2597,55 @@ input[type="search"]::-webkit-search-results-decoration {
   line-height: 1;
 }
 
+.tab-api__item[data-tone="default"] {
+  border: 1px solid transparent;
+}
+
+.tab-api__item[data-tone="success"] {
+  border: 1px solid var(--success);
+  background: var(--success-surface);
+  color: var(--success-dark);
+}
+
+.tab-api__item[data-tone="success"].is-active {
+  border-color: var(--success);
+  background: var(--success);
+  color: var(--text-inverse);
+}
+
+.tab-api__item[data-tone="warning"] {
+  border: 1px solid var(--warning);
+  background: var(--warning-surface);
+  color: var(--warning-dark);
+}
+
+.tab-api__item[data-tone="warning"].is-active {
+  border-color: var(--warning);
+  background: var(--warning);
+  color: var(--text-inverse);
+}
+
+.jobcard-tab-badge {
+  padding: 3px 8px;
+  background: var(--primary);
+  color: var(--text-inverse);
+  border-radius: var(--radius-xs);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.tab-api__item.is-active .jobcard-tab-badge {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.jobcard-tab-badge[data-tab-id="notes"] {
+  background: var(--danger);
+}
+
+.tab-api__item.is-active .jobcard-tab-badge[data-tab-id="notes"] {
+  background: rgba(255, 255, 255, 0.28);
+}
+
 .dropdown-api--sm .dropdown-api__control,
 .calendar-api--sm .calendar-api__control,
 .timepicker-api--sm .timepicker-api__control,
@@ -2582,6 +2662,48 @@ input[type="search"]::-webkit-search-results-decoration {
   min-height: var(--control-height-sm);
   padding: var(--control-padding-sm);
   border-radius: var(--control-radius-sm);
+}
+
+.dropdown-api.job-request-payment-dropdown {
+  width: 160px;
+}
+
+.dropdown-api.start-job-request-dropdown,
+.dropdown-api.efficiency-request-dropdown {
+  width: 100%;
+}
+
+.calendar-api.efficiency-filter-calendar,
+.dropdown-api.efficiency-tech-filter-dropdown,
+.compact-dropdown,
+.compact-calendar {
+  width: fit-content;
+}
+
+.dropdown-api.efficiency-request-dropdown .dropdown-api__menu {
+  max-height: 144px;
+  overflow-y: auto;
+}
+
+.dropdown-api.efficiency-tech-filter-dropdown .dropdown-api__menu {
+  min-width: 100%;
+  width: max-content;
+}
+
+.dropdown-api.start-job-request-dropdown .dropdown-api__option-description,
+.dropdown-api.efficiency-request-dropdown .dropdown-api__option-description {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--success);
+  color: var(--success);
+  background: rgba(var(--success-rgb), 0.08);
+  font-weight: 600;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 /* scrollbar styles consolidated into .themed-scrollbar block above */

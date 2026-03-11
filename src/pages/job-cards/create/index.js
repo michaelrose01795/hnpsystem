@@ -2777,24 +2777,7 @@ export default function CreateJobCardPage() {
             url: f.url || "",
           }))}
         />
-
       </div>
-      <style jsx global>{`
-        input[type="number"]::-webkit-outer-spin-button,
-        input[type="number"]::-webkit-inner-spin-button {
-          -webkit-appearance: none;
-          margin: 0;
-        }
-
-        input[type="number"] {
-          -moz-appearance: textfield;
-          appearance: textfield;
-        }
-
-        .job-request-payment-dropdown {
-          width: 160px;
-        }
-      `}</style>
     </Layout>
   );
 }
