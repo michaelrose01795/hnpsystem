@@ -8,8 +8,8 @@ export default function OutstandingInvoicesCard({ invoices = [] }) {
   };
 
   return (
-    <section className="rounded-3xl border border-[var(--surface-light)] bg-[var(--surface)] p-5">
-      <header className="rounded-2xl bg-[var(--primary)] px-4 py-3 text-white">
+    <section className="customer-portal-card">
+      <header className="customer-portal-header">
         <p className="text-xs uppercase tracking-[0.35em] text-white">Outstanding invoices</p>
         <h3 className="text-xl font-semibold text-white">Pay securely online</h3>
       </header>
@@ -18,7 +18,7 @@ export default function OutstandingInvoicesCard({ invoices = [] }) {
         {invoices.map((invoice) => (
           <div
             key={invoice.id}
-            className="rounded-2xl border border-[var(--surface-light)] bg-[var(--surface-light)] px-4 py-4 text-[var(--text-secondary)]"
+            className="customer-portal-card--muted text-[var(--text-secondary)]"
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -51,7 +51,7 @@ export default function OutstandingInvoicesCard({ invoices = [] }) {
           </div>
         ))}
         {invoices.length === 0 && (
-          <p className="rounded-2xl border border-dashed border-[var(--surface-light)] px-4 py-8 text-center text-sm text-[var(--text-secondary)]">
+          <p className="customer-portal-empty text-sm">
             Great news! You have no outstanding invoices.
           </p>
         )}

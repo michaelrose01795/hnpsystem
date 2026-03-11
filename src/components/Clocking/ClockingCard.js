@@ -2,6 +2,7 @@
 // file location: src/components/Clocking/ClockingCard.js
 import React from "react";
 import { useClocking } from "@/hooks/useClocking";
+import { Button, Card } from "@/components/ui";
 
 export default function ClockingCard() {
   const { clockedIn, hoursWorked, loading, clockIn, clockOut } = useClocking();
@@ -9,31 +10,40 @@ export default function ClockingCard() {
   if (loading) return <p>Loading clocking info...</p>;
 
   return (
-    <div className="p-6 bg-white rounded w-full max-w-md">
-      <h2 className="text-xl font-bold mb-4">Your Clocking Status</h2>
-      <p className="mb-2">Status: {clockedIn ? "Clocked In" : "Clocked Out"}</p>
-      <p className="mb-4">Hours Worked Today: {hoursWorked.toFixed(2)}</p>
+    <Card
+      title="Your Clocking Status"
+      style={{ width: "100%", maxWidth: "32rem" }}
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+        <p>Status: {clockedIn ? "Clocked In" : "Clocked Out"}</p>
+        <p>Hours Worked Today: {hoursWorked.toFixed(2)}</p>
+      </div>
       {clockedIn ? (
-        <button
+        <Button
           onClick={clockOut}
-          className="px-4 py-2 text-white rounded transition-colors"
-          style={{ backgroundColor: "var(--danger)" }}
-          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--danger-hover)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--danger)"; }}
+          variant="ghost"
+          style={{
+            background: "var(--danger)",
+            borderColor: "var(--danger)",
+            color: "var(--text-inverse)",
+            alignSelf: "flex-start",
+          }}
         >
           Clock Out
-        </button>
+        </Button>
       ) : (
-        <button
+        <Button
           onClick={clockIn}
-          className="px-4 py-2 text-white rounded transition-colors"
-          style={{ backgroundColor: "var(--success)" }}
-          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--success-hover)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--success)"; }}
+          style={{
+            background: "var(--success)",
+            borderColor: "var(--success)",
+            color: "var(--text-inverse)",
+            alignSelf: "flex-start",
+          }}
         >
           Clock In
-        </button>
+        </Button>
       )}
-    </div>
+    </Card>
   );
 }

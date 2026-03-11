@@ -21,7 +21,7 @@ export default function CustomerSidebar() {
   const { unreadCount } = useMessagesBadge(dbUserId);
 
   return (
-    <aside className="flex w-full flex-col overflow-hidden rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] lg:sticky lg:top-4 lg:max-h-[calc(100vh-32px)] lg:w-[260px] lg:min-w-[220px] lg:flex-shrink-0">
+    <aside className="customer-portal-card flex w-full flex-col overflow-hidden lg:sticky lg:top-4 lg:max-h-[calc(100vh-32px)] lg:w-[260px] lg:min-w-[220px] lg:flex-shrink-0">
       <div className="bg-[var(--primary)] px-6 py-5 text-white">
         <p className="m-0 text-[0.85rem] uppercase tracking-[0.08em] text-white/80">
           Customer Portal
@@ -45,19 +45,7 @@ export default function CustomerSidebar() {
                   <span>{link.label}</span>
                   {isMessagesLink && unreadCount > 0 && (
                     <span
-                      style={{
-                        minWidth: 24,
-                        minHeight: 24,
-                        padding: "0 6px",
-                        borderRadius: 999,
-                        background: "var(--primary)",
-                        color: "var(--surface)",
-                        fontSize: "0.75rem",
-                        fontWeight: 700,
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
+                      className="app-badge app-badge--primary"
                     >
                       {unreadCount > 99 ? "99+" : unreadCount}
                     </span>

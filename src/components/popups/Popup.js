@@ -19,7 +19,7 @@ export default function Popup({ isOpen, onClose, children }) {
       <button
         onClick={onClose}
         style={{
-          marginTop: "10px",
+          marginTop: "var(--space-2)",
           padding: "var(--control-padding)",
           borderRadius: "var(--input-radius)",
           backgroundColor: "var(--primary)",

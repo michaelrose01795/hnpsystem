@@ -65,7 +65,7 @@ const badgeBaseStyle = {
   gap: "6px",
   padding: "4px 10px",
   borderRadius: "var(--radius-pill)",
-  fontSize: "0.75rem",
+  fontSize: "var(--text-caption)",
   fontWeight: 600,
 };
 
@@ -1962,7 +1962,7 @@ function ConsumablesTrackerPage() {
                             padding: "4px 10px",
                             borderRadius: "var(--radius-pill)",
                             fontWeight: 600,
-                            fontSize: "0.75rem",
+                            fontSize: "var(--text-caption)",
                             ...(statusBadgeStyles[
                               request.status === "ordered"
                                 ? "ordered"

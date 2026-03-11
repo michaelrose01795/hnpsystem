@@ -9,6 +9,7 @@ export { default as PageSection } from "./PageSection";
 export { default as Card } from "./Card";
 export { default as ToolbarRow } from "./ToolbarRow";
 export { default as ControlGroup } from "./ControlGroup";
+export { default as StatusMessage } from "./StatusMessage";
 
 // Control components
 export { default as Button } from "./Button";

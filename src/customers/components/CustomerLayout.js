@@ -20,8 +20,8 @@ export default function CustomerLayout({ children }) {
 
   if (!user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[var(--accent-purple-surface)]">
-        <div className="rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] p-8 text-center">
+      <div className="customer-portal-shell flex items-center justify-center">
+        <div className="customer-portal-card text-center" style={{ maxWidth: "32rem" }}>
           <div className="space-y-4">
             <h1 className="text-2xl font-semibold text-[var(--text-primary)]">Customer Portal</h1>
             <p className="text-[var(--text-secondary)]">
@@ -41,8 +41,8 @@ export default function CustomerLayout({ children }) {
 
   if (!isCustomer) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[var(--accent-purple-surface)] px-4">
-        <div className="max-w-lg rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] p-8 text-center">
+      <div className="customer-portal-shell flex items-center justify-center px-4">
+        <div className="customer-portal-card text-center" style={{ maxWidth: "32rem" }}>
           <div className="space-y-4">
             <h1 className="text-2xl font-semibold text-[var(--text-primary)]">Restricted area</h1>
             <p className="text-[var(--text-secondary)]">
@@ -70,14 +70,14 @@ export default function CustomerLayout({ children }) {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--accent-purple-surface)]">
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:flex-row lg:items-start">
+    <div className="customer-portal-shell">
+      <div className="customer-portal-layout">
         <CustomerSidebar />
 
-        <div className="flex min-w-0 flex-1 flex-col gap-6">
-          <header className="rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] p-4">
+        <div className="customer-portal-stack">
+          <header className="customer-portal-card">
             <div className="grid gap-4 md:grid-cols-3">
-              <div className="rounded-2xl border border-[var(--surface-light)] bg-[var(--surface-light)] px-4 py-3">
+              <div className="customer-portal-card--muted">
                 <p className="text-[0.65rem] uppercase tracking-[0.25em] text-[var(--primary)]">
                   Signed in
                 </p>
@@ -85,7 +85,7 @@ export default function CustomerLayout({ children }) {
                   {user.username || "Customer"}
                 </p>
               </div>
-              <div className="rounded-2xl border border-[var(--surface-light)] bg-[var(--surface-light)] px-4 py-3">
+              <div className="customer-portal-card--muted">
                 <p className="text-[0.65rem] uppercase tracking-[0.25em] text-[var(--primary)]">
                   Portal link
                 </p>
@@ -98,7 +98,7 @@ export default function CustomerLayout({ children }) {
                   Open website
                 </a>
               </div>
-              <div className="rounded-2xl border border-[var(--surface-light)] bg-[var(--surface-light)] px-4 py-3">
+              <div className="customer-portal-card--muted">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-[0.65rem] uppercase tracking-[0.25em] text-[var(--primary)]">
                     Session
@@ -120,7 +120,7 @@ export default function CustomerLayout({ children }) {
             </div>
           </header>
 
-          <main className="flex flex-col gap-6">{children}</main>
+          <main className="customer-portal-stack">{children}</main>
         </div>
       </div>
     </div>

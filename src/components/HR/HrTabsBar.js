@@ -23,8 +23,8 @@ export default function HrTabsBar() {
     <div
       className="app-section-card"
       style={{
-        padding: "14px",
-        marginBottom: "20px",
+        padding: "var(--space-4)",
+        marginBottom: "var(--space-6)",
       }}
     >
       <TabLinkGroup

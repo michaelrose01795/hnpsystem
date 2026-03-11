@@ -2,6 +2,7 @@
 // file location: src/components/Clocking/ClockingList.js
 import React, { useEffect } from "react";
 import { useClockingContext } from "@/context/ClockingContext";
+import { Card } from "@/components/ui";
 
 export default function ClockingList() {
   const { allUsersClocking = [], fetchAllUsersClocking, loading } = useClockingContext(); // default to empty array
@@ -14,34 +15,33 @@ export default function ClockingList() {
   if (loading) return <p>Loading users clocking info...</p>;
 
   return (
-    <div className="p-6 bg-white rounded w-full max-w-3xl">
-      <h2 className="text-xl font-bold mb-4">All Users Clocking</h2>
-      <table className="w-full table-auto border-collapse border border-gray-300">
+    <Card title="All Users Clocking" style={{ width: "100%", maxWidth: "48rem" }}>
+      <table className="app-data-table">
         <thead>
           <tr>
-            <th className="border px-4 py-2">User</th>
-            <th className="border px-4 py-2">Status</th>
-            <th className="border px-4 py-2">Hours Worked</th>
+            <th>User</th>
+            <th>Status</th>
+            <th>Hours Worked</th>
           </tr>
         </thead>
         <tbody>
           {allUsersClocking.length > 0 ? (
             allUsersClocking.map((u) => (
               <tr key={u.user}>
-                <td className="border px-4 py-2">{u.user}</td>
-                <td className="border px-4 py-2">{u.clockedIn ? "In" : "Out"}</td>
-                <td className="border px-4 py-2">{u.hoursWorked.toFixed(2)}</td>
+                <td>{u.user}</td>
+                <td>{u.clockedIn ? "In" : "Out"}</td>
+                <td>{u.hoursWorked.toFixed(2)}</td>
               </tr>
             ))
           ) : (
             <tr>
-              <td colSpan={3} className="border px-4 py-2 text-center">
+              <td colSpan={3} style={{ textAlign: "center" }}>
                 No clocking data available
               </td>
             </tr>
           )}
         </tbody>
       </table>
-    </div>
+    </Card>
   );
 }

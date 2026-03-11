@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AccountForm from "@/components/accounts/AccountForm";
+import { PageContainer, PageSection, StatusMessage } from "@/components/ui";
 import { DEFAULT_ACCOUNT_FORM_VALUES } from "@/config/accounts";
 const CREATE_ROLES = ["ADMIN", "OWNER", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER"];
 export default function CreateAccountPage() {
@@ -35,16 +36,18 @@ export default function CreateAccountPage() {
   return (
     <ProtectedRoute allowedRoles={CREATE_ROLES}>
       <Layout>
-        <div style={{ maxWidth: "900px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "20px" }}>
-          <div>
-            <h1 style={{ margin: 0, color: "var(--primary)", fontSize: "2rem" }}>Create Account</h1>
-            <p style={{ margin: "4px 0 0", color: "var(--text-secondary)", fontSize: "0.95rem" }}>Add a new customer account with billing details, terms, and limits.</p>
-          </div>
-          {message && (
-            <div style={{ padding: "12px 16px", borderRadius: "var(--radius-sm)", background: message.includes("success") ? "rgba(var(--success-rgb), 0.15)" : "rgba(var(--danger-rgb), 0.12)", color: message.includes("success") ? "var(--success-text)" : "var(--danger-dark)", fontWeight: 600 }}>{message}</div>
-          )}
-          <AccountForm initialValues={DEFAULT_ACCOUNT_FORM_VALUES} onSubmit={handleSubmit} isSubmitting={saving} onCancel={() => router.push("/accounts")} />
-        </div>
+        <PageContainer style={{ maxWidth: "var(--page-width-form)", margin: "0 auto" }}>
+          <PageSection>
+            <div className="app-page-intro">
+              <h1 className="app-page-title">Create Account</h1>
+              <p className="app-page-copy">Add a new customer account with billing details, terms, and limits.</p>
+            </div>
+            {message && (
+              <StatusMessage tone={message.includes("success") ? "success" : "danger"}>{message}</StatusMessage>
+            )}
+            <AccountForm initialValues={DEFAULT_ACCOUNT_FORM_VALUES} onSubmit={handleSubmit} isSubmitting={saving} onCancel={() => router.push("/accounts")} />
+          </PageSection>
+        </PageContainer>
       </Layout>
     </ProtectedRoute>
   );

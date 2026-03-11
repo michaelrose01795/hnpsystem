@@ -3,6 +3,7 @@ import React from "react";
 import Link from "next/link";
 import { useUser } from "@/context/UserContext";
 import { useClockingContext } from "@/context/ClockingContext";
+import { Button } from "@/components/ui";
 
 export default function ClockInButton() {
   const { user, setStatus } = useUser();
@@ -16,15 +17,13 @@ export default function ClockInButton() {
 
   return (
     <Link href="/workshop/Clocking">
-      <button
+      <Button
         onClick={handleClockIn}
-        className="w-full py-2 px-4 text-white rounded mt-2 transition-colors"
-        style={{ backgroundColor: "var(--danger)" }}
-        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--danger-hover)"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--danger)"; }}
+        className="w-full"
+        style={{ marginTop: "var(--space-2)", background: "var(--danger)", borderColor: "var(--danger)" }}
       >
         {clockedIn ? "View Clocking" : "Clock In"}
-      </button>
+      </Button>
     </Link>
   );
 }

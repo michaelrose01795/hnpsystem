@@ -13,7 +13,7 @@ export const popupStyleApi = {
     alignItems: "center",
     justifyContent: "center",
     overflowY: "auto",
-    padding: "20px",
+    padding: "var(--space-6)",
     zIndex: 9999,
   },
   card: {

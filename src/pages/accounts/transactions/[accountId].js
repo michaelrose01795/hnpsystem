@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import TransactionTable from "@/components/accounts/TransactionTable";
+import { Button, ControlGroup, PageSection } from "@/components/ui";
 import { useUser } from "@/context/UserContext";
 import { deriveAccountPermissions } from "@/lib/accounts/permissions";
 import { exportToCsv } from "@/utils/exportUtils";
@@ -54,20 +55,20 @@ export default function AccountTransactionsPage() {
   return (
     <ProtectedRoute allowedRoles={TRANSACTION_ROLES}>
       <Layout>
-        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
-            <div>
-              <p style={{ margin: 0, color: "var(--text-secondary)", textTransform: "uppercase", fontSize: "0.8rem", letterSpacing: "0.05em" }}>Account {accountId}</p>
-              <h1 style={{ margin: 0, fontSize: "2rem", color: "var(--primary)" }}>Transactions</h1>
-              <p style={{ margin: "4px 0 0", color: "var(--text-secondary)", fontSize: "0.95rem" }}>Filter ledger entries, export to CSV, and trace adjustments.</p>
+        <PageSection>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "var(--space-3)" }}>
+            <div className="app-page-intro">
+              <p className="app-page-eyebrow">Account {accountId}</p>
+              <h1 className="app-page-title">Transactions</h1>
+              <p className="app-page-copy">Filter ledger entries, export to CSV, and trace adjustments.</p>
             </div>
-            <div style={{ display: "flex", gap: "10px" }}>
-              <button type="button" onClick={() => router.push(`/accounts/view/${accountId}`)} style={{ padding: "10px 16px", borderRadius: "var(--radius-sm)", border: "1px solid var(--surface-light)", background: "var(--surface-light)", fontWeight: 600 }}>Account</button>
-              {permissions.canExport && <button type="button" onClick={handleExport} style={{ padding: "10px 18px", borderRadius: "var(--radius-sm)", border: "1px solid var(--primary)", background: "transparent", color: "var(--primary)", fontWeight: 600 }}>Export</button>}
-            </div>
+            <ControlGroup>
+              <Button type="button" variant="secondary" onClick={() => router.push(`/accounts/view/${accountId}`)}>Account</Button>
+              {permissions.canExport && <Button type="button" variant="ghost" onClick={handleExport}>Export</Button>}
+            </ControlGroup>
           </div>
           <TransactionTable transactions={transactions} loading={loading} filters={filters} onFilterChange={setFilters} pagination={pagination} onPageChange={handlePageChange} onExport={handleExport} />
-        </div>
+        </PageSection>
       </Layout>
     </ProtectedRoute>
   );

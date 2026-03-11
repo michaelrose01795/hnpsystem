@@ -44,7 +44,7 @@ export default function ConfirmationDialog({
       ariaLabel={title || "Confirmation dialog"}
       cardStyle={{
         width: "min(520px, 100%)",
-        padding: "28px",
+        padding: "var(--space-7)",
         borderRadius: "var(--radius-xl)",
         display: "flex",
         flexDirection: "column",

@@ -28,17 +28,17 @@ export default function WorkshopTabsBar() {
       style={{
         background: "var(--surface)",
         borderRadius: "var(--radius-md)",
-        padding: "18px",
+        padding: "var(--space-5)",
         border: "1px solid var(--surface-light)",
         boxShadow: "none",
-        marginBottom: "22px",
+        marginBottom: "var(--space-lg)",
       }}
     >
       <div
         style={{
           display: "flex",
           flexWrap: "wrap",
-          gap: "14px",
+          gap: "var(--space-4)",
           alignItems: "center",
           justifyContent: "space-between",
         }}
@@ -61,7 +61,7 @@ export default function WorkshopTabsBar() {
           style={{
             display: "flex",
             flexWrap: "wrap",
-            gap: "10px",
+            gap: "var(--control-gap)",
             justifyContent: "flex-end",
           }}
         >

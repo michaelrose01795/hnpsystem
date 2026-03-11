@@ -8,7 +8,7 @@ export const fieldGroupStyles = {
   padding: "var(--section-card-padding)",
   display: "flex",
   flexWrap: "wrap",
-  gap: "16px",
+  gap: "var(--space-md)",
 };
 
 export const inputStyles = {
