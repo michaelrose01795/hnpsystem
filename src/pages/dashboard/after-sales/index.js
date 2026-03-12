@@ -4,23 +4,9 @@ import React, { useEffect, useState } from "react";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { getAfterSalesDashboardData } from "@/lib/database/dashboard/after-sales";
+import Section from "@/components/Section"; // shared titled section card — consolidated from duplicate local definitions
 
 const ALLOWED_ROLES = ["after sales manager", "after sales director", "aftersales manager"];
-
-const Section = ({ title, subtitle, children }) => (
-  <section
-    className="app-section-card"
-    style={{
-      gap: "12px",
-    }}
-  >
-    <div>
-      <h2 style={{ margin: 0, color: "var(--primary-dark)", fontSize: "1.2rem" }}>{title}</h2>
-      {subtitle && <p style={{ margin: "6px 0 0", color: "var(--info)" }}>{subtitle}</p>}
-    </div>
-    {children}
-  </section>
-);
 
 const MetricCard = ({ label, value, helper }) => (
   <div

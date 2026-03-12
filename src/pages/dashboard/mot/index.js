@@ -3,21 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Layout from "@/components/Layout";
 import { getMotDashboardData } from "@/lib/database/dashboard/mot";
-
-const Section = ({ title, subtitle, children }) => (
-  <section
-    className="app-section-card"
-    style={{
-      gap: "12px",
-    }}
-  >
-    <div>
-      <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-dark)" }}>{title}</h2>
-      {subtitle && <p style={{ margin: "6px 0 0", color: "var(--info)" }}>{subtitle}</p>}
-    </div>
-    {children}
-  </section>
-);
+import Section from "@/components/Section"; // shared titled section card — consolidated from duplicate local definitions
 
 const MetricCard = ({ label, value, helper }) => (
   <div
