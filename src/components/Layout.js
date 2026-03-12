@@ -350,6 +350,10 @@ export default function Layout({
     }
   }, [user, userLoading, hideSidebar, router]);
 
+  useEffect(() => {
+    if (activeJobId) fetchCurrentJobStatus(activeJobId);
+  }, [activeJobId, fetchCurrentJobStatus]);
+
   const shouldBlockForAuth = !hideSidebar && (userLoading || !user);
   if (shouldBlockForAuth) {
     return (
@@ -362,10 +366,6 @@ export default function Layout({
       </div>
     );
   }
-
-  useEffect(() => {
-    if (activeJobId) fetchCurrentJobStatus(activeJobId);
-  }, [activeJobId, fetchCurrentJobStatus]);
 
   useEffect(() => {
     if (urlJobId) {

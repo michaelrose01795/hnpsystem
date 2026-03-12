@@ -2,6 +2,7 @@
 import React, { useMemo } from "react";
 import Link from "next/link";
 import dayjs from "dayjs";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 const advisorPipelines = [
   {
@@ -73,8 +74,13 @@ export default function ServiceManagerDashboard() {
   }, []);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      <header
+    <DevLayoutSection sectionKey="dashboard-service-shell" sectionType="page-shell" shell style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      <DevLayoutSection
+        as="header"
+        sectionKey="dashboard-service-header"
+        parentKey="dashboard-service-shell"
+        sectionType="section-shell"
+        shell
         className="app-section-card"
         style={{
           background: "var(--info-surface)",
@@ -87,9 +93,13 @@ export default function ServiceManagerDashboard() {
         </span>
         <h1 style={{ margin: 0, color: "var(--info-dark)", fontSize: "1.9rem" }}>Customer Flow Control</h1>
         <p style={{ margin: 0, color: "var(--info-dark)" }}>{todayLabel} • 32 appointments • 6 waiters in lounge</p>
-      </header>
+      </DevLayoutSection>
 
-      <section
+      <DevLayoutSection
+        as="section"
+        sectionKey="dashboard-service-quick-actions"
+        parentKey="dashboard-service-shell"
+        sectionType="toolbar"
         className="app-section-card"
         style={{
           display: "flex",
@@ -113,9 +123,13 @@ export default function ServiceManagerDashboard() {
             {action.label}
           </Link>
         ))}
-      </section>
+      </DevLayoutSection>
 
-      <section
+      <DevLayoutSection
+        as="section"
+        sectionKey="dashboard-service-metric-grid"
+        parentKey="dashboard-service-shell"
+        sectionType="grid-card"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
@@ -127,10 +141,14 @@ export default function ServiceManagerDashboard() {
           { label: "Check-ins Completed", value: "22", helper: "7 remaining today", accent: "var(--info)" },
           { label: "Advisor CSAT", value: "4.7★", helper: "Live from feedback iPads", accent: "var(--info-dark)" },
           { label: "Upsell Authorised", value: "£4,280", helper: "55% hit-rate", accent: "var(--danger)" },
-        ].map((metric) => (
+        ].map((metric, index) => (
           <div
             key={metric.label}
             className="app-section-card"
+            data-dev-section="1"
+            data-dev-section-key={`dashboard-service-metric-${index + 1}`}
+            data-dev-section-type="stat-card"
+            data-dev-section-parent="dashboard-service-metric-grid"
             style={{
               padding: "18px",
               border: `1px solid ${metric.accent}22`,
@@ -144,16 +162,24 @@ export default function ServiceManagerDashboard() {
             <span style={{ color: "var(--info-dark)", fontSize: "0.85rem" }}>{metric.helper}</span>
           </div>
         ))}
-      </section>
+      </DevLayoutSection>
 
-      <section
+      <DevLayoutSection
+        as="section"
+        sectionKey="dashboard-service-operations-row"
+        parentKey="dashboard-service-shell"
+        sectionType="grid-card"
         style={{
           display: "grid",
           gridTemplateColumns: "minmax(320px, 2fr) minmax(280px, 1.2fr)",
           gap: "18px",
         }}
       >
-        <article
+        <DevLayoutSection
+          as="article"
+          sectionKey="dashboard-service-advisor-pipelines"
+          parentKey="dashboard-service-operations-row"
+          sectionType="content-card"
           className="app-section-card"
           style={{
             padding: "var(--section-card-padding)",
@@ -205,9 +231,13 @@ export default function ServiceManagerDashboard() {
               </div>
             ))}
           </div>
-        </article>
+        </DevLayoutSection>
 
-        <article
+        <DevLayoutSection
+          as="article"
+          sectionKey="dashboard-service-courtesy-fleet"
+          parentKey="dashboard-service-operations-row"
+          sectionType="content-card"
           className="app-section-card"
           style={{
             padding: "var(--section-card-padding)",
@@ -241,17 +271,25 @@ export default function ServiceManagerDashboard() {
               </div>
             ))}
           </div>
-        </article>
-      </section>
+        </DevLayoutSection>
+      </DevLayoutSection>
 
-      <section
+      <DevLayoutSection
+        as="section"
+        sectionKey="dashboard-service-planning-row"
+        parentKey="dashboard-service-shell"
+        sectionType="grid-card"
         style={{
           display: "grid",
           gridTemplateColumns: "minmax(300px, 1fr) minmax(320px, 1fr)",
           gap: "18px",
         }}
       >
-        <article
+        <DevLayoutSection
+          as="article"
+          sectionKey="dashboard-service-waiters-lounge"
+          parentKey="dashboard-service-planning-row"
+          sectionType="content-card"
           className="app-section-card"
           style={{
             padding: "var(--section-card-padding)",
@@ -296,9 +334,13 @@ export default function ServiceManagerDashboard() {
               </div>
             ))}
           </div>
-        </article>
+        </DevLayoutSection>
 
-        <article
+        <DevLayoutSection
+          as="article"
+          sectionKey="dashboard-service-afternoon-plan"
+          parentKey="dashboard-service-planning-row"
+          sectionType="content-card"
           className="app-section-card"
           style={{
             padding: "var(--section-card-padding)",
@@ -341,8 +383,8 @@ export default function ServiceManagerDashboard() {
           >
             Target: Zero waiters after 17:00 • Courtesy fleet utilisation &gt; 85%
           </div>
-        </article>
-      </section>
-    </div>
+        </DevLayoutSection>
+      </DevLayoutSection>
+    </DevLayoutSection>
   );
 }

@@ -510,12 +510,12 @@ function ClockingOverviewTab({ onSummaryChange }) {
       style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "24px" }}
     >
       {/* Summary Stats Section */}
-      <section
-        data-dev-section="1"
-        data-dev-section-key="clocking-overview-stats"
-        data-dev-section-type="section-shell"
-        data-dev-section-parent="clocking-overview-shell"
-        data-dev-shell="1"
+      <DevLayoutSection
+        as="section"
+        sectionKey="clocking-overview-stats"
+        parentKey="clocking-overview-shell"
+        sectionType="section-shell"
+        shell
         style={{
           background: "var(--surface)",
           borderRadius: "var(--radius-md)",
@@ -539,11 +539,10 @@ function ClockingOverviewTab({ onSummaryChange }) {
         {loading && teamStatus.length === 0 ? (
           <p style={{ color: "var(--info)" }}>Loading statistics...</p>
         ) : (
-            <div
-              data-dev-section="1"
-              data-dev-section-key="clocking-overview-stats-grid"
-              data-dev-section-type="grid-card"
-              data-dev-section-parent="clocking-overview-stats"
+            <DevLayoutSection
+              sectionKey="clocking-overview-stats-grid"
+              parentKey="clocking-overview-stats"
+              sectionType="grid-card"
               style={{
                 display: "grid",
               gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
@@ -729,9 +728,9 @@ function ClockingOverviewTab({ onSummaryChange }) {
                 Not clocked in
               </span>
             </div>
-          </div>
+          </DevLayoutSection>
         )}
-      </section>
+      </DevLayoutSection>
 
       {/* Error Display */}
       {error && (
@@ -750,12 +749,12 @@ function ClockingOverviewTab({ onSummaryChange }) {
       )}
 
       {/* Technician Grid Section */}
-      <section
-        data-dev-section="1"
-        data-dev-section-key="clocking-overview-technician-status"
-        data-dev-section-type="section-shell"
-        data-dev-section-parent="clocking-overview-shell"
-        data-dev-shell="1"
+      <DevLayoutSection
+        as="section"
+        sectionKey="clocking-overview-technician-status"
+        parentKey="clocking-overview-shell"
+        sectionType="section-shell"
+        shell
         style={{
           background: "var(--surface)",
           borderRadius: "var(--radius-md)",
@@ -789,11 +788,10 @@ function ClockingOverviewTab({ onSummaryChange }) {
             No technicians or MOT testers are currently clocked in.
           </div>
         ) : (
-          <div
-            data-dev-section="1"
-            data-dev-section-key="clocking-overview-technician-grid"
-            data-dev-section-type="grid-card"
-            data-dev-section-parent="clocking-overview-technician-status"
+          <DevLayoutSection
+            sectionKey="clocking-overview-technician-grid"
+            parentKey="clocking-overview-technician-status"
+            sectionType="grid-card"
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
@@ -1023,9 +1021,9 @@ function ClockingOverviewTab({ onSummaryChange }) {
               </Link>
               );
             })}
-          </div>
+          </DevLayoutSection>
         )}
-      </section>
+      </DevLayoutSection>
 
       {modalOpen && selectedTechnician && (
         <ModalPortal>

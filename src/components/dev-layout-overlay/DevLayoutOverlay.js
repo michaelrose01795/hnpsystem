@@ -42,9 +42,18 @@ const isVisibleRect = (rect) =>
 const getBackgroundToken = (node, computed) => {
   const explicitToken = node.getAttribute("data-dev-background-token");
   if (explicitToken) return explicitToken;
-  const classToken = String(node.className || "").match(/(?:surface|accent|layer|bg)[-\w]*/i)?.[0];
+  const classToken = String(node.className || "").match(/(?:surface|accent|layer|bg|tone)[-\w]*/i)?.[0];
   if (classToken) return classToken;
   return `computed:${computed.backgroundColor}`;
+};
+
+const getBackgroundClass = (node) => {
+  const classNames = String(node.className || "")
+    .split(/\s+/)
+    .filter(Boolean);
+
+  const tokenClass = classNames.find((name) => /(surface|accent|layer|bg|tone)/i.test(name));
+  return tokenClass || "";
 };
 
 const classifyType = (node, fallbackType) => {
@@ -90,6 +99,7 @@ const buildEntry = ({ key, node, route, order, type, parentKey = "", widthMode =
     number: "",
     classData: String(node.className || "").replace(/\s+/g, " ").trim(),
     backgroundToken: backgroundToken || getBackgroundToken(node, computed),
+    backgroundClass: getBackgroundClass(node),
     backgroundColor: computed.backgroundColor,
     padding: computed.padding,
     margin: computed.margin,
@@ -145,6 +155,8 @@ const inferIssueTags = (section, parent, previousSibling, sectionByKey) => {
       if (leftDelta < 14 && widthDelta < 18 && topDelta < 14) {
         tags.push("extra-wrapper");
         tags.push("rogue-wrapper");
+      } else if (leftDelta > 18 || widthDelta > 32) {
+        tags.push("misaligned-start");
       }
     }
   }
@@ -197,15 +209,29 @@ const buildPrompts = (section) => {
     ? `Children ${section.childNumbers.join(", ")} (${section.childKeys.join(", ")}).`
     : "No child sections.";
 
-  const metadata = `Type ${section.type}, wrapper ${section.wrapperClass}, background ${section.backgroundToken}, padding ${section.padding}, margin ${section.margin}, radius ${section.radius}, width ${section.width}px.`;
+  const metadata = `Type ${section.type}, wrapper ${section.wrapperClass}, background token ${section.backgroundToken}, background class ${section.backgroundClass || "none"}, computed background ${section.backgroundColor}, padding ${section.padding}, margin ${section.margin}, radius ${section.radius}, bounds ${section.width}x${section.height} at (${section.left}, ${section.top}).`;
   const issues = section.issueTags.length ? `Likely issues: ${section.issueTags.join(", ")}.` : "No obvious issues flagged.";
+  const suggestedAction = section.issueTags.length
+    ? `Suggested actions: ${section.issueTags
+        .map((tag) => {
+          if (tag === "rogue-wrapper" || tag === "extra-wrapper") return "remove redundant wrapper shells";
+          if (tag === "duplicate-surface") return "flatten duplicate surface/background layers";
+          if (tag === "nested-shell") return "collapse nested shells into one structural wrapper";
+          if (tag === "misaligned-start") return "align left edge to parent content start";
+          if (tag === "over-padded") return "reduce outer padding to shared spacing tokens";
+          if (tag === "nonstandard-radius") return "replace radius with approved token";
+          if (tag === "inconsistent-gap") return "normalize vertical rhythm to shared section gap";
+          return `review ${tag}`;
+        })
+        .join("; ")}.`
+    : "Suggested actions: standardize with nearest shared layout primitives only if mismatch is confirmed.";
   const prefix = `On ${section.route}, section ${section.number} (${section.key})`;
 
   return {
     reference: `${section.route} :: ${section.number} (${section.key})`,
-    debug: `${prefix}. Parent ${section.parentNumber || "none"} (${section.parentKey || "none"}). ${metadata} ${issues} ${childSummary}`,
-    codex: `${prefix}, standardise this to the shared layout architecture. Remove unnecessary wrappers, align to common page start, and keep behaviour unchanged. ${metadata} ${issues} ${childSummary}`,
-    claude: `${prefix}, refactor to shared page-shell/section/card patterns and reduce wrapper/surface duplication. Preserve functionality and improve spacing consistency. ${metadata} ${issues} ${childSummary}`,
+    debug: `${prefix}. Parent ${section.parentNumber || "none"} (${section.parentKey || "none"}). ${metadata} ${issues} ${suggestedAction} ${childSummary}`,
+    codex: `${prefix}, standardise this section using existing page-shell/section/card primitives while preserving current business behaviour. ${metadata} ${issues} ${suggestedAction} ${childSummary}`,
+    claude: `${prefix}, refactor layout structure for consistency and wrapper cleanup, keeping logic and data flow unchanged. ${metadata} ${issues} ${suggestedAction} ${childSummary}`,
   };
 };
 
@@ -368,10 +394,11 @@ const buildGuide = (section, sections) => {
 
 export default function DevLayoutOverlay() {
   const router = useRouter();
-  const { registry } = useDevLayoutRegistry();
+  const { registeredSections, syncComputedSections } = useDevLayoutRegistry();
   const { canAccess, enabled, mode, setMode, cycleMode } = useDevLayoutOverlay();
   const [sections, setSections] = useState([]);
   const [selectedKey, setSelectedKey] = useState("");
+  const [copiedAction, setCopiedAction] = useState("");
   const rafRef = useRef(null);
 
   useEffect(() => {
@@ -383,7 +410,9 @@ export default function DevLayoutOverlay() {
 
     const update = () => {
       const route = router.asPath || router.pathname || "/";
-      setSections(scanSections({ route, registry }));
+      const scanned = scanSections({ route, registry: registeredSections });
+      setSections(scanned);
+      syncComputedSections(route, scanned);
     };
 
     const schedule = () => {
@@ -415,7 +444,7 @@ export default function DevLayoutOverlay() {
         rafRef.current = null;
       }
     };
-  }, [canAccess, enabled, router.asPath, router.pathname, registry]);
+  }, [canAccess, enabled, router.asPath, router.pathname, registeredSections, syncComputedSections]);
 
   const selected = useMemo(
     () => sections.find((section) => section.key === selectedKey) || null,
@@ -432,15 +461,18 @@ export default function DevLayoutOverlay() {
   }, [sections, selectedKey]);
 
   useEffect(() => {
-    if (mode === "labels" && selectedKey) {
-      setSelectedKey("");
-    }
-  }, [mode, selectedKey]);
+    if (!copiedAction) return undefined;
+    const timer = window.setTimeout(() => setCopiedAction(""), 1600);
+    return () => window.clearTimeout(timer);
+  }, [copiedAction]);
 
   if (!canAccess || !enabled) return null;
 
-  const isInspectMode = mode === "inspect";
-  const canInspectClick = mode !== "labels";
+  const canInspectClick = true;
+  const handleCopy = async (type, text) => {
+    await copyText(text);
+    setCopiedAction(type);
+  };
 
   return (
     <div className={styles.root} aria-hidden="true">
@@ -542,10 +574,13 @@ export default function DevLayoutOverlay() {
         <aside className={styles.panel} role="dialog" aria-label="Dev layout inspector">
           <div className={styles.panelHeader}>
             <div>
-              <p className={styles.kicker}>Dev Layout Inspector</p>
+              <p className={styles.kicker}>DEV LAYOUT INSPECTOR</p>
               <h3 className={styles.title}>
                 Section {selected.number} · {selected.key}
               </h3>
+              <p className={styles.subtitle}>
+                Click any highlighted section to switch inspection target.
+              </p>
             </div>
             <button type="button" className={styles.button} onClick={() => setSelectedKey("")}>Close</button>
           </div>
@@ -556,40 +591,69 @@ export default function DevLayoutOverlay() {
             <button type="button" className={`${styles.button} ${styles.buttonPrimary}`} onClick={cycleMode}>Cycle Mode</button>
           </div>
 
-          <div className={styles.grid}>
-            <span className={styles.labelKey}>Route</span><span className={styles.value}>{selected.route}</span>
-            <span className={styles.labelKey}>Section Number</span><span className={styles.value}>{selected.number}</span>
-            <span className={styles.labelKey}>Stable Key</span><span className={styles.value}>{selected.key}</span>
-            <span className={styles.labelKey}>Parent</span><span className={styles.value}>{selected.parentNumber || "none"} ({selected.parentKey || "none"})</span>
-            <span className={styles.labelKey}>Children</span><span className={styles.value}>{selected.childNumbers.join(", ") || "none"} {selected.childKeys.length ? `(${selected.childKeys.join(", ")})` : ""}</span>
-            <span className={styles.labelKey}>Section Type</span><span className={styles.value}>{selected.type}</span>
-            <span className={styles.labelKey}>Wrapper Class</span><span className={styles.value}>{selected.wrapperClass}</span>
-            <span className={styles.labelKey}>Background Token</span><span className={styles.value}>{selected.backgroundToken}</span>
-            <span className={styles.labelKey}>Computed Background</span><span className={styles.value}>{selected.backgroundColor}</span>
-            <span className={styles.labelKey}>Padding</span><span className={styles.value}>{selected.padding}</span>
-            <span className={styles.labelKey}>Margin</span><span className={styles.value}>{selected.margin}</span>
-            <span className={styles.labelKey}>Radius</span><span className={styles.value}>{selected.radius}</span>
-            <span className={styles.labelKey}>Width/Bounds</span><span className={styles.value}>{selected.width}px × {selected.height}px at x {selected.left}, y {selected.top}</span>
-            <span className={styles.labelKey}>Gap from Prev</span><span className={styles.value}>{selected.computedGapFromPrevious ?? "n/a"} px</span>
-            <span className={styles.labelKey}>Left Offset</span><span className={styles.value}>{selected.computedLeftOffsetFromParent ?? "n/a"} px</span>
-            <span className={styles.labelKey}>Source</span><span className={styles.value}>{selected.source}</span>
+          <div className={styles.sectionBlock}>
+            <p className={styles.blockTitle}>Identity</p>
+            <div className={styles.grid}>
+              <span className={styles.labelKey}>Route</span><span className={styles.value}>{selected.route}</span>
+              <span className={styles.labelKey}>Section Number</span><span className={styles.value}>{selected.number}</span>
+              <span className={styles.labelKey}>Stable Key</span><span className={`${styles.value} ${styles.codeValue}`}>{selected.key}</span>
+              <span className={styles.labelKey}>Section Type</span><span className={styles.value}>{selected.type}</span>
+              <span className={styles.labelKey}>Wrapper Class</span><span className={styles.value}>{selected.wrapperClass}</span>
+              <span className={styles.labelKey}>Source</span><span className={styles.value}>{selected.source}</span>
+            </div>
           </div>
 
-          <div className={styles.row}>
+          <div className={styles.sectionBlock}>
+            <p className={styles.blockTitle}>Hierarchy</p>
+            <div className={styles.grid}>
+              <span className={styles.labelKey}>Parent</span><span className={styles.value}>{selected.parentNumber || "none"} ({selected.parentKey || "none"})</span>
+              <span className={styles.labelKey}>Children</span><span className={styles.value}>{selected.childNumbers.join(", ") || "none"} {selected.childKeys.length ? `(${selected.childKeys.join(", ")})` : ""}</span>
+            </div>
+          </div>
+
+          <div className={styles.sectionBlock}>
+            <p className={styles.blockTitle}>Layout</p>
+            <div className={styles.grid}>
+              <span className={styles.labelKey}>Padding</span><span className={styles.value}>{selected.padding}</span>
+              <span className={styles.labelKey}>Margin</span><span className={styles.value}>{selected.margin}</span>
+              <span className={styles.labelKey}>Radius</span><span className={styles.value}>{selected.radius}</span>
+              <span className={styles.labelKey}>Width/Bounds</span><span className={styles.value}>{selected.width}px × {selected.height}px at x {selected.left}, y {selected.top}</span>
+              <span className={styles.labelKey}>Gap from Prev</span><span className={styles.value}>{selected.computedGapFromPrevious ?? "n/a"} px</span>
+              <span className={styles.labelKey}>Left Offset</span><span className={styles.value}>{selected.computedLeftOffsetFromParent ?? "n/a"} px</span>
+            </div>
+          </div>
+
+          <div className={styles.sectionBlock}>
+            <p className={styles.blockTitle}>Background</p>
+            <div className={styles.grid}>
+              <span className={styles.labelKey}>Background Token</span><span className={styles.value}>{selected.backgroundToken}</span>
+              <span className={styles.labelKey}>Background Class</span><span className={styles.value}>{selected.backgroundClass || "none"}</span>
+              <span className={styles.labelKey}>Computed Background</span><span className={styles.value}>{selected.backgroundColor}</span>
+            </div>
+          </div>
+
+          <div className={styles.sectionBlock}>
+            <p className={styles.blockTitle}>Likely Issues</p>
+            <div className={styles.row}>
             {selected.issueTags.length === 0 && <span className={styles.tag}>no-issues-detected</span>}
             {selected.issueTags.map((tag) => (
               <span key={tag} className={styles.tag}>{tag}</span>
             ))}
+            </div>
           </div>
 
           {(() => {
             const prompts = buildPrompts(selected);
             return (
-              <div className={styles.row}>
-                <button type="button" className={styles.button} onClick={() => copyText(prompts.reference)}>Copy section reference</button>
-                <button type="button" className={styles.button} onClick={() => copyText(prompts.debug)}>Copy debug summary</button>
-                <button type="button" className={styles.button} onClick={() => copyText(prompts.codex)}>Copy Codex prompt</button>
-                <button type="button" className={styles.button} onClick={() => copyText(prompts.claude)}>Copy Claude prompt</button>
+              <div className={styles.sectionBlock}>
+                <p className={styles.blockTitle}>Copy Tools</p>
+                <div className={styles.row}>
+                  <button type="button" className={styles.button} onClick={() => handleCopy("reference", prompts.reference)}>Copy section reference</button>
+                  <button type="button" className={styles.button} onClick={() => handleCopy("debug", prompts.debug)}>Copy debug summary</button>
+                  <button type="button" className={styles.button} onClick={() => handleCopy("codex", prompts.codex)}>Copy Codex prompt</button>
+                  <button type="button" className={styles.button} onClick={() => handleCopy("claude", prompts.claude)}>Copy Claude prompt</button>
+                </div>
+                <p className={styles.copyStatus}>{copiedAction ? `Copied ${copiedAction}` : " "}</p>
               </div>
             );
           })()}

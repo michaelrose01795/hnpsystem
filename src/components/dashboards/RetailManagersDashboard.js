@@ -5,6 +5,7 @@ import { roleCategories } from "@/config/users";
 import { useRoster } from "@/context/RosterContext";
 import { supabase } from "@/lib/supabaseClient";
 import { SectionCard, MetricPill } from "@/components/dashboards/DashboardPrimitives";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 // ⚠️ Mock data found — replacing with Supabase query
 // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
 
@@ -336,8 +337,13 @@ export default function RetailManagersDashboard({ user }) {
   }, [snapshot.metrics, snapshot.redJobs.length, usersByRole]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      <header
+    <DevLayoutSection sectionKey="dashboard-retail-shell" sectionType="page-shell" shell style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      <DevLayoutSection
+        as="header"
+        sectionKey="dashboard-retail-header"
+        parentKey="dashboard-retail-shell"
+        sectionType="section-shell"
+        shell
         className="app-section-card"
         style={{
           gap: "8px",
@@ -350,12 +356,13 @@ export default function RetailManagersDashboard({ user }) {
           {user?.username ? `${user.username}'s Dashboard` : "Retail Dashboard"}
         </h1>
         <p style={{ margin: 0, color: "var(--info)" }}>Live view for retail managers · {todayLabel}</p>
-      </header>
+      </DevLayoutSection>
 
-      <SectionCard
-        title="Today's Workshop Pulse"
-        subtitle="Live workshop snapshot aggregated from Supabase"
-      >
+      <DevLayoutSection sectionKey="dashboard-retail-workshop-pulse" parentKey="dashboard-retail-shell" sectionType="content-card">
+        <SectionCard
+          title="Today's Workshop Pulse"
+          subtitle="Live workshop snapshot aggregated from Supabase"
+        >
         {snapshot.error && (
           <div style={{ color: "var(--danger)", marginBottom: "12px", fontWeight: 600 }}>
             {snapshot.error}
@@ -379,13 +386,19 @@ export default function RetailManagersDashboard({ user }) {
           <p style={{ color: "var(--info)", marginBottom: "8px" }}>Throughput progression</p>
           <LinearTrend data={throughputData} />
         </div>
-      </SectionCard>
+        </SectionCard>
+      </DevLayoutSection>
 
-      <SectionCard title="Retail manager focus" subtitle="Quick view for every manager level role inside retail">
+      <DevLayoutSection sectionKey="dashboard-retail-manager-focus" parentKey="dashboard-retail-shell" sectionType="content-card">
+        <SectionCard title="Retail manager focus" subtitle="Quick view for every manager level role inside retail">
         <div style={{ display: "grid", gap: "18px", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
           {managerPanels.map((panel) => (
             <div
               key={panel.role}
+              data-dev-section="1"
+              data-dev-section-key={`dashboard-retail-role-panel-${panel.role.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+              data-dev-section-type="content-card"
+              data-dev-section-parent="dashboard-retail-manager-focus"
               style={{
                 border: "none",
                 borderRadius: "var(--radius-md)",
@@ -438,13 +451,20 @@ export default function RetailManagersDashboard({ user }) {
             </div>
           ))}
         </div>
-      </SectionCard>
+        </SectionCard>
+      </DevLayoutSection>
 
-      <div style={{ display: "grid", gap: "20px", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
-        <SectionCard
-          title="Technician utilisation"
-          subtitle="Clock-in data grouped by team"
-        >
+      <DevLayoutSection
+        sectionKey="dashboard-retail-bottom-row"
+        parentKey="dashboard-retail-shell"
+        sectionType="grid-card"
+        style={{ display: "grid", gap: "20px", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}
+      >
+        <DevLayoutSection sectionKey="dashboard-retail-technician-utilisation" parentKey="dashboard-retail-bottom-row" sectionType="content-card">
+          <SectionCard
+            title="Technician utilisation"
+            subtitle="Clock-in data grouped by team"
+          >
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {utilisationData.map((team) => (
               <div key={team.team} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -474,9 +494,11 @@ export default function RetailManagersDashboard({ user }) {
               </div>
             ))}
           </div>
-        </SectionCard>
+          </SectionCard>
+        </DevLayoutSection>
 
-        <SectionCard title="Red priority jobs" subtitle="Jobs requiring manager attention">
+        <DevLayoutSection sectionKey="dashboard-retail-red-jobs" parentKey="dashboard-retail-bottom-row" sectionType="content-card">
+          <SectionCard title="Red priority jobs" subtitle="Jobs requiring manager attention">
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {redJobs.length === 0 && (
               <span style={{ color: "var(--info)" }}>No red-priority jobs at the moment.</span>
@@ -500,8 +522,9 @@ export default function RetailManagersDashboard({ user }) {
               </div>
             ))}
           </div>
-        </SectionCard>
-      </div>
-    </div>
+          </SectionCard>
+        </DevLayoutSection>
+      </DevLayoutSection>
+    </DevLayoutSection>
   );
 }

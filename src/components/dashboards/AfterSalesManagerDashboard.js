@@ -4,6 +4,7 @@ import Link from "next/link";
 import dayjs from "dayjs";
 import { supabase } from "@/lib/supabaseClient";
 import { SectionCard, formatCurrencyRounded as formatCurrency } from "@/components/dashboards/DashboardPrimitives";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 const revenueStreams = [
   { label: "Service Retail", actual: 28600, target: 26000 },
@@ -198,8 +199,13 @@ export default function AfterSalesManagerDashboard() {
   const progress = Math.round((totals.actual / totals.target) * 100);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      <header
+    <DevLayoutSection sectionKey="dashboard-aftersales-shell" sectionType="page-shell" shell style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      <DevLayoutSection
+        as="header"
+        sectionKey="dashboard-aftersales-header"
+        parentKey="dashboard-aftersales-shell"
+        sectionType="section-shell"
+        shell
         className="app-section-card"
         style={{
           background: "var(--warning-surface)",
@@ -212,9 +218,13 @@ export default function AfterSalesManagerDashboard() {
         </span>
         <h1 style={{ margin: 0, fontSize: "1.9rem", color: "var(--warning-dark)" }}>Revenue & Loyalty Pulse</h1>
         <p style={{ margin: 0, color: "var(--warning)" }}>{today} • {formatCurrency(totals.actual)} / {formatCurrency(totals.target)} • {progress}% to plan</p>
-      </header>
+      </DevLayoutSection>
 
-      <section
+      <DevLayoutSection
+        as="section"
+        sectionKey="dashboard-aftersales-quick-actions"
+        parentKey="dashboard-aftersales-shell"
+        sectionType="toolbar"
         className="app-section-card"
         style={{
           display: "flex",
@@ -238,19 +248,27 @@ export default function AfterSalesManagerDashboard() {
             {action.label}
           </Link>
         ))}
-      </section>
+      </DevLayoutSection>
 
-      <section
+      <DevLayoutSection
+        as="section"
+        sectionKey="dashboard-aftersales-metrics-grid"
+        parentKey="dashboard-aftersales-shell"
+        sectionType="grid-card"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
           gap: "18px",
         }}
       >
-        {metricCards.map((metric) => (
+        {metricCards.map((metric, index) => (
           <div
             key={metric.label}
             className="app-section-card"
+            data-dev-section="1"
+            data-dev-section-key={`dashboard-aftersales-metric-${index + 1}`}
+            data-dev-section-type="stat-card"
+            data-dev-section-parent="dashboard-aftersales-metrics-grid"
             style={{
               border: `1px solid ${metric.accent}22`,
               padding: "18px",
@@ -264,16 +282,21 @@ export default function AfterSalesManagerDashboard() {
             <span style={{ color: "var(--info-dark)", fontSize: "0.85rem" }}>{metric.helper}</span>
           </div>
         ))}
-      </section>
+      </DevLayoutSection>
 
-      <section
+      <DevLayoutSection
+        as="section"
+        sectionKey="dashboard-aftersales-revenue-row"
+        parentKey="dashboard-aftersales-shell"
+        sectionType="grid-card"
         style={{
           display: "grid",
           gridTemplateColumns: "minmax(320px, 1.2fr) minmax(280px, 1fr)",
           gap: "18px",
         }}
       >
-        <SectionCard borderColor="var(--warning)" style={{ gap: "16px" }}>
+        <DevLayoutSection sectionKey="dashboard-aftersales-revenue-streams" parentKey="dashboard-aftersales-revenue-row" sectionType="content-card">
+          <SectionCard borderColor="var(--warning)" style={{ gap: "16px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
             <div>
               <h2 style={{ margin: 0, color: "var(--warning-dark)", fontSize: "1.2rem" }}>Revenue Streams</h2>
@@ -315,9 +338,11 @@ export default function AfterSalesManagerDashboard() {
               );
             })}
           </div>
-        </SectionCard>
+          </SectionCard>
+        </DevLayoutSection>
 
-        <SectionCard borderColor="var(--warning)" style={{ gap: "16px" }}>
+        <DevLayoutSection sectionKey="dashboard-aftersales-regional-pulse" parentKey="dashboard-aftersales-revenue-row" sectionType="content-card">
+          <SectionCard borderColor="var(--warning)" style={{ gap: "16px" }}>
           <div>
             <h2 style={{ margin: 0, color: "var(--warning-dark)", fontSize: "1.2rem" }}>Regional Pulse</h2>
             <p style={{ margin: "4px 0 0", color: "var(--warning)" }}>Sites benchmarked vs strategic KPIs</p>
@@ -348,17 +373,23 @@ export default function AfterSalesManagerDashboard() {
               </div>
             ))}
           </div>
-        </SectionCard>
-      </section>
+          </SectionCard>
+        </DevLayoutSection>
+      </DevLayoutSection>
 
-      <section
+      <DevLayoutSection
+        as="section"
+        sectionKey="dashboard-aftersales-risk-loyalty-row"
+        parentKey="dashboard-aftersales-shell"
+        sectionType="grid-card"
         style={{
           display: "grid",
           gridTemplateColumns: "minmax(320px, 1.2fr) minmax(280px, 1fr)",
           gap: "18px",
         }}
       >
-        <SectionCard borderColor="var(--warning)" style={{ gap: "12px" }}>
+        <DevLayoutSection sectionKey="dashboard-aftersales-strategic-risks" parentKey="dashboard-aftersales-risk-loyalty-row" sectionType="content-card">
+          <SectionCard borderColor="var(--warning)" style={{ gap: "12px" }}>
           <div>
             <h2 style={{ margin: 0, color: "var(--warning-dark)", fontSize: "1.2rem" }}>Strategic Risks</h2>
             <p style={{ margin: "4px 0 0", color: "var(--warning)" }}>Escalations that impact daily GP and CSI</p>
@@ -392,9 +423,11 @@ export default function AfterSalesManagerDashboard() {
               </p>
             </div>
           ))}
-        </SectionCard>
+          </SectionCard>
+        </DevLayoutSection>
 
-        <SectionCard borderColor="var(--warning)">
+        <DevLayoutSection sectionKey="dashboard-aftersales-loyalty-engine" parentKey="dashboard-aftersales-risk-loyalty-row" sectionType="content-card">
+          <SectionCard borderColor="var(--warning)">
           <div>
             <h2 style={{ margin: 0, color: "var(--warning-dark)", fontSize: "1.2rem" }}>Loyalty Engine</h2>
             <p style={{ margin: "4px 0 0", color: "var(--warning)" }}>Subscription and retention guardrails</p>
@@ -433,8 +466,9 @@ export default function AfterSalesManagerDashboard() {
           >
             Action: Launch EV loyalty bundle pilot before 4pm sign-off.
           </div>
-        </SectionCard>
-      </section>
-    </div>
+          </SectionCard>
+        </DevLayoutSection>
+      </DevLayoutSection>
+    </DevLayoutSection>
   );
 }

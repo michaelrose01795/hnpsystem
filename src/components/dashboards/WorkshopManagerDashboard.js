@@ -7,6 +7,7 @@ import { getWorkshopDashboardData } from "@/lib/database/dashboard/workshop";
 import { listConsumablesForTracker } from "@/lib/database/consumables";
 import ModalPortal from "@/components/popups/ModalPortal";
 import { SectionCard, formatCurrency } from "@/components/dashboards/DashboardPrimitives";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 dayjs.extend(relativeTime);
 
@@ -327,8 +328,12 @@ export default function WorkshopManagerDashboard() {
   );
 
   return (
-    <div>
-      <section
+    <DevLayoutSection sectionKey="dashboard-workshop-shell" sectionType="page-shell" shell>
+      <DevLayoutSection
+        as="section"
+        sectionKey="dashboard-workshop-metrics-grid"
+        parentKey="dashboard-workshop-shell"
+        sectionType="grid-card"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
@@ -359,9 +364,13 @@ export default function WorkshopManagerDashboard() {
             {dashboardError}
           </div>
         ) : (
-          metrics.map((metric) => (
+          metrics.map((metric, index) => (
             <div
               key={metric.label}
+              data-dev-section="1"
+              data-dev-section-key={`dashboard-workshop-metric-${index + 1}`}
+              data-dev-section-type="stat-card"
+              data-dev-section-parent="dashboard-workshop-metrics-grid"
               style={{
                 borderRadius: "var(--radius-md)",
                 padding: "18px",
@@ -391,16 +400,21 @@ export default function WorkshopManagerDashboard() {
             </div>
           ))
         )}
-      </section>
+      </DevLayoutSection>
 
-      <section
+      <DevLayoutSection
+        as="section"
+        sectionKey="dashboard-workshop-focus-row"
+        parentKey="dashboard-workshop-shell"
+        sectionType="grid-card"
         style={{
           display: "grid",
           gridTemplateColumns: "minmax(320px, 1.2fr) minmax(280px, 0.9fr)",
           gap: "18px",
         }}
       >
-        <SectionCard title="Technician Focus" subtitle="Live assignments pulled from job clocking">
+        <DevLayoutSection sectionKey="dashboard-workshop-technician-focus" parentKey="dashboard-workshop-focus-row" sectionType="content-card">
+          <SectionCard title="Technician Focus" subtitle="Live assignments pulled from job clocking">
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {clockingLoading ? (
               <p style={{ color: "var(--info)" }}>Loading technician activity…</p>
@@ -434,9 +448,11 @@ export default function WorkshopManagerDashboard() {
               ))
             )}
           </div>
-        </SectionCard>
+          </SectionCard>
+        </DevLayoutSection>
 
-        <SectionCard title="Bay Readiness" subtitle="Outstanding jobs that need attention" style={{ gap: "12px" }}>
+        <DevLayoutSection sectionKey="dashboard-workshop-bay-readiness" parentKey="dashboard-workshop-focus-row" sectionType="content-card">
+          <SectionCard title="Bay Readiness" subtitle="Outstanding jobs that need attention" style={{ gap: "12px" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {dashboardLoading ? (
               <p style={{ color: "var(--info)" }}>Loading bay readiness…</p>
@@ -463,10 +479,18 @@ export default function WorkshopManagerDashboard() {
               ))
             )}
           </div>
-        </SectionCard>
-      </section>
+          </SectionCard>
+        </DevLayoutSection>
+      </DevLayoutSection>
 
-      <section style={{ marginBottom: "32px" }}>
+      <DevLayoutSection
+        as="section"
+        sectionKey="dashboard-workshop-clocking-overview"
+        parentKey="dashboard-workshop-shell"
+        sectionType="section-shell"
+        shell
+        style={{ marginBottom: "32px" }}
+      >
         <h2 style={{ fontSize: "1.2rem", fontWeight: 600, marginBottom: "12px" }}>
           Clocking Overview
         </h2>
@@ -498,9 +522,16 @@ export default function WorkshopManagerDashboard() {
             </p>
           </div>
         )}
-      </section>
+      </DevLayoutSection>
 
-      <section style={{ marginBottom: "32px" }}>
+      <DevLayoutSection
+        as="section"
+        sectionKey="dashboard-workshop-consumables"
+        parentKey="dashboard-workshop-shell"
+        sectionType="section-shell"
+        shell
+        style={{ marginBottom: "32px" }}
+      >
         <h2 style={{ fontSize: "1.2rem", fontWeight: 600, marginBottom: "12px" }}>
           Consumables
         </h2>
@@ -538,9 +569,15 @@ export default function WorkshopManagerDashboard() {
             View Consumable Orders
           </button>
         </div>
-      </section>
+      </DevLayoutSection>
 
-      <section>
+      <DevLayoutSection
+        as="section"
+        sectionKey="dashboard-workshop-important-notices"
+        parentKey="dashboard-workshop-shell"
+        sectionType="section-shell"
+        shell
+      >
         <h2 style={{ fontSize: "1.2rem", fontWeight: 600, marginBottom: "12px" }}>
           Important Notices
         </h2>
@@ -571,13 +608,18 @@ export default function WorkshopManagerDashboard() {
             ))
           )}
         </div>
-      </section>
+      </DevLayoutSection>
 
       {isConsumablesModalOpen && (
-        <ModalPortal>
-          <div className="popup-backdrop" role="dialog" aria-modal="true">
+        <DevLayoutSection sectionKey="dashboard-workshop-consumables-modal-overlay" parentKey="dashboard-workshop-shell" sectionType="floating-action">
+          <ModalPortal>
+            <div className="popup-backdrop" role="dialog" aria-modal="true">
             <div
               className="popup-card"
+              data-dev-section="1"
+              data-dev-section-key="dashboard-workshop-consumables-modal-card"
+              data-dev-section-type="content-card"
+              data-dev-section-parent="dashboard-workshop-consumables-modal-overlay"
               style={{
                 borderRadius: "var(--radius-xl)",
                 width: "100%",
@@ -743,10 +785,10 @@ export default function WorkshopManagerDashboard() {
               </div>
             </div>
           </div>
-        </div>
-        </ModalPortal>
+          </div>
+          </ModalPortal>
+        </DevLayoutSection>
       )}
-    </div>
+    </DevLayoutSection>
   );
 }
-
