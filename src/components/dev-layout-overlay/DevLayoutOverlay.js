@@ -120,6 +120,64 @@ const buildEntry = ({ key, node, route, order, type, parentKey = "", widthMode =
   };
 };
 
+const addTableSubSections = ({ sectionsByKey, route }) => {
+  const currentSections = Array.from(sectionsByKey.values());
+  let orderCursor = currentSections.length;
+
+  currentSections.forEach((section) => {
+    const nodeName = section.node?.tagName?.toLowerCase() || "";
+    if (nodeName !== "table" && !String(section.type || "").includes("table")) return;
+
+    const headingNode = section.node.tHead || section.node.querySelector("thead");
+    const headingKeyFromDom = sanitizeKey(headingNode?.getAttribute?.("data-dev-section-key") || "");
+    const headingKey = headingKeyFromDom || sanitizeKey(`${section.key}-headings`);
+    if (headingNode && headingKey && !sectionsByKey.has(headingKey)) {
+      sectionsByKey.set(
+        headingKey,
+        buildEntry({
+          key: headingKey,
+          node: headingNode,
+          route: section.route || route,
+          order: orderCursor++,
+          type: "table-headings",
+          parentKey: section.key,
+          widthMode: section.widthMode || "",
+          isShell: false,
+          source: headingKeyFromDom ? "explicit" : "table-auto",
+        })
+      );
+    }
+
+    const bodyNodes = Array.from(section.node.tBodies || []).filter(Boolean);
+    if (!bodyNodes.length) {
+      const fallbackBody = section.node.querySelector("tbody");
+      if (fallbackBody) bodyNodes.push(fallbackBody);
+    }
+
+    bodyNodes.forEach((rowNode, index) => {
+      const rowKeyFromDom = sanitizeKey(rowNode?.getAttribute?.("data-dev-section-key") || "");
+      const rowKey =
+        rowKeyFromDom || sanitizeKey(bodyNodes.length > 1 ? `${section.key}-rows-${index + 1}` : `${section.key}-rows`);
+      if (!rowNode || !rowKey || sectionsByKey.has(rowKey)) return;
+
+      sectionsByKey.set(
+        rowKey,
+        buildEntry({
+          key: rowKey,
+          node: rowNode,
+          route: section.route || route,
+          order: orderCursor++,
+          type: "table-rows",
+          parentKey: section.key,
+          widthMode: section.widthMode || "",
+          isShell: false,
+          source: rowKeyFromDom ? "explicit" : "table-auto",
+        })
+      );
+    });
+  });
+};
+
 const numberSections = (sections) => {
   const childrenByParent = new Map();
   sections.forEach((entry) => {
@@ -327,6 +385,8 @@ const scanSections = ({ route, registry }) => {
       );
     });
   });
+
+  addTableSubSections({ sectionsByKey, route });
 
   const sections = Array.from(sectionsByKey.values()).filter((section) => isVisibleRect(section.rect));
   sections.sort((a, b) => compareNodeOrder(a.node, b.node));

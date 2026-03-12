@@ -1280,15 +1280,21 @@ export default function Appointments() {
 
         {/* Top Bar */}
         <div
+          id="appointments-auto-content-card-2"
+          data-dev-section-key="appointments-auto-content-card-2"
+          data-dev-section-type="content-card"
           className="app-section-card"
           style={{
-            display: "flex",
-            gap: "12px",
+            display: "grid",
+            gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+            gap: "8px",
             alignItems: "center",
+            overflowX: "hidden",
+            backgroundColor: "rgba(var(--primary-rgb), 0.16)",
             boxShadow: "none",
           }}
         >
-          <div style={{ flex: "1 1 50%" }}>
+          <div style={{ minWidth: 0 }}>
             <SearchBar
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -1297,7 +1303,6 @@ export default function Appointments() {
               disabled={isLoading}
             />
           </div>
-          <div style={{ flex: "1 1 50%", display: "flex", gap: "12px" }}>
             <input
               type="text"
               value={jobNumber}
@@ -1305,7 +1310,7 @@ export default function Appointments() {
               placeholder="Job Number"
               disabled={isLoading}
               style={{
-                flex: 1,
+                width: "100%",
                 minHeight: "var(--control-height-sm)",
               }}
             />
@@ -1315,7 +1320,7 @@ export default function Appointments() {
               disabled={isLoading}
               placeholder="Select time"
               style={{
-                flex: 1,
+                width: "100%",
               }}
               size="sm"
             >
@@ -1329,7 +1334,7 @@ export default function Appointments() {
               onClick={() => handleAddAppointment(selectedDay.toISOString().split("T")[0])}
               disabled={isLoading}
               style={{
-                flex: 1,
+                width: "100%",
                 minHeight: "var(--control-height-sm)",
                 backgroundColor: isLoading ? "var(--background)" : "var(--primary)",
                 color: "white",
@@ -1338,6 +1343,7 @@ export default function Appointments() {
                 cursor: isLoading ? "not-allowed" : "pointer",
                 fontWeight: "600",
                 fontSize: "var(--control-font-size)",
+                whiteSpace: "nowrap",
                 transition: "background-color 0.2s",
               }}
               onMouseEnter={(e) => {
@@ -1351,22 +1357,35 @@ export default function Appointments() {
             >
               {isLoading ? "Booking..." : "Book Appointment"}
             </button>
-          </div>
         </div>
 
         {/* Calendar Table Container */}
-        <div style={{ 
+        <div
+          data-dev-section-key="appointments-auto-data-table-2-shell"
+          data-dev-section-type="section-shell"
+          style={{ 
           flex: "0 0 auto", 
           maxHeight: "calc(8 * 42px + 60px)", 
           overflowY: "auto", 
           marginBottom: "12px", 
           borderRadius: "var(--radius-sm)", 
           boxShadow: "none", 
-          backgroundColor: "var(--surface)" 
-        }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead style={{ position: "sticky", top: 0, zIndex: 2 }}>
-              <tr style={{ backgroundColor: "var(--surface)", borderBottom: "2px solid var(--primary)" }}>
+          backgroundColor: "rgba(var(--primary-rgb), 0.14)" 
+        }}
+        >
+          <table
+            id="appointments-auto-data-table-2"
+            data-dev-section-key="appointments-auto-data-table-2"
+            data-dev-section-type="data-table"
+            style={{ width: "100%", borderCollapse: "collapse", backgroundColor: "rgba(var(--primary-rgb), 0.12)" }}
+          >
+            <thead
+              data-dev-section-key="appointments-auto-data-table-2-headings"
+              data-dev-section-type="table-headings"
+              data-dev-section-parent="appointments-auto-data-table-2"
+              style={{ position: "sticky", top: 0, zIndex: 2, backgroundColor: "var(--primary)" }}
+            >
+              <tr style={{ backgroundColor: "var(--primary)", borderBottom: "2px solid var(--primary-dark)" }}>
                 {["Day/Date","Availability","Total Hours","Total Jobs","Jobs Scheduled","Finish","Services","MOT","Diagnosis","Other","Staff Off"].map(header => (
                   <th 
                     key={header} 
@@ -1375,9 +1394,9 @@ export default function Appointments() {
                       padding: "10px 12px", 
                       fontWeight: "600", 
                       fontSize: "14px", 
-                      color: "var(--text-secondary)", 
+                      color: "var(--text-inverse)", 
                       borderBottom: "1px solid var(--surface-light)", 
-                      background: "var(--surface)", 
+                      background: "var(--primary)", 
                       position: "sticky", 
                       top: 0 
                     }}
@@ -1387,7 +1406,11 @@ export default function Appointments() {
                 ))}
               </tr>
             </thead>
-            <tbody>
+            <tbody
+              data-dev-section-key="appointments-auto-data-table-2-rows"
+              data-dev-section-type="table-rows"
+              data-dev-section-parent="appointments-auto-data-table-2"
+            >
                 {dates.map((date) => {
                 const dateKey = date.toDateString();
                 const counts = getJobCounts(date);
@@ -1828,8 +1851,17 @@ export default function Appointments() {
             <>
               {/* ✅ Enhanced Jobs Table */}
               <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
-              <thead>
+                <table
+                  id="appointments-auto-data-table-3"
+                  data-dev-section-key="appointments-auto-data-table-3"
+                  data-dev-section-type="data-table"
+                  style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", backgroundColor: "rgba(var(--primary-rgb), 0.1)" }}
+                >
+              <thead
+                data-dev-section-key="appointments-auto-data-table-3-headings"
+                data-dev-section-type="table-headings"
+                data-dev-section-parent="appointments-auto-data-table-3"
+              >
                 <tr>
                 {[
                   "Time",
@@ -1847,7 +1879,7 @@ export default function Appointments() {
                       style={{ 
                         textAlign: head === "Check-In" ? "center" : "left", 
                         padding: "10px 12px", 
-                        background: "var(--surface)", 
+                        background: "rgba(var(--primary-rgb), 0.1)", 
                         fontWeight: "600", 
                         borderBottom: "2px solid var(--primary)", 
                         position: "sticky", 
@@ -1861,7 +1893,11 @@ export default function Appointments() {
                   ))}
                 </tr>
               </thead>
-              <tbody>
+              <tbody
+                data-dev-section-key="appointments-auto-data-table-3-rows"
+                data-dev-section-type="table-rows"
+                data-dev-section-parent="appointments-auto-data-table-3"
+              >
                 {sortedJobs.length > 0 ? (
                   sortedJobs.map((job, idx) => {
                     const statusNormalized = (job.status || "").trim().toLowerCase();

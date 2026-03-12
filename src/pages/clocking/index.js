@@ -21,32 +21,32 @@ const MOT_ROLE_SET = new Set(MOT_ROLES.map((role) => role.toLowerCase()));
 
 const SUMMARY_CARD_STYLES = {
   total: {
-    background: "rgba(var(--primary-rgb), 0.12)",
+    background: "var(--layer-section-level-2)",
     border: "none",
     valueColor: "var(--primary-dark)",
   },
   inProgress: {
-    background: "rgba(var(--primary-rgb), 0.12)",
+    background: "var(--layer-section-level-2)",
     border: "none",
     valueColor: "var(--primary-dark)",
   },
   onMot: {
-    background: "rgba(var(--primary-rgb), 0.12)",
+    background: "var(--layer-section-level-2)",
     border: "none",
     valueColor: "var(--primary-dark)",
   },
   teaBreak: {
-    background: "rgba(var(--primary-rgb), 0.12)",
+    background: "var(--layer-section-level-2)",
     border: "none",
     valueColor: "var(--primary-dark)",
   },
   waiting: {
-    background: "rgba(var(--primary-rgb), 0.12)",
+    background: "var(--layer-section-level-2)",
     border: "none",
     valueColor: "var(--primary-dark)",
   },
   notClocked: {
-    background: "rgba(var(--primary-rgb), 0.12)",
+    background: "var(--layer-section-level-2)",
     border: "none",
     valueColor: "var(--primary-dark)",
   },
@@ -504,7 +504,14 @@ function ClockingOverviewTab({ onSummaryChange }) {
   };
 
   return (
-    <>
+    <DevLayoutSection
+      as="div"
+      sectionKey="clocking-overview-shell"
+      parentKey="clocking-page-content"
+      sectionType="section-shell"
+      shell
+      style={{ display: "flex", flexDirection: "column", gap: "24px" }}
+    >
       {/* Summary Stats Section */}
       <DevLayoutSection
         as="section"
@@ -512,8 +519,9 @@ function ClockingOverviewTab({ onSummaryChange }) {
         parentKey="clocking-overview-shell"
         sectionType="section-shell"
         shell
+        backgroundToken="accent"
         style={{
-          background: "var(--layer-section-level-2)",
+          background: "rgba(var(--primary-rgb), 0.08)",
           borderRadius: "var(--radius-md)",
           padding: "24px",
           border: "none",
@@ -545,7 +553,11 @@ function ClockingOverviewTab({ onSummaryChange }) {
               gap: "14px",
             }}
           >
-            <div
+            <DevLayoutSection
+              sectionKey="clocking-stat-total"
+              parentKey="clocking-overview-stats-grid"
+              sectionType="stat-card"
+              backgroundToken="layer-section-level-2"
               style={{
                 borderRadius: "var(--radius-md)",
                 padding: "16px",
@@ -573,9 +585,13 @@ function ClockingOverviewTab({ onSummaryChange }) {
               <span style={{ color: "var(--info-dark)", fontSize: "0.85rem" }}>
                 All technicians
               </span>
-            </div>
+            </DevLayoutSection>
 
-            <div
+            <DevLayoutSection
+              sectionKey="clocking-stat-in-progress"
+              parentKey="clocking-overview-stats-grid"
+              sectionType="stat-card"
+              backgroundToken="layer-section-level-2"
               style={{
                 borderRadius: "var(--radius-md)",
                 padding: "16px",
@@ -603,9 +619,13 @@ function ClockingOverviewTab({ onSummaryChange }) {
               <span style={{ color: "var(--info-dark)", fontSize: "0.85rem" }}>
                 Active on jobs
               </span>
-            </div>
+            </DevLayoutSection>
 
-            <div
+            <DevLayoutSection
+              sectionKey="clocking-stat-on-mot"
+              parentKey="clocking-overview-stats-grid"
+              sectionType="stat-card"
+              backgroundToken="layer-section-level-2"
               style={{
                 borderRadius: "var(--radius-md)",
                 padding: "16px",
@@ -633,9 +653,13 @@ function ClockingOverviewTab({ onSummaryChange }) {
               <span style={{ color: "var(--info-dark)", fontSize: "0.85rem" }}>
                 On MOT tests
               </span>
-            </div>
+            </DevLayoutSection>
 
-            <div
+            <DevLayoutSection
+              sectionKey="clocking-stat-tea-break"
+              parentKey="clocking-overview-stats-grid"
+              sectionType="stat-card"
+              backgroundToken="layer-section-level-2"
               style={{
                 borderRadius: "var(--radius-md)",
                 padding: "16px",
@@ -663,9 +687,13 @@ function ClockingOverviewTab({ onSummaryChange }) {
               <span style={{ color: "var(--info-dark)", fontSize: "0.85rem" }}>
                 On break
               </span>
-            </div>
+            </DevLayoutSection>
 
-            <div
+            <DevLayoutSection
+              sectionKey="clocking-stat-waiting"
+              parentKey="clocking-overview-stats-grid"
+              sectionType="stat-card"
+              backgroundToken="layer-section-level-2"
               style={{
                 borderRadius: "var(--radius-md)",
                 padding: "16px",
@@ -693,9 +721,13 @@ function ClockingOverviewTab({ onSummaryChange }) {
               <span style={{ color: "var(--info-dark)", fontSize: "0.85rem" }}>
                 Awaiting jobs
               </span>
-            </div>
+            </DevLayoutSection>
 
-            <div
+            <DevLayoutSection
+              sectionKey="clocking-stat-offline"
+              parentKey="clocking-overview-stats-grid"
+              sectionType="stat-card"
+              backgroundToken="layer-section-level-2"
               style={{
                 borderRadius: "var(--radius-md)",
                 padding: "16px",
@@ -723,7 +755,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
               <span style={{ color: "var(--info-dark)", fontSize: "0.85rem" }}>
                 Not clocked in
               </span>
-            </div>
+            </DevLayoutSection>
           </DevLayoutSection>
         )}
       </DevLayoutSection>
@@ -751,8 +783,9 @@ function ClockingOverviewTab({ onSummaryChange }) {
         parentKey="clocking-overview-shell"
         sectionType="section-shell"
         shell
+        backgroundToken="layer-section-level-2"
         style={{
-          background: "var(--surface)",
+          background: "var(--layer-section-level-2)",
           borderRadius: "var(--radius-md)",
           padding: "24px",
           border: "none",
@@ -1207,7 +1240,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
           background: var(--primary-light) !important;
         }
       `}</style>
-    </>
+    </DevLayoutSection>
   );
 }
 

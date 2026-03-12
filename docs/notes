@@ -9,7 +9,7 @@ Continue flow with job number 56.
 
 
 
-PAGE ACCESS LIST (grouped by example role)
+PAGE ACCESS
 
 Service Manager
 /dashboard/service
@@ -36,15 +36,21 @@ Admin Manager
 Workshop Manager
 /
 /dashboard
-/appointments
-/clocking
+
 /clocking/[technicianSlug]
+
 /clocking/admin
+
 /dashboard/workshop
+
 /job-cards
+
 /job-cards/[jobNumber]
+
 /job-cards/[jobNumber]/add-checksheet
+
 /job-cards/[jobNumber]/car-details
+
 /job-cards/[jobNumber]/check-box
 /job-cards/[jobNumber]/dealer-car-details
 /job-cards/[jobNumber]/upload-checksheet
