@@ -8,15 +8,14 @@ Continue flow with job number 56.
 
 
 
-TODO CLAUDE
+CHECK CLAUDE
 Fix "Overview Efficiency" tab group, make sure it uses the tab style and is inside with the page, atm its off the edge. within the /clocking page remove the larger back card which everything sits on as this is not needed and missaligning everythign else. make sure /tracker page is uses the tab buttons style, deep dive into every page as lots still not following the full styles . have it so the search bars when starting to type its slightly hiden to the side like a boarder edge, fix this so the full text is visible wihtin the text section wihtin the search bars including the global search bar. 
 
 
 
 
-CHECK CODEX
-everytime a page is loaded up it almost reloads the whole app, this is good but have it load most/if not everything backend so the user should never have to reload the page frontend, or if the page is refreshed for some reason most of the work is done backend, so the user front end can continue working as quickly as possible. 
-
+TODO CODEX
+Fix it so when a page relaods ther is no additional loading page except on the redirect and roatate phone sections. have it so if a page is taking longer to load than expected then add a small loading symbol which rotates in the middle of the screen (not page for exmaple the loading job card page loads within the seciton card, have it load in the middle of the whole screen not just the page). when a page is reloaded have it load as quickly as possible, for example on iphone when a page is relaoded manually it then doesnt reload the page i have to open the whole page up again from the 
 
 
 

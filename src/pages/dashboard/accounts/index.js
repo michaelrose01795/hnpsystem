@@ -7,9 +7,6 @@ import Layout from "@/components/Layout";
 import { getAccountsDashboardData } from "@/lib/database/dashboard/accounts";
 import Section from "@/components/Section"; // shared titled section card — consolidated from duplicate local definitions
 
-  </section>
-);
-
 const MetricCard = ({ label, value, helper }) => (
   <div
     className="app-section-card"
