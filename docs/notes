@@ -5,101 +5,141 @@ TO DO:
 
 Continue flow with job number 56.
 
-PAGE ACCESS LIST (one example role per page)
-/ (page) Service Manager
-/accounts (page) Accounts Manager
-/accounts/create (page) Accounts Manager
-/accounts/edit/[accountId] (page) Accounts Manager
-/accounts/invoices (page) Accounts Manager
-/accounts/invoices/[invoiceId] (page) Accounts Manager
-/accounts/reports (page) Accounts Manager
-/accounts/settings (page) Accounts Manager
-/accounts/transactions/[accountId] (page) Accounts Manager
-/accounts/view/[accountId] (page) Accounts Manager
-/admin/profiles/[user] (page) Admin Manager
-/admin/users (page) Admin Manager
-/appointments (page) Receptionist
-/clocking (page) Workshop Manager
-/clocking/[technicianSlug] (page) Workshop Manager
-/clocking/admin (page) Workshop Manager
-/company-accounts (page) Accounts Manager
-/company-accounts/[accountNumber] (page) Accounts Manager
-/customer (page) Customer
-/customer/messages (page) Customer
-/customer/parts (page) Customer
-/customer/payments (page) Customer
-/customer/vehicles (page) Customer
-/customer/vhc (page) Customer
-/customers (page) Service
-/customers/[customerSlug] (page) Service
-/dashboard (page) Service Manager
-/dashboard/accounts (page) Accounts Manager
-/dashboard/admin (page) Admin Manager
-/dashboard/after-sales (page) After Sales Manager
-/dashboard/managers (page) General Manager
-/dashboard/mot (page) MOT Tester
-/dashboard/painting (page) Painters
-/dashboard/parts (page) Parts Manager
-/dashboard/service (page) Service Manager
-/dashboard/valeting (page) Valet Service
-/dashboard/workshop (page) Workshop Manager
-/dev/status-snapshot (page) Admin
-/dev/user-diagnostic (page) Admin
-/hr (page) HR Manager
-/hr/attendance (page) HR Manager
-/hr/disciplinary (page) HR Manager
-/hr/employees (page) HR Manager
-/hr/leave (page) HR Manager
-/hr/manager (page) Owner
-/hr/payroll (page) HR Manager
-/hr/performance (page) HR Manager
-/hr/recruitment (page) HR Manager
-/hr/reports (page) HR Manager
-/hr/settings (page) HR Manager
-/hr/training (page) HR Manager
-/job-cards (page) Service Manager
-/job-cards/[jobNumber] (page) Service Manager
-/job-cards/[jobNumber]/add-checksheet (page) Service Manager
-/job-cards/[jobNumber]/car-details (page) Service Manager
-/job-cards/[jobNumber]/check-box (page) Service Manager
-/job-cards/[jobNumber]/dealer-car-details (page) Service Manager
-/job-cards/[jobNumber]/upload-checksheet (page) Service Manager
-/job-cards/[jobNumber]/upload-dealer-file (page) Service Manager
-/job-cards/[jobNumber]/write-up (page) Service Manager
-/job-cards/appointments (page) Service Manager
-/job-cards/archive (page) Service Manager
-/job-cards/create (page) Service Manager
-/job-cards/myjobs (page) Techs
-/job-cards/myjobs/[jobNumber] (page) Techs
-/job-cards/view (page) Service Manager
-/job-cards/waiting/nextjobs (page) Workshop Manager
-/login (page) Public
-/messages (page) Service Manager
-/newsfeed (page) Service Manager
-/parts (page) Parts Manager
-/parts/create-order (page) Parts Manager
-/parts/create-order/[orderNumber] (page) Parts Manager
-/parts/deliveries (page) Parts Manager
-/parts/deliveries/[deliveryId] (page) Parts Manager
-/parts/delivery-planner (page) Parts Manager
-/parts/goods-in (page) Parts Manager
-/parts/goods-in/[goodsInNumber] (page) Parts Manager
-/parts/manager (page) Parts Manager
-/password-reset/reverted (page) Public
-/profile (page) Service Manager
-/stock-catalogue (page) Parts
-/tech/consumables-request (page) Techs
-/tech/dashboard (page) Techs
-/tech/efficiency (page) Techs
-/tracking (page) Service Manager
-/unauthorized (page) Public
-/valet (page) Valet Service
-/vhc (page) Techs
-/vhc/customer-preview/[jobNumber] (page) Customer
-/vhc/customer-view/[jobNumber] (page) Customer
-/vhc/share/[jobNumber]/[linkCode] (page) Customer
-/workshop (page) Workshop Manager
-/workshop/consumables-tracker (page) Workshop Manager
+
+
+
+
+PAGE ACCESS LIST (grouped by example role)
+
+Service Manager
+/dashboard/service
+
+Accounts Manager
+/accounts
+/accounts/create
+/accounts/edit/[accountId]
+/accounts/invoices
+/accounts/invoices/[invoiceId]
+/accounts/reports
+/accounts/settings
+/accounts/transactions/[accountId]
+/accounts/view/[accountId]
+/company-accounts
+/company-accounts/[accountNumber]
+/dashboard/accounts
+
+Admin Manager
+/admin/profiles/[user]
+/admin/users
+/dashboard/admin
+
+Workshop Manager
+/
+/dashboard
+/appointments
+/clocking
+/clocking/[technicianSlug]
+/clocking/admin
+/dashboard/workshop
+/job-cards
+/job-cards/[jobNumber]
+/job-cards/[jobNumber]/add-checksheet
+/job-cards/[jobNumber]/car-details
+/job-cards/[jobNumber]/check-box
+/job-cards/[jobNumber]/dealer-car-details
+/job-cards/[jobNumber]/upload-checksheet
+/job-cards/[jobNumber]/upload-dealer-file
+/job-cards/[jobNumber]/write-up
+/job-cards/appointments
+/job-cards/archive
+/job-cards/create
+/job-cards/view
+/job-cards/waiting/nextjobs
+/messages
+/newsfeed
+/profile
+/tracking
+/workshop
+/workshop/consumables-tracker
+
+Customer
+/customer
+/customer/messages
+/customer/parts
+/customer/payments
+/customer/vehicles
+/customer/vhc
+/vhc/customer-preview/[jobNumber]
+/vhc/customer-view/[jobNumber]
+/vhc/share/[jobNumber]/[linkCode]
+
+Service
+/customers
+/customers/[customerSlug]
+
+After Sales Manager
+/dashboard/after-sales
+
+General Manager
+/dashboard/managers
+
+MOT Tester
+/dashboard/mot
+
+Painters
+/dashboard/painting
+
+Parts Manager
+/dashboard/parts
+/parts
+/parts/create-order
+/parts/create-order/[orderNumber]
+/parts/deliveries
+/parts/deliveries/[deliveryId]
+/parts/delivery-planner
+/parts/goods-in
+/parts/goods-in/[goodsInNumber]
+/parts/manager
+
+Valet Service
+/dashboard/valeting
+/valet
+
+Admin
+/dev/status-snapshot
+/dev/user-diagnostic
+
+HR Manager
+/hr
+/hr/attendance
+/hr/disciplinary
+/hr/employees
+/hr/leave
+/hr/payroll
+/hr/performance
+/hr/recruitment
+/hr/reports
+/hr/settings
+/hr/training
+
+Owner
+/hr/manager
+
+Techs
+/job-cards/myjobs
+/job-cards/myjobs/[jobNumber]
+/tech/consumables-request
+/tech/dashboard
+/tech/efficiency
+/vhc
+
+Public
+/login
+/password-reset/reverted
+/unauthorized
+
+Parts
+/stock-catalogue
 
 
 
