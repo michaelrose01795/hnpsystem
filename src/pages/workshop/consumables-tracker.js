@@ -26,10 +26,6 @@ const workspaceShellStyle = {
   flex: 1,
   display: "flex",
   flexDirection: "column",
-  borderRadius: "var(--radius-xl)",
-  border: "var(--section-card-border)",
-  background: "var(--layer-section-level-2)",
-  padding: "var(--page-card-padding)",
   minHeight: 0,
   overflow: "hidden",
 };
@@ -1347,25 +1343,16 @@ function ConsumablesTrackerPage() {
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
-                    alignItems: "flex-start",
+                    alignItems: "center",
                     gap: "16px",
                     flexWrap: "wrap",
                   }}
                 >
-                  <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "20px", flexWrap: "wrap" }}>
                     <h1 style={{ margin: 0, fontSize: "1.4rem", color: "var(--text-primary)" }}>
                       Workshop Consumables Tracker
                     </h1>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px" }}>
-                    <button
-                      type="button"
-                      onClick={() => setShowStockCheck(true)}
-                      style={stockCheckButtonStyle}
-                    >
-                      Stock Check
-                    </button>
-                    <div style={{ textAlign: "right" }}>
+                    <div>
                       <p style={{ margin: 0, fontSize: "0.8rem", color: quietLabelColor }}>
                         Budget for {monthLabel}
                       </p>
@@ -1376,6 +1363,13 @@ function ConsumablesTrackerPage() {
                       </strong>
                     </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowStockCheck(true)}
+                    style={stockCheckButtonStyle}
+                  >
+                    Stock Check
+                  </button>
                 </div>
 
                 <div

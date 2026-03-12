@@ -14,6 +14,7 @@ import { DropdownField } from "@/components/dropdownAPI";
 import { SearchBar } from "@/components/searchBarAPI";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
 import { addMonths } from "date-fns";
+import { TabGroup } from "@/components/tabAPI/TabGroup";
 
 const CAR_LOCATIONS = [
   { id: "na", label: "N/A" },
@@ -2545,52 +2546,12 @@ export default function TrackingDashboard() {
           }}
         >
           {tabs.length > 1 && (
-            <div
-              style={{
-                borderRadius: "var(--radius-pill)",
-                border: "none",
-                background: "var(--surface)",
-                padding: "6px",
-                display: "flex",
-                gap: "6px",
-                width: "100%",
-                overflowX: "auto",
-                flexShrink: 0,
-                scrollbarWidth: "thin",
-                scrollbarColor: "var(--scrollbar-thumb) transparent",
-                scrollBehavior: "smooth",
-                WebkitOverflowScrolling: "touch",
-              }}
-            >
-              {tabs.map((tab) => {
-                const isActive = tab.id === activeTab;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => setActiveTab(tab.id)}
-                    style={{
-                      flex: "0 0 auto",
-                      borderRadius: "var(--radius-pill)",
-                      border: "1px solid transparent",
-                      padding: "10px 20px",
-                      fontSize: "var(--text-body)",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      background: isActive ? "var(--primary)" : "transparent",
-                      color: isActive ? "var(--text-inverse)" : "var(--text-primary)",
-                      transition: "all 0.15s ease",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </div>
+            <TabGroup
+              items={tabs.map((tab) => ({ label: tab.label, value: tab.id }))}
+              value={activeTab}
+              onChange={setActiveTab}
+              ariaLabel="Tracker tabs"
+            />
           )}
           {error && (
             <div

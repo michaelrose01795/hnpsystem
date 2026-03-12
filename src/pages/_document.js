@@ -178,12 +178,6 @@ const themeBootScript = `
     document.cookie = "hp-dms-theme=" + encodeURIComponent(mode) + "; path=/; max-age=31536000; samesite=lax";
     document.cookie = "hp-dms-accent=" + encodeURIComponent(storedAccent) + "; path=/; max-age=31536000; samesite=lax";
 
-    const isLoginRoute = window.location.pathname === "/login";
-    const loader = document.getElementById("app-boot-loader");
-    if (!isLoginRoute && loader) {
-      loader.style.background = bg;
-      document.documentElement.classList.add("app-boot-loading");
-    }
   } catch (_) {
     // Keep app boot resilient: startup script should never block render.
   }
@@ -203,18 +197,16 @@ class MyDocument extends Document {
 
   render() {
     const bootTheme = this.props.bootTheme || getBootTheme({});
-    const currentPage = this.props.__NEXT_DATA__?.page || "";
-    const showBootLoader = currentPage !== "/login";
 
     return (
       <Html
         data-theme={bootTheme.resolvedMode}
         data-theme-requested={bootTheme.requestedMode}
         data-authenticated={this.props.hasAuthCookie ? "true" : "false"}
-        className={showBootLoader ? "app-boot-loading" : undefined}
         style={{ backgroundColor: bootTheme.background, colorScheme: bootTheme.resolvedMode }}
       >
         <Head>
+          <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
           {/* Ensure iPad/Safari gets structuredClone before Next.js router boots */}
           <script dangerouslySetInnerHTML={{ __html: structuredClonePolyfill }} />
           <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
@@ -231,41 +223,10 @@ class MyDocument extends Document {
               html[data-theme-requested="system"], html[data-theme-requested="system"] body {
                 background: #0f0f11;
               }
-              html[data-theme-requested="system"] #app-boot-loader {
-                background: #0f0f11;
-              }
-            }
-            #app-boot-loader {
-              position: fixed;
-              inset: 0;
-              z-index: 2147483647;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              background: ${bootTheme.background};
-              opacity: ${showBootLoader ? "1" : "0"};
-              pointer-events: none;
-              transition: opacity 180ms ease;
-            }
-            #app-boot-loader img {
-              width: min(180px, 44vw);
-              height: auto;
-              filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.18));
-              animation: appBootLogoPulse 1.1s ease-in-out infinite alternate;
-            }
-            html.app-boot-loading #app-boot-loader {
-              opacity: 1;
-            }
-            @keyframes appBootLogoPulse {
-              from { transform: scale(0.97); opacity: 0.88; }
-              to { transform: scale(1.03); opacity: 1; }
             }
           `}</style>
         </Head>
         <body style={{ backgroundColor: bootTheme.background }}>
-          <div id="app-boot-loader" aria-hidden="true">
-            <img src="/logo.png" alt="Loading" />
-          </div>
           <Main />
           <NextScript />
         </body>

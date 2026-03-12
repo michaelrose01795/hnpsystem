@@ -1275,7 +1275,7 @@ export default function Appointments() {
 
   // ---------------- Render ----------------
   return (
-    <Layout>
+    <Layout requiresLandscape>
       <div className="app-page-stack" style={{ height: "100%" }}>
 
         {/* Top Bar */}

@@ -15,13 +15,6 @@ export default function TechEfficiencyPage() {
     if (dbUserId) setReady(true);
   }, [dbUserId]);
 
-  useEffect(() => {
-    if (typeof document === "undefined") return undefined;
-    document.body.classList.add("allow-portrait-efficiency");
-    return () => {
-      document.body.classList.remove("allow-portrait-efficiency");
-    };
-  }, []);
 
   const techUserId = dbUserId ? Number(dbUserId) : null;
 

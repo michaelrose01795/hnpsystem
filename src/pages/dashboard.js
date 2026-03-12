@@ -83,12 +83,16 @@ export default function Dashboard() {
     fetchJobs(); // execute fetch on mount
   }, [user, setJobs]); // re-run when user or setter changes
 
-  if (loading || !user || isRedirecting) {
+  if (loading) {
+    return null;
+  }
+
+  if (!user || isRedirecting) {
     return (
       <div className="redirect-page-shell">
         <div className="redirect-card" role="status" aria-live="polite">
-          <p className="redirect-kicker">SIGNING YOU IN</p>
-          <h1 className="redirect-title">Redirecting to login...</h1>
+          <p className="redirect-kicker">PAGE LOAD</p>
+          <h1 className="redirect-title">Loading page...</h1>
           <p className="redirect-sub">Just a moment while we get things ready.</p>
         </div>
       </div>

@@ -8,7 +8,8 @@ import { clockInToJob, clockOutFromJob } from "@/lib/database/jobClocking";
 import { generateTechnicianSlug } from "@/utils/technicianSlug";
 import ModalPortal from "@/components/popups/ModalPortal";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
-import { ContentWidth, FilterToolbarRow, PageShell, SectionShell, TabRow } from "@/components/ui";
+import { ContentWidth, FilterToolbarRow, PageShell, SectionShell } from "@/components/ui";
+import { TabGroup } from "@/components/tabAPI/TabGroup";
 import dynamic from "next/dynamic";
 const EfficiencyTab = dynamic(() => import("@/components/Clocking/EfficiencyTab"), { ssr: false });
 
@@ -503,12 +504,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
   };
 
   return (
-    <DevLayoutSection
-      sectionKey="clocking-overview-shell"
-      sectionType="section-shell"
-      shell
-      style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "24px" }}
-    >
+    <>
       {/* Summary Stats Section */}
       <DevLayoutSection
         as="section"
@@ -517,7 +513,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
         sectionType="section-shell"
         shell
         style={{
-          background: "var(--surface)",
+          background: "var(--layer-section-level-2)",
           borderRadius: "var(--radius-md)",
           padding: "24px",
           border: "none",
@@ -1211,41 +1207,27 @@ function ClockingOverviewTab({ onSummaryChange }) {
           background: var(--primary-light) !important;
         }
       `}</style>
-    </DevLayoutSection>
+    </>
   );
 }
 
 export default function ClockingPage() {
   const [pageTab, setPageTab] = useState("overview");
 
-  const pageTabStyle = (isActive) => ({
-    padding: "var(--control-padding)",
-    borderRadius: "var(--control-radius)",
-    border: "none",
-    background: isActive ? "var(--primary)" : "transparent",
-    color: isActive ? "var(--text-inverse)" : "var(--primary-dark)",
-    fontWeight: 600,
-    fontSize: "var(--control-font-size)",
-    cursor: "pointer",
-    transition: "background 0.15s ease, color 0.15s ease",
-    minHeight: "var(--control-height)",
-    transform: "none",
-    boxShadow: "none",
-  });
-
   return (
     <Layout>
       <PageShell sectionKey="clocking-page-shell" style={{ background: "var(--background)", minHeight: "100vh", padding: "24px 0" }}>
         <ContentWidth sectionKey="clocking-page-content" parentKey="clocking-page-shell" widthMode="content" className="mx-auto w-full max-w-none space-y-6 px-4 sm:px-6 lg:px-10">
           <FilterToolbarRow sectionKey="clocking-toolbar-row" parentKey="clocking-page-content">
-            <TabRow sectionKey="clocking-tab-row" parentKey="clocking-toolbar-row" className="clocking-tab-bar">
-            <button type="button" style={pageTabStyle(pageTab === "overview")} onClick={() => setPageTab("overview")}>
-              Overview
-            </button>
-            <button type="button" style={pageTabStyle(pageTab === "efficiency")} onClick={() => setPageTab("efficiency")}>
-              Efficiency
-            </button>
-            </TabRow>
+            <TabGroup
+              items={[
+                { label: "Overview", value: "overview" },
+                { label: "Efficiency", value: "efficiency" },
+              ]}
+              value={pageTab}
+              onChange={setPageTab}
+              ariaLabel="Clocking tabs"
+            />
           </FilterToolbarRow>
 
           {pageTab === "overview" && <ClockingOverviewTab />}
@@ -1262,17 +1244,6 @@ export default function ClockingPage() {
           )}
         </ContentWidth>
       </PageShell>
-      <style jsx>{`
-        .clocking-tab-bar button {
-          transform: none !important;
-          box-shadow: none !important;
-        }
-        .clocking-tab-bar button:hover {
-          transform: none !important;
-          box-shadow: none !important;
-          filter: brightness(1.08);
-        }
-      `}</style>
     </Layout>
   );
 }

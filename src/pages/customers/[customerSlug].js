@@ -14,6 +14,7 @@ import {
 import { createCustomerDisplaySlug, normalizeCustomerSlug } from "@/lib/customers/slug";
 import { isValidUuid } from "@/lib/utils/ids";
 import { createOrUpdateVehicle } from "@/lib/database/vehicles";
+import { TabGroup } from "@/components/tabAPI/TabGroup";
 
 const TAB_DEFINITIONS = [
   { id: "vehicles", label: "Vehicles" },
@@ -67,30 +68,6 @@ const detailCardStyles = {
   },
 };
 
-const tabsStyles = {
-  container: {
-    borderRadius: "var(--radius-pill)",
-    border: "none",
-    background: "var(--surface)",
-    padding: "6px",
-    display: "flex",
-    gap: "6px",
-    width: "100%",
-    overflowX: "auto",
-  },
-  pill: (active) => ({
-    flex: "0 0 auto",
-    borderRadius: "var(--radius-pill)",
-    border: "1px solid transparent",
-    padding: "10px 20px",
-    fontSize: "0.9rem",
-    fontWeight: 600,
-    cursor: "pointer",
-    background: active ? "var(--primary)" : "transparent",
-    color: active ? "var(--text-inverse)" : "var(--text-primary)",
-    transition: "all 0.15s ease",
-  }),
-};
 
 const tabPanelStyles = {
   container: {
@@ -935,20 +912,20 @@ export default function CustomerDetailWorkspace() {
               </div>
             </section>
 
-            <nav style={tabsStyles.container} aria-label="Customer data tabs">
-              {TAB_DEFINITIONS.map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  style={tabsStyles.pill(activeTab === tab.id)}
-                >
-                  {tab.label}
-                  {tab.id === "vehicles" ? ` (${vehicles.length})` : ""}
-                  {tab.id === "history" ? ` (${jobs.length})` : ""}
-                </button>
-              ))}
-            </nav>
+            <TabGroup
+              items={TAB_DEFINITIONS.map((tab) => ({
+                label:
+                  tab.id === "vehicles"
+                    ? `${tab.label} (${vehicles.length})`
+                    : tab.id === "history"
+                      ? `${tab.label} (${jobs.length})`
+                      : tab.label,
+                value: tab.id,
+              }))}
+              value={activeTab}
+              onChange={setActiveTab}
+              ariaLabel="Customer data tabs"
+            />
 
             <section style={tabPanelStyles.container}>{renderTabContent()}</section>
           </>

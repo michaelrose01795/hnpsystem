@@ -4,10 +4,11 @@ import "@/utils/polyfills"; // ensure polyfills load globally
 import "@/utils/quietConsole"; // minimize console noise unless LOG_LEVEL is raised
 import "@/styles/theme.css"; // register CSS variables before globals
 import "../styles/globals.css"; // import global base styles
-import React, { useEffect } from "react"; // import React helpers
+import React, { useEffect, useRef, useState } from "react"; // import React helpers
 import { SessionProvider } from "next-auth/react"; // import NextAuth session provider
 import { useRouter } from "next/router";
 import { UserProvider } from "@/context/UserContext"; // import user context
+import { useUser } from "@/context/UserContext";
 import { NextActionProvider } from "@/context/NextActionContext"; // import next action context provider
 import { JobsProvider } from "@/context/JobsContext"; // import jobs context
 import { ClockingProvider } from "@/context/ClockingContext"; // import clocking context
@@ -23,70 +24,125 @@ import DevLayoutOverlayRoot from "@/components/dev-layout-overlay/DevLayoutOverl
 
 function AppWrapper({ Component, pageProps }) {
   const router = useRouter();
+  const { loading: authLoading } = useUser();
   const pathname = router?.pathname || "";
   const asPath = router?.asPath || "";
   const asPathWithoutQuery = asPath.split("?")[0] || "";
   const routeForVisibility = `${pathname} ${asPath}`.toLowerCase();
   const notesHiddenRoutes = new Set(["/", "/login"]);
+  const isProtectedRoute = !notesHiddenRoutes.has(pathname) && !notesHiddenRoutes.has(asPathWithoutQuery);
+  const suppressGlobalLoader = !isProtectedRoute || routeForVisibility.includes("redirect");
   const hideNotesWidget =
     notesHiddenRoutes.has(pathname) ||
     notesHiddenRoutes.has(asPathWithoutQuery) ||
     routeForVisibility.includes("redirect");
+  const [isRouteLoading, setIsRouteLoading] = useState(false);
+  const [pendingFetchCount, setPendingFetchCount] = useState(0);
+  const [showGlobalLoader, setShowGlobalLoader] = useState(false);
+  const showTimerRef = useRef(null);
+  const hideTimerRef = useRef(null);
+  const visibleSinceRef = useRef(0);
 
-  // Auto-hide scrollbar after 3 seconds of inactivity using delegated event listeners.
-  // Uses event delegation on document (capturing phase) so we don't need to attach per-element.
+  // Remove legacy reload/boot classes that can persist on iOS Safari and block manual reloads.
   useEffect(() => {
     if (typeof document === "undefined") return undefined;
-    const hideBootLoader = () => {
+    const clearLegacyBootArtifacts = () => {
       document.documentElement.classList.remove("app-boot-loading");
       document.documentElement.classList.remove("app-reloading");
-      const loader = document.getElementById("app-boot-loader");
-      if (loader) {
-        loader.style.opacity = "0";
-        loader.style.transition = "opacity 180ms ease";
-      }
+      document.getElementById("app-boot-loader")?.remove();
     };
 
-    if (document.readyState === "complete") {
-      hideBootLoader();
-      return undefined;
-    }
-
-    window.addEventListener("load", hideBootLoader, { once: true });
-    return () => window.removeEventListener("load", hideBootLoader);
+    clearLegacyBootArtifacts();
+    window.addEventListener("pageshow", clearLegacyBootArtifacts);
+    return () => window.removeEventListener("pageshow", clearLegacyBootArtifacts);
   }, []);
 
   useEffect(() => {
-    if (typeof document === "undefined" || typeof window === "undefined") return undefined;
+    if (typeof window === "undefined") return undefined;
 
-    const isAuthenticated = () => {
-      const cookie = document.cookie || "";
-      return /(?:^|;\s*)(?:__Secure-next-auth\.session-token(?:\.\d+)?|next-auth\.session-token(?:\.\d+)?|hnp-dev-roles)=/.test(
-        cookie
-      );
-    };
+    const handleRouteStart = () => setIsRouteLoading(true);
+    const handleRouteDone = () => setIsRouteLoading(false);
 
-    const showReloadMask = () => {
-      if (!isAuthenticated()) return;
-      if (window.location.pathname === "/login") return;
-
-      const loader = document.getElementById("app-boot-loader");
-      document.documentElement.classList.add("app-reloading");
-      document.documentElement.classList.add("app-boot-loading");
-      document.documentElement.setAttribute("data-authenticated", "true");
-
-      if (!loader) return;
-      const bg = getComputedStyle(document.documentElement).getPropertyValue("--background").trim() || "#0f0f11";
-      loader.style.background = bg;
-      loader.style.transition = "none";
-      loader.style.opacity = "1";
-    };
-
-    window.addEventListener("beforeunload", showReloadMask);
-    window.addEventListener("pagehide", showReloadMask);
+    router.events.on("routeChangeStart", handleRouteStart);
+    router.events.on("routeChangeComplete", handleRouteDone);
+    router.events.on("routeChangeError", handleRouteDone);
     return () => {
-      window.removeEventListener("beforeunload", showReloadMask);
-      window.removeEventListener("pagehide", showReloadMask);
+      router.events.off("routeChangeStart", handleRouteStart);
+      router.events.off("routeChangeComplete", handleRouteDone);
+      router.events.off("routeChangeError", handleRouteDone);
+    };
+  }, [router.events]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const originalFetch = window.fetch.bind(window);
+    const shouldTrack = (value = "") => /\/api\/|\/_next\/data\//.test(String(value || ""));
+
+    window.fetch = (...args) => {
+      const input = args[0];
+      const targetUrl = typeof input === "string" ? input : input?.url || "";
+      if (!shouldTrack(targetUrl)) {
+        return originalFetch(...args);
+      }
+
+      setPendingFetchCount((prev) => prev + 1);
+      return originalFetch(...args).finally(() => {
+        setPendingFetchCount((prev) => (prev > 0 ? prev - 1 : 0));
+      });
+    };
+
+    return () => {
+      window.fetch = originalFetch;
+    };
+  }, []);
+
+  useEffect(() => {
+    const isBusy = !suppressGlobalLoader && (isRouteLoading || pendingFetchCount > 0 || (isProtectedRoute && authLoading));
+    const SHOW_DELAY_MS = 600;
+    const MIN_VISIBLE_MS = 220;
+
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
+    }
+
+    if (isBusy) {
+      if (!showGlobalLoader && !showTimerRef.current) {
+        showTimerRef.current = setTimeout(() => {
+          setShowGlobalLoader(true);
+          visibleSinceRef.current = Date.now();
+          showTimerRef.current = null;
+        }, SHOW_DELAY_MS);
+      }
+      return undefined;
+    }
+
+    if (showTimerRef.current) {
+      clearTimeout(showTimerRef.current);
+      showTimerRef.current = null;
+    }
+
+    if (!showGlobalLoader) return undefined;
+
+    const visibleFor = Date.now() - visibleSinceRef.current;
+    const remaining = Math.max(0, MIN_VISIBLE_MS - visibleFor);
+    if (remaining === 0) {
+      setShowGlobalLoader(false);
+      return undefined;
+    }
+    hideTimerRef.current = setTimeout(() => {
+      setShowGlobalLoader(false);
+      hideTimerRef.current = null;
+    }, remaining);
+
+    return undefined;
+  }, [authLoading, isProtectedRoute, isRouteLoading, pendingFetchCount, showGlobalLoader, suppressGlobalLoader]);
+
+  useEffect(() => {
+    return () => {
+      if (showTimerRef.current) clearTimeout(showTimerRef.current);
+      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     };
   }, []);
 
@@ -167,6 +223,11 @@ function AppWrapper({ Component, pageProps }) {
       <Component {...pageProps} />
       {!hideNotesWidget && <GlobalNotesWidget />}
       <DevLayoutOverlayRoot />
+      {showGlobalLoader && !suppressGlobalLoader && (
+        <div className="global-slow-loader-overlay" role="status" aria-live="polite" aria-label="Loading">
+          <span className="global-slow-loader-spinner" aria-hidden="true" />
+        </div>
+      )}
     </>
   ); // render the requested page
 }

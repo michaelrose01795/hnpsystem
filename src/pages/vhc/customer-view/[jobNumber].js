@@ -36,7 +36,7 @@ export default function VhcCustomerViewPage() {
   };
 
   return (
-    <Layout>
+    <Layout requiresLandscape>
       <div
         style={{
           padding: "24px",

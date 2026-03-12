@@ -2342,34 +2342,13 @@ export default function JobCardDetailPage() {
 
   // ✅ Loading State
   if (loading) {
-    return (
-      <Layout>
-        <div className="redirect-screen" role="status" aria-live="polite">
-          <div className="redirect-card">
-            <div className="login-brand redirect-brand" aria-hidden="true">
-              <img src="/logo.png" alt="H&P logo" className="login-logo" />
-            </div>
-            <div className="redirect-spinner" aria-hidden="true"></div>
-            <div className="redirect-copy">
-              <p className="redirect-kicker">Page Load</p>
-              <h2 className="redirect-title">Loading job card #{jobNumber}...</h2>
-              <p className="redirect-sub">Preparing page data and tabs.</p>
-            </div>
-            <div className="redirect-dots" aria-hidden="true">
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
-          </div>
-        </div>
-      </Layout>
-    );
+    return null;
   }
 
   // ✅ Error State
   if (error || !jobData) {
     return (
-      <Layout>
+      <Layout requiresLandscape>
         <div style={{ 
           padding: "40px", 
           textAlign: "center",
@@ -2538,7 +2517,7 @@ export default function JobCardDetailPage() {
   // ✅ Main Render
   return (
     <JobCardErrorBoundary>
-      <Layout>
+      <Layout requiresLandscape>
       <div
         style={pageStackStyle}
         data-dev-section="1"
@@ -3475,7 +3454,7 @@ export default function JobCardDetailPage() {
   } catch (renderError) {
     console.error("Job card render error:", renderError);
     return (
-      <Layout>
+      <Layout requiresLandscape>
         <div style={{
           padding: "40px",
           textAlign: "center",
@@ -3523,7 +3502,7 @@ class JobCardErrorBoundary extends React.Component {
     const message = this.state.error?.message || String(this.state.error);
 
     return (
-      <Layout>
+      <Layout requiresLandscape>
         <div style={{
           padding: "40px",
           textAlign: "center",

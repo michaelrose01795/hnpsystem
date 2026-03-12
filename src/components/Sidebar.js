@@ -186,9 +186,39 @@ export default function Sidebar({
     }
   }, [isClockedIn, dbUserId]);
 
-  const handleNavLinkClick = useCallback((_event, _href) => {
-    // Intentionally no-op: allow Next.js client-side routing to avoid hard app reloads.
-  }, []);
+  const handleNavLinkClick = useCallback(
+    (event, href) => {
+      if (!href) return;
+      if (typeof window === "undefined") return;
+      if (event.defaultPrevented) return;
+      if (event.button !== 0) return; // left-click only
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      if (href.startsWith("http://") || href.startsWith("https://")) return;
+
+      event.preventDefault();
+      const currentPath = window.location.pathname;
+      const targetPath = href.split("?")[0] || href;
+      const fallbackTimer = window.setTimeout(() => {
+        if (window.location.pathname === currentPath) {
+          window.location.assign(href);
+        }
+      }, 900);
+
+      router
+        .push(href)
+        .then(() => {
+          window.clearTimeout(fallbackTimer);
+          if (window.location.pathname !== targetPath) {
+            window.location.assign(href);
+          }
+        })
+        .catch(() => {
+          window.clearTimeout(fallbackTimer);
+          window.location.assign(href);
+        });
+    },
+    [pathname, router]
+  );
 
   const renderLinkLabel = (label, href) => {
     const isMessagesItem = href === "/messages";

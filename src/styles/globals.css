@@ -1209,6 +1209,17 @@ div#main-content {
   background: transparent;
 }
 
+.redirect-page-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 9700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  background: transparent;
+}
+
 .redirect-card {
   width: min(520px, 92vw);
   padding: 2.25rem;
@@ -1310,6 +1321,35 @@ div#main-content {
 
 .redirect-dots span:nth-child(3) {
   animation-delay: 0.24s;
+}
+
+/* ========================================================= */
+/* === Global Slow Loader === */
+/* ========================================================= */
+.global-slow-loader-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9800;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.global-slow-loader-spinner {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 3px solid rgba(var(--primary-rgb), 0.2);
+  border-top-color: rgba(var(--primary-rgb), 0.95);
+  animation: global-slow-loader-spin 0.72s linear infinite;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+@keyframes global-slow-loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes redirect-spin {
@@ -1873,20 +1913,14 @@ body:has(.login-page-wrapper) {
 }
 
 @media (max-width: 900px) and (orientation: portrait) {
-  .orientation-lock {
+  /* Default: portrait is allowed — overlay stays hidden.
+     Only show for pages that explicitly opt-in to requiring landscape. */
+  body.require-landscape .orientation-lock {
     display: flex;
   }
 
-  body {
+  body.require-landscape {
     overflow: hidden;
-  }
-
-  body.allow-portrait-efficiency .orientation-lock {
-    display: none;
-  }
-
-  body.allow-portrait-efficiency {
-    overflow: auto;
   }
 }
 
@@ -2561,6 +2595,16 @@ input[type="search"]::-webkit-search-results-decoration {
   font-weight: var(--control-font-weight);
   outline: none;
   box-shadow: none !important;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.searchbar-api__input::-webkit-search-decoration,
+.searchbar-api__input::-webkit-search-cancel-button,
+.searchbar-api__input::-webkit-search-results-button,
+.searchbar-api__input::-webkit-search-results-decoration {
+  display: none;
+  -webkit-appearance: none;
 }
 
 .searchbar-api__input::placeholder {

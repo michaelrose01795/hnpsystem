@@ -67,6 +67,7 @@ export default function Layout({
   jobNumber,
   disableContentCard = false,
   contentBackground = null,
+  requiresLandscape = false,
 }) {
   const { user, loading: userLoading, status, setStatus, currentJob, dbUserId } = useUser(); // get user context data
   const { usersByRole } = useRoster();
@@ -223,6 +224,16 @@ export default function Layout({
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+    if (requiresLandscape) {
+      document.body.classList.add("require-landscape");
+    }
+    return () => {
+      document.body.classList.remove("require-landscape");
+    };
+  }, [requiresLandscape]);
 
   useEffect(() => {
     setIsStatusSidebarOpen(false);
@@ -516,13 +527,18 @@ export default function Layout({
     };
   }, [router]);
 
-  const shouldBlockForAuth = !hideSidebar && (userLoading || !user);
+  const shouldRenderAuthSpinnerOnly = !hideSidebar && userLoading && !user;
+  if (shouldRenderAuthSpinnerOnly) {
+    return <div style={{ minHeight: "100vh" }} aria-hidden="true" />;
+  }
+
+  const shouldBlockForAuth = !hideSidebar && !userLoading && !user;
   if (shouldBlockForAuth) {
     return (
       <div className="redirect-page-shell">
         <div className="redirect-card" role="status" aria-live="polite">
-          <p className="redirect-kicker">SIGNING YOU IN</p>
-          <h1 className="redirect-title">Redirecting to login...</h1>
+          <p className="redirect-kicker">PAGE LOAD</p>
+          <h1 className="redirect-title">Loading page...</h1>
           <p className="redirect-sub">Just a moment while we get things ready.</p>
         </div>
       </div>
