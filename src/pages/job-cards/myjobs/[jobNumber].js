@@ -38,10 +38,55 @@ import InternalElectricsDetailsModal from "@/components/VHC/InternalElectricsDet
 import UndersideDetailsModal from "@/components/VHC/UndersideDetailsModal";
 import VhcCameraButton from "@/components/VHC/VhcCameraButton";
 import themeConfig, {
-  vhcLayoutStyles,
-  createVhcButtonStyle,
-  vhcCardStates,
+  createVhcButtonStyle, // VHC button style factory — still comes from appTheme
+  vhcCardStates, // VHC section state colours — still comes from appTheme
 } from "@/styles/appTheme";
+
+// Page layout styles — moved inline from appTheme.js (this was the only consumer).
+// Uses thin CSS variable wrapper aliases to keep the same token references.
+const _p = { // CSS variable token aliases for this layout (matches appTheme palette)
+  accent: "var(--primary)", // primary brand colour
+  accentSoft: "var(--surface-light)", // light accent surface
+  accentSurface: "var(--surface-light)", // same as accentSoft in this context
+  backgroundGradient: "var(--surface)", // page background
+  modalGradient: "var(--surface)", // card/modal background
+  surface: "var(--surface)", // default surface
+  border: "var(--border)", // border colour
+  textPrimary: "var(--text-primary)", // primary text colour
+  textMuted: "var(--text-secondary)", // muted/secondary text colour
+};
+const _r = { // CSS variable border radius aliases (matches appTheme radii)
+  lg: "var(--radius-lg)", // large radius
+  xl: "var(--radius-xl)", // extra large radius
+  pill: "var(--radius-pill)", // pill/full radius
+};
+const vhcLayoutStyles = { // page layout style map — only used on this page
+  page: { height: "100%", display: "flex", flexDirection: "column", padding: "var(--space-3) var(--space-md)", gap: "var(--space-md)", background: _p.backgroundGradient },
+  headerCard: { background: _p.modalGradient, border: `1px solid ${_p.border}`, borderRadius: _r.xl, padding: "var(--space-lg)", boxShadow: "none", display: "flex", flexDirection: "column", gap: "var(--space-5)" },
+  headerTopRow: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-lg)" },
+  headerTitleBlock: { display: "flex", flexDirection: "column", gap: "var(--space-1)" },
+  headerTitle: { fontSize: "28px", fontWeight: "700", color: _p.accent, margin: 0 },
+  headerSubtitle: { fontSize: "14px", color: _p.textMuted, margin: 0 },
+  progressWrapper: { minWidth: "220px", display: "flex", flexDirection: "column", gap: "var(--space-1)" },
+  progressLabel: { fontSize: "12px", fontWeight: "600", color: _p.textMuted },
+  progressTrack: { width: "100%", height: "10px", borderRadius: _r.pill, backgroundColor: _p.accentSoft, overflow: "hidden" },
+  progressFill: { height: "100%", borderRadius: _r.pill, background: "var(--primary)", transition: "width 0.3s ease" },
+  metaRow: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "var(--space-md)" },
+  metaItem: { backgroundColor: _p.accentSurface, borderRadius: _r.lg, padding: "var(--space-md)", border: `1px solid ${_p.border}`, display: "flex", flexDirection: "column", gap: "var(--space-1)" },
+  metaLabel: { fontSize: "11px", fontWeight: "700", color: "var(--danger-dark)", letterSpacing: "0.4px", textTransform: "uppercase" },
+  metaValue: { fontSize: "16px", fontWeight: "600", color: _p.textPrimary },
+  mainCard: { flex: 1, display: "flex", flexDirection: "column", gap: "var(--space-lg)", padding: "var(--space-lg)", borderRadius: _r.xl, border: `1px solid ${_p.border}`, background: "var(--surface)", boxShadow: "none", overflow: "hidden" },
+  sectionHeader: { display: "flex", justifyContent: "space-between", alignItems: "center" },
+  sectionTitle: { fontSize: "18px", fontWeight: "700", color: _p.accent, margin: 0 },
+  sectionSubtitle: { fontSize: "13px", color: _p.textMuted, margin: 0 },
+  sectionsGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "var(--space-md)" },
+  sectionCard: { position: "relative", textAlign: "left", border: `1px solid ${_p.border}`, backgroundColor: _p.surface, borderRadius: _r.lg, padding: "var(--space-6)", boxShadow: "none", cursor: "pointer", transition: "transform 0.2s ease, border-color 0.2s ease", display: "flex", flexDirection: "column", gap: "var(--space-3)" },
+  sectionCardHover: { transform: "translateY(-3px)", boxShadow: "none", borderColor: _p.accent },
+  cardTitle: { fontSize: "16px", fontWeight: "700", color: _p.textPrimary, margin: 0 },
+  cardSubtitle: { fontSize: "13px", color: _p.textMuted, margin: 0, lineHeight: 1.4 },
+  badge: { alignSelf: "flex-start", padding: "var(--space-xs) var(--space-3)", borderRadius: _r.pill, fontSize: "11px", fontWeight: "700", letterSpacing: "0.4px", textTransform: "uppercase", border: "1px solid transparent" },
+  actionBar: { display: "flex", flexWrap: "wrap", gap: "var(--space-3)", justifyContent: "flex-end", paddingTop: "var(--space-3)", borderTop: `2px solid ${_p.border}` },
+};
 
 // VHC Section titles and constants
 const SECTION_TITLES = {

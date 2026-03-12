@@ -8,7 +8,6 @@ import { useRoster } from "@/context/RosterContext";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import LoginDropdown from "@/components/LoginDropdown";
-import CustomerViewPreview from "@/components/CustomerViewPreview";
 import BrandLogo from "@/components/BrandLogo";
 import { roleCategories } from "@/config/users"; // Dev users config
 

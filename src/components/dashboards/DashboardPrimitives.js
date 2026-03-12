@@ -1,10 +1,7 @@
 // file location: src/components/dashboards/DashboardPrimitives.js
-// Shared presentational components used across dashboard views.
+// Shared presentational utilities for dashboard views: MetricPill, formatCurrency, formatCurrencyRounded.
+// SectionCard re-export has been removed — all consumers now import it from @/components/Section directly.
 import React from "react";
-import Section from "@/components/Section";
-
-// Re-export Section as SectionCard for backward compatibility
-export const SectionCard = Section;
 
 export const MetricPill = ({ label, value, accent = "var(--primary-dark)", helper }) => (
   <div

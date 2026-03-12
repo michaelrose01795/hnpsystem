@@ -1,6 +1,7 @@
 // file location: src/components/HR/MetricCard.js
+// Exports MetricCard (metric display widget) and StatusTag (status badge).
+// SectionCard re-export has been removed — all consumers now import it from @/components/Section directly.
 import React from "react";
-import Section from "@/components/Section";
 
 export function MetricCard({
   icon,
@@ -52,8 +53,6 @@ export function MetricCard({
   );
 }
 
-// Re-export Section as SectionCard for backward compatibility
-export const SectionCard = Section;
 
 export function StatusTag({ label, tone = "default" }) {
   const variants = {

@@ -1,5 +1,9 @@
 // file location: src/components/VHC/vhcModalStyles.js
-// Shared style constants for VHC detail modals.
+// Shared style constants for VHC detail modal FIELD-LEVEL elements (inputs, labels, selects, etc.).
+// NOTE: This is NOT the same as the vhcModalStyles export in src/styles/appTheme.js.
+//   - THIS file: field/input styles used by individual VHC detail modals (WheelsTyres, Brakes, External, etc.)
+//   - appTheme.js vhcModalStyles: modal SHELL layout styles (overlay, container, header, body, footer)
+//   Both serve different purposes and should not be confused or merged.
 import themeConfig from "@/styles/appTheme";
 
 const palette = themeConfig.palette;

@@ -3,7 +3,8 @@
 import React from "react";
 import Layout from "@/components/Layout";
 import { useHrAttendanceData } from "@/hooks/useHrData";
-import { SectionCard, StatusTag } from "@/components/HR/MetricCard";
+import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
+import { StatusTag } from "@/components/HR/MetricCard"; // status badge component
 
 export default function HrAttendance() {
   const { data, isLoading, error } = useHrAttendanceData();

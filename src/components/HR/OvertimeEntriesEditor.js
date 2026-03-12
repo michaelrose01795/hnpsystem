@@ -1,7 +1,8 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/components/HR/OvertimeEntriesEditor.js
 import React, { useEffect, useMemo, useState } from "react";
-import { SectionCard, StatusTag } from "@/components/HR/MetricCard";
+import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
+import { StatusTag } from "@/components/HR/MetricCard"; // status badge component
 import { CalendarField } from "@/components/calendarAPI"; // Date input component
 import { TimePickerField } from "@/components/timePickerAPI";
 

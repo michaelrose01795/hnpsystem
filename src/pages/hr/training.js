@@ -3,7 +3,8 @@
 import React from "react"; // React runtime for page rendering
 import Layout from "@/components/Layout"; // shared site layout
 import { useHrOperationsData } from "@/hooks/useHrData"; // Supabase-backed HR aggregation hook
-import { SectionCard, StatusTag } from "@/components/HR/MetricCard"; // shared HR UI widgets
+import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
+import { StatusTag } from "@/components/HR/MetricCard"; // status badge component
 import { CalendarField } from "@/components/calendarAPI"; // Date input component
 
 function TrainingContent() {

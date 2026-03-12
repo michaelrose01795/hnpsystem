@@ -2,7 +2,7 @@
 // file location: src/pages/hr/reports.js
 import React from "react";
 import Layout from "@/components/Layout";
-import { SectionCard } from "@/components/HR/MetricCard";
+import { SectionCard } from "@/components/Section"; // section card layout — imported directly, ghost chain removed
 
 function ReportsContent() {
   return (

@@ -2,7 +2,8 @@
 // Attendance tracking tab - shows time logs, overtime, and absences
 import React from "react";
 import { useHrAttendanceData } from "@/hooks/useHrData";
-import { SectionCard, StatusTag } from "@/components/HR/MetricCard";
+import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
+import { StatusTag } from "@/components/HR/MetricCard"; // status badge component
 
 const buttonStyleSecondary = {
   padding: "var(--control-padding)",

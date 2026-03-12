@@ -3,7 +3,8 @@
 import React from "react"; // React runtime for the page component
 import Layout from "@/components/Layout"; // shared layout shell with navigation
 import { useHrOperationsData } from "@/hooks/useHrData"; // aggregated HR hook backed by Supabase
-import { SectionCard, StatusTag } from "@/components/HR/MetricCard"; // shared HR UI components
+import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
+import { StatusTag } from "@/components/HR/MetricCard"; // status badge component
 // ⚠️ Mock data found — replacing with Supabase query
 // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
 

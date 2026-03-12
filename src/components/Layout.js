@@ -354,19 +354,6 @@ export default function Layout({
     if (activeJobId) fetchCurrentJobStatus(activeJobId);
   }, [activeJobId, fetchCurrentJobStatus]);
 
-  const shouldBlockForAuth = !hideSidebar && (userLoading || !user);
-  if (shouldBlockForAuth) {
-    return (
-      <div className="redirect-page-shell">
-        <div className="redirect-card" role="status" aria-live="polite">
-          <p className="redirect-kicker">SIGNING YOU IN</p>
-          <h1 className="redirect-title">Redirecting to login...</h1>
-          <p className="redirect-sub">Just a moment while we get things ready.</p>
-        </div>
-      </div>
-    );
-  }
-
   useEffect(() => {
     if (urlJobId) {
       setSearchedJobId(null);
@@ -528,6 +515,19 @@ export default function Layout({
       router.events.off("routeChangeError", triggerRepaint);
     };
   }, [router]);
+
+  const shouldBlockForAuth = !hideSidebar && (userLoading || !user);
+  if (shouldBlockForAuth) {
+    return (
+      <div className="redirect-page-shell">
+        <div className="redirect-card" role="status" aria-live="polite">
+          <p className="redirect-kicker">SIGNING YOU IN</p>
+          <h1 className="redirect-title">Redirecting to login...</h1>
+          <p className="redirect-sub">Just a moment while we get things ready.</p>
+        </div>
+      </div>
+    );
+  }
 
   const accountsRoleCandidates = (roleCategories?.Sales || []).filter((roleName) =>
     roleName.toLowerCase().includes("accounts")

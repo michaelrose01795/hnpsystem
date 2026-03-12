@@ -4,7 +4,8 @@ import React, { useMemo } from "react";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import { useHrDashboardData } from "@/hooks/useHrData";
-import { MetricCard, SectionCard, StatusTag } from "@/components/HR/MetricCard";
+import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
+import { MetricCard, StatusTag } from "@/components/HR/MetricCard"; // metric display and status badge components
 
 export default function HrDashboard() {
   const { data, isLoading, error } = useHrDashboardData();

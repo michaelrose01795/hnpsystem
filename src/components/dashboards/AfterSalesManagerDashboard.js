@@ -3,7 +3,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import dayjs from "dayjs";
 import { supabase } from "@/lib/supabaseClient";
-import { SectionCard, formatCurrencyRounded as formatCurrency } from "@/components/dashboards/DashboardPrimitives";
+import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
+import { formatCurrencyRounded as formatCurrency } from "@/components/dashboards/DashboardPrimitives"; // currency formatter
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 const revenueStreams = [

@@ -3,7 +3,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layout";
 import AdminUserForm from "@/components/Admin/AdminUserForm";
-import { SectionCard, StatusTag } from "@/components/HR/MetricCard";
+import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
+import { StatusTag } from "@/components/HR/MetricCard"; // status badge component
 import { useRoster } from "@/context/RosterContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";

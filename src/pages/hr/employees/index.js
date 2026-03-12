@@ -3,7 +3,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layout";
 import { useHrEmployeesData } from "@/hooks/useHrData";
-import { SectionCard, StatusTag } from "@/components/HR/MetricCard";
+import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
+import { StatusTag } from "@/components/HR/MetricCard"; // status badge component
 import EmployeeProfilePanel from "@/components/HR/EmployeeProfilePanel";
 
 // TODO: Connect employee directory, filters, and profile panel to live HR tables.

@@ -6,7 +6,8 @@ import { supabase } from "@/lib/supabaseClient";
 import { getWorkshopDashboardData } from "@/lib/database/dashboard/workshop";
 import { listConsumablesForTracker } from "@/lib/database/consumables";
 import ModalPortal from "@/components/popups/ModalPortal";
-import { SectionCard, formatCurrency } from "@/components/dashboards/DashboardPrimitives";
+import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
+import { formatCurrency } from "@/components/dashboards/DashboardPrimitives"; // currency formatter
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 dayjs.extend(relativeTime);

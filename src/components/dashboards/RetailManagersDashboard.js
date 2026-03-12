@@ -4,7 +4,8 @@ import dayjs from "dayjs";
 import { roleCategories } from "@/config/users";
 import { useRoster } from "@/context/RosterContext";
 import { supabase } from "@/lib/supabaseClient";
-import { SectionCard, MetricPill } from "@/components/dashboards/DashboardPrimitives";
+import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
+import { MetricPill } from "@/components/dashboards/DashboardPrimitives"; // metric display pill
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 // ⚠️ Mock data found — replacing with Supabase query
 // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)

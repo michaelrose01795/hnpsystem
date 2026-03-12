@@ -5,7 +5,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useHrEmployeesData } from "@/hooks/useHrData";
-import { SectionCard, StatusTag } from "@/components/HR/MetricCard";
+import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
+import { StatusTag } from "@/components/HR/MetricCard"; // status badge component
 import EmployeeProfilePanel from "@/components/HR/EmployeeProfilePanel";
 import { roleCategories } from "@/config/users";
 import { CalendarField } from "@/components/calendarAPI"; // Date input component
