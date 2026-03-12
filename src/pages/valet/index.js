@@ -35,17 +35,15 @@ const containsKeyword = (text, keywords = WASH_KEYWORDS) => {
   return keywords.some((keyword) => lower.includes(keyword));
 };
 
-const sumAuthorizedItems = (items) => {
-  if (!Array.isArray(items)) return 0;
-  return items.reduce((sum, item) => {
-    const amount = Number(
-      item?.amount ??
-        item?.value ??
-        item?.total ??
-        (typeof item === "number" ? item : 0)
-    );
-    return sum + (Number.isFinite(amount) ? amount : 0);
-  }, 0);
+const sumAuthorisedCheckAmount = (row) => {
+  if (!row || typeof row !== "object") return 0;
+  const override = Number(row.totalOverride ?? row.total_override);
+  if (Number.isFinite(override) && override > 0) {
+    return override;
+  }
+  const labour = Number(row.labourHours ?? row.labour_hours);
+  const parts = Number(row.partsCost ?? row.parts_cost);
+  return (Number.isFinite(labour) ? labour : 0) + (Number.isFinite(parts) ? parts : 0);
 };
 
 const jobHasServiceCategory = (job) => {
@@ -56,14 +54,20 @@ const jobHasServiceCategory = (job) => {
 };
 
 const jobHasHighValueAuthorizedWork = (job) => {
-  // Check if job has VHC authorizations with total >= £1000
-  if (!job.vhcAuthorizations || !Array.isArray(job.vhcAuthorizations)) {
+  if (!Array.isArray(job?.vhcChecks)) {
     return false;
   }
 
-  const totalAuthorized = job.vhcAuthorizations.reduce((total, auth) => {
-    const authTotal = sumAuthorizedItems(auth.authorized_items || []);
-    return total + authTotal;
+  const totalAuthorized = job.vhcChecks.reduce((total, check) => {
+    const state = String(
+      check?.authorizationState ?? check?.authorization_state ?? check?.approvalStatus ?? check?.approval_status ?? ""
+    )
+      .trim()
+      .toLowerCase();
+    if (state !== "authorized" && state !== "authorised" && state !== "completed") {
+      return total;
+    }
+    return total + sumAuthorisedCheckAmount(check);
   }, 0);
 
   return totalAuthorized >= 1000;

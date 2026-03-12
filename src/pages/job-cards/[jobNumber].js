@@ -138,6 +138,268 @@ const safeJsonParse = (value) => {
   }
 };
 
+const parseRequestIdentityFromTask = (task = {}) => {
+  const explicitRequestIdRaw = task?.requestId ?? task?.request_id ?? null;
+  const explicitRequestId = Number(explicitRequestIdRaw);
+  if (Number.isInteger(explicitRequestId) && explicitRequestId > 0) {
+    return { requestId: explicitRequestId, sortOrder: null };
+  }
+
+  const explicitSortOrderRaw = task?.sortOrder ?? task?.sort_order ?? null;
+  const explicitSortOrder = Number(explicitSortOrderRaw);
+  if (Number.isInteger(explicitSortOrder) && explicitSortOrder > 0) {
+    return { requestId: null, sortOrder: explicitSortOrder };
+  }
+
+  const sourceKey = String(task?.sourceKey || "").trim();
+  if (!sourceKey) return { requestId: null, sortOrder: null };
+
+  const requestIdMatch = sourceKey.match(/^reqid[-_:]?(\d+)$/i);
+  if (requestIdMatch?.[1]) {
+    return { requestId: Number(requestIdMatch[1]), sortOrder: null };
+  }
+
+  const sortOrderDirectMatch = sourceKey.match(/^req[-_:]?(\d+)$/i);
+  if (sortOrderDirectMatch?.[1]) {
+    return { requestId: null, sortOrder: Number(sortOrderDirectMatch[1]) };
+  }
+
+  const requestSuffixMatch = sourceKey.match(/(?:^|[-_:])request[-_:]?(\d+)$/i);
+  if (requestSuffixMatch?.[1]) {
+    return { requestId: null, sortOrder: Number(requestSuffixMatch[1]) };
+  }
+
+  const numericTailMatch = sourceKey.match(/(\d+)$/);
+  if (numericTailMatch?.[1]) {
+    return { requestId: null, sortOrder: Number(numericTailMatch[1]) };
+  }
+
+  return { requestId: null, sortOrder: null };
+};
+
+const normalizeWriteUpCompletionStatus = (value = "") =>
+  String(value || "")
+    .trim()
+    .toLowerCase();
+
+const normalizeRequestProgressStatus = (value = "") => {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+  return normalized === "complete" || normalized === "completed" || normalized === "done"
+    ? "complete"
+    : "inprogress";
+};
+
+const isTaskSnapshotChecked = (task = {}) => {
+  if (typeof task?.checked === "boolean") return task.checked;
+  const normalized = String(task?.status || "")
+    .trim()
+    .toLowerCase();
+  return normalized === "complete" || normalized === "completed" || normalized === "done";
+};
+
+const extractWriteUpChecklistTasks = (rawChecklist) => {
+  if (Array.isArray(rawChecklist)) return rawChecklist;
+  if (rawChecklist && typeof rawChecklist === "object") {
+    return Array.isArray(rawChecklist.tasks) ? rawChecklist.tasks : [];
+  }
+  if (typeof rawChecklist === "string") {
+    try {
+      const parsed = JSON.parse(rawChecklist);
+      if (Array.isArray(parsed)) return parsed;
+      if (parsed && typeof parsed === "object") {
+        return Array.isArray(parsed.tasks) ? parsed.tasks : [];
+      }
+    } catch (_error) {
+      return [];
+    }
+  }
+  return [];
+};
+
+const buildRequestStatusLookupFromTasks = (tasks = []) => {
+  const byId = {};
+  const bySortOrder = {};
+  (Array.isArray(tasks) ? tasks : [])
+    .filter((task) => task?.source === "request")
+    .forEach((task) => {
+      const ref = parseRequestIdentityFromTask(task);
+      const status = isTaskSnapshotChecked(task) ? "complete" : "inprogress";
+      if (ref.requestId) {
+        byId[String(ref.requestId)] = status;
+      } else if (ref.sortOrder) {
+        bySortOrder[String(ref.sortOrder)] = status;
+      }
+    });
+  return { byId, bySortOrder };
+};
+
+const buildRequestStatusLookupFromRows = (rows = []) => {
+  const byId = {};
+  const bySortOrder = {};
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    const status = normalizeRequestProgressStatus(row?.status);
+    const requestId = Number(row?.requestId ?? row?.request_id ?? null);
+    const sortOrder = Number(row?.sortOrder ?? row?.sort_order ?? null);
+    if (Number.isInteger(requestId) && requestId > 0) {
+      byId[String(requestId)] = status;
+      return;
+    }
+    if (Number.isInteger(sortOrder) && sortOrder > 0) {
+      bySortOrder[String(sortOrder)] = status;
+    }
+  });
+  return { byId, bySortOrder };
+};
+
+const mergeRequestStatusLookup = (baseLookup = {}, incomingLookup = {}) => ({
+  byId: {
+    ...(baseLookup?.byId || {}),
+    ...(incomingLookup?.byId || {}),
+  },
+  bySortOrder: {
+    ...(baseLookup?.bySortOrder || {}),
+    ...(incomingLookup?.bySortOrder || {}),
+  },
+});
+
+const applyRequestLookupToRows = (rows = [], lookup = {}) =>
+  (Array.isArray(rows) ? rows : []).map((row) => {
+    const requestId = row?.requestId ?? row?.request_id ?? null;
+    const sortOrder = row?.sortOrder ?? row?.sort_order ?? null;
+    const nextStatus =
+      (requestId !== null && requestId !== undefined
+        ? lookup?.byId?.[String(requestId)]
+        : null) ||
+      (sortOrder !== null && sortOrder !== undefined
+        ? lookup?.bySortOrder?.[String(sortOrder)]
+        : null);
+    if (!nextStatus) return row;
+    return {
+      ...row,
+      status: nextStatus,
+    };
+  });
+
+const mergeChecklistTasks = (rawChecklist, tasks = []) => {
+  if (rawChecklist && typeof rawChecklist === "object" && !Array.isArray(rawChecklist)) {
+    return {
+      ...rawChecklist,
+      tasks,
+    };
+  }
+  if (Array.isArray(rawChecklist)) {
+    return {
+      version: 2,
+      tasks,
+    };
+  }
+  if (typeof rawChecklist === "string") {
+    try {
+      const parsed = JSON.parse(rawChecklist);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return {
+          ...parsed,
+          tasks,
+        };
+      }
+    } catch (_error) {
+      return { version: 2, tasks };
+    }
+  }
+  return { version: 2, tasks };
+};
+
+const applyWriteUpOptimisticOverlay = (jobCard, overlay) => {
+  if (!jobCard || !overlay) return jobCard;
+
+  const hasCompletion = typeof overlay.completionStatus === "string";
+  const tasks = Array.isArray(overlay.tasks) ? overlay.tasks : null;
+  const lookup = overlay.requestStatusLookup || { byId: {}, bySortOrder: {} };
+  const hasRequestLookup =
+    Object.keys(lookup.byId || {}).length > 0 || Object.keys(lookup.bySortOrder || {}).length > 0;
+  if (!hasCompletion && !tasks && !hasRequestLookup) {
+    return jobCard;
+  }
+
+  const nextWriteUp = {
+    ...(jobCard.writeUp || {}),
+    ...(hasCompletion ? { completion_status: normalizeWriteUpCompletionStatus(overlay.completionStatus) } : {}),
+    ...(tasks ? { task_checklist: mergeChecklistTasks(jobCard.writeUp?.task_checklist, tasks) } : {}),
+  };
+
+  return {
+    ...jobCard,
+    ...(hasCompletion ? { completionStatus: normalizeWriteUpCompletionStatus(overlay.completionStatus) } : {}),
+    writeUp: nextWriteUp,
+    ...(hasRequestLookup
+      ? {
+          jobRequests: applyRequestLookupToRows(jobCard.jobRequests, lookup),
+          job_requests: applyRequestLookupToRows(jobCard.job_requests, lookup),
+        }
+      : {}),
+  };
+};
+
+const isWriteUpOverlayAcknowledgedByServer = (jobCard, overlay) => {
+  if (!overlay) return true;
+  if (!jobCard) return false;
+
+  if (typeof overlay.completionStatus === "string") {
+    const serverCompletion = normalizeWriteUpCompletionStatus(
+      jobCard.writeUp?.completion_status || jobCard.completionStatus || ""
+    );
+    const optimisticCompletion = normalizeWriteUpCompletionStatus(overlay.completionStatus);
+    if (serverCompletion !== optimisticCompletion) return false;
+  }
+
+  const lookup = overlay.requestStatusLookup || { byId: {}, bySortOrder: {} };
+  const byIdEntries = Object.entries(lookup.byId || {});
+  const bySortEntries = Object.entries(lookup.bySortOrder || {});
+  if (byIdEntries.length > 0 || bySortEntries.length > 0) {
+    const allRequests = Array.isArray(jobCard.jobRequests)
+      ? jobCard.jobRequests
+      : Array.isArray(jobCard.job_requests)
+      ? jobCard.job_requests
+      : [];
+    const requestIndex = new Map();
+    const sortIndex = new Map();
+    allRequests.forEach((row) => {
+      const requestId = Number(row?.requestId ?? row?.request_id ?? null);
+      const sortOrder = Number(row?.sortOrder ?? row?.sort_order ?? null);
+      const status = normalizeRequestProgressStatus(row?.status);
+      if (Number.isInteger(requestId) && requestId > 0) requestIndex.set(String(requestId), status);
+      if (Number.isInteger(sortOrder) && sortOrder > 0) sortIndex.set(String(sortOrder), status);
+    });
+    for (const [key, status] of byIdEntries) {
+      if (requestIndex.get(String(key)) !== normalizeRequestProgressStatus(status)) return false;
+    }
+    for (const [key, status] of bySortEntries) {
+      if (sortIndex.get(String(key)) !== normalizeRequestProgressStatus(status)) return false;
+    }
+  }
+
+  if (Array.isArray(overlay.tasks) && overlay.tasks.length > 0) {
+    const serverTasks = extractWriteUpChecklistTasks(jobCard.writeUp?.task_checklist);
+    if (!Array.isArray(serverTasks) || serverTasks.length === 0) return false;
+
+    const serverMap = new Map(
+      serverTasks.map((task) => [
+        `${task?.source || "request"}:${task?.sourceKey || ""}`,
+        isTaskSnapshotChecked(task),
+      ])
+    );
+    for (const task of overlay.tasks) {
+      const key = `${task?.source || "request"}:${task?.sourceKey || ""}`;
+      if (!serverMap.has(key)) return false;
+      if (serverMap.get(key) !== isTaskSnapshotChecked(task)) return false;
+    }
+  }
+
+  return true;
+};
+
 const isStatusReadyForInvoicing = (status, statusId) => {
   if (statusId) return statusId === JOB_STATUSES.IN_PROGRESS;
   return normalizeStatusId(status) === JOB_STATUSES.IN_PROGRESS;
@@ -390,6 +652,7 @@ export default function JobCardDetailPage() {
   const lastRealtimeFetchAtRef = useRef(0);
   const lastJobFetchAtRef = useRef(0);
   const jobFetchInFlightRef = useRef(false);
+  const writeUpOptimisticSyncRef = useRef(null);
   const [vehicleJobHistory, setVehicleJobHistory] = useState([]);
   const [customerVehicles, setCustomerVehicles] = useState([]);
   const [customerVehiclesLoading, setCustomerVehiclesLoading] = useState(false);
@@ -414,6 +677,37 @@ export default function JobCardDetailPage() {
   const [relatedJobsLoading, setRelatedJobsLoading] = useState(false);
 
   const isArchiveMode = router.query.archive === "1";
+
+  const applyWriteUpOptimisticState = useCallback(
+    ({ completionStatus, tasks, requestStatuses } = {}) => {
+      const now = Date.now();
+      const requestLookupFromTasks = Array.isArray(tasks)
+        ? buildRequestStatusLookupFromTasks(tasks)
+        : { byId: {}, bySortOrder: {} };
+      const requestLookupFromRows = Array.isArray(requestStatuses)
+        ? buildRequestStatusLookupFromRows(requestStatuses)
+        : { byId: {}, bySortOrder: {} };
+
+      const previousOverlay = writeUpOptimisticSyncRef.current || {};
+      const nextOverlay = {
+        ...previousOverlay,
+        ...(typeof completionStatus === "string"
+          ? { completionStatus: normalizeWriteUpCompletionStatus(completionStatus) }
+          : {}),
+        ...(Array.isArray(tasks) ? { tasks } : {}),
+        requestStatusLookup: mergeRequestStatusLookup(
+          previousOverlay.requestStatusLookup || { byId: {}, bySortOrder: {} },
+          mergeRequestStatusLookup(requestLookupFromTasks, requestLookupFromRows)
+        ),
+        updatedAt: now,
+        expiresAt: now + 20000,
+      };
+
+      writeUpOptimisticSyncRef.current = nextOverlay;
+      setJobData((prev) => applyWriteUpOptimisticOverlay(prev, nextOverlay));
+    },
+    []
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -860,7 +1154,16 @@ export default function JobCardDetailPage() {
           mileage: resolvedHydratedMileage ?? "",
           milage: pickMileageValue(jobCard?.milage, resolvedHydratedMileage),
         };
-        setJobData(hydratedJobCard);
+        const optimisticOverlay = writeUpOptimisticSyncRef.current;
+        if (optimisticOverlay && typeof optimisticOverlay.expiresAt === "number" && Date.now() > optimisticOverlay.expiresAt) {
+          writeUpOptimisticSyncRef.current = null;
+        }
+        const activeOverlay = writeUpOptimisticSyncRef.current;
+        if (activeOverlay && isWriteUpOverlayAcknowledgedByServer(hydratedJobCard, activeOverlay)) {
+          writeUpOptimisticSyncRef.current = null;
+        }
+        const overlayToApply = writeUpOptimisticSyncRef.current;
+        setJobData(overlayToApply ? applyWriteUpOptimisticOverlay(hydratedJobCard, overlayToApply) : hydratedJobCard);
         setJobDocuments(mappedFiles);
 
         if (isArchiveMode) {
@@ -900,6 +1203,10 @@ export default function JobCardDetailPage() {
   useEffect(() => {
     fetchJobData();
   }, [fetchJobData]);
+
+  useEffect(() => {
+    writeUpOptimisticSyncRef.current = null;
+  }, [jobNumber]);
 
   useEffect(() => {
     if (!jobData?.id || isArchiveMode) {
@@ -2397,6 +2704,36 @@ export default function JobCardDetailPage() {
   )
     .trim()
     .toLowerCase();
+  const writeUpChecklistTasksRaw = jobData.writeUp?.task_checklist;
+  let writeUpChecklistTasks = [];
+  if (Array.isArray(writeUpChecklistTasksRaw)) {
+    writeUpChecklistTasks = writeUpChecklistTasksRaw;
+  } else if (writeUpChecklistTasksRaw && typeof writeUpChecklistTasksRaw === "object") {
+    writeUpChecklistTasks = Array.isArray(writeUpChecklistTasksRaw.tasks)
+      ? writeUpChecklistTasksRaw.tasks
+      : [];
+  } else if (typeof writeUpChecklistTasksRaw === "string") {
+    try {
+      const parsedChecklist = JSON.parse(writeUpChecklistTasksRaw);
+      if (Array.isArray(parsedChecklist)) {
+        writeUpChecklistTasks = parsedChecklist;
+      } else if (parsedChecklist && typeof parsedChecklist === "object") {
+        writeUpChecklistTasks = Array.isArray(parsedChecklist.tasks)
+          ? parsedChecklist.tasks
+          : [];
+      }
+    } catch (_error) {
+      writeUpChecklistTasks = [];
+    }
+  }
+  const writeUpRowsAllChecked =
+    writeUpChecklistTasks.length > 0 &&
+    writeUpChecklistTasks.every((task) => {
+      if (!task || typeof task !== "object") return false;
+      if (typeof task.checked === "boolean") return task.checked;
+      const normalizedTaskStatus = String(task.status || "").trim().toLowerCase();
+      return normalizedTaskStatus === "complete" || normalizedTaskStatus === "completed";
+    });
   const writeUpComplete =
     writeUpCompletionStatus === "complete" ||
     writeUpCompletionStatus === "waiting_additional_work" ||
@@ -2419,7 +2756,8 @@ export default function JobCardDetailPage() {
       jobData.partsAllocations.length > 0 &&
       partsAllocatedBase &&
       partsReadyBase);
-  const writeUpCompleteInstant = writeUpComplete;
+  const writeUpCompleteInstant =
+    writeUpChecklistTasks.length > 0 ? writeUpRowsAllChecked : writeUpComplete;
   const vhcTabCompleteInstant = vhcTabComplete || Boolean(jobData.vhcCompletedAt);
   const vhcTabAmberReadyInstant = hasRedAmberRepairRows && !vhcTabCompleteInstant;
   const statusReadyForInvoicing = isStatusReadyForInvoicing(
@@ -2462,6 +2800,11 @@ export default function JobCardDetailPage() {
     }
   }
   const showProformaCompleteSection = invoicePrerequisitesMet && statusReadyForInvoicing;
+  const showInvoiceButton =
+    canEdit &&
+    partsTabCompleteInstant &&
+    writeUpCompleteInstant &&
+    vhcTabCompleteInstant;
   const showCreateInvoiceButton =
     canEdit &&
     activeTab === "invoice" &&
@@ -2513,6 +2856,7 @@ export default function JobCardDetailPage() {
     flexDirection: "column",
     gap: "16px",
   };
+  const sharedJobCardShellBackground = "var(--tab-container-bg)";
 
   // ✅ Main Render
   return (
@@ -2552,7 +2896,7 @@ export default function JobCardDetailPage() {
             justifyContent: "space-between",
             alignItems: "center",
             padding: "20px",
-            backgroundColor: "var(--surface)",
+            backgroundColor: sharedJobCardShellBackground,
             borderRadius: "var(--radius-sm)",
             border: "none",
             flexShrink: 0,
@@ -2685,35 +3029,61 @@ export default function JobCardDetailPage() {
                 + Add Sub-Job
               </button>
             )}
-            {(isBookedStatus || isCheckedIn) && (
+            {isBookedStatus && !isCheckedIn && (
               <button
                 onClick={handleCheckIn}
-                disabled={checkingIn || !canEdit || isCheckedIn}
+                disabled={checkingIn || !canEdit}
                 style={{
                   padding: "var(--control-padding)",
-                  backgroundColor: isCheckedIn ? "rgba(var(--primary-rgb), 0.12)" : "var(--primary)",
-                  color: isCheckedIn ? "var(--primary-dark)" : "var(--text-inverse)",
+                  backgroundColor: "var(--primary)",
+                  color: "var(--text-inverse)",
                   border: "none",
                   borderRadius: "var(--control-radius)",
-                  cursor: checkingIn || !canEdit || isCheckedIn ? "not-allowed" : "pointer",
+                  cursor: checkingIn || !canEdit ? "not-allowed" : "pointer",
                   fontWeight: "600",
                   fontSize: "var(--control-font-size)",
                   minHeight: "var(--control-height)",
                   transition: "background-color 0.2s",
-                  opacity: checkingIn || !canEdit || isCheckedIn ? 0.7 : 1
+                  opacity: checkingIn || !canEdit ? 0.7 : 1
                 }}
                 onMouseEnter={(e) => {
-                  if (!checkingIn && canEdit && !isCheckedIn) {
+                  if (!checkingIn && canEdit) {
                     e.target.style.backgroundColor = "var(--primary-light)";
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (!checkingIn && canEdit && !isCheckedIn) {
+                  if (!checkingIn && canEdit) {
                     e.target.style.backgroundColor = "var(--primary)";
                   }
                 }}
               >
-                {checkingIn ? "Checking In..." : isCheckedIn ? "Checked in" : "Check In"}
+                {checkingIn ? "Checking In..." : "Check In"}
+              </button>
+            )}
+            {showInvoiceButton && (
+              <button
+                onClick={() => handleTabClick("invoice")}
+                style={{
+                  padding: "var(--control-padding)",
+                  backgroundColor: "var(--primary)",
+                  color: "var(--text-inverse)",
+                  border: "none",
+                  borderRadius: "var(--control-radius)",
+                  cursor: "pointer",
+                  fontWeight: "600",
+                  fontSize: "var(--control-font-size)",
+                  minHeight: "var(--control-height)",
+                  transition: "background-color 0.2s, transform 0.2s",
+                  opacity: 1
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = "var(--primary-light)";
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = "var(--primary)";
+                }}
+              >
+                Invoice
               </button>
             )}
             {showCreateInvoiceButton && (
@@ -2747,44 +3117,6 @@ export default function JobCardDetailPage() {
                 Create Invoice
               </button>
             )}
-            <button
-              onClick={() => fetchJobData({ silent: false, force: true })}
-              style={{
-                padding: "var(--control-padding)",
-                backgroundColor: "rgba(var(--primary-rgb), 0.08)",
-                color: "var(--primary-dark)",
-                border: "none",
-                borderRadius: "var(--control-radius)",
-                cursor: "pointer",
-                fontWeight: "600",
-                fontSize: "var(--control-font-size)",
-                minHeight: "var(--control-height)",
-                transition: "background-color 0.2s"
-              }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = "rgba(var(--primary-rgb), 0.14)"}
-              onMouseLeave={(e) => e.target.style.backgroundColor = "rgba(var(--primary-rgb), 0.08)"}
-            >
-              Reload
-            </button>
-            <button
-              onClick={() => router.push("/job-cards/view")}
-              style={{
-                padding: "var(--control-padding)",
-                backgroundColor: "rgba(var(--primary-rgb), 0.08)",
-                color: "var(--primary-dark)",
-                border: "none",
-                borderRadius: "var(--control-radius)",
-                cursor: "pointer",
-                fontWeight: "600",
-                fontSize: "var(--control-font-size)",
-                minHeight: "var(--control-height)",
-                transition: "background-color 0.2s"
-              }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = "rgba(var(--primary-rgb), 0.14)"}
-              onMouseLeave={(e) => e.target.style.backgroundColor = "rgba(var(--primary-rgb), 0.08)"}
-            >
-              Back
-            </button>
           </div>
         </section>
 
@@ -2895,6 +3227,9 @@ export default function JobCardDetailPage() {
             gridTemplateColumns: "1fr 1fr 0.9fr 1fr",
             gap: "16px",
             flexShrink: 0,
+            backgroundColor: sharedJobCardShellBackground,
+            borderRadius: "var(--radius-sm)",
+            padding: "8px",
           }}
           data-dev-section="1"
           data-dev-section-key="jobcard-summary-shell"
@@ -3066,6 +3401,11 @@ export default function JobCardDetailPage() {
         {/* ✅ Tabs Navigation */}
         <section
           className="page-surface-plain"
+          style={{
+            backgroundColor: sharedJobCardShellBackground,
+            borderRadius: "var(--radius-sm)",
+            padding: "8px",
+          }}
           data-dev-section="1"
           data-dev-section-key="jobcard-tab-row"
           data-dev-section-type="tab-row"
@@ -3073,6 +3413,11 @@ export default function JobCardDetailPage() {
         >
           <div
             className={`tab-scroll-row${tabsOverflowing ? " is-overflowing" : ""}`}
+            style={{
+              backgroundColor: sharedJobCardShellBackground,
+              borderRadius: "var(--radius-sm)",
+              padding: "6px",
+            }}
             ref={tabsScrollRef}
             onMouseDown={tabsOverflowing ? handleTabsDragStart : undefined}
             onMouseMove={tabsOverflowing ? handleTabsDragMove : undefined}
@@ -3149,6 +3494,11 @@ export default function JobCardDetailPage() {
 
         {/* ✅ Tab Content */}
         <section
+          style={{
+            backgroundColor: sharedJobCardShellBackground,
+            borderRadius: "var(--radius-sm)",
+            padding: "8px",
+          }}
           data-dev-section="1"
           data-dev-section-key="jobcard-tab-content-shell"
           data-dev-section-type="section-shell"
@@ -3280,18 +3630,14 @@ export default function JobCardDetailPage() {
                 showHeader={false}
                 onSaveSuccess={() => fetchJobData({ silent: true, force: true })}
                 onCompletionChange={(nextStatus) => {
-                  const normalized = String(nextStatus || "").trim().toLowerCase();
-                  setJobData((prev) => {
-                    if (!prev) return prev;
-                    return {
-                      ...prev,
-                      completionStatus: normalized || prev.completionStatus,
-                      writeUp: {
-                        ...(prev.writeUp || {}),
-                        completion_status:
-                          normalized || prev.writeUp?.completion_status || "",
-                      },
-                    };
+                  applyWriteUpOptimisticState({ completionStatus: nextStatus });
+                }}
+                onRequestStatusesChange={(requestStatuses = []) => {
+                  applyWriteUpOptimisticState({ requestStatuses });
+                }}
+                onTasksSnapshotChange={(tasksSnapshot = []) => {
+                  applyWriteUpOptimisticState({
+                    tasks: Array.isArray(tasksSnapshot) ? tasksSnapshot : [],
                   });
                 }}
               />
@@ -3593,6 +3939,11 @@ function CustomerRequestsTab({
       .split("_")
       .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
       .join(" ");
+  };
+  const formatHoursDisplay = (value) => {
+    const numeric = Number(value);
+    const safe = Number.isFinite(numeric) ? numeric : 0;
+    return `${safe.toFixed(1)}h`;
   };
   const unifiedRequests = useMemo(() => {
     const source = Array.isArray(jobData?.jobRequests)
@@ -4523,6 +4874,7 @@ function CustomerRequestsTab({
                         className="customer-request-prepick-dropdown"
                         disabled={!canEdit || savingRequestPrePickId === String(req.requestId)}
                         size="sm"
+                        style={{ width: "170px", minWidth: "170px" }}
                       />
                     ) : (
                       <span style={{ ...smallPrintStyle, display: "inline-block" }}>
@@ -4549,7 +4901,7 @@ function CustomerRequestsTab({
                       fontSize: "12px",
                       fontWeight: "600"
                     }}>
-                      {Number(req.hours) || 0}h
+                      {formatHoursDisplay(req.hours)}
                     </span>
                     {req.jobType && (
                       <span style={{
@@ -4638,7 +4990,7 @@ function CustomerRequestsTab({
                       ) : null}
                       {(labourHoursValue !== null || (Number.isFinite(partsCostValue) && partsCostValue > 0) || row.prePickLocation) && (
                         <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-                          {labourHoursValue !== null && <span>Labour: {labourHoursValue}h</span>}
+                          {labourHoursValue !== null && <span>Labour: {formatHoursDisplay(labourHoursValue)}</span>}
                           {labourHoursValue !== null && Number.isFinite(partsCostValue) && partsCostValue > 0 && <span> | </span>}
                           {Number.isFinite(partsCostValue) && partsCostValue > 0 && (
                             <span>Parts: £{partsCostValue.toFixed(2)}</span>
@@ -4652,11 +5004,26 @@ function CustomerRequestsTab({
                       )}
                     </div>
                     <div style={{ minWidth: 0, display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
-                      <span style={{ ...smallPrintStyle, display: "inline-block" }}>
-                        {row.prePickLocation
-                          ? `Pre-picked: ${formatPrePickLabel(row.prePickLocation)}`
-                          : "Pre-pick not set"}
-                      </span>
+                      {row.requestId ? (
+                        <DropdownField
+                          value={row.prePickLocation || ""}
+                          placeholder="Pre-Pick Location"
+                          onChange={(event) =>
+                            handleCustomerRequestPrePickLocationChange(row, event.target.value)
+                          }
+                          options={prePickLocationOptions}
+                          className="customer-request-prepick-dropdown"
+                          disabled={!canEdit || savingRequestPrePickId === String(row.requestId)}
+                          size="sm"
+                          style={{ width: "170px", minWidth: "170px" }}
+                        />
+                      ) : (
+                        <span style={{ ...smallPrintStyle, display: "inline-block" }}>
+                          {row.prePickLocation
+                            ? `Pre-picked: ${formatPrePickLabel(row.prePickLocation)}`
+                            : "Pre-pick not set"}
+                        </span>
+                      )}
                     </div>
                     <div
                       style={{
@@ -4675,7 +5042,7 @@ function CustomerRequestsTab({
                         fontSize: "12px",
                         fontWeight: "600"
                       }}>
-                        {labourHoursValue !== null && Number.isFinite(labourHoursValue) ? labourHoursValue : 0}h
+                        {formatHoursDisplay(labourHoursValue)}
                       </span>
                       {row.jobType && (
                         <span style={{

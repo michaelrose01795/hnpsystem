@@ -175,6 +175,7 @@ export default function GlobalNotesWidget() {
   const closePanelTimerRef = useRef(null);
   const saveTimersRef = useRef(new Map());
   const resizeTimerRef = useRef(null);
+  const editingNoteIdRef = useRef(null);
 
   const storageSuffix = useMemo(() => {
     const numericUserId = Number(dbUserId);
@@ -220,6 +221,8 @@ export default function GlobalNotesWidget() {
   useEffect(() => {
     const editor = descriptionInputRef.current;
     if (!editor || !isPanelMounted) return;
+    const isFocused = typeof document !== "undefined" && document.activeElement === editor;
+    if (isFocused && editingNoteIdRef.current === activeNoteId) return;
     const description = activeNote?.description || "";
     const nextHtml = isLikelyHtml(description)
       ? description
@@ -629,6 +632,12 @@ export default function GlobalNotesWidget() {
       return;
     }
 
+    const pendingSave = saveTimersRef.current.get(noteId);
+    if (pendingSave) {
+      clearTimeout(pendingSave);
+      saveTimersRef.current.delete(noteId);
+    }
+
     const result = await deleteFloatingNote(noteId);
     if (!result.success) {
       setError(result.error?.message || "Failed to delete note");
@@ -879,10 +888,12 @@ export default function GlobalNotesWidget() {
   const onToggleGlobal = async (checked) => {
     if (!activeNote || !activeNoteOwnedByUser) return;
 
+    const previous = Boolean(activeNote.isGlobal);
     updateLocalNote(activeNote.noteId, (note) => ({ ...note, isGlobal: checked }));
     setSaveStatus("saving");
     const result = await updateFloatingNote(activeNote.noteId, { isGlobal: checked });
     if (!result.success) {
+      updateLocalNote(activeNote.noteId, (note) => ({ ...note, isGlobal: previous }));
       setSaveStatus("error");
       setError(result.error?.message || "Failed to update visibility");
       return;
@@ -1083,10 +1094,14 @@ export default function GlobalNotesWidget() {
                     className={`${styles.richEditor} ${activeNoteReadOnly ? styles.richEditorReadOnly : ""}`}
                     contentEditable={!activeNoteReadOnly}
                     suppressContentEditableWarning
+                    onFocus={() => {
+                      editingNoteIdRef.current = activeNote?.noteId || null;
+                    }}
                     onInput={handleDescriptionInput}
                     onPaste={handleDescriptionPaste}
                     onKeyDown={handleDescriptionKeyDown}
                     onBlur={() => {
+                      editingNoteIdRef.current = null;
                       setCommandSuggestions([]);
                       onBlurSave(activeNote.noteId);
                     }}

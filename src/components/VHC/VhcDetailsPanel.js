@@ -1706,13 +1706,49 @@ export default function VhcDetailsPanel({
           .eq("job_number", resolvedJobNumber)
           .maybeSingle();
 
-        const [{ data: jobRow, error: jobError }, { data: workflowRow, error: workflowError }] = await Promise.all([
+        const [{ data: primaryJobRow, error: jobError }, { data: workflowRow, error: workflowError }] = await Promise.all([
           jobPromise,
           workflowPromise,
         ]);
 
-        if (jobError) throw jobError;
-        if (workflowError && workflowError.message !== "Row not found") throw workflowError;
+        let jobRow = primaryJobRow;
+        if (jobError) {
+          console.warn("[VHC] Primary job query failed, retrying with fallback loader", jobError);
+          const { data: fallbackBaseJob, error: fallbackBaseError } = await supabase
+            .from("jobs")
+            .select("*")
+            .eq("job_number", resolvedJobNumber)
+            .maybeSingle();
+
+          if (fallbackBaseError) {
+            throw fallbackBaseError;
+          }
+
+          if (fallbackBaseJob?.id) {
+            const [checksRes, partsRes, filesRes] = await Promise.all([
+              supabase.from("vhc_checks").select("*").eq("job_id", fallbackBaseJob.id),
+              supabase.from("parts_job_items").select("*").eq("job_id", fallbackBaseJob.id),
+              supabase
+                .from("job_files")
+                .select("file_id, file_name, file_url, file_type, folder, uploaded_at, uploaded_by")
+                .eq("job_id", fallbackBaseJob.id),
+            ]);
+
+            if (checksRes.error) throw checksRes.error;
+            if (partsRes.error) throw partsRes.error;
+            if (filesRes.error) throw filesRes.error;
+
+            jobRow = {
+              ...fallbackBaseJob,
+              vhc_checks: checksRes.data || [],
+              parts_job_items: partsRes.data || [],
+              job_files: filesRes.data || [],
+            };
+          }
+        }
+        if (workflowError && workflowError.code !== "PGRST116") {
+          console.warn("[VHC] Failed to load vhc_workflow_status; continuing without workflow row", workflowError);
+        }
 
         if (!jobRow) {
           setError("Job not found for the supplied job number.");

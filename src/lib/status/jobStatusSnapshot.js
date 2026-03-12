@@ -261,7 +261,6 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
   const [
     historyRes,
     vhcChecksRes,
-    vhcAuthRes,
     vhcDeclineRes,
     invoiceRes,
     partsRes,
@@ -280,13 +279,6 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
       .from("vhc_checks")
       .select("vhc_id", { count: "exact", head: true })
       .eq("job_id", jobIdValue),
-    db
-      .from("vhc_authorizations")
-      .select("authorized_at")
-      .eq("job_id", jobIdValue)
-      .order("authorized_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
     db
       .from("vhc_declinations")
       .select("declined_at")
@@ -554,10 +546,7 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
   const vhcRequired = Boolean(jobRow.vhc_required);
   const vhcCompletedAt = jobRow.vhc_completed_at || null;
   const vhcSentAt = jobRow.vhc_sent_at || null;
-  const vhcAuthorisedAt =
-    jobRow.additional_work_authorized_at ||
-    vhcAuthRes?.data?.authorized_at ||
-    null;
+  const vhcAuthorisedAt = jobRow.additional_work_authorized_at || null;
   const vhcDeclinedAt = vhcDeclineRes?.data?.declined_at || null;
 
   const snapshot = {

@@ -206,47 +206,6 @@ const hasPaidInvoiceForJob = async (jobId) => {
   });
 };
 
-const extractAuthorizedItems = (authRows = []) => {
-  const items = [];
-
-  authRows.forEach((authorization) => {
-    const rawItems = Array.isArray(authorization.authorized_items)
-      ? authorization.authorized_items
-      : [];
-
-    rawItems.forEach((item, index) => {
-      const description =
-        (typeof item === "string" && item) ||
-        item?.description ||
-        item?.title ||
-        item?.name ||
-        item?.issue ||
-        item?.concern ||
-        "";
-
-      if (!description) {
-        return;
-      }
-
-      items.push({
-        recordId: null,
-        description,
-        status: normaliseRectificationStatus(item?.status),
-        isAdditionalWork: true,
-        vhcItemId: item?.vhc_item_id ?? item?.vhcItemId ?? item?.id ?? index ?? null,
-        authorizationId: authorization.id,
-        authorizedAmount:
-          item?.amount !== null && item?.amount !== undefined
-            ? Number(item.amount)
-            : null,
-        source: "vhc",
-      });
-    });
-  });
-
-  return items;
-};
-
 const mergeRectificationSources = (stored = [], authorized = []) => {
   const merged = [...stored];
   const vhcIndex = new Map();
@@ -472,7 +431,6 @@ const _getAllJobsUncached = async () => {
       job_notes(note_id, note_text, user_id, created_at, updated_at, linked_request_index, linked_vhc_id, linked_request_indices, linked_vhc_ids, linked_part_id, linked_part_ids),
       job_writeups(writeup_id, fault, rectification, technician_id, completion_status, created_at, updated_at, task_checklist),
       job_files(file_id, file_name, file_url, file_type, folder, uploaded_by, uploaded_at),
-      vhc_authorizations(id, authorized_items, authorized_at),
       booking_request:job_booking_requests(
         request_id,
         job_id,
@@ -577,17 +535,6 @@ export const getDashboardData = async () => {
 ============================================ */
 export const getAuthorizedAdditionalWorkByJob = async (jobId) => {
   try {
-    // Fetch VHC authorizations
-    const { data: vhcData, error: vhcError } = await supabase
-      .from("vhc_authorizations")
-      .select("id, job_id, authorized_at, authorized_items")
-      .eq("job_id", jobId)
-      .order("authorized_at", { ascending: false });
-
-    if (vhcError && vhcError.code !== "PGRST116") {
-      throw vhcError;
-    }
-
     // Fetch authorized parts
     const { data: partsData, error: partsError } = await supabase
       .from("parts_job_items")
@@ -613,42 +560,26 @@ export const getAuthorizedAdditionalWorkByJob = async (jobId) => {
       console.error("⚠️ Error fetching authorized parts:", partsError);
     }
 
-    const hasAuthorizations = Array.isArray(vhcData) && vhcData.length > 0;
-
-    // Fetch authorized VHC checks directly (fallback when vhc_authorizations is not populated)
+    // Fetch authorized VHC checks
     let vhcChecksData = [];
-    if (hasAuthorizations) {
-      const { data, error: vhcChecksError } = await supabase
-        .from("vhc_checks")
-        .select("vhc_id, section, issue_title, issue_description, approval_status")
-        .eq("job_id", jobId)
-        .in("approval_status", ["authorized", "authorised"]);
+    const { data, error: vhcChecksError } = await supabase
+      .from("vhc_checks")
+      .select("vhc_id, section, issue_title, issue_description, approval_status")
+      .eq("job_id", jobId)
+      .in("approval_status", ["authorized", "authorised"]);
 
-      if (vhcChecksError && vhcChecksError.code !== "PGRST116") {
-        console.error("⚠️ Error fetching authorized VHC checks:", vhcChecksError);
-      } else {
-        vhcChecksData = data || [];
-      }
+    if (vhcChecksError && vhcChecksError.code !== "PGRST116") {
+      console.error("⚠️ Error fetching authorized VHC checks:", vhcChecksError);
+    } else {
+      vhcChecksData = data || [];
     }
 
-    // Extract VHC authorized items
-    const vhcItems = extractAuthorizedItems(vhcData || []);
-    const vhcItemIds = new Set(
-      vhcItems
-        .map((item) => item?.vhcItemId)
-        .filter((value) => value !== null && value !== undefined)
-        .map((value) => String(value))
-    );
-
-    // Add authorized items from vhc_checks if missing
+    // Build authorized items from vhc_checks.
     const vhcChecksItems = (vhcChecksData || []).reduce((acc, check) => {
       const description =
         (check.issue_title || check.issue_description || check.section || "").toString().trim();
       if (!description) return acc;
       const vhcId = check.vhc_id ?? null;
-      if (vhcId !== null && vhcItemIds.has(String(vhcId))) {
-        return acc;
-      }
       acc.push({
         recordId: null,
         description,
@@ -686,7 +617,7 @@ export const getAuthorizedAdditionalWorkByJob = async (jobId) => {
     });
 
     // Combine both sources
-    return [...vhcItems, ...vhcChecksItems, ...partsItems];
+    return [...vhcChecksItems, ...partsItems];
   } catch (error) {
     console.error("❌ getAuthorizedAdditionalWorkByJob error:", error);
     return [];
@@ -1702,6 +1633,7 @@ const normaliseRequestsForWriteUp = ({ jobRequests = [], legacyRequests = null }
           raw: cleaned,
           requestId,
           sortOrder: fallbackOrder,
+          status: isCompleteRequestStatus(entry?.status) ? "complete" : "inprogress",
         };
       })
       .filter(Boolean);
@@ -1744,6 +1676,7 @@ const normaliseRequestsForWriteUp = ({ jobRequests = [], legacyRequests = null }
         raw: cleaned,
         requestId: null,
         sortOrder: index + 1,
+        status: isCompleteRequestStatus(entry?.status) ? "complete" : "inprogress",
       };
     })
     .filter(Boolean);
@@ -1811,6 +1744,13 @@ const normalizeRequestTaskLabel = (value = "") =>
     .trim()
     .toLowerCase();
 
+const isCompleteRequestStatus = (value) => {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+  return normalized === "complete" || normalized === "completed" || normalized === "done";
+};
+
 // ✅ Merge stored tasks with live request/VHC sources
 const buildWriteUpTaskList = ({ storedTasks = [], requestItems = [], authorisedItems = [] }) => {
   const registry = new Map();
@@ -1839,19 +1779,28 @@ const buildWriteUpTaskList = ({ storedTasks = [], requestItems = [], authorisedI
 
   requestItems.forEach((item, index) => {
     const key = `${item.source}:${item.sourceKey}`;
+    const itemIsComplete = isCompleteRequestStatus(item?.status);
     const existing = registry.get(key);
     if (existing) {
-      merged.push({ ...existing, label: existing.label || item.label, checked: existing.checked === true });
+      const checked = existing.checked === true || itemIsComplete;
+      merged.push({
+        ...existing,
+        label: existing.label || item.label,
+        checked,
+        status: checked ? "complete" : "additional_work",
+      });
       registry.delete(key);
     } else {
       const legacyKey = `${item.source}:req-${index + 1}`;
       const legacyExisting = registry.get(legacyKey);
       if (legacyExisting) {
+        const checked = legacyExisting.checked === true || itemIsComplete;
         merged.push({
           ...legacyExisting,
           sourceKey: item.sourceKey,
           label: legacyExisting.label || item.label,
-          checked: legacyExisting.checked === true,
+          checked,
+          status: checked ? "complete" : "additional_work",
         });
         registry.delete(legacyKey);
         return;
@@ -1868,23 +1817,26 @@ const buildWriteUpTaskList = ({ storedTasks = [], requestItems = [], authorisedI
         });
         if (matchedRegistryKey) {
           const matchedExisting = registry.get(matchedRegistryKey);
+          const checked = matchedExisting?.checked === true || itemIsComplete;
           merged.push({
             ...matchedExisting,
             sourceKey: item.sourceKey,
             label: matchedExisting?.label || item.label,
-            checked: matchedExisting?.checked === true,
+            checked,
+            status: checked ? "complete" : "additional_work",
           });
           registry.delete(matchedRegistryKey);
           return;
         }
       }
+      const checked = itemIsComplete;
       merged.push({
         taskId: null,
         source: item.source,
         sourceKey: item.sourceKey,
         label: item.label,
-        status: "additional_work",
-        checked: false,
+        status: checked ? "complete" : "additional_work",
+        checked,
       });
     }
   });
@@ -2367,7 +2319,6 @@ const formatJobData = (data) => {
     notes: data.job_notes || [],
     writeUp: data.job_writeups?.[0] || null,
     files: data.job_files || [], // ✅ NEW: File attachments
-    vhcAuthorizations: data.vhc_authorizations || [],
     linkedWarrantyJobId: data.warranty_linked_job_id || null,
     warrantyVhcMasterJobId: data.warranty_vhc_master_job_id || null,
     linkedWarrantyJobNumber: data.linked_warranty_job?.job_number || null,
@@ -3369,31 +3320,21 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
       return null;
     }
 
-    const [writeUpResponse, authorizationRowsResponse, authorisedVhcItems] = await Promise.all([
+    const [writeUpResponse, authorisedVhcItems] = await Promise.all([
       supabase
         .from("job_writeups")
         .select("*")
         .eq("job_id", job.id)
         .maybeSingle(),
-      supabase
-        .from("vhc_authorizations")
-        .select("id, authorized_items, authorized_at")
-        .eq("job_id", job.id)
-        .order("authorized_at", { ascending: false }),
       // Canonical "Authorised VHC Items" source: vhc_checks (authorized) + linked parts.
       getAuthorizedVhcItemsWithDetails(job.id),
     ]);
 
     const { data: writeUp, error } = writeUpResponse;
-    const { data: authorizationRows, error: authorizationError } = authorizationRowsResponse;
 
     if (error && error.code !== "PGRST116") {
       console.error("❌ Error fetching write-up:", error);
       return null;
-    }
-
-    if (authorizationError) {
-      console.error("⚠️ Error fetching VHC authorizations:", authorizationError);
     }
 
     const requestItems = normaliseRequestsForWriteUp({
@@ -3425,8 +3366,7 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
     });
 
     const completionStatus = determineCompletionStatus(tasks, writeUp?.completion_status);
-    const latestAuthorizationId =
-      authorizationRows?.[0]?.id ?? checklistMeta.vhcAuthorizationId ?? null;
+    const latestAuthorizationId = checklistMeta.vhcAuthorizationId ?? null;
     const rectificationItems = mergeRectificationSources(
       extractRectificationItemsFromChecklist(writeUp?.task_checklist),
       canonicalAuthorisedVhcItems

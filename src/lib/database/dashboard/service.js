@@ -65,7 +65,7 @@ export const getServiceDashboardData = async () => {
     runQuery(() =>
       supabase
         .from("jobs")
-        .select("id,job_number,vehicle_reg,checked_in_at,vhc_authorizations(id)")
+        .select("id,job_number,vehicle_reg,checked_in_at")
         .eq("vhc_required", true)
         .is("vhc_completed_at", null)
         .limit(6)
@@ -111,9 +111,7 @@ export const getServiceDashboardData = async () => {
       collection: collectionTotal,
     },
     upcomingJobs,
-    awaitingVhc: (vhcCandidates || []).filter(
-      (job) => !Array.isArray(job.vhc_authorizations) || job.vhc_authorizations.length === 0
-    ),
+    awaitingVhc: vhcCandidates || [],
     vhcSeverityTrend: buildSeverityWeeklySeries(severityChecks, "created_at"),
     progress: {
       completed: completedJobsToday.length,

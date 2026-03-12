@@ -25,13 +25,13 @@ These are severity and condition inputs captured in the section modals and used 
 - `jobs.vhc_completed_at` marks VHC completion for workflow snapshots and status blockers.
 - `jobs.vhc_sent_at` marks VHC sent to customer for workflow snapshots.
 - `jobs.additional_work_authorized_at` marks additional work authorised for workflow snapshots.
-- `vhc_send_history.sent_at`, `vhc_authorizations.authorized_at`, and `vhc_declinations.declined_at` are logged events that feed workflow status snapshots.
+- `vhc_send_history.sent_at` and `vhc_declinations.declined_at` are logged events that feed workflow status snapshots.
 - `vhc_workflow_status.status` (free-text in `vhc_workflow_status`) is read by the customer portal but no write path is present in this repo.
 
 ## Severity vs approval vs workflow
 - Severity is derived from the VHC builder payload (see `src/lib/vhc/summary.js`) and is normalized to `red/amber/green/grey` in `src/components/VHC/VhcDetailsPanel.js` for display.
 - Approval is tracked on `vhc_checks.approval_status` and is the source of the decision state (pending/authorised/declined/completed).
-- Workflow status is derived from job-level timestamps and authorisation/declination tables (see `src/lib/status/jobStatusSnapshot.js`).
+- Workflow status is derived from job-level timestamps and declination history (see `src/lib/status/jobStatusSnapshot.js`).
 
 ## How section rules affect status display
 - Health Check cards (`VhcDetailsPanel` health-check tab) derive section severity using metrics first, then item/concern statuses (red > amber > grey > green).
@@ -68,7 +68,6 @@ These are severity and condition inputs captured in the section modals and used 
 | `jobs.additional_work_authorized_at` | timestamp or null | Additional work authorised marker for workflow status. | `src/lib/services/jobStatusService.js` via `autoSetAdditionalWorkRequiredStatus`. | `src/lib/status/jobStatusSnapshot.js` | Used for workflow status (`authorised`). | Status sidebar snapshot |
 | `vhc_workflow_status.status` | free text; typical values in `src/lib/vhc/summary.js`: "VHC not started", "In progress", "Waiting for parts", "Sent to customer", "Awaiting approval", "Approved", "Declined", "Completed" | Display status for customer portal summaries. | No write path found in this repo. | `src/customers/hooks/useCustomerPortalData.js`, `src/components/VHC/VhcDetailsPanel.js` (workflow data load) | Not applied to VHC summary table; only high-level portal labels. | Customer portal summaries |
 | `vhc_send_history.sent_at` | timestamp | Logged when VHC is sent to customer. | `src/lib/services/vhcStatusService.js` | `src/lib/status/jobStatusSnapshot.js` (via `vhc_sent_at`) | Contributes to workflow status and history. | Status sidebar snapshot |
-| `vhc_authorizations.authorized_at` | timestamp | Logged when customer authorizes additional work. | `src/lib/services/vhcStatusService.js` | `src/lib/status/jobStatusSnapshot.js` | Contributes to workflow status (`authorised`). | Status sidebar snapshot |
 | `vhc_declinations.declined_at` | timestamp | Logged when customer declines additional work. | `src/lib/services/vhcStatusService.js`, `src/pages/api/vhc/declinations/index.js` | `src/lib/status/jobStatusSnapshot.js` | Contributes to workflow status (`declined`). | Status sidebar snapshot |
 | VHC builder payload `concerns[].status` | `Red`, `Amber`, `Green` | Severity per concern; rolled up to item + section severity. | VHC section modals (External/Internal/Underside/Service/Wheels/Brakes). | `src/lib/vhc/summary.js`, `src/components/VHC/VhcDetailsPanel.js` | Red/amber items become summary rows; green only appears in Green Checks section. | VHC Summary + Health Check tabs |
 | VHC builder payload `brakesHubs.*.status` | `Red`, `Amber`, `Green` (pads/discs), `Good`/`Monitor`/`Replace` (drums) | Severity for brake pad/disc/drum sections; normalized in summary. | `src/components/VHC/BrakesHubsDetailsModal.js` | `src/lib/vhc/summary.js`, `src/components/VHC/VhcDetailsPanel.js` | Drum status normalized by `normaliseStatus` (Good->Green, Monitor->Amber, Replace->Red). | VHC Summary + Health Check tabs |
@@ -165,7 +164,7 @@ These are severity and condition inputs captured in the section modals and used 
 
 - `src/lib/services/vhcStatusService.js`
   - `markVHCAsSent` -> inserts `vhc_send_history` and calls `autoSetVHCSentStatus`.
-  - `authorizeAdditionalWork` -> inserts `vhc_authorizations` and calls `autoSetAdditionalWorkRequiredStatus`.
+  - `authorizeAdditionalWork` -> calls `autoSetAdditionalWorkRequiredStatus`.
   - `declineAdditionalWork` -> inserts `vhc_declinations`, adds job note, logs sub-status `Customer Declined`.
 
 ## Declinations API

@@ -82,6 +82,11 @@ const buildRequestList = (rawRequests) => {
           ? entry.sortOrder ?? entry.sort_order ?? null
           : null;
       const sortOrder = Number(sortOrderRaw);
+      const rawStatus =
+        typeof entry === "object" && entry !== null
+          ? entry.status ?? entry.requestStatus ?? null
+          : null;
+      const normalizedStatus = String(rawStatus || "").trim().toLowerCase();
       return {
         source: "request",
         sourceKey:
@@ -90,7 +95,18 @@ const buildRequestList = (rawRequests) => {
             : Number.isFinite(sortOrder) && sortOrder > 0
             ? `req-${sortOrder}`
             : `req-${index + 1}`,
+        requestId:
+          requestId !== null && requestId !== undefined && String(requestId).trim() !== ""
+            ? Number(requestId)
+            : null,
+        sortOrder: Number.isFinite(sortOrder) && sortOrder > 0 ? sortOrder : null,
         label: `Request ${index + 1}: ${cleaned}`,
+        status:
+          normalizedStatus === "complete" ||
+          normalizedStatus === "completed" ||
+          normalizedStatus === "done"
+            ? "complete"
+            : "inprogress",
       };
     })
     .filter(Boolean);
@@ -100,6 +116,48 @@ const buildRequestList = (rawRequests) => {
 const composeTaskKey = (task) => `${task.source}:${task.sourceKey}`;
 const isTaskChecked = (task = {}) =>
   typeof task?.checked === "boolean" ? task.checked : task?.status === "complete";
+const parseRequestIdentityFromTask = (task = {}) => {
+  const explicitRequestIdRaw = task?.requestId ?? task?.request_id ?? null;
+  const explicitRequestId = Number(explicitRequestIdRaw);
+  if (Number.isInteger(explicitRequestId) && explicitRequestId > 0) {
+    return { requestId: explicitRequestId, sortOrder: null };
+  }
+
+  const explicitSortOrderRaw = task?.sortOrder ?? task?.sort_order ?? null;
+  const explicitSortOrder = Number(explicitSortOrderRaw);
+  if (Number.isInteger(explicitSortOrder) && explicitSortOrder > 0) {
+    return { requestId: null, sortOrder: explicitSortOrder };
+  }
+
+  const sourceKey = String(task?.sourceKey || "").trim();
+  if (!sourceKey) return { requestId: null, sortOrder: null };
+
+  const requestIdMatch = sourceKey.match(/^reqid[-_:]?(\d+)$/i);
+  if (requestIdMatch?.[1]) {
+    return { requestId: Number(requestIdMatch[1]), sortOrder: null };
+  }
+
+  const sortOrderDirectMatch = sourceKey.match(/^req[-_:]?(\d+)$/i);
+  if (sortOrderDirectMatch?.[1]) {
+    return { requestId: null, sortOrder: Number(sortOrderDirectMatch[1]) };
+  }
+
+  const requestSuffixMatch = sourceKey.match(/(?:^|[-_:])request[-_:]?(\d+)$/i);
+  if (requestSuffixMatch?.[1]) {
+    return { requestId: null, sortOrder: Number(requestSuffixMatch[1]) };
+  }
+
+  const numericTailMatch = sourceKey.match(/(\d+)$/);
+  if (numericTailMatch?.[1]) {
+    return { requestId: null, sortOrder: Number(numericTailMatch[1]) };
+  }
+
+  return { requestId: null, sortOrder: null };
+};
+const getRequestTaskDefaults = (request = {}) => {
+  const status = request?.status === "complete" ? "complete" : "additional_work";
+  return { status, checked: status === "complete" };
+};
 const withTaskChecked = (task = {}) => ({
   ...task,
   checked: isTaskChecked(task),
@@ -420,6 +478,8 @@ const buildTaskChecklistSnapshot = (tasks = []) =>
   (Array.isArray(tasks) ? tasks : []).map((task) => ({
     source: task?.source || "request",
     sourceKey: task?.sourceKey || composeTaskKey(task),
+    ...(task?.requestId || task?.request_id ? { requestId: Number(task?.requestId ?? task?.request_id) } : {}),
+    ...(task?.sortOrder || task?.sort_order ? { sortOrder: Number(task?.sortOrder ?? task?.sort_order) } : {}),
     label: task?.label || "",
     status: task?.status === "complete" ? "complete" : "additional_work",
     checked: isTaskChecked(task),
@@ -780,6 +840,8 @@ export default function WriteUpForm({
   showHeader = true,
   onSaveSuccess,
   onCompletionChange,
+  onRequestStatusesChange,
+  onTasksSnapshotChange,
 }) {
   const router = useRouter();
   const { user } = useUser();
@@ -833,6 +895,8 @@ export default function WriteUpForm({
   const liveSyncTimeoutRef = useRef(null);
   const autoSaveTimeoutRef = useRef(null);
   const autoSaveExtrasTimeoutRef = useRef(null);
+  const onCompletionChangeRef = useRef(onCompletionChange);
+  const onTasksSnapshotChangeRef = useRef(onTasksSnapshotChange);
   const lastSyncedFieldsRef = useRef({
     fault: "",
     caused: "",
@@ -940,8 +1004,7 @@ export default function WriteUpForm({
         source: item.source,
         sourceKey: item.sourceKey,
         label: item.label,
-        status: "additional_work",
-        checked: false,
+        ...getRequestTaskDefaults(item),
       })),
       canonicalEntries
     );
@@ -1226,8 +1289,7 @@ export default function WriteUpForm({
                       source: item.source,
                       sourceKey: item.sourceKey,
                       label: item.label,
-                      status: "additional_work",
-                      checked: false,
+                      ...getRequestTaskDefaults(item),
                     })),
                     []
                   ).map((task) => withTaskChecked(task)),
@@ -1595,6 +1657,8 @@ export default function WriteUpForm({
     let nextCompletionStatus = null;
     let timelineEventLabel = null;
     let vhcSyncPayload = null;
+    let requestStatusPayload = null;
+    let toggledRequestStatusUpdate = null;
     setWriteUpData((prev) => {
       const updatedTasks = prev.tasks.map((task) => {
         const currentKey = composeTaskKey(task);
@@ -1622,6 +1686,24 @@ export default function WriteUpForm({
       });
 
       const requestList = updatedTasks.filter((task) => task && task.source === "request");
+      requestStatusPayload = requestList
+        .map((task) => {
+          const requestRef = parseRequestIdentityFromTask(task);
+          if (requestRef.requestId) {
+            return {
+              requestId: requestRef.requestId,
+              sortOrder: null,
+              status: isTaskChecked(task) ? "complete" : "inprogress",
+            };
+          }
+          if (!requestRef.sortOrder) return null;
+          return {
+            requestId: null,
+            sortOrder: requestRef.sortOrder,
+            status: isTaskChecked(task) ? "complete" : "inprogress",
+          };
+        })
+        .filter(Boolean);
       const manualFaultList = updatedTasks.filter((task) => task && task.source === MANUAL_FAULT_SOURCE);
       const manualRectificationList = updatedTasks.filter(
         (task) => task && task.source === MANUAL_RECTIFICATION_SOURCE
@@ -1634,6 +1716,22 @@ export default function WriteUpForm({
           const requestIndex =
             requestList.findIndex((task) => composeTaskKey(task) === taskKey) + 1;
           timelineEventLabel = `Request ${requestIndex || 1} ${isComplete ? "Complete" : "Uncompleted"}`;
+          const requestRef = parseRequestIdentityFromTask(toggledTask);
+          if (requestRef.requestId) {
+            toggledRequestStatusUpdate = {
+              requestId: requestRef.requestId,
+              sortOrder: null,
+              status: isComplete ? "complete" : "inprogress",
+            };
+          } else {
+            if (requestRef.sortOrder) {
+              toggledRequestStatusUpdate = {
+                requestId: null,
+                sortOrder: requestRef.sortOrder,
+                status: isComplete ? "complete" : "inprogress",
+              };
+            }
+          }
         } else if (toggledTask.source === MANUAL_FAULT_SOURCE) {
           const faultIndex =
             manualFaultList.findIndex((task) => composeTaskKey(task) === taskKey) + 1;
@@ -1701,8 +1799,34 @@ export default function WriteUpForm({
     if (nextCompletionStatus && typeof onCompletionChange === "function") {
       onCompletionChange(nextCompletionStatus);
     }
+    if (requestStatusPayload && typeof onRequestStatusesChange === "function") {
+      onRequestStatusesChange(requestStatusPayload);
+    }
     if (toggledSection) {
       recordSectionEditor(toggledSection);
+    }
+
+    if (toggledRequestStatusUpdate && writeUpMeta.jobId) {
+      void (async () => {
+        try {
+          const { error } = await supabase
+            .from("job_requests")
+            .update({
+              status: toggledRequestStatusUpdate.status,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("job_id", writeUpMeta.jobId)
+            .eq(
+              toggledRequestStatusUpdate.requestId ? "request_id" : "sort_order",
+              toggledRequestStatusUpdate.requestId || toggledRequestStatusUpdate.sortOrder
+            );
+          if (error) {
+            console.error("Failed to sync request status from write-up toggle:", error);
+          }
+        } catch (error) {
+          console.error("Failed to sync request status from write-up toggle:", error);
+        }
+      })();
     }
 
     // Sync VHC item status when a VHC write-up checkbox is toggled
@@ -1752,11 +1876,26 @@ export default function WriteUpForm({
   }, [writeUpMeta.jobId, writeUpData.tasks, writeUpData.completionStatus, saving, performWriteUpSave]);
 
   useEffect(() => {
-    if (typeof onCompletionChange !== "function") {
+    onCompletionChangeRef.current = onCompletionChange;
+  }, [onCompletionChange]);
+
+  useEffect(() => {
+    onTasksSnapshotChangeRef.current = onTasksSnapshotChange;
+  }, [onTasksSnapshotChange]);
+
+  useEffect(() => {
+    if (typeof onCompletionChangeRef.current !== "function") {
       return;
     }
-    onCompletionChange(writeUpData.completionStatus || "additional_work");
-  }, [onCompletionChange, writeUpData.completionStatus]);
+    onCompletionChangeRef.current?.(writeUpData.completionStatus || "additional_work");
+  }, [writeUpData.completionStatus]);
+
+  useEffect(() => {
+    if (typeof onTasksSnapshotChangeRef.current !== "function") {
+      return;
+    }
+    onTasksSnapshotChangeRef.current(buildTaskChecklistSnapshot(writeUpData.tasks || []));
+  }, [writeUpData.tasks]);
 
   useEffect(() => {
     if (!writeUpMeta.jobId) {

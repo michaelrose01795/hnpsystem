@@ -449,40 +449,6 @@ export default function Appointments() {
     }
   }, []);
 
-  const parseVhcItemHours = (item) => {
-    if (!item || typeof item !== "object") return null;
-    const candidates = [
-      "labour_hours",
-      "labor_hours",
-      "labour_time",
-      "labor_time",
-      "hours",
-      "time",
-      "duration",
-    ];
-
-    for (const key of candidates) {
-      if (!Object.prototype.hasOwnProperty.call(item, key)) continue;
-      const numeric = parseHoursValue(item[key]);
-      if (numeric !== null) {
-        return numeric;
-      }
-    }
-
-    return null;
-  };
-
-  const sumAuthorizedVhcLabourHours = (items = []) => {
-    if (!Array.isArray(items)) return 0;
-    return items.reduce((sum, item) => {
-      const hours = parseVhcItemHours(item);
-      if (hours !== null) {
-        return sum + hours;
-      }
-      return sum;
-    }, 0);
-  };
-
   const fetchJobVhcLabourHours = useCallback(async (jobIds = []) => {
     if (!jobIds || jobIds.length === 0) {
       setJobVhcLabourHours({});
@@ -493,8 +459,8 @@ export default function Appointments() {
 
     try {
       const { data, error } = await supabase
-        .from("vhc_authorizations")
-        .select("job_id, authorized_items")
+        .from("vhc_checks")
+        .select("job_id, labour_hours, approval_status")
         .in("job_id", uniqueJobIds);
 
       if (error) throw error;
@@ -502,7 +468,11 @@ export default function Appointments() {
       const aggregated = {};
       (data || []).forEach((row) => {
         if (!row?.job_id) return;
-        const vhcHours = sumAuthorizedVhcLabourHours(row.authorized_items);
+        const status = String(row?.approval_status || "").trim().toLowerCase();
+        if (status !== "authorized" && status !== "authorised" && status !== "completed") {
+          return;
+        }
+        const vhcHours = parseHoursValue(row.labour_hours) ?? 0;
         if (vhcHours <= 0) return;
         const key = row.job_id;
         aggregated[key] = (aggregated[key] || 0) + vhcHours;

@@ -1446,17 +1446,6 @@ CREATE TABLE public.vehicles (
   CONSTRAINT vehicles_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
   CONSTRAINT vehicles_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.users(user_id)
 );
-CREATE TABLE public.vhc_authorizations (
-  id integer NOT NULL DEFAULT nextval('vhc_authorizations_id_seq'::regclass),
-  job_id integer NOT NULL,
-  authorized_by text NOT NULL,
-  authorized_at timestamp with time zone NOT NULL DEFAULT now(),
-  authorized_items jsonb DEFAULT '[]'::jsonb,
-  customer_notes text,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT vhc_authorizations_pkey PRIMARY KEY (id),
-  CONSTRAINT vhc_authorizations_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
-);
 CREATE TABLE public.vhc_checks (
   vhc_id integer NOT NULL DEFAULT nextval('vhc_checks_vhc_id_seq'::regclass),
   job_id integer,

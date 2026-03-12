@@ -34,17 +34,15 @@ const LinearTrend = ({ data, accent = "var(--primary)" }) => (
 const COMPLETED_STATUSES = new Set(["Complete", "Completed", "Collected", "Closed", "Invoiced"]);
 const CRITICAL_STATUS_KEYWORDS = ["waiting", "hold", "vhc", "qa", "road"];
 
-const sumAuthorizedItems = (items) => {
-  if (!Array.isArray(items)) return 0;
-  return items.reduce((sum, item) => {
-    const amount = Number(
-      item?.amount ??
-        item?.value ??
-        item?.total ??
-        (typeof item === "number" ? item : 0)
-    );
-    return sum + (Number.isFinite(amount) ? amount : 0);
-  }, 0);
+const sumAuthorizedCheckTotal = (row) => {
+  const override = Number(row?.total_override);
+  if (Number.isFinite(override) && override > 0) {
+    return override;
+  }
+
+  const labourHours = Number(row?.labour_hours);
+  const partsCost = Number(row?.parts_cost);
+  return (Number.isFinite(labourHours) ? labourHours : 0) + (Number.isFinite(partsCost) ? partsCost : 0);
 };
 
 const buildThroughputTrend = (jobs = []) => {
@@ -155,15 +153,18 @@ const useRetailWorkshopSnapshot = (teamMembers) => {
 
         if (clockingError) throw clockingError;
 
-        let authRows = [];
+        let authorisedChecks = [];
         if (jobIds.length) {
-          const { data: authData, error: authError } = await supabase
-            .from("vhc_authorizations")
-            .select("job_id, authorized_items")
+          const { data: checksData, error: checksError } = await supabase
+            .from("vhc_checks")
+            .select("job_id, labour_hours, parts_cost, total_override, approval_status")
             .in("job_id", jobIds);
 
-          if (authError && authError.code !== "PGRST116") throw authError;
-          authRows = authData || [];
+          if (checksError && checksError.code !== "PGRST116") throw checksError;
+          authorisedChecks = (checksData || []).filter((row) => {
+            const status = String(row?.approval_status || "").trim().toLowerCase();
+            return status === "authorized" || status === "authorised";
+          });
         }
 
         const jobs = jobsData || [];
@@ -191,10 +192,7 @@ const useRetailWorkshopSnapshot = (teamMembers) => {
             : false
         ).length;
 
-        const estUpsell = authRows.reduce(
-          (sum, row) => sum + sumAuthorizedItems(row?.authorized_items),
-          0
-        );
+        const estUpsell = authorisedChecks.reduce((sum, row) => sum + sumAuthorizedCheckTotal(row), 0);
 
         const throughputTrend = buildThroughputTrend(jobs);
         const technicianUtilisation = buildUtilisation(clockingRows, teamMembers);

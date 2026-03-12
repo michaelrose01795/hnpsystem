@@ -203,10 +203,6 @@ export default async function handler(req, res) {
       supabaseService.from("vhc_checks").select("*").eq("job_id", jobId),
       "vhc_checks"
     );
-    snapshotTables.vhc_authorizations = await fetchRows(
-      supabaseService.from("vhc_authorizations").select("*").eq("job_id", jobId),
-      "vhc_authorizations"
-    );
     snapshotTables.vhc_declinations = await fetchRows(
       supabaseService.from("vhc_declinations").select("*").eq("job_id", jobId),
       "vhc_declinations"
@@ -470,7 +466,6 @@ export default async function handler(req, res) {
 
     // VHC
     const vhcDeleteTables = [
-      "vhc_authorizations",
       "vhc_declinations",
       "vhc_send_history",
     ];

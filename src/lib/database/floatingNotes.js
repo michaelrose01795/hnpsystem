@@ -3,10 +3,10 @@ import { supabase } from "@/lib/supabaseClient";
 const TABLE = "floating_notes";
 const SHARE_TABLE = "floating_note_shares";
 let resolvedGlobalColumn = null;
-let resolvedIdColumn = null;
+let resolvedNoteIdColumn = null;
 
-const mapRow = (row = {}, globalColumn = "is_global", idColumn = "id") => ({
-  noteId: row[idColumn],
+const mapRow = (row = {}, globalColumn = "is_global", noteIdColumn = "note_id") => ({
+  noteId: row[noteIdColumn],
   userId: row.user_id,
   title: row.title || "",
   description: row.description || "",
@@ -17,14 +17,15 @@ const mapRow = (row = {}, globalColumn = "is_global", idColumn = "id") => ({
 
 const resolveGlobalColumn = async () => {
   if (resolvedGlobalColumn) return resolvedGlobalColumn;
+  const noteIdColumn = await resolveNoteIdColumn();
 
-  const tryIsGlobal = await supabase.from(TABLE).select("note_id, is_global").limit(1);
+  const tryIsGlobal = await supabase.from(TABLE).select(`${noteIdColumn}, is_global`).limit(1);
   if (!tryIsGlobal.error) {
     resolvedGlobalColumn = "is_global";
     return resolvedGlobalColumn;
   }
 
-  const tryLegacy = await supabase.from(TABLE).select("note_id, shared_all_users").limit(1);
+  const tryLegacy = await supabase.from(TABLE).select(`${noteIdColumn}, shared_all_users`).limit(1);
   if (!tryLegacy.error) {
     resolvedGlobalColumn = "shared_all_users";
     return resolvedGlobalColumn;
@@ -34,33 +35,33 @@ const resolveGlobalColumn = async () => {
   return resolvedGlobalColumn;
 };
 
-const resolveIdColumn = async () => {
-  if (resolvedIdColumn) return resolvedIdColumn;
-
-  const tryId = await supabase.from(TABLE).select("id").limit(1);
-  if (!tryId.error) {
-    resolvedIdColumn = "id";
-    return resolvedIdColumn;
-  }
+const resolveNoteIdColumn = async () => {
+  if (resolvedNoteIdColumn) return resolvedNoteIdColumn;
 
   const tryNoteId = await supabase.from(TABLE).select("note_id").limit(1);
   if (!tryNoteId.error) {
-    resolvedIdColumn = "note_id";
-    return resolvedIdColumn;
+    resolvedNoteIdColumn = "note_id";
+    return resolvedNoteIdColumn;
   }
 
-  resolvedIdColumn = "id";
-  return resolvedIdColumn;
+  const tryId = await supabase.from(TABLE).select("id").limit(1);
+  if (!tryId.error) {
+    resolvedNoteIdColumn = "id";
+    return resolvedNoteIdColumn;
+  }
+
+  resolvedNoteIdColumn = "note_id";
+  return resolvedNoteIdColumn;
 };
 
-const selectColumns = (idColumn, globalColumn) =>
-  `${idColumn}, user_id, title, description, ${globalColumn}, created_at, updated_at`;
+const selectColumns = (noteIdColumn, globalColumn) =>
+  `${noteIdColumn}, user_id, title, description, ${globalColumn}, created_at, updated_at`;
 
 export const getFloatingNotesForUser = async (userId) => {
   const numericUserId = Number(userId);
   if (!Number.isInteger(numericUserId)) return [];
 
-  const idColumn = await resolveIdColumn();
+  const noteIdColumn = await resolveNoteIdColumn();
   const globalColumn = await resolveGlobalColumn();
   let sharedNoteIds = [];
 
@@ -77,12 +78,12 @@ export const getFloatingNotesForUser = async (userId) => {
 
   const filters = [`user_id.eq.${numericUserId}`, `${globalColumn}.eq.true`];
   if (sharedNoteIds.length > 0) {
-    filters.push(`${idColumn}.in.(${sharedNoteIds.join(",")})`);
+    filters.push(`${noteIdColumn}.in.(${sharedNoteIds.join(",")})`);
   }
 
   const { data, error } = await supabase
     .from(TABLE)
-    .select(selectColumns(idColumn, globalColumn))
+    .select(selectColumns(noteIdColumn, globalColumn))
     .or(filters.join(","))
     .order("created_at", { ascending: true });
 
@@ -91,7 +92,7 @@ export const getFloatingNotesForUser = async (userId) => {
     return [];
   }
 
-  return (data || []).map((row) => mapRow(row, globalColumn, idColumn));
+  return (data || []).map((row) => mapRow(row, globalColumn, noteIdColumn));
 };
 
 export const getShareableUsers = async () => {
@@ -184,7 +185,7 @@ export const createFloatingNote = async ({ userId, title, description, isGlobal 
     return { success: false, error: { message: "A valid user id is required" } };
   }
 
-  const idColumn = await resolveIdColumn();
+  const noteIdColumn = await resolveNoteIdColumn();
   const globalColumn = await resolveGlobalColumn();
   const payload = {
     user_id: numericUserId,
@@ -196,7 +197,7 @@ export const createFloatingNote = async ({ userId, title, description, isGlobal 
   const { data, error } = await supabase
     .from(TABLE)
     .insert([payload])
-    .select(selectColumns(idColumn, globalColumn))
+    .select(selectColumns(noteIdColumn, globalColumn))
     .single();
 
   if (error) {
@@ -204,7 +205,7 @@ export const createFloatingNote = async ({ userId, title, description, isGlobal 
     return { success: false, error: { message: error.message } };
   }
 
-  return { success: true, data: mapRow(data, globalColumn, idColumn) };
+  return { success: true, data: mapRow(data, globalColumn, noteIdColumn) };
 };
 
 export const updateFloatingNote = async (noteId, updates = {}) => {
@@ -213,7 +214,7 @@ export const updateFloatingNote = async (noteId, updates = {}) => {
     return { success: false, error: { message: "A valid note id is required" } };
   }
 
-  const idColumn = await resolveIdColumn();
+  const noteIdColumn = await resolveNoteIdColumn();
   const globalColumn = await resolveGlobalColumn();
   const payload = {};
 
@@ -236,8 +237,8 @@ export const updateFloatingNote = async (noteId, updates = {}) => {
   const { data, error } = await supabase
     .from(TABLE)
     .update(payload)
-    .eq(idColumn, numericNoteId)
-    .select(selectColumns(idColumn, globalColumn))
+    .eq(noteIdColumn, numericNoteId)
+    .select(selectColumns(noteIdColumn, globalColumn))
     .single();
 
   if (error) {
@@ -245,7 +246,7 @@ export const updateFloatingNote = async (noteId, updates = {}) => {
     return { success: false, error: { message: error.message } };
   }
 
-  return { success: true, data: mapRow(data, globalColumn, idColumn) };
+  return { success: true, data: mapRow(data, globalColumn, noteIdColumn) };
 };
 
 export const deleteFloatingNote = async (noteId) => {
@@ -254,8 +255,8 @@ export const deleteFloatingNote = async (noteId) => {
     return { success: false, error: { message: "A valid note id is required" } };
   }
 
-  const idColumn = await resolveIdColumn();
-  const { error } = await supabase.from(TABLE).delete().eq(idColumn, numericNoteId);
+  const noteIdColumn = await resolveNoteIdColumn();
+  const { error } = await supabase.from(TABLE).delete().eq(noteIdColumn, numericNoteId);
 
   if (error) {
     console.error("Failed to delete floating note:", error);

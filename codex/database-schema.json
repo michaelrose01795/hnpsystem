@@ -3605,55 +3605,6 @@
     "column_default": null
   },
   {
-    "table_name": "vhc_authorizations",
-    "column_name": "id",
-    "data_type": "integer",
-    "is_nullable": "NO",
-    "column_default": "nextval('vhc_authorizations_id_seq'::regclass)"
-  },
-  {
-    "table_name": "vhc_authorizations",
-    "column_name": "job_id",
-    "data_type": "integer",
-    "is_nullable": "NO",
-    "column_default": null
-  },
-  {
-    "table_name": "vhc_authorizations",
-    "column_name": "authorized_by",
-    "data_type": "text",
-    "is_nullable": "NO",
-    "column_default": null
-  },
-  {
-    "table_name": "vhc_authorizations",
-    "column_name": "authorized_at",
-    "data_type": "timestamp with time zone",
-    "is_nullable": "NO",
-    "column_default": "now()"
-  },
-  {
-    "table_name": "vhc_authorizations",
-    "column_name": "authorized_items",
-    "data_type": "jsonb",
-    "is_nullable": "YES",
-    "column_default": "'[]'::jsonb"
-  },
-  {
-    "table_name": "vhc_authorizations",
-    "column_name": "customer_notes",
-    "data_type": "text",
-    "is_nullable": "YES",
-    "column_default": null
-  },
-  {
-    "table_name": "vhc_authorizations",
-    "column_name": "created_at",
-    "data_type": "timestamp with time zone",
-    "is_nullable": "YES",
-    "column_default": "now()"
-  },
-  {
     "table_name": "vhc_checks",
     "column_name": "vhc_id",
     "data_type": "integer",

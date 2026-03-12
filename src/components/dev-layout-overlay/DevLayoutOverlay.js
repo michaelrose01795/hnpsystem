@@ -638,18 +638,52 @@ export default function DevLayoutOverlay() {
               <h3 className={styles.title}>
                 Section {selected.number} · {selected.key}
               </h3>
-              <p className={styles.subtitle}>
-                Click any highlighted section to switch inspection target.
-              </p>
             </div>
             <button type="button" className={styles.button} onClick={() => setSelectedKey("")}>Close</button>
           </div>
 
           <div className={styles.row}>
-            <button type="button" className={styles.button} onClick={() => setMode("labels")}>Labels</button>
-            <button type="button" className={styles.button} onClick={() => setMode("details")}>Details</button>
-            <button type="button" className={`${styles.button} ${styles.buttonPrimary}`} onClick={cycleMode}>Cycle Mode</button>
+            <button
+              type="button"
+              className={`${styles.button} ${mode === "labels" ? styles.buttonSelected : ""}`.trim()}
+              aria-pressed={mode === "labels"}
+              onClick={() => setMode("labels")}
+            >
+              Labels
+            </button>
+            <button
+              type="button"
+              className={`${styles.button} ${mode === "details" ? styles.buttonSelected : ""}`.trim()}
+              aria-pressed={mode === "details"}
+              onClick={() => setMode("details")}
+            >
+              Details
+            </button>
+            <button
+              type="button"
+              className={`${styles.button} ${styles.buttonPrimary} ${mode === "inspect" ? styles.buttonSelected : ""}`.trim()}
+              aria-pressed={mode === "inspect"}
+              onClick={cycleMode}
+            >
+              Cycle Mode
+            </button>
           </div>
+
+          {(() => {
+            const prompts = buildPrompts(selected);
+            return (
+              <div className={styles.sectionBlock}>
+                <p className={styles.blockTitle}>Copy Tools</p>
+                <div className={styles.row}>
+                  <button type="button" className={styles.button} onClick={() => handleCopy("reference", prompts.reference)}>Copy section reference</button>
+                  <button type="button" className={styles.button} onClick={() => handleCopy("debug", prompts.debug)}>Copy debug summary</button>
+                  <button type="button" className={styles.button} onClick={() => handleCopy("codex", prompts.codex)}>Copy Codex prompt</button>
+                  <button type="button" className={styles.button} onClick={() => handleCopy("claude", prompts.claude)}>Copy Claude prompt</button>
+                </div>
+                <p className={styles.copyStatus}>{copiedAction ? `Copied ${copiedAction}` : " "}</p>
+              </div>
+            );
+          })()}
 
           <div className={styles.sectionBlock}>
             <p className={styles.blockTitle}>Identity</p>
@@ -701,22 +735,6 @@ export default function DevLayoutOverlay() {
             ))}
             </div>
           </div>
-
-          {(() => {
-            const prompts = buildPrompts(selected);
-            return (
-              <div className={styles.sectionBlock}>
-                <p className={styles.blockTitle}>Copy Tools</p>
-                <div className={styles.row}>
-                  <button type="button" className={styles.button} onClick={() => handleCopy("reference", prompts.reference)}>Copy section reference</button>
-                  <button type="button" className={styles.button} onClick={() => handleCopy("debug", prompts.debug)}>Copy debug summary</button>
-                  <button type="button" className={styles.button} onClick={() => handleCopy("codex", prompts.codex)}>Copy Codex prompt</button>
-                  <button type="button" className={styles.button} onClick={() => handleCopy("claude", prompts.claude)}>Copy Claude prompt</button>
-                </div>
-                <p className={styles.copyStatus}>{copiedAction ? `Copied ${copiedAction}` : " "}</p>
-              </div>
-            );
-          })()}
         </aside>
       )}
     </div>

@@ -215,23 +215,6 @@ export const authorizeAdditionalWork = async (
       };
     }
     
-    // Log authorization
-    const { error: logError } = await supabase
-      .from("vhc_authorizations")
-      .insert([{
-        job_id: jobId,
-        authorized_by: authorizedBy,
-        authorized_at: new Date().toISOString(),
-        authorized_items: authorizedItems,
-        customer_notes: customerNotes,
-        created_at: new Date().toISOString()
-      }]);
-    
-    if (logError) {
-      console.error("⚠️ Failed to log authorization:", logError);
-      // Continue anyway
-    }
-    
     // Log sub-status: Customer Authorised
     const result = await autoSetAdditionalWorkRequiredStatus(jobId, authorizedBy);
     
@@ -529,14 +512,31 @@ export const getVHCAuthorizationHistory = async (jobId) => {
   console.log(`📋 Fetching VHC authorization history for job ${jobId}`);
   
   try {
-    // Get authorizations
-    const { data: authData, error: authError } = await supabase
-      .from("vhc_authorizations")
-      .select("*")
-      .eq("job_id", jobId)
-      .order("authorized_at", { ascending: false });
-    
-    if (authError) throw authError;
+    // Derive authorizations from vhc_checks status transitions
+    const { data: checksData, error: checksError } = await supabase
+      .from("vhc_checks")
+      .select("vhc_id, approved_at, approved_by, approval_status, authorization_state, issue_title, issue_description")
+      .eq("job_id", jobId);
+
+    if (checksError) throw checksError;
+
+    const authData = (checksData || [])
+      .filter((row) => {
+        const approval = String(row?.approval_status || "").trim().toLowerCase();
+        const state = String(row?.authorization_state || "").trim().toLowerCase();
+        return approval === "authorized" || approval === "authorised" || state === "authorized" || state === "authorised";
+      })
+      .map((row) => ({
+        id: row.vhc_id,
+        job_id: jobId,
+        authorized_at: row.approved_at || null,
+        authorized_by: row.approved_by || null,
+        authorized_items: [{
+          vhc_item_id: row.vhc_id,
+          description: row.issue_title || row.issue_description || "",
+        }],
+      }))
+      .sort((a, b) => new Date(b.authorized_at || 0) - new Date(a.authorized_at || 0));
     
     // Get declinations
     const { data: declineData, error: declineError } = await supabase
@@ -547,7 +547,7 @@ export const getVHCAuthorizationHistory = async (jobId) => {
     
     if (declineError) throw declineError;
     
-    console.log(`✅ Found ${authData?.length || 0} authorizations, ${declineData?.length || 0} declinations`);
+    console.log(`✅ Found ${authData.length || 0} authorizations, ${declineData?.length || 0} declinations`);
     
     return { 
       success: true, 
@@ -578,7 +578,7 @@ export const calculateVHCTotals = async (jobId) => {
     // Get VHC checks
     const { data: vhcChecks, error: vhcError } = await supabase
       .from("vhc_checks")
-      .select("vhc_id, section, issue_title, measurement")
+      .select("vhc_id, section, issue_title, measurement, labour_hours, parts_cost, total_override, approval_status, authorization_state")
       .eq("job_id", jobId);
     
     if (vhcError) throw vhcError;
@@ -608,22 +608,27 @@ export const calculateVHCTotals = async (jobId) => {
     
     const totalWork = redWork + amberWork;
     
-    // Get authorizations to calculate authorized amount
-    const { data: authData } = await supabase
-      .from("vhc_authorizations")
-      .select("authorized_items")
-      .eq("job_id", jobId);
-    
     let authorized = 0;
-    if (authData && authData.length > 0) {
-      authData.forEach(auth => {
-        if (auth.authorized_items && Array.isArray(auth.authorized_items)) {
-          auth.authorized_items.forEach(item => {
-            authorized += parseFloat(item.amount) || 0;
-          });
-        }
-      });
-    }
+    (vhcChecks || []).forEach((check) => {
+      const approval = String(check?.approval_status || "").trim().toLowerCase();
+      const state = String(check?.authorization_state || "").trim().toLowerCase();
+      const isAuthorized =
+        approval === "authorized" ||
+        approval === "authorised" ||
+        state === "authorized" ||
+        state === "authorised";
+      if (!isAuthorized) return;
+
+      const override = Number(check?.total_override);
+      if (Number.isFinite(override) && override > 0) {
+        authorized += override;
+        return;
+      }
+
+      const labour = Number(check?.labour_hours);
+      const parts = Number(check?.parts_cost);
+      authorized += (Number.isFinite(labour) ? labour : 0) + (Number.isFinite(parts) ? parts : 0);
+    });
     
     const declined = totalWork - authorized;
     
