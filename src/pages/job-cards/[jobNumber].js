@@ -3400,23 +3400,18 @@ export default function JobCardDetailPage() {
 
         {/* ✅ Tabs Navigation */}
         <section
-          className="page-surface-plain"
           style={{
-            backgroundColor: sharedJobCardShellBackground,
-            borderRadius: "var(--radius-sm)",
-            padding: "8px",
+            backgroundColor: "transparent",
+            borderRadius: 0,
+            padding: 0,
           }}
-          data-dev-section="1"
-          data-dev-section-key="jobcard-tab-row"
-          data-dev-section-type="tab-row"
-          data-dev-section-parent="jobcard-page-shell"
         >
           <div
             className={`tab-scroll-row${tabsOverflowing ? " is-overflowing" : ""}`}
             style={{
               backgroundColor: sharedJobCardShellBackground,
               borderRadius: "var(--radius-sm)",
-              padding: "6px",
+              padding: "8px",
             }}
             ref={tabsScrollRef}
             onMouseDown={tabsOverflowing ? handleTabsDragStart : undefined}
@@ -5527,6 +5522,9 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
     border: "none",
     borderRadius: "var(--radius-md)",
     padding: "18px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "16px",
   };
   const panelHeaderStyle = {
     display: "flex",
@@ -5586,29 +5584,9 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
         <div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
-            <label style={labelStyle}>
-              CUSTOMER NAME
-            </label>
-            {canEdit && (
-              <div style={actionsStyle}>
-                {editing ? (
-                  <>
-                    <button onClick={handleSave} disabled={isSaveDisabled} style={primaryButtonStyle(isSaveDisabled)}>
-                      {customerSaving ? "Saving..." : "Save"}
-                    </button>
-                    <button onClick={cancelEditing} disabled={customerSaving} style={secondaryButtonStyle(customerSaving)}>
-                      Cancel
-                    </button>
-                  </>
-                ) : (
-                  <button onClick={startEditing} style={primaryButtonStyle(false)}>
-                    Edit Customer Details
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
+          <label style={labelStyle}>
+            CUSTOMER NAME
+          </label>
           {editing ? (
             <div style={{ display: "flex", gap: "8px" }}>
               <input
@@ -5779,6 +5757,25 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
       {saveError && (
         <div style={{ marginTop: "12px", padding: "10px", borderRadius: "var(--control-radius)", backgroundColor: "var(--danger-surface)", color: "var(--danger)", fontSize: "13px" }}>
           {saveError}
+        </div>
+      )}
+
+      {canEdit && (
+        <div style={{ ...actionsStyle, marginTop: "auto", justifyContent: "flex-start" }}>
+          {editing ? (
+            <>
+              <button onClick={handleSave} disabled={isSaveDisabled} style={primaryButtonStyle(isSaveDisabled)}>
+                {customerSaving ? "Saving..." : "Save"}
+              </button>
+              <button onClick={cancelEditing} disabled={customerSaving} style={secondaryButtonStyle(customerSaving)}>
+                Cancel
+              </button>
+            </>
+          ) : (
+            <button onClick={startEditing} style={primaryButtonStyle(false)}>
+              Edit Customer Details
+            </button>
+          )}
         </div>
       )}
     </div>

@@ -35,15 +35,11 @@ Admin Manager
 
 
 Workshop Manager
-/
 
-
-/job-cards
-
-
-Make the search bar smaller and in the middle of the section row, have unit so the size of the sections are made smaller, make sure the orders tab is hidden for all uses except the parts
 
 /job-cards/[jobNumber]
+
+
 
 /job-cards/[jobNumber]/add-checksheet
 
