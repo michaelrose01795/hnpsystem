@@ -39,6 +39,14 @@ Workshop Manager
 
 /job-cards/[jobNumber]
 
+check Assign selected
+
+remove the "BRAKES & HUBS" section titles from "VHC REQUESTS
+BRAKES & HUBS" bits so it only shows "VHC REQUESTS" and "CUSTOMER REQUESTS" as seperating titles. 
+
+have it so /job-cards/00056 :: 2.4.1.1.2.1 (jobcard-parts-on-order-table) uses accent colour background, and the rows use surface colour background. 
+
+
 
 
 /job-cards/[jobNumber]/add-checksheet

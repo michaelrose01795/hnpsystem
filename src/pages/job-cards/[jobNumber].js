@@ -37,6 +37,7 @@ import PartsTabNew from "@/components/PartsTab_New";
 import NotesTabNew from "@/components/NotesTab_New";
 import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
 import WriteUpForm from "@/components/JobCards/WriteUpForm";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { SearchBar } from "@/components/searchBarAPI";
 import { DropdownField } from "@/components/dropdownAPI";
 import { CalendarField } from "@/components/calendarAPI";
@@ -5063,7 +5064,15 @@ function CustomerRequestsTab({
                     </div>
                   </div>
                   {linkedParts.length > 0 && (
-                    <div style={{ marginTop: "10px", borderTop: "1px solid var(--surface-light)", paddingTop: "10px" }}>
+                    <div
+                      style={{
+                        marginTop: "10px",
+                        borderTop: "1px solid var(--surface-light)",
+                        padding: "10px 12px",
+                        borderRadius: "var(--radius-sm)",
+                        backgroundColor: "var(--accent-purple-surface)",
+                      }}
+                    >
                       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
                         <thead>
                           <tr style={{ color: "var(--grey-accent)", textAlign: "left", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em" }}>
@@ -5076,7 +5085,13 @@ function CustomerRequestsTab({
                         </thead>
                         <tbody>
                           {linkedParts.map((item, pIdx) => (
-                            <tr key={item.id || pIdx} style={{ color: "var(--text-secondary)" }}>
+                            <tr
+                              key={item.id || pIdx}
+                              style={{
+                                color: "var(--text-secondary)",
+                                backgroundColor: normalizeStatusId(item.status) === "removed" ? undefined : "var(--surface)",
+                              }}
+                            >
                               <td style={{ padding: "4px 8px 4px 0", fontWeight: "500", color: "var(--text-primary)" }}>{item.part?.partNumber || "\u2014"}</td>
                               <td style={{ padding: "4px 8px" }}>{item.part?.name || item.part?.description || "\u2014"}</td>
                               <td style={{ padding: "4px 8px", textAlign: "right" }}>{item.quantityAllocated ?? item.quantityRequested ?? 0}</td>
@@ -5575,14 +5590,31 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
   const isSaveDisabled = customerSaving || !approvalChecked;
 
   return (
-    <div style={panelStyle}>
-      <div style={panelHeaderStyle}>
+    <DevLayoutSection
+      sectionKey="jobcard-tab-contact-panel"
+      sectionType="section-shell"
+      parentKey="jobcard-tab-contact"
+      backgroundToken="surface"
+      shell
+      style={panelStyle}
+    >
+      <DevLayoutSection
+        sectionKey="jobcard-tab-contact-header"
+        sectionType="toolbar"
+        parentKey="jobcard-tab-contact-panel"
+        style={panelHeaderStyle}
+      >
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {editing ? <div style={badgeStyle}>Editing</div> : null}
         </div>
-      </div>
+      </DevLayoutSection>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
+      <DevLayoutSection
+        sectionKey="jobcard-tab-contact-fields"
+        sectionType="form-grid"
+        parentKey="jobcard-tab-contact-panel"
+        style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}
+      >
         <div>
           <label style={labelStyle}>
             CUSTOMER NAME
@@ -5727,17 +5759,22 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
             </div>
           )}
         </div>
-      </div>
+      </DevLayoutSection>
 
       {editing && (
-        <div style={{
+        <DevLayoutSection
+          sectionKey="jobcard-tab-contact-approval"
+          sectionType="content-card"
+          parentKey="jobcard-tab-contact-panel"
+          style={{
           marginTop: "20px",
           padding: "16px",
           backgroundColor: "var(--layer-section-level-2)",
           borderRadius: "var(--radius-sm)",
           border: "none",
           borderLeft: `4px solid ${approvalChecked ? "var(--success)" : "var(--warning)"}`
-        }}>
+        }}
+        >
           <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "14px", color: "var(--text-primary)", fontWeight: "700" }}>
             <input
               type="checkbox"
@@ -5751,17 +5788,27 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
           <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "8px", marginBottom: 0 }}>
             Regulatory requirement: customer confirmation must be recorded before saving.
           </p>
-        </div>
+        </DevLayoutSection>
       )}
 
       {saveError && (
-        <div style={{ marginTop: "12px", padding: "10px", borderRadius: "var(--control-radius)", backgroundColor: "var(--danger-surface)", color: "var(--danger)", fontSize: "13px" }}>
+        <DevLayoutSection
+          sectionKey="jobcard-tab-contact-error"
+          sectionType="content-card"
+          parentKey="jobcard-tab-contact-panel"
+          style={{ marginTop: "12px", padding: "10px", borderRadius: "var(--control-radius)", backgroundColor: "var(--danger-surface)", color: "var(--danger)", fontSize: "13px" }}
+        >
           {saveError}
-        </div>
+        </DevLayoutSection>
       )}
 
       {canEdit && (
-        <div style={{ ...actionsStyle, marginTop: "auto", justifyContent: "flex-start" }}>
+        <DevLayoutSection
+          sectionKey="jobcard-tab-contact-actions"
+          sectionType="toolbar"
+          parentKey="jobcard-tab-contact-panel"
+          style={{ ...actionsStyle, marginTop: "auto", justifyContent: "flex-start" }}
+        >
           {editing ? (
             <>
               <button onClick={handleSave} disabled={isSaveDisabled} style={primaryButtonStyle(isSaveDisabled)}>
@@ -5776,9 +5823,9 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
               Edit Customer Details
             </button>
           )}
-        </div>
+        </DevLayoutSection>
       )}
-    </div>
+    </DevLayoutSection>
   );
 }
 // ✅ Scheduling Tab
@@ -6113,7 +6160,7 @@ function SchedulingTab({
 
   const sectionCardStyle = {
     ...cardStyle,
-    marginBottom: "16px",
+    marginBottom: 0,
   };
   const sectionTitleRow = {
     display: "flex",
@@ -6126,7 +6173,13 @@ function SchedulingTab({
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
 
       {/* ── Section 1: Customer & Vehicle ── */}
-      <div style={sectionCardStyle}>
+      <DevLayoutSection
+        sectionKey="jobcard-tab-scheduling-customer-vehicle"
+        sectionType="content-card"
+        parentKey="jobcard-tab-scheduling"
+        backgroundToken="surface"
+        style={sectionCardStyle}
+      >
         <div style={sectionTitleRow}>
           <div style={{ flex: 1 }}>
             <h3 style={cardTitleStyle}>Customer &amp; Vehicle</h3>
@@ -6190,55 +6243,19 @@ function SchedulingTab({
           )}
         </div>
 
-        {/* Confirm customer contact details */}
-        <div
-          style={{
-            marginTop: "16px",
-            padding: "14px",
-            backgroundColor: "var(--surface-light)",
-            borderRadius: "var(--radius-sm)",
-            border: "none",
-            borderLeft: `4px solid ${confirmCustomerDetails ? "var(--success)" : "var(--warning)"}`,
-          }}
-        >
-          <label
-            style={{
-              display: "flex",
-              gap: "10px",
-              alignItems: "flex-start",
-              fontSize: "13px",
-              color: "var(--text-primary)",
-              cursor: canEdit ? "pointer" : "default",
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={confirmCustomerDetails}
-              onChange={(event) => setConfirmCustomerDetails(event.target.checked)}
-              disabled={!canEdit}
-              style={{ width: "16px", height: "16px", marginTop: "2px", flexShrink: 0 }}
-            />
-            <span>
-              I confirm {jobData.customer || "the customer"}&apos;s contact details for this booking.
-              <br />
-              <span style={{ fontSize: "11px", color: "var(--grey-accent)", fontWeight: "400" }}>
-                Required for booking updates and collection notifications.
-              </span>
-            </span>
-          </label>
-          {!confirmCustomerDetails && canEdit && (
-            <div style={{ marginTop: "8px", marginLeft: "26px", fontSize: "12px", color: "var(--danger)", fontWeight: "500" }}>
-              Please confirm customer details before saving.
-            </div>
-          )}
-        </div>
-      </div>
+      </DevLayoutSection>
 
       {/* ── Row: Customer Reported Issues (left) + Appointment Information (right) ── */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", alignItems: "stretch" }}>
 
         {/* ── Section 2: Customer Reported Issues ── */}
-        <div style={{ ...sectionCardStyle, marginBottom: 0, display: "flex", flexDirection: "column" }}>
+        <DevLayoutSection
+          sectionKey="jobcard-tab-scheduling-reported-issues"
+          sectionType="content-card"
+          parentKey="jobcard-tab-scheduling"
+          backgroundToken="surface"
+          style={{ ...sectionCardStyle, marginBottom: 0, display: "flex", flexDirection: "column" }}
+        >
           <div style={sectionTitleRow}>
             <h3 style={cardTitleStyle}>Customer Reported Issues</h3>
           </div>
@@ -6282,10 +6299,16 @@ function SchedulingTab({
               <div style={{ padding: "8px 6px", color: "var(--grey-accent)" }}>No reported issues found.</div>
             )}
           </div>
-        </div>
+        </DevLayoutSection>
 
         {/* ── Section 3: Appointment Information ── */}
-        <div style={{ ...sectionCardStyle, marginBottom: 0 }}>
+        <DevLayoutSection
+          sectionKey="jobcard-tab-scheduling-appointment"
+          sectionType="content-card"
+          parentKey="jobcard-tab-scheduling"
+          backgroundToken="surface"
+          style={{ ...sectionCardStyle, marginBottom: 0 }}
+        >
           <div style={{
             display: "flex",
             justifyContent: "space-between",
@@ -6365,11 +6388,17 @@ function SchedulingTab({
           >
             Appointment created: <strong style={{ color: "var(--text-secondary)" }}>{appointmentCreatedAt}</strong>
           </div>
-        </div>
+        </DevLayoutSection>
       </div>
 
       {/* ── Section 4: Customer Logistics ── */}
-      <div style={sectionCardStyle}>
+      <DevLayoutSection
+        sectionKey="jobcard-tab-scheduling-logistics"
+        sectionType="content-card"
+        parentKey="jobcard-tab-scheduling"
+        backgroundToken="surface"
+        style={sectionCardStyle}
+      >
         <div style={sectionTitleRow}>
           <h3 style={cardTitleStyle}>Customer Logistics</h3>
         </div>
@@ -6411,10 +6440,68 @@ function SchedulingTab({
         </div>
         {/* Placeholder for future conditional fields (loan car details, collection time, etc.) */}
         <div style={{ minHeight: "0px" }} />
-      </div>
+      </DevLayoutSection>
 
       {/* ── Section 5: Actions ── */}
-      <div style={{ ...sectionCardStyle, display: "flex", flexWrap: "wrap", alignItems: "center", gap: "12px", marginBottom: 0 }}>
+      <DevLayoutSection
+        sectionKey="jobcard-tab-scheduling-actions"
+        sectionType="toolbar"
+        parentKey="jobcard-tab-scheduling"
+        backgroundToken="surface"
+        style={{ ...sectionCardStyle, display: "flex", flexWrap: "wrap", alignItems: "stretch", gap: "14px", marginBottom: 0 }}
+      >
+        <DevLayoutSection
+          sectionKey="jobcard-tab-scheduling-confirmation"
+          sectionType="content-card"
+          parentKey="jobcard-tab-scheduling-actions"
+          style={{
+            flex: "1 1 360px",
+            minWidth: "280px",
+            padding: "14px",
+            backgroundColor: "var(--surface-light)",
+            borderRadius: "var(--radius-sm)",
+            border: "none",
+            borderLeft: `4px solid ${confirmCustomerDetails ? "var(--success)" : "var(--warning)"}`,
+          }}
+        >
+          <label
+            style={{
+              display: "flex",
+              gap: "10px",
+              alignItems: "flex-start",
+              fontSize: "13px",
+              color: "var(--text-primary)",
+              cursor: canEdit ? "pointer" : "default",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={confirmCustomerDetails}
+              onChange={(event) => setConfirmCustomerDetails(event.target.checked)}
+              disabled={!canEdit}
+              style={{ width: "16px", height: "16px", marginTop: "2px", flexShrink: 0 }}
+            />
+            <span>
+              I confirm {jobData.customer || "the customer"}&apos;s contact details for this booking.
+              <br />
+              <span style={{ fontSize: "11px", color: "var(--grey-accent)", fontWeight: "400" }}>
+                Required for booking updates and collection notifications.
+              </span>
+            </span>
+          </label>
+          {!confirmCustomerDetails && canEdit && (
+            <div style={{ marginTop: "8px", marginLeft: "26px", fontSize: "12px", color: "var(--danger)", fontWeight: "500" }}>
+              Please confirm customer details before saving.
+            </div>
+          )}
+        </DevLayoutSection>
+
+        <DevLayoutSection
+          sectionKey="jobcard-tab-scheduling-action-buttons"
+          sectionType="toolbar"
+          parentKey="jobcard-tab-scheduling-actions"
+          style={{ display: "flex", flex: "1 1 320px", flexWrap: "wrap", alignItems: "center", alignContent: "center", gap: "12px" }}
+        >
         {/* Primary: Save Booking */}
         <button
           onClick={handleBookingSubmit}
@@ -6483,7 +6570,8 @@ function SchedulingTab({
             {appointmentMessage}
           </span>
         )}
-      </div>
+        </DevLayoutSection>
+      </DevLayoutSection>
     </div>
   );
 }
@@ -6503,12 +6591,26 @@ function ServiceHistoryTab({ vehicleJobHistory }) {
   };
 
   return (
-    <div>
+    <DevLayoutSection
+      sectionKey="jobcard-tab-service-history-panel"
+      sectionType="section-shell"
+      parentKey="jobcard-tab-service-history"
+      backgroundToken="surface"
+      shell
+    >
       {history.length > 0 ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        <DevLayoutSection
+          sectionKey="jobcard-tab-service-history-list"
+          sectionType="list"
+          parentKey="jobcard-tab-service-history-panel"
+          style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+        >
           {history.map((job) => (
-            <div
+            <DevLayoutSection
               key={job.id}
+              sectionKey={`jobcard-tab-service-history-entry-${job.id || job.jobNumber || "row"}`}
+              sectionType="content-card"
+              parentKey="jobcard-tab-service-history-list"
               onClick={() => handleInvoiceOpen(job)}
               style={{
                 padding: "16px",
@@ -6579,23 +6681,28 @@ function ServiceHistoryTab({ vehicleJobHistory }) {
                   )}
                 </ul>
               )}
-            </div>
+            </DevLayoutSection>
           ))}
-        </div>
+        </DevLayoutSection>
       ) : (
-        <div style={{
+        <DevLayoutSection
+          sectionKey="jobcard-tab-service-history-empty"
+          sectionType="empty-state"
+          parentKey="jobcard-tab-service-history-panel"
+          style={{
           padding: "40px",
           textAlign: "center",
           backgroundColor: "var(--surface)",
           borderRadius: "var(--control-radius)"
-        }}>
+        }}
+        >
           <div style={{ fontSize: "48px", marginBottom: "16px" }}>📋</div>
           <p style={{ fontSize: "14px", color: "var(--grey-accent)" }}>
             No previous service history for this vehicle
           </p>
-        </div>
+        </DevLayoutSection>
       )}
-    </div>
+    </DevLayoutSection>
   );
 }
 
@@ -7742,7 +7849,13 @@ function VHCTab({
   );
 
   return (
-    <div>
+    <DevLayoutSection
+      sectionKey="jobcard-tab-vhc-panel"
+      sectionType="section-shell"
+      parentKey="jobcard-tab-vhc"
+      backgroundToken="surface"
+      shell
+    >
       <VhcDetailsPanel
         jobNumber={jobNumber}
         showNavigation={false}
@@ -7753,7 +7866,7 @@ function VHCTab({
         onJobDataRefresh={onJobDataRefresh}
         enableTabs
       />
-    </div>
+    </DevLayoutSection>
   );
 }
 
@@ -8759,27 +8872,36 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
 
     if (!linkMode) {
       return (
-        <button
-          type="button"
-          onClick={() => setLinkMode(true)}
-          style={{
-            marginTop: "16px",
-            padding: "10px 18px",
-            borderRadius: "var(--radius-sm)",
-            border: "none",
-            backgroundColor: "var(--primary)",
-            color: "var(--text-inverse)",
-            fontWeight: "600",
-            cursor: "pointer"
-          }}
+        <DevLayoutSection
+          sectionKey="jobcard-tab-warranty-link-action"
+          sectionType="toolbar"
+          parentKey="jobcard-tab-warranty-panel"
+          style={{ marginTop: "16px" }}
         >
-          {isLinked ? "Change Linked Warranty Job" : "Link Warranty Job Card"}
-        </button>
+          <button
+            type="button"
+            onClick={() => setLinkMode(true)}
+            style={{
+              padding: "10px 18px",
+              borderRadius: "var(--radius-sm)",
+              border: "none",
+              backgroundColor: "var(--primary)",
+              color: "var(--text-inverse)",
+              fontWeight: "600",
+              cursor: "pointer"
+            }}
+          >
+            {isLinked ? "Change Linked Warranty Job" : "Link Warranty Job Card"}
+          </button>
+        </DevLayoutSection>
       );
     }
 
     return (
-      <div
+      <DevLayoutSection
+        sectionKey="jobcard-tab-warranty-link-form"
+        sectionType="content-card"
+        parentKey="jobcard-tab-warranty-panel"
         style={{
           marginTop: "20px",
           padding: "16px",
@@ -8869,13 +8991,22 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
             Cancel
           </button>
         </div>
-      </div>
+      </DevLayoutSection>
     );
   };
 
   return (
-    <div>
-      <div
+    <DevLayoutSection
+      sectionKey="jobcard-tab-warranty-panel"
+      sectionType="section-shell"
+      parentKey="jobcard-tab-warranty"
+      backgroundToken="surface"
+      shell
+    >
+      <DevLayoutSection
+        sectionKey="jobcard-tab-warranty-linked-job"
+        sectionType="content-card"
+        parentKey="jobcard-tab-warranty-panel"
         style={{
           padding: "18px",
           borderRadius: "var(--radius-sm)",
@@ -8915,9 +9046,12 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
             No warranty job card is linked yet.
           </p>
         )}
-      </div>
+      </DevLayoutSection>
 
-      <div
+      <DevLayoutSection
+        sectionKey="jobcard-tab-warranty-shared-vhc"
+        sectionType="content-card"
+        parentKey="jobcard-tab-warranty-panel"
         style={{
           padding: "18px",
           borderRadius: "var(--radius-sm)",
@@ -8936,10 +9070,10 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
           reflect on both job cards. Clocking, labour, and invoicing remain
           separate per job.
         </p>
-      </div>
+      </DevLayoutSection>
 
       {renderLinkControls()}
-    </div>
+    </DevLayoutSection>
   );
 }
 

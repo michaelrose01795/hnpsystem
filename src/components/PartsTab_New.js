@@ -8,6 +8,7 @@ import { DropdownField } from "@/components/dropdownAPI";
 import ModalPortal from "@/components/popups/ModalPortal";
 import { SearchBar } from "@/components/searchBarAPI";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 // Helper functions (keep existing)
 const normalizePartStatus = (status = "") => {
@@ -1446,6 +1447,21 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     ]
   );
 
+  const beginAssignSelection = useCallback(() => {
+    if (!canEdit) return;
+    if (selectedPartIds.length === 0) {
+      alert("Select one or more parts from 'Parts Added to Job' first.");
+      return;
+    }
+    setAssignMode(true);
+    setAssignTargetRequestId(null);
+  }, [canEdit, selectedPartIds.length]);
+
+  const cancelAssignSelection = useCallback(() => {
+    setAssignMode(false);
+    setAssignTargetRequestId(null);
+  }, []);
+
   const handleUnassignPart = useCallback(
     async (partId) => {
       if (!canEdit || !partId) return;
@@ -1654,7 +1670,9 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         /* Optimize the on-order table to use maximum space */
         .on-order-table {
           font-size: 11px !important;
-          table-layout: auto !important;
+          table-layout: fixed !important;
+          width: 100% !important;
+          max-width: 100% !important;
         }
 
         .on-order-table th {
@@ -1679,12 +1697,13 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         /* Part Name column - max width with horizontal scroll */
         .on-order-table th:nth-child(1),
         .on-order-table td:nth-child(1) {
-          max-width: 120px;
-          width: 120px;
+          width: 18%;
+          max-width: none;
         }
 
         .on-order-table td:nth-child(1) .part-name-cell {
-          max-width: 120px;
+          width: 100%;
+          max-width: 100%;
           overflow-x: auto;
           overflow-y: hidden;
           white-space: nowrap;
@@ -1700,11 +1719,101 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         }
 
         /* Part Number column */
+        .on-order-table th:nth-child(2),
         .on-order-table td:nth-child(2) {
-          max-width: 150px;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          width: 20%;
+          max-width: none;
+        }
+
+        .on-order-cell-scroll {
+          width: 100%;
+          max-width: 100%;
+          overflow-x: auto;
+          overflow-y: hidden;
           white-space: nowrap;
+          display: block;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+
+        .on-order-cell-scroll::-webkit-scrollbar {
+          display: none;
+        }
+
+        .parts-allocate-subtable {
+          width: 100%;
+          max-width: 100%;
+          table-layout: fixed;
+        }
+
+        .parts-allocate-subtable th:nth-child(1),
+        .parts-allocate-subtable td:nth-child(1) {
+          width: 22%;
+        }
+
+        .parts-allocate-subtable th:nth-child(2),
+        .parts-allocate-subtable td:nth-child(2) {
+          width: 24%;
+        }
+
+        .parts-allocate-subtable th:nth-child(3),
+        .parts-allocate-subtable td:nth-child(3),
+        .parts-allocate-subtable th:nth-child(4),
+        .parts-allocate-subtable td:nth-child(4),
+        .parts-allocate-subtable th:nth-child(5),
+        .parts-allocate-subtable td:nth-child(5) {
+          width: 12%;
+        }
+
+        .parts-allocate-subtable th:nth-child(6),
+        .parts-allocate-subtable td:nth-child(6) {
+          width: 18%;
+        }
+
+        .parts-allocate-cell-scroll {
+          width: 100%;
+          max-width: 100%;
+          overflow-x: auto;
+          overflow-y: hidden;
+          white-space: nowrap;
+          display: block;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+
+        .parts-allocate-description-cell {
+          width: 100%;
+          max-width: 100%;
+        }
+
+        .parts-allocate-cell-scroll::-webkit-scrollbar {
+          display: none;
+        }
+
+        @media (min-width: 1100px) {
+          .parts-allocate-subtable th:nth-child(1),
+          .parts-allocate-subtable td:nth-child(1) {
+            width: 24%;
+          }
+
+          .parts-allocate-subtable th:nth-child(2),
+          .parts-allocate-subtable td:nth-child(2) {
+            width: 28%;
+          }
+
+          .parts-allocate-subtable th:nth-child(3),
+          .parts-allocate-subtable td:nth-child(3),
+          .parts-allocate-subtable th:nth-child(4),
+          .parts-allocate-subtable td:nth-child(4),
+          .parts-allocate-subtable th:nth-child(5),
+          .parts-allocate-subtable td:nth-child(5) {
+            width: 10%;
+          }
+
+          .parts-allocate-subtable th:nth-child(6),
+          .parts-allocate-subtable td:nth-child(6) {
+            width: 18%;
+          }
         }
 
         /* Keep qty and price columns compact */
@@ -1712,7 +1821,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         .on-order-table th:nth-child(4),
         .on-order-table td:nth-child(3),
         .on-order-table td:nth-child(4) {
-          width: 60px;
+          width: 10%;
         }
 
         /* ETA date and time columns */
@@ -1720,13 +1829,44 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         .on-order-table th:nth-child(6),
         .on-order-table td:nth-child(5),
         .on-order-table td:nth-child(6) {
-          width: 110px;
+          width: 16%;
         }
 
         /* Action column */
         .on-order-table th:nth-child(7),
         .on-order-table td:nth-child(7) {
-          width: 130px;
+          width: 10%;
+        }
+
+        @media (min-width: 1100px) {
+          .on-order-table th:nth-child(1),
+          .on-order-table td:nth-child(1) {
+            width: 22%;
+          }
+
+          .on-order-table th:nth-child(2),
+          .on-order-table td:nth-child(2) {
+            width: 22%;
+          }
+
+          .on-order-table th:nth-child(3),
+          .on-order-table th:nth-child(4),
+          .on-order-table td:nth-child(3),
+          .on-order-table td:nth-child(4) {
+            width: 8%;
+          }
+
+          .on-order-table th:nth-child(5),
+          .on-order-table th:nth-child(6),
+          .on-order-table td:nth-child(5),
+          .on-order-table td:nth-child(6) {
+            width: 14%;
+          }
+
+          .on-order-table th:nth-child(7),
+          .on-order-table td:nth-child(7) {
+            width: 12%;
+          }
         }
         .catalog-qty-input::placeholder {
           color: var(--grey-accent);
@@ -1736,10 +1876,20 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           color: var(--text-primary);
         }
       `}</style>
-      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+      <DevLayoutSection
+        sectionKey="jobcard-parts-tab-root"
+        sectionType="section-shell"
+        parentKey="jobcard-tab-parts"
+        backgroundToken="surface"
+        shell
+        style={{ display: "flex", flexDirection: "column", gap: "16px" }}
+      >
         {/* Search Section */}
         {showBookPartPanel && (
-          <div
+          <DevLayoutSection
+            sectionKey="jobcard-parts-stock-search"
+            sectionType="content-card"
+            parentKey="jobcard-parts-tab-root"
             style={{
               background: "var(--surface)",
               border: "none",
@@ -1958,12 +2108,17 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             {catalogSubmitError}
           </div>
         )}
-          </div>
+          </DevLayoutSection>
         )}
-      </div>
+      </DevLayoutSection>
 
       {/* Layout: Parts List (Left) and Requests (Right) - Right side wider for better content fit */}
-      <div
+      <DevLayoutSection
+        sectionKey="jobcard-parts-workspace"
+        sectionType="section-shell"
+        parentKey="jobcard-tab-parts"
+        backgroundToken="surface"
+        shell
         style={{
           display: "grid",
           gridTemplateColumns: "2fr 3fr",
@@ -1972,7 +2127,10 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         }}
       >
         {/* Left Side - Parts Added to Job */}
-        <div
+        <DevLayoutSection
+          sectionKey="jobcard-parts-added-panel"
+          sectionType="content-card"
+          parentKey="jobcard-parts-workspace"
           style={{
             background: "var(--surface)",
             border: "none",
@@ -2083,15 +2241,76 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 No unallocated parts. Add parts using the search above.
               </div>
             ) : (
-              <div style={{ overflowX: "auto", overflowY: "auto", maxHeight: "600px" }}>
-                <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 8px", fontSize: "var(--text-caption)" }}>
-                  <thead>
+              <div
+                style={{
+                  overflowX: "auto",
+                  overflowY: "auto",
+                  maxHeight: "600px",
+                  background: "var(--accent-purple-surface)",
+                  borderRadius: "var(--radius-sm)",
+                  padding: "0 6px 6px",
+                }}
+              >
+                <table
+                  data-dev-section="1"
+                  data-dev-section-key="jobcard-parts-added-table"
+                  data-dev-section-type="data-table"
+                  data-dev-section-parent="jobcard-parts-added-panel"
+                  data-dev-disable-table-subsections="1"
+                  style={{
+                    width: "100%",
+                    borderCollapse: "separate",
+                    borderSpacing: 0,
+                    fontSize: "var(--text-caption)",
+                  }}
+                >
+                  <thead style={{ background: "transparent" }}>
                     <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
                       {assignMode && (
-                        <th style={{ textAlign: "center", padding: "8px", width: "40px", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1, border: "none" }}>Select</th>
+                        <th
+                          style={{
+                            textAlign: "center",
+                            padding: "10px 8px",
+                            width: "40px",
+                            position: "sticky",
+                            top: 0,
+                            background: "transparent",
+                            zIndex: 1,
+                            border: "none",
+                            borderBottom: "1px solid transparent",
+                          }}
+                        >
+                          Select
+                        </th>
                       )}
-                      <th style={{ textAlign: "left", padding: "8px", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1, border: "none" }}>Part</th>
-                      <th style={{ textAlign: "right", padding: "8px", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1, border: "none" }}>Qty</th>
+                      <th
+                        style={{
+                          textAlign: "left",
+                          padding: "10px 12px",
+                          position: "sticky",
+                          top: 0,
+                          background: "transparent",
+                          zIndex: 1,
+                          border: "none",
+                          borderBottom: "1px solid transparent",
+                        }}
+                      >
+                        Part
+                      </th>
+                      <th
+                        style={{
+                          textAlign: "right",
+                          padding: "10px 12px",
+                          position: "sticky",
+                          top: 0,
+                          background: "transparent",
+                          zIndex: 1,
+                          border: "none",
+                          borderBottom: "1px solid transparent",
+                        }}
+                      >
+                        Qty
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2115,11 +2334,10 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                           style={{
                             background: isRemoved
                               ? "var(--danger)"
-                              : isSelected
-                              ? "var(--info-surface)"
-                              : "var(--accent-purple-surface)",
+                              : "var(--surface)",
                             cursor: assignMode ? "default" : "pointer",
                             opacity: isRemoved ? 0.8 : 1,
+                            boxShadow: isRemoved ? "none" : "0 0 0 1px rgba(var(--shadow-rgb), 0.03)",
                           }}
                           title={
                             part.source === "goods-in"
@@ -2129,13 +2347,14 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                         >
                       {assignMode && (
                         <td style={{
-                          padding: "12px",
+                          padding: "9px 8px",
                           textAlign: "center",
-                          verticalAlign: "top",
+                          verticalAlign: "middle",
                           border: "none",
                           borderRight: "none",
-                          borderTopLeftRadius: "10px",
-                          borderBottomLeftRadius: "10px",
+                          borderTopLeftRadius: "8px",
+                          borderBottomLeftRadius: "8px",
+                          borderBottom: "6px solid var(--accent-purple-surface)",
                         }}>
                           <input
                             type="checkbox"
@@ -2156,13 +2375,14 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                       )}
                           {/* Part Column */}
                           <td style={{
-                            padding: "12px",
-                            verticalAlign: "top",
+                            padding: "9px 12px",
+                            verticalAlign: "middle",
                             border: "none",
                             borderRight: assignMode ? "none" : "none",
-                            borderLeft: assignMode ? "none" : "1px solid var(--surface-light)",
+                            borderLeft: "none",
                             borderTopLeftRadius: assignMode ? "0" : "10px",
                             borderBottomLeftRadius: assignMode ? "0" : "10px",
+                            borderBottom: "6px solid var(--accent-purple-surface)",
                           }}>
                             <div style={{
                               display: "flex",
@@ -2225,15 +2445,17 @@ const PartsTabNew = forwardRef(function PartsTabNew(
 
                           {/* Qty Column */}
                           <td style={{
-                            padding: "12px",
+                            padding: "9px 12px",
                             textAlign: "right",
-                            verticalAlign: "top",
+                            verticalAlign: "middle",
                             color: isRemoved ? "var(--text-inverse)" : "var(--text-primary)",
                             textDecoration: isRemoved ? "line-through" : "none",
                             border: "none",
                             borderLeft: "none",
-                            borderTopRightRadius: "10px",
-                            borderBottomRightRadius: "10px",
+                            borderTopRightRadius: "8px",
+                            borderBottomRightRadius: "8px",
+                            borderBottom: "6px solid var(--accent-purple-surface)",
+                            fontWeight: 600,
                           }}>
                             {part.quantity}
                           </td>
@@ -2245,13 +2467,16 @@ const PartsTabNew = forwardRef(function PartsTabNew(
               </div>
             )}
           </div>
-        </div>
+        </DevLayoutSection>
 
         {/* Right Side - On Order (VHC) / Allocate Parts */}
         {/* Swap sections when all parts arrived: show Allocate by default, On Order on click */}
         {(showAllocatePanel && !allPartsArrived) || (!showAllocatePanel && allPartsArrived) ? (
-          <div
+          <DevLayoutSection
             className="on-order-section"
+            sectionKey="jobcard-parts-allocate-panel"
+            sectionType="content-card"
+            parentKey="jobcard-parts-workspace"
             style={{
               background: "var(--surface)",
               border: "none",
@@ -2261,17 +2486,94 @@ const PartsTabNew = forwardRef(function PartsTabNew(
               overflow: "hidden",
             }}
           >
-          <div style={{ marginBottom: "12px" }}>
-            <div
-              style={{
-                fontSize: "var(--text-body-sm)",
-                fontWeight: 600,
-                color: "var(--primary)",
-                letterSpacing: "0.05em",
-                textTransform: "uppercase",
-              }}
-            >
-              Allocate Parts
+          <div style={{ marginBottom: "12px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", flexWrap: "wrap" }}>
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: "var(--text-body-sm)",
+                  fontWeight: 600,
+                  color: "var(--primary)",
+                  letterSpacing: "0.05em",
+                  textTransform: "uppercase",
+                }}
+              >
+                Allocate Parts
+              </div>
+              {assignMode ? (
+                <div style={{ marginTop: "4px", fontSize: "var(--text-caption)", color: "var(--info)" }}>
+                  {assignTargetRequestId
+                    ? `Ready to assign ${selectedPartIds.length} selected part${selectedPartIds.length === 1 ? "" : "s"}.`
+                    : `Choose a customer or VHC request below for ${selectedPartIds.length} selected part${selectedPartIds.length === 1 ? "" : "s"}.`}
+                </div>
+              ) : null}
+            </div>
+            <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
+              {assignMode && (
+                <button
+                  type="button"
+                  onClick={cancelAssignSelection}
+                  disabled={allocatingSelection}
+                  style={{
+                    padding: "6px 10px",
+                    borderRadius: "var(--radius-xs)",
+                    border: "1px solid var(--surface-light)",
+                    background: "var(--surface)",
+                    color: "var(--text-secondary)",
+                    fontSize: "var(--text-caption)",
+                    fontWeight: 600,
+                    cursor: allocatingSelection ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  if (!assignMode) {
+                    beginAssignSelection();
+                    return;
+                  }
+                  if (!assignTargetRequestId) return;
+                  handleAssignSelectedToRequest(assignTargetRequestId);
+                }}
+                disabled={
+                  !canEdit ||
+                  allocatingSelection ||
+                  selectedPartIds.length === 0 ||
+                  (assignMode && !assignTargetRequestId)
+                }
+                style={{
+                  padding: "6px 10px",
+                  borderRadius: "var(--radius-xs)",
+                  border: "1px solid transparent",
+                  background:
+                    !canEdit || selectedPartIds.length === 0 || allocatingSelection || (assignMode && !assignTargetRequestId)
+                      ? "var(--surface-light)"
+                      : assignMode
+                      ? "var(--success)"
+                      : "var(--accent-purple)",
+                  color:
+                    !canEdit || selectedPartIds.length === 0 || allocatingSelection || (assignMode && !assignTargetRequestId)
+                      ? "var(--text-secondary)"
+                      : "var(--text-inverse)",
+                  fontSize: "var(--text-caption)",
+                  fontWeight: 600,
+                  cursor:
+                    !canEdit || selectedPartIds.length === 0 || allocatingSelection || (assignMode && !assignTargetRequestId)
+                      ? "not-allowed"
+                      : "pointer",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {allocatingSelection
+                  ? "Assigning..."
+                  : !assignMode
+                  ? "Assign selected"
+                  : !assignTargetRequestId
+                  ? "Select request below"
+                  : "Assign to selected request"}
+              </button>
             </div>
           </div>
           {/* Fixed-size content container to match ON ORDER section */}
@@ -2295,7 +2597,12 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 {(() => {
                   const customerRequests = allRequests.filter((r) => r.type === "customer");
                   return (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <DevLayoutSection
+                      sectionKey="jobcard-parts-allocate-customer-requests"
+                      sectionType="list"
+                      parentKey="jobcard-parts-allocate-panel"
+                      style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+                    >
                       <div style={{ fontSize: "var(--text-caption)", fontWeight: 700, color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
                         Customer Requests
                       </div>
@@ -2310,13 +2617,29 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             .filter((part, index, arr) => arr.findIndex((entry) => entry.id === part.id) === index)
                             .filter((part) => partsAddedToJobIdSet.has(String(part.id)));
                           return (
-                            <div
+                            <DevLayoutSection
                               key={request.id}
+                              sectionKey={`jobcard-parts-customer-request-${request.id}`}
+                              sectionType="content-card"
+                              parentKey="jobcard-parts-allocate-customer-requests"
+                              onClick={() => {
+                                if (assignMode && request.canAllocate) {
+                                  setAssignTargetRequestId(request.id);
+                                }
+                              }}
                               style={{
                                 padding: "12px",
                                 borderRadius: "var(--radius-sm)",
-                                border: "none",
+                                border:
+                                  assignMode && String(assignTargetRequestId) === String(request.id)
+                                    ? "1px solid var(--accent-purple)"
+                                    : "1px solid transparent",
                                 background: "var(--surface-muted)",
+                                cursor: assignMode && request.canAllocate ? "pointer" : "default",
+                                boxShadow:
+                                  assignMode && String(assignTargetRequestId) === String(request.id)
+                                    ? "0 0 0 2px rgba(var(--primary-rgb), 0.08)"
+                                    : "none",
                               }}
                             >
                               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
@@ -2324,40 +2647,33 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                   <div style={{ fontSize: "var(--text-label)", color: "var(--info-dark)" }}>
                                     {request.description}
                                   </div>
+                                  {assignMode && String(assignTargetRequestId) === String(request.id) && (
+                                    <div style={{ marginTop: "4px", fontSize: "var(--text-caption)", color: "var(--accent-purple)", fontWeight: 600 }}>
+                                      Selected request
+                                    </div>
+                                  )}
                                 </div>
-                                <button
-                                  type="button"
-                                  disabled={!canEdit || !request.canAllocate}
-                                  onClick={() => handleAssignSelectedToRequest(request.id)}
-                                  style={{
-                                    padding: "6px 10px",
-                                    borderRadius: "var(--radius-xs)",
-                                    border: !canEdit || !request.canAllocate
-                                      ? "1px solid var(--surface-light)"
-                                      : assignMode && assignTargetRequestId === request.id
-                                      ? selectedPartIds.length > 0
-                                        ? "1px solid var(--success)"
-                                        : "1px solid var(--warning)"
-                                      : "1px solid var(--accent-purple)",
-                                    background: !canEdit || !request.canAllocate
-                                      ? "var(--surface-light)"
-                                      : assignMode && assignTargetRequestId === request.id
-                                      ? selectedPartIds.length > 0
-                                        ? "var(--success)"
-                                        : "var(--warning)"
-                                      : "var(--accent-purple)",
-                                    color: !canEdit || !request.canAllocate ? "var(--text-secondary)" : "white",
-                                    fontSize: "var(--text-caption)",
-                                    fontWeight: 600,
-                                    cursor: !canEdit || !request.canAllocate ? "not-allowed" : "pointer",
-                                  }}
-                                >
-                                  {assignMode && assignTargetRequestId === request.id
-                                    ? selectedPartIds.length > 0
-                                      ? "Assign"
-                                      : "Select parts"
-                                    : "Assign selected"}
-                                </button>
+                                {assignMode ? (
+                                  <span
+                                    style={{
+                                      padding: "6px 10px",
+                                      borderRadius: "var(--radius-xs)",
+                                      background:
+                                        String(assignTargetRequestId) === String(request.id)
+                                          ? "var(--accent-purple-surface)"
+                                          : "var(--surface-light)",
+                                      color:
+                                        String(assignTargetRequestId) === String(request.id)
+                                          ? "var(--accent-purple)"
+                                          : "var(--text-secondary)",
+                                      fontSize: "var(--text-caption)",
+                                      fontWeight: 600,
+                                      whiteSpace: "nowrap",
+                                    }}
+                                  >
+                                    {String(assignTargetRequestId) === String(request.id) ? "Selected" : "Click to select"}
+                                  </span>
+                                ) : null}
                               </div>
                               {allocatedParts.length > 0 && (
                                 <div
@@ -2368,8 +2684,15 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                     borderLeft: "2px solid var(--surface-light)",
                                   }}
                                 >
-                                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "var(--text-caption)" }}>
-                                    <thead>
+                                  <table
+                                    data-dev-section="1"
+                                    data-dev-section-key={`jobcard-parts-allocate-customer-table-${request.id}`}
+                                    data-dev-section-type="data-table"
+                                    data-dev-section-parent={`jobcard-parts-customer-request-${request.id}`}
+                                    className="parts-allocate-subtable"
+                                    style={{ width: "100%", borderCollapse: "collapse", fontSize: "var(--text-caption)", tableLayout: "fixed" }}
+                                  >
+                                    <thead data-dev-section="1" data-dev-section-key={`jobcard-parts-allocate-customer-table-${request.id}-headings`} data-dev-section-type="table-headings" data-dev-section-parent={`jobcard-parts-allocate-customer-table-${request.id}`}>
                                       <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
                                         <th style={{ textAlign: "left", padding: "6px" }}>Part number</th>
                                         <th style={{ textAlign: "left", padding: "6px" }}>Description</th>
@@ -2379,16 +2702,28 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                         <th style={{ textAlign: "center", padding: "6px" }}>Unassign</th>
                                       </tr>
                                     </thead>
-                                    <tbody>
+                                    <tbody data-dev-section="1" data-dev-section-key={`jobcard-parts-allocate-customer-table-${request.id}-rows`} data-dev-section-type="table-rows" data-dev-section-parent={`jobcard-parts-allocate-customer-table-${request.id}`}>
                                       {allocatedParts.map((part) => (
                                         <tr key={part.id} style={{ background: "var(--accent-purple-surface)", borderTop: "1px solid var(--surface-light)" }}>
                                           <td style={{ padding: "6px", fontWeight: 600, color: "var(--accent-purple)" }}>
-                                            {part.partNumber}
+                                            <span className="parts-allocate-cell-scroll">
+                                              {part.partNumber}
+                                            </span>
                                           </td>
-                                          <td style={{ padding: "6px", color: "var(--info-dark)" }}>{part.description || part.name}</td>
-                                          <td style={{ padding: "6px", textAlign: "right" }}>{part.quantity}</td>
-                                          <td style={{ padding: "6px", textAlign: "right" }}>{formatMoney(part.unitPrice)}</td>
-                                          <td style={{ padding: "6px", textAlign: "right" }}>{formatMoney(part.unitCost)}</td>
+                                          <td style={{ padding: "6px", color: "var(--info-dark)" }}>
+                                            <span className="parts-allocate-cell-scroll parts-allocate-description-cell">
+                                              {part.description || part.name}
+                                            </span>
+                                          </td>
+                                          <td style={{ padding: "6px", textAlign: "right" }}>
+                                            <span className="parts-allocate-cell-scroll">{part.quantity}</span>
+                                          </td>
+                                          <td style={{ padding: "6px", textAlign: "right" }}>
+                                            <span className="parts-allocate-cell-scroll">{formatMoney(part.unitPrice)}</span>
+                                          </td>
+                                          <td style={{ padding: "6px", textAlign: "right" }}>
+                                            <span className="parts-allocate-cell-scroll">{formatMoney(part.unitCost)}</span>
+                                          </td>
                                           <td style={{ padding: "6px", textAlign: "center" }}>
                                             <button
                                               type="button"
@@ -2405,7 +2740,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                                 cursor: !canEdit ? "not-allowed" : "pointer",
                                               }}
                                             >
-                                              Unassign
+                                              <span className="parts-allocate-cell-scroll">Unassign</span>
                                             </button>
                                           </td>
                                         </tr>
@@ -2414,11 +2749,11 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                   </table>
                                 </div>
                               )}
-                            </div>
+                            </DevLayoutSection>
                           );
                         })
                       )}
-                    </div>
+                    </DevLayoutSection>
                   );
                 })()}
 
@@ -2439,7 +2774,12 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   });
 
                   return (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <DevLayoutSection
+                      sectionKey="jobcard-parts-allocate-vhc-requests"
+                      sectionType="list"
+                      parentKey="jobcard-parts-allocate-panel"
+                      style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+                    >
                       <div style={{ fontSize: "var(--text-caption)", fontWeight: 700, color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
                         VHC Requests
                       </div>
@@ -2449,7 +2789,13 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                         </div>
                       ) : (
                         groupedVhcRequests.map((group) => (
-                          <div key={`vhc-group-${group.section}`} style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                          <DevLayoutSection
+                            key={`vhc-group-${group.section}`}
+                            sectionKey={`jobcard-parts-vhc-group-${String(group.section || "other").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "other"}`}
+                            sectionType="content-card"
+                            parentKey="jobcard-parts-allocate-vhc-requests"
+                            style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+                          >
                             <div
                               style={{
                                 fontSize: "var(--text-caption)",
@@ -2472,13 +2818,29 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                 .filter((part, index, arr) => arr.findIndex((entry) => entry.id === part.id) === index)
                                 .filter((part) => partsAddedToJobIdSet.has(String(part.id)));
                               return (
-                                <div
+                                <DevLayoutSection
                                   key={request.id}
+                                  sectionKey={`jobcard-parts-vhc-request-${request.id}`}
+                                  sectionType="content-card"
+                                  parentKey={`jobcard-parts-vhc-group-${String(group.section || "other").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "other"}`}
+                                  onClick={() => {
+                                    if (assignMode && request.canAllocate) {
+                                      setAssignTargetRequestId(request.id);
+                                    }
+                                  }}
                                   style={{
                                     padding: "12px",
                                     borderRadius: "var(--radius-sm)",
-                                    border: "none",
+                                    border:
+                                      assignMode && String(assignTargetRequestId) === String(request.id)
+                                        ? "1px solid var(--accent-purple)"
+                                        : "1px solid transparent",
                                     background: "var(--surface-muted)",
+                                    cursor: assignMode && request.canAllocate ? "pointer" : "default",
+                                    boxShadow:
+                                      assignMode && String(assignTargetRequestId) === String(request.id)
+                                        ? "0 0 0 2px rgba(var(--primary-rgb), 0.08)"
+                                        : "none",
                                   }}
                                 >
                                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
@@ -2486,6 +2848,11 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                       <div style={{ fontSize: "var(--text-label)", color: "var(--info-dark)" }}>
                                         {request.displayText || request.description}
                                       </div>
+                                      {assignMode && String(assignTargetRequestId) === String(request.id) && (
+                                        <div style={{ fontSize: "var(--text-caption)", color: "var(--accent-purple)", fontWeight: 600 }}>
+                                          Selected request
+                                        </div>
+                                      )}
                                       {(request.expectedPartNumberDisplay || request.expectedPartNumber) && (
                                         <div style={{ fontSize: "var(--text-caption)", color: "var(--info)" }}>
                                           Part No: {request.expectedPartNumberDisplay || request.expectedPartNumber}
@@ -2497,39 +2864,27 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                         </div>
                                       )}
                                     </div>
-                                    <button
-                                      type="button"
-                                      disabled={!canEdit || !request.canAllocate}
-                                      onClick={() => handleAssignSelectedToRequest(request.id)}
-                                      style={{
-                                        padding: "6px 10px",
-                                        borderRadius: "var(--radius-xs)",
-                                        border: !canEdit || !request.canAllocate
-                                          ? "1px solid var(--surface-light)"
-                                          : assignMode && assignTargetRequestId === request.id
-                                          ? selectedPartIds.length > 0
-                                            ? "1px solid var(--success)"
-                                            : "1px solid var(--warning)"
-                                          : "1px solid var(--accent-purple)",
-                                        background: !canEdit || !request.canAllocate
-                                          ? "var(--surface-light)"
-                                          : assignMode && assignTargetRequestId === request.id
-                                          ? selectedPartIds.length > 0
-                                            ? "var(--success)"
-                                            : "var(--warning)"
-                                          : "var(--accent-purple)",
-                                        color: !canEdit || !request.canAllocate ? "var(--text-secondary)" : "white",
-                                        fontSize: "var(--text-caption)",
-                                        fontWeight: 600,
-                                        cursor: !canEdit || !request.canAllocate ? "not-allowed" : "pointer",
-                                      }}
-                                    >
-                                      {assignMode && assignTargetRequestId === request.id
-                                        ? selectedPartIds.length > 0
-                                          ? "Assign"
-                                          : "Select parts"
-                                        : "Assign selected"}
-                                    </button>
+                                    {assignMode ? (
+                                      <span
+                                        style={{
+                                          padding: "6px 10px",
+                                          borderRadius: "var(--radius-xs)",
+                                          background:
+                                            String(assignTargetRequestId) === String(request.id)
+                                              ? "var(--accent-purple-surface)"
+                                              : "var(--surface-light)",
+                                          color:
+                                            String(assignTargetRequestId) === String(request.id)
+                                              ? "var(--accent-purple)"
+                                              : "var(--text-secondary)",
+                                          fontSize: "var(--text-caption)",
+                                          fontWeight: 600,
+                                          whiteSpace: "nowrap",
+                                        }}
+                                      >
+                                        {String(assignTargetRequestId) === String(request.id) ? "Selected" : "Click to select"}
+                                      </span>
+                                    ) : null}
                                   </div>
                                   {allocatedParts.length > 0 && (
                                     <div
@@ -2540,8 +2895,15 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                         borderLeft: "2px solid var(--surface-light)",
                                       }}
                                     >
-                                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "var(--text-caption)" }}>
-                                        <thead>
+                                      <table
+                                        data-dev-section="1"
+                                        data-dev-section-key={`jobcard-parts-allocate-vhc-table-${request.id}`}
+                                        data-dev-section-type="data-table"
+                                        data-dev-section-parent={`jobcard-parts-vhc-request-${request.id}`}
+                                        className="parts-allocate-subtable"
+                                        style={{ width: "100%", borderCollapse: "collapse", fontSize: "var(--text-caption)", tableLayout: "fixed" }}
+                                      >
+                                        <thead data-dev-section="1" data-dev-section-key={`jobcard-parts-allocate-vhc-table-${request.id}-headings`} data-dev-section-type="table-headings" data-dev-section-parent={`jobcard-parts-allocate-vhc-table-${request.id}`}>
                                           <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
                                             <th style={{ textAlign: "left", padding: "6px" }}>Part number</th>
                                             <th style={{ textAlign: "left", padding: "6px" }}>Description</th>
@@ -2551,16 +2913,28 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                             <th style={{ textAlign: "center", padding: "6px" }}>Unassign</th>
                                           </tr>
                                         </thead>
-                                        <tbody>
+                                        <tbody data-dev-section="1" data-dev-section-key={`jobcard-parts-allocate-vhc-table-${request.id}-rows`} data-dev-section-type="table-rows" data-dev-section-parent={`jobcard-parts-allocate-vhc-table-${request.id}`}>
                                           {allocatedParts.map((part) => (
                                             <tr key={part.id} style={{ background: "var(--accent-purple-surface)", borderTop: "1px solid var(--surface-light)" }}>
                                               <td style={{ padding: "6px", fontWeight: 600, color: "var(--accent-purple)" }}>
-                                                {part.partNumber}
+                                                <span className="parts-allocate-cell-scroll">
+                                                  {part.partNumber}
+                                                </span>
                                               </td>
-                                              <td style={{ padding: "6px", color: "var(--info-dark)" }}>{part.description || part.name}</td>
-                                              <td style={{ padding: "6px", textAlign: "right" }}>{part.quantity}</td>
-                                              <td style={{ padding: "6px", textAlign: "right" }}>{formatMoney(part.unitPrice)}</td>
-                                              <td style={{ padding: "6px", textAlign: "right" }}>{formatMoney(part.unitCost)}</td>
+                                              <td style={{ padding: "6px", color: "var(--info-dark)" }}>
+                                                <span className="parts-allocate-cell-scroll parts-allocate-description-cell">
+                                                  {part.description || part.name}
+                                                </span>
+                                              </td>
+                                              <td style={{ padding: "6px", textAlign: "right" }}>
+                                                <span className="parts-allocate-cell-scroll">{part.quantity}</span>
+                                              </td>
+                                              <td style={{ padding: "6px", textAlign: "right" }}>
+                                                <span className="parts-allocate-cell-scroll">{formatMoney(part.unitPrice)}</span>
+                                              </td>
+                                              <td style={{ padding: "6px", textAlign: "right" }}>
+                                                <span className="parts-allocate-cell-scroll">{formatMoney(part.unitCost)}</span>
+                                              </td>
                                               <td style={{ padding: "6px", textAlign: "center" }}>
                                                 <button
                                                   type="button"
@@ -2577,7 +2951,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                                     cursor: !canEdit ? "not-allowed" : "pointer",
                                                   }}
                                                 >
-                                                  Unassign
+                                                  <span className="parts-allocate-cell-scroll">Unassign</span>
                                                 </button>
                                               </td>
                                             </tr>
@@ -2586,22 +2960,25 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                       </table>
                                     </div>
                                   )}
-                                </div>
+                                </DevLayoutSection>
                               );
                             })}
-                          </div>
+                          </DevLayoutSection>
                         ))
                       )}
-                    </div>
+                    </DevLayoutSection>
                   );
                 })()}
             </div>
             )}
           </div>
-          </div>
+          </DevLayoutSection>
         ) : (
-          <div
+          <DevLayoutSection
             className="on-order-section"
+            sectionKey="jobcard-parts-on-order-panel"
+            sectionType="content-card"
+            parentKey="jobcard-parts-workspace"
             style={{
               background: "var(--surface)",
               border: "none",
@@ -2632,8 +3009,15 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             {/* Fixed-size table container */}
             <div style={{ minHeight: "200px", display: "flex", flexDirection: "column" }}>
               <div style={{ overflowX: "auto", overflowY: "auto", maxHeight: "600px", flex: 1 }}>
-                <table className="on-order-table" style={{ width: "100%", borderCollapse: "collapse" }}>
-                  <thead>
+                <table
+                  className="on-order-table"
+                  data-dev-section="1"
+                  data-dev-section-key="jobcard-parts-on-order-table"
+                  data-dev-section-type="data-table"
+                  data-dev-section-parent="jobcard-parts-on-order-panel"
+                  style={{ width: "100%", borderCollapse: "collapse" }}
+                >
+                  <thead data-dev-section="1" data-dev-section-key="jobcard-parts-on-order-table-headings" data-dev-section-type="table-headings" data-dev-section-parent="jobcard-parts-on-order-table">
                     <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
                       <th style={{ textAlign: "left", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>Part Name</th>
                       <th style={{ textAlign: "left", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>Part Number</th>
@@ -2644,7 +3028,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                       <th style={{ textAlign: "center", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>Action</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody data-dev-section="1" data-dev-section-key="jobcard-parts-on-order-table-rows" data-dev-section-type="table-rows" data-dev-section-parent="jobcard-parts-on-order-table">
                     {partsOnOrderFromDB.length === 0 ? (
                       <tr>
                         <td colSpan={7} style={{ textAlign: "center", padding: "40px", color: "var(--info)" }}>
@@ -2669,7 +3053,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                           >
                             <td style={{ color: "var(--info-dark)" }}>
                               <span
-                                className="part-name-cell"
+                                className="part-name-cell on-order-cell-scroll"
                                 onMouseDown={handlePartNameDragStart}
                                 onMouseMove={handlePartNameDragMove}
                                 onMouseUp={handlePartNameDragEnd}
@@ -2678,9 +3062,15 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                 {part.partName}
                               </span>
                             </td>
-                            <td style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{part.partNumber}</td>
-                            <td style={{ textAlign: "right" }}>{part.quantity}</td>
-                            <td style={{ textAlign: "right" }}>{formatMoney(part.unitPrice)}</td>
+                            <td style={{ fontWeight: 600, color: "var(--accent-purple)" }}>
+                              <span className="on-order-cell-scroll">{part.partNumber}</span>
+                            </td>
+                            <td style={{ textAlign: "right" }}>
+                              <span className="on-order-cell-scroll">{part.quantity}</span>
+                            </td>
+                            <td style={{ textAlign: "right" }}>
+                              <span className="on-order-cell-scroll">{formatMoney(part.unitPrice)}</span>
+                            </td>
                             <td>
                               <CalendarField
                                 value={part.etaDate || ""}
@@ -2728,7 +3118,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                   padding: "6px 12px",
                                 }}
                               >
-                                {isArrived ? "Arrived" : "Arrived?"}
+                                <span className="on-order-cell-scroll">{isArrived ? "Arrived" : "Arrived?"}</span>
                               </button>
                             </td>
                           </tr>
@@ -2739,9 +3129,9 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                 </table>
               </div>
             </div>
-          </div>
+          </DevLayoutSection>
         )}
-      </div>
+      </DevLayoutSection>
 
       {/* Part Removal Popup Modal */}
       {showPrePickPopup && (

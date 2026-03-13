@@ -127,6 +127,7 @@ const addTableSubSections = ({ sectionsByKey, route }) => {
   currentSections.forEach((section) => {
     const nodeName = section.node?.tagName?.toLowerCase() || "";
     if (nodeName !== "table" && !String(section.type || "").includes("table")) return;
+    if (section.node?.getAttribute?.("data-dev-disable-table-subsections") === "1") return;
 
     const headingNode = section.node.tHead || section.node.querySelector("thead");
     const headingKeyFromDom = sanitizeKey(headingNode?.getAttribute?.("data-dev-section-key") || "");
@@ -459,6 +460,7 @@ export default function DevLayoutOverlay() {
   const [sections, setSections] = useState([]);
   const [selectedKey, setSelectedKey] = useState("");
   const [copiedAction, setCopiedAction] = useState("");
+  const [copiedText, setCopiedText] = useState("");
   const rafRef = useRef(null);
 
   useEffect(() => {
@@ -532,6 +534,14 @@ export default function DevLayoutOverlay() {
   const handleCopy = async (type, text) => {
     await copyText(text);
     setCopiedAction(type);
+    setCopiedText(text || "");
+  };
+  const handleInspectClick = async (sectionKey) => {
+    setSelectedKey(sectionKey);
+    const section = sections.find((entry) => entry.key === sectionKey);
+    if (!section) return;
+    const prompts = buildPrompts(section);
+    await handleCopy("reference", prompts.reference);
   };
 
   return (
@@ -546,10 +556,10 @@ export default function DevLayoutOverlay() {
               <button
                 type="button"
                 className={styles.inspectButton}
-                onClick={(event) => {
+                onClick={async (event) => {
                   event.preventDefault();
                   event.stopPropagation();
-                  setSelectedKey(section.key);
+                  await handleInspectClick(section.key);
                 }}
                 style={{
                   left: section.rect.left,
@@ -681,6 +691,7 @@ export default function DevLayoutOverlay() {
                   <button type="button" className={styles.button} onClick={() => handleCopy("claude", prompts.claude)}>Copy Claude prompt</button>
                 </div>
                 <p className={styles.copyStatus}>{copiedAction ? `Copied ${copiedAction}` : " "}</p>
+                <p className={styles.copyStatus}>{copiedAction === "reference" ? copiedText : " "}</p>
               </div>
             );
           })()}
