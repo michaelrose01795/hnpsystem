@@ -66,10 +66,60 @@ async function autoCloseStaleRecord(record) {
 
 export default async function handler(req, res) {
   try {
-    const userId = await resolveUserId(req, res);
     const today = new Date().toISOString().split("T")[0];
 
     if (req.method === "GET") {
+      const queryUserId = req.query.userId;
+      const parsedQueryUserId = Number.parseInt(queryUserId, 10);
+
+      if (!Number.isInteger(parsedQueryUserId) || parsedQueryUserId <= 0) {
+        const { data: records, error } = await supabase
+          .from("time_records")
+          .select(`
+            id,
+            user_id,
+            date,
+            clock_in,
+            clock_out,
+            hours_worked,
+            users:user_id (
+              user_id,
+              first_name,
+              last_name,
+              department,
+              role
+            )
+          `)
+          .eq("date", today)
+          .order("clock_in", { ascending: false });
+
+        if (error) {
+          console.error("Failed to fetch all clock records:", error);
+          return res.status(500).json({ success: false, message: "Failed to fetch clocking records." });
+        }
+
+        return res.status(200).json({
+          success: true,
+          data: (records || []).map((record) => {
+            const user = Array.isArray(record.users) ? record.users[0] : record.users;
+            return {
+              id: record.id,
+              user: user ? `${user.first_name || ""} ${user.last_name || ""}`.trim() || String(record.user_id) : String(record.user_id),
+              userId: record.user_id,
+              department: user?.department || null,
+              role: user?.role || null,
+              clockedIn: !record.clock_out,
+              clockInTime: record.clock_in,
+              clockOutTime: record.clock_out,
+              hoursWorked: Number(record.hours_worked || 0),
+              date: record.date,
+            };
+          }),
+        });
+      }
+
+      const userId = await resolveUserId(req, res);
+
       // Find ANY active (un-clocked-out) record for this user
       const { data: activeRecord, error } = await supabase
         .from("time_records")
@@ -118,6 +168,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === "POST") {
+      const userId = await resolveUserId(req, res);
       const { action } = req.body || {};
 
       if (action === "clock-in") {

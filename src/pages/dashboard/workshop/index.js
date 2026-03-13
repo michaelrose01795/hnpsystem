@@ -12,7 +12,12 @@ const MetricCard = ({ sectionKey, parentKey, label, value, helper }) => (
     sectionKey={sectionKey}
     parentKey={parentKey}
     className="app-section-card"
-    style={{ minWidth: "140px", flex: "1 1 140px" }}
+    style={{
+      minWidth: "140px",
+      flex: "1 1 140px",
+      background: "var(--surface)",
+      border: "1px solid var(--border)",
+    }}
   >
     <p style={{ margin: 0, textTransform: "uppercase", fontSize: "0.75rem", color: "var(--primary-dark)" }}>
       {label}
@@ -23,7 +28,17 @@ const MetricCard = ({ sectionKey, parentKey, label, value, helper }) => (
 );
 
 const Section = ({ sectionKey, parentKey, title, subtitle, children, style }) => (
-  <SectionShell sectionKey={sectionKey} parentKey={parentKey} className="app-section-card" style={{ gap: "12px", ...style }}>
+  <SectionShell
+    sectionKey={sectionKey}
+    parentKey={parentKey}
+    className="app-section-card"
+    style={{
+      gap: "12px",
+      background: "rgba(var(--primary-rgb), 0.10)",
+      border: "1px solid rgba(var(--primary-rgb), 0.18)",
+      ...style,
+    }}
+  >
     <div>
       <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-dark)" }}>{title}</h2>
       {subtitle && <p style={{ margin: "6px 0 0", color: "var(--info)" }}>{subtitle}</p>}
@@ -40,10 +55,10 @@ const TrendBlock = ({ sectionKey, parentKey, title, data }) => {
       parentKey={parentKey}
       sectionType="content-card"
       style={{
-        border: "1px solid var(--danger-surface)",
+        border: "1px solid rgba(var(--primary-rgb), 0.18)",
         borderRadius: "var(--radius-sm)",
         padding: "16px",
-        background: "var(--surface)",
+        background: "rgba(var(--primary-rgb), 0.14)",
         display: "flex",
         flexDirection: "column",
         gap: "10px",
@@ -89,7 +104,7 @@ const ProgressBar = ({ completed, target }) => {
         <span>Completed</span>
         <span>{percentage}%</span>
       </div>
-      <div style={{ width: "100%", height: 10, background: "var(--surface)", borderRadius: 5 }}>
+      <div style={{ width: "100%", height: 10, background: "rgba(var(--primary-rgb), 0.14)", borderRadius: 5 }}>
         <div
           style={{
             width: `${percentage}%`,
@@ -263,8 +278,8 @@ export default function WorkshopDashboard() {
                       style={{
                         padding: "12px",
                         borderRadius: "var(--radius-sm)",
-                        background: "var(--danger-surface)",
-                        border: "none",
+                        background: "var(--surface)",
+                        border: "1px solid var(--border)",
                         display: "flex",
                         flexDirection: "column",
                         gap: "8px",
@@ -293,7 +308,6 @@ export default function WorkshopDashboard() {
             sectionKey="workshop-dashboard-outstanding-vhc"
             parentKey="workshop-dashboard-worklist-row"
             title="Outstanding VHCs"
-            subtitle="Jobs requiring follow-up"
             style={{ height: "100%", minHeight: "360px" }}
           >
             {loading ? (
@@ -311,7 +325,7 @@ export default function WorkshopDashboard() {
                       gap: "8px",
                       background: "var(--surface)",
                       borderRadius: "var(--radius-sm)",
-                      border: "none",
+                      border: "1px solid var(--border)",
                       padding: "12px",
                       minHeight: "84px",
                     }}

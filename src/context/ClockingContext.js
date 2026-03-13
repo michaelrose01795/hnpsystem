@@ -13,6 +13,7 @@ export const ClockingProvider = ({ children }) => {
   const { user, dbUserId } = useUser(); // logged-in user + real users.user_id
   const [clockedIn, setClockedIn] = useState(false);
   const [hoursWorked, setHoursWorked] = useState(0);
+  const [allUsersClocking, setAllUsersClocking] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Fetch clocking status via the server API (handles auto-close of stale records)
@@ -55,6 +56,25 @@ export const ClockingProvider = ({ children }) => {
       fetchClockingStatus();
     }
   }, [dbUserId, fetchClockingStatus]);
+
+  const fetchAllUsersClocking = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/profile/clock");
+      const json = await res.json();
+
+      if (json.success && Array.isArray(json.data)) {
+        setAllUsersClocking(json.data);
+      } else {
+        setAllUsersClocking([]);
+      }
+    } catch (err) {
+      console.error("Error fetching all users clocking:", err.message);
+      setAllUsersClocking([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   // Clock in via the server API (auto-closes stale records if needed)
   const clockIn = async () => {
@@ -112,7 +132,17 @@ export const ClockingProvider = ({ children }) => {
 
   return (
     <ClockingContext.Provider
-      value={{ clockedIn, hoursWorked, loading, clockIn, clockOut, userId: dbUserId }}
+      value={{
+        clockedIn,
+        hoursWorked,
+        allUsersClocking,
+        fetchClockingStatus,
+        fetchAllUsersClocking,
+        loading,
+        clockIn,
+        clockOut,
+        userId: dbUserId,
+      }}
     >
       {children}
     </ClockingContext.Provider>

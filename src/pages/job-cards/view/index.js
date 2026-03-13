@@ -12,7 +12,10 @@ import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { useUser } from "@/context/UserContext";
 import { DropdownField } from "@/components/dropdownAPI";
 import { SearchBar } from "@/components/searchBarAPI";
+import { TabGroup } from "@/components/tabAPI/TabGroup";
 import { deriveJobTypeDisplay, formatDetectedJobTypeLabel } from "@/lib/jobType/display";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import { ContentWidth, FilterToolbarRow, PageShell, SectionShell } from "@/components/ui";
 
 const TODAY_STATUSES = ["Booked", "Checked In", "In Progress", "Invoiced", "Complete"];
 
@@ -534,8 +537,21 @@ export default function ViewJobCards() {
   if (loading) {
     return (
       <Layout>
-        <div className="redirect-screen" role="status" aria-live="polite">
-          <div className="redirect-card">
+        <PageShell sectionKey="job-cards-view-loading-shell">
+          <DevLayoutSection
+            className="redirect-screen"
+            role="status"
+            aria-live="polite"
+            sectionKey="job-cards-view-loading-state"
+            parentKey="job-cards-view-loading-shell"
+            sectionType="state-banner"
+          >
+          <DevLayoutSection
+            className="redirect-card"
+            sectionKey="job-cards-view-loading-card"
+            parentKey="job-cards-view-loading-state"
+            sectionType="content-card"
+          >
             <div className="login-brand redirect-brand" aria-hidden="true">
               <img src="/logo.png" alt="H&P logo" className="login-logo" />
             </div>
@@ -550,8 +566,9 @@ export default function ViewJobCards() {
               <span></span>
               <span></span>
             </div>
-          </div>
-        </div>
+          </DevLayoutSection>
+          </DevLayoutSection>
+        </PageShell>
       </Layout>
     );
   }
@@ -566,103 +583,61 @@ export default function ViewJobCards() {
           width: 100%;
         }
       `}</style>
+      <PageShell sectionKey="job-cards-view-shell">
+        <ContentWidth sectionKey="job-cards-view-content" parentKey="job-cards-view-shell" widthMode="content">
       <div className="app-page-stack">
-        {
-          // middle-layer
-        }
-          <div
+          <SectionShell
+            sectionKey="job-cards-view-filter-shell"
+            parentKey="job-cards-view-content"
             style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "16px",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <div
-              style={{
-                borderRadius: "var(--radius-pill)",
-                border: "none",
-                background: "var(--surface)",
-                padding: "6px",
-                display: "flex",
-                gap: "6px",
-                width: "100%",
-                overflowX: "auto",
-                flexShrink: 0,
-                scrollbarWidth: "thin",
-                scrollbarColor: "var(--scrollbar-thumb) transparent",
-                scrollBehavior: "smooth",
-                WebkitOverflowScrolling: "touch",
-              }}
-            >
-              {tabOptions.map((tab) => {
-                const isActive = tab.value === activeTab;
-                return (
-                  <button
-                    key={tab.value}
-                    type="button"
-                    onClick={() => setActiveTab(tab.value)}
-                    style={{
-                      flex: "0 0 auto",
-                      borderRadius: "var(--radius-pill)",
-                      border: "1px solid transparent",
-                      padding: "10px 20px",
-                      fontSize: "0.9rem",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      background: isActive ? "var(--primary)" : "transparent",
-                      color: isActive ? "var(--text-inverse)" : "var(--text-primary)",
-                      transition: "all 0.15s ease",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div
-            style={{
-              flex: 1,
               display: "flex",
               flexDirection: "column",
-            background: "var(--surface)",
-            borderRadius: "var(--radius-lg)",
-            border: "1px solid var(--info-surface)",
-            padding: "var(--section-card-padding)",
-            minHeight: "0",
-          }}
-        >
-          {
-            // top-layer
-          }
-            <div
+              background: "rgba(var(--primary-rgb), 0.10)",
+              borderRadius: "var(--radius-lg)",
+              border: "1px solid rgba(var(--primary-rgb), 0.18)",
+              padding: "12px",
+              gap: "12px",
+            }}
+          >
+            <FilterToolbarRow
+              sectionKey="job-cards-view-filter-row"
+              parentKey="job-cards-view-filter-shell"
               style={{
                 display: "flex",
                 flexWrap: "wrap",
                 gap: "12px",
-                alignItems: "stretch",
-                marginBottom: "16px",
+                alignItems: "center",
+                justifyContent: "space-between",
               }}
             >
-              <div
+              <DevLayoutSection
+                className="page-surface-plain"
+                sectionKey="job-cards-view-tabs"
+                parentKey="job-cards-view-filter-row"
+                sectionType="tab-row"
                 style={{
-                  flex: "1 1 280px",
-                  minWidth: "200px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  padding: "10px 14px",
-                  borderRadius: "var(--radius-md)",
-                  border: "1px solid var(--search-surface-muted)",
-                  background: "var(--search-surface)",
-                  color: "var(--search-text)",
+                  flex: "0 1 auto",
+                  padding: "8px",
+                  borderRadius: "var(--radius-sm)",
+                }}
+              >
+                <TabGroup
+                  items={tabOptions}
+                  value={activeTab}
+                  onChange={setActiveTab}
+                  ariaLabel="Job card tabs"
+                  className="tab-api--wrap"
+                />
+              </DevLayoutSection>
+              <DevLayoutSection
+                className="app-layout-card"
+                sectionKey="job-cards-view-search"
+                parentKey="job-cards-view-filter-row"
+                sectionType="search-control"
+                style={{
+                  flex: "1 1 320px",
+                  minWidth: "260px",
+                  maxWidth: "560px",
                 }}
               >
                 <SearchBar
@@ -673,141 +648,177 @@ export default function ViewJobCards() {
                   }
                   onClear={() => handleSearchValueChange(activeTab, "")}
                   style={{
-                    flex: 1,
+                    width: "100%",
                   }}
                 />
-              </div>
-              {!isOrdersTab && (
-                <div
-                  style={{
-                    flex: "0 1 220px",
-                    minWidth: "200px",
-                    maxWidth: "320px",
-                  }}
-                >
-                  <DropdownField
-                    className="job-cards-filter"
-                    value={divisionFilter}
-                    options={[
-                      { value: "All", label: "Division filter: All" },
-                      { value: "Retail", label: "Division filter: Retail" },
-                      { value: "Sales", label: "Division filter: Sales" },
-                    ]}
-                    size="sm"
-                    onValueChange={(value) => handleDivisionFilterChange(value)}
-                  />
-                </div>
-              )}
-              {!isOrdersTab && (
-                <div
-                  style={{
-                    flex: "0 1 220px",
-                    minWidth: "200px",
-                    maxWidth: "320px",
-                  }}
-                >
-                  <DropdownField
-                    className="job-cards-filter"
-                    value={activeStatusFilter}
-                    options={statusTabs.map((status) => ({
-                      value: status,
-                      label: `Status filter: ${status}`,
-                      description:
-                        status === "All"
-                          ? `${baseJobs.length} total`
-                          : `${statusCounts[status] || 0} jobs`,
-                    }))}
-                    size="sm"
-                    onValueChange={(value) =>
-                      handleStatusFilterChange(activeTab, value)
-                    }
-                  />
-                </div>
-              )}
-            </div>
-
-            <div
-              style={{
-                flex: 1,
-                overflow: "hidden",
-                borderRadius: "var(--radius-md)",
-                border: "1px solid var(--info-surface)",
-                background: "var(--surface)",
-                padding: "12px",
-              }}
-            >
-              <div
+              </DevLayoutSection>
+              <DevLayoutSection
+                sectionKey="job-cards-view-filter-controls"
+                parentKey="job-cards-view-filter-row"
+                sectionType="toolbar"
                 style={{
-                  height: "100%",
-                  overflowY: "auto",
+                  flex: "0 1 auto",
                   display: "flex",
-                  flexDirection: "column",
                   gap: "12px",
+                  alignItems: "center",
+                  marginLeft: "auto",
                 }}
               >
-                {isOrdersTab && ordersLoading ? (
-                  <div
+                {!isOrdersTab && (
+                  <DevLayoutSection
+                    className="app-layout-card"
+                    sectionKey="job-cards-view-division-filter"
+                    parentKey="job-cards-view-filter-controls"
+                    sectionType="filter-control"
                     style={{
-                      padding: "32px",
-                      textAlign: "center",
-                      color: "var(--info)",
-                      border: "1px dashed var(--accent-purple-surface)",
-                      borderRadius: "var(--radius-sm)",
-                      background: "var(--info-surface)",
+                      width: "220px",
                     }}
                   >
-                    Loading orders...
-                  </div>
-                ) : sortedJobs.length === 0 ? (
-                  <div
-                    style={{
-                      padding: "32px",
-                      textAlign: "center",
-                      color: "var(--info)",
-                      border: "1px dashed var(--accent-purple-surface)",
-                      borderRadius: "var(--radius-sm)",
-                      background: "var(--info-surface)",
-                    }}
-                  >
-                    {emptyStateMessage}
-                  </div>
-                ) : (
-                  sortedJobs.map((job, index) =>
-                    isOrdersTab ? (
-                      <OrderListCard
-                        key={job.id || job.orderNumber}
-                        order={job}
-                        index={index}
-                        onNavigate={() => router.push(`/parts/create-order/${job.orderNumber}`)}
-                      />
-                    ) : (
-                      <JobListCard
-                        key={job.jobNumber}
-                        job={job}
-                        index={index}
-                        onNavigate={() => handleCardNavigation(job.jobNumber)}
-                      />
-                    )
-                  )
+                    <DropdownField
+                      className="job-cards-filter"
+                      value={divisionFilter}
+                      options={[
+                        { value: "All", label: "Division filter: All" },
+                        { value: "Retail", label: "Division filter: Retail" },
+                        { value: "Sales", label: "Division filter: Sales" },
+                      ]}
+                      size="sm"
+                      onValueChange={(value) => handleDivisionFilterChange(value)}
+                    />
+                  </DevLayoutSection>
                 )}
-              </div>
-            </div>
-          </div>
+                {!isOrdersTab && (
+                  <DevLayoutSection
+                    className="app-layout-card"
+                    sectionKey="job-cards-view-status-filter"
+                    parentKey="job-cards-view-filter-controls"
+                    sectionType="filter-control"
+                    style={{
+                      width: "220px",
+                    }}
+                  >
+                    <DropdownField
+                      className="job-cards-filter"
+                      value={activeStatusFilter}
+                      options={statusTabs.map((status) => ({
+                        value: status,
+                        label: `Status filter: ${status}`,
+                        description:
+                          status === "All"
+                            ? `${baseJobs.length} total`
+                            : `${statusCounts[status] || 0} jobs`,
+                      }))}
+                      size="sm"
+                      onValueChange={(value) =>
+                        handleStatusFilterChange(activeTab, value)
+                      }
+                    />
+                  </DevLayoutSection>
+                )}
+              </DevLayoutSection>
+            </FilterToolbarRow>
+          </SectionShell>
+
+          <SectionShell
+            sectionKey="job-cards-view-list-shell"
+            parentKey="job-cards-view-content"
+            style={{
+              flex: 1,
+              overflow: "hidden",
+              borderRadius: "var(--radius-md)",
+              border: "1px solid rgba(var(--primary-rgb), 0.18)",
+              background: "rgba(var(--primary-rgb), 0.10)",
+              padding: "12px",
+              minHeight: "0",
+            }}
+          >
+            <DevLayoutSection
+              sectionKey="job-cards-view-list-viewport"
+              parentKey="job-cards-view-list-shell"
+              sectionType="scroll-region"
+              style={{
+                height: "100%",
+                overflowY: "auto",
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+              }}
+            >
+              {isOrdersTab && ordersLoading ? (
+                <DevLayoutSection
+                  sectionKey="job-cards-view-orders-loading"
+                  parentKey="job-cards-view-list-viewport"
+                  sectionType="state-banner"
+                  style={{
+                    padding: "32px",
+                    textAlign: "center",
+                    color: "var(--info)",
+                    border: "1px dashed var(--accent-purple-surface)",
+                    borderRadius: "var(--radius-sm)",
+                    background: "var(--info-surface)",
+                  }}
+                >
+                  Loading orders...
+                </DevLayoutSection>
+              ) : sortedJobs.length === 0 ? (
+                <DevLayoutSection
+                  sectionKey="job-cards-view-empty-state"
+                  parentKey="job-cards-view-list-viewport"
+                  sectionType="state-banner"
+                  style={{
+                    padding: "32px",
+                    textAlign: "center",
+                    color: "var(--info)",
+                    border: "1px dashed var(--accent-purple-surface)",
+                    borderRadius: "var(--radius-sm)",
+                    background: "var(--info-surface)",
+                  }}
+                >
+                  {emptyStateMessage}
+                </DevLayoutSection>
+              ) : (
+                sortedJobs.map((job, index) =>
+                  isOrdersTab ? (
+                    <OrderListCard
+                      key={job.id || job.orderNumber}
+                      sectionKey={`job-cards-view-order-row-${job.id || job.orderNumber || index + 1}`}
+                      parentKey="job-cards-view-list-viewport"
+                      order={job}
+                      index={index}
+                      onNavigate={() => router.push(`/parts/create-order/${job.orderNumber}`)}
+                    />
+                  ) : (
+                    <JobListCard
+                      key={job.jobNumber}
+                      sectionKey={`job-cards-view-job-row-${job.jobNumber || index + 1}`}
+                      parentKey="job-cards-view-list-viewport"
+                      job={job}
+                      index={index}
+                      onNavigate={() => handleCardNavigation(job.jobNumber)}
+                    />
+                  )
+                )
+              )}
+            </DevLayoutSection>
+          </SectionShell>
 
           {/* ✅ Job Popup - Enhanced with all new fields */}
           {popupJob && (
             <>
-              {
-                // top-layer
-              }
-              <div
+              <DevLayoutSection
+                sectionKey="job-cards-view-quick-view-overlay"
+                parentKey="job-cards-view-shell"
+                sectionType="floating-action"
                 style={{
                   ...popupOverlayStyles,
                   zIndex: 1200,
                 }}
                 onClick={() => setPopupJob(null)}
               >
-              <div
+              <DevLayoutSection
+                sectionKey="job-cards-view-quick-view-card"
+                parentKey="job-cards-view-quick-view-overlay"
+                sectionType="content-card"
                 onClick={(e) => e.stopPropagation()}
                 style={{
                   ...popupCardStyles,
@@ -1157,18 +1168,20 @@ export default function ViewJobCards() {
               >
                 Close
               </button>
-            </div>
-          </div>
+            </DevLayoutSection>
+          </DevLayoutSection>
             </>
         )}
       </div>
+      </ContentWidth>
+      </PageShell>
     </Layout>
   );
 }
 
-const JobListCard = ({ job, onNavigate, onQuickView, index = 0 }) => {
+const JobListCard = ({ job, onNavigate, onQuickView, index = 0, sectionKey, parentKey }) => {
   // top-layer
-  const rowBackground = index % 2 === 0 ? "var(--surface)" : "var(--layer-section-level-2)";
+  const rowBackground = "var(--surface)";
   const jobType = deriveJobType(job);
   const appointmentLabel = getAppointmentDisplay(job);
   const jobDate = getJobDate(job);
@@ -1199,7 +1212,10 @@ const JobListCard = ({ job, onNavigate, onQuickView, index = 0 }) => {
     : [];
 
   return (
-    <div
+    <DevLayoutSection
+      sectionKey={sectionKey}
+      parentKey={parentKey}
+      sectionType="list-row"
       onClick={onNavigate}
       style={{
         border: "none",
@@ -1347,13 +1363,13 @@ const JobListCard = ({ job, onNavigate, onQuickView, index = 0 }) => {
           </div>
         </div>
       )}
-    </div>
+    </DevLayoutSection>
   );
 };
 
-const OrderListCard = ({ order, onNavigate, index = 0 }) => {
+const OrderListCard = ({ order, onNavigate, index = 0, sectionKey, parentKey }) => {
   // top-layer
-  const rowBackground = index % 2 === 0 ? "var(--surface)" : "var(--layer-section-level-2)";
+  const rowBackground = "var(--surface)";
   const items = order.requests || order.items || [];
   const totalItems = items.length;
   const deliveryLabel = order.delivery_type === "collection" ? "Collection" : "Delivery";
@@ -1366,7 +1382,10 @@ const OrderListCard = ({ order, onNavigate, index = 0 }) => {
     order.status || order.delivery_status || order.invoice_status || "Draft";
 
   return (
-    <div
+    <DevLayoutSection
+      sectionKey={sectionKey}
+      parentKey={parentKey}
+      sectionType="list-row"
       onClick={onNavigate}
       style={{
         border: "none",
@@ -1489,6 +1508,6 @@ const OrderListCard = ({ order, onNavigate, index = 0 }) => {
           </div>
         </div>
       )}
-    </div>
+    </DevLayoutSection>
   );
 };

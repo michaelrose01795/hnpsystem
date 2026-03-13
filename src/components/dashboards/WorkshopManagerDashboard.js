@@ -410,12 +410,13 @@ export default function WorkshopManagerDashboard() {
         sectionType="grid-card"
         style={{
           display: "grid",
-          gridTemplateColumns: "minmax(320px, 1.2fr) minmax(280px, 0.9fr)",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
           gap: "18px",
+          alignItems: "stretch",
         }}
       >
         <DevLayoutSection sectionKey="dashboard-workshop-technician-focus" parentKey="dashboard-workshop-focus-row" sectionType="content-card">
-          <SectionCard title="Technician Focus" subtitle="Live assignments pulled from job clocking">
+          <SectionCard title="Technician Focus" style={{ gap: "12px", height: "100%" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {clockingLoading ? (
               <p style={{ color: "var(--info)" }}>Loading technician activity…</p>
@@ -431,20 +432,27 @@ export default function WorkshopManagerDashboard() {
                     border: `1px solid ${item.accent}33`,
                     borderRadius: "var(--radius-sm)",
                     padding: "14px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "4px",
-                    background: "var(--danger-surface)",
+                    display: "grid",
+                    gridTemplateColumns: "minmax(0, 1.2fr) auto",
+                    gap: "8px 16px",
+                    alignItems: "center",
+                    background: "rgba(var(--primary-rgb), 0.12)",
+                    minHeight: "104px",
                   }}
                 >
-                  <strong style={{ color: item.accent }}>{item.tech}</strong>
-                  <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>
-                    {item.job}
-                  </span>
-                  <small style={{ color: "var(--info)" }}>{item.next}</small>
-                  <small style={{ color: "var(--info)" }}>
-                    {item.startedAt ? `Since ${formatTime(item.startedAt)}` : item.status}
-                  </small>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px", minWidth: 0 }}>
+                    <strong style={{ color: item.accent }}>{item.tech}</strong>
+                    <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>
+                      {item.job}
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px", alignItems: "flex-end", textAlign: "right" }}>
+                    <small style={{ color: "var(--info)" }}>
+                      {item.startedAt ? `Since ${formatTime(item.startedAt)}` : item.status}
+                    </small>
+                    <small style={{ color: item.accent, fontWeight: 600 }}>{item.status}</small>
+                  </div>
+                  <div style={{ gridColumn: "1 / -1", color: "var(--info)", fontSize: "0.85rem" }}>{item.next}</div>
                 </div>
               ))
             )}
@@ -453,7 +461,7 @@ export default function WorkshopManagerDashboard() {
         </DevLayoutSection>
 
         <DevLayoutSection sectionKey="dashboard-workshop-bay-readiness" parentKey="dashboard-workshop-focus-row" sectionType="content-card">
-          <SectionCard title="Bay Readiness" subtitle="Outstanding jobs that need attention" style={{ gap: "12px" }}>
+          <SectionCard title="Bay Readiness" style={{ gap: "12px", height: "100%" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {dashboardLoading ? (
               <p style={{ color: "var(--info)" }}>Loading bay readiness…</p>
@@ -467,15 +475,17 @@ export default function WorkshopManagerDashboard() {
                     border: `1px solid ${bay.tone}33`,
                     borderRadius: "var(--radius-sm)",
                     padding: "14px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "4px",
-                    background: "var(--danger-surface)",
+                    display: "grid",
+                    gridTemplateColumns: "minmax(0, 1.2fr) auto",
+                    gap: "8px 16px",
+                    alignItems: "center",
+                    background: "rgba(var(--primary-rgb), 0.12)",
+                    minHeight: "104px",
                   }}
                 >
                   <strong style={{ color: bay.tone }}>{bay.bay}</strong>
-                  <span style={{ color: "var(--accent-purple)" }}>{bay.status}</span>
-                  <small style={{ color: "var(--info)" }}>{bay.action}</small>
+                  <span style={{ color: "var(--accent-purple)", justifySelf: "end", textAlign: "right" }}>{bay.status}</span>
+                  <small style={{ color: "var(--info)", gridColumn: "1 / -1" }}>{bay.action}</small>
                 </div>
               ))
             )}

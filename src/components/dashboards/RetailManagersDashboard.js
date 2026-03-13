@@ -466,7 +466,18 @@ export default function RetailManagersDashboard({ user }) {
           >
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {utilisationData.map((team) => (
-              <div key={team.team} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <div
+                key={team.team}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "6px",
+                  background: "rgba(var(--primary-rgb), 0.12)",
+                  border: "1px solid rgba(var(--primary-rgb), 0.18)",
+                  borderRadius: "var(--radius-sm)",
+                  padding: "12px",
+                }}
+              >
                 <div style={{ display: "flex", justifyContent: "space-between", color: "var(--info-dark)" }}>
                   <span>{team.team}</span>
                   <strong>{team.utilisation}%</strong>
@@ -506,10 +517,10 @@ export default function RetailManagersDashboard({ user }) {
               <div
                 key={job.jobNumber}
                 style={{
-                  border: "1px solid var(--danger)",
+                  border: "1px solid rgba(var(--primary-rgb), 0.18)",
                   borderRadius: "var(--radius-sm)",
                   padding: "12px",
-                  background: "var(--surface-light)",
+                  background: "rgba(var(--primary-rgb), 0.12)",
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>

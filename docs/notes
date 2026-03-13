@@ -32,17 +32,16 @@ Admin Manager
 /admin/users
 /dashboard/admin
 
+
+
 Workshop Manager
 /
-/dashboard
 
-/clocking/[technicianSlug]
-
-/clocking/admin
-
-/dashboard/workshop
 
 /job-cards
+
+
+Make the search bar smaller and in the middle of the section row, have unit so the size of the sections are made smaller, make sure the orders tab is hidden for all uses except the parts
 
 /job-cards/[jobNumber]
 
