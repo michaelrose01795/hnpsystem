@@ -289,12 +289,29 @@ const renderMessageContent = (content, userRoles = []) => {
   return parts.length > 0 ? parts : content;
 };
 
-const MessageBubble = ({ message, isMine, nameColor = palette.accent, userRoles = [] }) => {
+const MessageBubble = ({
+  message,
+  isMine,
+  nameColor = palette.accent,
+  userRoles = [],
+  currentUserId = null,
+  onApproveLeaveRequest,
+  onDeclineLeaveRequest,
+  decisionBusy = false,
+}) => {
   const senderName = message.sender?.name || "Unknown";
   const timestamp = new Date(message.createdAt).toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
   });
+  const leaveRequestMeta = message?.metadata?.leaveRequest || null;
+  const leaveStatus = String(leaveRequestMeta?.status || "").trim();
+  const leaveStatusKey = leaveStatus.toLowerCase();
+  const canDecideLeaveRequest =
+    Boolean(leaveRequestMeta?.absenceId) &&
+    Array.isArray(leaveRequestMeta?.managerIds) &&
+    leaveRequestMeta.managerIds.includes(currentUserId) &&
+    leaveStatusKey === "pending";
 
   const bubbleStyles = {
     padding: "12px 16px",
@@ -343,7 +360,89 @@ const MessageBubble = ({ message, isMine, nameColor = palette.accent, userRoles 
             {senderName}
           </span>
           <span style={{ fontSize: "0.68rem", color: "rgba(71, 85, 105, 0.85)" }}>{timestamp}</span>
-          <div style={bubbleStyles}>{renderMessageContent(message.content, userRoles)}</div>
+          <div style={bubbleStyles}>
+            {renderMessageContent(message.content, userRoles)}
+            {leaveRequestMeta ? (
+              <div style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+                  <span
+                    style={{
+                      padding: "4px 8px",
+                      borderRadius: radii.pill,
+                      backgroundColor:
+                        leaveStatusKey === "approved"
+                          ? "var(--success-surface)"
+                          : leaveStatusKey === "declined"
+                          ? "var(--danger-surface)"
+                          : "var(--info-surface)",
+                      color:
+                        leaveStatusKey === "approved"
+                          ? "var(--success)"
+                          : leaveStatusKey === "declined"
+                          ? "var(--danger)"
+                          : "var(--info-dark)",
+                      fontSize: "0.72rem",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {leaveStatus || "Pending"}
+                  </span>
+                  <span style={{ fontSize: "0.76rem", color: palette.textMuted }}>
+                    {leaveRequestMeta.leaveType || "Leave"} · {leaveRequestMeta.startDate || ""}
+                    {leaveRequestMeta.endDate && leaveRequestMeta.endDate !== leaveRequestMeta.startDate
+                      ? ` to ${leaveRequestMeta.endDate}`
+                      : ""}
+                  </span>
+                </div>
+                {leaveRequestMeta.requestNotes ? (
+                  <div style={{ fontSize: "0.8rem", color: palette.textMuted }}>
+                    {leaveRequestMeta.requestNotes}
+                  </div>
+                ) : null}
+                {leaveRequestMeta.declineReason ? (
+                  <div style={{ fontSize: "0.8rem", color: "var(--danger)", fontWeight: 600 }}>
+                    Decline reason: {leaveRequestMeta.declineReason}
+                  </div>
+                ) : null}
+                {canDecideLeaveRequest ? (
+                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      disabled={decisionBusy}
+                      onClick={() => onApproveLeaveRequest?.(message)}
+                      style={{
+                        border: "none",
+                        borderRadius: radii.pill,
+                        padding: "8px 14px",
+                        backgroundColor: decisionBusy ? "var(--info-surface)" : "var(--success)",
+                        color: "var(--surface)",
+                        fontWeight: 700,
+                        cursor: decisionBusy ? "not-allowed" : "pointer",
+                      }}
+                    >
+                      Approve
+                    </button>
+                    <button
+                      type="button"
+                      disabled={decisionBusy}
+                      onClick={() => onDeclineLeaveRequest?.(message)}
+                      style={{
+                        border: "none",
+                        borderRadius: radii.pill,
+                        padding: "8px 14px",
+                        backgroundColor: decisionBusy ? "var(--info-surface)" : "var(--danger)",
+                        color: "var(--surface)",
+                        fontWeight: 700,
+                        cursor: decisionBusy ? "not-allowed" : "pointer",
+                      }}
+                    >
+                      Decline
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
     </div>
@@ -734,6 +833,10 @@ function MessagesPage() {
   const [groupMembersModalOpen, setGroupMembersModalOpen] = useState(false);
   const [showCommandSuggestions, setShowCommandSuggestions] = useState(false);
   const [commandSuggestions, setCommandSuggestions] = useState([]);
+  const [leaveDecisionBusy, setLeaveDecisionBusy] = useState(false);
+  const [leaveDecisionError, setLeaveDecisionError] = useState("");
+  const [leaveDeclineModal, setLeaveDeclineModal] = useState({ open: false, message: null });
+  const [leaveDeclineReason, setLeaveDeclineReason] = useState("");
 
   const scrollerRef = useRef(null);
   const unreadMarkerTimersRef = useRef(new Map());
@@ -995,6 +1098,70 @@ function MessagesPage() {
     setConversationError("");
     setLastSystemViewedAt(new Date().toISOString());
   }, [lastSystemViewedAt]);
+
+  const submitLeaveDecision = useCallback(
+    async (message, decision, reason = "") => {
+      const absenceId = message?.metadata?.leaveRequest?.absenceId;
+      if (!absenceId || !activeThreadId) return;
+
+      setLeaveDecisionBusy(true);
+      setLeaveDecisionError("");
+      try {
+        const response = await fetch(`/api/hr/leave-requests/${absenceId}/decision`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            decision,
+            reason,
+            threadId: activeThreadId,
+            messageId: message.id,
+          }),
+        });
+
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload?.success) {
+          throw new Error(payload?.message || "Unable to process leave request.");
+        }
+
+        if (leaveDeclineModal.open) {
+          setLeaveDeclineModal({ open: false, message: null });
+          setLeaveDeclineReason("");
+        }
+
+        await openThread(activeThreadId, activeThread);
+        await fetchThreads();
+      } catch (error) {
+        console.error("Failed to process leave request decision:", error);
+        setLeaveDecisionError(error.message || "Unable to process leave request.");
+        setConversationError(error.message || "Unable to process leave request.");
+      } finally {
+        setLeaveDecisionBusy(false);
+      }
+    },
+    [activeThread, activeThreadId, fetchThreads, leaveDeclineModal.open, openThread]
+  );
+
+  const handleApproveLeaveRequest = useCallback(
+    async (message) => {
+      await submitLeaveDecision(message, "approve");
+    },
+    [submitLeaveDecision]
+  );
+
+  const handleOpenDeclineLeaveRequest = useCallback((message) => {
+    setLeaveDecisionError("");
+    setLeaveDeclineReason("");
+    setLeaveDeclineModal({ open: true, message });
+  }, []);
+
+  const handleConfirmDeclineLeaveRequest = useCallback(async () => {
+    if (!leaveDeclineReason.trim() || !leaveDeclineModal.message) {
+      setLeaveDecisionError("Enter a reason before declining this leave request.");
+      return;
+    }
+    await submitLeaveDecision(leaveDeclineModal.message, "decline", leaveDeclineReason.trim());
+  }, [leaveDeclineModal.message, leaveDeclineReason, submitLeaveDecision]);
 
   const connectCustomerToConversation = useCallback(
     async ({ threadId, customerQuery }) => {
@@ -2382,6 +2549,10 @@ function MessagesPage() {
                         isMine={message.senderId === dbUserId}
                         nameColor={userNameColor}
                         userRoles={user?.roles || []}
+                        currentUserId={dbUserId}
+                        onApproveLeaveRequest={handleApproveLeaveRequest}
+                        onDeclineLeaveRequest={handleOpenDeclineLeaveRequest}
+                        decisionBusy={leaveDecisionBusy}
                       />
                     </React.Fragment>
                   ))}
@@ -2529,6 +2700,107 @@ function MessagesPage() {
           </div>
         </div>
       </div>
+
+      {leaveDeclineModal.open && (
+        <ModalPortal>
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.45)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "20px",
+              zIndex: 1200,
+            }}
+          >
+            <div
+              style={{
+                width: "min(520px, 100%)",
+                backgroundColor: "var(--surface)",
+                borderRadius: "var(--radius-lg)",
+                border: `1px solid ${palette.border}`,
+                boxShadow: shadows.lg,
+                padding: "24px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "14px",
+              }}
+            >
+              <div>
+                <h3 style={{ margin: 0, color: systemTitleColor }}>Decline leave request</h3>
+                <p style={{ margin: "6px 0 0", color: palette.textMuted }}>
+                  A reason is required before this request can be declined.
+                </p>
+              </div>
+
+              <textarea
+                rows={4}
+                value={leaveDeclineReason}
+                onChange={(event) => {
+                  setLeaveDeclineReason(event.target.value);
+                  setLeaveDecisionError("");
+                }}
+                placeholder="Enter the reason for declining this request..."
+                style={{
+                  width: "100%",
+                  borderRadius: radii.lg,
+                  border: `1px solid ${palette.border}`,
+                  padding: "12px 14px",
+                  resize: "vertical",
+                  backgroundColor: "var(--surface)",
+                }}
+              />
+
+              {leaveDecisionError ? (
+                <p style={{ margin: 0, color: "var(--danger)", fontSize: "var(--text-body-sm)" }}>
+                  {leaveDecisionError}
+                </p>
+              ) : null}
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (leaveDecisionBusy) return;
+                    setLeaveDeclineModal({ open: false, message: null });
+                    setLeaveDeclineReason("");
+                    setLeaveDecisionError("");
+                  }}
+                  style={{
+                    borderRadius: radii.pill,
+                    padding: "10px 16px",
+                    border: `1px solid ${palette.border}`,
+                    backgroundColor: "var(--surface)",
+                    color: palette.textPrimary,
+                    fontWeight: 600,
+                    cursor: leaveDecisionBusy ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={leaveDecisionBusy}
+                  onClick={handleConfirmDeclineLeaveRequest}
+                  style={{
+                    borderRadius: radii.pill,
+                    padding: "10px 16px",
+                    border: "none",
+                    backgroundColor: leaveDecisionBusy ? "var(--info-surface)" : "var(--danger)",
+                    color: "var(--surface)",
+                    fontWeight: 700,
+                    cursor: leaveDecisionBusy ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {leaveDecisionBusy ? "Declining..." : "Decline request"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </ModalPortal>
+      )}
 
       {groupEditModalOpen && isGroupChat && (
         <ModalPortal>

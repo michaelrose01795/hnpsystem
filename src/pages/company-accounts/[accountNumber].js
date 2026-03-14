@@ -6,6 +6,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import CompanyAccountForm from "@/components/companyAccounts/CompanyAccountForm";
 import { useUser } from "@/context/UserContext";
 import { deriveAccountPermissions } from "@/lib/accounts/permissions";
+import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 
 const ALLOWED_ROLES = ["ADMIN", "OWNER", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER"];
 const HISTORY_DEFAULT = { jobs: [], invoices: [] };
@@ -27,6 +28,7 @@ export default function CompanyAccountDetailPage() {
   const [error, setError] = useState("");
   const [history, setHistory] = useState(HISTORY_DEFAULT);
   const [activeTab, setActiveTab] = useState(ACCOUNT_TABS[0].id);
+  const [confirmDialog, setConfirmDialog] = useState(null);
 
   const fetchAccount = useCallback(async () => {
     if (!accountNumber) return;
@@ -71,8 +73,7 @@ export default function CompanyAccountDetailPage() {
     }
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm("Delete this company account? This action cannot be undone.")) return;
+  const doDelete = async () => {
     setSaving(true);
     try {
       const response = await fetch(`/api/company-accounts/${accountNumber}`, { method: "DELETE" });
@@ -86,6 +87,16 @@ export default function CompanyAccountDetailPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleDelete = () => {
+    setConfirmDialog({
+      message: "Delete this company account? This action cannot be undone.",
+      onConfirm: () => {
+        setConfirmDialog(null);
+        doDelete();
+      },
+    });
   };
 
   const detailRow = (label, value) => {
@@ -541,6 +552,14 @@ export default function CompanyAccountDetailPage() {
             </div>
           )}
         </div>
+      <ConfirmationDialog
+        isOpen={!!confirmDialog}
+        message={confirmDialog?.message}
+        cancelLabel="Cancel"
+        confirmLabel="Delete"
+        onCancel={() => setConfirmDialog(null)}
+        onConfirm={confirmDialog?.onConfirm}
+      />
       </Layout>
     </ProtectedRoute>
   );

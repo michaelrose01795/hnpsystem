@@ -16,6 +16,7 @@ import { DropdownField } from "@/components/dropdownAPI";
 import StaffVehiclesCard from "@/components/HR/StaffVehiclesCard";
 import { ACCENT_PALETTES, useTheme } from "@/styles/themeProvider";
 import { isHrCoreRole, isManagerScopedRole } from "@/lib/auth/roles"; // Role checking utilities
+import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 
 const SAFE_ACCENT_PALETTES =
   ACCENT_PALETTES && typeof ACCENT_PALETTES === "object"
@@ -190,7 +191,16 @@ function KpiCard({ label, primary, secondary, accentColor }) {
 }
 
 // Leave Request Modal
-function LeaveRequestModal({ isOpen, onClose, onSubmit, isSubmitting }) {
+function LeaveRequestModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  isSubmitting,
+  initialValues = null,
+  mode = "create",
+  onRemove = null,
+  isRemoving = false,
+}) {
   const [form, setForm] = useState({
     type: "Holiday",
     startDate: "",
@@ -200,6 +210,18 @@ function LeaveRequestModal({ isOpen, onClose, onSubmit, isSubmitting }) {
   });
   const [error, setError] = useState(null);
   useBodyModalLock(isOpen);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setForm({
+      type: initialValues?.type || "Holiday",
+      startDate: initialValues?.startDate || "",
+      totalDays: initialValues?.totalDays || 1,
+      halfDay: initialValues?.halfDay || "None",
+      notes: initialValues?.notes || "",
+    });
+    setError(null);
+  }, [initialValues, isOpen]);
 
   if (!isOpen) return null;
 
@@ -247,6 +269,7 @@ function LeaveRequestModal({ isOpen, onClose, onSubmit, isSubmitting }) {
       startDate: form.startDate,
       endDate: computedEndDate,
       halfDay: form.halfDay,
+      totalDays: form.totalDays,
       notes: form.notes,
     });
   };
@@ -281,7 +304,7 @@ function LeaveRequestModal({ isOpen, onClose, onSubmit, isSubmitting }) {
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <h2 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 700, color: "var(--text-primary)" }}>
-            Request Leave
+            {mode === "edit" ? "Edit Leave Request" : "Request Leave"}
           </h2>
           <button
             type="button"
@@ -402,6 +425,20 @@ function LeaveRequestModal({ isOpen, onClose, onSubmit, isSubmitting }) {
           {error && <div style={{ color: "var(--danger)", fontSize: "0.85rem" }}>{error}</div>}
 
           <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "4px" }}>
+            {mode === "edit" && onRemove ? (
+              <button
+                type="button"
+                onClick={onRemove}
+                disabled={isRemoving || isSubmitting}
+                style={{
+                  ...modalCancelBtnStyle,
+                  background: "var(--danger-surface)",
+                  color: "var(--danger)",
+                }}
+              >
+                {isRemoving ? "Removing..." : "Remove request"}
+              </button>
+            ) : null}
             <button type="button" onClick={onClose} style={modalCancelBtnStyle}>
               Cancel
             </button>
@@ -410,7 +447,13 @@ function LeaveRequestModal({ isOpen, onClose, onSubmit, isSubmitting }) {
               disabled={isSubmitting}
               style={{ ...modalSubmitBtnStyle, opacity: isSubmitting ? 0.7 : 1 }}
             >
-              {isSubmitting ? "Submitting..." : "Submit Request"}
+              {isSubmitting
+                ? mode === "edit"
+                  ? "Saving..."
+                  : "Submitting..."
+                : mode === "edit"
+                ? "Save changes"
+                : "Submit Request"}
             </button>
           </div>
         </form>
@@ -720,6 +763,7 @@ export function ProfilePage({
   const attendanceLogs = shouldUseHrData ? (data?.attendanceLogs ?? []) : (userProfileData?.attendanceLogs ?? []); // clocking records
   const overtimeSummaries = shouldUseHrData ? (data?.overtimeSummaries ?? []) : (userProfileData?.overtimeSummary ? [userProfileData.overtimeSummary] : []); // overtime totals
   const leaveBalances = data?.leaveBalances ?? []; // leave usage (admin only)
+  const leaveRequests = shouldUseHrData ? [] : userProfileData?.leaveRequests ?? [];
   const staffVehicles = shouldUseHrData ? (data?.staffVehicles ?? []) : (userProfileData?.staffVehicles ?? []);
   const activeUserName = previewUserParam || user?.username || session?.user?.name || null; // active username resolution
 
@@ -887,6 +931,9 @@ export function ProfilePage({
   // Leave request modal state
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
   const [leaveSubmitting, setLeaveSubmitting] = useState(false);
+  const [leaveRemoving, setLeaveRemoving] = useState(false);
+  const [editingLeaveRequest, setEditingLeaveRequest] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
 
   // Emergency contact edit state
   const [ecEditing, setEcEditing] = useState(false);
@@ -900,26 +947,81 @@ export function ProfilePage({
   const handleLeaveSubmit = useCallback(async (formData) => {
     setLeaveSubmitting(true);
     try {
-      const response = await fetch("/api/profile/leave-request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(formData),
-      });
+      const isEditMode = Boolean(editingLeaveRequest?.id);
+      const response = await fetch(
+        isEditMode
+          ? `/api/profile/leave-request/${editingLeaveRequest.id}`
+          : "/api/profile/leave-request",
+        {
+          method: isEditMode ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(formData),
+        }
+      );
       if (!response.ok) {
         const payload = await response.json().catch(() => null);
-        throw new Error(payload?.message || "Failed to submit leave request.");
+        throw new Error(payload?.message || `Failed to ${isEditMode ? "update" : "submit"} leave request.`);
       }
+      setEditingLeaveRequest(null);
       setLeaveModalOpen(false);
       setProfileReloadKey((prev) => prev + 1);
-      alert("Leave request submitted successfully.");
+      alert(`Leave request ${isEditMode ? "updated" : "submitted"} successfully.`);
     } catch (err) {
       console.error("Leave request error:", err);
-      alert("Failed to submit leave request. " + (err.message || ""));
+      alert(`Failed to ${editingLeaveRequest?.id ? "update" : "submit"} leave request. ` + (err.message || ""));
     } finally {
       setLeaveSubmitting(false);
     }
+  }, [editingLeaveRequest?.id]);
+
+  const handleEditLeaveRequest = useCallback((request) => {
+    if (!request?.id) return;
+    setEditingLeaveRequest({
+      id: request.id,
+      type: request.type,
+      startDate: request.startDate,
+      totalDays: request.totalDays || 1,
+      halfDay: request.halfDay || "None",
+      notes: request.requestNotes || "",
+    });
+    setLeaveModalOpen(true);
   }, []);
+
+  const doRemoveLeaveRequest = useCallback(async () => {
+    if (!editingLeaveRequest?.id) return;
+    setLeaveRemoving(true);
+    try {
+      const response = await fetch(`/api/profile/leave-request/${editingLeaveRequest.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.message || "Failed to remove leave request.");
+      }
+      setEditingLeaveRequest(null);
+      setLeaveModalOpen(false);
+      setProfileReloadKey((prev) => prev + 1);
+      alert("Leave request removed successfully.");
+    } catch (error) {
+      console.error("Failed to remove leave request:", error);
+      alert(`Failed to remove leave request. ${error.message || ""}`);
+    } finally {
+      setLeaveRemoving(false);
+    }
+  }, [editingLeaveRequest?.id]);
+
+  const handleRemoveLeaveRequest = useCallback(() => {
+    if (!editingLeaveRequest?.id) return;
+    setConfirmDialog({
+      message: "Remove this leave request?",
+      onConfirm: () => {
+        setConfirmDialog(null);
+        doRemoveLeaveRequest();
+      },
+    });
+  }, [editingLeaveRequest?.id, doRemoveLeaveRequest]);
 
   const handleStartEcEdit = useCallback(() => {
     setEcName(emergencyParts.name === "Not provided" ? "" : emergencyParts.name);
@@ -1221,7 +1323,10 @@ export function ProfilePage({
                 action={
                   <button
                     type="button"
-                    onClick={() => setLeaveModalOpen(true)}
+                    onClick={() => {
+                      setEditingLeaveRequest(null);
+                      setLeaveModalOpen(true);
+                    }}
                     style={buttonStyleLeaveRequest}
                   >
                     Request leave
@@ -1250,13 +1355,91 @@ export function ProfilePage({
                       {aggregatedStats?.leaveRemaining ?? "-"} days
                     </span>
                   </div>
+                  {leaveRequests.length > 0 && (
+                    <div style={{ display: "grid", gap: "10px", paddingTop: "8px", borderTop: "1px solid rgba(var(--accent-purple-rgb), 0.12)" }}>
+                      <span style={{ fontSize: "0.78rem", color: "var(--text-secondary)", fontWeight: 700 }}>
+                        Recent requests
+                      </span>
+                      {leaveRequests.slice(0, 4).map((request) => {
+                        const status = String(request.status || "Pending");
+                        const isApproved = status.toLowerCase() === "approved";
+                        const isDeclined = status.toLowerCase() === "declined" || status.toLowerCase() === "rejected";
+                        const isEditable = true;
+                        return (
+                          <button
+                            type="button"
+                            key={request.id}
+                            onClick={() => {
+                              if (isEditable) {
+                                handleEditLeaveRequest(request);
+                              }
+                            }}
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "6px",
+                              padding: "10px 12px",
+                              borderRadius: "var(--radius-sm)",
+                              background: "rgba(var(--accent-purple-rgb), 0.06)",
+                              border: "1px solid rgba(var(--accent-purple-rgb), 0.12)",
+                              textAlign: "left",
+                              cursor: isEditable ? "pointer" : "default",
+                            }}
+                          >
+                            <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center" }}>
+                              <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>
+                                {request.type} · {new Date(`${request.startDate}T00:00:00`).toLocaleDateString("en-GB")}
+                              </span>
+                              <span
+                                style={{
+                                  padding: "4px 8px",
+                                  borderRadius: "var(--radius-pill)",
+                                  fontSize: "0.72rem",
+                                  fontWeight: 700,
+                                  background: isApproved
+                                    ? "var(--success-surface)"
+                                    : isDeclined
+                                    ? "var(--danger-surface)"
+                                    : "var(--info-surface)",
+                                  color: isApproved
+                                    ? "var(--success)"
+                                    : isDeclined
+                                    ? "var(--danger)"
+                                    : "var(--info-dark)",
+                                }}
+                              >
+                                {status}
+                              </span>
+                            </div>
+                            {request.requestNotes ? (
+                              <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+                                {request.requestNotes}
+                              </span>
+                            ) : null}
+                            {request.declineReason ? (
+                              <span style={{ fontSize: "0.78rem", color: "var(--danger)", fontWeight: 600 }}>
+                                Decline reason: {request.declineReason}
+                              </span>
+                            ) : null}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </ProfileCard>
               <LeaveRequestModal
                 isOpen={leaveModalOpen}
-                onClose={() => setLeaveModalOpen(false)}
+                onClose={() => {
+                  setLeaveModalOpen(false);
+                  setEditingLeaveRequest(null);
+                }}
                 onSubmit={handleLeaveSubmit}
                 isSubmitting={leaveSubmitting}
+                initialValues={editingLeaveRequest}
+                mode={editingLeaveRequest ? "edit" : "create"}
+                onRemove={editingLeaveRequest ? handleRemoveLeaveRequest : null}
+                isRemoving={leaveRemoving}
               />
 
               <ProfileCard
@@ -1485,7 +1668,22 @@ export function ProfilePage({
     </div>
   );
 
-  return isEmbedded ? content : <Layout>{content}</Layout>;
+  const confirmDialogEl = (
+    <ConfirmationDialog
+      isOpen={!!confirmDialog}
+      message={confirmDialog?.message}
+      cancelLabel="Cancel"
+      confirmLabel="Remove"
+      onCancel={() => setConfirmDialog(null)}
+      onConfirm={confirmDialog?.onConfirm}
+    />
+  );
+
+  return isEmbedded ? (
+    <>{content}{confirmDialogEl}</>
+  ) : (
+    <Layout>{content}{confirmDialogEl}</Layout>
+  );
 }
 
 export default function ProfilePageWrapper(props) {

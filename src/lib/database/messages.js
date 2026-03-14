@@ -1068,6 +1068,47 @@ export const sendThreadMessage = async ({
   return formatMessageRow(data);
 };
 
+export const updateThreadMessageMetadata = async ({
+  threadId,
+  messageId,
+  metadataPatch = {},
+}) => {
+  assertMessagingWriteAccess();
+  const threadIdNum = Number(threadId);
+  const messageKey = String(messageId || "").trim();
+  if (!threadIdNum || !messageKey) {
+    throw new Error("threadId and messageId are required to update message metadata.");
+  }
+
+  const existingRows = await fetchThreadMessageRows(threadIdNum);
+  const existingEntries = extractConversationEntriesFromRows(existingRows);
+  const nextEntries = existingEntries.map((entry) => {
+    if (String(entry.id) !== messageKey) {
+      return entry;
+    }
+
+    return {
+      ...entry,
+      metadata: {
+        ...(entry.metadata || {}),
+        ...(metadataPatch || {}),
+        leaveRequest: {
+          ...(entry.metadata?.leaveRequest || {}),
+          ...(metadataPatch?.leaveRequest || {}),
+        },
+      },
+    };
+  });
+
+  await persistThreadConversationRows({
+    threadId: threadIdNum,
+    entries: nextEntries,
+    existingRows,
+  });
+
+  return nextEntries.find((entry) => String(entry.id) === messageKey) || null;
+};
+
 export const markMessageSaved = async ({ messageId, threadId = null, saved = true }) => {
   assertMessagingWriteAccess();
   const messageKey = String(messageId || "").trim();

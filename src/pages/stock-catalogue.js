@@ -12,6 +12,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { isValidUuid, sanitizeNumericId } from "@/lib/utils/ids";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
+import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import { SearchBar } from "@/components/searchBarAPI";
 
 const PRE_PICK_OPTIONS = [
@@ -245,6 +246,7 @@ function StockCataloguePage() {
   const [bulkImportLoading, setBulkImportLoading] = useState(false);
   const [categories, setCategories] = useState([]);
   const [categorySearch, setCategorySearch] = useState("");
+  const [confirmDialog, setConfirmDialog] = useState(null);
   const [detectedCategory, setDetectedCategory] = useState("");
 
   const {
@@ -1597,9 +1599,14 @@ useEffect(() => {
                       if (exactMatch) {
                         handleCategorySelect(exactMatch.name);
                       } else {
-                        if (window.confirm(`Category "${categorySearch.trim()}" doesn't exist. Create it?`)) {
-                          handleCreateCategory(categorySearch.trim());
-                        }
+                        const trimmedCat = categorySearch.trim();
+                        setConfirmDialog({
+                          message: `Category "${trimmedCat}" doesn't exist. Create it?`,
+                          onConfirm: () => {
+                            setConfirmDialog(null);
+                            handleCreateCategory(trimmedCat);
+                          },
+                        });
                       }
                     }
                   }}
@@ -3321,6 +3328,14 @@ useEffect(() => {
         {renderAddToJobModal()}
         {renderDeliveryModal()}
       </div>
+      <ConfirmationDialog
+        isOpen={!!confirmDialog}
+        message={confirmDialog?.message}
+        cancelLabel="Cancel"
+        confirmLabel="Yes"
+        onCancel={() => setConfirmDialog(null)}
+        onConfirm={confirmDialog?.onConfirm}
+      />
     </Layout>
   );
 }

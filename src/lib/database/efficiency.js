@@ -227,6 +227,19 @@ export async function deleteEfficiencyEntry(entryId) {
 }
 
 /**
+ * Delete a job clocking entry (removes auto-logged entry from efficiency view).
+ */
+export async function deleteJobClockingEntry(entryId) {
+  const realId = entryId.startsWith("jc_") ? Number(entryId.slice(3)) : Number(entryId);
+  const { error } = await db
+    .from("job_clocking")
+    .delete()
+    .eq("id", realId);
+
+  if (error) throw error;
+}
+
+/**
  * Fetch targets for a specific technician.
  * Falls back to defaults if no row exists.
  */

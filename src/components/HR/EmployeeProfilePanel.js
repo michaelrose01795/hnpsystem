@@ -177,6 +177,14 @@ export default function EmployeeProfilePanel({ employee }) {
             <KeyValue label="Keycloak ID" value={employee.keycloakId} />
             <KeyValue label="Job Title" value={employee.jobTitle} />
             <KeyValue label="Department" value={employee.department} />
+            <KeyValue
+              label="Line Managers"
+              value={
+                employee.lineManagers?.length
+                  ? employee.lineManagers.map((manager) => manager.name).join(", ")
+                  : "Not assigned"
+              }
+            />
           </div>
         </CardBlock>
 

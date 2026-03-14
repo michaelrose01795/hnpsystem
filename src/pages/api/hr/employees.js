@@ -3,6 +3,7 @@
 import { getEmployeeDirectory } from "@/lib/database/hr";
 import { supabaseService } from "@/lib/supabaseClient";
 import { withRoleGuard } from "@/lib/auth/roleGuard";
+import { buildEmployeeMeta, normalizeLineManagerIds, parseEmployeeMeta } from "@/lib/hr/employeeMeta";
 
 const HR_MANAGER_EMPLOYEE_EDITOR_ROLES = ["owner", "admin manager"];
 
@@ -139,6 +140,8 @@ async function handleCreateOrUpdate(req, res) {
       email,
       phone: payload.phone || "",
       keycloakId: payload.keycloakId || null,
+      lineManagerIds: normalizeLineManagerIds(payload.lineManagerIds ?? payload.lineManagerId ?? []),
+      lineManagers: [],
     };
 
     return res.status(200).json({
@@ -219,18 +222,22 @@ async function upsertUser({ email, firstName, lastName, phone, role, jobTitle, p
 
   // Build the combined user + employee fields payload
   const buildEmployeeFields = () => {
-    const ec = payload.emergencyContact;
-    let emergencyContact = null;
-    if (ec) {
-      if (typeof ec === "string") emergencyContact = { raw: ec };
-      else if (typeof ec === "object" && ec.raw) emergencyContact = ec;
-      else if (typeof ec === "object" && ec.name) {
-        const parts = [ec.name, ec.phone, ec.relationship].filter(Boolean);
-        emergencyContact = parts.length > 0 ? { raw: parts.join(", ") } : null;
-      } else {
-        emergencyContact = { raw: String(ec) };
-      }
-    }
+    const existingMeta = parseEmployeeMeta(existingUser?.emergency_contact);
+    const contactValue =
+      typeof payload.emergencyContact === "string"
+        ? payload.emergencyContact
+        : payload.emergencyContact?.raw ?? existingMeta.raw;
+    const addressValue =
+      typeof payload.address === "string" ? payload.address : existingMeta.address;
+    const lineManagerIds = normalizeLineManagerIds(
+      payload.lineManagerIds ?? payload.lineManagerId ?? []
+    );
+    const emergencyContact = buildEmployeeMeta({
+      existingValue: existingUser?.emergency_contact ?? null,
+      contact: contactValue,
+      address: addressValue,
+      lineManagerIds,
+    });
 
     return {
       department: payload.department || null,
@@ -238,7 +245,7 @@ async function upsertUser({ email, firstName, lastName, phone, role, jobTitle, p
       employment_status: payload.status || null,
       start_date: toIsoDate(payload.startDate),
       probation_end: toIsoDate(payload.probationEnd),
-      manager_id: payload.managerId || null,
+      manager_id: lineManagerIds[0] || null,
       emergency_contact: emergencyContact,
       contracted_hours: toNumberOrNull(payload.contractedHours),
       hourly_rate: toNumberOrNull(payload.hourlyRate),

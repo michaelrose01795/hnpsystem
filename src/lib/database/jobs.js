@@ -691,6 +691,7 @@ export const getAuthorizedVhcItemsWithDetails = async (jobId) => {
         noteText: row.note_text ?? null,
         prePickLocation: row.pre_pick_location ?? null,
         requestId: row.request_id ?? null,
+        partNumber: row.part_number ?? null,
         status: isComplete ? "complete" : "additional_work",
         approvalStatus: row.approval_status ?? null,
         authorizationState: row.authorization_state ?? null,

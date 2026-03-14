@@ -6,6 +6,16 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import { supabase } from "@/lib/supabaseClient";
 import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver";
+import { ensureDirectThread, sendThreadMessage } from "@/lib/database/messages";
+import { parseEmployeeMeta } from "@/lib/hr/employeeMeta";
+import {
+  formatLeaveDateRange,
+  parseLeaveRequestNotes,
+  serializeLeaveRequestNotes,
+} from "@/lib/hr/leaveRequests";
+
+const buildRequesterName = (user = {}) =>
+  [user.first_name || "", user.last_name || ""].filter(Boolean).join(" ").trim() || user.email || "Employee";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -47,7 +57,7 @@ export default async function handler(req, res) {
     }
 
     // Validate request body
-    const { type, startDate, endDate, notes } = req.body;
+    const { type, startDate, endDate, notes, halfDay = "None", totalDays = null } = req.body;
 
     if (!type || !startDate || !endDate) {
       return res.status(400).json({
@@ -71,6 +81,40 @@ export default async function handler(req, res) {
       });
     }
 
+    const { data: requester, error: requesterError } = await supabase
+      .from("users")
+      .select("user_id, first_name, last_name, email, emergency_contact")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (requesterError) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load requester details.",
+        error: requesterError.message,
+      });
+    }
+
+    const lineManagerIds = parseEmployeeMeta(requester?.emergency_contact).lineManagerIds.filter(
+      (managerId) => managerId !== userId
+    );
+
+    if (lineManagerIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No line manager is assigned to your profile yet. Ask HR to add one before requesting leave.",
+      });
+    }
+
+    const requesterName = buildRequesterName(requester);
+    const notePayload = {
+      requestNotes: notes || "",
+      halfDay,
+      totalDays: totalDays === null || totalDays === undefined || totalDays === "" ? null : Number(totalDays),
+      lineManagerIds,
+      managerNotificationRefs: [],
+    };
+
     // Insert leave request into hr_absences
     const { data, error } = await supabase
       .from("hr_absences")
@@ -80,7 +124,7 @@ export default async function handler(req, res) {
         start_date: startDate,
         end_date: endDate,
         approval_status: "Pending",
-        notes: notes || null,
+        notes: serializeLeaveRequestNotes(notePayload),
       })
       .select()
       .single();
@@ -94,6 +138,58 @@ export default async function handler(req, res) {
       });
     }
 
+    const leaveSummary = formatLeaveDateRange(startDate, endDate);
+    const requestLines = [
+      `/leaverequest ${type} requested for ${leaveSummary}.`,
+      halfDay && halfDay !== "None" ? `Half day: ${halfDay}.` : null,
+      totalDays ? `Working days requested: ${totalDays}.` : null,
+      notes ? `Details: ${notes}` : null,
+    ].filter(Boolean);
+
+    const managerNotificationRefs = [];
+
+    // TODO: Reuse these line-manager relationships to power the future manager dashboard view for assigned staff states.
+    for (const managerId of lineManagerIds) {
+      const thread = await ensureDirectThread(userId, managerId);
+      const sentMessage = await sendThreadMessage({
+        threadId: thread.id,
+        senderId: userId,
+        receiverId: managerId,
+        content: requestLines.join(" "),
+        metadata: {
+          type: "leave-request",
+          leaveRequest: {
+            absenceId: data.absence_id,
+            requesterId: userId,
+            requesterName,
+            managerIds: lineManagerIds,
+            status: "Pending",
+            leaveType: type,
+            startDate,
+            endDate,
+            halfDay,
+            totalDays: notePayload.totalDays,
+            requestNotes: notes || "",
+          },
+        },
+      });
+
+      managerNotificationRefs.push({
+        managerId,
+        threadId: thread.id,
+        messageId: sentMessage.id,
+      });
+    }
+
+    if (managerNotificationRefs.length > 0) {
+      const nextNotes = parseLeaveRequestNotes(data.notes);
+      nextNotes.managerNotificationRefs = managerNotificationRefs;
+      await supabase
+        .from("hr_absences")
+        .update({ notes: serializeLeaveRequestNotes(nextNotes) })
+        .eq("absence_id", data.absence_id);
+    }
+
     return res.status(201).json({
       success: true,
       message: "Leave request submitted successfully.",
@@ -104,7 +200,9 @@ export default async function handler(req, res) {
         startDate: data.start_date,
         endDate: data.end_date,
         status: data.approval_status,
-        notes: data.notes,
+        notes,
+        halfDay,
+        totalDays: notePayload.totalDays,
       },
     });
   } catch (error) {

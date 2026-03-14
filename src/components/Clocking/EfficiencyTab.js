@@ -12,12 +12,14 @@ import {
   addEfficiencyEntry,
   updateEfficiencyEntry,
   deleteEfficiencyEntry,
+  deleteJobClockingEntry,
   upsertTechTarget,
   calculateTechTotals,
   calculateOverallTotals,
   TECH_NAMES,
 } from "@/lib/database/efficiency";
 import ModalPortal from "@/components/popups/ModalPortal";
+import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import { CalendarField } from "@/components/calendarAPI";
 import { DropdownField } from "@/components/dropdownAPI";
 import { SearchBar } from "@/components/searchBarAPI";
@@ -190,6 +192,9 @@ export default function EfficiencyTab({
   const lastJobNumberRef = useRef("");
 
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+
+  // In-app confirm dialog state
+  const [confirmDialog, setConfirmDialog] = useState(null); // { message, onConfirm }
 
   // Overall tab detail popup state
   const [detailPopupTechId, setDetailPopupTechId] = useState(null);
@@ -774,10 +779,14 @@ export default function EfficiencyTab({
     }
   };
 
-  const handleDelete = async (entryId) => {
+  const handleDelete = async (entryId, source) => {
     setDeleteSubmitting(true);
     try {
-      await deleteEfficiencyEntry(entryId);
+      if (source === "job_clocking") {
+        await deleteJobClockingEntry(entryId);
+      } else {
+        await deleteEfficiencyEntry(entryId);
+      }
       await fetchData();
     } catch (err) {
       setError(err?.message || "Failed to delete entry.");
@@ -786,14 +795,20 @@ export default function EfficiencyTab({
     }
   };
 
-  const handleDeleteFromEditModal = async () => {
+  const handleDeleteFromEditModal = () => {
     if (!editingEntry?.id) return;
-    const confirmed = typeof window === "undefined"
-      ? true
-      : window.confirm("Delete this job entry?");
-    if (!confirmed) return;
-    await handleDelete(editingEntry.id);
-    closeModal();
+    const isClocking = editingEntry._source === "job_clocking";
+    const confirmMsg = isClocking
+      ? "Remove this auto-logged job clocking entry?"
+      : "Delete this job entry?";
+    setConfirmDialog({
+      message: confirmMsg,
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        await handleDelete(editingEntry.id, editingEntry._source);
+        closeModal();
+      },
+    });
   };
 
   // Styles
@@ -1418,28 +1433,30 @@ export default function EfficiencyTab({
                       activeSummary.entries.map((entry) => {
                         const isFromClocking = entry._source === "job_clocking";
                         const canOpenEditModal = isTabEditable && !isFromClocking;
+                        const canOpenViewModal = isTabEditable && isFromClocking;
+                        const isClickable = canOpenEditModal || canOpenViewModal;
                         const logged = Number(entry.hours_spent || 0);
                         const allocated = Number(entry.allocated_hours || 0);
                         const rowDifference = Number((logged - allocated).toFixed(2));
                         return (
                         <tr
                           key={entry.id}
-                          role={canOpenEditModal ? "button" : undefined}
-                          tabIndex={canOpenEditModal ? 0 : -1}
+                          role={isClickable ? "button" : undefined}
+                          tabIndex={isClickable ? 0 : -1}
                           onPointerUp={(event) => {
-                            if (!canOpenEditModal) return;
+                            if (!isClickable) return;
                             if (event.pointerType === "mouse" && event.button !== 0) return;
                             openEditModal(entry);
                           }}
                           onKeyDown={(event) => {
-                            if (!canOpenEditModal) return;
+                            if (!isClickable) return;
                             if (event.key === "Enter" || event.key === " ") {
                               event.preventDefault();
                               openEditModal(entry);
                             }
                           }}
                           style={{
-                            cursor: canOpenEditModal ? "pointer" : "default",
+                            cursor: isClickable ? "pointer" : "default",
                             backgroundColor: canOpenEditModal ? "transparent" : undefined,
                           }}
                         >
@@ -1745,25 +1762,27 @@ export default function EfficiencyTab({
                         detailPopupSummary.entries.map((entry) => {
                           const isFromClocking = entry._source === "job_clocking";
                           const canOpenEditModal = isDetailPopupEditable && !isFromClocking;
+                          const canOpenViewModal = isDetailPopupEditable && isFromClocking;
+                          const isClickable = canOpenEditModal || canOpenViewModal;
                           return (
                           <tr
                             key={entry.id}
-                            role={canOpenEditModal ? "button" : undefined}
-                            tabIndex={canOpenEditModal ? 0 : -1}
+                            role={isClickable ? "button" : undefined}
+                            tabIndex={isClickable ? 0 : -1}
                             onPointerUp={(event) => {
-                              if (!canOpenEditModal) return;
+                              if (!isClickable) return;
                               if (event.pointerType === "mouse" && event.button !== 0) return;
                               openEditModal(entry);
                             }}
                             onKeyDown={(event) => {
-                              if (!canOpenEditModal) return;
+                              if (!isClickable) return;
                               if (event.key === "Enter" || event.key === " ") {
                                 event.preventDefault();
                                 openEditModal(entry);
                               }
                             }}
                             style={{
-                              cursor: canOpenEditModal ? "pointer" : "default",
+                              cursor: isClickable ? "pointer" : "default",
                             }}
                           >
                             <td style={tdStyle}>
@@ -1844,7 +1863,7 @@ export default function EfficiencyTab({
                     Job Entry
                   </p>
                   <h3 style={{ margin: "4px 0 0", fontSize: "1.3rem", color: "var(--primary-dark)" }}>
-                    {editingEntry ? "Edit Job Entry" : "New Job Entry"}
+                    {editingEntry ? (editingEntry._source === "job_clocking" ? "View Job Entry" : "Edit Job Entry") : "New Job Entry"}
                   </h3>
                 </div>
                 <button
@@ -1884,6 +1903,19 @@ export default function EfficiencyTab({
               )}
 
               <form onSubmit={handleFormSubmit} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+                {editingEntry?._source === "job_clocking" && (
+                  <div style={{
+                    borderRadius: "var(--radius-md)",
+                    padding: "10px 14px",
+                    background: "var(--info-surface)",
+                    color: "var(--info)",
+                    fontSize: "0.82rem",
+                    fontWeight: 500,
+                    border: "1px solid var(--info)22",
+                  }}>
+                    Auto-logged from job clocking — this entry can be removed but not edited.
+                  </div>
+                )}
                 {/* Row 1: Date + Day Type */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                   <CalendarField
@@ -1892,6 +1924,7 @@ export default function EfficiencyTab({
                     value={formDate}
                     onChange={(event) => setFormDate(event.target.value)}
                     required
+                    disabled={editingEntry?._source === "job_clocking"}
                   />
                   <DropdownField
                     id="efficiencyDayType"
@@ -1904,6 +1937,7 @@ export default function EfficiencyTab({
                     value={formDayType}
                     onChange={(event) => setFormDayType(event.target.value)}
                     required
+                    disabled={editingEntry?._source === "job_clocking"}
                   />
                 </div>
 
@@ -1925,6 +1959,7 @@ export default function EfficiencyTab({
                         setFormError("");
                       }}
                       placeholder="Job no. optional"
+                      disabled={editingEntry?._source === "job_clocking"}
                       style={{
                         borderRadius: "var(--radius-md)",
                         border: "none",
@@ -1933,6 +1968,7 @@ export default function EfficiencyTab({
                         fontSize: "0.95rem",
                         color: "var(--text-primary)",
                         outline: "none",
+                        ...(editingEntry?._source === "job_clocking" ? { opacity: 0.6, cursor: "not-allowed" } : {}),
                       }}
                     />
                     <span
@@ -1970,7 +2006,7 @@ export default function EfficiencyTab({
                     label="Job Clocking On"
                     options={requestOptions}
                     placeholder={formJobNumber.trim() ? `Job: ${formJobNumber.trim()}` : "Select clocking"}
-                    disabled={!formJobNumber.trim()}
+                    disabled={editingEntry?._source === "job_clocking" || !formJobNumber.trim()}
                     className="efficiency-request-dropdown"
                   />
                 </div>
@@ -1995,6 +2031,7 @@ export default function EfficiencyTab({
                         setFormError("");
                       }}
                       placeholder="Allocated hours"
+                      disabled={editingEntry?._source === "job_clocking"}
                       style={{
                         borderRadius: "var(--radius-md)",
                         border: "none",
@@ -2004,6 +2041,7 @@ export default function EfficiencyTab({
                         color: "var(--text-primary)",
                         outline: "none",
                         ...(formError.toLowerCase().includes("allocated hours") ? popupFieldErrorStyle : {}),
+                        ...(editingEntry?._source === "job_clocking" ? { opacity: 0.6, cursor: "not-allowed" } : {}),
                       }}
                     />
                   </div>
@@ -2026,6 +2064,7 @@ export default function EfficiencyTab({
                       }}
                       placeholder="Clocked hours"
                       required
+                      disabled={editingEntry?._source === "job_clocking"}
                       style={{
                         borderRadius: "var(--radius-md)",
                         border: "none",
@@ -2035,6 +2074,7 @@ export default function EfficiencyTab({
                         color: "var(--text-primary)",
                         outline: "none",
                         ...(formError.toLowerCase().includes("total clocked") ? popupFieldErrorStyle : {}),
+                        ...(editingEntry?._source === "job_clocking" ? { opacity: 0.6, cursor: "not-allowed" } : {}),
                       }}
                     />
                   </div>
@@ -2055,6 +2095,7 @@ export default function EfficiencyTab({
                       onChange={(e) => setFormDescription(e.target.value)}
                       placeholder="Job description"
                       rows={2}
+                      disabled={editingEntry?._source === "job_clocking"}
                       style={{
                         borderRadius: "var(--radius-md)",
                         border: "none",
@@ -2066,6 +2107,7 @@ export default function EfficiencyTab({
                         resize: "vertical",
                         minHeight: "64px",
                         overflowY: "auto",
+                        ...(editingEntry?._source === "job_clocking" ? { opacity: 0.6, cursor: "not-allowed" } : {}),
                       }}
                     />
                   </div>
@@ -2082,6 +2124,7 @@ export default function EfficiencyTab({
                       onChange={(e) => setFormNotes(e.target.value)}
                       placeholder="Notes"
                       rows={2}
+                      disabled={editingEntry?._source === "job_clocking"}
                       style={{
                         borderRadius: "var(--radius-md)",
                         border: "none",
@@ -2093,6 +2136,7 @@ export default function EfficiencyTab({
                         resize: "vertical",
                         minHeight: "64px",
                         overflowY: "auto",
+                        ...(editingEntry?._source === "job_clocking" ? { opacity: 0.6, cursor: "not-allowed" } : {}),
                       }}
                     />
                   </div>
@@ -2101,7 +2145,7 @@ export default function EfficiencyTab({
                 {/* Actions */}
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", paddingTop: "4px" }}>
                   <div>
-                    {editingEntry && editingEntry._source !== "job_clocking" && (
+                    {editingEntry && (
                       <button
                         type="button"
                         onClick={handleDeleteFromEditModal}
@@ -2118,7 +2162,7 @@ export default function EfficiencyTab({
                           opacity: deleteSubmitting ? 0.7 : 1,
                         }}
                       >
-                        {deleteSubmitting ? "Deleting..." : "Delete Entry"}
+                        {deleteSubmitting ? "Deleting..." : editingEntry._source === "job_clocking" ? "Remove Entry" : "Delete Entry"}
                       </button>
                     )}
                   </div>
@@ -2139,6 +2183,7 @@ export default function EfficiencyTab({
                   >
                     Cancel
                   </button>
+                  {editingEntry?._source !== "job_clocking" && (
                   <button
                     type="submit"
                     disabled={formSubmitting}
@@ -2156,6 +2201,7 @@ export default function EfficiencyTab({
                   >
                     {formSubmitting ? "Saving..." : editingEntry ? "Update Job Entry" : "Add Job Entry"}
                   </button>
+                  )}
                   </div>
                 </div>
               </form>
@@ -2273,6 +2319,14 @@ export default function EfficiencyTab({
           `}</style>
         </ModalPortal>
       )}
+      <ConfirmationDialog
+        isOpen={!!confirmDialog}
+        message={confirmDialog?.message}
+        cancelLabel="Cancel"
+        confirmLabel="Remove"
+        onCancel={() => setConfirmDialog(null)}
+        onConfirm={confirmDialog?.onConfirm}
+      />
     </div>
   );
 }

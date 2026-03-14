@@ -9,6 +9,7 @@ import { getDatabaseClient } from "@/lib/database/client";
 import { getDisplayName } from "@/lib/users/displayName";
 import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver";
 import dayjs from "dayjs";
+import { parseLeaveRequestNotes } from "@/lib/hr/leaveRequests";
 
 const adminDb = getDatabaseClient();
 
@@ -258,6 +259,36 @@ async function getUserLeaveBalance(userId, employmentType) {
   };
 }
 
+async function getUserLeaveRequests(userId, limit = 20) {
+  const { data, error } = await supabase
+    .from("hr_absences")
+    .select("absence_id, type, start_date, end_date, approval_status, notes, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("Failed to load leave requests for profile:", error);
+    throw error;
+  }
+
+  return (data || []).map((row) => {
+    const noteData = parseLeaveRequestNotes(row.notes);
+    return {
+      id: row.absence_id,
+      type: row.type,
+      startDate: row.start_date,
+      endDate: row.end_date,
+      status: row.approval_status || "Pending",
+      requestNotes: noteData.requestNotes || "",
+      declineReason: noteData.declineReason || "",
+      halfDay: noteData.halfDay || "None",
+      totalDays: noteData.totalDays ?? null,
+      createdAt: row.created_at,
+    };
+  });
+}
+
 // Get user's profile directly from users table
 async function getUserProfile(userId) {
   const { data, error } = await supabase
@@ -443,11 +474,12 @@ export default async function handler(req, res) {
     }
 
     // Fetch all user-specific data in parallel
-    const [profile, attendanceLogs, overtimeSnapshot, leaveBalance, staffVehicles] = await Promise.all([
+    const [profile, attendanceLogs, overtimeSnapshot, leaveBalance, leaveRequests, staffVehicles] = await Promise.all([
       getUserProfile(userId),
       getUserAttendanceLogs(userId, 50),
       getUserOvertimeSnapshot(userId),
       getUserLeaveBalance(userId, null),
+      getUserLeaveRequests(userId, 20),
       getUserStaffVehicles(userId),
     ]);
 
@@ -466,6 +498,7 @@ export default async function handler(req, res) {
         overtimeSummary: overtimeSnapshot.summary,
         overtimeSessions: overtimeSnapshot.sessions,
         leaveBalance: finalLeaveBalance,
+        leaveRequests,
         staffVehicles,
       },
     });

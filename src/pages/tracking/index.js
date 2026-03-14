@@ -13,6 +13,7 @@ import { CalendarField } from "@/components/calendarAPI";
 import { DropdownField } from "@/components/dropdownAPI";
 import { SearchBar } from "@/components/searchBarAPI";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
+import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import { addMonths } from "date-fns";
 import { TabGroup } from "@/components/tabAPI/TabGroup";
 
@@ -577,6 +578,7 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
   useBodyModalLock(true);
 
   const [form, setForm] = useState(() => buildEquipmentFormState(initialData));
+  const [confirmDialog, setConfirmDialog] = useState(null);
 
   useEffect(() => {
     setForm(buildEquipmentFormState(initialData));
@@ -731,10 +733,13 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
                 type="button"
                 onClick={() => {
                   if (!initialData?.id) return;
-                  const shouldDelete = window.confirm("Delete this equipment entry?");
-                  if (shouldDelete) {
-                    onDelete?.(initialData.id);
-                  }
+                  setConfirmDialog({
+                    message: "Delete this equipment entry?",
+                    onConfirm: () => {
+                      setConfirmDialog(null);
+                      onDelete?.(initialData.id);
+                    },
+                  });
                 }}
                 style={{
                   padding: "10px 16px",
@@ -781,6 +786,14 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
           </div>
         </div>
       </form>
+      <ConfirmationDialog
+        isOpen={!!confirmDialog}
+        message={confirmDialog?.message}
+        cancelLabel="Cancel"
+        confirmLabel="Delete"
+        onCancel={() => setConfirmDialog(null)}
+        onConfirm={confirmDialog?.onConfirm}
+      />
     </div>
   );
 };
@@ -789,6 +802,7 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
   useBodyModalLock(true);
 
   const [form, setForm] = useState(() => buildOilFormState(initialData));
+  const [confirmDialog, setConfirmDialog] = useState(null);
 
   useEffect(() => {
     setForm(buildOilFormState(initialData));
@@ -964,10 +978,13 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
               type="button"
               onClick={() => {
                 if (!initialData?.id) return;
-                const shouldDelete = window.confirm("Delete this oil/stock entry?");
-                if (shouldDelete) {
-                  onDelete?.(initialData.id);
-                }
+                setConfirmDialog({
+                  message: "Delete this oil/stock entry?",
+                  onConfirm: () => {
+                    setConfirmDialog(null);
+                    onDelete?.(initialData.id);
+                  },
+                });
               }}
               style={{
                 padding: "10px 16px",
@@ -1015,6 +1032,14 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
           </div>
         </div>
       </form>
+      <ConfirmationDialog
+        isOpen={!!confirmDialog}
+        message={confirmDialog?.message}
+        cancelLabel="Cancel"
+        confirmLabel="Delete"
+        onCancel={() => setConfirmDialog(null)}
+        onConfirm={confirmDialog?.onConfirm}
+      />
     </div>
   );
 };

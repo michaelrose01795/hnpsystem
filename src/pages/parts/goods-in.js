@@ -10,6 +10,7 @@ import { CalendarField } from "@/components/calendarAPI";
 import { ScrollArea } from "@/components/scrollAPI";
 import { TabGroup } from "@/components/tabAPI/TabGroup";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
+import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 
 const PRICE_LEVEL_OPTIONS = [
   { value: "stock_order_rate", label: "Stock order rate" },
@@ -305,6 +306,7 @@ function GoodsInPage() {
   const [completionPromptOpen, setCompletionPromptOpen] = useState(false);
   const [scanBusy, setScanBusy] = useState(false);
   const [removingItemId, setRemovingItemId] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
   const [partError, setPartError] = useState("");
   const fileInputRef = useRef(null);
 
@@ -612,15 +614,7 @@ function GoodsInPage() {
     }
   };
 
-  const handleRemoveItem = async (itemId) => {
-    if (!itemId) return;
-    if (!goodsInRecord?.id) {
-      setToast({ type: "error", message: "Start a goods-in record before removing lines" });
-      return;
-    }
-    if (typeof window !== "undefined" && !window.confirm("Remove this invoice line?")) {
-      return;
-    }
+  const doRemoveItem = async (itemId) => {
     try {
       setRemovingItemId(itemId);
       const response = await fetch(`/api/parts/goods-in/items/${itemId}`, {
@@ -638,6 +632,21 @@ function GoodsInPage() {
     } finally {
       setRemovingItemId(null);
     }
+  };
+
+  const handleRemoveItem = (itemId) => {
+    if (!itemId) return;
+    if (!goodsInRecord?.id) {
+      setToast({ type: "error", message: "Start a goods-in record before removing lines" });
+      return;
+    }
+    setConfirmDialog({
+      message: "Remove this invoice line?",
+      onConfirm: () => {
+        setConfirmDialog(null);
+        doRemoveItem(itemId);
+      },
+    });
   };
 
   const handleCompleteGoodsIn = async () => {
@@ -1676,6 +1685,14 @@ function GoodsInPage() {
           }}
         />
       )}
+      <ConfirmationDialog
+        isOpen={!!confirmDialog}
+        message={confirmDialog?.message}
+        cancelLabel="Cancel"
+        confirmLabel="Remove"
+        onCancel={() => setConfirmDialog(null)}
+        onConfirm={confirmDialog?.onConfirm}
+      />
     </Layout>
   );
 }

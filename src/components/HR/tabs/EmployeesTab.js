@@ -51,6 +51,7 @@ const SAMPLE_PAYLOAD_FIELD_MAP = {
   "start date": "startDate",
   "probation ends": "probationEnd",
   "contracted hours per week": "contractedHours",
+  "line manager": "lineManagerIds",
   "hourly rate (£)": "hourlyRate",
   "overtime rate (£)": "overtimeRate",
   "annual salary (£)": "annualSalary",
@@ -73,6 +74,7 @@ const DB_COLUMN_TO_FORM_FIELD = {
   employment_status: "status",
   start_date: "startDate",
   contracted_hours: "contractedHours",
+  manager_id: "lineManagerIds",
   hourly_rate: "hourlyRate",
   overtime_rate: "overtimeRate",
   annual_salary: "annualSalary",
@@ -96,6 +98,7 @@ const FIELD_SECTION_MAP = {
   startDate: "employment",
   probationEnd: "employment",
   contractedHours: "employment",
+  lineManagerIds: "employment",
   hourlyRate: "compensation",
   overtimeRate: "compensation",
   annualSalary: "compensation",
@@ -184,6 +187,7 @@ export default function EmployeesTab() {
     startDate: "",
     probationEnd: "",
     contractedHours: 40,
+    lineManagerIds: [],
     hourlyRate: "",
     overtimeRate: "",
     annualSalary: "",
@@ -236,6 +240,16 @@ export default function EmployeesTab() {
     const employeeTitles = employees.map((employee) => employee.jobTitle);
     return buildUniqueList(employeeTitles);
   }, [employees]);
+
+  const lineManagerOptions = useMemo(
+    () =>
+      employees.map((employee) => ({
+        value: employee.userId,
+        label: employee.name || employee.email || `User ${employee.userId}`,
+        description: [employee.jobTitle, employee.department].filter(Boolean).join(" · "),
+      })),
+    [employees]
+  );
 
   useEffect(() => {
     if (!isLoading && !error && employees.length > 0 && !selectedEmployeeId) {
@@ -300,6 +314,7 @@ export default function EmployeesTab() {
       startDate: "",
       probationEnd: "",
       contractedHours: 40,
+      lineManagerIds: [],
       hourlyRate: "",
       overtimeRate: "",
       annualSalary: "",
@@ -347,6 +362,7 @@ export default function EmployeesTab() {
         employee.contractedHours !== undefined && employee.contractedHours !== null
           ? employee.contractedHours
           : 40,
+      lineManagerIds: Array.isArray(employee.lineManagerIds) ? employee.lineManagerIds : [],
       hourlyRate: employee.hourlyRate ?? "",
       overtimeRate: employee.overtimeRate ?? "",
       annualSalary: employee.annualSalary ?? "",
@@ -795,6 +811,7 @@ export default function EmployeesTab() {
       footerContent={sampleFooter}
       availableRoles={availableRoles}
       availableJobTitles={availableJobTitles}
+      lineManagerOptions={lineManagerOptions}
     />
   );
 
@@ -813,6 +830,7 @@ export default function EmployeesTab() {
         fieldErrors={editFieldErrors}
         availableRoles={availableRoles}
         availableJobTitles={availableJobTitles}
+        lineManagerOptions={lineManagerOptions}
       />
     ) : null;
 
@@ -921,6 +939,7 @@ function EmployeeForm({
   footerContent = null,
   availableRoles,
   availableJobTitles,
+  lineManagerOptions,
 }) {
   if (!values) return null;
 
@@ -989,6 +1008,7 @@ function EmployeeForm({
             fieldErrors={fieldErrors}
             availableRoles={availableRoles}
             availableJobTitles={availableJobTitles}
+            lineManagerOptions={lineManagerOptions}
           />
           {footerContent}
         </div>
@@ -1120,6 +1140,186 @@ function SearchableListDropdown({
   );
 }
 
+function SearchableMultiSelect({
+  values = [],
+  onChange,
+  items = [],
+  placeholder,
+  emptyLabel,
+  hasError = false,
+  excludeIds = [],
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const dropdownRef = React.useRef(null);
+
+  const normalizedExcludeIds = useMemo(
+    () => new Set((excludeIds || []).map((entry) => Number(entry)).filter(Boolean)),
+    [excludeIds]
+  );
+  const normalizedValues = useMemo(
+    () => (values || []).map((entry) => Number(entry)).filter(Boolean),
+    [values]
+  );
+  const selectedIds = useMemo(() => new Set(normalizedValues), [normalizedValues]);
+
+  const filteredItems = useMemo(() => {
+    const safeItems = Array.isArray(items) ? items : [];
+    return safeItems.filter((item) => {
+      if (normalizedExcludeIds.has(Number(item.value))) return false;
+      if (!searchTerm.trim()) return true;
+      const haystack = [item.label, item.description].filter(Boolean).join(" ").toLowerCase();
+      return haystack.includes(searchTerm.toLowerCase());
+    });
+  }, [items, normalizedExcludeIds, searchTerm]);
+
+  const selectedItems = useMemo(
+    () => (items || []).filter((item) => selectedIds.has(Number(item.value))),
+    [items, selectedIds]
+  );
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+        setSearchTerm("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const toggleValue = (value) => {
+    const numericValue = Number(value);
+    const next = selectedIds.has(numericValue)
+      ? normalizedValues.filter((entry) => entry !== numericValue)
+      : [...normalizedValues, numericValue];
+    onChange(next);
+  };
+
+  return (
+    <div ref={dropdownRef} style={{ position: "relative" }}>
+      <div
+        onClick={() => setIsOpen(true)}
+        style={{
+          minHeight: "42px",
+          padding: "8px 10px",
+          borderRadius: "var(--radius-xs)",
+          border: hasError ? "1px solid var(--danger)" : "1px solid rgba(var(--accent-purple-rgb), 0.18)",
+          boxShadow: hasError ? "0 0 0 2px rgba(var(--danger-rgb), 0.12)" : "none",
+          background: "rgba(var(--accent-purple-rgb), 0.08)",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          flexWrap: "wrap",
+          cursor: "text",
+        }}
+      >
+        {selectedItems.length > 0 ? (
+          selectedItems.map((item) => (
+            <button
+              key={item.value}
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                toggleValue(item.value);
+              }}
+              style={{
+                border: "1px solid rgba(var(--primary-rgb), 0.45)",
+                borderRadius: "var(--radius-pill)",
+                padding: "8px 12px",
+                background: "var(--primary)",
+                color: "var(--text-inverse)",
+                fontSize: "0.82rem",
+                fontWeight: 600,
+                cursor: "pointer",
+                boxShadow: "0 10px 20px rgba(0,0,0,0.12)",
+                lineHeight: 1,
+              }}
+            >
+              {item.label} ×
+            </button>
+          ))
+        ) : (
+          <span style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>{placeholder}</span>
+        )}
+      </div>
+      {isOpen && (
+        <div
+          style={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            right: 0,
+            maxHeight: "260px",
+            overflow: "hidden",
+            background: "rgba(var(--accent-purple-rgb), 0.08)",
+            borderRadius: "var(--radius-xs)",
+            marginTop: "4px",
+            zIndex: 1000,
+            boxShadow: "var(--shadow-md)",
+            border: "1px solid rgba(var(--accent-purple-rgb), 0.18)",
+          }}
+        >
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Search users..."
+            style={{
+              width: "100%",
+              padding: "10px 12px",
+              border: "none",
+              borderBottom: "1px solid var(--surface-light)",
+              outline: "none",
+              background: "rgba(var(--accent-purple-rgb), 0.14)",
+              color: "var(--text-primary)",
+            }}
+          />
+          <div style={{ maxHeight: "210px", overflowY: "auto" }}>
+            {filteredItems.length > 0 ? (
+              filteredItems.map((item) => {
+                const isSelected = selectedIds.has(Number(item.value));
+                return (
+                  <button
+                    key={item.value}
+                    type="button"
+                    onClick={() => toggleValue(item.value)}
+                    style={{
+                      width: "100%",
+                      border: "none",
+                      background: isSelected ? "rgba(var(--accent-purple-rgb), 0.1)" : "transparent",
+                      padding: "10px 12px",
+                      textAlign: "left",
+                      cursor: "pointer",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "2px",
+                    }}
+                  >
+                    <span style={{ fontWeight: isSelected ? 700 : 600, color: isSelected ? "var(--accent-purple)" : "var(--text-primary)" }}>
+                      {item.label}
+                    </span>
+                    {item.description ? (
+                      <span style={{ fontSize: "0.78rem", color: "var(--text-secondary)" }}>
+                        {item.description}
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })
+            ) : (
+              <div style={{ padding: "10px 12px", color: "var(--info)", fontSize: "0.9rem" }}>
+                {emptyLabel}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SectionHeading({ title, hasError = false, errorCount = 0 }) {
   return (
     <div
@@ -1167,6 +1367,7 @@ function EmployeeDetailsFields({
   fieldErrors = {},
   availableRoles,
   availableJobTitles,
+  lineManagerOptions = [],
 }) {
   const update = (field) => (event) => onFieldChange(field, event.target.value);
   const inputStyle = { padding: "10px", borderRadius: "var(--radius-xs)", border: "none" };
@@ -1288,6 +1489,17 @@ function EmployeeDetailsFields({
           </FormField>
           <FormField label="Contracted Hours / Week" errorMessage={fieldErrors.contractedHours}>
             <input type="number" min="0" value={values.contractedHours} onChange={update("contractedHours")} style={applyFieldErrorStyle("contractedHours")} />
+          </FormField>
+          <FormField label="Line Manager" errorMessage={fieldErrors.lineManagerIds}>
+            <SearchableMultiSelect
+              values={values.lineManagerIds || []}
+              onChange={(nextValue) => onFieldChange("lineManagerIds", nextValue)}
+              items={lineManagerOptions}
+              placeholder="Search and select line managers..."
+              emptyLabel="No users found"
+              hasError={Boolean(fieldErrors.lineManagerIds)}
+              excludeIds={values.userId ? [values.userId] : []}
+            />
           </FormField>
         </div>
       </div>

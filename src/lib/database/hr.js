@@ -5,6 +5,8 @@ import dayjs from "dayjs";
 import { supabase } from "@/lib/supabaseClient";
 import { getDatabaseClient } from "@/lib/database/client"; // Use the service client for privileged HR operations.
 import { getDisplayName } from "@/lib/users/displayName";
+import { parseEmployeeMeta } from "@/lib/hr/employeeMeta";
+import { parseLeaveRequestNotes } from "@/lib/hr/leaveRequests";
 
 const DEFAULT_ATTENDANCE_LIMIT = 50;
 
@@ -772,27 +774,31 @@ const normalizeDocuments = (documents) => {
 
 // Format emergency contact data into consistent display format
 const formatEmergencyContact = (value) => {
-  if (!value) return { contact: "Not provided", address: "Not provided" };
+  if (!value) return { contact: "Not provided", address: "Not provided", lineManagerIds: [] };
   if (typeof value === "string") {
-    return { contact: value, address: "Not provided" };
+    return { contact: value, address: "Not provided", lineManagerIds: [] };
   }
 
   if (typeof value === "object") {
-    // Standard format: { raw: "Name, Phone, Relationship" }
-    if (value.raw) {
-      return { contact: value.raw, address: value.address || "Not provided" };
+    const parsed = parseEmployeeMeta(value);
+    if (parsed.raw || parsed.address || parsed.lineManagerIds.length > 0) {
+      return {
+        contact: parsed.raw || "Not provided",
+        address: parsed.address || "Not provided",
+        lineManagerIds: parsed.lineManagerIds,
+      };
     }
-    // Legacy structured format: { name, phone, relationship }
     if (value.name) {
       const parts = [value.name, value.phone, value.relationship].filter(Boolean);
       return {
         contact: parts.join(", "),
         address: value.address || "Not provided",
+        lineManagerIds: [],
       };
     }
   }
 
-  return { contact: "Not provided", address: "Not provided" };
+  return { contact: "Not provided", address: "Not provided", lineManagerIds: [] };
 };
 
 // Get complete employee directory with profile details
@@ -838,11 +844,16 @@ export async function getEmployeeDirectory() {
     throw error;
   }
 
+  const lineManagerNameMap = new Map(
+    (data || []).map((user) => [user.user_id, getDisplayName(user)])
+  );
+
   return (data || []).map((user) => {
     const userId = user.user_id;
     const status = user.employment_status || "Active";
     const name = getDisplayName(user);
     const emergencyDetails = formatEmergencyContact(user.emergency_contact);
+    const lineManagerIds = emergencyDetails.lineManagerIds || [];
     const contractedHours = user.contracted_hours ?? null;
     const hourlyRate = user.hourly_rate;
     const overtimeRate = user.overtime_rate;
@@ -874,6 +885,12 @@ export async function getEmployeeDirectory() {
       phone: user.phone || "N/A",
       emergencyContact: emergencyDetails.contact,
       address: homeAddress || emergencyDetails.address,
+      lineManagerIds,
+      lineManagers: lineManagerIds
+        .map((managerId) => ({
+          userId: managerId,
+          name: lineManagerNameMap.get(managerId) || `User ${managerId}`,
+        })),
       documents: normalizeDocuments(user.documents),
     };
   });
@@ -973,7 +990,7 @@ async function fetchUsersByIds(ids = []) {
 function mapLeaveStatus(status, startDate, endDate) {
   const normalized = (status || "").toLowerCase();
   if (normalized === "pending") return "Pending";
-  if (normalized === "rejected") return "Rejected";
+  if (normalized === "rejected" || normalized === "declined") return "Declined";
 
   if (normalized === "approved") {
     const today = dayjs();
@@ -1015,6 +1032,7 @@ export async function getLeaveRequests({ limit = 50 } = {}) {
         end_date,
         approval_status,
         approved_by,
+        notes,
         created_at,
         user:users!hr_absences_user_id_fkey(
           first_name,
@@ -1037,6 +1055,7 @@ export async function getLeaveRequests({ limit = 50 } = {}) {
   return (data || []).map((row) => {
     const employee = formatEmployee(row.user);
     const approver = approverMap.get(row.approved_by) || "Awaiting approval";
+    const noteData = parseLeaveRequestNotes(row.notes);
 
     return {
       id: `LR-${row.absence_id}`,
@@ -1048,6 +1067,8 @@ export async function getLeaveRequests({ limit = 50 } = {}) {
       status: mapLeaveStatus(row.approval_status, row.start_date, row.end_date),
       submittedOn: row.created_at,
       approver,
+      requestNotes: noteData.requestNotes,
+      declineReason: noteData.declineReason,
     };
   });
 }

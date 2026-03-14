@@ -60,6 +60,14 @@ const loadArchivedJob = async (jobNumberIdentifier) => {
 
 const HOT_CACHE_HEADER = "private, max-age=10, stale-while-revalidate=60";
 
+const loadLiveJob = async (jobNumber, { force = false } = {}) => {
+  if (!jobNumber) {
+    return { data: null, error: { message: "Job number is required" } };
+  }
+
+  return getJobByNumber(jobNumber, { noCache: force });
+};
+
 export default async function handler(req, res) {
   const { jobNumber: rawJobNumber, archive, force } = req.query;
 
@@ -82,7 +90,11 @@ export default async function handler(req, res) {
       identifier: rawJobNumber,
       select: "id, job_number",
     });
-    const canonicalJobNumber = identity?.job_number || String(rawJobNumber).trim();
+    const rawJobNumberTrimmed = String(rawJobNumber).trim();
+    const canonicalJobNumber = identity?.job_number || rawJobNumberTrimmed;
+    const liveLookupCandidates = Array.from(
+      new Set([canonicalJobNumber, rawJobNumberTrimmed, ...buildArchiveCandidates(rawJobNumberTrimmed)])
+    ).filter(Boolean);
 
     if (requestArchive) {
       const { data, error } = await loadArchivedJob(canonicalJobNumber);
@@ -102,9 +114,17 @@ export default async function handler(req, res) {
       });
     }
 
-    const { data, error } = await getJobByNumber(canonicalJobNumber, { noCache: requestForce });
+    let liveResult = null;
+    for (const candidate of liveLookupCandidates) {
+      // Retry the underlying lookup across raw and padded variants before failing the request.
+      const attempt = await loadLiveJob(candidate, { force: requestForce });
+      if (attempt?.data?.jobCard) {
+        liveResult = attempt;
+        break;
+      }
+    }
 
-    if (error || !data?.jobCard) {
+    if (!liveResult?.data?.jobCard) {
       const archived = await loadArchivedJob(canonicalJobNumber);
       if (archived?.data?.jobCard) {
         res.setHeader("Cache-Control", requestForce ? "no-store, max-age=0, must-revalidate" : HOT_CACHE_HEADER);
@@ -121,6 +141,7 @@ export default async function handler(req, res) {
         .json({ message: `Job card ${rawJobNumber} not found` });
     }
 
+    const { data } = liveResult;
     const { jobCard, customer, vehicle } = data;
     const notes = jobCard.id ? await getNotesByJob(jobCard.id) : [];
     const sharedNote = notes[0] || null;

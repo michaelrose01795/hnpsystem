@@ -1461,6 +1461,8 @@ export default function VhcDetailsPanel({
   const labourSuggestionRequestRef = useRef({});
   const labourEditSessionRef = useRef({});
   const partsLearningDebounceRef = useRef(null);
+  const vhcPartsStatusSyncRef = useRef(new Set());
+  const vhcPartsCostSyncRef = useRef(new Set());
   // Track item IDs where totalOverride has been touched by the user so the
   // DB-init effect never overwrites an in-progress edit or an explicit clear.
   const totalOverrideTouchedRef = useRef(new Set());
@@ -1700,15 +1702,8 @@ export default function VhcDetailsPanel({
           .eq("job_number", resolvedJobNumber)
           .maybeSingle();
 
-        const workflowPromise = supabase
-          .from("vhc_workflow_status")
-          .select("*")
-          .eq("job_number", resolvedJobNumber)
-          .maybeSingle();
-
-        const [{ data: primaryJobRow, error: jobError }, { data: workflowRow, error: workflowError }] = await Promise.all([
+        const [{ data: primaryJobRow, error: jobError }] = await Promise.all([
           jobPromise,
-          workflowPromise,
         ]);
 
         let jobRow = primaryJobRow;
@@ -1746,15 +1741,11 @@ export default function VhcDetailsPanel({
             };
           }
         }
-        if (workflowError && workflowError.code !== "PGRST116") {
-          console.warn("[VHC] Failed to load vhc_workflow_status; continuing without workflow row", workflowError);
-        }
-
         if (!jobRow) {
           setError("Job not found for the supplied job number.");
           setJob(null);
           setBuilderData(null);
-          setWorkflow(workflowRow || null);
+          setWorkflow(null);
           return;
         }
 
@@ -1787,7 +1778,7 @@ export default function VhcDetailsPanel({
           parts_job_items: resolvedParts,
           job_files: job_files || [],
         });
-        setWorkflow(workflowRow || null);
+        setWorkflow(null);
 
         // Store all VHC checks data for approval status lookup
         setVhcChecksData(vhc_checks || []);
@@ -3240,6 +3231,8 @@ export default function VhcDetailsPanel({
 
   // Auto-update partsComplete checkbox and parts_cost based on parts being added or marked as not required
   useEffect(() => {
+    const pendingSyncs = [];
+
     setItemEntries((prev) => {
       const updated = { ...prev };
       let hasChanges = false;
@@ -3320,19 +3313,30 @@ export default function VhcDetailsPanel({
             } else if (clearPartsCost) {
               dbPayload.partsCost = 0;
             }
-            // Update database asynchronously
-            fetch("/api/vhc/update-item-status", {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(dbPayload),
-            }).catch((error) => {
-              console.error("Failed to save parts complete/cost status", error);
-            });
+            pendingSyncs.push(dbPayload);
           }
         }
       });
 
       return hasChanges ? updated : prev;
+    });
+
+    pendingSyncs.forEach((dbPayload) => {
+      const syncKey = JSON.stringify(dbPayload);
+      if (vhcPartsStatusSyncRef.current.has(syncKey)) return;
+      vhcPartsStatusSyncRef.current.add(syncKey);
+
+      fetch("/api/vhc/update-item-status", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dbPayload),
+      })
+        .catch((error) => {
+          console.error("Failed to save parts complete/cost status", error);
+        })
+        .finally(() => {
+          vhcPartsStatusSyncRef.current.delete(syncKey);
+        });
     });
   }, [
     partsCostByVhcItem,
@@ -3377,6 +3381,9 @@ export default function VhcDetailsPanel({
       if (storedCost === computedCost) return; // Already in sync
 
       const nextPartsComplete = computedCost > 0 || Boolean(check.parts_complete);
+      const syncKey = `${check.vhc_id}:${computedCost}:${nextPartsComplete}`;
+      if (vhcPartsCostSyncRef.current.has(syncKey)) return;
+      vhcPartsCostSyncRef.current.add(syncKey);
 
       fetch("/api/vhc/update-item-status", {
         method: "PATCH",
@@ -3406,7 +3413,10 @@ export default function VhcDetailsPanel({
         })
         .catch((error) =>
           console.error("Failed to sync parts cost to vhc_checks", error)
-        );
+        )
+        .finally(() => {
+          vhcPartsCostSyncRef.current.delete(syncKey);
+        });
     });
   }, [jobParts, vhcChecksData]);
 

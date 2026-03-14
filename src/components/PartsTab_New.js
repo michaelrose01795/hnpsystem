@@ -481,6 +481,13 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       );
     };
 
+    const shouldIncludeVhcRequest = (check) => {
+      if (!check) return false;
+      if (isAuthorizedVhcCheck(check)) return true;
+      const expectedPart = extractExpectedPartNumberInfo(check);
+      return Boolean(expectedPart?.key);
+    };
+
     const vhcReqsFromCanonicalAuthorized = (Array.isArray(jobData?.authorizedVhcItems) ? jobData.authorizedVhcItems : [])
       .map((row, index) => {
         const vhcItemId = row?.vhcItemId ?? row?.vhc_item_id ?? null;
@@ -514,12 +521,13 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       })
       .filter(Boolean);
 
-    // VHC requests sourced from vhc_checks rows with authorized/completed decisions.
+    // VHC requests sourced from vhc_checks rows that are either allocatable by
+    // decision state or carry an explicit part number from Parts Identified.
     const vhcReqsFromVhcChecks = vhcChecksSource
       .filter((check) => {
         const vhcItemId = check?.vhc_id ?? check?.vhcId ?? null;
         if (vhcItemId === null || vhcItemId === undefined || String(vhcItemId).trim() === "") return false;
-        return isAuthorizedVhcCheck(check);
+        return shouldIncludeVhcRequest(check);
       })
       .map((check, index) => {
         const vhcItemId = check.vhc_id ?? check.vhcId ?? null;
@@ -819,9 +827,9 @@ const PartsTabNew = forwardRef(function PartsTabNew(
   const togglePartSelection = useCallback((partId) => {
     setSelectedPartIds((prev) => {
       if (prev.includes(partId)) {
-        return prev.filter((entry) => entry !== partId);
+        return [];
       }
-      return [...prev, partId];
+      return [partId];
     });
   }, []);
 
@@ -882,6 +890,31 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       setCatalogLoading(false);
     }
   }, []);
+
+  const refreshCatalogStockState = useCallback(async () => {
+    const trimmedSearch = String(catalogSearch || "").trim();
+    const selectedPartId = selectedCatalogPart?.id || null;
+
+    if (trimmedSearch.length >= 2) {
+      await searchStockCatalog(trimmedSearch);
+    }
+
+    if (!selectedPartId) return;
+
+    try {
+      const response = await fetch(`/api/parts/catalog/${selectedPartId}`);
+      const payload = await response.json();
+      if (!response.ok || !payload?.success || !payload?.part) {
+        throw new Error(payload?.message || "Unable to refresh selected part stock");
+      }
+      setSelectedCatalogPart(payload.part);
+    } catch (error) {
+      console.warn("[PartsTab] Failed to refresh selected part stock", {
+        partId: selectedPartId,
+        error,
+      });
+    }
+  }, [catalogSearch, searchStockCatalog, selectedCatalogPart]);
 
   useEffect(() => {
     if (!canAllocateParts) {
@@ -1292,6 +1325,21 @@ const PartsTabNew = forwardRef(function PartsTabNew(
   );
   const unallocatedParts = bookedParts.filter((part) => !part.allocatedToRequestId && !part.vhcItemId);
   const leftPanelParts = [...bookedParts, ...removedParts];
+  const assignableParts = useMemo(
+    () =>
+      leftPanelParts.filter((part) => {
+        const isRemoved =
+          removedPartIds.includes(part.id) || normalizePartStatus(part.status) === "removed";
+        const isAllocated = Boolean(part.allocatedToRequestId || part.vhcItemId);
+        return !isRemoved && !isAllocated;
+      }),
+    [leftPanelParts, removedPartIds]
+  );
+  const hasAssignableParts = assignableParts.length > 0;
+  const selectedAssignablePart = useMemo(() => {
+    if (selectedPartIds.length === 0) return null;
+    return assignableParts.find((part) => String(part.id) === String(selectedPartIds[0])) || null;
+  }, [assignableParts, selectedPartIds]);
   const partsAddedToJobIdSet = useMemo(
     () => new Set(leftPanelParts.map((part) => String(part.id))),
     [leftPanelParts]
@@ -1361,17 +1409,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
   const handleAssignSelectedToRequest = useCallback(
     async (requestId) => {
       if (!canEdit || !requestId) return;
-
-      if (!assignMode || assignTargetRequestId !== requestId) {
-        setAssignMode(true);
-        setAssignTargetRequestId(requestId);
-        return;
-      }
-
       if (selectedPartIds.length === 0) {
-        // If no parts selected and button clicked again, cancel assign mode
-        setAssignMode(false);
-        setAssignTargetRequestId(null);
         return;
       }
 
@@ -1435,8 +1473,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       }
     },
     [
-      assignMode,
-      assignTargetRequestId,
       canEdit,
       createJobItemFromGoodsIn,
       jobParts,
@@ -1449,17 +1485,46 @@ const PartsTabNew = forwardRef(function PartsTabNew(
 
   const beginAssignSelection = useCallback(() => {
     if (!canEdit) return;
-    if (selectedPartIds.length === 0) {
-      alert("Select one or more parts from 'Parts Added to Job' first.");
+    if (!hasAssignableParts) {
       return;
     }
+    setSelectedPartIds([]);
     setAssignMode(true);
     setAssignTargetRequestId(null);
-  }, [canEdit, selectedPartIds.length]);
+  }, [canEdit, hasAssignableParts]);
+
+  const handleAssignButtonClick = useCallback(() => {
+    if (!canEdit || allocatingSelection || !hasAssignableParts) {
+      return;
+    }
+    if (!assignMode) {
+      beginAssignSelection();
+      return;
+    }
+    if (!assignTargetRequestId) {
+      alert("Select a row in 'Allocate Parts' first.");
+      return;
+    }
+    if (!selectedAssignablePart) {
+      alert("Select a row in 'Parts Added to Job' that is not already allocated or removed.");
+      return;
+    }
+    handleAssignSelectedToRequest(assignTargetRequestId);
+  }, [
+    allocatingSelection,
+    assignMode,
+    assignTargetRequestId,
+    beginAssignSelection,
+    canEdit,
+    handleAssignSelectedToRequest,
+    hasAssignableParts,
+    selectedAssignablePart,
+  ]);
 
   const cancelAssignSelection = useCallback(() => {
     setAssignMode(false);
     setAssignTargetRequestId(null);
+    setSelectedPartIds([]);
   }, []);
 
   const handleUnassignPart = useCallback(
@@ -1539,6 +1604,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         if (typeof onRefreshJob === "function") {
           onRefreshJob();
         }
+        await refreshCatalogStockState();
       } catch (error) {
         console.error("Failed to remove part:", error);
         alert(`Error: ${error.message}`);
@@ -1547,18 +1613,20 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         setPartPopup({ open: false, part: null });
       }
     },
-    [canEdit, onRefreshJob, partPopup, partRemoveQuantity]
+    [canEdit, onRefreshJob, partPopup, partRemoveQuantity, refreshCatalogStockState]
   );
 
   useEffect(() => {
     setSelectedPartIds((prev) => {
-      const next = prev.filter((id) => leftPanelParts.some((part) => part.id === id));
+      const next = prev.filter((id) =>
+        assignableParts.some((part) => String(part.id) === String(id))
+      );
       if (next.length === prev.length && next.every((id, index) => id === prev[index])) {
         return prev;
       }
       return next;
     });
-  }, [leftPanelParts]);
+  }, [assignableParts]);
 
   useEffect(() => {
     if (!partPopup.open || !partPopup.part) {
@@ -2321,26 +2389,42 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                         normalizePartStatus(part.status) === "removed";
 
                       const isAllocated = Boolean(part.allocatedToRequestId || part.vhcItemId);
+                      const isAssignable = !isRemoved && !isAllocated;
 
                       return (
                         <tr
                           key={part.id}
                           onClick={() => {
-                            // Disable popup when in assign/select mode
-                            if (!assignMode) {
-                              setPartPopup({ open: true, part });
+                            if (assignMode) {
+                              if (isAssignable) {
+                                togglePartSelection(part.id);
+                              }
+                              return;
                             }
+                            setPartPopup({ open: true, part });
                           }}
                           style={{
                             background: isRemoved
                               ? "var(--danger)"
+                              : assignMode && isSelected
+                              ? "var(--accent-purple-surface)"
                               : "var(--surface)",
-                            cursor: assignMode ? "default" : "pointer",
+                            cursor: assignMode ? (isAssignable ? "pointer" : "not-allowed") : "pointer",
                             opacity: isRemoved ? 0.8 : 1,
-                            boxShadow: isRemoved ? "none" : "0 0 0 1px rgba(var(--shadow-rgb), 0.03)",
+                            boxShadow: isRemoved
+                              ? "none"
+                              : isSelected
+                              ? "0 0 0 1px var(--accent-purple)"
+                              : "0 0 0 1px rgba(var(--shadow-rgb), 0.03)",
                           }}
                           title={
-                            part.source === "goods-in"
+                            assignMode
+                              ? isRemoved
+                                ? "Removed rows cannot be assigned."
+                                : isAllocated
+                                ? "Already allocated rows cannot be assigned."
+                                : "Click to select this part for allocation."
+                              : part.source === "goods-in"
                               ? "Goods-in parts will be added as job items when assigned."
                               : "Click to view options"
                           }
@@ -2359,14 +2443,10 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                           <input
                             type="checkbox"
                             checked={isSelected}
-                            disabled={isRemoved}
+                            disabled={!isAssignable}
                             onClick={(event) => event.stopPropagation()}
                             onChange={() => {
-                              if (!assignMode) {
-                                setAssignMode(true);
-                                setAssignTargetRequestId(null);
-                              }
-                              if (!isRemoved) {
+                              if (isAssignable) {
                                 togglePartSelection(part.id);
                               }
                             }}
@@ -2413,6 +2493,24 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                   }}
                                 >
                                   Allocated
+                                </span>
+                              )}
+                              {assignMode && isSelected && (
+                                <span
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    padding: "2px 8px",
+                                    borderRadius: "var(--radius-pill)",
+                                    background: "var(--accent-purple)",
+                                    color: "var(--text-inverse)",
+                                    fontSize: "var(--text-caption)",
+                                    fontWeight: 700,
+                                    textTransform: "uppercase",
+                                    letterSpacing: "0.06em",
+                                  }}
+                                >
+                                  Selected
                                 </span>
                               )}
                               {part.authorised && (
@@ -2501,9 +2599,11 @@ const PartsTabNew = forwardRef(function PartsTabNew(
               </div>
               {assignMode ? (
                 <div style={{ marginTop: "4px", fontSize: "var(--text-caption)", color: "var(--info)" }}>
-                  {assignTargetRequestId
-                    ? `Ready to assign ${selectedPartIds.length} selected part${selectedPartIds.length === 1 ? "" : "s"}.`
-                    : `Choose a customer or VHC request below for ${selectedPartIds.length} selected part${selectedPartIds.length === 1 ? "" : "s"}.`}
+                  {!assignTargetRequestId
+                    ? "Select a row in 'Allocate Parts' first."
+                    : !selectedAssignablePart
+                    ? "Now select a row in 'Parts Added to Job' that is not allocated or removed."
+                    : `Press 'Assign selected' again to assign ${selectedAssignablePart.partNumber || "the selected part"}.`}
                 </div>
               ) : null}
             </div>
@@ -2529,38 +2629,30 @@ const PartsTabNew = forwardRef(function PartsTabNew(
               )}
               <button
                 type="button"
-                onClick={() => {
-                  if (!assignMode) {
-                    beginAssignSelection();
-                    return;
-                  }
-                  if (!assignTargetRequestId) return;
-                  handleAssignSelectedToRequest(assignTargetRequestId);
-                }}
+                onClick={handleAssignButtonClick}
                 disabled={
                   !canEdit ||
                   allocatingSelection ||
-                  selectedPartIds.length === 0 ||
-                  (assignMode && !assignTargetRequestId)
+                  !hasAssignableParts
                 }
                 style={{
                   padding: "6px 10px",
                   borderRadius: "var(--radius-xs)",
                   border: "1px solid transparent",
                   background:
-                    !canEdit || selectedPartIds.length === 0 || allocatingSelection || (assignMode && !assignTargetRequestId)
+                    !canEdit || !hasAssignableParts || allocatingSelection
                       ? "var(--surface-light)"
                       : assignMode
                       ? "var(--success)"
                       : "var(--accent-purple)",
                   color:
-                    !canEdit || selectedPartIds.length === 0 || allocatingSelection || (assignMode && !assignTargetRequestId)
+                    !canEdit || !hasAssignableParts || allocatingSelection
                       ? "var(--text-secondary)"
                       : "var(--text-inverse)",
                   fontSize: "var(--text-caption)",
                   fontWeight: 600,
                   cursor:
-                    !canEdit || selectedPartIds.length === 0 || allocatingSelection || (assignMode && !assignTargetRequestId)
+                    !canEdit || !hasAssignableParts || allocatingSelection
                       ? "not-allowed"
                       : "pointer",
                   whiteSpace: "nowrap",
@@ -2568,11 +2660,15 @@ const PartsTabNew = forwardRef(function PartsTabNew(
               >
                 {allocatingSelection
                   ? "Assigning..."
+                  : !hasAssignableParts
+                  ? "All parts allocated"
                   : !assignMode
                   ? "Assign selected"
                   : !assignTargetRequestId
                   ? "Select request below"
-                  : "Assign to selected request"}
+                  : !selectedAssignablePart
+                  ? "Select part row"
+                  : "Assign selected"}
               </button>
             </div>
           </div>
@@ -2645,11 +2741,11 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
                                 <div>
                                   <div style={{ fontSize: "var(--text-label)", color: "var(--info-dark)" }}>
-                                    {request.description}
+                                  {request.description}
                                   </div>
                                   {assignMode && String(assignTargetRequestId) === String(request.id) && (
                                     <div style={{ marginTop: "4px", fontSize: "var(--text-caption)", color: "var(--accent-purple)", fontWeight: 600 }}>
-                                      Selected request
+                                      Selected allocation row
                                     </div>
                                   )}
                                 </div>
@@ -2848,11 +2944,11 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                       <div style={{ fontSize: "var(--text-label)", color: "var(--info-dark)" }}>
                                         {request.displayText || request.description}
                                       </div>
-                                      {assignMode && String(assignTargetRequestId) === String(request.id) && (
-                                        <div style={{ fontSize: "var(--text-caption)", color: "var(--accent-purple)", fontWeight: 600 }}>
-                                          Selected request
-                                        </div>
-                                      )}
+                                    {assignMode && String(assignTargetRequestId) === String(request.id) && (
+                                      <div style={{ fontSize: "var(--text-caption)", color: "var(--accent-purple)", fontWeight: 600 }}>
+                                          Selected allocation row
+                                      </div>
+                                    )}
                                       {(request.expectedPartNumberDisplay || request.expectedPartNumber) && (
                                         <div style={{ fontSize: "var(--text-caption)", color: "var(--info)" }}>
                                           Part No: {request.expectedPartNumberDisplay || request.expectedPartNumber}

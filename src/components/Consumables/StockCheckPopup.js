@@ -1,6 +1,7 @@
 // file location: src/components/Consumables/StockCheckPopup.js
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import ModalPortal from "@/components/popups/ModalPortal";
+import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import { SearchBar } from "@/components/searchBarAPI";
 
 const consumableNameCollator = new Intl.Collator(undefined, {
@@ -96,6 +97,7 @@ function StockCheckPopup({
   const [renameItemState, setRenameItemState] = useState({ id: null, value: "" });
   const [managerActionLoading, setManagerActionLoading] = useState(false);
   const [requestUpdateId, setRequestUpdateId] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
   const [stockSearch, setStockSearch] = useState("");
   const [showStockList, setShowStockList] = useState(false);
   const [newConsumableForm, setNewConsumableForm] = useState({
@@ -418,16 +420,7 @@ function StockCheckPopup({
     }
   };
 
-  const handleDeleteItem = async (consumableId, itemName) => {
-    if (!consumableId) {
-      return;
-    }
-    const confirmed = window.confirm(
-      `Delete ${itemName || "this consumable"}? This cannot be undone.`
-    );
-    if (!confirmed) {
-      return;
-    }
+  const doDeleteItem = async (consumableId) => {
     const success = await handleManagerAction({
       action: "deleteConsumable",
       consumableId,
@@ -435,6 +428,17 @@ function StockCheckPopup({
     if (success) {
       setStatusMessage("Consumable removed.");
     }
+  };
+
+  const handleDeleteItem = (consumableId, itemName) => {
+    if (!consumableId) return;
+    setConfirmDialog({
+      message: `Delete ${itemName || "this consumable"}? This cannot be undone.`,
+      onConfirm: () => {
+        setConfirmDialog(null);
+        doDeleteItem(consumableId);
+      },
+    });
   };
 
   const handleRequestStatusUpdate = async (requestId, status) => {
@@ -565,6 +569,7 @@ function StockCheckPopup({
   };
 
   return (
+    <>
     <ModalPortal>
       <div
         className="popup-backdrop"
@@ -867,6 +872,15 @@ function StockCheckPopup({
         </div>
       </div>
     </ModalPortal>
+    <ConfirmationDialog
+      isOpen={!!confirmDialog}
+      message={confirmDialog?.message}
+      cancelLabel="Cancel"
+      confirmLabel="Delete"
+      onCancel={() => setConfirmDialog(null)}
+      onConfirm={confirmDialog?.onConfirm}
+    />
+    </>
   );
 }
 
