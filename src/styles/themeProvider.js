@@ -271,6 +271,21 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
       document.documentElement.style.setProperty("--layer-section-level-3", "var(--accent-layer-3)");
       document.documentElement.style.setProperty("--layer-section-level-4", "var(--accent-layer-4)");
       document.documentElement.style.setProperty("--layer-gradient", "var(--accent-layer-3)");
+
+      // Update html/body background to accent layer so mobile browser overscroll
+      // areas and safe-area insets show the accent colour instead of plain white/dark.
+      const shellBg = rgbToHex(accentLayer3);
+      document.documentElement.style.backgroundColor = shellBg;
+      if (document.body) document.body.style.backgroundColor = shellBg;
+      // Update theme-color meta so mobile browser chrome matches
+      let themeMeta = document.querySelector('meta[name="theme-color"]');
+      if (!themeMeta) {
+        themeMeta = document.createElement("meta");
+        themeMeta.setAttribute("name", "theme-color");
+        document.head.appendChild(themeMeta);
+      }
+      themeMeta.setAttribute("content", shellBg);
+
       document.documentElement.style.setProperty("--row-background", rgbToHex(accentPanelTone));
       document.documentElement.style.setProperty("--section-gradient-outer", "var(--accent-layer-2)");
       document.documentElement.style.setProperty("--section-gradient-inner", "var(--accent-layer-3)");

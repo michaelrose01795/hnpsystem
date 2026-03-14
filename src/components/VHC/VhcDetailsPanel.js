@@ -85,7 +85,7 @@ const TAB_OPTIONS = [
 ];
 
 const PRE_PICK_LOCATION_OPTIONS_FULL = [
-  { value: "", label: "Select Location" },
+  { value: "", label: "Not assigned" },
   { value: "service_rack_1", label: "Service Rack 1" },
   { value: "service_rack_2", label: "Service Rack 2" },
   { value: "service_rack_3", label: "Service Rack 3" },
@@ -94,17 +94,19 @@ const PRE_PICK_LOCATION_OPTIONS_FULL = [
   { value: "sales_rack_2", label: "Sales Rack 2" },
   { value: "sales_rack_3", label: "Sales Rack 3" },
   { value: "sales_rack_4", label: "Sales Rack 4" },
+  { value: "tyre_shed", label: "Tyre Shed" },
   { value: "stairs_pre_pick", label: "Stairs Pre-Pick" },
   { value: "no_pick", label: "No Pick" },
   { value: "on_order", label: "On Order" },
 ];
 
 const PRE_PICK_LOCATION_OPTIONS_COMPACT = [
-  { value: "", label: "Select Location" },
+  { value: "", label: "Not assigned" },
   { value: "service_rack_1", label: "Service Rack 1" },
   { value: "service_rack_2", label: "Service Rack 2" },
   { value: "service_rack_3", label: "Service Rack 3" },
   { value: "service_rack_4", label: "Service Rack 4" },
+  { value: "tyre_shed", label: "Tyre Shed" },
   { value: "no_pick", label: "No Pick" },
   { value: "on_order", label: "On Order" },
 ];
@@ -1387,6 +1389,7 @@ export default function VhcDetailsPanel({
   onCheckboxesLockReason = null,
   onFinancialTotalsChange = null,
   onJobDataRefresh = null,
+  onUpdateRequestPrePickLocation = async () => {},
   viewMode = "full",
   enableTabs = false,
 }) {
@@ -1479,6 +1482,86 @@ export default function VhcDetailsPanel({
       }
     },
     [onJobDataRefresh]
+  );
+
+  const applyLinkedPrePickLocation = useCallback(
+    ({ requestId = null, vhcItemId = null }, nextPrePickLocation) => {
+      const normalizedRequestId =
+        requestId === null || requestId === undefined || requestId === ""
+          ? null
+          : String(requestId);
+      const normalizedVhcItemId =
+        vhcItemId === null || vhcItemId === undefined || vhcItemId === ""
+          ? null
+          : String(vhcItemId);
+
+      const matchesLinkedRow = (row = {}) => {
+        const rowRequestId = row?.request_id ?? row?.requestId ?? null;
+        const rowVhcId = row?.vhc_id ?? row?.vhcItemId ?? row?.vhc_item_id ?? null;
+        if (normalizedRequestId && String(rowRequestId) === normalizedRequestId) return true;
+        if (normalizedVhcItemId && String(rowVhcId) === normalizedVhcItemId) return true;
+        return false;
+      };
+
+      setAuthorizedViewRows((prev) =>
+        (Array.isArray(prev) ? prev : []).map((row) => {
+          if (!matchesLinkedRow(row)) return row;
+          return {
+            ...row,
+            request_id: row?.request_id ?? row?.requestId ?? requestId ?? null,
+            requestId: row?.requestId ?? row?.request_id ?? requestId ?? null,
+            vhc_id: row?.vhc_id ?? row?.vhcItemId ?? row?.vhc_item_id ?? vhcItemId ?? null,
+            vhcItemId: row?.vhcItemId ?? row?.vhc_id ?? row?.vhc_item_id ?? vhcItemId ?? null,
+            pre_pick_location: nextPrePickLocation,
+            prePickLocation: nextPrePickLocation,
+          };
+        })
+      );
+
+      setVhcChecksData((prev) =>
+        (Array.isArray(prev) ? prev : []).map((row) => {
+          if (!matchesLinkedRow(row)) return row;
+          return {
+            ...row,
+            request_id: row?.request_id ?? row?.requestId ?? requestId ?? null,
+            requestId: row?.requestId ?? row?.request_id ?? requestId ?? null,
+            pre_pick_location: nextPrePickLocation,
+            prePickLocation: nextPrePickLocation,
+          };
+        })
+      );
+
+      setJob((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          vhc_checks: Array.isArray(prev.vhc_checks)
+            ? prev.vhc_checks.map((row) => {
+                if (!matchesLinkedRow(row)) return row;
+                return {
+                  ...row,
+                  request_id: row?.request_id ?? row?.requestId ?? requestId ?? null,
+                  requestId: row?.requestId ?? row?.request_id ?? requestId ?? null,
+                  pre_pick_location: nextPrePickLocation,
+                  prePickLocation: nextPrePickLocation,
+                };
+              })
+            : prev.vhc_checks,
+          parts_job_items: Array.isArray(prev.parts_job_items)
+            ? prev.parts_job_items.map((row) => {
+                const rowVhcId = row?.vhc_item_id ?? row?.vhcItemId ?? null;
+                if (!normalizedVhcItemId || String(rowVhcId) !== normalizedVhcItemId) return row;
+                return {
+                  ...row,
+                  pre_pick_location: nextPrePickLocation,
+                  prePickLocation: nextPrePickLocation,
+                };
+              })
+            : prev.parts_job_items,
+        };
+      });
+    },
+    []
   );
 
   useEffect(() => {
@@ -2113,11 +2196,8 @@ export default function VhcDetailsPanel({
   const partsAuthorized = useMemo(
     () => {
       return jobParts.filter((part) => {
-        // Part must be from VHC
-        const isVhc = normalisePartStatus(part.origin).includes("vhc");
-        if (!isVhc) return false;
-
-        // Check if the part is linked to an authorized VHC item
+        // Any part linked to an authorised/completed VHC item should appear here,
+        // even if it was added from the job card rather than the VHC modal.
         if (part.vhc_item_id) {
           const canonicalId = String(part.vhc_item_id);
           const approvalData = vhcApprovalLookup.get(canonicalId);
@@ -2129,7 +2209,9 @@ export default function VhcDetailsPanel({
           }
         }
 
-        // Also include parts that are marked as authorised in the old way (no VHC status)
+        // Legacy fallback for old data without vhc_item_id.
+        const isVhc = normalisePartStatus(part.origin).includes("vhc");
+        if (!isVhc) return false;
         return part.authorised === true;
       });
     },
@@ -2139,14 +2221,13 @@ export default function VhcDetailsPanel({
   const partsOnOrder = useMemo(
     () => {
       return jobParts.filter((part) => {
-        // Part must be from VHC and have status on_order or stock (parts that have arrived)
-        const isVhc = normalisePartStatus(part.origin).includes("vhc");
+        // Parts linked to an authorised/completed VHC row should remain visible
+        // in on-order tracking regardless of whether they were added via VHC or job card.
         const partStatus = normalisePartStatus(part.status);
         const isOnOrderOrStock = partStatus === "on_order" || partStatus === "stock";
 
-        if (!isVhc || !isOnOrderOrStock) return false;
+        if (!isOnOrderOrStock) return false;
 
-        // Check if part is linked to an authorized VHC item OR has authorised flag
         if (part.vhc_item_id) {
           const canonicalId = String(part.vhc_item_id);
           const approvalData = vhcApprovalLookup.get(canonicalId);
@@ -2158,7 +2239,8 @@ export default function VhcDetailsPanel({
           }
         }
 
-        // Also include parts that are marked as authorised in the old way
+        const isVhc = normalisePartStatus(part.origin).includes("vhc");
+        if (!isVhc) return false;
         return part.authorised === true;
       });
     },
@@ -2843,6 +2925,8 @@ export default function VhcDetailsPanel({
         linkedParts,
         vhcId: displayVhcId,
         canonicalVhcId,
+        requestId: row?.request_id ?? null,
+        requestPrePickLocation: row?.pre_pick_location ?? row?.prePickLocation ?? null,
       });
     });
 
@@ -7203,7 +7287,7 @@ export default function VhcDetailsPanel({
                 );
 
                 group.items.forEach((item) => {
-                const { vhcItem, linkedParts, vhcId, canonicalVhcId } = item;
+                const { vhcItem, linkedParts, vhcId, canonicalVhcId, requestId, requestPrePickLocation } = item;
                 const isWarranty = warrantyRows.has(vhcId);
 
                 // VHC item details
@@ -7483,24 +7567,47 @@ export default function VhcDetailsPanel({
                         {partLines.map(({ part }) => (
                           <DropdownField
                             key={`prepick-${part.id}`}
-                            value={part.pre_pick_location || ""}
+                            value={
+                              requestPrePickLocation ??
+                              part.pre_pick_location ??
+                              part.prePickLocation ??
+                              ""
+                            }
                             onChange={async (e) => {
                               const newLocation = e.target.value;
                               try {
-                                const updates = { prePickLocation: newLocation };
+                                if (requestId || canonicalVhcId) {
+                                  applyLinkedPrePickLocation(
+                                    {
+                                      requestId: requestId ?? null,
+                                      vhcItemId: canonicalVhcId,
+                                    },
+                                    newLocation || null
+                                  );
+                                  await onUpdateRequestPrePickLocation(
+                                    {
+                                      requestId: requestId ?? null,
+                                      vhcItemId: canonicalVhcId,
+                                    },
+                                    newLocation || null
+                                  );
+                                } else {
+                                  const updates = { prePickLocation: newLocation };
 
-                                if (newLocation === "on_order") {
-                                  updates.status = "on_order";
-                                  updates.stockStatus = "no_stock";
-                                } else if (newLocation && newLocation !== "") {
-                                  updates.status = "pre_picked";
-                                  updates.stockStatus = "in_stock";
+                                  if (newLocation === "on_order") {
+                                    updates.status = "on_order";
+                                    updates.stockStatus = "no_stock";
+                                  } else if (newLocation && newLocation !== "") {
+                                    updates.status = "pre_picked";
+                                    updates.stockStatus = "in_stock";
+                                  }
+
+                                  await handlePartStatusUpdate(part.id, updates);
                                 }
-
-                                await handlePartStatusUpdate(part.id, updates);
                               } catch (error) {
                                 console.error(`[VHC] Failed to update part ${part.id}:`, error);
                                 alert(`Failed to update part location: ${error.message}`);
+                                refreshJobData({ silent: true, force: true });
                               }
                             }}
                             options={PRE_PICK_LOCATION_OPTIONS_FULL}
@@ -7521,7 +7628,7 @@ export default function VhcDetailsPanel({
         </div>
       </div>
     );
-  }, [vhcItemsWithPartsAuthorized, warrantyRows, partsCostByVhcItem, handlePartStatusUpdate]);
+  }, [vhcItemsWithPartsAuthorized, warrantyRows, partsCostByVhcItem, handlePartStatusUpdate, onUpdateRequestPrePickLocation]);
 
   // Render parts panel with table
   const renderPartsPanel = useCallback((title, parts, emptyMessage) => {

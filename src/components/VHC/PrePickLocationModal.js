@@ -9,6 +9,7 @@ const PRE_PICK_LOCATIONS = [
   { value: "service_rack_2", label: "Service Rack 2" },
   { value: "service_rack_3", label: "Service Rack 3" },
   { value: "service_rack_4", label: "Service Rack 4" },
+  { value: "tyre_shed", label: "Tyre Shed" },
   { value: "no_pick", label: "No Pick" },
   { value: "on_order", label: "On Order" },
 ];

@@ -40,13 +40,33 @@ const normalizeAccent = (value) => {
   return ACCENT_PALETTES[normalized] ? normalized : "red";
 };
 
+const blendChannel = (from, to, ratio) => Math.round(from + (to - from) * ratio);
+const hexToRgbObj = (hex) => {
+  const h = hex.replace("#", "");
+  return {
+    r: parseInt(h.slice(0, 2), 16),
+    g: parseInt(h.slice(2, 4), 16),
+    b: parseInt(h.slice(4, 6), 16),
+  };
+};
+const rgbObjToHex = ({ r, g, b }) =>
+  "#" + [r, g, b].map((c) => c.toString(16).padStart(2, "0")).join("");
+
 const getBootTheme = (cookies = {}) => {
   const requestedMode = normalizeMode(cookies["hp-dms-theme"] || "system");
   const resolvedMode = requestedMode === "dark" ? "dark" : "light";
   const accentName = normalizeAccent(cookies["hp-dms-accent"]);
   const accentPalette = ACCENT_PALETTES[accentName] || ACCENT_PALETTES.red;
   const primary = resolvedMode === "dark" ? accentPalette.dark : accentPalette.light;
-  const background = resolvedMode === "dark" ? "#0f0f11" : "#fefefe";
+  // Compute accent layer 3 (page shell background) so html/body bg matches
+  const accent = hexToRgbObj(primary);
+  const target = resolvedMode === "dark" ? { r: 0, g: 0, b: 0 } : { r: 255, g: 255, b: 255 };
+  const ratio = resolvedMode === "dark" ? 0.75 : 0.9;
+  const background = rgbObjToHex({
+    r: blendChannel(accent.r, target.r, ratio),
+    g: blendChannel(accent.g, target.g, ratio),
+    b: blendChannel(accent.b, target.b, ratio),
+  });
   return { requestedMode, resolvedMode, accentName, primary, background };
 };
 
@@ -134,11 +154,8 @@ const themeBootScript = `
       typeof window.matchMedia === "function" &&
       window.matchMedia("(prefers-color-scheme: dark)").matches;
     const resolvedMode = mode === "system" ? (prefersDark ? "dark" : "light") : mode;
-    const bg = resolvedMode === "dark" ? "#0f0f11" : "#fefefe";
     document.documentElement.setAttribute("data-theme", resolvedMode);
     document.documentElement.style.colorScheme = resolvedMode;
-    document.documentElement.style.backgroundColor = bg;
-    document.body.style.backgroundColor = bg;
 
     const accents = {
       red: { light: "#dc2626", dark: "#f87171" },
@@ -175,6 +192,19 @@ const themeBootScript = `
     document.documentElement.style.setProperty("--accent-purple", resolvedAccent);
     document.documentElement.style.setProperty("--accent-purple-rgb", rgb);
     document.documentElement.style.setProperty("--scrollbar-thumb", resolvedAccent);
+    // Compute accent layer 3 for html/body background so mobile overscroll areas match
+    var blendCh = function(f,t,r){ return Math.round(f+(t-f)*r); };
+    var hexToR = function(h){ h=h.replace("#",""); return {r:parseInt(h.slice(0,2),16),g:parseInt(h.slice(2,4),16),b:parseInt(h.slice(4,6),16)}; };
+    var toHex2 = function(o){ return "#"+[o.r,o.g,o.b].map(function(c){return c.toString(16).padStart(2,"0");}).join(""); };
+    var ac = hexToR(resolvedAccent);
+    var tgt = resolvedMode === "dark" ? {r:0,g:0,b:0} : {r:255,g:255,b:255};
+    var ratio = resolvedMode === "dark" ? 0.75 : 0.9;
+    var shellBg = toHex2({r:blendCh(ac.r,tgt.r,ratio),g:blendCh(ac.g,tgt.g,ratio),b:blendCh(ac.b,tgt.b,ratio)});
+    document.documentElement.style.backgroundColor = shellBg;
+    document.body.style.backgroundColor = shellBg;
+    var tm = document.querySelector('meta[name="theme-color"]');
+    if (tm) tm.setAttribute("content", shellBg);
+
     document.cookie = "hp-dms-theme=" + encodeURIComponent(mode) + "; path=/; max-age=31536000; samesite=lax";
     document.cookie = "hp-dms-accent=" + encodeURIComponent(storedAccent) + "; path=/; max-age=31536000; samesite=lax";
 
@@ -207,22 +237,22 @@ class MyDocument extends Document {
       >
         <Head>
           <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+          <meta name="theme-color" content={bootTheme.background} />
+          <meta name="apple-mobile-web-app-capable" content="yes" />
+          <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
           {/* Ensure iPad/Safari gets structuredClone before Next.js router boots */}
           <script dangerouslySetInnerHTML={{ __html: structuredClonePolyfill }} />
           <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
           <style>{`
             html, body {
               min-height: 100%;
+              min-height: 100dvh;
               margin: 0;
               background: ${bootTheme.background};
+              overscroll-behavior-y: none;
             }
             html[data-theme-requested="system"], html[data-theme-requested="system"] body {
               color-scheme: light dark;
-            }
-            @media (prefers-color-scheme: dark) {
-              html[data-theme-requested="system"], html[data-theme-requested="system"] body {
-                background: #0f0f11;
-              }
             }
           `}</style>
         </Head>

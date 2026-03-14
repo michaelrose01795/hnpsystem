@@ -2,6 +2,10 @@
 
 import { supabase } from "@/lib/supabaseClient";
 import { resolveAuditIds } from "@/lib/utils/ids";
+import {
+  buildVhcRequestLinkRows,
+  matchPartToVhcRequestRow,
+} from "@/lib/vhc/requestRowLinking";
 
 const PRE_PICK_LOCATIONS = new Set([
   "service_rack_1",
@@ -12,6 +16,7 @@ const PRE_PICK_LOCATIONS = new Set([
   "sales_rack_2",
   "sales_rack_3",
   "sales_rack_4",
+  "tyre_shed",
   "stairs_pre_pick",
   "no_pick",
   "on_order",
@@ -48,20 +53,6 @@ const parseNumber = (value, fallback = 0) => {
   const parsed = Number.parseFloat(value);
   return Number.isNaN(parsed) ? fallback : parsed;
 };
-
-const normalizeAuthorizationState = (value = "") => {
-  const normalized = String(value || "").toLowerCase().trim();
-  if (!normalized) return "";
-  if (normalized === "authorised" || normalized === "approved") return "authorized";
-  if (normalized === "complete") return "completed";
-  if (normalized === "rejected") return "declined";
-  return normalized;
-};
-
-const normalizePartNumberKey = (value = "") =>
-  String(value || "")
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, "");
 
 const mapJobRecord = (job) => ({
   id: job.id,
@@ -143,49 +134,51 @@ const buildVhcRowDescription = async ({ jobId, vhcItemId }) => {
   return compact || null;
 };
 
-const findAutoMatchedVhcItemId = async ({ jobId, partNumber }) => {
-  const normalizedPartNumber = normalizePartNumberKey(partNumber);
-  if (!jobId || !normalizedPartNumber) return null;
-
-  const { data: vhcRows, error } = await supabase
+const fetchVhcChecks = async (jobId) => {
+  const { data, error } = await supabase
     .from("vhc_checks")
-    .select(
-      "vhc_id, part_number, section, approval_status, authorization_state, complete, Complete"
-    )
+    .select("*")
     .eq("job_id", jobId);
 
-  if (error) {
-    if (error.code === "42703" && String(error.message || "").includes("part_number")) {
-      console.warn("[api/parts/jobs] Skipping VHC part-number auto-match because vhc_checks.part_number does not exist in this database yet");
-      return null;
-    }
-    throw new Error(`Failed to load VHC rows for part-number matching: ${error.message}`);
-  }
+  if (error) throw error;
+  return data || [];
+};
 
-  const matches = (vhcRows || []).filter((row) => {
-    const section = String(row?.section || "").trim();
-    if (section === "VHC_CHECKSHEET" || section === "VHC Checksheet") return false;
+const fetchVhcJobRequests = async (jobId) => {
+  const { data, error } = await supabase
+    .from("job_requests")
+    .select("*")
+    .eq("job_id", jobId)
+    .not("vhc_item_id", "is", null);
 
-    const decision =
-      normalizeAuthorizationState(row?.authorization_state) ||
-      normalizeAuthorizationState(row?.approval_status);
-    const isAllocatableByDecision =
-      decision === "authorized" ||
-      decision === "completed" ||
-      row?.Complete === true ||
-      row?.complete === true;
-    const hasDirectPartNumberMatch =
-      normalizePartNumberKey(row?.part_number || "") === normalizedPartNumber;
+  if (error) throw error;
+  return data || [];
+};
 
-    if (!hasDirectPartNumberMatch) return false;
-    return isAllocatableByDecision || hasDirectPartNumberMatch;
+const findAutoMatchedVhcRow = async ({ jobId, partNumber, partName, partDescription }) => {
+  if (!jobId) return { row: null, matchedBy: "none", debug: { reason: "missing-job-id" } };
+
+  const [vhcChecks, vhcJobRequests, partsJobItems] = await Promise.all([
+    fetchVhcChecks(jobId),
+    fetchVhcJobRequests(jobId),
+    fetchJobParts(jobId),
+  ]);
+
+  const candidateRows = buildVhcRequestLinkRows({
+    jobRequests: vhcJobRequests,
+    vhcChecks,
+    authorizedVhcItems: [],
+    partsJobItems,
   });
 
-  if (matches.length !== 1) {
-    return null;
-  }
-
-  return Number.isInteger(matches[0]?.vhc_id) ? matches[0].vhc_id : Number(matches[0]?.vhc_id) || null;
+  return matchPartToVhcRequestRow(
+    {
+      partNumber,
+      partName,
+      partDescription,
+    },
+    candidateRows
+  );
 };
 
 const fetchJobParts = async (jobId) => {
@@ -349,7 +342,7 @@ export default async function handler(req, res) {
 
       const { data: part, error: partError } = await supabase
         .from("parts_catalog")
-        .select("id, part_number, qty_in_stock, qty_reserved, storage_location, unit_cost, unit_price")
+        .select("id, part_number, name, description, qty_in_stock, qty_reserved, storage_location, unit_cost, unit_price")
         .eq("id", partId)
         .single();
 
@@ -368,14 +361,32 @@ export default async function handler(req, res) {
         });
       }
 
-      const autoMatchedVhcItemId =
+      const autoMatchedRow =
         Number.isInteger(resolvedVhcItemId)
-          ? resolvedVhcItemId
-          : await findAutoMatchedVhcItemId({
+          ? {
+              row: {
+                vhcItemId: resolvedVhcItemId,
+                requestId: null,
+                description: null,
+              },
+              matchedBy: "explicit-vhc-item-id",
+              debug: {},
+            }
+          : await findAutoMatchedVhcRow({
               jobId,
               partNumber: part.part_number,
+              partName: part.name,
+              partDescription: part.description,
             });
-      const finalVhcItemId = Number.isInteger(autoMatchedVhcItemId) ? autoMatchedVhcItemId : null;
+      const finalVhcItemId = Number.isInteger(autoMatchedRow?.row?.vhcItemId)
+        ? autoMatchedRow.row.vhcItemId
+        : null;
+      const finalAllocatedRequestId =
+        autoMatchedRow?.row?.requestId !== null &&
+        autoMatchedRow?.row?.requestId !== undefined &&
+        autoMatchedRow?.row?.requestId !== ""
+          ? autoMatchedRow.row.requestId
+          : null;
       const finalRowDescription = finalVhcItemId
         ? await buildVhcRowDescription({ jobId, vhcItemId: finalVhcItemId })
         : null;
@@ -405,6 +416,7 @@ export default async function handler(req, res) {
         quantity_fitted: 0,
         status: resolvedStatus,
         origin: resolvedOrigin,
+        allocated_to_request_id: finalAllocatedRequestId,
         vhc_item_id: finalVhcItemId,
         row_description: finalRowDescription,
         pre_pick_location: sanitizedPrePick,
@@ -432,9 +444,12 @@ export default async function handler(req, res) {
         status: newJobPart?.status,
         origin: newJobPart?.origin,
         vhc_item_id: newJobPart?.vhc_item_id,
+        allocated_to_request_id: newJobPart?.allocated_to_request_id,
         requestedVhcItemId,
         resolvedVhcItemId,
         autoMatchedVhcItemId: finalVhcItemId,
+        autoMatchedRequestId: finalAllocatedRequestId,
+        autoMatchedBy: autoMatchedRow?.matchedBy || "none",
         hasPartData: !!newJobPart?.part,
       });
 
@@ -503,6 +518,19 @@ export default async function handler(req, res) {
       return res.status(201).json({
         success: true,
         jobPart: newJobPart,
+        autoAllocation: {
+          attempted: !Number.isInteger(resolvedVhcItemId),
+          matched: Boolean(autoMatchedRow?.row?.vhcItemId),
+          matchedBy: autoMatchedRow?.matchedBy || "none",
+          vhcItemId: finalVhcItemId,
+          requestId: finalAllocatedRequestId,
+          label:
+            autoMatchedRow?.row?.displayText ||
+            autoMatchedRow?.row?.description ||
+            finalRowDescription ||
+            null,
+          debug: autoMatchedRow?.debug || null,
+        },
       });
     } catch (error) {
       console.error("Error creating job part:", error);

@@ -9,6 +9,9 @@ import ModalPortal from "@/components/popups/ModalPortal";
 import { SearchBar } from "@/components/searchBarAPI";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import {
+  buildVhcRequestLinkRows,
+} from "@/lib/vhc/requestRowLinking";
 
 // Helper functions (keep existing)
 const normalizePartStatus = (status = "") => {
@@ -62,66 +65,6 @@ const formatExpectedPartNumberDisplay = (value = "") => {
   return raw.replace(/\s*\|\s*$/, "");
 };
 
-const extractExpectedPartNumberInfo = (check = {}) => {
-  const direct = check?.part_number ?? check?.partNumber ?? null;
-  if (direct) {
-    const display = formatExpectedPartNumberDisplay(direct);
-    const key = normalizePartNumberKey(display);
-    if (key) return { display, key };
-  }
-
-  const textCandidates = [
-    check?.issue_description,
-    check?.issueDescription,
-    check?.measurement,
-    check?.note_text,
-  ]
-    .filter(Boolean)
-    .map((value) => String(value));
-
-  for (const text of textCandidates) {
-    const makeLineMatch = text.match(/make:\s*(.+?)(?=\s*(run\s*flat|tread|$))/i);
-    if (makeLineMatch?.[1]) {
-      const display = formatExpectedPartNumberDisplay(makeLineMatch[1]);
-      const key = normalizePartNumberKey(display);
-      if (key.length >= 6) return { display, key };
-    }
-
-    const tyreSpecMatch = text.match(/([A-Z]+)\s+(\d{3}\/\d{2}R\d{2}\s*\d{2,3}\s*[A-Z])/i);
-    if (tyreSpecMatch) {
-      const display = `${tyreSpecMatch[1]} ${tyreSpecMatch[2]}`.replace(/\s+/g, " ").trim();
-      const key = normalizePartNumberKey(display);
-      if (key.length >= 6) return { display, key };
-    }
-
-    const flattenedTyreMatch = text.match(
-      /([A-Z]+)\s*SIZE\s*(\d{3}\s*\/\s*\d{2}\s*R\s*\d{2})\s*LOAD\s*(\d{2,3})\s*SPEED\s*([A-Z])/i
-    );
-    if (flattenedTyreMatch) {
-      const brand =
-        flattenedTyreMatch[1].charAt(0).toUpperCase() +
-        flattenedTyreMatch[1].slice(1).toLowerCase();
-      const size = flattenedTyreMatch[2].replace(/\s+/g, "").toUpperCase();
-      const load = flattenedTyreMatch[3];
-      const speed = flattenedTyreMatch[4].toUpperCase();
-      const display = `${brand} ${size} ${load} ${speed}`;
-      const key = normalizePartNumberKey(display);
-      if (key.length >= 6) return { display, key };
-    }
-  }
-
-  return { display: null, key: null };
-};
-
-const normalizeAuthorizationState = (value = "") => {
-  const normalized = String(value || "").toLowerCase().trim();
-  if (!normalized) return "";
-  if (normalized === "authorised" || normalized === "approved") return "authorized";
-  if (normalized === "complete") return "completed";
-  if (normalized === "rejected") return "declined";
-  return normalized;
-};
-
 const PRE_PICK_OPTIONS = [
   { value: "", label: "Not assigned" },
   { value: "service_rack_1", label: "Service Rack 1" },
@@ -132,6 +75,7 @@ const PRE_PICK_OPTIONS = [
   { value: "sales_rack_2", label: "Sales Rack 2" },
   { value: "sales_rack_3", label: "Sales Rack 3" },
   { value: "sales_rack_4", label: "Sales Rack 4" },
+  { value: "tyre_shed", label: "Tyre Shed" },
   { value: "stairs_pre_pick", label: "Stairs Pre-Pick" },
   { value: "no_pick", label: "No Pick" },
   { value: "on_order", label: "On Order" },
@@ -373,54 +317,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       ? jobData.vhc_checks
       : [];
 
-    const vhcRequestRowsByItemId = new Map();
-    requestsSource.forEach((req) => {
-      if (!req || typeof req === "string") return;
-      const vhcItemId = req.vhc_item_id ?? req.vhcItemId ?? null;
-      if (vhcItemId === null || vhcItemId === undefined) return;
-      const key = String(vhcItemId);
-      if (!vhcRequestRowsByItemId.has(key)) {
-        vhcRequestRowsByItemId.set(key, []);
-      }
-      vhcRequestRowsByItemId.get(key).push(req);
-    });
-
-    const vhcChecksById = new Map();
-    vhcChecksSource.forEach((check) => {
-      const id = check?.vhc_id ?? check?.vhcId ?? null;
-      if (id === null || id === undefined) return;
-      vhcChecksById.set(String(id), check);
-    });
-
-    const resolveVhcLabel = (primary, vhcItemId, index) => {
-      const key = vhcItemId === null || vhcItemId === undefined ? "" : String(vhcItemId);
-      const linkedRequestRows = key ? vhcRequestRowsByItemId.get(key) || [] : [];
-      const linkedRequestText = linkedRequestRows
-        .map((row) =>
-          firstText(
-            row?.text,
-            row?.description,
-            row?.note_text,
-            row?.noteText,
-            row?.issue_description,
-            row?.issueDescription,
-            row?.section
-          )
-        )
-        .find(Boolean);
-      const linkedCheck = key ? vhcChecksById.get(key) : null;
-      const linkedCheckText = firstText(
-        linkedCheck?.issue_title,
-        linkedCheck?.issue_description,
-        linkedCheck?.section,
-        linkedCheck?.measurement
-      );
-      return (
-        firstText(...primary, linkedRequestText, linkedCheckText) ||
-        `VHC authorised item ${index + 1}`
-      );
-    };
-
     const customerReqs = requestsSource
       .filter((req) => {
         if (!req) return false;
@@ -467,112 +363,15 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         };
       });
 
-    const isAuthorizedVhcCheck = (check) => {
-      const section = String(check?.section || "").trim();
-      if (section === "VHC_CHECKSHEET" || section === "VHC Checksheet") return false;
-      const decision =
-        normalizeAuthorizationState(check?.authorization_state) ||
-        normalizeAuthorizationState(check?.approval_status);
-      return (
-        decision === "authorized" ||
-        decision === "completed" ||
-        check?.Complete === true ||
-        check?.complete === true
-      );
-    };
-
-    const shouldIncludeVhcRequest = (check) => {
-      if (!check) return false;
-      if (isAuthorizedVhcCheck(check)) return true;
-      const expectedPart = extractExpectedPartNumberInfo(check);
-      return Boolean(expectedPart?.key);
-    };
-
-    const vhcReqsFromCanonicalAuthorized = (Array.isArray(jobData?.authorizedVhcItems) ? jobData.authorizedVhcItems : [])
-      .map((row, index) => {
-        const vhcItemId = row?.vhcItemId ?? row?.vhc_item_id ?? null;
-        if (vhcItemId === null || vhcItemId === undefined || String(vhcItemId).trim() === "") return null;
-        const expectedPart = extractExpectedPartNumberInfo(row);
-        const displayText =
-          firstText(row?.label, row?.description, row?.text, row?.issue_title, row?.section) ||
-          `VHC authorised item ${index + 1}`;
-        const detailText = firstText(row?.issueDescription, row?.issue_description, row?.noteText, row?.note_text);
-        return {
-          id: `vhc-${vhcItemId}`,
-          type: "vhc",
-          description: resolveVhcLabel(
-            [row?.label, row?.description, row?.text, row?.issue_title, row?.issue_description, row?.section],
-            vhcItemId,
-            index
-          ),
-          displayText,
-          detailText:
-            detailText &&
-            normalizePartNumberKey(detailText) !== normalizePartNumberKey(displayText)
-              ? detailText
-              : "",
-          section: row?.section || "",
-          severity: "authorized",
-          vhcItemId,
-          expectedPartNumber: expectedPart.key,
-          expectedPartNumberDisplay: expectedPart.display,
-          canAllocate: true,
-        };
-      })
-      .filter(Boolean);
-
-    // VHC requests sourced from vhc_checks rows that are either allocatable by
-    // decision state or carry an explicit part number from Parts Identified.
-    const vhcReqsFromVhcChecks = vhcChecksSource
-      .filter((check) => {
-        const vhcItemId = check?.vhc_id ?? check?.vhcId ?? null;
-        if (vhcItemId === null || vhcItemId === undefined || String(vhcItemId).trim() === "") return false;
-        return shouldIncludeVhcRequest(check);
-      })
-      .map((check, index) => {
-        const vhcItemId = check.vhc_id ?? check.vhcId ?? null;
-        const expectedPart = extractExpectedPartNumberInfo(check);
-        const sectionLabel = firstText(check.section);
-        const issueTitle = firstText(check.issue_title);
-        const issueDetail = firstText(check.issue_description, check.note_text, check.measurement);
-        const titleLooksLikeSection =
-          issueTitle &&
-          sectionLabel &&
-          normalizePartNumberKey(issueTitle) === normalizePartNumberKey(sectionLabel);
-        const displayText = titleLooksLikeSection
-          ? (issueDetail || issueTitle || sectionLabel || `VHC authorised item ${index + 1}`)
-          : (issueTitle || issueDetail || sectionLabel || `VHC authorised item ${index + 1}`);
-        return {
-          id: `vhc-${vhcItemId}`,
-          type: "vhc",
-          description: resolveVhcLabel(
-            [
-              check.issue_title,
-              check.issue_description,
-              check.note_text,
-              check.section,
-              check.measurement,
-            ],
-            vhcItemId,
-            index
-          ),
-          displayText,
-          detailText:
-            issueDetail &&
-            normalizePartNumberKey(issueDetail) !== normalizePartNumberKey(displayText)
-              ? issueDetail
-              : "",
-          section: check.section || "",
-          severity: "authorized",
-          vhcItemId,
-          expectedPartNumber: expectedPart.key,
-          expectedPartNumberDisplay: expectedPart.display,
-          canAllocate: true,
-        };
-      });
-
     const vhcReqMap = new Map();
-    [...vhcReqsFromCanonicalAuthorized, ...vhcReqsFromVhcChecks].forEach((row) => {
+    buildVhcRequestLinkRows({
+      jobRequests: requestsSource,
+      vhcChecks: vhcChecksSource,
+      authorizedVhcItems: Array.isArray(jobData?.authorizedVhcItems)
+        ? jobData.authorizedVhcItems
+        : [],
+      partsJobItems: jobParts,
+    }).forEach((row) => {
       if (!row?.id) return;
       vhcReqMap.set(String(row.id), row);
     });
@@ -614,20 +413,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     jobData.authorizedVhcItems,
     jobParts,
   ]);
-
-  const vhcAutoAllocateTargetsByPartNumber = useMemo(() => {
-    const map = new Map();
-    allRequests
-      .filter((row) => row?.type === "vhc" && row?.id)
-      .forEach((row) => {
-        const key = normalizePartNumberKey(row.expectedPartNumber || "");
-        if (!key) return;
-        const existing = map.get(key) || [];
-        existing.push(row);
-        map.set(key, existing);
-      });
-    return map;
-  }, [allRequests]);
 
   // Group parts by allocated request (including VHC items)
   useEffect(() => {
@@ -1094,44 +879,14 @@ const PartsTabNew = forwardRef(function PartsTabNew(
       }));
 
       const partName = selectedCatalogPart.part_number || selectedCatalogPart.name;
-      const createdJobPartId = data?.jobPart?.id || null;
-      const selectedPartNumberKey = normalizePartNumberKey(selectedCatalogPart.part_number || "");
-
-      if (createdJobPartId && selectedPartNumberKey) {
-        const matchingVhcRows = vhcAutoAllocateTargetsByPartNumber.get(selectedPartNumberKey) || [];
-        if (matchingVhcRows.length === 1) {
-          const target = matchingVhcRows[0];
-          try {
-            const response = await fetch("/api/parts/allocate-to-request", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                partAllocationId: createdJobPartId,
-                requestId: target.id,
-                jobId,
-              }),
-            });
-            const payload = await response.json().catch(() => ({}));
-            if (!response.ok || !payload?.success) {
-              console.warn("[PartsTab] Auto-allocate by part number failed", {
-                requestId: target.id,
-                partAllocationId: createdJobPartId,
-                payload,
-              });
-            }
-          } catch (autoAllocateError) {
-            console.warn("[PartsTab] Auto-allocate by part number error", autoAllocateError);
-          }
-        } else if (matchingVhcRows.length > 1) {
-          console.info("[PartsTab] Auto-allocate skipped due to ambiguous part-number match", {
-            partNumber: selectedCatalogPart.part_number,
-            matches: matchingVhcRows.map((row) => ({ id: row.id, text: row.displayText || row.description })),
-          });
-        }
-      }
+      const autoAllocationMessage = data?.autoAllocation?.matched
+        ? ` Auto-allocated to ${data.autoAllocation.label || `VHC row ${data.autoAllocation.vhcItemId}`}.`
+        : data?.autoAllocation?.attempted
+        ? " Added to job but no unique VHC row match was found."
+        : "";
 
       clearSelectedCatalogPart();
-      setCatalogSuccessMessage(`${partName} added to job.`);
+      setCatalogSuccessMessage(`${partName} added to job.${autoAllocationMessage}`);
 
       // Refresh job data in background to sync with database
       if (typeof onRefreshJob === "function") {
@@ -1163,7 +918,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     onRefreshJob,
     searchStockCatalog,
     selectedCatalogPart,
-    vhcAutoAllocateTargetsByPartNumber,
   ]);
 
   const handleAddPartToOrderFromStock = useCallback(async () => {
@@ -2949,11 +2703,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                           Selected allocation row
                                       </div>
                                     )}
-                                      {(request.expectedPartNumberDisplay || request.expectedPartNumber) && (
-                                        <div style={{ fontSize: "var(--text-caption)", color: "var(--info)" }}>
-                                          Part No: {request.expectedPartNumberDisplay || request.expectedPartNumber}
-                                        </div>
-                                      )}
                                       {request.detailText && (
                                         <div style={{ fontSize: "var(--text-caption)", color: "var(--info)" }}>
                                           {request.detailText}

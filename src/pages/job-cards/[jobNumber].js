@@ -2506,7 +2506,16 @@ export default function JobCardDetailPage() {
   };
 
   const handleUpdateRequestPrePickLocation = async (requestRow, prePickLocation) => {
-    if (!canEdit || !jobData?.id || !requestRow?.requestId) return;
+    if (!canEdit || !jobData?.id) return;
+
+    let requestId = requestRow?.requestId ?? requestRow?.request_id ?? null;
+    const vhcItemId = requestRow?.vhcItemId ?? requestRow?.vhc_item_id ?? null;
+    if (
+      (requestId === null || requestId === undefined || requestId === "") &&
+      (vhcItemId === null || vhcItemId === undefined || vhcItemId === "")
+    ) {
+      return;
+    }
 
     const nextPrePickLocation =
       prePickLocation === null || prePickLocation === undefined
@@ -2515,24 +2524,107 @@ export default function JobCardDetailPage() {
     const timestamp = new Date().toISOString();
 
     try {
-      const { error: requestUpdateError } = await supabase
-        .from("job_requests")
-        .update({
-          pre_pick_location: nextPrePickLocation,
-          updated_at: timestamp,
-        })
-        .eq("request_id", requestRow.requestId);
+      if (
+        (requestId === null || requestId === undefined || requestId === "") &&
+        vhcItemId !== null &&
+        vhcItemId !== undefined &&
+        vhcItemId !== ""
+      ) {
+        const { data: existingRequestRows, error: existingRequestError } = await supabase
+          .from("job_requests")
+          .select("request_id")
+          .eq("job_id", jobData.id)
+          .eq("request_source", "vhc_authorised")
+          .eq("vhc_item_id", vhcItemId)
+          .order("request_id", { ascending: true });
 
-      if (requestUpdateError) {
-        throw requestUpdateError;
+        if (existingRequestError) {
+          throw existingRequestError;
+        }
+
+        const primaryExistingRequestId = existingRequestRows?.[0]?.request_id ?? null;
+        if (primaryExistingRequestId) {
+          requestId = primaryExistingRequestId;
+        } else {
+          const matchedVhcRow =
+            (Array.isArray(jobData?.vhcChecks) ? jobData.vhcChecks : []).find(
+              (row) => String(row?.vhc_id ?? row?.vhcItemId ?? row?.vhc_item_id ?? "") === String(vhcItemId)
+            ) || null;
+          const requestDescription =
+            requestRow?.description ||
+            requestRow?.label ||
+            requestRow?.text ||
+            matchedVhcRow?.issue_title ||
+            matchedVhcRow?.issue_description ||
+            matchedVhcRow?.section ||
+            `VHC Item ${vhcItemId}`;
+          const requestStatus =
+            requestRow?.status ||
+            matchedVhcRow?.display_status ||
+            matchedVhcRow?.approval_status ||
+            "inprogress";
+          const requestNoteText =
+            requestRow?.noteText ??
+            requestRow?.note_text ??
+            matchedVhcRow?.note_text ??
+            "";
+          const requestJobType =
+            requestRow?.jobType ??
+            requestRow?.job_type ??
+            "Customer";
+
+          const { data: insertedRequestRows, error: insertRequestError } = await supabase
+            .from("job_requests")
+            .insert([
+              {
+                job_id: jobData.id,
+                description: requestDescription,
+                hours: null,
+                job_type: requestJobType,
+                sort_order: 0,
+                status: requestStatus,
+                request_source: "vhc_authorised",
+                vhc_item_id: vhcItemId,
+                pre_pick_location: nextPrePickLocation,
+                note_text: requestNoteText,
+                created_at: timestamp,
+                updated_at: timestamp,
+              },
+            ])
+            .select("request_id")
+            .limit(1);
+
+          if (insertRequestError) {
+            throw insertRequestError;
+          }
+
+          requestId = insertedRequestRows?.[0]?.request_id ?? null;
+        }
       }
 
-      const vhcItemId = requestRow.vhcItemId ?? requestRow.vhc_item_id ?? null;
+      if (requestId !== null && requestId !== undefined && requestId !== "") {
+        const { error: requestUpdateError } = await supabase
+          .from("job_requests")
+          .update({
+            pre_pick_location: nextPrePickLocation,
+            updated_at: timestamp,
+          })
+          .eq("request_id", requestId);
+
+        if (requestUpdateError) {
+          throw requestUpdateError;
+        }
+      }
+
       if (vhcItemId !== null && vhcItemId !== undefined && vhcItemId !== "") {
         const { error: vhcUpdateError } = await supabase
           .from("vhc_checks")
           .update({
             pre_pick_location: nextPrePickLocation,
+            request_id:
+              requestId !== null && requestId !== undefined && requestId !== ""
+                ? requestId
+                : null,
             updated_at: timestamp,
           })
           .eq("vhc_id", vhcItemId);
@@ -2546,15 +2638,71 @@ export default function JobCardDetailPage() {
         if (!prev) return prev;
         const updateRequestList = (rows) =>
           Array.isArray(rows)
-            ? rows.map((row) => {
-                const rowRequestId = row?.requestId ?? row?.request_id ?? null;
-                if (String(rowRequestId) !== String(requestRow.requestId)) return row;
-                return {
-                  ...row,
-                  prePickLocation: nextPrePickLocation,
-                  pre_pick_location: nextPrePickLocation,
-                };
-              })
+            ? (() => {
+                let matchedAny = false;
+                const nextRows = rows.map((row) => {
+                  const rowRequestId = row?.requestId ?? row?.request_id ?? null;
+                  const rowVhcId = row?.vhcItemId ?? row?.vhc_item_id ?? null;
+                  const matchesRequest =
+                    requestId !== null &&
+                    requestId !== undefined &&
+                    requestId !== "" &&
+                    String(rowRequestId) === String(requestId);
+                  const matchesVhc =
+                    vhcItemId !== null &&
+                    vhcItemId !== undefined &&
+                    vhcItemId !== "" &&
+                    String(rowVhcId) === String(vhcItemId);
+                  if (!matchesRequest && !matchesVhc) return row;
+                  matchedAny = true;
+                  return {
+                    ...row,
+                    requestId: row?.requestId ?? row?.request_id ?? requestId ?? null,
+                    request_id: row?.request_id ?? row?.requestId ?? requestId ?? null,
+                    vhcItemId: row?.vhcItemId ?? row?.vhc_item_id ?? vhcItemId ?? null,
+                    vhc_item_id: row?.vhc_item_id ?? row?.vhcItemId ?? vhcItemId ?? null,
+                    prePickLocation: nextPrePickLocation,
+                    pre_pick_location: nextPrePickLocation,
+                  };
+                });
+
+                if (matchedAny || requestId === null || requestId === undefined || requestId === "") {
+                  return nextRows;
+                }
+
+                return [
+                  ...nextRows,
+                  {
+                    requestId,
+                    request_id: requestId,
+                    jobId: jobData.id,
+                    job_id: jobData.id,
+                    description:
+                      requestRow?.description ||
+                      requestRow?.label ||
+                      requestRow?.text ||
+                      `VHC Item ${vhcItemId}`,
+                    hours: null,
+                    jobType: requestRow?.jobType ?? requestRow?.job_type ?? "Customer",
+                    job_type: requestRow?.jobType ?? requestRow?.job_type ?? "Customer",
+                    sortOrder: 0,
+                    sort_order: 0,
+                    status: requestRow?.status || "inprogress",
+                    requestSource: "vhc_authorised",
+                    request_source: "vhc_authorised",
+                    vhcItemId: vhcItemId ?? null,
+                    vhc_item_id: vhcItemId ?? null,
+                    prePickLocation: nextPrePickLocation,
+                    pre_pick_location: nextPrePickLocation,
+                    noteText: requestRow?.noteText ?? requestRow?.note_text ?? "",
+                    note_text: requestRow?.noteText ?? requestRow?.note_text ?? "",
+                    createdAt: timestamp,
+                    created_at: timestamp,
+                    updatedAt: timestamp,
+                    updated_at: timestamp,
+                  },
+                ];
+              })()
             : rows;
 
         const updateAuthorised = (rows) =>
@@ -2565,6 +2713,33 @@ export default function JobCardDetailPage() {
                 if (String(rowVhcId) !== String(vhcItemId)) return row;
                 return {
                   ...row,
+                  requestId: row?.requestId ?? row?.request_id ?? requestId ?? null,
+                  request_id: row?.request_id ?? row?.requestId ?? requestId ?? null,
+                  prePickLocation: nextPrePickLocation,
+                  pre_pick_location: nextPrePickLocation,
+                };
+              })
+            : rows;
+        const updateVhcChecks = (rows) =>
+          Array.isArray(rows)
+            ? rows.map((row) => {
+                const rowVhcId = row?.vhc_id ?? row?.vhcItemId ?? row?.vhc_item_id ?? null;
+                const rowRequestId = row?.request_id ?? row?.requestId ?? null;
+                const matchesRequest =
+                  requestId !== null &&
+                  requestId !== undefined &&
+                  requestId !== "" &&
+                  String(rowRequestId) === String(requestId);
+                const matchesVhc =
+                  vhcItemId !== null &&
+                  vhcItemId !== undefined &&
+                  vhcItemId !== "" &&
+                  String(rowVhcId) === String(vhcItemId);
+                if (!matchesRequest && !matchesVhc) return row;
+                return {
+                  ...row,
+                  requestId: row?.requestId ?? row?.request_id ?? requestId ?? null,
+                  request_id: row?.request_id ?? row?.requestId ?? requestId ?? null,
                   prePickLocation: nextPrePickLocation,
                   pre_pick_location: nextPrePickLocation,
                 };
@@ -2576,6 +2751,7 @@ export default function JobCardDetailPage() {
           jobRequests: updateRequestList(prev.jobRequests),
           job_requests: updateRequestList(prev.job_requests),
           authorizedVhcItems: updateAuthorised(prev.authorizedVhcItems),
+          vhcChecks: updateVhcChecks(prev.vhcChecks),
         };
       });
 
@@ -3655,6 +3831,7 @@ export default function JobCardDetailPage() {
               actingUserName={user?.name || user?.email || ""}
               onFinancialTotalsChange={setVhcFinancialTotalsFromPanel}
               onJobDataRefresh={() => fetchJobData({ silent: true, force: true })}
+              onUpdateRequestPrePickLocation={handleUpdateRequestPrePickLocation}
             />
           </div>
 
@@ -3941,6 +4118,17 @@ function CustomerRequestsTab({
     const safe = Number.isFinite(numeric) ? numeric : 0;
     return `${safe.toFixed(1)}h`;
   };
+  const getPrePickRowKey = useCallback((row) => {
+    const requestId = row?.requestId ?? row?.request_id ?? null;
+    if (requestId !== null && requestId !== undefined && requestId !== "") {
+      return `request:${requestId}`;
+    }
+    const vhcItemId = row?.vhcItemId ?? row?.vhc_item_id ?? null;
+    if (vhcItemId !== null && vhcItemId !== undefined && vhcItemId !== "") {
+      return `vhc:${vhcItemId}`;
+    }
+    return "";
+  }, []);
   const unifiedRequests = useMemo(() => {
     const source = Array.isArray(jobData?.jobRequests)
       ? jobData.jobRequests
@@ -4153,6 +4341,22 @@ function CustomerRequestsTab({
         (hasVhcLink && (status === "authorized" || status === "completed"))
       );
     });
+    const authorisedRequestRowByRequestId = new Map();
+    const authorisedRequestRowByVhcId = new Map();
+    authorisedRequestRows.forEach((row) => {
+      const requestId = row?.requestId ?? row?.request_id ?? null;
+      const rawVhcItemId = row?.vhcItemId ?? row?.vhc_item_id ?? null;
+      const canonicalVhcId =
+        rawVhcItemId !== null && rawVhcItemId !== undefined && String(rawVhcItemId).trim() !== ""
+          ? resolveCanonicalVhcId(rawVhcItemId)
+          : null;
+      if (requestId !== null && requestId !== undefined) {
+        authorisedRequestRowByRequestId.set(String(requestId), row);
+      }
+      if (canonicalVhcId !== null && canonicalVhcId !== undefined && String(canonicalVhcId).trim() !== "") {
+        authorisedRequestRowByVhcId.set(String(canonicalVhcId), row);
+      }
+    });
     const vhcChecksList = Array.isArray(vhcChecks) ? vhcChecks : [];
     const vhcCheckByVhcId = new Map();
     const vhcCheckByRequestId = new Map();
@@ -4288,6 +4492,43 @@ function CustomerRequestsTab({
     };
 
     const mappedRows = mergedAuthorized.map((row, rowIndex) => {
+      const rawRequestId = row?.requestId ?? row?.request_id ?? null;
+      const rawVhcItemId = row?.vhcItemId ?? row?.vhc_item_id ?? null;
+      const canonicalVhcItemId =
+        rawVhcItemId !== null && rawVhcItemId !== undefined && String(rawVhcItemId).trim() !== ""
+          ? resolveCanonicalVhcId(rawVhcItemId)
+          : null;
+      const linkedRequestRow =
+        (rawRequestId !== null && rawRequestId !== undefined
+          ? authorisedRequestRowByRequestId.get(String(rawRequestId))
+          : null) ||
+        (canonicalVhcItemId !== null && canonicalVhcItemId !== undefined
+          ? authorisedRequestRowByVhcId.get(String(canonicalVhcItemId))
+          : null) ||
+        null;
+      const matchedCheck =
+        (rawRequestId !== null && rawRequestId !== undefined
+          ? vhcCheckByRequestId.get(String(rawRequestId))
+          : null) ||
+        (canonicalVhcItemId !== null && canonicalVhcItemId !== undefined
+          ? vhcCheckByVhcId.get(String(canonicalVhcItemId))
+          : null) ||
+        null;
+      const resolvedRequestId =
+        rawRequestId ??
+        linkedRequestRow?.requestId ??
+        linkedRequestRow?.request_id ??
+        matchedCheck?.request_id ??
+        matchedCheck?.requestId ??
+        null;
+      const resolvedPrePickLocation =
+        row?.prePickLocation ??
+        row?.pre_pick_location ??
+        linkedRequestRow?.prePickLocation ??
+        linkedRequestRow?.pre_pick_location ??
+        matchedCheck?.pre_pick_location ??
+        matchedCheck?.prePickLocation ??
+        null;
       const rawSection = row.section || "";
       const rawLabel =
         row.label ||
@@ -4328,7 +4569,7 @@ function CustomerRequestsTab({
           : null;
 
       return {
-        requestId: row.requestId ?? row.request_id ?? null,
+        requestId: resolvedRequestId,
         description: row.description ?? row.text ?? row.section ?? "",
         label: computedLabel,
         detail: computedDetail,
@@ -4337,9 +4578,9 @@ function CustomerRequestsTab({
         sortOrder: row.sortOrder ?? row.sort_order ?? null,
         status: row.status ?? null,
         requestSource: row.requestSource ?? row.request_source ?? "vhc_authorised",
-        prePickLocation: row.prePickLocation ?? row.pre_pick_location ?? null,
+        prePickLocation: resolvedPrePickLocation,
         noteText: row.noteText ?? row.note_text ?? "",
-        vhcItemId: row.vhcItemId ?? row.vhc_item_id ?? null,
+        vhcItemId: canonicalVhcItemId ?? rawVhcItemId ?? null,
         labourHours: row.labourHours ?? row.labour_hours ?? null,
         partsCost: row.partsCost ?? row.parts_cost ?? null,
         complete: Boolean(row.complete ?? row.Complete ?? false),
@@ -4464,6 +4705,7 @@ function CustomerRequestsTab({
       { value: "sales_rack_2", label: "Sales Rack 2" },
       { value: "sales_rack_3", label: "Sales Rack 3" },
       { value: "sales_rack_4", label: "Sales Rack 4" },
+      { value: "tyre_shed", label: "Tyre Shed" },
       { value: "stairs_pre_pick", label: "Stairs Pre-Pick" },
       { value: "no_pick", label: "No Pick" },
       { value: "on_order", label: "On Order" },
@@ -4473,8 +4715,8 @@ function CustomerRequestsTab({
 
   const handleCustomerRequestPrePickLocationChange = useCallback(
     async (requestRow, nextValue) => {
-      if (!canEdit || !requestRow?.requestId) return;
-      const key = String(requestRow.requestId);
+      const key = getPrePickRowKey(requestRow);
+      if (!canEdit || !key) return;
       setSavingRequestPrePickId(key);
       try {
         await onUpdateRequestPrePickLocation(requestRow, nextValue || null);
@@ -4485,7 +4727,7 @@ function CustomerRequestsTab({
         setSavingRequestPrePickId((current) => (current === key ? null : current));
       }
     },
-    [canEdit, onUpdateRequestPrePickLocation]
+    [canEdit, getPrePickRowKey, onUpdateRequestPrePickLocation]
   );
 
   return (
@@ -4817,6 +5059,7 @@ function CustomerRequestsTab({
             <>
             {customerRequestRows.map((req, index) => {
               const linkedNoteTexts = linkedNotesByRequestIndex.get(index + 1) || [];
+              const prePickRowKey = getPrePickRowKey(req);
               const { statusLabel, statusBadgeStyle } = getRequestStatusPresentation(
                 req.status,
                 "inprogress"
@@ -4859,7 +5102,7 @@ function CustomerRequestsTab({
                     ))}
                   </div>
                   <div style={{ minWidth: 0, display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
-                    {req.requestId ? (
+                    {prePickRowKey ? (
                       <DropdownField
                         value={req.prePickLocation || ""}
                         placeholder="Pre-Pick Location"
@@ -4868,7 +5111,7 @@ function CustomerRequestsTab({
                         }
                         options={prePickLocationOptions}
                         className="customer-request-prepick-dropdown"
-                        disabled={!canEdit || savingRequestPrePickId === String(req.requestId)}
+                        disabled={!canEdit || savingRequestPrePickId === prePickRowKey}
                         size="sm"
                         style={{ width: "170px", minWidth: "170px" }}
                       />
@@ -4927,6 +5170,7 @@ function CustomerRequestsTab({
             })}
             {authorisedRows.map((row, index) => {
               const rowKey = row.requestId || row.vhcItemId || `authorized-row-${index}`;
+              const prePickRowKey = getPrePickRowKey(row);
               const linkedParts = row.requestId ? (partsByRequestId[String(row.requestId)] || []) : [];
               const authorisedStatusSource =
                 row.status ||
@@ -5000,7 +5244,7 @@ function CustomerRequestsTab({
                       )}
                     </div>
                     <div style={{ minWidth: 0, display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
-                      {row.requestId ? (
+                      {prePickRowKey ? (
                         <DropdownField
                           value={row.prePickLocation || ""}
                           placeholder="Pre-Pick Location"
@@ -5009,7 +5253,7 @@ function CustomerRequestsTab({
                           }
                           options={prePickLocationOptions}
                           className="customer-request-prepick-dropdown"
-                          disabled={!canEdit || savingRequestPrePickId === String(row.requestId)}
+                          disabled={!canEdit || savingRequestPrePickId === prePickRowKey}
                           size="sm"
                           style={{ width: "170px", minWidth: "170px" }}
                         />
@@ -7676,6 +7920,7 @@ function VHCTab({
   actingUserName = "",
   onFinancialTotalsChange,
   onJobDataRefresh,
+  onUpdateRequestPrePickLocation = async () => {},
 }) {
   const [copied, setCopied] = useState(false);
   const [generatingLink, setGeneratingLink] = useState(false);
@@ -7864,6 +8109,7 @@ function VHCTab({
         onCheckboxesLockReason={setCheckboxesLockReason}
         onFinancialTotalsChange={onFinancialTotalsChange}
         onJobDataRefresh={onJobDataRefresh}
+        onUpdateRequestPrePickLocation={onUpdateRequestPrePickLocation}
         enableTabs
       />
     </DevLayoutSection>

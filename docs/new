@@ -1,16 +1,13 @@
 
 
 CLAUDE
-CHECK CLAUDE
-Have it so Auto-logged from job clock added to the efficiency table can also be clicked, but not edited, only removed. Within the update job entry. 
-
-
+CHECK/DONE
 have it so Job Progress Tracker section follows the design when using iPhone in vertical mode as well as the other sections. 
 
-
+CHECK/DONE
 Have it so when in phone view the whole background colour is accent colour atm it cuts off and turns white on the bottom and top sections in the web browsers as the browser tab section goes smaller and the app wasn’t added full accent colour. 
 
-
+CHECK/DONE
 Have it so the messages page works like iPhone messages does on iPhone instead of the current design for bigger screens, have it so it only uses this messages page feature when in iPhone view and other view when in bigger screens view. 
 
 
@@ -59,8 +56,8 @@ Have it so “6 techsJob #00056” bubbles follow more of the button style than 
 Have it so within the messages tab the “Open Messaging Hub” button opens up the messages page, with a message which is linked to the customer (not another user (this is the only way a user can message a customer though end to end encryption messages from the job card/[jobnumber] page it’s self)) and opens the chat section with “/job[jobnumber] already in the chat box which indicates they are taking about that job. 
 Fix “Review the invoice layout below, but complete these tasks before sharing with the customer:Allocate every booked part to a request or additional request.Parts tab 
 
+TODO CODEX
+so changing the dropdowns within the "Pre-Pick Location" columnn inside the "Parts Authorised" tab works and changes it wihtin the tab, but chaning it wihti the "Customer Requests" tab doesnt update it wihit the "Parts Authorised" tab fix this 
 
 
-CHECK CODEX
-have it so for rows wihtin the VHC Requests section inside the Allocate Parts section has part numbers attached to them back end, for example Wipers/Washers/Horn Near Side Front Wiper blade split, requires replacing is a row and is also within the vhc_check database table which has part number "Nsfwiper236" attached, so when a add a part to the job within the "Parts Added to Job " section it will autodetect that part number matches the part within the "Allocate Parts " seciton and assign that row to the request. so for example if i add Nsfwiper236 part number to the job it sees it matches with the row inside the "Allocate Parts " seciton and auto assigns.
-
+if wihtin the Parts Added to Job  section the part has been added to the job change the status within the "Parts Authorised" tab so it shows added to job instead of order for example.

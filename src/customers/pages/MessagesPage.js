@@ -241,6 +241,19 @@ export default function CustomerMessagesPage() {
   const { dbUserId } = useUser();
   const { confirm } = useConfirmation();
 
+  // Mobile view state (iPhone Messages-style navigation)
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileView, setMobileView] = useState("threads"); // "threads" | "chat"
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(max-width: 480px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
   // Composer state
   const [composerOpen, setComposerOpen] = useState(false);
   const [composerSearch, setComposerSearch] = useState("");
@@ -334,6 +347,7 @@ export default function CustomerMessagesPage() {
       if (!dbUserId || !thread?.id) return;
       setIsSystemThreadActive(false);
       setActiveThread(thread);
+      if (isMobile) setMobileView("chat");
       setMessagesLoading(true);
       setMessagesError("");
       // Capture lastReadAt BEFORE marking read so we know where the divider goes
@@ -372,12 +386,13 @@ export default function CustomerMessagesPage() {
         setMessagesLoading(false);
       }
     },
-    [dbUserId, fetchThreads]
+    [dbUserId, fetchThreads, isMobile]
   );
 
   const openSystemNotificationsThread = useCallback(() => {
     setIsSystemThreadActive(true);
     setActiveThread(null);
+    if (isMobile) setMobileView("chat");
     setThreadMessages([]);
     setMessagesLoading(false);
     setMessagesError("");
@@ -389,7 +404,7 @@ export default function CustomerMessagesPage() {
       clearTimeout(unreadTimerRef.current);
       unreadTimerRef.current = null;
     }
-  }, []);
+  }, [isMobile]);
 
   // Toggle composer user selection
   const toggleComposerUser = useCallback((user) => {
@@ -838,6 +853,294 @@ export default function CustomerMessagesPage() {
           Loading messages…
         </div>
       ) : null}
+      {/* ── Mobile: iPhone Messages-style navigation ── */}
+      {isMobile ? (
+        <div className="space-y-4">
+          {mobileView === "threads" ? (
+            /* ── Thread list view (like iOS Messages inbox) ── */
+            <section className="rounded-3xl border border-[var(--surface-light)] bg-[var(--surface)] p-4">
+              <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[var(--primary)] px-4 py-3 text-white">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.35em] text-white">Messages</p>
+                  <h3 className="text-lg font-semibold text-white">Your conversations</h3>
+                </div>
+              </header>
+
+              <div className="mt-3 space-y-3">
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setComposerOpen(true)}
+                    disabled={composerCreating}
+                    className="flex-1 rounded-full border border-dashed border-[var(--primary)] bg-[var(--surface)] px-3 py-2 text-xs font-semibold uppercase tracking-[0.15em] text-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    + New
+                  </button>
+                  <button
+                    type="button"
+                    onClick={fetchThreads}
+                    disabled={threadsLoading}
+                    className="rounded-full border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-2 text-xs font-semibold text-[var(--primary)] hover:border-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {threadsLoading ? "…" : "Refresh"}
+                  </button>
+                </div>
+                {conversationFeedback && (
+                  <p className="rounded-2xl border border-[var(--success)] bg-[var(--success-surface)] px-3 py-2 text-sm text-[var(--success-dark)]">
+                    {conversationFeedback}
+                  </p>
+                )}
+                {conversationError && (
+                  <p className="rounded-2xl border border-[var(--danger)] bg-[var(--danger-surface)] px-3 py-2 text-sm text-[var(--danger-dark)]">
+                    {conversationError}
+                  </p>
+                )}
+
+                {/* System notifications thread */}
+                <button
+                  type="button"
+                  onClick={openSystemNotificationsThread}
+                  className="w-full text-left rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] px-4 py-3 text-sm transition"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-semibold text-[var(--text-primary)]">System notifications</p>
+                    <div className="flex items-center gap-1">
+                      {hasSystemUnread && (
+                        <span className="rounded-full bg-[var(--primary)] px-2 py-0.5 text-[0.6rem] font-semibold text-white">
+                          New
+                        </span>
+                      )}
+                      <span className="rounded-full border border-[var(--surface-light)] px-2 py-0.5 text-[0.6rem] font-semibold text-[var(--danger)]">
+                        Read only
+                      </span>
+                    </div>
+                  </div>
+                  <p className="mt-1 text-xs text-[var(--text-secondary)] line-clamp-1">{systemPreview}</p>
+                  <p className="text-[0.6rem] text-[var(--text-secondary)]">{systemTimestampLabel}</p>
+                </button>
+
+                {/* Thread list */}
+                {threads.length ? (
+                  <div className="space-y-2">
+                    {threads.map((thread) => {
+                      const preview = thread.lastMessage?.content || "No messages yet.";
+                      return (
+                        <button
+                          key={thread.id}
+                          type="button"
+                          onClick={() => openThread(thread)}
+                          className="w-full text-left rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] px-4 py-3 transition active:bg-[var(--surface-light)]"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-sm font-semibold text-[var(--text-primary)] line-clamp-1">
+                              {thread.title || "Conversation"}
+                            </p>
+                            <div className="flex items-center gap-1 shrink-0">
+                              {thread.hasUnread && (
+                                <span className="h-2.5 w-2.5 rounded-full bg-[var(--primary)]" />
+                              )}
+                              <span className="text-[0.6rem] text-[var(--text-secondary)]">
+                                {thread.lastMessage?.createdAt
+                                  ? formatMessageTimestamp(thread.lastMessage.createdAt)
+                                  : ""}
+                              </span>
+                            </div>
+                          </div>
+                          <p className="mt-0.5 text-xs text-[var(--text-secondary)] line-clamp-1">
+                            {thread.lastMessage?.sender?.name || "Team"}: {preview.length > 60 ? `${preview.slice(0, 60)}…` : preview}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-sm text-[var(--text-secondary)]">
+                    No conversations yet. Tap + New to start one.
+                  </p>
+                )}
+              </div>
+            </section>
+          ) : (
+            /* ── Chat view (like iOS Messages conversation) ── */
+            <section className="rounded-3xl border border-[var(--surface-light)] bg-[var(--surface)] p-4">
+              {/* Back button */}
+              <button
+                type="button"
+                onClick={() => { setMobileView("threads"); setActiveThread(null); setIsSystemThreadActive(false); }}
+                className="mb-3 flex items-center gap-1 text-sm font-semibold text-[var(--primary)]"
+              >
+                <span style={{ fontSize: "18px", lineHeight: 1 }}>&lsaquo;</span> Messages
+              </button>
+
+              {isSystemThreadActive ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-lg font-semibold text-[var(--text-primary)]">System notifications</h4>
+                    <span className="rounded-full bg-[var(--danger-surface)] px-2 py-0.5 text-[0.6rem] font-semibold text-[var(--danger)]">
+                      Read only
+                    </span>
+                  </div>
+                  <div className="space-y-2 max-h-[60dvh] overflow-y-auto">
+                    {systemLoading && (
+                      <p className="text-sm text-[var(--text-secondary)]">Loading…</p>
+                    )}
+                    {!systemLoading && systemError && (
+                      <p className="text-sm text-[var(--danger)]">{systemError}</p>
+                    )}
+                    {!systemLoading && !systemError && systemNotifications.length === 0 && (
+                      <p className="text-sm text-[var(--text-secondary)]">No system notifications yet.</p>
+                    )}
+                    {!systemLoading && !systemError && systemNotifications.length > 0 && (
+                      <div className="space-y-2">
+                        {systemNotifications.map((note) => (
+                          <article
+                            key={`system-${note.notification_id}`}
+                            className="space-y-1 rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] px-3 py-2 text-sm"
+                          >
+                            <p className="text-sm text-[var(--text-primary)]">{note.message || "System update"}</p>
+                            <p className="text-[0.6rem] text-[var(--text-secondary)]">
+                              {formatNotificationTimestamp(note.created_at)}
+                            </p>
+                          </article>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : activeThread ? (
+                <div className="flex flex-col" style={{ maxHeight: "calc(100dvh - 200px)" }}>
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-base font-semibold text-[var(--text-primary)] line-clamp-1">{activeThread.title}</h4>
+                    <span className="shrink-0 text-[0.6rem] text-[var(--text-secondary)]">
+                      {formatMessageTimestamp(threadMessages[threadMessages.length - 1]?.createdAt)}
+                    </span>
+                  </div>
+                  <div className="flex-1 space-y-2 overflow-y-auto pb-2" style={{ maxHeight: "calc(100dvh - 340px)" }}>
+                    {messagesLoading && (
+                      <p className="text-sm text-[var(--text-secondary)]">Loading…</p>
+                    )}
+                    {!messagesLoading && messagesError && (
+                      <p className="text-sm text-[var(--danger)]">{messagesError}</p>
+                    )}
+                    {!messagesLoading && !messagesError && threadMessages.length === 0 && (
+                      <p className="text-sm text-[var(--text-secondary)]">No messages yet. Start below.</p>
+                    )}
+                    {!messagesLoading && !messagesError && (
+                      <div className="space-y-2">
+                        {threadMessages.map((message, index) => {
+                          const senderName =
+                            message.sender?.name || (message.senderId === dbUserId ? "You" : "Team member");
+                          const isMine = message.senderId === dbUserId;
+                          const isFirstUnread =
+                            showUnreadDivider &&
+                            unreadAfterTimestamp &&
+                            new Date(message.createdAt) > new Date(unreadAfterTimestamp) &&
+                            (index === 0 || new Date(threadMessages[index - 1].createdAt) <= new Date(unreadAfterTimestamp));
+                          return (
+                            <React.Fragment key={message.id || `${message.senderId}-${message.createdAt}`}>
+                              {isFirstUnread && (
+                                <div ref={unreadDividerRef} className="flex items-center gap-2 py-1">
+                                  <div className="h-px flex-1 bg-[var(--primary)]" />
+                                  <span className="shrink-0 text-[0.6rem] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]">
+                                    New
+                                  </span>
+                                  <div className="h-px flex-1 bg-[var(--primary)]" />
+                                </div>
+                              )}
+                              <div
+                                className={`rounded-2xl px-3 py-2 text-sm ${
+                                  isMine
+                                    ? "ml-8 bg-[var(--primary)] text-white"
+                                    : "mr-8 border border-[var(--surface-light)] bg-[var(--background)]"
+                                }`}
+                              >
+                                {!isMine && (
+                                  <p className="text-xs font-semibold text-[var(--text-primary)] mb-0.5">{senderName}</p>
+                                )}
+                                <p className={isMine ? "text-white" : "text-[var(--text-secondary)]"}>
+                                  {renderMessageContentWithLinks(message.content)}
+                                </p>
+                                <p className={`text-[0.6rem] mt-0.5 ${isMine ? "text-white/70" : "text-[var(--text-secondary)]"}`}>
+                                  {formatMessageTimestamp(message.createdAt)}
+                                </p>
+                                {message.metadata?.jobNumber && (
+                                  <p className={`text-[0.6rem] ${isMine ? "text-white/70" : "text-[var(--text-secondary)]"}`}>
+                                    Job #{message.metadata.jobNumber}
+                                  </p>
+                                )}
+                              </div>
+                            </React.Fragment>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                  <form onSubmit={handleSendMessage} className="relative mt-2 space-y-2">
+                    {showCommandSuggestions && commandSuggestions.length > 0 && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          bottom: "100%",
+                          left: 0,
+                          right: 0,
+                          marginBottom: "4px",
+                          maxHeight: "180px",
+                          overflowY: "auto",
+                          backgroundColor: "var(--surface)",
+                          borderRadius: "var(--radius-md)",
+                          boxShadow: "var(--shadow-lg)",
+                          zIndex: 1000,
+                        }}
+                      >
+                        {commandSuggestions.map((cmd, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => handleSelectCommand(cmd)}
+                            className="w-full bg-[var(--background)] px-3 py-2 text-left hover:bg-[var(--surface-light)]"
+                            style={{
+                              borderBottom: idx < commandSuggestions.length - 1 ? "1px solid var(--surface-light)" : "none",
+                            }}
+                          >
+                            <span className="text-sm font-bold text-[var(--primary)]">{cmd.command}</span>
+                            <span className="ml-2 text-xs text-[var(--text-secondary)]">{cmd.description}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex items-end gap-2">
+                      <textarea
+                        id="message-draft"
+                        rows={1}
+                        value={messageDraft}
+                        onChange={handleMessageDraftChange}
+                        placeholder="Message…"
+                        className="flex-1 rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:border-[var(--primary)] focus:outline-none"
+                        style={{ resize: "none", maxHeight: "80px" }}
+                      />
+                      <button
+                        type="submit"
+                        disabled={!dbUserId || sendingMessage || !messageDraft.trim()}
+                        className="shrink-0 rounded-full bg-[var(--primary)] p-2.5 text-white disabled:opacity-40"
+                        aria-label="Send"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M22 2L11 13" /><path d="M22 2L15 22L11 13L2 9L22 2Z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              ) : (
+                <p className="text-sm text-[var(--text-secondary)]">
+                  Select a conversation to view messages.
+                </p>
+              )}
+            </section>
+          )}
+        </div>
+      ) : (
+      /* ── Desktop: existing 2-column layout ── */
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="rounded-3xl border border-[var(--surface-light)] bg-[var(--surface)] p-5">
           <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[var(--primary)] px-4 py-3 text-white">
@@ -1168,97 +1471,99 @@ export default function CustomerMessagesPage() {
               </div>
             )}
           </div>
-          {composerOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-              <div className="w-full max-w-2xl rounded-3xl border border-[var(--surface-light)] bg-[var(--surface)] p-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">Compose</p>
-                    <h3 className="text-xl font-semibold text-[var(--text-primary)]">Create a group chat</h3>
-                    <p className="text-sm text-[var(--text-secondary)]">
-                      Search by name, check the people you need, and create a new thread.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setComposerOpen(false)}
-                    className="rounded-full border border-[var(--surface-light)] px-3 py-1 text-xs font-semibold text-[var(--primary)]"
-                  >
-                    Close
-                  </button>
-                </div>
-                <div className="mt-4 space-y-3">
-                  <label className="text-xs font-semibold uppercase text-[var(--text-secondary)]">Search users</label>
-                  <SearchBar
-                    value={composerSearch}
-                    onChange={(event) => setComposerSearch(event.target.value)}
-                    onClear={() => setComposerSearch("")}
-                    placeholder="Find teammates by name or email"
-                  />
-                  <div className="max-h-60 overflow-y-auto space-y-2 rounded-2xl border border-[var(--search-surface-muted)] bg-[var(--search-surface)] p-3 text-[var(--search-text)]">
-                    {composerLoading && (
-                      <p className="text-sm text-[var(--search-text)]">Searching your roster…</p>
-                    )}
-                    {!composerLoading && composerError && (
-                      <p className="text-sm text-[var(--search-text)]">{composerError}</p>
-                    )}
-                    {!composerLoading && !composerError && !composerHasSearch && (
-                      <p className="text-sm text-[var(--search-text)]">Type a name to see matching users.</p>
-                    )}
-                    {!composerLoading && !composerError && composerHasSearch && composerResults.length === 0 && (
-                      <p className="text-sm text-[var(--search-text)]">No users match that search.</p>
-                    )}
-                    {!composerLoading && !composerError && composerResults.length > 0 && (
-                      <div className="space-y-2">
-                        {composerResults.map((user) => {
-                          const isSelected = composerSelection.some((entry) => entry.id === user.id);
-                          return (
-                            <label
-                              key={user.id}
-                              className="flex cursor-pointer items-center justify-between rounded-2xl border border-[var(--danger-surface)] bg-[var(--background)] px-3 py-2 text-sm transition hover:border-[var(--primary)]"
-                            >
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  onChange={() => toggleComposerUser(user)}
-                                  className="h-4 w-4 rounded border-[var(--primary)]"
-                                />
-                                <div>
-                                  <p className="font-semibold text-[var(--text-primary)]">{user.name}</p>
-                                  <p className="text-[0.65rem] uppercase tracking-[0.2em] text-[var(--text-secondary)]">
-                                    {user.role || "Team member"}
-                                  </p>
-                                </div>
-                              </div>
-                              <span className="text-xs text-[var(--text-secondary)]">{user.email}</span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="mt-4 flex items-center justify-between">
-                  <span className="text-sm text-[var(--text-secondary)]">
-                    Selected {composerSelection.length} colleague
-                    {composerSelection.length === 1 ? "" : "s"}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleCreateGroup}
-                    disabled={composerCreating || composerSelection.length === 0}
-                    className="rounded-full bg-[var(--primary)] px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white hover:bg-[var(--primary-dark)] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {composerCreating ? "Creating…" : "Create chat"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </section>
         <AppointmentTimeline events={timeline} />
       </div>
+      )}
+      {/* Composer modal (shared between mobile & desktop) */}
+      {composerOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className={`w-full rounded-3xl border border-[var(--surface-light)] bg-[var(--surface)] p-6 ${isMobile ? "max-w-full mx-2" : "max-w-2xl"}`}>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">Compose</p>
+                <h3 className={`font-semibold text-[var(--text-primary)] ${isMobile ? "text-lg" : "text-xl"}`}>Create a group chat</h3>
+                <p className="text-sm text-[var(--text-secondary)]">
+                  Search by name, check the people you need, and create a new thread.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setComposerOpen(false)}
+                className="rounded-full border border-[var(--surface-light)] px-3 py-1 text-xs font-semibold text-[var(--primary)]"
+              >
+                Close
+              </button>
+            </div>
+            <div className="mt-4 space-y-3">
+              <label className="text-xs font-semibold uppercase text-[var(--text-secondary)]">Search users</label>
+              <SearchBar
+                value={composerSearch}
+                onChange={(event) => setComposerSearch(event.target.value)}
+                onClear={() => setComposerSearch("")}
+                placeholder="Find teammates by name or email"
+              />
+              <div className="max-h-60 overflow-y-auto space-y-2 rounded-2xl border border-[var(--search-surface-muted)] bg-[var(--search-surface)] p-3 text-[var(--search-text)]">
+                {composerLoading && (
+                  <p className="text-sm text-[var(--search-text)]">Searching your roster…</p>
+                )}
+                {!composerLoading && composerError && (
+                  <p className="text-sm text-[var(--search-text)]">{composerError}</p>
+                )}
+                {!composerLoading && !composerError && !composerHasSearch && (
+                  <p className="text-sm text-[var(--search-text)]">Type a name to see matching users.</p>
+                )}
+                {!composerLoading && !composerError && composerHasSearch && composerResults.length === 0 && (
+                  <p className="text-sm text-[var(--search-text)]">No users match that search.</p>
+                )}
+                {!composerLoading && !composerError && composerResults.length > 0 && (
+                  <div className="space-y-2">
+                    {composerResults.map((user) => {
+                      const isSelected = composerSelection.some((entry) => entry.id === user.id);
+                      return (
+                        <label
+                          key={user.id}
+                          className="flex cursor-pointer items-center justify-between rounded-2xl border border-[var(--danger-surface)] bg-[var(--background)] px-3 py-2 text-sm transition hover:border-[var(--primary)]"
+                        >
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => toggleComposerUser(user)}
+                              className="h-4 w-4 rounded border-[var(--primary)]"
+                            />
+                            <div>
+                              <p className="font-semibold text-[var(--text-primary)]">{user.name}</p>
+                              <p className="text-[0.65rem] uppercase tracking-[0.2em] text-[var(--text-secondary)]">
+                                {user.role || "Team member"}
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-xs text-[var(--text-secondary)]">{user.email}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="mt-4 flex items-center justify-between">
+              <span className="text-sm text-[var(--text-secondary)]">
+                Selected {composerSelection.length} colleague
+                {composerSelection.length === 1 ? "" : "s"}
+              </span>
+              <button
+                type="button"
+                onClick={handleCreateGroup}
+                disabled={composerCreating || composerSelection.length === 0}
+                className="rounded-full bg-[var(--primary)] px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white hover:bg-[var(--primary-dark)] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {composerCreating ? "Creating…" : "Create chat"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </CustomerLayout>
   );
 }

@@ -47,6 +47,7 @@ export default function JobProgressTracker({
   currentStatusId = null,
   currentStatusMeta = null,
   isWide = false,
+  isCompact = false,
 }) {
   const [selectedUser, setSelectedUser] = useState("all");
   const [selectedAction, setSelectedAction] = useState("all");
@@ -168,9 +169,9 @@ export default function JobProgressTracker({
     <div
       style={{
         backgroundColor: COLORS.panelBg,
-        borderRadius: "var(--radius-md)",
+        borderRadius: isCompact ? "var(--section-card-radius, var(--radius-md))" : "var(--radius-md)",
         border: "none",
-        padding: "12px",
+        padding: isCompact ? "var(--section-card-padding-sm, 16px)" : "12px",
         boxShadow: "none",
         height: "100%",
         display: "flex",
@@ -182,16 +183,17 @@ export default function JobProgressTracker({
         style={{
           display: "flex",
           flexWrap: "wrap",
-          gap: "12px",
-          alignItems: "center",
+          gap: isCompact ? "8px" : "12px",
+          alignItems: isCompact ? "stretch" : "center",
+          flexDirection: isCompact ? "column" : "row",
           justifyContent: "space-between",
-          marginBottom: "16px",
+          marginBottom: isCompact ? "12px" : "16px",
         }}
       >
         <h3
           style={{
             margin: 0,
-            fontSize: "16px",
+            fontSize: isCompact ? "15px" : "16px",
             fontWeight: 700,
             color: COLORS.textDark,
           }}
@@ -208,7 +210,7 @@ export default function JobProgressTracker({
               borderRadius: "var(--radius-sm)",
               border: "none",
               padding: "8px 12px",
-              minWidth: isWide ? "240px" : "100%",
+              minWidth: isCompact ? "100%" : isWide ? "240px" : "100%",
             }}
           >
             <span
@@ -235,10 +237,10 @@ export default function JobProgressTracker({
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: isWide ? "repeat(2, minmax(0, 1fr))" : "1fr",
-          gap: "10px",
+          gridTemplateColumns: isCompact ? "1fr" : isWide ? "repeat(2, minmax(0, 1fr))" : "repeat(auto-fit, minmax(200px, 1fr))",
+          gap: isCompact ? "var(--page-stack-gap-mobile, 16px)" : "10px",
           marginBottom: "14px",
-          padding: "12px",
+          padding: isCompact ? "var(--section-card-padding-sm, 16px)" : "12px",
           borderRadius: "var(--radius-sm)",
           border: "none",
           backgroundColor: "var(--surface)",
@@ -320,8 +322,8 @@ export default function JobProgressTracker({
               key={`${item?.status || item?.label || "status"}-${index}`}
               style={{
                 position: "relative",
-                paddingLeft: "42px",
-                marginBottom: "10px",
+                paddingLeft: isCompact ? "32px" : "42px",
+                marginBottom: isCompact ? "8px" : "10px",
               }}
             >
               {/* Dot + connector */}
@@ -329,7 +331,7 @@ export default function JobProgressTracker({
                 <span
                   style={{
                     position: "absolute",
-                    left: "24px",
+                    left: isCompact ? "17px" : "24px",
                     top: "-calc(50% + 12px)",
                     width: "2px",
                     height: "calc(50% + 12px)",
@@ -341,11 +343,11 @@ export default function JobProgressTracker({
               <span
                 style={{
                   position: "absolute",
-                  left: "18px",
+                  left: isCompact ? "11px" : "18px",
                   top: "50%",
                   transform: "translateY(-50%)",
-                  width: "14px",
-                  height: "14px",
+                  width: isCompact ? "12px" : "14px",
+                  height: isCompact ? "12px" : "14px",
                   borderRadius: "var(--radius-full)",
                   backgroundColor: nodeColor,
                   border: "2px solid var(--surface)",
@@ -359,10 +361,10 @@ export default function JobProgressTracker({
                 <span
                   style={{
                     position: "absolute",
-                    left: "24px",
+                    left: isCompact ? "17px" : "24px",
                     top: "50%",
                     width: "2px",
-                    height: "calc(100% + 16px)",
+                    height: isCompact ? "calc(100% + 12px)" : "calc(100% + 16px)",
                     backgroundColor: connectorColor,
                     zIndex: 1,
                   }}
@@ -374,16 +376,16 @@ export default function JobProgressTracker({
                 style={{
                   width: "100%",
                   backgroundColor: "var(--surface)",
-                  borderRadius: "var(--radius-sm)",
+                  borderRadius: isCompact ? "var(--radius-md)" : "var(--radius-sm)",
                   border: "none",
                   boxShadow: "none",
-                  padding: "12px 14px",
+                  padding: isCompact ? "12px 14px" : "12px 14px",
                   display: "flex",
                   flexDirection: "column",
                   gap: "4px",
                   fontFamily: "'Inter','Segoe UI','Helvetica Neue',Arial,sans-serif",
                   transition: "transform 0.2s ease",
-                  minHeight: "72px",
+                  minHeight: isCompact ? "60px" : "72px",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.position = "relative";
@@ -400,13 +402,13 @@ export default function JobProgressTracker({
                 <div style={{ textAlign: "left", minWidth: 0 }}>
                   <div
                     style={{
-                      fontSize: "16px",
+                      fontSize: isCompact ? "14px" : "16px",
                       fontWeight: 700,
                       color: COLORS.textDark,
                       lineHeight: 1.25,
                       display: "flex",
                       justifyContent: "space-between",
-                      gap: "8px",
+                      gap: isCompact ? "6px" : "8px",
                       alignItems: "flex-start",
                       flexWrap: "wrap",
                     }}

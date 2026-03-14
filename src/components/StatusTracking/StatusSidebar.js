@@ -337,7 +337,7 @@ export default function StatusSidebar({
         <div style={{
           background: 'var(--primary)',
           color: 'var(--text-inverse)',
-          padding: '20px',
+          padding: compactMode ? 'var(--page-gutter-y-mobile, 14px) var(--page-gutter-x-mobile, 12px)' : '20px',
           borderRadius: '0',
           position: 'relative'
         }}>
@@ -432,7 +432,7 @@ export default function StatusSidebar({
                 fontSize: '14px',
                 opacity: 0.95,
                 display: 'grid',
-                gridTemplateColumns: isWideLayout ? 'minmax(0, 1fr) auto' : '1fr',
+                gridTemplateColumns: compactMode ? '1fr' : isWideLayout ? 'minmax(0, 1fr) auto' : '1fr',
                 gap: '12px',
                 alignItems: 'center',
               }}
@@ -479,7 +479,7 @@ export default function StatusSidebar({
           overflowX: 'hidden',
           flex: 1, // Fill remaining vertical space so colored section reaches footer
           minHeight: 0, // Allow flex child to shrink for proper scrolling
-          padding: '20px',
+          padding: compactMode ? 'var(--page-gutter-y-mobile, 14px) var(--page-gutter-x-mobile, 12px)' : '20px',
           background: 'var(--surface)',
           borderRadius: '0 0 var(--radius-md) var(--radius-md)' // Match parent border radius
         }}>
@@ -505,7 +505,7 @@ export default function StatusSidebar({
               </p>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: compactMode ? 'var(--page-stack-gap-mobile, 16px)' : '20px' }}>
               <div style={{ minHeight: 0 }}>
                 <JobProgressTracker
                   statuses={timelineStatuses}
@@ -513,6 +513,7 @@ export default function StatusSidebar({
                   currentStatusId={currentStatusId}
                   currentStatusMeta={currentStatusMeta}
                   isWide={isWideLayout}
+                  isCompact={compactMode}
                 />
               </div>
             </div>
