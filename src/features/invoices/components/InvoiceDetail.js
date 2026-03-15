@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import styles from "@/features/invoices/styles/invoice.module.css";
 import ModalPortal from "@/components/popups/ModalPortal";
 import DropdownField from "@/components/dropdownAPI/DropdownField";
+import InvoicePaymentModal from "@/features/invoices/components/InvoicePaymentModal";
 
 const formatCurrency = (value) => {
   const number = Number(value || 0);
@@ -261,15 +262,27 @@ const PaymentBlock = ({ payment }) => {
   );
 };
 
-export default function InvoiceDetail({ data, onPrint, onEmail, emailStatus, customerEmail, jobData = null, onDataRefresh = null, onDataPatch = null }) {
+export default function InvoiceDetail({
+  data,
+  onPrint,
+  onEmail,
+  emailStatus,
+  customerEmail,
+  jobData = null,
+  onDataRefresh = null,
+  onDataPatch = null,
+  onPaymentCompleted = null,
+  onReleaseRequested = null,
+}) {
   if (!data) {
     return null;
   }
-  const { company, invoice, requests = [], payment } = data;
+  const { company, invoice, requests = [], payment, payments = [] } = data;
   const [editingRequest, setEditingRequest] = useState(null);
   const [overrideForm, setOverrideForm] = useState(null);
   const [overrideSaving, setOverrideSaving] = useState(false);
   const [billingDropdownSeed, setBillingDropdownSeed] = useState(0);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const requestRowsSource = Array.isArray(jobData?.jobRequests)
     ? jobData.jobRequests
     : Array.isArray(jobData?.job_requests)
@@ -508,6 +521,9 @@ export default function InvoiceDetail({ data, onPrint, onEmail, emailStatus, cus
     return aAuthorised ? 1 : -1;
   });
   const isProforma = Boolean(data?.meta?.isProforma);
+  const invoicePaid =
+    invoice?.paid === true ||
+    String(invoice?.payment_status || "").trim().toLowerCase() === "paid";
   const jobIdForOverride = jobData?.id || null;
 
   const handleOpenProformaEditor = (request) => {
@@ -659,6 +675,7 @@ export default function InvoiceDetail({ data, onPrint, onEmail, emailStatus, cus
   };
 
   return (
+    <>
     <article className={styles.invoiceShell}>
       <header className={styles.companyHeader}>
         <div className={styles.companyInfo}>
@@ -678,33 +695,47 @@ export default function InvoiceDetail({ data, onPrint, onEmail, emailStatus, cus
           )}
         </div>
         <div className="invoice-action-buttons" style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "flex-end" }}>
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button type="button" className={styles.printButton} onClick={onPrint}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: "6px", verticalAlign: "middle" }}>
-                <polyline points="6 9 6 2 18 2 18 9" />
-                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-                <rect x="6" y="14" width="12" height="8" />
-              </svg>
-              Print Invoice
-            </button>
-            <button
-              type="button"
-              className={styles.printButton}
-              onClick={onEmail}
-              disabled={emailStatus === "Sending..."}
-              style={{
-                background: customerEmail ? "var(--primary-dark)" : "var(--grey-accent-light)",
-                borderColor: customerEmail ? "var(--primary-dark)" : "var(--grey-accent-light)",
-                cursor: customerEmail ? "pointer" : "not-allowed",
-                opacity: emailStatus === "Sending..." ? 0.7 : 1,
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: "6px", verticalAlign: "middle" }}>
-                <rect x="2" y="4" width="20" height="16" rx="2" />
-                <path d="M22 7l-10 7L2 7" />
-              </svg>
-              {emailStatus === "Sending..." ? "Sending..." : "Email Invoice"}
-            </button>
+          {!isProforma && (
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+              <button type="button" className={styles.printButton} onClick={onPrint}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: "6px", verticalAlign: "middle" }}>
+                  <polyline points="6 9 6 2 18 2 18 9" />
+                  <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                  <rect x="6" y="14" width="12" height="8" />
+                </svg>
+                Print Invoice
+              </button>
+              <button
+                type="button"
+                className={styles.printButton}
+                onClick={onEmail}
+                disabled={emailStatus === "Sending..."}
+                style={{
+                  background: customerEmail ? "var(--primary-dark)" : "var(--grey-accent-light)",
+                  borderColor: customerEmail ? "var(--primary-dark)" : "var(--grey-accent-light)",
+                  cursor: customerEmail ? "pointer" : "not-allowed",
+                  opacity: emailStatus === "Sending..." ? 0.7 : 1,
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: "6px", verticalAlign: "middle" }}>
+                  <rect x="2" y="4" width="20" height="16" rx="2" />
+                  <path d="M22 7l-10 7L2 7" />
+                </svg>
+                {emailStatus === "Sending..." ? "Sending..." : "Email Invoice"}
+              </button>
+              <button
+                type="button"
+                className={styles.primaryActionButton}
+                onClick={() => setPaymentModalOpen(true)}
+              >
+                Payment
+              </button>
+            </div>
+          )}
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <span className={styles.invoiceStatusBadge}>
+              {isProforma ? "Proforma preview" : invoicePaid ? "Payment captured" : invoice?.payment_status || "Live invoice"}
+            </span>
           </div>
           {emailStatus && emailStatus !== "Sending..." && (
             <div style={{
@@ -939,7 +970,46 @@ export default function InvoiceDetail({ data, onPrint, onEmail, emailStatus, cus
 
       <TotalsFooter totals={invoice.totals} />
 
+      {!isProforma && (
+        <section className={styles.paymentDetails}>
+          <h3>Payment Activity</h3>
+          {payments.length === 0 ? (
+            <p style={{ margin: 0, color: "var(--text-secondary)" }}>
+              No payment has been captured yet. Use Payment to run the dealership settlement flow.
+            </p>
+          ) : (
+            <div className={styles.activityTimeline}>
+              {payments.map((entry) => (
+                <div key={entry.payment_id || `${entry.payment_date}-${entry.reference}`} className={styles.activityTimelineItem}>
+                  <div>
+                    <strong>{formatCurrency(entry.amount || 0)}</strong>
+                    <p>{entry.payment_method || entry.method || "Manual payment"}</p>
+                  </div>
+                  <span className={styles.invoiceStatusBadge}>
+                    {formatDate(entry.payment_date || entry.created_at)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
       <PaymentBlock payment={payment} />
     </article>
+    {!isProforma && (
+      <InvoicePaymentModal
+        isOpen={paymentModalOpen}
+        onClose={() => setPaymentModalOpen(false)}
+        invoice={invoice}
+        customerEmail={customerEmail}
+        onInvoiceActionComplete={async () => {
+          await onDataRefresh?.({ silent: true });
+        }}
+        onPaymentCompleted={onPaymentCompleted}
+        onReleaseRequested={onReleaseRequested}
+      />
+    )}
+    </>
   );
 }

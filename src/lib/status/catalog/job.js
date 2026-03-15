@@ -8,7 +8,7 @@ export const STATUSES = {
   CHECKED_IN: "checked_in",
   IN_PROGRESS: "in_progress",
   INVOICED: "invoiced",
-  COMPLETE: "complete",
+  RELEASED: "released",
 };
 
 export const DISPLAY = {
@@ -16,7 +16,7 @@ export const DISPLAY = {
   [STATUSES.CHECKED_IN]: "Checked In",
   [STATUSES.IN_PROGRESS]: "In Progress",
   [STATUSES.INVOICED]: "Invoiced",
-  [STATUSES.COMPLETE]: "Complete",
+  [STATUSES.RELEASED]: "Released",
 };
 
 const LEGACY_TO_MAIN = {
@@ -48,11 +48,11 @@ const LEGACY_TO_MAIN = {
   delivered_to_customer: STATUSES.IN_PROGRESS,
   invoicing: STATUSES.INVOICED,
   invoiced: STATUSES.INVOICED,
-  released: STATUSES.COMPLETE,
-  completed: STATUSES.COMPLETE,
-  complete: STATUSES.COMPLETE,
-  collected: STATUSES.COMPLETE,
-  cancelled: STATUSES.COMPLETE,
+  released: STATUSES.RELEASED,
+  completed: STATUSES.RELEASED,
+  complete: STATUSES.RELEASED,
+  collected: STATUSES.RELEASED,
+  cancelled: STATUSES.RELEASED,
   workshop_mot: STATUSES.IN_PROGRESS,
   vhc_sent: STATUSES.IN_PROGRESS,
   additional_work_required: STATUSES.IN_PROGRESS,

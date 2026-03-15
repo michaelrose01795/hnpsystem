@@ -17,9 +17,9 @@ import { deriveJobTypeDisplay, formatDetectedJobTypeLabel } from "@/lib/jobType/
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { ContentWidth, FilterToolbarRow, PageShell, SectionShell } from "@/components/ui";
 
-const TODAY_STATUSES = ["Booked", "Checked In", "In Progress", "Invoiced", "Complete"];
+const TODAY_STATUSES = ["Booked", "Checked In", "In Progress", "Invoiced", "Released"];
 
-const CARRY_OVER_STATUSES = ["Booked", "Checked In", "In Progress", "Invoiced", "Complete"];
+const CARRY_OVER_STATUSES = ["Booked", "Checked In", "In Progress", "Invoiced", "Released"];
 
 /* ================================
    Utility function: today's date

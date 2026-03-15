@@ -1,7 +1,6 @@
 // ✅ Connected to Supabase (server-side)
 // file location: src/pages/api/invoices/create.js
 import { createClient } from "@supabase/supabase-js";
-import { PAYMENT_PROVIDERS, buildPaymentUrl } from "@/lib/payments/paymentProviders";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -123,12 +122,10 @@ export default async function handler(req, res) {
     orderNumber,
     customerId,
     customerEmail,
-    providerId,
     totals = {},
     requests = [],
+    structuredRequests = [],
     partLines = [],
-    sendEmail = false,
-    sendPortal = false
   } = req.body || {};
 
   if (!jobId || !jobNumber) {
@@ -139,9 +136,6 @@ export default async function handler(req, res) {
     const invoiceNumber = await generateInvoiceNumber(); // derive friendly sequential invoice number
     const jobContext = await fetchJobContext(jobId); // capture customer and vehicle snapshot
 
-    const provider =
-      PAYMENT_PROVIDERS.find((item) => item.id === providerId) || PAYMENT_PROVIDERS[0];
-
     const now = new Date().toISOString();
     const invoicePayload = {
       job_id: jobId,
@@ -150,9 +144,10 @@ export default async function handler(req, res) {
       total_labour: Number(totals.labourTotal ?? 0),
       total_vat: Number(totals.vatTotal ?? 0),
       total: Number(totals.total ?? 0),
-      payment_method: provider.label,
-      sent_email_at: sendEmail ? now : null,
-      sent_portal_at: sendPortal ? now : null,
+      payment_method: null,
+      payment_status: "Draft",
+      sent_email_at: null,
+      sent_portal_at: null,
       created_at: now,
       updated_at: now,
       invoice_number: invoiceNumber,
@@ -219,51 +214,20 @@ export default async function handler(req, res) {
       }
     }
 
-    const checkoutUrl = buildPaymentUrl(provider, {
-      invoiceId: invoice.id,
+    // TODO: Persist full proforma-to-invoice structured request rows once invoice_requests
+    // is expanded to support request linkage and authored proforma metadata consistently.
+
+    await insertNotification({
       jobNumber,
-      amount: invoice.total
+      method: "invoice_created",
+      targetRole: "accounts",
+      message: `Invoice ${invoice.invoice_number || invoice.id} created and ready for payment or delivery`
     });
-    const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString();
-
-    const { data: paymentLink, error: linkError } = await dbClient
-      .from("payment_links")
-      .insert({
-        invoice_id: invoice.id,
-        provider: provider.label,
-        checkout_url: checkoutUrl,
-        expires_at: expiresAt
-      })
-      .select()
-      .single();
-
-    if (linkError) {
-      throw linkError;
-    }
-
-    if (sendEmail && customerEmail) {
-      await insertNotification({
-        jobNumber,
-        method: "email",
-        targetRole: "customer",
-        message: `Invoice ${invoice.id} sent to ${customerEmail}`
-      });
-    }
-
-    if (sendPortal) {
-      await insertNotification({
-        jobNumber,
-        method: "portal",
-        targetRole: "customer_portal",
-        message: `Invoice ${invoice.id} published to the customer portal`
-      });
-    }
 
     return res.status(201).json({
       success: true,
       invoice,
-      paymentLink,
-      provider: provider.id
+      provider: null
     });
   } catch (error) {
     console.error("❌ create invoice error:", error);

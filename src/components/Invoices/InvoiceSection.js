@@ -3,7 +3,13 @@
 import React from "react";
 import InvoiceDetailSection from "@/features/invoices/components/InvoiceDetailSection";
 
-export default function InvoiceSection({ jobData, invoiceReady = false }) {
+export default function InvoiceSection({
+  jobData,
+  invoiceReady = false,
+  onInvoiceStateChange,
+  onPaymentCompleted,
+  onReleaseRequested,
+}) {
   const jobNumber = jobData?.jobNumber || jobData?.job_number || "";
 
   if (!jobNumber) {
@@ -21,6 +27,9 @@ export default function InvoiceSection({ jobData, invoiceReady = false }) {
       jobId={jobData?.id}
       jobData={jobData}
       invoiceReady={invoiceReady}
+      onInvoiceStateChange={onInvoiceStateChange}
+      onPaymentCompleted={onPaymentCompleted}
+      onReleaseRequested={onReleaseRequested}
     />
   );
 }

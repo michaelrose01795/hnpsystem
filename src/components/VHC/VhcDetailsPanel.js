@@ -32,6 +32,7 @@ import {
 } from "@/components/VHC/VhcSharedComponents";
 import { isValidUuid } from "@/features/labour-times/normalization";
 import { buildStableDisplayId, formatMeasurement, resolveLocationKey, normalizeText, hashString, LOCATION_TOKENS } from "@/lib/vhc/displayId";
+import { collectLinkedPartRows, resolveLinkedPrePickLocation } from "@/lib/prePickLocations";
 
 const LABOUR_SUGGEST_DEBUG = process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_DEBUG_LABOUR_SUGGESTIONS === "1";
 
@@ -2908,6 +2909,18 @@ export default function VhcDetailsPanel({
       const summaryItem = summaryByCanonicalId.get(canonicalVhcId);
       const displayVhcId = String(row?.display_id || summaryItem?.id || canonicalVhcId);
       const linkedParts = partsByVhcId.get(canonicalVhcId) || [];
+      const resolvedRequestPrePickLocation = resolveLinkedPrePickLocation({
+        linkedPartRows: collectLinkedPartRows({
+          parts: linkedParts,
+          requestId: row?.request_id ?? row?.requestId ?? null,
+          vhcItemId: canonicalVhcId,
+          resolveCanonicalVhcId,
+        }),
+        fallbackValues: [
+          row?.pre_pick_location,
+          row?.prePickLocation,
+        ],
+      });
 
       const fallbackVhcItem = {
         id: displayVhcId,
@@ -2926,7 +2939,7 @@ export default function VhcDetailsPanel({
         vhcId: displayVhcId,
         canonicalVhcId,
         requestId: row?.request_id ?? null,
-        requestPrePickLocation: row?.pre_pick_location ?? row?.prePickLocation ?? null,
+        requestPrePickLocation: resolvedRequestPrePickLocation,
       });
     });
 

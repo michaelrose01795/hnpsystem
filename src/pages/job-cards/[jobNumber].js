@@ -5,7 +5,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
-import InvoiceBuilderPopup from "@/components/popups/InvoiceBuilderPopup";
 import { useUser } from "@/context/UserContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
 import { supabase } from "@/lib/supabaseClient";
@@ -45,6 +44,11 @@ import { TimePickerField } from "@/components/timePickerAPI";
 import ClockingHistorySection from "@/components/JobCards/ClockingHistorySection";
 import { buildApiUrl } from "@/utils/apiClient";
 import { popupCardStyles, popupOverlayStyles } from "@/styles/appTheme";
+import {
+  collectLinkedPartRows,
+  normalizePrePickLocation,
+  resolveLinkedPrePickLocation,
+} from "@/lib/prePickLocations";
 
 const deriveVhcSeverity = (check = {}) => {
   const fields = [
@@ -664,8 +668,13 @@ export default function JobCardDetailPage() {
   const [bookingApprovalSaving, setBookingApprovalSaving] = useState(false);
   const [jobDocuments, setJobDocuments] = useState([]);
   const [creatingInvoice, setCreatingInvoice] = useState(false);
-  const [invoicePopupOpen, setInvoicePopupOpen] = useState(false);
-  const [invoiceResponse, setInvoiceResponse] = useState(null);
+  const [invoiceViewState, setInvoiceViewState] = useState({
+    exists: false,
+    isProforma: true,
+    paymentStatus: "",
+    paymentCaptured: false,
+    invoiceId: null,
+  });
   const [showDocumentsPopup, setShowDocumentsPopup] = useState(false);
   const [vhcFinancialTotalsFromPanel, setVhcFinancialTotalsFromPanel] = useState(null);
   const [checkingIn, setCheckingIn] = useState(false);
@@ -756,8 +765,21 @@ export default function JobCardDetailPage() {
     "admin",
     "admin manager"
   ].some((role) => userRoles.includes(role));
-  const canEdit = !isArchiveMode && canEditBase;
-  const canManageDocuments = !isArchiveMode && canManageDocumentsBase;
+  const mainStatusForEditLock = resolveMainStatusId(jobData?.status);
+  const isInvoiceOrBeyondReadOnly =
+    mainStatusForEditLock === JOB_STATUSES.INVOICED ||
+    mainStatusForEditLock === JOB_STATUSES.RELEASED ||
+    String(jobData?.status || "").trim().toLowerCase() === "archived";
+  const canEdit = !isArchiveMode && !isInvoiceOrBeyondReadOnly && canEditBase;
+  const canManageDocuments =
+    !isArchiveMode && !isInvoiceOrBeyondReadOnly && canManageDocumentsBase;
+  const canEditTrackingLocations =
+    !isArchiveMode &&
+    String(jobData?.status || "").trim().toLowerCase() !== "archived";
+  const canUseReleaseAction =
+    !isArchiveMode &&
+    canEditBase &&
+    mainStatusForEditLock === JOB_STATUSES.INVOICED;
   const canViewPartsTab = [
     "workshop manager",
     "service manager",
@@ -1210,29 +1232,53 @@ export default function JobCardDetailPage() {
   }, [jobNumber]);
 
   useEffect(() => {
+    setInvoiceViewState({
+      exists: false,
+      isProforma: true,
+      paymentStatus: "",
+      paymentCaptured: false,
+      invoiceId: null,
+    });
+  }, [jobNumber]);
+
+  const loadStatusSnapshot = useCallback(async (jobId, options = {}) => {
+    if (!jobId || isArchiveMode) {
+      setStatusSnapshot(null);
+      return null;
+    }
+
+    try {
+      const response = await fetch(`/api/status/snapshot?jobId=${jobId}`);
+      const payload = await response.json();
+      if (payload?.success && payload?.snapshot) {
+        if (options.apply !== false) {
+          setStatusSnapshot(payload.snapshot);
+        }
+        return payload.snapshot;
+      }
+    } catch (snapshotError) {
+      console.error("Failed to load status snapshot:", snapshotError);
+    }
+
+    return null;
+  }, [isArchiveMode]);
+
+  useEffect(() => {
     if (!jobData?.id || isArchiveMode) {
       setStatusSnapshot(null);
       return;
     }
     let isActive = true;
     const loadSnapshot = async () => {
-      try {
-        const response = await fetch(`/api/status/snapshot?jobId=${jobData.id}`);
-        const payload = await response.json();
-        if (!isActive) return;
-        if (payload?.success && payload?.snapshot) {
-          setStatusSnapshot(payload.snapshot);
-        }
-      } catch (snapshotError) {
-        if (!isActive) return;
-        console.error("Failed to load status snapshot:", snapshotError);
-      }
+      const snapshot = await loadStatusSnapshot(jobData.id, { apply: false });
+      if (!isActive || !snapshot) return;
+      setStatusSnapshot(snapshot);
     };
     loadSnapshot();
     return () => {
       isActive = false;
     };
-  }, [jobData?.id, isArchiveMode]);
+  }, [jobData?.id, isArchiveMode, loadStatusSnapshot]);
 
   useEffect(() => {
     if (!jobData?.id || isArchiveMode) return;
@@ -2173,10 +2219,40 @@ export default function JobCardDetailPage() {
     [canEdit, jobData?.jobNumber, dbUserId, user]
   );
 
-  const handleInvoiceBuilderConfirm = useCallback(async (builderPayload) => {
+  const handleCreateInvoice = useCallback(async () => {
     if (!canEdit || !jobData?.id) return;
     setCreatingInvoice(true);
     try {
+      const detailResponse = await fetch(
+        `/api/invoices/by-job/${encodeURIComponent(jobData.jobNumber)}`,
+        { credentials: "include", cache: "no-store" }
+      );
+      const detailPayload = await detailResponse.json();
+      if (!detailResponse.ok || !detailPayload?.success || !detailPayload?.data) {
+        throw new Error(detailPayload?.message || "Failed to load proforma data");
+      }
+
+      if (!detailPayload.data?.meta?.isProforma) {
+        await fetchJobData({ silent: true, force: true });
+        await loadStatusSnapshot(jobData.id);
+        return;
+      }
+
+      const liveInvoiceData = detailPayload.data;
+      const structuredRequests = Array.isArray(liveInvoiceData?.requests)
+        ? liveInvoiceData.requests
+        : [];
+      const totals = liveInvoiceData?.invoice?.totals || {};
+      const derivedPartsTotal = structuredRequests.reduce((sum, request) => {
+        const requestNet = Number(request?.totals?.request_total_net || 0);
+        const labourNet = Number(request?.labour?.net || 0);
+        return sum + Math.max(requestNet - labourNet, 0);
+      }, 0);
+      const derivedLabourTotal = structuredRequests.reduce(
+        (sum, request) => sum + Number(request?.labour?.net || 0),
+        0
+      );
+
       const response = await fetch("/api/invoices/create", {
         method: "POST",
         headers: {
@@ -2187,12 +2263,13 @@ export default function JobCardDetailPage() {
           jobNumber: jobData.jobNumber,
           customerId: jobData.customerId,
           customerEmail: jobData.customerEmail,
-          providerId: builderPayload.providerId,
-          totals: builderPayload.totals,
-          requests: builderPayload.requests,
-          partLines: builderPayload.partLines,
-          sendEmail: builderPayload.sendEmail,
-          sendPortal: builderPayload.sendPortal
+          totals: {
+            partsTotal: derivedPartsTotal,
+            labourTotal: derivedLabourTotal,
+            vatTotal: Number(totals.vat_total || 0),
+            total: Number(totals.invoice_total || 0),
+          },
+          structuredRequests,
         })
       });
 
@@ -2211,17 +2288,23 @@ export default function JobCardDetailPage() {
         jobData.id,
         "Ready for Invoice",
         dbUserId || null,
-        "Invoice ready"
+        "Live invoice created"
       );
       const statusResult = await updateJobStatus(jobData.id, "Invoiced");
       if (!statusResult?.success) {
-        console.warn("Invoice created but failed to update status:", statusResult?.error);
+        throw new Error(
+          statusResult?.error?.message ||
+          statusResult?.error ||
+          "Invoice created but failed to update job status"
+        );
       }
-      alert(
-        `✅ Invoice created. Payment link ready: ${payload.paymentLink?.checkout_url || ""}`
-      );
-      setInvoiceResponse(payload);
       await fetchJobData({ silent: true, force: true });
+      await loadStatusSnapshot(jobData.id);
+      setInvoiceViewState((prev) => ({
+        ...prev,
+        exists: true,
+        isProforma: false,
+      }));
 
       // Redirect to invoice tab after successful invoice creation
       router.push(`/job-cards/${jobData.jobNumber}?tab=invoice`);
@@ -2231,15 +2314,55 @@ export default function JobCardDetailPage() {
     } finally {
       setCreatingInvoice(false);
     }
-  }, [
-    canEdit,
-    fetchJobData,
-    jobData?.id,
-    jobData?.jobNumber,
-    jobData?.customerId,
-    jobData?.customerEmail,
-    updateJobStatus
-  ]);
+  }, [canEdit, fetchJobData, jobData, loadStatusSnapshot, dbUserId, router]);
+
+  const handleInvoicePaymentCompleted = useCallback(async () => {
+    if (!jobData?.id) {
+      return { success: false, error: "Job not found" };
+    }
+    await fetchJobData({ silent: true, force: true });
+    await loadStatusSnapshot(jobData.id);
+    return { success: true };
+  }, [fetchJobData, jobData?.id, loadStatusSnapshot, updateJobStatus]);
+
+  const handleReleaseJob = useCallback(async () => {
+    if (!jobData?.id) {
+      return { success: false, error: "Job not found" };
+    }
+
+    const statusResult = await updateJobStatus(jobData.id, "Released");
+    if (!statusResult?.success) {
+      return {
+        success: false,
+        error:
+          statusResult?.error?.message ||
+          statusResult?.error ||
+          "Failed to release job",
+      };
+    }
+
+    setJobData((prev) => (prev ? { ...prev, status: "Released" } : prev));
+    setStatusSnapshot((prev) =>
+      prev
+        ? {
+            ...prev,
+            job: prev.job
+              ? {
+                  ...prev.job,
+                  overallStatus: JOB_STATUSES.RELEASED,
+                  statusLabel: "Released",
+                  updatedAt: new Date().toISOString(),
+                }
+              : prev.job,
+          }
+        : prev
+    );
+
+    await fetchJobData({ silent: true, force: true });
+    await loadStatusSnapshot(jobData.id);
+    await router.push("/newsfeed");
+    return { success: true };
+  }, [fetchJobData, jobData?.id, loadStatusSnapshot, router, updateJobStatus]);
 
   const handleDeleteDocument = useCallback(
     async (file) => {
@@ -2508,131 +2631,63 @@ export default function JobCardDetailPage() {
   const handleUpdateRequestPrePickLocation = async (requestRow, prePickLocation) => {
     if (!canEdit || !jobData?.id) return;
 
-    let requestId = requestRow?.requestId ?? requestRow?.request_id ?? null;
+    const requestId = requestRow?.requestId ?? requestRow?.request_id ?? null;
     const vhcItemId = requestRow?.vhcItemId ?? requestRow?.vhc_item_id ?? null;
-    if (
-      (requestId === null || requestId === undefined || requestId === "") &&
-      (vhcItemId === null || vhcItemId === undefined || vhcItemId === "")
-    ) {
+    const normalizedRequestId =
+      requestId === null || requestId === undefined || requestId === ""
+        ? null
+        : String(requestId).trim();
+    const normalizedPrePickLocation = normalizePrePickLocation(prePickLocation);
+
+    if (!normalizedRequestId && (vhcItemId === null || vhcItemId === undefined || vhcItemId === "")) {
       return;
     }
 
-    const nextPrePickLocation =
-      prePickLocation === null || prePickLocation === undefined
-        ? null
-        : String(prePickLocation).trim() || null;
-    const timestamp = new Date().toISOString();
-
     try {
-      if (
-        (requestId === null || requestId === undefined || requestId === "") &&
-        vhcItemId !== null &&
-        vhcItemId !== undefined &&
-        vhcItemId !== ""
-      ) {
-        const { data: existingRequestRows, error: existingRequestError } = await supabase
-          .from("job_requests")
-          .select("request_id")
-          .eq("job_id", jobData.id)
-          .eq("request_source", "vhc_authorised")
-          .eq("vhc_item_id", vhcItemId)
-          .order("request_id", { ascending: true });
+      const response = await fetch("/api/vhc/pre-pick-location", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobId: jobData.id,
+          requestId: normalizedRequestId,
+          vhcItemId,
+          prePickLocation: normalizedPrePickLocation,
+        }),
+      });
 
-        if (existingRequestError) {
-          throw existingRequestError;
-        }
-
-        const primaryExistingRequestId = existingRequestRows?.[0]?.request_id ?? null;
-        if (primaryExistingRequestId) {
-          requestId = primaryExistingRequestId;
-        } else {
-          const matchedVhcRow =
-            (Array.isArray(jobData?.vhcChecks) ? jobData.vhcChecks : []).find(
-              (row) => String(row?.vhc_id ?? row?.vhcItemId ?? row?.vhc_item_id ?? "") === String(vhcItemId)
-            ) || null;
-          const requestDescription =
-            requestRow?.description ||
-            requestRow?.label ||
-            requestRow?.text ||
-            matchedVhcRow?.issue_title ||
-            matchedVhcRow?.issue_description ||
-            matchedVhcRow?.section ||
-            `VHC Item ${vhcItemId}`;
-          const requestStatus =
-            requestRow?.status ||
-            matchedVhcRow?.display_status ||
-            matchedVhcRow?.approval_status ||
-            "inprogress";
-          const requestNoteText =
-            requestRow?.noteText ??
-            requestRow?.note_text ??
-            matchedVhcRow?.note_text ??
-            "";
-          const requestJobType =
-            requestRow?.jobType ??
-            requestRow?.job_type ??
-            "Customer";
-
-          const { data: insertedRequestRows, error: insertRequestError } = await supabase
-            .from("job_requests")
-            .insert([
-              {
-                job_id: jobData.id,
-                description: requestDescription,
-                hours: null,
-                job_type: requestJobType,
-                sort_order: 0,
-                status: requestStatus,
-                request_source: "vhc_authorised",
-                vhc_item_id: vhcItemId,
-                pre_pick_location: nextPrePickLocation,
-                note_text: requestNoteText,
-                created_at: timestamp,
-                updated_at: timestamp,
-              },
-            ])
-            .select("request_id")
-            .limit(1);
-
-          if (insertRequestError) {
-            throw insertRequestError;
-          }
-
-          requestId = insertedRequestRows?.[0]?.request_id ?? null;
-        }
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.error || payload?.details || "Failed to update pre-pick location");
       }
 
-      if (requestId !== null && requestId !== undefined && requestId !== "") {
-        const { error: requestUpdateError } = await supabase
-          .from("job_requests")
-          .update({
-            pre_pick_location: nextPrePickLocation,
-            updated_at: timestamp,
-          })
-          .eq("request_id", requestId);
-
-        if (requestUpdateError) {
-          throw requestUpdateError;
-        }
+      const linkedVhcIds = new Set(
+        (Array.isArray(payload?.linkedVhcItemIds) ? payload.linkedVhcItemIds : [])
+          .map((value) => String(value).trim())
+          .filter(Boolean)
+      );
+      const normalizedVhcItemId =
+        vhcItemId === null || vhcItemId === undefined || vhcItemId === ""
+          ? ""
+          : String(vhcItemId).trim();
+      if (normalizedVhcItemId) {
+        linkedVhcIds.add(normalizedVhcItemId);
       }
-
-      if (vhcItemId !== null && vhcItemId !== undefined && vhcItemId !== "") {
-        const { error: vhcUpdateError } = await supabase
-          .from("vhc_checks")
-          .update({
-            pre_pick_location: nextPrePickLocation,
-            request_id:
-              requestId !== null && requestId !== undefined && requestId !== ""
-                ? requestId
-                : null,
-            updated_at: timestamp,
-          })
-          .eq("vhc_id", vhcItemId);
-
-        if (vhcUpdateError) {
-          throw vhcUpdateError;
-        }
-      }
+      const nextRequestId =
+        payload?.requestId === null || payload?.requestId === undefined || payload?.requestId === ""
+          ? normalizedRequestId
+          : String(payload.requestId).trim();
+      const nextPartStatus =
+        normalizedPrePickLocation === "on_order"
+          ? "on_order"
+          : normalizedPrePickLocation
+          ? "pre_picked"
+          : "pending";
+      const nextStockStatus =
+        normalizedPrePickLocation === "on_order"
+          ? "no_stock"
+          : normalizedPrePickLocation
+          ? "in_stock"
+          : null;
 
       setJobData((prev) => {
         if (!prev) return prev;
@@ -2644,44 +2699,43 @@ export default function JobCardDetailPage() {
                   const rowRequestId = row?.requestId ?? row?.request_id ?? null;
                   const rowVhcId = row?.vhcItemId ?? row?.vhc_item_id ?? null;
                   const matchesRequest =
-                    requestId !== null &&
-                    requestId !== undefined &&
-                    requestId !== "" &&
-                    String(rowRequestId) === String(requestId);
+                    nextRequestId !== null &&
+                    nextRequestId !== undefined &&
+                    nextRequestId !== "" &&
+                    String(rowRequestId) === String(nextRequestId);
                   const matchesVhc =
-                    vhcItemId !== null &&
-                    vhcItemId !== undefined &&
-                    vhcItemId !== "" &&
-                    String(rowVhcId) === String(vhcItemId);
+                    rowVhcId !== null &&
+                    rowVhcId !== undefined &&
+                    linkedVhcIds.has(String(rowVhcId).trim());
                   if (!matchesRequest && !matchesVhc) return row;
                   matchedAny = true;
                   return {
                     ...row,
-                    requestId: row?.requestId ?? row?.request_id ?? requestId ?? null,
-                    request_id: row?.request_id ?? row?.requestId ?? requestId ?? null,
-                    vhcItemId: row?.vhcItemId ?? row?.vhc_item_id ?? vhcItemId ?? null,
-                    vhc_item_id: row?.vhc_item_id ?? row?.vhcItemId ?? vhcItemId ?? null,
-                    prePickLocation: nextPrePickLocation,
-                    pre_pick_location: nextPrePickLocation,
+                    requestId: row?.requestId ?? row?.request_id ?? nextRequestId ?? null,
+                    request_id: row?.request_id ?? row?.requestId ?? nextRequestId ?? null,
+                    vhcItemId: row?.vhcItemId ?? row?.vhc_item_id ?? normalizedVhcItemId ?? null,
+                    vhc_item_id: row?.vhc_item_id ?? row?.vhcItemId ?? normalizedVhcItemId ?? null,
+                    prePickLocation: normalizedPrePickLocation,
+                    pre_pick_location: normalizedPrePickLocation,
                   };
                 });
 
-                if (matchedAny || requestId === null || requestId === undefined || requestId === "") {
+                if (matchedAny || nextRequestId === null || nextRequestId === undefined || nextRequestId === "") {
                   return nextRows;
                 }
 
                 return [
                   ...nextRows,
                   {
-                    requestId,
-                    request_id: requestId,
+                    requestId: nextRequestId,
+                    request_id: nextRequestId,
                     jobId: jobData.id,
                     job_id: jobData.id,
                     description:
                       requestRow?.description ||
                       requestRow?.label ||
                       requestRow?.text ||
-                      `VHC Item ${vhcItemId}`,
+                      `VHC Item ${normalizedVhcItemId || ""}`,
                     hours: null,
                     jobType: requestRow?.jobType ?? requestRow?.job_type ?? "Customer",
                     job_type: requestRow?.jobType ?? requestRow?.job_type ?? "Customer",
@@ -2690,16 +2744,12 @@ export default function JobCardDetailPage() {
                     status: requestRow?.status || "inprogress",
                     requestSource: "vhc_authorised",
                     request_source: "vhc_authorised",
-                    vhcItemId: vhcItemId ?? null,
-                    vhc_item_id: vhcItemId ?? null,
-                    prePickLocation: nextPrePickLocation,
-                    pre_pick_location: nextPrePickLocation,
+                    vhcItemId: normalizedVhcItemId || null,
+                    vhc_item_id: normalizedVhcItemId || null,
+                    prePickLocation: normalizedPrePickLocation,
+                    pre_pick_location: normalizedPrePickLocation,
                     noteText: requestRow?.noteText ?? requestRow?.note_text ?? "",
                     note_text: requestRow?.noteText ?? requestRow?.note_text ?? "",
-                    createdAt: timestamp,
-                    created_at: timestamp,
-                    updatedAt: timestamp,
-                    updated_at: timestamp,
                   },
                 ];
               })()
@@ -2709,14 +2759,22 @@ export default function JobCardDetailPage() {
           Array.isArray(rows)
             ? rows.map((row) => {
                 const rowVhcId = row?.vhcItemId ?? row?.vhc_item_id ?? null;
-                if (vhcItemId === null || vhcItemId === undefined) return row;
-                if (String(rowVhcId) !== String(vhcItemId)) return row;
+                const matchesVhc =
+                  rowVhcId !== null &&
+                  rowVhcId !== undefined &&
+                  linkedVhcIds.has(String(rowVhcId).trim());
+                const matchesRequest =
+                  nextRequestId !== null &&
+                  nextRequestId !== undefined &&
+                  nextRequestId !== "" &&
+                  String(row?.requestId ?? row?.request_id ?? "") === String(nextRequestId);
+                if (!matchesVhc && !matchesRequest) return row;
                 return {
                   ...row,
-                  requestId: row?.requestId ?? row?.request_id ?? requestId ?? null,
-                  request_id: row?.request_id ?? row?.requestId ?? requestId ?? null,
-                  prePickLocation: nextPrePickLocation,
-                  pre_pick_location: nextPrePickLocation,
+                  requestId: row?.requestId ?? row?.request_id ?? nextRequestId ?? null,
+                  request_id: row?.request_id ?? row?.requestId ?? nextRequestId ?? null,
+                  prePickLocation: normalizedPrePickLocation,
+                  pre_pick_location: normalizedPrePickLocation,
                 };
               })
             : rows;
@@ -2726,22 +2784,55 @@ export default function JobCardDetailPage() {
                 const rowVhcId = row?.vhc_id ?? row?.vhcItemId ?? row?.vhc_item_id ?? null;
                 const rowRequestId = row?.request_id ?? row?.requestId ?? null;
                 const matchesRequest =
-                  requestId !== null &&
-                  requestId !== undefined &&
-                  requestId !== "" &&
-                  String(rowRequestId) === String(requestId);
+                  nextRequestId !== null &&
+                  nextRequestId !== undefined &&
+                  nextRequestId !== "" &&
+                  String(rowRequestId) === String(nextRequestId);
                 const matchesVhc =
-                  vhcItemId !== null &&
-                  vhcItemId !== undefined &&
-                  vhcItemId !== "" &&
-                  String(rowVhcId) === String(vhcItemId);
+                  rowVhcId !== null &&
+                  rowVhcId !== undefined &&
+                  linkedVhcIds.has(String(rowVhcId).trim());
                 if (!matchesRequest && !matchesVhc) return row;
                 return {
                   ...row,
-                  requestId: row?.requestId ?? row?.request_id ?? requestId ?? null,
-                  request_id: row?.request_id ?? row?.requestId ?? requestId ?? null,
-                  prePickLocation: nextPrePickLocation,
-                  pre_pick_location: nextPrePickLocation,
+                  requestId: row?.requestId ?? row?.request_id ?? nextRequestId ?? null,
+                  request_id: row?.request_id ?? row?.requestId ?? nextRequestId ?? null,
+                  prePickLocation: normalizedPrePickLocation,
+                  pre_pick_location: normalizedPrePickLocation,
+                };
+              })
+            : rows;
+        const updatePartsJobItems = (rows) =>
+          Array.isArray(rows)
+            ? rows.map((row) => {
+                const rowVhcId = row?.vhc_item_id ?? row?.vhcItemId ?? null;
+                const rowRequestId =
+                  row?.allocatedToRequestId ??
+                  row?.allocated_to_request_id ??
+                  row?.request_id ??
+                  row?.requestId ??
+                  null;
+                const matchesRequest =
+                  nextRequestId !== null &&
+                  nextRequestId !== undefined &&
+                  nextRequestId !== "" &&
+                  String(rowRequestId) === String(nextRequestId);
+                const matchesVhc =
+                  rowVhcId !== null &&
+                  rowVhcId !== undefined &&
+                  linkedVhcIds.has(String(rowVhcId).trim());
+                if (!matchesRequest && !matchesVhc) return row;
+                return {
+                  ...row,
+                  requestId: row?.requestId ?? row?.request_id ?? nextRequestId ?? null,
+                  request_id: row?.request_id ?? row?.requestId ?? nextRequestId ?? null,
+                  vhcItemId: row?.vhcItemId ?? row?.vhc_item_id ?? normalizedVhcItemId ?? null,
+                  vhc_item_id: row?.vhc_item_id ?? row?.vhcItemId ?? normalizedVhcItemId ?? null,
+                  prePickLocation: normalizedPrePickLocation,
+                  pre_pick_location: normalizedPrePickLocation,
+                  status: nextPartStatus,
+                  stockStatus: nextStockStatus,
+                  stock_status: nextStockStatus,
                 };
               })
             : rows;
@@ -2752,6 +2843,9 @@ export default function JobCardDetailPage() {
           job_requests: updateRequestList(prev.job_requests),
           authorizedVhcItems: updateAuthorised(prev.authorizedVhcItems),
           vhcChecks: updateVhcChecks(prev.vhcChecks),
+          partsJobItems: updatePartsJobItems(prev.partsJobItems),
+          parts_job_items: updatePartsJobItems(prev.parts_job_items),
+          partsAllocations: updatePartsJobItems(prev.partsAllocations),
         };
       });
 
@@ -2977,15 +3071,29 @@ export default function JobCardDetailPage() {
     }
   }
   const showProformaCompleteSection = invoicePrerequisitesMet && statusReadyForInvoicing;
-  const showInvoiceButton =
-    canEdit &&
-    partsTabCompleteInstant &&
-    writeUpCompleteInstant &&
-    vhcTabCompleteInstant;
+  const statusSnapshotInvoice = statusSnapshot?.workflows?.invoice || null;
+  const invoiceExists =
+    Boolean(statusSnapshotInvoice?.invoiceId) || Boolean(invoiceViewState?.exists);
+  const invoicePaymentStatus = String(
+    invoiceViewState?.paymentStatus || statusSnapshotInvoice?.status || ""
+  ).trim();
+  const invoicePaymentComplete =
+    invoiceViewState?.paymentCaptured === true ||
+    invoicePaymentStatus.toLowerCase() === "paid";
+  const jobReleased =
+    overallStatusId === JOB_STATUSES.RELEASED ||
+    String(overallStatusLabel || "").trim().toLowerCase() === "released";
   const showCreateInvoiceButton =
     canEdit &&
     activeTab === "invoice" &&
+    !invoiceExists &&
     showProformaCompleteSection;
+  const showReleaseButton =
+    canUseReleaseAction &&
+    activeTab === "invoice" &&
+    invoiceExists &&
+    invoicePaymentComplete &&
+    !jobReleased;
 
   const jobVhcChecks = Array.isArray(jobData.vhcChecks) ? jobData.vhcChecks : [];
   const redIssues = jobVhcChecks.filter((check) => resolveVhcSeverity(check) === "red");
@@ -3066,6 +3174,22 @@ export default function JobCardDetailPage() {
           </section>
         )}
 
+        {isInvoiceOrBeyondReadOnly && !isArchiveMode && (
+          <section
+            style={{
+              padding: "12px 16px",
+              borderRadius: "var(--radius-sm)",
+              border: "1px solid var(--warning-surface)",
+              backgroundColor: "var(--surface-light)",
+              color: "var(--text-secondary)",
+              fontSize: "0.95rem",
+              fontWeight: 600,
+            }}
+          >
+            Job card is read-only in {jobData.status}. Payment remains available while invoiced, and key/car location updates remain available until archive.
+          </section>
+        )}
+
         {/* ✅ Header Section */}
         <section
           style={{
@@ -3097,10 +3221,12 @@ export default function JobCardDetailPage() {
                 padding: "6px 14px",
                 backgroundColor: 
                   overallStatusLabel === "Open" ? "var(--success-surface)" : 
+                  overallStatusLabel === "Released" ? "var(--success-surface)" :
                   overallStatusLabel === "Complete" ? "var(--info-surface)" : 
                   "var(--warning-surface)",
                 color: 
                   overallStatusLabel === "Open" ? "var(--success-dark)" : 
+                  overallStatusLabel === "Released" ? "var(--success-dark)" :
                   overallStatusLabel === "Complete" ? "var(--info)" : 
                   "var(--danger)",
                 borderRadius: "var(--radius-lg)",
@@ -3237,35 +3363,9 @@ export default function JobCardDetailPage() {
                 {checkingIn ? "Checking In..." : "Check In"}
               </button>
             )}
-            {showInvoiceButton && (
-              <button
-                onClick={() => handleTabClick("invoice")}
-                style={{
-                  padding: "var(--control-padding)",
-                  backgroundColor: "var(--primary)",
-                  color: "var(--text-inverse)",
-                  border: "none",
-                  borderRadius: "var(--control-radius)",
-                  cursor: "pointer",
-                  fontWeight: "600",
-                  fontSize: "var(--control-font-size)",
-                  minHeight: "var(--control-height)",
-                  transition: "background-color 0.2s, transform 0.2s",
-                  opacity: 1
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = "var(--primary-light)";
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.backgroundColor = "var(--primary)";
-                }}
-              >
-                Invoice
-              </button>
-            )}
             {showCreateInvoiceButton && (
               <button
-                onClick={() => setInvoicePopupOpen(true)}
+                onClick={handleCreateInvoice}
                 disabled={creatingInvoice}
                 style={{
                   padding: "var(--control-padding)",
@@ -3291,7 +3391,30 @@ export default function JobCardDetailPage() {
                   }
                 }}
               >
-                Create Invoice
+                {creatingInvoice ? "Creating Invoice..." : "Create Invoice"}
+              </button>
+            )}
+            {showReleaseButton && (
+              <button
+                onClick={async () => {
+                  const result = await handleReleaseJob();
+                  if (!result?.success) {
+                    alert(result?.error || "Unable to release vehicle");
+                  }
+                }}
+                style={{
+                  padding: "var(--control-padding)",
+                  backgroundColor: "var(--success)",
+                  color: "var(--text-inverse)",
+                  border: "none",
+                  borderRadius: "var(--control-radius)",
+                  cursor: "pointer",
+                  fontWeight: "600",
+                  fontSize: "var(--control-font-size)",
+                  minHeight: "var(--control-height)",
+                }}
+              >
+                Release
               </button>
             )}
           </div>
@@ -3543,7 +3666,11 @@ export default function JobCardDetailPage() {
             data-dev-section-key="jobcard-summary-locations"
             data-dev-section-type="content-card"
             data-dev-section-parent="jobcard-summary-shell"
-            onClick={() => setTrackerQuickModalOpen(true)}
+            onClick={() => {
+              if (canEditTrackingLocations) {
+                setTrackerQuickModalOpen(true);
+              }
+            }}
             style={{
               padding: "16px 20px",
               backgroundColor: "var(--surface)",
@@ -3552,7 +3679,8 @@ export default function JobCardDetailPage() {
               display: "flex",
               flexDirection: "row",
               alignItems: "stretch",
-              cursor: "pointer"
+              cursor: canEditTrackingLocations ? "pointer" : "default",
+              opacity: canEditTrackingLocations ? 1 : 0.75,
             }}
           >
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -3923,20 +4051,12 @@ export default function JobCardDetailPage() {
             <InvoiceSection
               jobData={jobData}
               invoiceReady={showProformaCompleteSection}
+              onInvoiceStateChange={setInvoiceViewState}
+              onPaymentCompleted={handleInvoicePaymentCompleted}
+              onReleaseRequested={handleReleaseJob}
             />
           </div>
         </section>
-        <InvoiceBuilderPopup
-          isOpen={invoicePopupOpen}
-          onClose={() => {
-            setInvoicePopupOpen(false);
-            setInvoiceResponse(null);
-          }}
-          jobData={jobData}
-          onConfirm={handleInvoiceBuilderConfirm}
-          invoiceResponse={invoiceResponse}
-          isSubmitting={creatingInvoice}
-        />
         <DocumentsUploadPopup
           open={showDocumentsPopup}
           onClose={() => setShowDocumentsPopup(false)}
@@ -4211,6 +4331,14 @@ function CustomerRequestsTab({
     });
     return map;
   }, [jobData?.partsAllocations]);
+
+  const linkedPrePickPartsSource = useMemo(
+    () => [
+      ...(Array.isArray(jobData?.partsAllocations) ? jobData.partsAllocations : []),
+      ...(Array.isArray(jobData?.parts_job_items) ? jobData.parts_job_items : []),
+    ],
+    [jobData?.partsAllocations, jobData?.parts_job_items]
+  );
 
   const vhcAliasMap = useMemo(() => {
     const rows = Array.isArray(jobData?.vhcItemAliases)
@@ -4521,14 +4649,24 @@ function CustomerRequestsTab({
         matchedCheck?.request_id ??
         matchedCheck?.requestId ??
         null;
+      const linkedPartRows = collectLinkedPartRows({
+        parts: linkedPrePickPartsSource,
+        requestId: resolvedRequestId,
+        vhcItemId: canonicalVhcItemId ?? rawVhcItemId ?? null,
+        resolveCanonicalVhcId,
+      });
       const resolvedPrePickLocation =
-        row?.prePickLocation ??
-        row?.pre_pick_location ??
-        linkedRequestRow?.prePickLocation ??
-        linkedRequestRow?.pre_pick_location ??
-        matchedCheck?.pre_pick_location ??
-        matchedCheck?.prePickLocation ??
-        null;
+        resolveLinkedPrePickLocation({
+          linkedPartRows,
+          fallbackValues: [
+            row?.prePickLocation,
+            row?.pre_pick_location,
+            linkedRequestRow?.prePickLocation,
+            linkedRequestRow?.pre_pick_location,
+            matchedCheck?.pre_pick_location,
+            matchedCheck?.prePickLocation,
+          ],
+        });
       const rawSection = row.section || "";
       const rawLabel =
         row.label ||
@@ -4613,7 +4751,7 @@ function CustomerRequestsTab({
         return (a._originalIndex ?? 0) - (b._originalIndex ?? 0);
       })
       .map(({ _groupKey, _wheelOrder, _originalIndex, ...row }) => row);
-  }, [jobData?.authorizedVhcItems, unifiedRequests, vhcChecks, normaliseAuthorizationState, normaliseServiceText, serviceChoiceLabel, resolveCanonicalVhcId]);
+  }, [jobData?.authorizedVhcItems, linkedPrePickPartsSource, unifiedRequests, vhcChecks, normaliseAuthorizationState, normaliseServiceText, serviceChoiceLabel, resolveCanonicalVhcId]);
 
   const authorisedColumns = useMemo(() => {
     const columns = [[], [], []];
@@ -8042,16 +8180,22 @@ function VHCTab({
         onClick={handleCopyToClipboard}
         disabled={!actionsEnabled || generatingLink}
         style={{
-          padding: "8px 12px",
+          padding: "var(--control-padding)",
           borderRadius: "var(--control-radius)",
-          border: `1px solid ${actionsEnabled ? "var(--info)" : "var(--grey-accent)"}`,
-          backgroundColor: actionsEnabled ? (copied ? "var(--success)" : "var(--info)") : "var(--surface-light)",
-          color: actionsEnabled ? "var(--surface)" : "var(--grey-accent)",
-          fontWeight: 600,
+          border: "none",
+          fontSize: "var(--control-font-size)",
+          fontWeight: "600",
           cursor: actionsEnabled && !generatingLink ? "pointer" : "not-allowed",
+          minHeight: "var(--control-height)",
+          backgroundColor: copied ? "rgba(var(--success-rgb, 22, 163, 74), 0.08)" : "rgba(var(--primary-rgb), 0.08)",
+          color: copied ? "var(--success-dark, var(--success))" : "var(--primary-dark)",
           opacity: actionsEnabled ? 1 : 0.5,
-          fontSize: "13px",
-          minWidth: "100px",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.opacity = "0.9";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.opacity = actionsEnabled ? "1" : "0.5";
         }}
         title={!actionsEnabled ? (checkboxesLockReason || "Summary checks are incomplete.") : copied ? "Copied!" : "Copy shareable link (expires in 24 hours)"}
       >

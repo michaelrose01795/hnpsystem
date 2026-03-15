@@ -21,6 +21,9 @@ export default function InvoiceDetailSection({
   jobId,
   jobData = null,
   invoiceReady = false,
+  onInvoiceStateChange = null,
+  onPaymentCompleted = null,
+  onReleaseRequested = null,
 }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -70,6 +73,18 @@ export default function InvoiceDetailSection({
     fetchInvoice();
     return () => {};
   }, [fetchInvoice]);
+
+  useEffect(() => {
+    if (!data || typeof onInvoiceStateChange !== "function") return;
+    onInvoiceStateChange({
+      exists: !Boolean(data?.meta?.isProforma),
+      isProforma: Boolean(data?.meta?.isProforma),
+      paymentStatus: data?.invoice?.payment_status || data?.meta?.paymentStatus || "",
+      paymentCaptured:
+        data?.invoice?.paid === true || Boolean(data?.meta?.paymentCaptured),
+      invoiceId: data?.invoice?.id || null,
+    });
+  }, [data, onInvoiceStateChange]);
 
   const invoiceSyncSignature = useMemo(() => {
     if (!jobData || typeof jobData !== "object") return "";
@@ -313,6 +328,8 @@ export default function InvoiceDetailSection({
         jobData={jobData}
         onDataRefresh={fetchInvoice}
         onDataPatch={handleDataPatch}
+        onPaymentCompleted={onPaymentCompleted}
+        onReleaseRequested={onReleaseRequested}
       />
     </>
   );

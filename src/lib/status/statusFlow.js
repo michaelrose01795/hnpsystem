@@ -18,7 +18,7 @@ export const MAIN_STATUS_ORDER = [
   JOB_STATUSES.CHECKED_IN,
   JOB_STATUSES.IN_PROGRESS,
   JOB_STATUSES.INVOICED,
-  JOB_STATUSES.COMPLETE,
+  JOB_STATUSES.RELEASED,
 ];
 
 export const SERVICE_STATUS_FLOW = {
@@ -57,15 +57,15 @@ export const SERVICE_STATUS_FLOW = {
     id: JOB_STATUSES.INVOICED,
     label: JOB_DISPLAY[JOB_STATUSES.INVOICED],
     color: "var(--info)",
-    next: [JOB_STATUSES.COMPLETE],
+    next: [JOB_STATUSES.RELEASED],
     department: "Accounts",
     canClockOn: false,
     pausesTime: true,
   },
 
-  COMPLETE: {
-    id: JOB_STATUSES.COMPLETE,
-    label: JOB_DISPLAY[JOB_STATUSES.COMPLETE],
+  RELEASED: {
+    id: JOB_STATUSES.RELEASED,
+    label: JOB_DISPLAY[JOB_STATUSES.RELEASED],
     color: "var(--success)",
     next: null,
     department: "Accounts",

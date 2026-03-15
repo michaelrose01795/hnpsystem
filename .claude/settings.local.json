@@ -66,7 +66,8 @@
       "Bash(sudo apt:*)",
       "Bash(winget install:*)",
       "Read(//f/hnpsystem/**)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(find /f/hnpsystem/src/components -type f \\\\\\(-name *.js -o -name *.jsx -o -name *.ts -o -name *.tsx \\\\\\))"
     ],
     "deny": [],
     "ask": []

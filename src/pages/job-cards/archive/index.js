@@ -6,6 +6,7 @@ import { SearchBar } from "@/components/searchBarAPI";
 
 const STATUS_BADGES = {
   Complete: { bg: "var(--success-surface)", color: "var(--info-dark)" },
+  Released: { bg: "var(--success-surface)", color: "var(--success-dark)" },
   Invoiced: { bg: "var(--info-surface)", color: "var(--accent-purple)" },
   Delivered: { bg: "var(--warning-surface)", color: "var(--danger-dark)" },
   Archived: { bg: "var(--info-surface)", color: "var(--info-dark)" },

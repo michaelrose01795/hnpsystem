@@ -5,7 +5,7 @@ const REQUEST_SOURCE = "vhc_authorised";
 const APPROVAL_AUTHORIZED = "authorized";
 const APPROVAL_DECLINED = "declined";
 
-const resolveCanonicalVhcId = async ({ jobId, rawVhcId }) => {
+export const resolveCanonicalVhcId = async ({ jobId, rawVhcId }) => {
   if (rawVhcId === null || rawVhcId === undefined) return null;
 
   const displayId = String(rawVhcId).trim();
@@ -80,7 +80,23 @@ export const syncVhcPartsAuthorisation = async ({ jobId, vhcItemId, approvalStat
 
   const authorisedParts = (partRows || []).filter((part) => part.authorised === true);
   const hasAuthorisedParts = authorisedParts.length > 0;
-  const normalizedApproval = normaliseApprovalStatus(approvalStatus);
+  let normalizedApproval = normaliseApprovalStatus(approvalStatus);
+  if (!normalizedApproval) {
+    const { data: existingVhcRow, error: existingVhcError } = await supabase
+      .from("vhc_checks")
+      .select("approval_status, authorization_state")
+      .eq("job_id", jobId)
+      .eq("vhc_id", canonicalVhcId)
+      .maybeSingle();
+
+    if (existingVhcError) {
+      throw new Error(`Failed to load VHC approval state for sync: ${existingVhcError.message}`);
+    }
+
+    normalizedApproval = normaliseApprovalStatus(
+      existingVhcRow?.authorization_state || existingVhcRow?.approval_status
+    );
+  }
   const hasSummaryApproval =
     normalizedApproval === APPROVAL_AUTHORIZED || normalizedApproval === "completed";
   const isPendingReset = normalizedApproval === "pending";
@@ -142,7 +158,7 @@ export const syncVhcPartsAuthorisation = async ({ jobId, vhcItemId, approvalStat
 
   if (isAuthorised) {
     const latestPrePick = pickLatestByUpdatedAt(
-      authorisedParts.filter((part) =>
+      (hasAuthorisedParts ? authorisedParts : (partRows || [])).filter((part) =>
         part.pre_pick_location && String(part.pre_pick_location).trim()
       )
     );

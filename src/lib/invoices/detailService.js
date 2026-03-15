@@ -132,6 +132,19 @@ async function fetchInvoiceRequests(invoiceId) { // fetch invoice_requests + ite
   })); // return structured requests
 } // end fetchInvoiceRequests
 
+async function fetchInvoicePayments(invoiceId) {
+  if (!invoiceId) return [];
+  const { data, error } = await supabase
+    .from("invoice_payments")
+    .select("*")
+    .eq("invoice_id", invoiceId)
+    .order("created_at", { ascending: false });
+  if (error && error.code !== "PGRST116") {
+    throw error;
+  }
+  return Array.isArray(data) ? data : [];
+}
+
 async function fetchJobRequests(jobId) { // fetch job requests fallback
   const { data, error } = await supabase // query job_requests table
     .from("job_requests") // table name
@@ -1124,7 +1137,10 @@ export async function getInvoiceDetailPayload({ jobNumber, orderNumber }) { // m
     invoice.job_number || jobNumber || null, // job number fallback
     invoice.job_id || null // job id fallback
   ); // finish snapshot fetch
-  const invoiceRequests = await fetchInvoiceRequests(invoice.id); // try fetching stored invoice requests
+  const [invoiceRequests, invoicePayments] = await Promise.all([
+    fetchInvoiceRequests(invoice.id),
+    fetchInvoicePayments(invoice.id),
+  ]); // try fetching stored invoice requests
   let requests = []; // prepare array
   let livePartAllocations = [];
   let liveAuthorizedVhcRows = [];
@@ -1193,6 +1209,8 @@ export async function getInvoiceDetailPayload({ jobNumber, orderNumber }) { // m
   const companyBlock = buildCompanyBlock(companyProfile); // shape company info
   const paymentBlock = buildPaymentBlock(companyProfile); // shape payment info
   const invoiceBlock = { // shape invoice header block
+    id: invoice.id,
+    invoice_id: invoice.invoice_id || invoice.id,
     invoice_number: invoice.invoice_number || invoice.invoice_id || "INV-DRAFT", // friendly invoice number fallback
     invoice_date: invoice.invoice_date || invoice.created_at || new Date().toISOString(), // date fallback
     account_number: invoice.account_number || job?.account_number || invoice.account_id || "", // account number snapshot
@@ -1202,6 +1220,11 @@ export async function getInvoiceDetailPayload({ jobNumber, orderNumber }) { // m
     invoice_to: invoiceTo, // invoice contact info
     deliver_to: deliverTo, // delivery contact info
     vehicle_details: vehicleDetails, // vehicle snapshot
+    payment_status: invoice.payment_status || (invoice.paid ? "Paid" : "Draft"),
+    payment_method: invoice.payment_method || "",
+    paid: invoice.paid === true || String(invoice.payment_status || "").trim().toLowerCase() === "paid",
+    sent_email_at: invoice.sent_email_at || null,
+    sent_portal_at: invoice.sent_portal_at || null,
     totals: { // total block combining cached + computed values
       service_total: invoice.service_total || totals.service_total, // prefer cached totals
       vat_total: invoice.vat_total || totals.vat_total, // prefer cached VAT
@@ -1213,10 +1236,13 @@ export async function getInvoiceDetailPayload({ jobNumber, orderNumber }) { // m
     invoice: invoiceBlock, // invoice header
     requests, // request blocks
     payment: paymentBlock, // bank/payment info
+    payments: invoicePayments,
     meta: {
       isProforma: false,
       source: "invoice",
-      notice: ""
+      notice: "",
+      paymentStatus: invoiceBlock.payment_status,
+      paymentCaptured: invoiceBlock.paid,
     }
   }; // end payload
 } // end getInvoiceDetailPayload

@@ -17,8 +17,8 @@ const STATUS_FLOW = {
   Booked: ["Checked In", "In Progress"],
   "Checked In": ["In Progress"],
   "In Progress": ["Invoiced"],
-  Invoiced: ["Complete"],
-  Complete: [],
+  Invoiced: ["Released"],
+  Released: [],
 };
 
 /* ============================================

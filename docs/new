@@ -10,7 +10,7 @@ Have it so when in phone view the whole background colour is accent colour atm i
 CHECK/DONE
 Have it so the messages page works like iPhone messages does on iPhone instead of the current design for bigger screens, have it so it only uses this messages page feature when in iPhone view and other view when in bigger screens view. 
 
-
+CHECK/DONE
 Have it so within the tracking page it shows each tracking card in a row instead of being in a 2 column layout. Only make this change with iPhone view. (CHANGE users can click add location and if a job number, reg, or customer already exists it auto fills the information and changes to “Edit existing” instead of “log new”)
 
 
@@ -56,8 +56,11 @@ Have it so “6 techsJob #00056” bubbles follow more of the button style than 
 Have it so within the messages tab the “Open Messaging Hub” button opens up the messages page, with a message which is linked to the customer (not another user (this is the only way a user can message a customer though end to end encryption messages from the job card/[jobnumber] page it’s self)) and opens the chat section with “/job[jobnumber] already in the chat box which indicates they are taking about that job. 
 Fix “Review the invoice layout below, but complete these tasks before sharing with the customer:Allocate every booked part to a request or additional request.Parts tab 
 
+
+
 TODO CODEX
-so changing the dropdowns within the "Pre-Pick Location" columnn inside the "Parts Authorised" tab works and changes it wihtin the tab, but chaning it wihti the "Customer Requests" tab doesnt update it wihit the "Parts Authorised" tab fix this 
-
-
 if wihtin the Parts Added to Job  section the part has been added to the job change the status within the "Parts Authorised" tab so it shows added to job instead of order for example.
+
+
+TODO CODEX
+have it os when the page is realosed it doesnt think the write up check boxes are ticked every time as it shows "Technician Work Completed Workshop Tech complete by System 15 Mar, 23:28 Tech has completed all work on this job." everytime the page is reloaded wihtit he "Job Progress Tracker" which means it messing up the databse as well. fix this 

@@ -45,6 +45,26 @@
   cursor: pointer; /* // show clickable */
 } /* // end printButton */
 
+.primaryActionButton {
+  padding: 10px 18px;
+  border-radius: var(--radius-pill);
+  border: none;
+  background: var(--primary-dark);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.secondaryActionButton {
+  padding: 10px 18px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--surface-light);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .headerGrid { /* // grid for invoice to/deliver to/job info */
   display: grid; /* // enable grid layout */
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* // responsive columns */
@@ -264,6 +284,214 @@
   background: rgba(124, 77, 255, 0.08); /* // subtle tint */
 } /* // end info */
 
+.invoiceStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--surface-light);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.48);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 1600;
+}
+
+.paymentModal {
+  width: min(1180px, 100%);
+  max-height: min(92vh, 960px);
+  overflow: auto;
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--surface-light);
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.22);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.paymentModalHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.paymentModalGrid {
+  display: grid;
+  grid-template-columns: minmax(250px, 320px) minmax(0, 1fr);
+  gap: 18px;
+}
+
+.paymentMethodRail {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.paymentMethodCard {
+  text-align: left;
+  border: 1px solid var(--surface-light);
+  background: var(--surface-secondary, var(--surface));
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--text-primary);
+}
+
+.paymentMethodCard[data-active="true"] {
+  border-color: var(--primary-dark);
+  box-shadow: inset 0 0 0 1px var(--primary-dark);
+  background: var(--primary-surface, var(--surface));
+}
+
+.paymentMethodCard span {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.paymentMethodCard p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.paymentPanel {
+  display: grid;
+  gap: 16px;
+}
+
+.paymentPanelCard {
+  border: 1px solid var(--surface-light);
+  border-radius: var(--radius-sm);
+  padding: 18px;
+  background: var(--surface-secondary, var(--surface));
+}
+
+.paymentPanelHeading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.paymentFieldGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.paymentField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.paymentField input {
+  border: 1px solid var(--surface-light);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  color: var(--text-primary);
+}
+
+.paymentNoteBox {
+  margin-top: 16px;
+  border: 1px solid var(--surface-light);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+.paymentNoteBox p {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.outcomeSelector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.outcomeChip {
+  border: 1px solid var(--surface-light);
+  background: var(--surface);
+  color: var(--text-primary);
+  border-radius: var(--radius-pill);
+  padding: 8px 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.outcomeChip[data-active="true"] {
+  border-color: var(--primary-dark);
+  background: var(--primary-surface, var(--surface));
+  color: var(--primary-dark);
+}
+
+.paymentActionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 18px;
+}
+
+.activityTimeline {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.activityTimelineItem {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid var(--surface-light);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  background: var(--surface);
+}
+
+.activityTimelineItem p {
+  margin: 4px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.releasePromptBox {
+  margin-top: 16px;
+  border: 1px solid var(--warning);
+  background: var(--warning-surface);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+}
+
 .skeleton { /* // skeleton loader container */
   display: grid; /* // grid layout */
   gap: 12px; /* // spacing */
@@ -286,4 +514,6 @@
   .invoiceShell { padding: 16px; } /* // reduce padding */
   .companyHeader { flex-direction: column; align-items: flex-start; } /* // stack header */
   .partsTable { min-width: 520px; } /* // allow smaller scroll width */
+  .paymentModal { padding: 16px; }
+  .paymentModalGrid { grid-template-columns: 1fr; }
 } /* // end media query */

@@ -43,6 +43,14 @@ const REQUIRED_INVOICE_SUB_STATUSES = new Set([
   "pricing_completed",
 ]);
 
+const getRequiredInvoiceSubStatuses = (jobRow) => {
+  const required = new Set(REQUIRED_INVOICE_SUB_STATUSES);
+  if (!jobRow?.vhc_required) {
+    required.delete("vhc_completed");
+  }
+  return required;
+};
+
 const fetchSubStatusSet = async (jobId) => {
   const { data, error } = await dbClient
     .from("job_status_history")
@@ -101,7 +109,7 @@ export default async function handler(req, res) {
   if (!normalizedTargetStatus) {
     return res.status(400).json({
       error: "Main job status required",
-      message: "Use main statuses only: Booked, Checked In, In Progress, Invoiced, Complete.",
+      message: "Use main statuses only: Booked, Checked In, In Progress, Invoiced, Released.",
     }); // Reject empty or malformed statuses
   }
 
@@ -109,7 +117,7 @@ export default async function handler(req, res) {
     const jobQuery = dbClient
       .from("jobs")
       .select(
-        `id, job_number, status, status_updated_at, status_updated_by, created_at, updated_at`
+        `id, job_number, status, vhc_required, status_updated_at, status_updated_by, created_at, updated_at`
       ); // Prepare query selecting metadata required for auditing
 
     if (jobIdentifier.type === "id") {
@@ -150,7 +158,8 @@ export default async function handler(req, res) {
 
     if (normalizedTargetStatus === "invoiced") {
       const subStatusSet = await fetchSubStatusSet(jobRow.id);
-      const missing = Array.from(REQUIRED_INVOICE_SUB_STATUSES).filter(
+      const requiredStatuses = getRequiredInvoiceSubStatuses(jobRow);
+      const missing = Array.from(requiredStatuses).filter(
         (status) => !subStatusSet.has(status)
       );
       if (missing.length) {
@@ -161,11 +170,11 @@ export default async function handler(req, res) {
       }
     }
 
-    if (normalizedTargetStatus === "complete") {
+    if (normalizedTargetStatus === "released") {
       const hasInvoice = await hasInvoiceForJob(jobRow.id);
       if (!hasInvoice) {
         return res.status(400).json({
-          error: "Job cannot be completed without an invoice",
+          error: "Job cannot be released without an invoice",
         });
       }
     }
