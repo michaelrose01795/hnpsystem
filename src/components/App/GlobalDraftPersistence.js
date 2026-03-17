@@ -116,27 +116,40 @@ const readElementValue = (element) => {
   return null;
 };
 
+const isEntryEqual = (current, next) => {
+  if (!current || !next || current.kind !== next.kind) return false;
+  if (current.kind === "multi") {
+    const currentValues = Array.isArray(current.value) ? current.value : [];
+    const nextValues = Array.isArray(next.value) ? next.value : [];
+    if (currentValues.length !== nextValues.length) return false;
+    return currentValues.every((value, index) => String(value) === String(nextValues[index]));
+  }
+  return String(current.value ?? "") === String(next.value ?? "");
+};
+
 const applyElementValue = (element, entry) => {
   if (!entry || typeof entry !== "object") return;
+  const current = readElementValue(element);
+  if (isEntryEqual(current, entry)) return false;
 
   if (element instanceof HTMLInputElement) {
     const type = (element.type || "").toLowerCase();
     if ((type === "checkbox" || type === "radio") && entry.kind === "checked") {
       element.checked = Boolean(entry.value);
       element.dispatchEvent(new Event("change", { bubbles: true }));
-      return;
+      return true;
     }
     if (entry.kind === "value") {
       element.value = String(entry.value ?? "");
       element.dispatchEvent(new Event("input", { bubbles: true }));
     }
-    return;
+    return true;
   }
 
   if (element instanceof HTMLTextAreaElement && entry.kind === "value") {
     element.value = String(entry.value ?? "");
     element.dispatchEvent(new Event("input", { bubbles: true }));
-    return;
+    return true;
   }
 
   if (element instanceof HTMLSelectElement) {
@@ -146,41 +159,49 @@ const applyElementValue = (element, entry) => {
         option.selected = selected.has(option.value);
       });
       element.dispatchEvent(new Event("change", { bubbles: true }));
-      return;
+      return true;
     }
     if (entry.kind === "value") {
       element.value = String(entry.value ?? "");
       element.dispatchEvent(new Event("change", { bubbles: true }));
     }
-    return;
+    return true;
   }
 
   if (element.isContentEditable && entry.kind === "html") {
     element.innerHTML = String(entry.value ?? "");
     element.dispatchEvent(new Event("input", { bubbles: true }));
+    return true;
+  }
+  return false;
+};
+
+const readStoredDraftValues = (routeKey) => {
+  const key = buildStorageKey(routeKey);
+  const raw = localStorage.getItem(key);
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed?.values || typeof parsed.values !== "object") return {};
+    return parsed.values;
+  } catch (_error) {
+    return {};
   }
 };
 
-const collectRouteDraftSnapshot = () => {
-  const entries = {};
-  const controls = document.querySelectorAll(DRAFTABLE_SELECTOR);
-  controls.forEach((node) => {
-    const element = node;
-    if (!isDraftableElement(element)) return;
-    const key = getElementKey(element);
-    if (!key) return;
-    const payload = readElementValue(element);
-    if (!payload) return;
-    entries[key] = payload;
-  });
-  return entries;
-};
+const persistRouteDraftEntries = (routeKey, entries = {}) => {
+  if (!entries || typeof entries !== "object") return;
+  const keys = Object.keys(entries);
+  if (keys.length === 0) return;
 
-const persistRouteDraftSnapshot = (routeKey) => {
   const key = buildStorageKey(routeKey);
+  const existingValues = readStoredDraftValues(routeKey);
   const payload = {
     updatedAt: Date.now(),
-    values: collectRouteDraftSnapshot(),
+    values: {
+      ...existingValues,
+      ...entries,
+    },
   };
   localStorage.setItem(key, JSON.stringify(payload));
 };
@@ -208,8 +229,8 @@ const restoreRouteDraftSnapshot = (routeKey) => {
     const elementKey = getElementKey(element);
     if (!elementKey) return;
     if (!(elementKey in values)) return;
-    applyElementValue(element, values[elementKey]);
-    restoredCount += 1;
+    const changed = applyElementValue(element, values[elementKey]);
+    if (changed) restoredCount += 1;
   });
   return restoredCount;
 };
@@ -217,13 +238,14 @@ const restoreRouteDraftSnapshot = (routeKey) => {
 export default function GlobalDraftPersistence() {
   const router = useRouter();
   const saveTimeoutRef = useRef(null);
-  const restoreTimerRef = useRef(null);
-  const restoreObserverRef = useRef(null);
+  const restoreRetryTimeoutsRef = useRef([]);
   const fetchRestoreRef = useRef(null);
   const lastInputAtRef = useRef(0);
   const pendingSubmitRouteRef = useRef(null);
   const pendingSubmitUntilRef = useRef(0);
   const routeKeyRef = useRef("/");
+  const dirtyEntriesRef = useRef({});
+  const isRestoringRef = useRef(false);
 
   useEffect(() => {
     routeKeyRef.current = getRouteKey(router);
@@ -234,50 +256,44 @@ export default function GlobalDraftPersistence() {
     routeKeyRef.current = routeKey;
 
     const runRestore = () => {
-      restoreRouteDraftSnapshot(routeKeyRef.current);
+      if (isRestoringRef.current) return;
+      isRestoringRef.current = true;
+      try {
+        restoreRouteDraftSnapshot(routeKeyRef.current);
+      } finally {
+        isRestoringRef.current = false;
+      }
     };
     runRestore();
 
-    // Some pages render form fields after async data/loaders.
-    // Retry restore for a short window so late-mount controls also recover draft text.
-    let restoreAttempts = 0;
-    restoreTimerRef.current = setInterval(() => {
-      restoreAttempts += 1;
-      runRestore();
-      if (restoreAttempts >= 12) {
-        clearInterval(restoreTimerRef.current);
-        restoreTimerRef.current = null;
-      }
-    }, 400);
-
-    const observer = new MutationObserver((mutations) => {
-      const hasPotentialDraftableNode = mutations.some((mutation) =>
-        Array.from(mutation.addedNodes || []).some((addedNode) => {
-          if (!(addedNode instanceof Element)) return false;
-          if (addedNode.matches?.(DRAFTABLE_SELECTOR)) return true;
-          return Boolean(addedNode.querySelector?.(DRAFTABLE_SELECTOR));
-        })
-      );
-      if (hasPotentialDraftableNode) {
-        runRestore();
-      }
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-    restoreObserverRef.current = observer;
+    // Retry restore a few times for async-mounted inputs without keeping a long-lived DOM observer.
+    const retryDelaysMs = [350, 900, 1600, 2600, 3800];
+    restoreRetryTimeoutsRef.current = retryDelaysMs.map((delay) =>
+      window.setTimeout(runRestore, delay)
+    );
 
     const queueSave = () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
       saveTimeoutRef.current = setTimeout(() => {
-        persistRouteDraftSnapshot(routeKeyRef.current);
+        const routeKey = routeKeyRef.current;
+        const dirty = dirtyEntriesRef.current;
+        persistRouteDraftEntries(routeKey, dirty);
+        dirtyEntriesRef.current = {};
       }, 180);
     };
 
     const handleInput = (event) => {
+      if (isRestoringRef.current) return;
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
       if (!isDraftableElement(target)) return;
+      const elementKey = getElementKey(target);
+      if (!elementKey) return;
+      const payload = readElementValue(target);
+      if (!payload) return;
+      dirtyEntriesRef.current[elementKey] = payload;
       lastInputAtRef.current = Date.now();
       queueSave();
     };
@@ -285,16 +301,19 @@ export default function GlobalDraftPersistence() {
     const handleFormSubmit = () => {
       pendingSubmitRouteRef.current = routeKeyRef.current;
       pendingSubmitUntilRef.current = Date.now() + 15000;
-      persistRouteDraftSnapshot(routeKeyRef.current);
+      persistRouteDraftEntries(routeKeyRef.current, dirtyEntriesRef.current);
+      dirtyEntriesRef.current = {};
     };
 
     const handleBeforeUnload = () => {
-      persistRouteDraftSnapshot(routeKeyRef.current);
+      persistRouteDraftEntries(routeKeyRef.current, dirtyEntriesRef.current);
+      dirtyEntriesRef.current = {};
     };
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
-        persistRouteDraftSnapshot(routeKeyRef.current);
+        persistRouteDraftEntries(routeKeyRef.current, dirtyEntriesRef.current);
+        dirtyEntriesRef.current = {};
       }
     };
 
@@ -302,6 +321,9 @@ export default function GlobalDraftPersistence() {
       const detailRoute = event?.detail?.routeKey;
       const targetRoute = detailRoute || routeKeyRef.current;
       localStorage.removeItem(buildStorageKey(targetRoute));
+      if (targetRoute === routeKeyRef.current) {
+        dirtyEntriesRef.current = {};
+      }
     };
 
     if (typeof window !== "undefined" && !fetchRestoreRef.current) {
@@ -345,13 +367,11 @@ export default function GlobalDraftPersistence() {
 
     return () => {
       handleBeforeUnload();
-      if (restoreTimerRef.current) {
-        clearInterval(restoreTimerRef.current);
-        restoreTimerRef.current = null;
-      }
-      if (restoreObserverRef.current) {
-        restoreObserverRef.current.disconnect();
-        restoreObserverRef.current = null;
+      if (restoreRetryTimeoutsRef.current.length > 0) {
+        restoreRetryTimeoutsRef.current.forEach((timeoutId) => {
+          clearTimeout(timeoutId);
+        });
+        restoreRetryTimeoutsRef.current = [];
       }
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);

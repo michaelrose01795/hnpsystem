@@ -848,6 +848,22 @@ const hydrateCauseEntries = (entries) => {
     .filter(Boolean);
 };
 
+const withTimeout = async (promise, timeoutMs = 10000) => {
+  let timeoutId = null;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((resolve) => {
+        timeoutId = setTimeout(() => resolve(null), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
+};
+
 export default function WriteUpForm({
   jobNumber,
   jobCardData = null,
@@ -902,6 +918,14 @@ export default function WriteUpForm({
       setJobData(jobCardData);
     }
   }, [jobCardData]);
+
+  useEffect(() => {
+    if (!loading) return undefined;
+    const timeoutId = setTimeout(() => {
+      setLoading(false);
+    }, 12000);
+    return () => clearTimeout(timeoutId);
+  }, [loading]);
 
   const [showCheckSheetPopup, setShowCheckSheetPopup] = useState(false);
   const [showDocumentsPopup, setShowDocumentsPopup] = useState(false);
@@ -1256,12 +1280,15 @@ export default function WriteUpForm({
         }
 
         // Prefer job payload passed down from the job card page to avoid re-loading per tab.
-        const jobPayload = jobCardData?.jobCard ? jobCardData : (await getJobByNumber(jobNumber))?.data || null;
+        const fetchedJobPayload = jobCardData?.jobCard
+          ? null
+          : await withTimeout(getJobByNumber(jobNumber), 10000);
+        const jobPayload = jobCardData?.jobCard ? jobCardData : fetchedJobPayload?.data || null;
         if (jobPayload) {
           setJobData(jobPayload);
         }
 
-        const writeUpResponse = await getWriteUpByJobNumber(jobNumber);
+        const writeUpResponse = await withTimeout(getWriteUpByJobNumber(jobNumber), 10000);
         const fallbackRequests = buildRequestList(
           jobPayload?.jobCard?.jobRequests || jobPayload?.jobCard?.requests
         );

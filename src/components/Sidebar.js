@@ -3,7 +3,6 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useRouter } from "next/router";
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { useUser } from "@/context/UserContext";
@@ -38,8 +37,8 @@ export default function Sidebar({
   visibleRoles = null,
   modeLabel: _modeLabel = null, // keep legacy prop available without rendering the old text block
 }) {
-  const pathname = usePathname();
   const router = useRouter();
+  const pathname = (router.asPath || router.pathname || "").split("?")[0];
   const { user, dbUserId } = useUser();
   const { canAccess: canUseDevOverlay, enabled: devOverlayEnabled, toggleEnabled: toggleDevOverlay } =
     useDevLayoutOverlay();
@@ -85,20 +84,22 @@ export default function Sidebar({
 
     return access;
   };
-  const hasTechSidebarRole = userRoles.some((role) => role === "techs" || role === "mot tester");
+  const hasRestrictedJobSectionRole = userRoles.some(
+    (role) => role === "techs" || role === "mot tester" || role === "valet service"
+  );
 
   const filterAccessibleSections = (sections = []) =>
     sections
       .map((section) => ({
         ...section,
         items:
-          hasTechSidebarRole && section.label === "Job Divisions"
+          hasRestrictedJobSectionRole && section.label === "Job Divisions"
             ? []
             : (section.items || []).filter(
                 (item) =>
                   hasAccess(item) &&
                   (!item.href || !hiddenHrRoutes.has(item.href)) &&
-                  !(hasTechSidebarRole && item.href === "/job-cards/archive")
+                  !(hasRestrictedJobSectionRole && item.href === "/job-cards/archive")
               ),
       }))
       .filter((section) => section.items.length > 0);
@@ -106,30 +107,6 @@ export default function Sidebar({
   const generalSections = filterAccessibleSections(groupedSections.general);
   const departmentSections = filterAccessibleSections(groupedSections.departments);
   const accountSections = filterAccessibleSections(groupedSections.account);
-  const prefetchRoutes = useMemo(() => {
-    const allRoutes = new Set(["/login"]);
-    const collect = (items = []) => {
-      items.forEach((item) => {
-        if (item?.href) allRoutes.add(item.href);
-      });
-    };
-
-    collect(dashboardShortcuts);
-    generalSections.forEach((section) => collect(section.items));
-    departmentSections.forEach((section) => collect(section.items));
-    accountSections.forEach((section) => collect(section.items));
-
-    return Array.from(allRoutes);
-  }, [dashboardShortcuts, generalSections, departmentSections, accountSections]);
-
-  useEffect(() => {
-    prefetchRoutes.forEach((route) => {
-      void router.prefetch(route).catch(() => {
-        // Ignore prefetch errors so navigation remains unaffected.
-      });
-    });
-  }, [router, prefetchRoutes]);
-
   const handleLogout = () => {
     if (typeof window !== "undefined") {
       window.sessionStorage.setItem(
@@ -185,40 +162,6 @@ export default function Sidebar({
       setClockLoading(false);
     }
   }, [isClockedIn, dbUserId]);
-
-  const handleNavLinkClick = useCallback(
-    (event, href) => {
-      if (!href) return;
-      if (typeof window === "undefined") return;
-      if (event.defaultPrevented) return;
-      if (event.button !== 0) return; // left-click only
-      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-      if (href.startsWith("http://") || href.startsWith("https://")) return;
-
-      event.preventDefault();
-      const currentPath = window.location.pathname;
-      const targetPath = href.split("?")[0] || href;
-      const fallbackTimer = window.setTimeout(() => {
-        if (window.location.pathname === currentPath) {
-          window.location.assign(href);
-        }
-      }, 900);
-
-      router
-        .push(href)
-        .then(() => {
-          window.clearTimeout(fallbackTimer);
-          if (window.location.pathname !== targetPath) {
-            window.location.assign(href);
-          }
-        })
-        .catch(() => {
-          window.clearTimeout(fallbackTimer);
-          window.location.assign(href);
-        });
-    },
-    [pathname, router]
-  );
 
   const renderLinkLabel = (label, href) => {
     const isMessagesItem = href === "/messages";
@@ -352,20 +295,11 @@ export default function Sidebar({
                   key={shortcut.href}
                   href={shortcut.href}
                   title={shortcut.description}
-                  onClick={(event) => handleNavLinkClick(event, shortcut.href)}
                 >
                   {shortcut.label}
                 </Link>
               );
             })}
-            <div
-              style={{
-                height: "1px",
-                width: "100%",
-                background: "rgba(var(--danger-rgb), 0.12)",
-                margin: "14px 0",
-              }}
-            />
           </>
         )}
 
@@ -383,7 +317,6 @@ export default function Sidebar({
                   className={`app-sidebar__link${isActive ? " is-active" : ""}`}
                   key={item.href}
                   href={item.href}
-                  onClick={(event) => handleNavLinkClick(event, item.href)}
                 >
                   {renderLinkLabel(item.label, item.href)}
                 </Link>
@@ -406,7 +339,6 @@ export default function Sidebar({
                   className={`app-sidebar__link${isActive ? " is-active" : ""}`}
                   key={item.href}
                   href={item.href}
-                  onClick={(event) => handleNavLinkClick(event, item.href)}
                 >
                   {renderLinkLabel(item.label, item.href)}
                 </Link>
@@ -458,7 +390,7 @@ export default function Sidebar({
                         Logout
                       </button>
                     </div>
-                    {process.env.NODE_ENV !== "production" && (
+                    {(process.env.NODE_ENV !== "production" || canUseDevOverlay) && (
                       <div
                         style={{
                           display: "flex",
@@ -467,20 +399,22 @@ export default function Sidebar({
                           marginTop: "8px",
                         }}
                       >
-                        <Link
-                          className="app-sidebar__link"
-                          href="/dev/user-diagnostic"
-                          style={{
-                            flex: 1,
-                            marginBottom: 0,
-                            background: "transparent",
-                            color: "var(--text-secondary)",
-                            fontSize: "0.78rem",
-                            textAlign: "center",
-                          }}
-                        >
-                          Diagnostics
-                        </Link>
+                        {process.env.NODE_ENV !== "production" && (
+                          <Link
+                            className="app-sidebar__link"
+                            href="/dev/user-diagnostic"
+                            style={{
+                              flex: 1,
+                              marginBottom: 0,
+                              background: "transparent",
+                              color: "var(--text-secondary)",
+                              fontSize: "0.78rem",
+                              textAlign: "center",
+                            }}
+                          >
+                            Diagnostics
+                          </Link>
+                        )}
                         {canUseDevOverlay && (
                           <button
                             type="button"
@@ -517,7 +451,6 @@ export default function Sidebar({
                   className={`app-sidebar__link${isActive ? " is-active" : ""}`}
                   key={item.href}
                   href={item.href}
-                  onClick={(event) => handleNavLinkClick(event, item.href)}
                     style={{
                       marginBottom: "10px",
                     }}

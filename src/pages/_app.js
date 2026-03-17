@@ -37,7 +37,6 @@ function AppWrapper({ Component, pageProps }) {
     notesHiddenRoutes.has(asPathWithoutQuery) ||
     routeForVisibility.includes("redirect");
   const [isRouteLoading, setIsRouteLoading] = useState(false);
-  const [pendingFetchCount, setPendingFetchCount] = useState(0);
   const [showGlobalLoader, setShowGlobalLoader] = useState(false);
   const showTimerRef = useRef(null);
   const hideTimerRef = useRef(null);
@@ -74,31 +73,7 @@ function AppWrapper({ Component, pageProps }) {
   }, [router.events]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return undefined;
-
-    const originalFetch = window.fetch.bind(window);
-    const shouldTrack = (value = "") => /\/api\/|\/_next\/data\//.test(String(value || ""));
-
-    window.fetch = (...args) => {
-      const input = args[0];
-      const targetUrl = typeof input === "string" ? input : input?.url || "";
-      if (!shouldTrack(targetUrl)) {
-        return originalFetch(...args);
-      }
-
-      setPendingFetchCount((prev) => prev + 1);
-      return originalFetch(...args).finally(() => {
-        setPendingFetchCount((prev) => (prev > 0 ? prev - 1 : 0));
-      });
-    };
-
-    return () => {
-      window.fetch = originalFetch;
-    };
-  }, []);
-
-  useEffect(() => {
-    const isBusy = !suppressGlobalLoader && (isRouteLoading || pendingFetchCount > 0 || (isProtectedRoute && authLoading));
+    const isBusy = !suppressGlobalLoader && (isRouteLoading || (isProtectedRoute && authLoading));
     const SHOW_DELAY_MS = 600;
     const MIN_VISIBLE_MS = 220;
 
@@ -137,7 +112,7 @@ function AppWrapper({ Component, pageProps }) {
     }, remaining);
 
     return undefined;
-  }, [authLoading, isProtectedRoute, isRouteLoading, pendingFetchCount, showGlobalLoader, suppressGlobalLoader]);
+  }, [authLoading, isProtectedRoute, isRouteLoading, showGlobalLoader, suppressGlobalLoader]);
 
   useEffect(() => {
     return () => {

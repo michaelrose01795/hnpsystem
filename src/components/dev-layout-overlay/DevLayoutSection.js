@@ -1,8 +1,8 @@
 ﻿// file location: src/components/dev-layout-overlay/DevLayoutSection.js
-import React from "react";
+import React, { useCallback } from "react";
 import useDevLayoutSectionRegistration from "@/components/dev-layout-overlay/useDevLayoutSectionRegistration";
 
-export default function DevLayoutSection({
+const DevLayoutSection = React.forwardRef(function DevLayoutSection({
   as: Component = "div",
   sectionKey,
   sectionType = "section-shell",
@@ -14,7 +14,7 @@ export default function DevLayoutSection({
   style,
   children,
   ...rest
-}) {
+}, forwardedRef) {
   const { elementRef, normalizedKey, normalizedParentKey } = useDevLayoutSectionRegistration({
     sectionKey,
     sectionType,
@@ -24,9 +24,22 @@ export default function DevLayoutSection({
     shell,
   });
 
+  const assignRefs = useCallback(
+    (node) => {
+      elementRef.current = node;
+      if (!forwardedRef) return;
+      if (typeof forwardedRef === "function") {
+        forwardedRef(node);
+      } else {
+        forwardedRef.current = node;
+      }
+    },
+    [elementRef, forwardedRef]
+  );
+
   return (
     <Component
-      ref={elementRef}
+      ref={assignRefs}
       data-dev-section="1"
       data-dev-section-key={normalizedKey || undefined}
       data-dev-section-type={sectionType}
@@ -41,4 +54,8 @@ export default function DevLayoutSection({
       {children}
     </Component>
   );
-}
+});
+
+DevLayoutSection.displayName = "DevLayoutSection";
+
+export default DevLayoutSection;

@@ -997,9 +997,11 @@ export default function ViewJobCards() {
                               ? "var(--info)"
                               : "var(--success-dark)",
                           padding: "8px 16px",
-                          borderRadius: "var(--radius-xs)",
+                          borderRadius: "var(--control-radius-xs)",
                           fontSize: "12px",
                           fontWeight: "600",
+                          border: "1px solid currentColor",
+                          letterSpacing: "0.3px",
                         }}
                       >
                         {popupJob.jobDivision}
@@ -1010,9 +1012,11 @@ export default function ViewJobCards() {
                         backgroundColor: popupJob.jobSource === "Warranty" ? "var(--warning)" : "var(--success)",
                         color: "white",
                         padding: "8px 16px",
-                        borderRadius: "var(--radius-xs)",
+                        borderRadius: "var(--control-radius-xs)",
                         fontSize: "12px",
                         fontWeight: "600",
+                        border: "1px solid transparent",
+                        letterSpacing: "0.3px",
                       }}
                     >
                       {popupJob.jobSource || "Retail"}
@@ -1419,11 +1423,13 @@ const JobListCard = ({ job, onNavigate, onQuickView, index = 0, sectionKey, pare
         >
           <span
             style={{
-              padding: "4px 10px",
-              borderRadius: "var(--control-radius)",
+              padding: "4px 12px",
+              borderRadius: "var(--control-radius-xs)",
               fontWeight: 600,
               fontSize: "12px",
               textTransform: "capitalize",
+              border: "1px solid currentColor",
+              letterSpacing: "0.3px",
               ...divisionBadgeStyles,
             }}
           >
@@ -1431,13 +1437,15 @@ const JobListCard = ({ job, onNavigate, onQuickView, index = 0, sectionKey, pare
           </span>
           <span
             style={{
-              padding: "4px 10px",
-              borderRadius: "var(--control-radius)",
+              padding: "4px 12px",
+              borderRadius: "var(--control-radius-xs)",
               backgroundColor: "var(--accent-purple-surface)",
               color: "var(--accent-purple)",
               fontWeight: 600,
               fontSize: "12px",
               textTransform: "capitalize",
+              border: "1px solid currentColor",
+              letterSpacing: "0.3px",
             }}
           >
             {jobStatus}

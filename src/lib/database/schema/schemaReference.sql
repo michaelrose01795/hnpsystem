@@ -592,6 +592,19 @@ CREATE TABLE public.job_request_detections (
   CONSTRAINT job_request_detections_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT job_request_detections_request_id_fkey FOREIGN KEY (request_id) REFERENCES public.job_requests(request_id)
 );
+CREATE TABLE public.job_request_presets (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  label text NOT NULL,
+  normalized_label text NOT NULL,
+  aliases ARRAY NOT NULL DEFAULT '{}'::text[],
+  normalized_aliases ARRAY NOT NULL DEFAULT '{}'::text[],
+  default_hours numeric NOT NULL DEFAULT 1 CHECK (default_hours >= 0::numeric),
+  is_active boolean NOT NULL DEFAULT true,
+  usage_count integer NOT NULL DEFAULT 0,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT job_request_presets_pkey PRIMARY KEY (id)
+);
 CREATE TABLE public.job_requests (
   request_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
   job_id integer NOT NULL,
@@ -606,9 +619,11 @@ CREATE TABLE public.job_requests (
   vhc_item_id integer,
   pre_pick_location text CHECK (pre_pick_location IS NULL OR (pre_pick_location = ANY (ARRAY['service_rack_1'::text, 'service_rack_2'::text, 'service_rack_3'::text, 'service_rack_4'::text, 'sales_rack_1'::text, 'sales_rack_2'::text, 'sales_rack_3'::text, 'sales_rack_4'::text, 'tyre_shed'::text, 'stairs_pre_pick'::text, 'no_pick'::text, 'on_order'::text]))),
   note_text text,
+  job_request_preset_id bigint,
   CONSTRAINT job_requests_pkey PRIMARY KEY (request_id),
   CONSTRAINT job_requests_vhc_item_id_fkey FOREIGN KEY (vhc_item_id) REFERENCES public.vhc_checks(vhc_id),
-  CONSTRAINT job_requests_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
+  CONSTRAINT job_requests_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
+  CONSTRAINT job_requests_job_request_preset_id_fkey FOREIGN KEY (job_request_preset_id) REFERENCES public.job_request_presets(id)
 );
 CREATE TABLE public.job_share_links (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -708,12 +723,14 @@ CREATE TABLE public.jobs (
   sub_job_sequence integer,
   vhc_authorized_total numeric DEFAULT 0,
   vhc_declined_total numeric DEFAULT 0,
+  account_id text,
   CONSTRAINT jobs_pkey PRIMARY KEY (id),
   CONSTRAINT jobs_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES public.users(user_id),
   CONSTRAINT jobs_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.vehicles(vehicle_id),
   CONSTRAINT jobs_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
   CONSTRAINT jobs_warranty_linked_job_id_fkey FOREIGN KEY (warranty_linked_job_id) REFERENCES public.jobs(id),
   CONSTRAINT jobs_warranty_vhc_master_job_id_fkey FOREIGN KEY (warranty_vhc_master_job_id) REFERENCES public.jobs(id),
+  CONSTRAINT jobs_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.accounts(account_id),
   CONSTRAINT jobs_prime_job_id_fkey FOREIGN KEY (prime_job_id) REFERENCES public.jobs(id)
 );
 CREATE TABLE public.key_tracking_events (

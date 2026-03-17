@@ -53,7 +53,7 @@ export default function useDevLayoutSectionRegistration({
   useEffect(() => {
     if (!normalizedKey) return;
     updateSectionElement(normalizedKey, elementRef.current);
-  });
+  }, [normalizedKey, updateSectionElement]);
 
   return {
     elementRef,

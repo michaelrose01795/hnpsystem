@@ -1096,16 +1096,22 @@ export default function Layout({
                         <option>In Progress</option>
                         <option>Tea Break</option>
                       </DropdownField>
-                      <button
-                        type="button"
-                        disabled={!currentJob?.jobNumber}
-                        onClick={() =>
-                          currentJob?.jobNumber && router.push(`/job-cards/myjobs/${currentJob.jobNumber}`)
-                        }
-                        className={`app-topbar-button${currentJob?.jobNumber ? " app-topbar-button--primary" : ""}`}
-                      >
-                        {currentJob?.jobNumber ? `Open Job ${currentJob.jobNumber}` : "No Current Job"}
-                      </button>
+                      {currentJob?.jobNumber ? (
+                        <Link
+                          href={`/job-cards/myjobs/${currentJob.jobNumber}`}
+                          className="app-topbar-button app-topbar-button--primary"
+                        >
+                          {`Open Job ${currentJob.jobNumber}`}
+                        </Link>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled
+                          className="app-topbar-button"
+                        >
+                          No Current Job
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => setIsModalOpen(true)}

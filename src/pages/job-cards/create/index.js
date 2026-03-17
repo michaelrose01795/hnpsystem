@@ -6,6 +6,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"; // import React hooks including useEffect/useCallback/useRef for syncing customer forms
 import { useRouter } from "next/router"; // for navigation
 import Layout from "@/components/Layout"; // import layout wrapper
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { useJobs } from "@/context/JobsContext"; // import jobs context
 import { useUser } from "@/context/UserContext"; // import user context for signature + uploads
 import {
@@ -21,9 +22,11 @@ import { supabase } from "@/lib/supabaseClient"; // import supabase client for j
 import NewCustomerPopup from "@/components/popups/NewCustomerPopup"; // import new customer popup
 import ExistingCustomerPopup from "@/components/popups/ExistingCustomerPopup"; // import existing customer popup
 import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
+import RequestPresetAutosuggestInput from "@/components/JobCards/RequestPresetAutosuggestInput";
 import { DropdownField } from "@/components/dropdownAPI";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { detectJobTypesForRequests } from "@/lib/ai/jobTypeDetection";
+import { isDiagnosticRequestText } from "@/lib/jobRequestPresets/constants";
 
 const PAYMENT_TYPE_OPTIONS = [
   { value: "Customer", label: "Customer" },
@@ -113,7 +116,7 @@ export default function CreateJobCardPage() {
     jobDivision: "Retail",
     jobCategories: [],
     jobDetections: [],
-    requests: [{ text: "", time: "", paymentType: "Customer" }],
+    requests: [{ text: "", time: "", paymentType: "Customer", presetId: null }],
     uploadedFiles: [],
   });
 
@@ -371,6 +374,13 @@ export default function CreateJobCardPage() {
   const handleRequestChange = (index, value) => {
     const updated = [...requests]; // copy current requests
     updated[index].text = value; // update text at index
+    if (updated[index]?.presetId && String(value || "").trim() !== String(updated[index].selectedPresetLabel || "").trim()) {
+      updated[index].presetId = null;
+      updated[index].selectedPresetLabel = "";
+    }
+    if (isDiagnosticRequestText(value)) {
+      updated[index].time = "1.00";
+    }
     const detections = detectJobTypesForRequests(updated);
     setRequests(updated); // store updated list
     setJobDetections(detections);
@@ -380,10 +390,50 @@ export default function CreateJobCardPage() {
   // handle changes to estimated time for a request
   const handleTimeChange = (index, value) => {
     const updated = [...requests]; // copy current requests
-    let num = parseFloat(value); // parse numeric value
-    if (Number.isNaN(num) || num < 0) num = 0; // ensure valid number
-    updated[index].time = num; // store sanitized number
+    const raw = String(value ?? "").trim();
+    if (raw === "") {
+      updated[index].time = "";
+      setRequests(updated); // store updated list
+      return;
+    }
+
+    const normalizedRaw = raw.startsWith(".") ? `0${raw}` : raw;
+    if (!/^\d+(\.\d{0,2})?$/.test(normalizedRaw)) {
+      return;
+    }
+
+    let num = Number(normalizedRaw); // parse numeric value
+    if (!Number.isFinite(num) || num < 0) num = 0; // ensure valid number
+    updated[index].time = normalizedRaw; // keep editing-friendly raw value
     setRequests(updated); // store updated list
+  };
+
+  const normalizeHoursToTwoDecimals = (value) => {
+    if (value === "" || value === null || value === undefined) return "";
+    let numeric = Number(value);
+    if (!Number.isFinite(numeric) || numeric < 0) numeric = 0;
+    return numeric.toFixed(2);
+  };
+
+  const persistPresetDefaultHours = async (requestEntry = {}) => {
+    const requestText = String(requestEntry?.text || "").trim();
+    const parsedHours = Number(requestEntry?.time);
+    if (!requestText) return;
+    if (!Number.isFinite(parsedHours) || parsedHours < 0) return;
+
+    try {
+      await fetch("/api/job-requests/presets/update-default-hours", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          presetId: requestEntry?.presetId || null,
+          requestText,
+          hours: parsedHours,
+        }),
+      });
+    } catch (error) {
+      console.error("Failed to persist preset default hours", error);
+    }
   };
 
   // handle changes to payment type for a request
@@ -396,7 +446,7 @@ export default function CreateJobCardPage() {
 
   // add a new empty request to the list
   const handleAddRequest = () => {
-    const nextRequests = [...requests, { text: "", time: "", paymentType: "Customer" }];
+    const nextRequests = [...requests, { text: "", time: "", paymentType: "Customer", presetId: null }];
     const detections = detectJobTypesForRequests(nextRequests);
     setRequests(nextRequests);
     setJobDetections(detections);
@@ -634,12 +684,13 @@ export default function CreateJobCardPage() {
         } // finish empty guard
 
         const parsedHours = entry.time === "" || entry.time === null || entry.time === undefined ? null : Number(entry.time); // parse numeric hours when present
-        const safeHours = Number.isFinite(parsedHours) ? parsedHours : null; // ensure NaN becomes null
+        const safeHours = Number.isFinite(parsedHours) ? Number(parsedHours.toFixed(2)) : null; // ensure NaN becomes null and keep 2dp precision
 
         return { // build insert row
           job_id: jobId, // link to parent job id
           description: trimmedDescription, // set description text
           hours: safeHours, // store parsed hours or null
+          job_request_preset_id: entry.presetId || null,
           job_type: (entry.paymentType || "Customer").trim() || "Customer", // persist job type label
           sort_order: index + 1, // keep order for UI grouping
           created_at: timestamp, // assign creation timestamp
@@ -1330,7 +1381,11 @@ export default function CreateJobCardPage() {
 
   return (
     <Layout>
-      <div
+      <DevLayoutSection
+        sectionKey="job-cards-create-page-shell"
+        sectionType="page-shell"
+        shell
+        widthMode="page"
         style={{
           height: "100%",
           display: "flex",
@@ -1342,7 +1397,10 @@ export default function CreateJobCardPage() {
         }}
       >
         {/* ✅ Header Section - Modern Design */}
-        <div
+        <DevLayoutSection
+          sectionKey="job-cards-create-header"
+          sectionType="toolbar"
+          parentKey="job-cards-create-page-shell"
           style={{
             display: "flex",
             justifyContent: "space-between",
@@ -1368,15 +1426,17 @@ export default function CreateJobCardPage() {
             </h2>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            {/* Job Source Bubble */}
+            {/* Job Source Badge */}
             <span
               style={{
                 padding: "8px 16px",
-                borderRadius: "var(--control-radius)",
+                borderRadius: "var(--control-radius-xs)",
                 backgroundColor: jobSource === "Warranty" ? "var(--warning-surface)" : "var(--success-surface)",
                 color: jobSource === "Warranty" ? "var(--danger)" : "var(--success-dark)",
                 fontSize: "13px",
                 fontWeight: 600,
+                border: "1px solid currentColor",
+                letterSpacing: "0.3px",
               }}
             >
               {jobSource}
@@ -1406,11 +1466,14 @@ export default function CreateJobCardPage() {
               {asPrimeJob && jobTabs.length > 1 ? `Save ${jobTabs.length} Jobs` : "Save Job Card"}
             </button>
           </div>
-        </div>
+        </DevLayoutSection>
 
         {/* ✅ Job Tabs Bar - Always shown unless in sub-job mode */}
         {!isSubJobMode && (
-          <div
+          <DevLayoutSection
+            sectionKey="job-cards-create-job-tabs"
+            sectionType="tab-row"
+            parentKey="job-cards-create-page-shell"
             style={{
               display: "flex",
               alignItems: "center",
@@ -1498,12 +1561,15 @@ export default function CreateJobCardPage() {
             <span style={{ marginLeft: "8px", fontSize: "12px", color: "var(--text-secondary)" }}>
               Link new job card
             </span>
-          </div>
+          </DevLayoutSection>
         )}
 
         {/* ✅ Sub-job Mode Banner */}
         {isSubJobMode && primeJobData && (
-          <div
+          <DevLayoutSection
+            sectionKey="job-cards-create-subjob-banner"
+            sectionType="status-banner"
+            parentKey="job-cards-create-page-shell"
             style={{
               padding: "12px 16px",
               backgroundColor: "var(--primary-surface)",
@@ -1538,11 +1604,15 @@ export default function CreateJobCardPage() {
             >
               View Prime Job
             </button>
-          </div>
+          </DevLayoutSection>
         )}
 
         {/* ✅ Content Area */}
-        <div
+        <DevLayoutSection
+          sectionKey="job-cards-create-content"
+          sectionType="section-shell"
+          parentKey="job-cards-create-page-shell"
+          shell
           style={{
             flex: 1,
             display: "flex",
@@ -1551,9 +1621,18 @@ export default function CreateJobCardPage() {
           }}
         >
           {/* ✅ NEW LAYOUT: Top Row - Job Information, Vehicle Details, Customer Details (all 33% width) */}
-          <div style={{ display: "flex", gap: "16px", width: "100%" }}>
+          <DevLayoutSection
+            sectionKey="job-cards-create-top-row"
+            sectionType="section-shell"
+            parentKey="job-cards-create-content"
+            shell
+            style={{ display: "flex", gap: "16px", width: "100%" }}
+          >
             {/* Job Information Section - 33% width */}
-            <div
+            <DevLayoutSection
+              sectionKey="job-cards-create-job-information"
+              sectionType="content-card"
+              parentKey="job-cards-create-top-row"
               style={{
                 flex: 1,
                 minWidth: 0,
@@ -1791,10 +1870,13 @@ export default function CreateJobCardPage() {
                 </div>
               </div>
 
-            </div>
+            </DevLayoutSection>
 
             {/* Vehicle Details Section - 33% width */}
-            <div
+            <DevLayoutSection
+              sectionKey="job-cards-create-vehicle-details"
+              sectionType="content-card"
+              parentKey="job-cards-create-top-row"
               style={{
                 flex: 1,
                 minWidth: 0,
@@ -2019,10 +2101,13 @@ export default function CreateJobCardPage() {
                   />
                 </div>
               </div>
-            </div>
+            </DevLayoutSection>
 
             {/* Customer Details Section - 33% width */}
-            <div
+            <DevLayoutSection
+              sectionKey="job-cards-create-customer-details"
+              sectionType="content-card"
+              parentKey="job-cards-create-top-row"
               style={{
                 flex: 1,
                 minWidth: 0,
@@ -2392,11 +2477,14 @@ export default function CreateJobCardPage() {
                   </button>
                 </div>
               )}
-            </div>
-          </div>
+            </DevLayoutSection>
+          </DevLayoutSection>
 
           {/* ✅ Job Requests Section - Full Width */}
-          <div
+          <DevLayoutSection
+            sectionKey="job-cards-create-job-requests"
+            sectionType="section-shell"
+            parentKey="job-cards-create-content"
             style={{
               padding: "var(--section-card-padding)",
               borderRadius: "var(--radius-md)",
@@ -2416,8 +2504,11 @@ export default function CreateJobCardPage() {
             </h3>
             <div style={{ maxHeight: "360px", overflowY: "auto", paddingRight: "4px", marginBottom: "12px" }}>
               {requests.map((req, i) => (
-                <div
-                  key={i}
+                <DevLayoutSection
+                  key={`job-request-row-${i}`}
+                  sectionKey={`job-cards-create-job-request-${i + 1}`}
+                  sectionType="content-card"
+                  parentKey="job-cards-create-job-requests"
                   style={{
                     border: "none",
                     borderRadius: "var(--radius-sm)",
@@ -2437,14 +2528,27 @@ export default function CreateJobCardPage() {
                     Request {i + 1}
                   </div>
                   <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
-                    <input
-                      type="text"
-                      value={req.text}
-                      onChange={(e) => handleRequestChange(i, e.target.value)}
+                    <RequestPresetAutosuggestInput
+                      value={req.text || ""}
+                      onChange={(nextValue) => handleRequestChange(i, nextValue)}
+                      onPresetSelect={(preset) => {
+                        const updated = [...requests];
+                        updated[i] = {
+                          ...updated[i],
+                          text: preset.label,
+                          time: normalizeHoursToTwoDecimals(preset.defaultHours),
+                          presetId: preset.id,
+                          selectedPresetLabel: preset.label,
+                        };
+                        const detections = detectJobTypesForRequests(updated);
+                        setRequests(updated);
+                        setJobDetections(detections);
+                        setJobCategories(Array.from(new Set(detections.map((d) => d.jobType))));
+                      }}
                       placeholder="Enter job request (MOT, Service, Diagnostic)"
-                      style={{
-                        flex: 2,
-                        minWidth: "250px",
+                      containerStyle={{ flex: 2, minWidth: "250px" }}
+                      inputStyle={{
+                        width: "100%",
                         padding: "10px 12px",
                         border: "none",
                         borderRadius: "var(--radius-xs)",
@@ -2453,18 +2557,12 @@ export default function CreateJobCardPage() {
                         transition: "border-color 0.2s",
                         backgroundColor: "var(--surface)",
                       }}
-                      onFocus={(e) => {
-                        e.target.style.borderColor = "var(--primary)";
-                      }}
-                      onBlur={(e) => {
-                        e.target.style.borderColor = "var(--surface-light)";
-                      }}
                     />
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                       <input
                         type="number"
-                        min="0"
-                        step="0.1"
+                        min="0.00"
+                        step="0.01"
                         value={req.time || ""}
                         onChange={(e) => handleTimeChange(i, e.target.value)}
                         placeholder="Hours"
@@ -2483,6 +2581,10 @@ export default function CreateJobCardPage() {
                         }}
                         onBlur={(e) => {
                           e.target.style.borderColor = "var(--surface-light)";
+                          const updated = [...requests];
+                          updated[i].time = normalizeHoursToTwoDecimals(updated[i]?.time);
+                          setRequests(updated);
+                          persistPresetDefaultHours(updated[i]);
                         }}
                       />
                       <span
@@ -2525,7 +2627,7 @@ export default function CreateJobCardPage() {
                       Remove
                     </button>
                   </div>
-                </div>
+                </DevLayoutSection>
               ))}
             </div>
             <button
@@ -2550,11 +2652,20 @@ export default function CreateJobCardPage() {
             >
               + Add Request
             </button>
-          </div>
+          </DevLayoutSection>
 
           {/* ✅ Bottom Row: Cosmetic Damage, Add VHC, Full Car Details */}
-          <div style={{ display: "flex", gap: "16px" }}>
-            <div
+          <DevLayoutSection
+            sectionKey="job-cards-create-bottom-row"
+            sectionType="section-shell"
+            parentKey="job-cards-create-content"
+            shell
+            style={{ display: "flex", gap: "16px" }}
+          >
+            <DevLayoutSection
+              sectionKey="job-cards-create-cosmetic-damage"
+              sectionType="content-card"
+              parentKey="job-cards-create-bottom-row"
               style={{
                 flex: 1,
                 padding: "var(--section-card-padding)",
@@ -2634,8 +2745,11 @@ export default function CreateJobCardPage() {
                   }}
                 />
               )}
-            </div>
-            <div
+            </DevLayoutSection>
+            <DevLayoutSection
+              sectionKey="job-cards-create-vhc-required"
+              sectionType="content-card"
+              parentKey="job-cards-create-bottom-row"
               style={{
                 flex: 1,
                 padding: "var(--section-card-padding)",
@@ -2690,8 +2804,11 @@ export default function CreateJobCardPage() {
                   ))}
                 </div>
               </div>
-            </div>
-            <div
+            </DevLayoutSection>
+            <DevLayoutSection
+              sectionKey="job-cards-create-documents"
+              sectionType="content-card"
+              parentKey="job-cards-create-bottom-row"
               style={{
                 flex: 1,
                 padding: "var(--section-card-padding)",
@@ -2742,9 +2859,9 @@ export default function CreateJobCardPage() {
                   Manage Documents
                 </button>
               </div>
-            </div>
-          </div>
-        </div>
+            </DevLayoutSection>
+          </DevLayoutSection>
+        </DevLayoutSection>
 
         {showNewCustomer && (
           <NewCustomerPopup
@@ -2777,7 +2894,7 @@ export default function CreateJobCardPage() {
             url: f.url || "",
           }))}
         />
-      </div>
+      </DevLayoutSection>
     </Layout>
   );
 }

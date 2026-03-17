@@ -167,6 +167,20 @@ export const JOB_SUB_STATUS_FLOW = {
     department: "Admin",
     category: "Admin",
   },
+  MOT_COMPLETED: {
+    id: TIMELINE_STATUSES.MOT_COMPLETED,
+    label: TIMELINE_DISPLAY[TIMELINE_STATUSES.MOT_COMPLETED],
+    color: "var(--success)",
+    department: "Workshop",
+    category: "Workshop",
+  },
+  WASH_COMPLETE: {
+    id: TIMELINE_STATUSES.WASH_COMPLETE,
+    label: TIMELINE_DISPLAY[TIMELINE_STATUSES.WASH_COMPLETE],
+    color: "var(--success)",
+    department: "Valet",
+    category: "Valet",
+  },
 };
 
 export const normalizeStatusId = (status) => normalizeCatalogStatusId(status);

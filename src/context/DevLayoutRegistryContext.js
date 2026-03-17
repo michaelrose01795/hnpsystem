@@ -48,6 +48,7 @@ export function DevLayoutRegistryProvider({ children }) {
     if (!sectionKey) return;
     setRegisteredSections((current) => {
       if (!current[sectionKey]) return current;
+      if (current[sectionKey].element === element) return current;
       return {
         ...current,
         [sectionKey]: {

@@ -2,6 +2,10 @@
 import React, { useEffect, useMemo } from "react";
 import { Dropdown } from "@/components/dropdownAPI";
 
+const ROLE_ALIASES = {
+  "valet service": ["valet"],
+};
+
 /**
  * LoginDropdown
  * Props:
@@ -46,6 +50,13 @@ export default function LoginDropdown({
   const resolveDepartmentRoster = (source, department) => {
     if (!source || !department) return null;
     if (source[department]) return source[department];
+    const aliases = ROLE_ALIASES[String(department).toLowerCase()] || [];
+    for (const alias of aliases) {
+      const aliasMatchKey = Object.keys(source).find(
+        (key) => key.toLowerCase() === String(alias).toLowerCase()
+      );
+      if (aliasMatchKey) return source[aliasMatchKey];
+    }
     const matchKey = Object.keys(source).find(
       (key) => key.toLowerCase() === department.toLowerCase()
     );

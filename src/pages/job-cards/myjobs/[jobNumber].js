@@ -2108,7 +2108,7 @@ export default function TechJobDetailPage() {
   // Access check - only technicians can view this page
   if (!isTech) {
     return (
-      <Layout jobNumber={jobNumber}>
+      <Layout jobNumber={jobNumber} requiresLandscape>
         <div style={{ padding: "40px", textAlign: "center" }}>
           <h2 style={{ color: "var(--primary)" }}>Access Denied</h2>
           <p>This page is only for Technicians.</p>
@@ -2120,7 +2120,7 @@ export default function TechJobDetailPage() {
   // Loading state with spinner animation
   if (loading) {
     return (
-      <Layout jobNumber={jobNumber}>
+      <Layout jobNumber={jobNumber} requiresLandscape>
         <div className="redirect-screen" role="status" aria-live="polite">
           <div className="redirect-card">
             <div className="login-brand redirect-brand" aria-hidden="true">
@@ -2146,7 +2146,7 @@ export default function TechJobDetailPage() {
   // Handle case where job is not found
   if (!jobData?.jobCard) {
     return (
-      <Layout jobNumber={jobNumber}>
+      <Layout jobNumber={jobNumber} requiresLandscape>
         <div style={{ padding: "40px", textAlign: "center" }}>
           <h2 style={{ color: "var(--primary)" }}>Job Not Found</h2>
           <button
@@ -2320,14 +2320,14 @@ export default function TechJobDetailPage() {
 
   if (rosterLoading) {
     return (
-      <Layout jobNumber={jobNumber}>
+      <Layout jobNumber={jobNumber} requiresLandscape>
         <div style={{ padding: "24px", color: "var(--info)" }}>Loading roster…</div>
       </Layout>
     );
   }
 
   return (
-    <Layout jobNumber={jobNumber}>
+    <Layout jobNumber={jobNumber} requiresLandscape>
       <div
         style={{
           height: "100%",

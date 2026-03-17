@@ -17,6 +17,8 @@ export const STATUSES = {
   WAITING_FOR_PARTS: "waiting_for_parts",
   PARTS_READY: "parts_ready",
   READY_FOR_INVOICE: "ready_for_invoice",
+  MOT_COMPLETED: "mot_completed",
+  WASH_COMPLETE: "wash_complete",
 };
 
 export const DISPLAY = {
@@ -33,6 +35,8 @@ export const DISPLAY = {
   [STATUSES.WAITING_FOR_PARTS]: "Waiting for Parts",
   [STATUSES.PARTS_READY]: "Parts Ready",
   [STATUSES.READY_FOR_INVOICE]: "Ready for Invoice",
+  [STATUSES.MOT_COMPLETED]: "MOT Completed",
+  [STATUSES.WASH_COMPLETE]: "Wash Complete",
 };
 
 const LEGACY_TO_SUB = {
@@ -56,6 +60,9 @@ const LEGACY_TO_SUB = {
   retail_parts_on_order: STATUSES.WAITING_FOR_PARTS,
   warranty_parts_on_order: STATUSES.WAITING_FOR_PARTS,
   customer_authorized: STATUSES.CUSTOMER_AUTHORISED,
+  mot_complete: STATUSES.MOT_COMPLETED,
+  wash_complete: STATUSES.WASH_COMPLETE,
+  valet_complete: STATUSES.WASH_COMPLETE,
 };
 
 export const NORMALIZE = (value) => {

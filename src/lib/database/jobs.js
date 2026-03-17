@@ -379,6 +379,22 @@ const _getAllJobsUncached = async () => {
       ),
       technician:assigned_to(user_id, first_name, last_name, email, role),
       appointments(appointment_id, scheduled_time, status, notes, created_at, updated_at),
+      job_requests(
+        request_id,
+        job_id,
+        description,
+        hours,
+        job_request_preset_id,
+        job_type,
+        sort_order,
+        status,
+        request_source,
+        vhc_item_id,
+        pre_pick_location,
+        note_text,
+        created_at,
+        updated_at
+      ),
       vhc_checks(vhc_id, section, issue_title, issue_description, measurement, created_at, updated_at, approval_status, authorization_state, display_status, severity, labour_hours, parts_cost, total_override, labour_complete, parts_complete, approved_at, approved_by, note_text, pre_pick_location, request_id, display_id),
       parts_requests(request_id, part_id, quantity, status, requested_by, approved_by, pre_pick_location, created_at, updated_at),
       parts_job_items!parts_job_items_job_id_fkey(
@@ -860,6 +876,7 @@ const _getJobByNumberUncached = async (jobNumber, options = {}) => {
         job_id,
         description,
         hours,
+        job_request_preset_id,
         job_type,
         sort_order,
         status,
@@ -989,6 +1006,7 @@ const _getJobByNumberUncached = async (jobNumber, options = {}) => {
           job_id,
           description,
           hours,
+          job_request_preset_id,
           job_type,
           sort_order,
           status,
@@ -2142,6 +2160,7 @@ const formatJobData = (data) => {
     jobId: request.job_id ?? null,
     description: request.description || "",
     hours: request.hours ?? null,
+    presetId: request.job_request_preset_id ?? null,
     jobType: request.job_type || "Customer",
     sortOrder:
       request.sort_order !== null && request.sort_order !== undefined
@@ -2820,6 +2839,7 @@ export const upsertJobRequestsForJob = async (jobId, requestEntries = []) => {
         const hours = Number.isFinite(parsedHours) ? parsedHours : null;
         const jobType = (entry.paymentType ?? entry.jobType ?? "Customer").toString().trim() || "Customer";
         const requestId = entry.requestId ?? entry.request_id ?? null;
+        const presetId = entry.presetId ?? entry.job_request_preset_id ?? null;
         const noteText = entry.noteText ?? entry.note_text ?? null;
         const rawPrePickLocation = entry.prePickLocation ?? entry.pre_pick_location ?? null;
         const prePickLocation =
@@ -2833,6 +2853,12 @@ export const upsertJobRequestsForJob = async (jobId, requestEntries = []) => {
           hours,
           jobType,
           sortOrder: index + 1,
+          presetId:
+            presetId === null || presetId === undefined || presetId === ""
+              ? null
+              : Number.isFinite(Number(presetId))
+              ? Number(presetId)
+              : null,
           noteText: noteText ? noteText.toString().trim() : null,
           prePickLocation,
         };
@@ -2880,6 +2906,7 @@ export const upsertJobRequestsForJob = async (jobId, requestEntries = []) => {
             hours: row.hours,
             job_type: row.jobType,
             sort_order: row.sortOrder,
+            job_request_preset_id: row.presetId,
             note_text: row.noteText,
             pre_pick_location: row.prePickLocation,
             request_source: "customer_request",
@@ -2897,6 +2924,7 @@ export const upsertJobRequestsForJob = async (jobId, requestEntries = []) => {
               hours: row.hours,
               job_type: row.jobType,
               sort_order: row.sortOrder,
+              job_request_preset_id: row.presetId,
               status: "inprogress",
               request_source: "customer_request",
               note_text: row.noteText,
@@ -3324,6 +3352,7 @@ export const getWriteUpByJobNumber = async (jobNumber) => {
         job_requests(
           request_id,
           description,
+          job_request_preset_id,
           sort_order,
           request_source,
           job_type,

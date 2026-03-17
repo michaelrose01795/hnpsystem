@@ -2,12 +2,18 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { useUser } from "@/context/UserContext";
 import { getAllJobs, updateJob } from "@/lib/database/jobs";
+import { resolveMainStatusId } from "@/lib/status/statusFlow";
+import { logJobSubStatus } from "@/lib/services/jobStatusService";
 import { SearchBar } from "@/components/searchBarAPI";
 
 const WASH_KEYWORDS = ["wash", "valet", "clean"];
+const VALET_TABLE_COLUMNS =
+  "minmax(108px, 0.75fr) minmax(96px, 0.7fr) minmax(220px, 1.55fr) minmax(92px, 0.72fr) minmax(92px, 0.72fr) minmax(92px, 0.72fr) minmax(118px, 0.86fr) minmax(112px, 0.7fr) minmax(210px, 1.35fr)";
 
 const normalizeTextArray = (values) => {
   if (!Array.isArray(values)) return [];
@@ -33,6 +39,55 @@ const containsKeyword = (text, keywords = WASH_KEYWORDS) => {
   if (!text) return false;
   const lower = text.toLowerCase();
   return keywords.some((keyword) => lower.includes(keyword));
+};
+
+const COMPLETE_STATUSES = new Set(["complete", "completed", "done", "waiting_additional_work"]);
+const REQUEST_DONE_STATUSES = new Set(["complete", "completed", "done"]);
+
+const normalizeStatusValue = (value) =>
+  String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_");
+
+const isRequestComplete = (status) => REQUEST_DONE_STATUSES.has(normalizeStatusValue(status));
+
+const isMotRequest = (request = {}) => {
+  const haystack = [
+    request?.description,
+    request?.jobType,
+    request?.serviceType,
+    request?.requestSource,
+  ]
+    .map((value) => String(value || "").toLowerCase())
+    .join(" ");
+  return haystack.includes("mot");
+};
+
+const extractWriteUpTasks = (job) => {
+  const rawChecklist = job?.writeUp?.task_checklist;
+  if (Array.isArray(rawChecklist)) return rawChecklist;
+  if (rawChecklist && typeof rawChecklist === "object" && Array.isArray(rawChecklist.tasks)) {
+    return rawChecklist.tasks;
+  }
+  if (typeof rawChecklist === "string") {
+    try {
+      const parsed = JSON.parse(rawChecklist);
+      if (Array.isArray(parsed)) return parsed;
+      if (parsed && typeof parsed === "object" && Array.isArray(parsed.tasks)) {
+        return parsed.tasks;
+      }
+    } catch (_error) {
+      return [];
+    }
+  }
+  return [];
+};
+
+const isTaskComplete = (task) => {
+  if (!task || typeof task !== "object") return false;
+  if (typeof task.checked === "boolean") return task.checked;
+  return isRequestComplete(task.status);
 };
 
 const sumAuthorisedCheckAmount = (row) => {
@@ -90,188 +145,171 @@ const jobHasWashFlag = (job) => {
   );
 };
 
+const inferVehicleHere = (job) => {
+  const mainStatusId = resolveMainStatusId(job?.status);
+  if (mainStatusId === "released") return false;
+  return Boolean(job?.checkedInAt);
+};
+
 const inferWorkshop = (job) => {
-  const status = (job.status || "").toLowerCase();
-  if (!status) return false;
-  const workshopStates = [
-    "workshop",
-    "mot",
-    "additional work",
-    "being washed",
-    "valet",
-    "in progress",
-  ];
-  return workshopStates.some((state) => status.includes(state));
+  const writeUpCompletionStatus = normalizeStatusValue(
+    job?.writeUp?.completion_status || job?.completionStatus || ""
+  );
+  const writeUpMarkedComplete = COMPLETE_STATUSES.has(writeUpCompletionStatus);
+
+  const requestRows = Array.isArray(job?.jobRequests) ? job.jobRequests : [];
+  const allRequestsComplete =
+    requestRows.length > 0 && requestRows.every((request) => isRequestComplete(request?.status));
+
+  const requestTasks = extractWriteUpTasks(job).filter((task) => {
+    const source = String(task?.source || "").toLowerCase();
+    return source === "request";
+  });
+  const allRequestTasksComplete =
+    requestTasks.length > 0 && requestTasks.every((task) => isTaskComplete(task));
+
+  return writeUpMarkedComplete || allRequestsComplete || allRequestTasksComplete;
 };
 
 const inferMot = (job) => {
-  const type = (job.type || "").toLowerCase();
-  const description = (job.description || "").toLowerCase();
-  const categories = Array.isArray(job.jobCategories)
-    ? job.jobCategories.map((cat) => (cat || "").toLowerCase())
-    : [];
-  const requests = normalizeTextArray(job.requests);
-
-  return (
-    type.includes("mot") ||
-    description.includes("mot") ||
-    categories.some((category) => category.includes("mot")) ||
-    requests.some((request) => request.includes("mot"))
-  );
-};
-
-const inferWash = (job) => {
-  const status = (job.status || "").toLowerCase();
-  if (status.includes("washed") || status.includes("valet")) return true;
-  return false;
-};
-
-const inferVehicleHere = (job) => {
-  // Auto-tick if job is checked in (has checkedInAt timestamp)
-  return Boolean(job.checkedInAt);
+  const requestRows = Array.isArray(job?.jobRequests) ? job.jobRequests : [];
+  const motRows = requestRows.filter((request) => isMotRequest(request));
+  return motRows.length > 0 && motRows.every((request) => isRequestComplete(request?.status));
 };
 
 const buildChecklist = (job) => {
   const stored = job.maintenanceInfo?.valetChecklist || {};
   const result = {
-    vehicleHere:
-      typeof stored.vehicleHere === "boolean"
-        ? stored.vehicleHere
-        : inferVehicleHere(job),
-    workshop:
-      typeof stored.workshop === "boolean"
-        ? stored.workshop
-        : inferWorkshop(job),
-    mot:
-      typeof stored.mot === "boolean"
-        ? stored.mot
-        : inferMot(job),
-    wash:
-      typeof stored.wash === "boolean"
-        ? stored.wash
-        : inferWash(job),
+    vehicleHere: inferVehicleHere(job),
+    workshop: inferWorkshop(job),
+    mot: inferMot(job),
+    wash: typeof stored.wash === "boolean" ? stored.wash : false,
     updatedAt: stored.updatedAt || null,
     updatedBy: stored.updatedBy || null,
   };
   return result;
 };
 
-const ValetJobRow = ({ job, checklist, onToggle, isSaving }) => {
+const resolveValetRowStatusLabel = (job, checklist) => {
+  if (checklist?.wash) return "Wash Complete";
+  return job?.status || "N/A";
+};
+
+const logChecklistCompletionTransitions = async ({
+  jobId,
+  beforeChecklist,
+  afterChecklist,
+  actor,
+}) => {
+  const tasks = [];
+
+  if (!beforeChecklist?.workshop && afterChecklist?.workshop) {
+    tasks.push(
+      logJobSubStatus(
+        jobId,
+        "Technician Work Completed",
+        actor,
+        "Workshop checklist auto-completed from Customer Request completion."
+      )
+    );
+  }
+
+  if (!beforeChecklist?.mot && afterChecklist?.mot) {
+    tasks.push(
+      logJobSubStatus(
+        jobId,
+        "MOT Completed",
+        actor,
+        "MOT request line marked complete."
+      )
+    );
+  }
+
+  if (!beforeChecklist?.wash && afterChecklist?.wash) {
+    tasks.push(
+      logJobSubStatus(
+        jobId,
+        "Wash Complete",
+        actor,
+        "Valet wash manually completed."
+      )
+    );
+  }
+
+  if (tasks.length > 0) {
+    await Promise.allSettled(tasks);
+  }
+};
+
+const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob }) => {
   const handleChange = (field) => (event) => {
     onToggle(job.id, field, event.target.checked);
   };
 
   return (
     <div
+      onClick={() => {
+        if (typeof onOpenJob === "function") {
+          onOpenJob(job);
+        }
+      }}
       style={{
         border: "none",
-        padding: "16px 20px",
+        padding: "12px 16px",
         borderRadius: "var(--radius-sm)",
-        backgroundColor: "var(--surface)",
+        backgroundColor: "var(--accent-purple-surface)",
         boxShadow: "none",
-        display: "flex",
-        justifyContent: "space-between",
+        display: "grid",
+        gridTemplateColumns: VALET_TABLE_COLUMNS,
+        gap: "8px",
         alignItems: "center",
-        gap: "16px",
+        width: "100%",
+        minWidth: "1120px",
+        cursor: "pointer",
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "6px",
-          minWidth: "240px",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "12px",
-            alignItems: "center",
-          }}
-        >
-          <span
+      <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--accent-purple)" }}>
+        {job.jobNumber || "No Job Number"}
+      </span>
+      <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--accent-purple)" }}>
+        {job.reg || "N/A"}
+      </span>
+      <span style={{ fontSize: "14px", color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+        {job.customer || "No customer assigned"}
+      </span>
+
+      {[
+        { field: "vehicleHere", label: "Vehicle Here", manual: false },
+        { field: "workshop", label: "Workshop", manual: false },
+        { field: "mot", label: "MOT", manual: false },
+        { field: "wash", label: "Wash", manual: true },
+      ].map(({ field, label, manual }) => (
+        <div key={field} style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+          <input
+            type="checkbox"
+            checked={Boolean(checklist[field])}
+            onChange={handleChange(field)}
+            onClick={(event) => event.stopPropagation()}
+            disabled={isSaving || !manual}
+            aria-label={`${label} for ${job.jobNumber || job.reg || "job"}`}
+            title={label}
             style={{
-              fontSize: "18px",
-              fontWeight: "700",
-              color: "var(--text-primary)",
+              width: "20px",
+              height: "20px",
+              cursor: isSaving || !manual ? "not-allowed" : "pointer",
+              opacity: manual ? 1 : 0.9,
             }}
-          >
-            {job.reg || "N/A"}
-          </span>
-          <span
-            style={{
-              fontSize: "14px",
-              fontWeight: "600",
-              color: "var(--primary)",
-            }}
-          >
-            {job.jobNumber || "No Job Number"}
-          </span>
+          />
         </div>
-        <span style={{ fontSize: "14px", color: "var(--grey-accent-dark)" }}>
-          {job.makeModel || "Unknown Vehicle"}
-        </span>
-        <span style={{ fontSize: "13px", color: "var(--grey-accent-light)" }}>
-          {job.customer || "No customer assigned"}
-        </span>
-        <span
-          style={{
-            fontSize: "12px",
-            color: "var(--grey-accent-light)",
-          }}
-        >
-          Status: {job.status || "N/A"}
-        </span>
-      </div>
+      ))}
 
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "32px",
-          flexShrink: 0,
-        }}
-      >
-        {[
-          { field: "vehicleHere", label: "Vehicle Here" },
-          { field: "workshop", label: "Workshop" },
-          { field: "mot", label: "MOT" },
-          { field: "wash", label: "Wash Complete" },
-        ].map(({ field, label }) => (
-          <label
-            key={field}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "8px",
-              fontSize: "13px",
-              color: "var(--text-primary)",
-              fontWeight: "600",
-              cursor: "pointer",
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={Boolean(checklist[field])}
-              onChange={handleChange(field)}
-              disabled={isSaving}
-              style={{
-                width: "20px",
-                height: "20px",
-                cursor: isSaving ? "not-allowed" : "pointer",
-              }}
-            />
-            {label}
-          </label>
-        ))}
-      </div>
+      <span style={{ fontSize: "13px", color: "var(--text-primary)", fontWeight: 600, textAlign: "right" }}>
+        {resolveValetRowStatusLabel(job, checklist)}
+      </span>
 
-      <div style={{ textAlign: "right", minWidth: "160px" }}>
+      <div style={{ textAlign: "right", minWidth: 0 }}>
         {isSaving ? (
-          <span style={{ fontSize: "12px", color: "var(--primary)" }}>Saving…</span>
+          <span style={{ fontSize: "12px", color: "var(--accent-purple)" }}>Saving…</span>
         ) : checklist.updatedAt ? (
           <div
             style={{
@@ -279,7 +317,7 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving }) => {
               flexDirection: "column",
               gap: "4px",
               fontSize: "12px",
-              color: "var(--grey-accent)",
+              color: "var(--text-secondary)",
             }}
           >
             <span>Updated by {checklist.updatedBy || "Unknown"}</span>
@@ -293,7 +331,7 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving }) => {
             </span>
           </div>
         ) : (
-          <span style={{ fontSize: "12px", color: "var(--background)" }}>
+          <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
             No valet updates yet
           </span>
         )}
@@ -303,6 +341,7 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving }) => {
 };
 
 export default function ValetDashboard() {
+  const router = useRouter();
   const { user, loading: userLoading } = useUser();
   const [jobs, setJobs] = useState([]);
   const [valetState, setValetState] = useState({});
@@ -335,6 +374,7 @@ export default function ValetDashboard() {
       setError("");
       try {
         const allJobs = await getAllJobs();
+        const actor = user?.user_id || user?.id || user?.username || "VALET_SERVICE";
 
         // Filter jobs that match any of these criteria:
         // 1. Has wash-related flags
@@ -348,10 +388,69 @@ export default function ValetDashboard() {
           );
         });
 
+        const syncedJobs = await Promise.all(
+          filteredJobs.map(async (job) => {
+            const derivedChecklist = buildChecklist(job);
+            const storedChecklist = job?.maintenanceInfo?.valetChecklist || {};
+            const autoFieldChanged =
+              Boolean(storedChecklist?.vehicleHere) !== Boolean(derivedChecklist.vehicleHere) ||
+              Boolean(storedChecklist?.workshop) !== Boolean(derivedChecklist.workshop) ||
+              Boolean(storedChecklist?.mot) !== Boolean(derivedChecklist.mot);
+
+            if (!autoFieldChanged) return job;
+
+            const mergedChecklist = {
+              ...storedChecklist,
+              vehicleHere: derivedChecklist.vehicleHere,
+              workshop: derivedChecklist.workshop,
+              mot: derivedChecklist.mot,
+              wash: typeof storedChecklist?.wash === "boolean" ? storedChecklist.wash : false,
+            };
+
+            const maintenanceInfo = {
+              ...(job.maintenanceInfo || {}),
+              valetChecklist: mergedChecklist,
+            };
+
+            const result = await updateJob(job.id, {
+              maintenance_info: maintenanceInfo,
+            });
+
+            if (!result?.success || !result?.data) {
+              return job;
+            }
+
+            const persistedJob = {
+              ...job,
+              ...result.data,
+              jobRequests: Array.isArray(job.jobRequests) ? job.jobRequests : [],
+              writeUp: job.writeUp || null,
+              checkedInAt: result.data.checkedInAt ?? job.checkedInAt ?? null,
+              status: result.data.status || job.status,
+              completionStatus: result.data.completionStatus ?? job.completionStatus ?? null,
+              maintenanceInfo: result.data.maintenanceInfo || maintenanceInfo,
+            };
+
+            await logChecklistCompletionTransitions({
+              jobId: job.id,
+              beforeChecklist: {
+                vehicleHere: Boolean(storedChecklist?.vehicleHere),
+                workshop: Boolean(storedChecklist?.workshop),
+                mot: Boolean(storedChecklist?.mot),
+                wash: Boolean(storedChecklist?.wash),
+              },
+              afterChecklist: buildChecklist(persistedJob),
+              actor,
+            });
+
+            return persistedJob;
+          })
+        );
+
         if (!cancelled) {
-          setJobs(filteredJobs);
+          setJobs(syncedJobs);
           const initial = {};
-          filteredJobs.forEach((job) => {
+          syncedJobs.forEach((job) => {
             initial[job.id] = buildChecklist(job);
           });
           setValetState(initial);
@@ -393,6 +492,7 @@ export default function ValetDashboard() {
 
   const handleToggle = useCallback(
     async (jobId, field, value) => {
+      if (field !== "wash") return;
       const targetJob = jobs.find((job) => job.id === jobId);
       if (!targetJob) return;
 
@@ -424,12 +524,30 @@ export default function ValetDashboard() {
           throw new Error(result?.error?.message || "Failed to save checklist");
         }
 
+        const persistedJob = {
+          ...targetJob,
+          ...result.data,
+          jobRequests: Array.isArray(targetJob.jobRequests) ? targetJob.jobRequests : [],
+          writeUp: targetJob.writeUp || null,
+          checkedInAt: result.data.checkedInAt ?? targetJob.checkedInAt ?? null,
+          status: result.data.status || targetJob.status,
+          completionStatus: result.data.completionStatus ?? targetJob.completionStatus ?? null,
+          maintenanceInfo: result.data.maintenanceInfo || maintenanceInfo,
+        };
+        const persistedChecklist = buildChecklist(persistedJob);
+        await logChecklistCompletionTransitions({
+          jobId,
+          beforeChecklist: previousState,
+          afterChecklist: persistedChecklist,
+          actor: user?.user_id || user?.id || user?.username || "VALET_SERVICE",
+        });
+
         setJobs((prev) =>
-          prev.map((job) => (job.id === jobId ? result.data : job))
+          prev.map((job) => (job.id === jobId ? persistedJob : job))
         );
         setValetState((prev) => ({
           ...prev,
-          [jobId]: buildChecklist(result.data),
+          [jobId]: persistedChecklist,
         }));
       } catch (err) {
         setValetState((prev) => ({
@@ -447,18 +565,23 @@ export default function ValetDashboard() {
   if (userLoading) {
     return (
       <Layout>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            height: "100%",
-            padding: "40px",
-            fontSize: "16px",
-          }}
-        >
-          Loading user…
-        </div>
+        <DevLayoutSection sectionKey="valet-loading-shell" sectionType="page-shell" shell>
+          <DevLayoutSection
+            sectionKey="valet-loading-panel"
+            parentKey="valet-loading-shell"
+            sectionType="content-card"
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              height: "100%",
+              padding: "40px",
+              fontSize: "16px",
+            }}
+          >
+            Loading user…
+          </DevLayoutSection>
+        </DevLayoutSection>
       </Layout>
     );
   }
@@ -466,11 +589,18 @@ export default function ValetDashboard() {
   if (!user) {
     return (
       <Layout>
-        <div style={{ padding: "24px" }}>
-          <p style={{ color: "var(--primary)", fontWeight: 600 }}>
-            You must be logged in to view valet jobs.
-          </p>
-        </div>
+        <DevLayoutSection sectionKey="valet-auth-shell" sectionType="page-shell" shell>
+          <DevLayoutSection
+            sectionKey="valet-auth-message"
+            parentKey="valet-auth-shell"
+            sectionType="content-card"
+            style={{ padding: "24px" }}
+          >
+            <p style={{ color: "var(--primary)", fontWeight: 600 }}>
+              You must be logged in to view valet jobs.
+            </p>
+          </DevLayoutSection>
+        </DevLayoutSection>
       </Layout>
     );
   }
@@ -478,18 +608,28 @@ export default function ValetDashboard() {
   if (!hasAccess) {
     return (
       <Layout>
-        <div style={{ padding: "24px" }}>
-          <p style={{ color: "var(--primary)", fontWeight: 600 }}>
-            You do not have access to the valet dashboard.
-          </p>
-        </div>
+        <DevLayoutSection sectionKey="valet-no-access-shell" sectionType="page-shell" shell>
+          <DevLayoutSection
+            sectionKey="valet-no-access-message"
+            parentKey="valet-no-access-shell"
+            sectionType="content-card"
+            style={{ padding: "24px" }}
+          >
+            <p style={{ color: "var(--primary)", fontWeight: 600 }}>
+              You do not have access to the valet dashboard.
+            </p>
+          </DevLayoutSection>
+        </DevLayoutSection>
       </Layout>
     );
   }
 
   return (
     <Layout>
-      <div
+      <DevLayoutSection
+        sectionKey="valet-shell"
+        sectionType="page-shell"
+        shell
         style={{
           height: "100%",
           display: "flex",
@@ -498,14 +638,21 @@ export default function ValetDashboard() {
           gap: "16px",
         }}
       >
-        <div
+        <DevLayoutSection
+          sectionKey="valet-controls-shell"
+          parentKey="valet-shell"
+          sectionType="section-shell"
           style={{
             display: "flex",
             flexDirection: "column",
             gap: "12px",
+            overflowX: "auto",
           }}
         >
-          <div
+          <DevLayoutSection
+            sectionKey="valet-filter-row"
+            parentKey="valet-controls-shell"
+            sectionType="filter-row"
             style={{
               display: "flex",
               gap: "12px",
@@ -527,9 +674,43 @@ export default function ValetDashboard() {
               Showing {filteredJobs.length} job
               {filteredJobs.length === 1 ? "" : "s"}
             </span>
-          </div>
+          </DevLayoutSection>
+          {!loading && filteredJobs.length > 0 && (
+            <DevLayoutSection
+              sectionKey="valet-table-header"
+              parentKey="valet-controls-shell"
+              sectionType="toolbar"
+              style={{
+                display: "grid",
+                gridTemplateColumns: VALET_TABLE_COLUMNS,
+                gap: "8px",
+                width: "100%",
+                minWidth: "1120px",
+                padding: "0 16px 4px",
+                alignItems: "center",
+                fontSize: "12px",
+                fontWeight: 700,
+                color: "var(--text-secondary)",
+                textTransform: "uppercase",
+                letterSpacing: "0.03em",
+              }}
+            >
+              <span>Job Number</span>
+              <span>Reg</span>
+              <span>Customer</span>
+              <span style={{ textAlign: "center" }}>Vehicle Here</span>
+              <span style={{ textAlign: "center" }}>Workshop</span>
+              <span style={{ textAlign: "center" }}>MOT</span>
+              <span style={{ textAlign: "center" }}>Wash</span>
+              <span style={{ textAlign: "right" }}>Status</span>
+              <span style={{ textAlign: "right" }}>Updated At</span>
+            </DevLayoutSection>
+          )}
           {error && (
-            <div
+            <DevLayoutSection
+              sectionKey="valet-error-banner"
+              parentKey="valet-controls-shell"
+              sectionType="content-card"
               style={{
                 padding: "12px 16px",
                 borderRadius: "var(--radius-xs)",
@@ -540,12 +721,15 @@ export default function ValetDashboard() {
               }}
             >
               {error}
-            </div>
+            </DevLayoutSection>
           )}
-        </div>
+        </DevLayoutSection>
 
         {loading ? (
-          <div
+          <DevLayoutSection
+            sectionKey="valet-jobs-loading"
+            parentKey="valet-shell"
+            sectionType="content-card"
             style={{
               display: "flex",
               justifyContent: "center",
@@ -556,9 +740,12 @@ export default function ValetDashboard() {
             }}
           >
             Loading valet jobs…
-          </div>
+          </DevLayoutSection>
         ) : filteredJobs.length === 0 ? (
-          <div
+          <DevLayoutSection
+            sectionKey="valet-jobs-empty"
+            parentKey="valet-shell"
+            sectionType="content-card"
             style={{
               padding: "60px 0",
               textAlign: "center",
@@ -567,28 +754,44 @@ export default function ValetDashboard() {
             }}
           >
             No jobs requiring wash were found.
-          </div>
+          </DevLayoutSection>
         ) : (
-          <div
+          <DevLayoutSection
+            sectionKey="valet-jobs-list"
+            parentKey="valet-shell"
+            sectionType="section-shell"
             style={{
               display: "flex",
               flexDirection: "column",
               gap: "14px",
               paddingBottom: "24px",
+              width: "100%",
+              overflowX: "auto",
             }}
           >
             {filteredJobs.map((job) => (
-              <ValetJobRow
+              <DevLayoutSection
                 key={job.id}
-                job={job}
-                checklist={valetState[job.id] || buildChecklist(job)}
-                onToggle={handleToggle}
-                isSaving={Boolean(savingMap[job.id])}
-              />
+                sectionKey={`valet-job-row-${job.id}`}
+                parentKey="valet-jobs-list"
+                sectionType="content-card"
+              >
+                <ValetJobRow
+                  job={job}
+                  checklist={valetState[job.id] || buildChecklist(job)}
+                  onToggle={handleToggle}
+                  isSaving={Boolean(savingMap[job.id])}
+                  onOpenJob={(selectedJob) => {
+                    const selectedJobNumber = selectedJob?.jobNumber;
+                    if (!selectedJobNumber) return;
+                    void router.push(`/job-cards/valet/${encodeURIComponent(selectedJobNumber)}`);
+                  }}
+                />
+              </DevLayoutSection>
             ))}
-          </div>
+          </DevLayoutSection>
         )}
-      </div>
+      </DevLayoutSection>
     </Layout>
   );
 }

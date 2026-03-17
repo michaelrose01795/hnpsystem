@@ -623,12 +623,6 @@ const PANEL_SECTION_STYLE = {
   flexDirection: "column",
   gap: "18px",
 };
-const TAB_ROW_STYLE = {
-  display: "flex",
-  borderBottom: "1px solid var(--accent-purple-surface)",
-  gap: "8px",
-  flexWrap: "wrap",
-};
 const TAB_CONTENT_STYLE = {
   display: "flex",
   flexDirection: "column",
@@ -8177,11 +8171,12 @@ export default function VhcDetailsPanel({
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
               <nav
                 style={{
-                  borderRadius: "var(--radius-pill)",
+                  borderRadius: "var(--control-radius)",
                   border: "none",
-                  background: "var(--surface)",
+                  background: "var(--tab-container-bg)",
                   padding: "6px",
                   display: "flex",
+                  flexWrap: "nowrap",
                   gap: "6px",
                   overflowX: "auto",
                   scrollbarWidth: "thin",
@@ -8189,7 +8184,7 @@ export default function VhcDetailsPanel({
                   scrollBehavior: "smooth",
                   WebkitOverflowScrolling: "touch",
                 }}
-                className="vhc-tabs-scroll-container"
+                className="tab-api"
                 aria-label="VHC tabs"
               >
                 {TAB_OPTIONS.map((tab) => {
@@ -8199,17 +8194,9 @@ export default function VhcDetailsPanel({
                       key={tab.id}
                       type="button"
                       onClick={() => setActiveTab(tab.id)}
+                      className={`tab-api__item${isActive ? " is-active" : ""}`}
                       style={{
                         flex: "0 0 auto",
-                        borderRadius: "var(--radius-pill)",
-                        border: "1px solid transparent",
-                        padding: "10px 20px",
-                        fontSize: "0.9rem",
-                        fontWeight: 600,
-                        cursor: "pointer",
-                        background: isActive ? "var(--primary)" : "transparent",
-                        color: isActive ? "var(--text-inverse)" : "var(--text-primary)",
-                        transition: "all 0.15s ease",
                         whiteSpace: "nowrap",
                       }}
                     >
@@ -9643,24 +9630,6 @@ export default function VhcDetailsPanel({
       />
 
       <style jsx global>{`
-        .vhc-tabs-scroll-container::-webkit-scrollbar {
-          height: 6px;
-        }
-
-        .vhc-tabs-scroll-container::-webkit-scrollbar-track {
-          background: transparent;
-          border-radius: var(--radius-pill);
-        }
-
-        .vhc-tabs-scroll-container::-webkit-scrollbar-thumb {
-          background: var(--scrollbar-thumb);
-          border-radius: var(--radius-pill);
-        }
-
-        .vhc-tabs-scroll-container::-webkit-scrollbar-thumb:hover {
-          background: var(--scrollbar-thumb-hover);
-        }
-
         .labour-hours-input {
           -moz-appearance: textfield;
           appearance: textfield;
