@@ -533,13 +533,18 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
   const activeClocking =
     (clockingRes.data || []).filter((row) => !row.clock_out).slice(-1)[0] || null;
 
-  const jobStatusMeta = getMainStatusMetadata(jobRow.status) || {};
-  const overallStatus = resolveMainStatusId(jobRow.status);
-  if (!overallStatus && jobRow.status) {
+  const latestMainStatusEntry =
+    statusEntries.length > 0 ? statusEntries[statusEntries.length - 1] : null;
+  const resolvedMainStatusLabel =
+    latestMainStatusEntry?.statusLabel || jobRow.status || null;
+  const overallStatus =
+    latestMainStatusEntry?.status || resolveMainStatusId(jobRow.status);
+  if (!overallStatus && resolvedMainStatusLabel) {
     addWarning(`Unknown main status \"${jobRow.status}\".`);
   }
+  const jobStatusMeta = getMainStatusMetadata(resolvedMainStatusLabel) || {};
   const techStatus = resolveTechStatus({
-    status: jobRow.status,
+    status: resolvedMainStatusLabel,
     techCompletionStatus: jobRow.tech_completion_status,
   });
 
@@ -554,9 +559,9 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
       id: jobRow.id,
       jobNumber: jobRow.job_number,
       reg: jobRow.vehicle_reg || null,
-      status: jobRow.status || null,
+      status: resolvedMainStatusLabel,
       overallStatus,
-      statusLabel: jobStatusMeta?.label || jobRow.status || null,
+      statusLabel: jobStatusMeta?.label || resolvedMainStatusLabel || null,
       statusMeta: {
         color: jobStatusMeta?.color || null,
         department: jobStatusMeta?.department || null,
@@ -564,8 +569,11 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
       },
       waitingStatus: jobRow.waiting_status || null,
       updatedAt:
-        jobRow.status_updated_at || jobRow.updated_at || new Date().toISOString(),
-      updatedBy: jobRow.status_updated_by || null,
+        latestMainStatusEntry?.timestamp ||
+        jobRow.status_updated_at ||
+        jobRow.updated_at ||
+        new Date().toISOString(),
+      updatedBy: latestMainStatusEntry?.userId || jobRow.status_updated_by || null,
     },
     tech: {
       status: techStatus || null,

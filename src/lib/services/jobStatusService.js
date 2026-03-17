@@ -60,7 +60,12 @@ const ensureInProgressStatus = async (jobId, updatedBy) => {
   }
 
   const currentMain = resolveMainStatusId(jobRow?.status);
-  if (currentMain === "in_progress" || currentMain === "invoiced" || currentMain === "complete") {
+  if (
+    currentMain === "in_progress" ||
+    currentMain === "invoiced" ||
+    currentMain === "released" ||
+    currentMain === "complete"
+  ) {
     return jobRow?.status || null;
   }
 

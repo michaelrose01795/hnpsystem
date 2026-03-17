@@ -2346,6 +2346,20 @@ textarea:disabled {
   }
 }
 
+/* Centre the calendar popup on phone vertical screens */
+@media (max-width: 480px) {
+  .calendar-api__menu {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: calc(100vw - 32px);
+    max-width: 320px;
+    animation: none;
+    z-index: 1250;
+  }
+}
+
 .calendar-api__header,
 .timepicker-api__header {
   display: flex;
@@ -2637,6 +2651,11 @@ input[type="search"]::-webkit-search-results-decoration {
   align-items: center;
   justify-content: center;
   transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.searchbar-api__clear:disabled {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .searchbar-api__clear:hover,
@@ -3257,6 +3276,10 @@ input[type="search"]::-webkit-search-results-decoration {
 }
 
 @media (max-width: 720px) {
+  .myjobs-header {
+    display: none;
+  }
+
   .myjobs-status,
   .myjobs-clock,
   .myjobs-writeup,
@@ -3264,12 +3287,14 @@ input[type="search"]::-webkit-search-results-decoration {
   .myjobs-reg,
   .myjobs-type,
   .myjobs-date {
-    flex: 0 1 45%;
+    flex: 0 1 calc(50% - 6px) !important;
+    min-width: 0 !important;
   }
 
   .myjobs-customer,
   .myjobs-make {
-    flex: 1 1 100%;
+    flex: 1 1 100% !important;
+    min-width: 0 !important;
   }
 }
 

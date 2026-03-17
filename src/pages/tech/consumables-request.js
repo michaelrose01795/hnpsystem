@@ -36,7 +36,7 @@ const inputStyle = {
 
 const tableHeaderStyle = {
   textAlign: "left", // Left align headers for readability
-  color: "var(--primary-dark)", // On-brand header colour
+  color: "var(--text-primary)", // High-contrast header colour for readability
   fontSize: "0.8rem", // Smaller uppercase header text
   textTransform: "uppercase", // Uppercase for header emphasis
   letterSpacing: "0.08em", // Add tracking to uppercase text
@@ -321,9 +321,7 @@ const TechConsumableRequestPage = () => {
         <div style={{ ...cardStyle }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div>
-              <h1 style={{ margin: 0, fontSize: "1.6rem", color: "var(--primary-dark)" }}>
-                Request Workshop Consumables
-              </h1>
+              <h1 style={{ margin: 0, fontSize: "1.6rem", color: "var(--primary-dark)" }}></h1>
             </div>
             <button
               type="button"
@@ -513,9 +511,9 @@ const TechConsumableRequestPage = () => {
                         {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
                       </span>
                     </td>
-                    <td style={{ padding: "12px", fontWeight: 600, color: "var(--text-secondary)" }}>{request.itemName}</td>
-                    <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>{request.quantity}</td>
-                    <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>
+                    <td style={{ padding: "12px", fontWeight: 600, color: "var(--text-primary)" }}>{request.itemName}</td>
+                    <td style={{ padding: "12px", color: "var(--text-secondary)" }}>{request.quantity}</td>
+                    <td style={{ padding: "12px", color: "var(--text-secondary)" }}>
                       {request.requestedAt
                         ? new Date(request.requestedAt).toLocaleDateString("en-GB", {
                             day: "2-digit",
@@ -524,7 +522,7 @@ const TechConsumableRequestPage = () => {
                           })
                         : "—"}
                     </td>
-                    <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>{request.requestedByName || "—"}</td>
+                    <td style={{ padding: "12px", color: "var(--text-secondary)" }}>{request.requestedByName || "—"}</td>
                   </tr>
                 ))}
               </tbody>

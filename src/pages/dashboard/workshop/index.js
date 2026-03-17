@@ -246,7 +246,7 @@ export default function WorkshopDashboard() {
             parentKey="workshop-dashboard-analytics-row"
             title="Check-in trends"
             subtitle="Last 7 days"
-            style={{ height: "100%", minHeight: "250px" }}
+            style={{ height: "100%", minHeight: "250px", border: "1px solid rgba(var(--accent-purple-rgb), 0.32)", background: "rgba(var(--accent-purple-rgb), 0.08)" }}
           >
             <TrendBlock
               sectionKey="workshop-dashboard-checkin-trends-chart"
@@ -278,8 +278,8 @@ export default function WorkshopDashboard() {
                       style={{
                         padding: "12px",
                         borderRadius: "var(--radius-sm)",
-                        background: "var(--surface)",
-                        border: "1px solid var(--border)",
+                        background: "rgba(var(--accent-purple-rgb), 0.08)",
+                        border: "1px solid rgba(var(--accent-purple-rgb), 0.18)",
                         display: "flex",
                         flexDirection: "column",
                         gap: "8px",

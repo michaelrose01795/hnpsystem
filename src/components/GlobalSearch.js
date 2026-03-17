@@ -223,18 +223,11 @@ const GlobalSearch = ({
       const anchor = controlRef.current || containerRef.current;
       if (!anchor) return;
       const rect = anchor.getBoundingClientRect();
-      const viewportPadding = 16;
-      const maxWidth = Math.min(520, window.innerWidth - viewportPadding * 2);
-      const width = Math.min(Math.max(rect.width, 320), maxWidth);
-      const left = Math.min(
-        Math.max(rect.left, viewportPadding),
-        window.innerWidth - viewportPadding - width
-      );
       setDropdownStyle({
         position: "fixed",
         top: rect.bottom + 12,
-        left,
-        width,
+        left: rect.left,
+        width: rect.width,
         right: "auto",
         margin: 0,
         boxSizing: "border-box",

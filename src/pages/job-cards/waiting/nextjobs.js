@@ -1413,7 +1413,7 @@ export default function NextJobsPage() {
                           <span
                             style={{
                               padding: "4px 10px",
-                              borderRadius: "var(--radius-pill)",
+                              borderRadius: "var(--control-radius)",
                               backgroundColor: "var(--danger-surface)",
                               color: "var(--danger)",
                               fontSize: "12px",

@@ -80,6 +80,7 @@ const requestStatusTone = {
 };
 
 const defaultData = { locations: [], unassigned: [], stockChecks: [] };
+const MAX_SEARCH_SUGGESTIONS = 8;
 
 function StockCheckPopup({
   open,
@@ -98,7 +99,8 @@ function StockCheckPopup({
   const [managerActionLoading, setManagerActionLoading] = useState(false);
   const [requestUpdateId, setRequestUpdateId] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState(null);
-  const [stockSearch, setStockSearch] = useState("");
+  const [stockSearchInput, setStockSearchInput] = useState("");
+  const [stockSearchQuery, setStockSearchQuery] = useState("");
   const [showStockList, setShowStockList] = useState(false);
   const [newConsumableForm, setNewConsumableForm] = useState({
     name: "",
@@ -122,19 +124,31 @@ function StockCheckPopup({
   }, [allConsumables]);
 
   const filteredConsumables = useMemo(() => {
-    const query = stockSearch.trim().toLowerCase();
+    const query = stockSearchQuery.trim().toLowerCase();
     if (!query) {
       return sortedConsumables;
     }
     return sortedConsumables.filter((item) =>
       (item.name || "").toLowerCase().includes(query)
     );
-  }, [sortedConsumables, stockSearch]);
+  }, [sortedConsumables, stockSearchQuery]);
 
   const totalItems = allConsumables.length;
   const visibleItems = filteredConsumables.length;
-  const hasSearchQuery = stockSearch.trim().length > 0;
-  const shouldShowStockList = hasSearchQuery || showStockList;
+  const hasSearchQuery = stockSearchInput.trim().length > 0;
+  const hasAppliedSearch = stockSearchQuery.trim().length > 0;
+  const shouldShowStockList = showStockList || hasAppliedSearch;
+
+  const searchSuggestions = useMemo(() => {
+    const query = stockSearchInput.trim().toLowerCase();
+    if (!query) {
+      return [];
+    }
+
+    return sortedConsumables
+      .filter((item) => (item.name || "").toLowerCase().includes(query))
+      .slice(0, MAX_SEARCH_SUGGESTIONS);
+  }, [sortedConsumables, stockSearchInput]);
 
   const displayConsumables = useMemo(() => {
     if (!showStockList) {
@@ -219,7 +233,8 @@ function StockCheckPopup({
       setStatusMessage("");
       setError("");
       setRenameItemState({ id: null, value: "" });
-      setStockSearch("");
+      setStockSearchInput("");
+      setStockSearchQuery("");
       setShowStockList(false);
       setNewConsumableForm({ name: "", supplier: "", unitCost: "" });
       setNewConsumableLoading(false);
@@ -257,6 +272,27 @@ function StockCheckPopup({
     const value = event.target.value;
     setNewConsumableForm((previous) => ({ ...previous, [field]: value }));
   };
+
+  const applyStockSearch = useCallback((nextQuery = stockSearchInput) => {
+    const trimmedQuery = (nextQuery || "").trim();
+    setStockSearchInput(trimmedQuery ? nextQuery : "");
+    setStockSearchQuery(trimmedQuery);
+    if (trimmedQuery) {
+      setShowStockList(true);
+    }
+  }, [stockSearchInput]);
+
+  const clearStockSearch = useCallback(() => {
+    setStockSearchInput("");
+    setStockSearchQuery("");
+  }, []);
+
+  const handleStockSearchKeyDown = useCallback((event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      applyStockSearch();
+    }
+  }, [applyStockSearch]);
 
   const handleNewConsumableSubmit = async (event) => {
     event.preventDefault();
@@ -801,10 +837,13 @@ function StockCheckPopup({
               </div>
               <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
                 <SearchBar
-                  value={stockSearch}
-                  onChange={(event) => setStockSearch(event.target.value)}
-                  onClear={() => setStockSearch("")}
+                  value={stockSearchInput}
+                  onChange={(event) => setStockSearchInput(event.target.value)}
+                  onClear={clearStockSearch}
+                  onKeyDown={handleStockSearchKeyDown}
                   placeholder="Search consumables"
+                  inputMode="search"
+                  enterKeyHint="search"
                   style={{
                     flex: "1 1 260px",
                     minWidth: "240px",
@@ -812,16 +851,69 @@ function StockCheckPopup({
                 />
                 <button
                   type="button"
+                  onClick={() => applyStockSearch()}
+                  style={{ ...buttonPrimaryStyle, padding: "10px 14px" }}
+                  disabled={loading || totalItems === 0}
+                >
+                  Search
+                </button>
+                <button
+                  type="button"
                   onClick={() => setShowStockList((previous) => !previous)}
                   style={{ ...buttonSecondaryStyle, padding: "10px 14px" }}
                   disabled={totalItems === 0}
                 >
-                  {shouldShowStockList && !hasSearchQuery ? "Hide list" : "Show list"}
+                  {showStockList && !hasAppliedSearch ? "Hide list" : "Show list"}
                 </button>
               </div>
+              {hasSearchQuery && !loading && (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                    padding: "12px",
+                    borderRadius: "var(--radius-sm)",
+                    background: "var(--surface-light)",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+                    <strong style={{ color: "var(--primary-dark)", fontSize: "0.95rem" }}>
+                      Possible items
+                    </strong>
+                    {hasAppliedSearch && (
+                      <span style={{ color: "var(--grey-accent-dark)", fontSize: "0.85rem" }}>
+                        Active search: "{stockSearchQuery}"
+                      </span>
+                    )}
+                  </div>
+                  {searchSuggestions.length === 0 ? (
+                    <p style={{ margin: 0, color: "var(--grey-accent-dark)" }}>
+                      No matching consumables found.
+                    </p>
+                  ) : (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                      {searchSuggestions.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => applyStockSearch(item.name || "")}
+                          style={{
+                            ...buttonSecondaryStyle,
+                            padding: "8px 12px",
+                            background: "rgba(var(--primary-rgb), 0.1)",
+                          }}
+                        >
+                          {item.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
               {!shouldShowStockList ? (
                 <p style={{ margin: 0, color: "var(--grey-accent-dark)" }}>
-                  Search for a consumable or click Show list.
+                  Type to see suggestions, then press Search or tap a suggestion.
                 </p>
               ) : loading ? (
                 <p style={{ margin: 0, color: "var(--info)" }}>Loading stock...</p>

@@ -2412,7 +2412,6 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
         </div>
         <div style={{ display: "grid", gap: "16px", marginTop: "16px" }}>
           <div style={modalSectionStyle}>
-            <label style={labelStyle}>Search job number, registration, or customer name</label>
             <input
               style={inputStyle}
               value={searchTerm}
@@ -2420,9 +2419,6 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
               placeholder="e.g., GJ12345, AB12CDE, Jane Smith"
               disabled={submitting}
             />
-            <div style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>
-              Detected from search: job number, vehicle reg, customer name, and job description.
-            </div>
             {loading && <div style={{ color: "var(--text-secondary)" }}>Searching...</div>}
             {error && <div style={{ color: "var(--danger)" }}>{error}</div>}
             <div>
@@ -2478,11 +2474,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
               <div style={{ color: "var(--text-secondary)" }}>
                 All parts from this goods-in are already linked to a job.
               </div>
-            ) : selectedRows.length === 0 ? (
-              <div style={{ color: "var(--text-secondary)" }}>
-                No parts selected yet. Add quantities from the available list below.
-              </div>
-            ) : (
+            ) : selectedRows.length === 0 ? null : (
               <div
                 style={{
                   border: "none",

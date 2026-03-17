@@ -138,7 +138,7 @@ export default function ArchivedJobsPage() {
                             display: "inline-flex",
                             alignItems: "center",
                             padding: "4px 12px",
-                            borderRadius: "var(--radius-pill)",
+                            borderRadius: "var(--control-radius)",
                             background: badge.bg,
                             color: badge.color,
                             fontSize: "0.85rem",

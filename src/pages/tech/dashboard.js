@@ -146,29 +146,29 @@ export default function TechsDashboard() {
         style={{
           maxWidth: "100%",
           margin: "0 auto",
-          padding: "24px",
+          padding: "16px",
           display: "flex",
           flexDirection: "column",
-          gap: "24px",
+          gap: "16px",
         }}
       >
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: "16px",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+            gap: "12px",
           }}
         >
           <div
             style={{
               backgroundColor: "var(--accent-purple-surface)",
-              padding: "24px",
+              padding: "16px",
               borderRadius: "var(--radius-md)",
               boxShadow: "none",
               border: "none",
             }}
           >
-            <div style={{ fontSize: "36px", fontWeight: "700", color: "var(--primary)", marginBottom: "8px" }}>
+            <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--primary)", marginBottom: "4px" }}>
               {myJobs.length}
             </div>
             <div style={{ fontSize: "14px", color: "var(--text-secondary)", fontWeight: "600" }}>Jobs Assigned</div>
@@ -177,7 +177,7 @@ export default function TechsDashboard() {
           <div
             style={{
               backgroundColor: clockingStatus ? "var(--success-surface)" : "var(--danger-surface)",
-              padding: "24px",
+              padding: "16px",
               borderRadius: "var(--radius-md)",
               boxShadow: "none",
               border: `1px solid ${clockingStatus ? "var(--success-border)" : "var(--danger-border)"}`,
@@ -206,7 +206,7 @@ export default function TechsDashboard() {
           <div
             style={{
               backgroundColor: "rgba(var(--primary-rgb), 0.08)",
-              padding: "24px",
+              padding: "16px",
               borderRadius: "var(--radius-md)",
               boxShadow: "none",
               border: "none",
@@ -223,13 +223,13 @@ export default function TechsDashboard() {
           <div
             style={{
               backgroundColor: "rgba(var(--primary-rgb), 0.08)",
-              padding: "24px",
+              padding: "16px",
               borderRadius: "var(--radius-md)",
               boxShadow: "none",
               border: "none",
             }}
           >
-            <div style={{ fontSize: "36px", fontWeight: "700", color: "var(--primary)", marginBottom: "8px" }}>
+            <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--primary)", marginBottom: "4px" }}>
               {clockingStatus ? calculateHoursWorked(clockingStatus.clock_in) : "0.0"}h
             </div>
             <div style={{ fontSize: "14px", color: "var(--text-secondary)", fontWeight: "600" }}>Hours Today</div>
@@ -258,10 +258,9 @@ export default function TechsDashboard() {
             </h2>
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns: "2fr 1fr",
-                gap: "24px",
-                alignItems: "center",
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
               }}
             >
               <div>
@@ -278,27 +277,26 @@ export default function TechsDashboard() {
                   {currentJob.description}
                 </p>
               </div>
-              <div style={{ textAlign: "right" }}>
-                <button
-                  onClick={() => handleStartJob(currentJob)}
-                  style={{
-                    padding: "14px 28px",
-                    backgroundColor: "var(--primary)",
-                    color: "var(--text-inverse)",
-                    border: "none",
-                    borderRadius: "var(--radius-xs)",
-                    cursor: "pointer",
-                    fontSize: "15px",
-                    fontWeight: "600",
-                    boxShadow: "none",
-                    transition: "all 0.2s",
-                  }}
-                  onMouseEnter={(e) => (e.target.style.backgroundColor = "var(--primary-dark)")}
-                  onMouseLeave={(e) => (e.target.style.backgroundColor = "var(--primary)")}
-                >
-                  Continue Job
-                </button>
-              </div>
+              <button
+                onClick={() => handleStartJob(currentJob)}
+                style={{
+                  padding: "14px 28px",
+                  backgroundColor: "var(--primary)",
+                  color: "var(--text-inverse)",
+                  border: "none",
+                  borderRadius: "var(--radius-xs)",
+                  cursor: "pointer",
+                  fontSize: "15px",
+                  fontWeight: "600",
+                  boxShadow: "none",
+                  transition: "all 0.2s",
+                  width: "100%",
+                }}
+                onMouseEnter={(e) => (e.target.style.backgroundColor = "var(--primary-dark)")}
+                onMouseLeave={(e) => (e.target.style.backgroundColor = "var(--primary)")}
+              >
+                Continue Job
+              </button>
             </div>
           </div>
         )}
@@ -325,10 +323,9 @@ export default function TechsDashboard() {
             </h2>
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns: "2fr 1fr",
-                gap: "24px",
-                alignItems: "center",
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
               }}
             >
               <div>
@@ -345,27 +342,26 @@ export default function TechsDashboard() {
                   {nextJob.description}
                 </p>
               </div>
-              <div style={{ textAlign: "right" }}>
-                <button
-                  onClick={() => handleStartJob(nextJob)}
-                  style={{
-                    padding: "14px 28px",
-                    backgroundColor: "var(--primary)",
-                    color: "var(--text-inverse)",
-                    border: "none",
-                    borderRadius: "var(--radius-xs)",
-                    cursor: "pointer",
-                    fontSize: "15px",
-                    fontWeight: "600",
-                    boxShadow: "none",
-                    transition: "all 0.2s",
-                  }}
-                  onMouseEnter={(e) => (e.target.style.backgroundColor = "var(--primary-dark)")}
-                  onMouseLeave={(e) => (e.target.style.backgroundColor = "var(--primary)")}
-                >
-                  Start Job
-                </button>
-              </div>
+              <button
+                onClick={() => handleStartJob(nextJob)}
+                style={{
+                  padding: "14px 28px",
+                  backgroundColor: "var(--primary)",
+                  color: "var(--text-inverse)",
+                  border: "none",
+                  borderRadius: "var(--radius-xs)",
+                  cursor: "pointer",
+                  fontSize: "15px",
+                  fontWeight: "600",
+                  boxShadow: "none",
+                  transition: "all 0.2s",
+                  width: "100%",
+                }}
+                onMouseEnter={(e) => (e.target.style.backgroundColor = "var(--primary-dark)")}
+                onMouseLeave={(e) => (e.target.style.backgroundColor = "var(--primary)")}
+              >
+                Start Job
+              </button>
             </div>
           </div>
         )}
@@ -394,9 +390,7 @@ export default function TechsDashboard() {
                 color: "var(--text-primary)",
                 margin: 0,
               }}
-            >
-              My Assigned Jobs
-            </h2>
+            ></h2>
           </div>
 
           {myJobs.length === 0 ? (
@@ -502,8 +496,8 @@ export default function TechsDashboard() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: "16px",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 140px), 1fr))",
+            gap: "12px",
           }}
         >
           <button

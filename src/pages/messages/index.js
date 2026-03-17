@@ -9,6 +9,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { useRouter } from "next/router"; // Next.js router for reading query params
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { supabase } from "@/lib/supabaseClient";
@@ -783,6 +784,7 @@ const sortDirectoryEntries = (entries = []) =>
   );
 
 function MessagesPage() {
+  const router = useRouter(); // Access query params from job card navigation
   const { dbUserId, user } = useUser();
   const { isDark } = useTheme();
 
@@ -841,6 +843,7 @@ function MessagesPage() {
   const scrollerRef = useRef(null);
   const unreadMarkerTimersRef = useRef(new Map());
   const activeUnreadMarkerKeyRef = useRef(null);
+  const deepLinkProcessedRef = useRef(false); // Track whether job card deep-link has been handled
   const {
     listThreads,
     listThreadMessages,
@@ -1450,6 +1453,42 @@ function MessagesPage() {
     if (!dbUserId) return;
     fetchThreads();
   }, [dbUserId, fetchThreads]);
+
+  // Deep-link from job card: find customer thread and pre-fill /job command
+  useEffect(() => {
+    if (deepLinkProcessedRef.current) return; // Only run once
+    if (!router.isReady || !threads.length || loadingThreads) return; // Wait for threads to load
+    const { jobNumber, customerEmail, customerName } = router.query; // Read job card params
+    if (!jobNumber) return; // No deep-link params present
+
+    deepLinkProcessedRef.current = true; // Mark as processed
+
+    // Find a thread that has a member matching the customer email or name
+    const normalise = (value = "") => (value || "").toLowerCase().trim();
+    const customerThread = threads.find((thread) => {
+      const members = thread.members || [];
+      return members.some((member) => {
+        const profile = member.profile || {};
+        const role = normalise(member.role);
+        const isCustomerRole = role.includes("customer");
+        if (!isCustomerRole) return false; // Only match customer members
+        if (customerEmail && normalise(profile.email) === normalise(customerEmail)) return true;
+        if (customerName && normalise(profile.name) === normalise(customerName)) return true;
+        return false;
+      });
+    });
+
+    if (customerThread) {
+      openThread(customerThread.id, customerThread); // Open the matching thread
+      setMessageDraft(`/job${jobNumber} `); // Pre-fill draft with job reference
+    } else {
+      // No existing customer thread found — pre-fill draft for when user starts a new conversation
+      setMessageDraft(`/job${jobNumber} `);
+    }
+
+    // Clean query params from URL without navigation
+    router.replace("/messages", undefined, { shallow: true });
+  }, [router.isReady, router.query, threads, loadingThreads, openThread]);
 
   useEffect(() => {
     if (!dbUserId) return;

@@ -1746,6 +1746,7 @@ export default function VhcDetailsPanel({
             parts_job_items(
               id,
               part_id,
+              allocated_to_request_id,
               quantity_requested,
               quantity_allocated,
               quantity_fitted,
@@ -2197,6 +2198,9 @@ export default function VhcDetailsPanel({
   const partsAuthorized = useMemo(
     () => {
       return jobParts.filter((part) => {
+        if (normalisePartStatus(part.status) === "removed") {
+          return false;
+        }
         // Any part linked to an authorised/completed VHC item should appear here,
         // even if it was added from the job card rather than the VHC modal.
         if (part.vhc_item_id) {
@@ -2881,15 +2885,50 @@ export default function VhcDetailsPanel({
   const vhcItemsWithPartsAuthorized = useMemo(() => {
     const items = [];
     const partsByVhcId = new Map();
+    const partsByRequestId = new Map();
     const summaryByCanonicalId = new Map();
+    const getPartTimestamp = (part) => {
+      const raw = part?.updated_at ?? part?.updatedAt ?? part?.created_at ?? part?.createdAt ?? null;
+      const timestamp = raw ? new Date(raw).getTime() : 0;
+      return Number.isFinite(timestamp) ? timestamp : 0;
+    };
+
+    const pushUniquePart = (map, key, part) => {
+      if (!key) return;
+      const nextKey = String(key);
+      const existing = map.get(nextKey) || [];
+      const partId = part?.id ?? null;
+      if (partId !== null) {
+        const existingIndex = existing.findIndex((entry) => entry?.id === partId);
+        if (existingIndex >= 0) {
+          const current = existing[existingIndex];
+          const next = [...existing];
+          const currentTime = getPartTimestamp(current);
+          const nextTime = getPartTimestamp(part);
+          if (
+            nextTime > currentTime ||
+            (nextTime === currentTime &&
+              normalisePartStatus(current?.status) !== "removed" &&
+              normalisePartStatus(part?.status) === "removed")
+          ) {
+            next[existingIndex] = part;
+            map.set(nextKey, next);
+          }
+          return;
+        }
+      }
+      map.set(nextKey, [...existing, part]);
+    };
 
     partsAuthorized.forEach((part) => {
-      if (!part?.vhc_item_id) return;
-      const key = String(part.vhc_item_id);
-      if (!partsByVhcId.has(key)) {
-        partsByVhcId.set(key, []);
+      const canonicalVhcId = part?.vhc_item_id ? String(resolveCanonicalVhcId(part.vhc_item_id)) : "";
+      const requestId = part?.allocated_to_request_id ?? part?.allocatedToRequestId ?? null;
+      if (canonicalVhcId) {
+        pushUniquePart(partsByVhcId, canonicalVhcId, part);
       }
-      partsByVhcId.get(key).push(part);
+      if (requestId !== null && requestId !== undefined && requestId !== "") {
+        pushUniquePart(partsByRequestId, requestId, part);
+      }
     });
 
     summaryItems.forEach((summaryItem) => {
@@ -2908,11 +2947,21 @@ export default function VhcDetailsPanel({
 
       const summaryItem = summaryByCanonicalId.get(canonicalVhcId);
       const displayVhcId = String(row?.display_id || summaryItem?.id || canonicalVhcId);
-      const linkedParts = partsByVhcId.get(canonicalVhcId) || [];
+      const requestId = row?.request_id ?? row?.requestId ?? null;
+      const linkedParts = [
+        ...(partsByVhcId.get(canonicalVhcId) || []),
+        ...((requestId !== null && requestId !== undefined && requestId !== "")
+          ? (partsByRequestId.get(String(requestId)) || [])
+          : []),
+      ].filter((part, index, array) => {
+        const partId = part?.id ?? null;
+        if (partId === null) return array.indexOf(part) === index;
+        return array.findIndex((entry) => entry?.id === partId) === index;
+      });
       const resolvedRequestPrePickLocation = resolveLinkedPrePickLocation({
         linkedPartRows: collectLinkedPartRows({
           parts: linkedParts,
-          requestId: row?.request_id ?? row?.requestId ?? null,
+          requestId,
           vhcItemId: canonicalVhcId,
           resolveCanonicalVhcId,
         }),
@@ -2938,7 +2987,7 @@ export default function VhcDetailsPanel({
         linkedParts,
         vhcId: displayVhcId,
         canonicalVhcId,
-        requestId: row?.request_id ?? null,
+        requestId,
         requestPrePickLocation: resolvedRequestPrePickLocation,
       });
     });
@@ -5562,6 +5611,7 @@ export default function VhcDetailsPanel({
               parts_job_items(
                 id,
                 part_id,
+                allocated_to_request_id,
                 quantity_requested,
                 quantity_allocated,
                 quantity_fitted,
@@ -6215,6 +6265,7 @@ export default function VhcDetailsPanel({
           parts_job_items(
             id,
             part_id,
+            allocated_to_request_id,
             quantity_requested,
             quantity_allocated,
             quantity_fitted,
@@ -7434,7 +7485,9 @@ export default function VhcDetailsPanel({
                   const normalizedStatus = normalisePartStatus(part.status);
                   const currentStatus = normalizedStatus || "authorized";
                   const isOrdered = currentStatus === "on_order";
-                  return { part, partQty, partTotal, isOrdered };
+                  const isRemoved = currentStatus === "removed";
+                  const isAddedToJob = !isRemoved && !isOrdered;
+                  return { part, partQty, partTotal, isOrdered, isRemoved, isAddedToJob };
                 });
 
                 const totalPartsCost = partLines.reduce((sum, entry) => sum + (entry.partTotal || 0), 0);
@@ -7527,12 +7580,12 @@ export default function VhcDetailsPanel({
 
                     <td style={{ padding: "12px 16px", textAlign: "center" }}>
                       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                        {partLines.map(({ part, isOrdered }) => (
+                        {partLines.map(({ part, isOrdered, isRemoved, isAddedToJob }) => (
                           <button
                             key={`order-${part.id}`}
                             type="button"
                             onClick={async () => {
-                              if (isOrdered) return;
+                              if (isOrdered || isAddedToJob || isRemoved) return;
                               try {
                                 await handlePartStatusUpdate(part.id, {
                                   status: "on_order",
@@ -7547,29 +7600,41 @@ export default function VhcDetailsPanel({
                             style={{
                               padding: "8px 16px",
                               borderRadius: "var(--radius-xs)",
-                              border: isOrdered ? "1px solid var(--success)" : "1px solid var(--primary)",
-                              background: isOrdered ? "var(--success)" : "var(--primary)",
+                              border:
+                                isRemoved
+                                  ? "1px solid var(--danger)"
+                                  : isAddedToJob || isOrdered
+                                  ? "1px solid var(--success)"
+                                  : "1px solid var(--primary)",
+                              background:
+                                isRemoved
+                                  ? "var(--danger)"
+                                  : isAddedToJob || isOrdered
+                                  ? "var(--success)"
+                                  : "var(--primary)",
                               color: "var(--surface)",
                               fontWeight: 600,
-                              cursor: isOrdered ? "default" : "pointer",
+                              cursor: isRemoved || isAddedToJob || isOrdered ? "default" : "pointer",
                               fontSize: "12px",
                               transition: "all 0.2s ease",
                               width: "100%",
                             }}
                             onMouseEnter={(e) => {
-                              if (!isOrdered) {
+                              if (!isOrdered && !isAddedToJob && !isRemoved) {
                                 e.target.style.background = "var(--primary-dark)";
                               }
                             }}
                             onMouseLeave={(e) => {
-                              if (!isOrdered) {
+                              if (!isOrdered && !isAddedToJob && !isRemoved) {
                                 e.target.style.background = "var(--primary)";
+                              } else if (isRemoved) {
+                                e.target.style.background = "var(--danger)";
                               } else {
                                 e.target.style.background = "var(--success)";
                               }
                             }}
                           >
-                            {isOrdered ? "Ordered" : "Order"}
+                            {isRemoved ? "Removed" : isAddedToJob ? "Added to Job" : isOrdered ? "Ordered" : "Order"}
                           </button>
                         ))}
                       </div>

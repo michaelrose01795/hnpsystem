@@ -726,9 +726,14 @@ export default function InvoiceDetail({
               <button
                 type="button"
                 className={styles.primaryActionButton}
-                onClick={() => setPaymentModalOpen(true)}
+                onClick={() => {
+                  if (!invoicePaid) {
+                    setPaymentModalOpen(true);
+                  }
+                }}
+                disabled={invoicePaid}
               >
-                Payment
+                {invoicePaid ? "Payment Captured" : "Payment"}
               </button>
             </div>
           )}
@@ -997,7 +1002,7 @@ export default function InvoiceDetail({
 
       <PaymentBlock payment={payment} />
     </article>
-    {!isProforma && (
+    {!isProforma && !invoicePaid && (
       <InvoicePaymentModal
         isOpen={paymentModalOpen}
         onClose={() => setPaymentModalOpen(false)}

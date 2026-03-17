@@ -1,6 +1,6 @@
 //  Imports converted to use absolute alias "@/"
 // file location: src/pages/profile/index.js
-import React, { useMemo, useState, useEffect, useCallback } from "react"; // React for UI and memoization
+import React, { useMemo, useState, useEffect, useCallback, useRef } from "react"; // React for UI and memoization
 import { usePolling } from "@/hooks/usePolling"; // visibility-gated polling
 import { createPortal } from "react-dom";
 import { useRouter } from "next/router"; // Next.js router for query params
@@ -659,6 +659,7 @@ export function ProfilePage({
   const [userProfileLoading, setUserProfileLoading] = useState(true);
   const [userProfileError, setUserProfileError] = useState(null);
   const [profileReloadKey, setProfileReloadKey] = useState(0);
+  const hasProfileDataRef = useRef(false); // Track whether initial data has loaded (avoids stale closure)
 
   // Determine if user has HR/Manager roles for admin preview
   const userRoles = session?.user?.roles || user?.roles || [];
@@ -693,7 +694,10 @@ export function ProfilePage({
 
     const fetchProfile = async () => {
       try {
-        setUserProfileLoading(true);
+        // Only show loading skeleton on initial fetch — background reloads keep existing UI
+        if (!hasProfileDataRef.current) {
+          setUserProfileLoading(true);
+        }
         setUserProfileError(null);
 
         const shouldUseDevQuery = !session?.user && dbUserId;
@@ -729,6 +733,7 @@ export function ProfilePage({
         console.log("Sample attendance log:", payload.data?.attendanceLogs?.[0]);
 
         setUserProfileData(payload.data);
+        hasProfileDataRef.current = true; // Mark that initial data has loaded
         setUserProfileLoading(false);
       } catch (error) {
         if (error.name === "AbortError") return;
@@ -1315,7 +1320,7 @@ export function ProfilePage({
               style={{
                 display: "grid",
                 gap: "16px",
-                gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+                gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 480px), 1fr))",
               }}
             >
               <ProfileCard

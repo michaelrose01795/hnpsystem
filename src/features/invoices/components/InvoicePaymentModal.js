@@ -128,6 +128,9 @@ export default function InvoicePaymentModal({
     () => findPaymentFlowMethod(selectedMethodId),
     [selectedMethodId]
   );
+  const invoiceAlreadyPaid =
+    invoice?.paid === true ||
+    String(invoice?.payment_status || "").trim().toLowerCase() === "paid";
 
   const methodSummary = useMemo(
     () =>
@@ -238,6 +241,10 @@ export default function InvoicePaymentModal({
   };
 
   const runSimulation = () => {
+    if (invoiceAlreadyPaid) {
+      setResultMessage("Payment has already been captured for this invoice.");
+      return;
+    }
     clearQueuedUpdates();
     setIsRunning(true);
     setShowReleasePrompt(false);
@@ -433,9 +440,17 @@ export default function InvoicePaymentModal({
                     type="button"
                     className={styles.primaryActionButton}
                     onClick={runSimulation}
-                    disabled={isRunning || (selectedMethod.id === "cash" && Number(amountReceived || 0) <= 0)}
+                    disabled={
+                      invoiceAlreadyPaid ||
+                      isRunning ||
+                      (selectedMethod.id === "cash" && Number(amountReceived || 0) <= 0)
+                    }
                   >
-                    {isRunning ? "Running simulation..." : `Run ${selectedMethod.label}`}
+                    {invoiceAlreadyPaid
+                      ? "Payment Already Captured"
+                      : isRunning
+                      ? "Running simulation..."
+                      : `Run ${selectedMethod.label}`}
                   </button>
                   <span style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
                     Test flow only. Real gateway execution is still pending backend integration.

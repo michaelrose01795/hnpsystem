@@ -2,6 +2,7 @@
 
 import { supabase } from "@/lib/supabaseClient";
 import { resolveAuditIds } from "@/lib/utils/ids";
+import { syncVhcPartsAuthorisation } from "@/lib/database/vhcPartsSync";
 import {
   buildVhcRequestLinkRows,
   matchPartToVhcRequestRow,
@@ -512,6 +513,17 @@ export default async function handler(req, res) {
         // Log movement error but don't fail the request - the job part was already created
         if (movementError) {
           console.warn("[api/parts/jobs] Stock movement insert failed:", movementError.message);
+        }
+      }
+
+      if (finalVhcItemId) {
+        try {
+          await syncVhcPartsAuthorisation({
+            jobId,
+            vhcItemId: finalVhcItemId,
+          });
+        } catch (syncError) {
+          console.error("[api/parts/jobs] VHC sync error (non-blocking):", syncError);
         }
       }
 

@@ -24,8 +24,20 @@ const JOB_SELECT = `
   waiting_status,
   type,
   created_at,
-  updated_at
+  updated_at,
+  linked_customer:customer_id(id, firstname, lastname)
 `;
+
+// Build a display name from the linked customer record, falling back to the jobs.customer text field
+const resolveCustomerName = (job) => {
+  if (job.linked_customer) {
+    const first = (job.linked_customer.firstname || "").trim();
+    const last = (job.linked_customer.lastname || "").trim();
+    const full = [first, last].filter(Boolean).join(" ");
+    if (full) return full;
+  }
+  return job.customer || null;
+};
 
 async function handler(req, res, session) {
   if (req.method !== "GET") {
@@ -50,7 +62,7 @@ async function handler(req, res, session) {
         throw error;
       }
 
-      return res.status(200).json({ success: true, job: data });
+      return res.status(200).json({ success: true, job: { ...data, customer: resolveCustomerName(data) } });
     }
 
     const size = Math.min(Math.max(Number.parseInt(limit, 10) || 15, 1), 50);
@@ -70,7 +82,8 @@ async function handler(req, res, session) {
     const { data, error } = await query;
     if (error) throw error;
 
-    return res.status(200).json({ success: true, jobs: data || [] });
+    const jobs = (data || []).map((job) => ({ ...job, customer: resolveCustomerName(job) }));
+    return res.status(200).json({ success: true, jobs });
   } catch (error) {
     console.error("Failed to search jobs:", error);
     return res.status(500).json({

@@ -1,4 +1,4 @@
-import React, { forwardRef } from "react";
+import React, { forwardRef, useRef } from "react";
 
 const pickStyleKeys = (style, keys) => {
   if (!style) return undefined;
@@ -41,38 +41,71 @@ const SearchBar = forwardRef(function SearchBar(
     inputStyle,
     disabled = false,
     onClear,
+    type = "text",
     ...rest
   },
   ref
 ) {
+  const inputRef = useRef(null);
   const hasValue = String(value ?? "").length > 0;
   const wrapperStyle = pickStyleKeys(style, WRAPPER_STYLE_KEYS);
   const mergedInputStyle = pickStyleKeys(inputStyle, INPUT_LAYOUT_STYLE_KEYS);
+
+  const assignInputRef = (node) => {
+    inputRef.current = node;
+    if (typeof ref === "function") {
+      ref(node);
+      return;
+    }
+    if (ref) {
+      ref.current = node;
+    }
+  };
+
+  const handleClearPointerDown = (event) => {
+    event.preventDefault();
+  };
+
+  const handleClear = () => {
+    if (typeof onClear === "function") {
+      onClear();
+    }
+    if (inputRef.current) {
+      window.requestAnimationFrame(() => {
+        inputRef.current?.focus();
+      });
+    }
+  };
 
   return (
     <div className={["searchbar-api", className].filter(Boolean).join(" ")} style={wrapperStyle}>
       <input
         {...rest}
-        ref={ref}
-        type="search"
+        ref={assignInputRef}
+        type={type}
         value={value}
         onChange={onChange}
         placeholder={placeholder}
         aria-label={ariaLabel}
         disabled={disabled}
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
         className={["searchbar-api__input", inputClassName].filter(Boolean).join(" ")}
         style={mergedInputStyle}
       />
-      {hasValue && (
-        <button
-          type="button"
-          className="searchbar-api__clear"
-          onClick={onClear}
-          aria-label="Clear search"
-        >
-          &times;
-        </button>
-      )}
+      <button
+        type="button"
+        className="searchbar-api__clear"
+        onMouseDown={handleClearPointerDown}
+        onPointerDown={handleClearPointerDown}
+        onClick={handleClear}
+        aria-label="Clear search"
+        disabled={!hasValue || disabled}
+        aria-hidden={!hasValue}
+      >
+        &times;
+      </button>
     </div>
   );
 });

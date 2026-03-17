@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabaseClient";
 const REQUEST_SOURCE = "vhc_authorised";
 const APPROVAL_AUTHORIZED = "authorized";
 const APPROVAL_DECLINED = "declined";
+const AUTHORIZATION_ADDED_TO_JOB = "authorized_added_to_job";
 
 export const resolveCanonicalVhcId = async ({ jobId, rawVhcId }) => {
   if (rawVhcId === null || rawVhcId === undefined) return null;
@@ -70,7 +71,7 @@ export const syncVhcPartsAuthorisation = async ({ jobId, vhcItemId, approvalStat
 
   const { data: partRows, error: partsError } = await supabase
     .from("parts_job_items")
-    .select("id, authorised, pre_pick_location, updated_at")
+    .select("id, authorised, status, pre_pick_location, updated_at")
     .eq("job_id", jobId)
     .eq("vhc_item_id", canonicalVhcId);
 
@@ -79,6 +80,11 @@ export const syncVhcPartsAuthorisation = async ({ jobId, vhcItemId, approvalStat
   }
 
   const authorisedParts = (partRows || []).filter((part) => part.authorised === true);
+  const activeParts = (partRows || []).filter((part) => {
+    const normalizedStatus = String(part?.status || "").trim().toLowerCase();
+    return normalizedStatus !== "removed";
+  });
+  const hasActiveParts = activeParts.length > 0;
   const hasAuthorisedParts = authorisedParts.length > 0;
   let normalizedApproval = normaliseApprovalStatus(approvalStatus);
   if (!normalizedApproval) {
@@ -108,10 +114,16 @@ export const syncVhcPartsAuthorisation = async ({ jobId, vhcItemId, approvalStat
     ? APPROVAL_DECLINED
     : APPROVAL_DECLINED;
   const isAuthorised = nextApprovalStatus === APPROVAL_AUTHORIZED || nextApprovalStatus === "completed";
+  const nextAuthorizationState = isPendingReset
+    ? "pending"
+    : hasActiveParts && isAuthorised
+    ? AUTHORIZATION_ADDED_TO_JOB
+    : nextApprovalStatus;
   const now = new Date().toISOString();
 
   const vhcUpdatePayload = {
     approval_status: nextApprovalStatus,
+    authorization_state: nextAuthorizationState,
     updated_at: now,
   };
 
@@ -181,7 +193,7 @@ export const syncVhcPartsAuthorisation = async ({ jobId, vhcItemId, approvalStat
 
     const { data: requestRows, error: requestError } = await supabase
       .from("job_requests")
-      .select("request_id")
+      .select("request_id, status")
       .eq("job_id", resolvedJobId)
       .eq("request_source", REQUEST_SOURCE)
       .eq("vhc_item_id", canonicalVhcId);
@@ -202,7 +214,7 @@ export const syncVhcPartsAuthorisation = async ({ jobId, vhcItemId, approvalStat
       hours: null,
       job_type: "Customer",
       sort_order: 0,
-      status: "inprogress",
+      status: hasActiveParts ? AUTHORIZATION_ADDED_TO_JOB : "inprogress",
       request_source: REQUEST_SOURCE,
       vhc_item_id: canonicalVhcId,
       pre_pick_location: latestPrePickLocation,

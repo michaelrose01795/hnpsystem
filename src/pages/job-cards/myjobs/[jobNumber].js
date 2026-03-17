@@ -58,7 +58,7 @@ const _p = { // CSS variable token aliases for this layout (matches appTheme pal
 const _r = { // CSS variable border radius aliases (matches appTheme radii)
   lg: "var(--radius-lg)", // large radius
   xl: "var(--radius-xl)", // extra large radius
-  pill: "var(--radius-pill)", // pill/full radius
+  pill: "var(--control-radius)", // button-style radius
 };
 const vhcLayoutStyles = { // page layout style map — only used on this page
   page: { height: "100%", display: "flex", flexDirection: "column", padding: "var(--space-3) var(--space-md)", gap: "var(--space-md)", background: _p.backgroundGradient },
@@ -279,7 +279,7 @@ const normalizeVhcStatus = (value) => {
 
 const VHC_ACTION_BUTTON_BASE = {
   padding: "10px 16px",
-  borderRadius: "var(--radius-pill)",
+  borderRadius: "var(--control-radius)",
   border: "1px solid var(--accent-purple)",
   fontWeight: 600,
   fontSize: "13px",
@@ -1437,8 +1437,42 @@ export default function TechJobDetailPage() {
       ? jobData.jobCard.completionStatus.toLowerCase()
       : "";
   })();
+  const writeUpChecklistRowsComplete = (() => {
+    const checklistRaw = jobData?.jobCard?.writeUp?.task_checklist;
+    let checklistTasks = [];
+
+    if (Array.isArray(checklistRaw)) {
+      checklistTasks = checklistRaw;
+    } else if (checklistRaw && typeof checklistRaw === "object") {
+      checklistTasks = Array.isArray(checklistRaw.tasks) ? checklistRaw.tasks : [];
+    } else if (typeof checklistRaw === "string") {
+      try {
+        const parsedChecklist = JSON.parse(checklistRaw);
+        if (Array.isArray(parsedChecklist)) {
+          checklistTasks = parsedChecklist;
+        } else if (parsedChecklist && typeof parsedChecklist === "object") {
+          checklistTasks = Array.isArray(parsedChecklist.tasks) ? parsedChecklist.tasks : [];
+        }
+      } catch (_error) {
+        checklistTasks = [];
+      }
+    }
+
+    if (checklistTasks.length === 0) {
+      return null;
+    }
+
+    return checklistTasks.every((task) => {
+      if (!task || typeof task !== "object") return false;
+      if (typeof task.checked === "boolean") return task.checked;
+      const normalizedTaskStatus = String(task.status || "").trim().toLowerCase();
+      return normalizedTaskStatus === "complete" || normalizedTaskStatus === "completed";
+    });
+  })();
   const writeUpComplete =
-    writeUpCompletion === "complete" || writeUpCompletion === "waiting_additional_work";
+    typeof writeUpChecklistRowsComplete === "boolean"
+      ? writeUpChecklistRowsComplete
+      : writeUpCompletion === "complete" || writeUpCompletion === "waiting_additional_work";
   const rectificationsComplete = writeUpComplete;
 
   const handleCompleteVhcClick = useCallback(async () => {
@@ -2495,7 +2529,7 @@ export default function TechJobDetailPage() {
                   color: stat.accent,
                   backgroundColor: stat.pill ? `${stat.accent}15` : "transparent",
                   padding: stat.pill ? "6px 14px" : 0,
-                  borderRadius: stat.pill ? "var(--radius-pill)" : 0,
+                  borderRadius: stat.pill ? "var(--control-radius)" : 0,
                   letterSpacing: stat.pill ? "0.04em" : 0,
                   textTransform: stat.pill ? "uppercase" : "none"
                 }}>
@@ -2511,7 +2545,7 @@ export default function TechJobDetailPage() {
 
         {/* Tabs Navigation */}
         <div style={{
-          borderRadius: "var(--radius-pill)",
+          borderRadius: "var(--control-radius)",
           border: "none",
           background: "var(--surface)",
           padding: "6px",
@@ -2557,7 +2591,7 @@ export default function TechJobDetailPage() {
                 onClick={() => setActiveTab(tab)}
                 style={{
                   flex: "0 0 auto",
-                  borderRadius: "var(--radius-pill)",
+                  borderRadius: "var(--control-radius)",
                   border: "1px solid transparent",
                   padding: "10px 20px",
                   fontSize: "0.9rem",
@@ -2837,7 +2871,7 @@ export default function TechJobDetailPage() {
                     onClick={handleCompleteVhcClick}
                     style={{
                       padding: "10px 18px",
-                      borderRadius: "var(--radius-pill)",
+                      borderRadius: "var(--control-radius)",
                       border: "1px solid var(--accent-purple)",
                       backgroundColor: "transparent",
                       color: "var(--accent-purple)",
@@ -2966,7 +3000,7 @@ export default function TechJobDetailPage() {
                       <span style={{
                         ...getBadgeState(sectionStatus.wheelsTyres),
                         padding: "4px 12px",
-                        borderRadius: "var(--radius-pill)",
+                        borderRadius: "var(--control-radius)",
                         fontSize: "11px",
                         fontWeight: "600",
                         textTransform: "uppercase",
@@ -3009,7 +3043,7 @@ export default function TechJobDetailPage() {
                       <span style={{
                         ...getBadgeState(sectionStatus.brakesHubs),
                         padding: "4px 12px",
-                        borderRadius: "var(--radius-pill)",
+                        borderRadius: "var(--control-radius)",
                         fontSize: "11px",
                         fontWeight: "600",
                         textTransform: "uppercase",
@@ -3052,7 +3086,7 @@ export default function TechJobDetailPage() {
                       <span style={{
                         ...getBadgeState(sectionStatus.serviceIndicator),
                         padding: "4px 12px",
-                        borderRadius: "var(--radius-pill)",
+                        borderRadius: "var(--control-radius)",
                         fontSize: "11px",
                         fontWeight: "600",
                         textTransform: "uppercase",
@@ -3109,7 +3143,7 @@ export default function TechJobDetailPage() {
                           backgroundColor: "var(--info-surface)",
                           color: "var(--info)",
                           padding: "4px 12px",
-                          borderRadius: "var(--radius-pill)",
+                          borderRadius: "var(--control-radius)",
                           fontSize: "11px",
                           fontWeight: "600"
                         }}>
@@ -3153,7 +3187,7 @@ export default function TechJobDetailPage() {
                           backgroundColor: "var(--info-surface)",
                           color: "var(--info)",
                           padding: "4px 12px",
-                          borderRadius: "var(--radius-pill)",
+                          borderRadius: "var(--control-radius)",
                           fontSize: "11px",
                           fontWeight: "600"
                         }}>
@@ -3197,7 +3231,7 @@ export default function TechJobDetailPage() {
                           backgroundColor: "var(--info-surface)",
                           color: "var(--info)",
                           padding: "4px 12px",
-                          borderRadius: "var(--radius-pill)",
+                          borderRadius: "var(--control-radius)",
                           fontSize: "11px",
                           fontWeight: "600"
                         }}>
@@ -3619,7 +3653,7 @@ export default function TechJobDetailPage() {
                             <span style={{
                               ...badgeStyle,
                               padding: "4px 14px",
-                              borderRadius: "var(--radius-pill)",
+                              borderRadius: "var(--control-radius)",
                               fontSize: "11px",
                               fontWeight: "600"
                             }}>
@@ -3732,7 +3766,7 @@ export default function TechJobDetailPage() {
                             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px" }}>
                               <span style={{
                                 padding: "3px 10px",
-                                borderRadius: "var(--radius-pill)",
+                                borderRadius: "var(--control-radius)",
                                 fontSize: "11px",
                                 fontWeight: "600",
                                 backgroundColor: isComplete ? "var(--info-surface)" : "var(--success-surface)",
@@ -3907,7 +3941,7 @@ export default function TechJobDetailPage() {
                             <span
                               style={{
                                 padding: "4px 10px",
-                                borderRadius: "var(--radius-pill)",
+                                borderRadius: "var(--control-radius)",
                                 backgroundColor: "var(--info-surface)",
                                 color: "var(--info)",
                                 fontSize: "11px",

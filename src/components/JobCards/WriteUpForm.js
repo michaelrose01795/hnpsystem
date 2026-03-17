@@ -11,7 +11,7 @@ import {
   updateJobStatus,
 } from "@/lib/database/jobs";
 import { logJobSubStatus } from "@/lib/services/jobStatusService";
-import { resolveSubStatusId } from "@/lib/status/statusFlow";
+import { normalizeStatusId, resolveMainStatusId, resolveSubStatusId } from "@/lib/status/statusFlow";
 import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
@@ -617,6 +617,20 @@ const computeTaskSignature = (tasks = [], completionStatus = "") => {
   return JSON.stringify({ tasks: payload, completionStatus });
 };
 
+const computeExtrasSignature = (data = {}) =>
+  JSON.stringify({
+    warrantyClaim: data?.warrantyClaim || "",
+    tsrNumber: data?.tsrNumber || "",
+    pwaNumber: data?.pwaNumber || "",
+    technicalBulletins: data?.technicalBulletins || "",
+    technicalSignature: data?.technicalSignature || "",
+    qualityControl: data?.qualityControl || "",
+    additionalParts: data?.additionalParts || "",
+    qty: data?.qty || [],
+    booked: data?.booked || [],
+    jobDescription: data?.jobDescription || "",
+  });
+
 const MANUAL_FAULT_SOURCE = "manual_fault";
 const MANUAL_RECTIFICATION_SOURCE = "manual_rectification";
 
@@ -838,6 +852,7 @@ export default function WriteUpForm({
   jobNumber,
   jobCardData = null,
   showHeader = true,
+  readOnly = false,
   onSaveSuccess,
   onCompletionChange,
   onRequestStatusesChange,
@@ -914,6 +929,28 @@ export default function WriteUpForm({
   const warmHydratedJobRef = useRef(null);
   const warmStartReadyRef = useRef(Boolean(jobCardData?.jobCard));
 
+  const markFieldsSynced = useCallback((fields) => {
+    lastSyncedFieldsRef.current = {
+      fault: fields.fault || "",
+      caused: fields.caused || "",
+      rectification: fields.rectification || "",
+      causeSignature: fields.causeSignature || "",
+      sectionEditorsSignature: fields.sectionEditorsSignature || "",
+    };
+  }, []);
+
+  const markTasksSynced = useCallback((signature) => {
+    lastSyncedTasksRef.current = {
+      signature: signature || "",
+    };
+  }, []);
+
+  const markExtrasSynced = useCallback((signature) => {
+    lastSyncedExtrasRef.current = {
+      signature: signature || "",
+    };
+  }, []);
+
   // When the parent job card refreshes, keep Rectification in sync immediately (no tab-local refetch required).
   useEffect(() => {
     const resolved = Array.isArray(jobCardData?.jobCard?.authorizedVhcItems)
@@ -954,24 +991,10 @@ export default function WriteUpForm({
       if (tasksAreEqual(prev.tasks, mergedTasks)) {
         return prev;
       }
+      markTasksSynced(computeTaskSignature(mergedTasks, prev.completionStatus));
       return { ...prev, tasks: mergedTasks.map((task) => withTaskChecked(task)) };
     });
-  }, [jobCardData?.jobCard?.authorizedVhcItems, jobCardData?.jobCard?.id]);
-  const markFieldsSynced = useCallback((fields) => {
-    lastSyncedFieldsRef.current = {
-      fault: fields.fault || "",
-      caused: fields.caused || "",
-      rectification: fields.rectification || "",
-      causeSignature: fields.causeSignature || "",
-      sectionEditorsSignature: fields.sectionEditorsSignature || "",
-    };
-  }, []);
-
-  const markTasksSynced = useCallback((signature) => {
-    lastSyncedTasksRef.current = {
-      signature: signature || "",
-    };
-  }, []);
+  }, [jobCardData?.jobCard?.authorizedVhcItems, jobCardData?.jobCard?.id, markTasksSynced]);
 
   useEffect(() => {
     if (!jobNumber) return;
@@ -998,16 +1021,18 @@ export default function WriteUpForm({
       };
     });
 
-    const mergedTasks = ensureAuthorizedTasks(
-      extractTasksFromChecklist(checklistRaw) || fallbackRequests.map((item) => ({
-        taskId: null,
-        source: item.source,
-        sourceKey: item.sourceKey,
-        label: item.label,
-        ...getRequestTaskDefaults(item),
-      })),
-      canonicalEntries
-    );
+    const checklistTasks = extractTasksFromChecklist(checklistRaw);
+    const baseTasks =
+      Array.isArray(checklistTasks) && checklistTasks.length > 0
+        ? checklistTasks
+        : fallbackRequests.map((item) => ({
+            taskId: null,
+            source: item.source,
+            sourceKey: item.sourceKey,
+            label: item.label,
+            ...getRequestTaskDefaults(item),
+          }));
+    const mergedTasks = ensureAuthorizedTasks(baseTasks, canonicalEntries);
     const completionStatusValue = writeUp?.completion_status || "additional_work";
     const normalizedEditors = sanitizeSectionEditors(deriveSectionEditorsFromChecklist(checklistRaw));
     const incomingCauseEntries = hydrateCauseEntries(writeUp?.cause_entries || []);
@@ -1046,10 +1071,24 @@ export default function WriteUpForm({
       sectionEditorsSignature: computeSectionEditorsSignature(normalizedEditors),
     });
     markTasksSynced(computeTaskSignature(mergedTasks, completionStatusValue));
+    markExtrasSynced(
+      computeExtrasSignature({
+        warrantyClaim: writeUp?.warranty_claim || "",
+        tsrNumber: writeUp?.tsr_number || "",
+        pwaNumber: writeUp?.pwa_number || "",
+        technicalBulletins: writeUp?.technical_bulletins || "",
+        technicalSignature: writeUp?.technical_signature || "",
+        qualityControl: writeUp?.quality_control || "",
+        additionalParts: extractChecklistMeta(checklistRaw)?.additionalParts || "",
+        qty: writeUp?.qty || createCheckboxArray(),
+        booked: writeUp?.booked || createCheckboxArray(),
+        jobDescription: writeUp?.fault || fallbackDescription,
+      })
+    );
     warmHydratedJobRef.current = jobNumber;
     warmStartReadyRef.current = true;
     setLoading(false);
-  }, [jobNumber, jobCardData?.jobCard, markFieldsSynced, markTasksSynced]);
+  }, [jobNumber, jobCardData?.jobCard, markExtrasSynced, markFieldsSynced, markTasksSynced]);
 
   const techsList = usersByRole?.["Techs"] || [];
   const isTech = techsList.includes(username);
@@ -1123,7 +1162,19 @@ export default function WriteUpForm({
             requestsForPartsStatus,
             rectificationTasks.length > 0
           );
-          if (desiredStatus && jobData?.jobCard?.id) {
+          const currentMainStatus = jobData?.jobCard?.status || "";
+          const currentTechCompletionStatus = jobData?.jobCard?.techCompletionStatus || "";
+          const alreadyTechComplete =
+            resolveMainStatusId(currentMainStatus) === "invoiced" ||
+            resolveMainStatusId(currentMainStatus) === "released" ||
+            normalizeStatusId(currentMainStatus)?.includes("technician_work_completed") ||
+            normalizeStatusId(currentTechCompletionStatus) === "tech_complete" ||
+            normalizeStatusId(currentTechCompletionStatus) === "complete";
+          if (
+            desiredStatus &&
+            jobData?.jobCard?.id &&
+            !(desiredStatus === "Technician Work Completed" && alreadyTechComplete)
+          ) {
             try {
               const isSubStatus = Boolean(resolveSubStatusId(desiredStatus));
               if (isSubStatus) {
@@ -1142,6 +1193,7 @@ export default function WriteUpForm({
           }
 
           markTasksSynced(computeTaskSignature(writeUpData.tasks, nextCompletionStatus));
+          markExtrasSynced(computeExtrasSignature(writeUpData));
           if (typeof window !== "undefined") {
             window.dispatchEvent(new CustomEvent("app:drafts:clear-route"));
           }
@@ -1188,6 +1240,7 @@ export default function WriteUpForm({
       isTech,
       router,
       markTasksSynced,
+      markExtrasSynced,
     ]
   );
 
@@ -1263,9 +1316,40 @@ export default function WriteUpForm({
             sectionEditorsSignature: computeSectionEditorsSignature(normalizedEditors),
           });
           markTasksSynced(computeTaskSignature(mergedTasks, completionStatusValue));
+          markExtrasSynced(
+            computeExtrasSignature({
+              warrantyClaim: writeUpResponse.warrantyClaim || "",
+              tsrNumber: writeUpResponse.tsrNumber || "",
+              pwaNumber: writeUpResponse.pwaNumber || "",
+              technicalBulletins: writeUpResponse.technicalBulletins || "",
+              technicalSignature: writeUpResponse.technicalSignature || "",
+              qualityControl: writeUpResponse.qualityControl || "",
+              additionalParts: writeUpResponse.additionalParts || "",
+              qty: writeUpResponse.qty || createCheckboxArray(),
+              booked: writeUpResponse.booked || createCheckboxArray(),
+              jobDescription: writeUpResponse.jobDescription || writeUpResponse.fault || "",
+            })
+          );
         } else {
           const fallbackDescription = formatNoteValue(jobPayload?.jobCard?.description || "");
+          const fallbackTaskList = ensureAuthorizedTasks(
+            fallbackRequests.map((item) => ({
+              taskId: null,
+              source: item.source,
+              sourceKey: item.sourceKey,
+              label: item.label,
+              ...getRequestTaskDefaults(item),
+            })),
+            []
+          ).map((task) => withTaskChecked(task));
+          let nextTasksSignature = computeTaskSignature(fallbackTaskList, "additional_work");
           setWriteUpData((prev) => ({
+            ...(() => {
+              const nextTasks =
+                Array.isArray(prev.tasks) && prev.tasks.length > 0 ? prev.tasks : fallbackTaskList;
+              nextTasksSignature = computeTaskSignature(nextTasks, "additional_work");
+              return {};
+            })(),
             ...prev,
             fault: fallbackDescription,
             caused: "",
@@ -1283,16 +1367,7 @@ export default function WriteUpForm({
             tasks:
               Array.isArray(prev.tasks) && prev.tasks.length > 0
                 ? prev.tasks
-                : ensureAuthorizedTasks(
-                    fallbackRequests.map((item) => ({
-                      taskId: null,
-                      source: item.source,
-                      sourceKey: item.sourceKey,
-                      label: item.label,
-                      ...getRequestTaskDefaults(item),
-                    })),
-                    []
-                  ).map((task) => withTaskChecked(task)),
+                : fallbackTaskList,
             completionStatus: "additional_work",
             jobDescription: fallbackDescription,
             vhcAuthorizationId: null,
@@ -1306,7 +1381,21 @@ export default function WriteUpForm({
             causeSignature: "",
             sectionEditorsSignature: computeSectionEditorsSignature(),
           });
-          markTasksSynced(computeTaskSignature([], "additional_work"));
+          markTasksSynced(nextTasksSignature);
+          markExtrasSynced(
+            computeExtrasSignature({
+              warrantyClaim: "",
+              tsrNumber: "",
+              pwaNumber: "",
+              technicalBulletins: "",
+              technicalSignature: "",
+              qualityControl: "",
+              additionalParts: "",
+              qty: createCheckboxArray(),
+              booked: createCheckboxArray(),
+              jobDescription: fallbackDescription,
+            })
+          );
         }
       } catch (error) {
         console.error("❌ Error fetching write-up:", error);
@@ -1316,7 +1405,7 @@ export default function WriteUpForm({
     };
 
     fetchData();
-  }, [jobNumber]);
+  }, [jobNumber, jobCardData, markExtrasSynced, markFieldsSynced, markTasksSynced]);
 
   useEffect(() => {
     setWriteUpMeta({ jobId: null, writeupId: null });
@@ -1339,6 +1428,7 @@ export default function WriteUpForm({
 
   // ✅ Shared handler for plain text fields
   const handleInputChange = (field) => (event) => {
+    if (readOnly) return;
     const value = event.target.value;
     setWriteUpData((prev) => ({
       ...prev,
@@ -1348,6 +1438,7 @@ export default function WriteUpForm({
 
   // ✅ Handler for bullet-formatted text areas (except fault which also mirrors job description)
   const handleNoteChange = (field) => (event) => {
+    if (readOnly) return;
     const formatted = formatNoteValue(event.target.value);
     setWriteUpData((prev) => ({
       ...prev,
@@ -1357,6 +1448,7 @@ export default function WriteUpForm({
 
   // ✅ Dedicated handler for the fault section so it keeps the job card description in sync
   const handleFaultChange = (event) => {
+    if (readOnly) return;
     const formatted = formatNoteValue(event.target.value);
     setWriteUpData((prev) => ({
       ...prev,
@@ -1367,6 +1459,7 @@ export default function WriteUpForm({
   };
 
   const handleRequestLabelChange = (taskKey) => (event) => {
+    if (readOnly) return;
     const value = event.target.value;
     let updated = false;
     setWriteUpData((prev) => ({
@@ -1392,6 +1485,7 @@ export default function WriteUpForm({
   };
 
   const addFaultSection = () => {
+    if (readOnly) return;
     setWriteUpData((prev) => {
       const existingFaultItems = prev.tasks.filter(
         (task) => task?.source === MANUAL_FAULT_SOURCE
@@ -1415,6 +1509,7 @@ export default function WriteUpForm({
   };
 
   const addRectificationSection = () => {
+    if (readOnly) return;
     setWriteUpData((prev) => {
       const existingRectificationItems = prev.tasks.filter(
         (task) => task?.source === MANUAL_RECTIFICATION_SOURCE
@@ -1438,6 +1533,7 @@ export default function WriteUpForm({
   };
 
   const handleTaskLabelChange = (taskKey) => (event) => {
+    if (readOnly) return;
     const value = event.target.value;
     let updated = false;
     setWriteUpData((prev) => ({
@@ -1456,6 +1552,7 @@ export default function WriteUpForm({
   };
 
   const removeAddedTaskRow = (taskKey) => {
+    if (readOnly) return;
     let removedSource = "";
     setWriteUpData((prev) => {
       const nextTasks = prev.tasks.filter((task) => {
@@ -1483,6 +1580,7 @@ export default function WriteUpForm({
   };
 
   const handleCauseRequestChange = (entryId) => (event) => {
+    if (readOnly) return;
     const value = event.target.value;
     const timestamp = new Date().toISOString();
     setWriteUpData((prev) => ({
@@ -1501,6 +1599,7 @@ export default function WriteUpForm({
   };
 
   const handleCauseTextChange = (entryId) => (event) => {
+    if (readOnly) return;
     const value = event.target.value;
     const timestamp = new Date().toISOString();
     setWriteUpData((prev) => ({
@@ -1518,6 +1617,7 @@ export default function WriteUpForm({
   };
 
   const addCauseRow = () => {
+    if (readOnly) return;
     const requestCount = (writeUpData.tasks || []).filter((task) => task?.source === "request").length;
     if (requestCount === 0) {
       return;
@@ -1539,6 +1639,7 @@ export default function WriteUpForm({
   };
 
   const removeCauseRow = (entryId) => {
+    if (readOnly) return;
     setWriteUpData((prev) => ({
       ...prev,
       causeEntries: prev.causeEntries.filter((entry) => entry.id !== entryId),
@@ -1653,6 +1754,7 @@ export default function WriteUpForm({
 
   // ✅ Toggle checklist status and auto-update completion state
   const toggleTaskStatus = (taskKey) => {
+    if (readOnly) return;
     let toggledSection = null;
     let nextCompletionStatus = null;
     let timelineEventLabel = null;
@@ -1849,6 +1951,7 @@ export default function WriteUpForm({
     }
   };
   useEffect(() => {
+    if (readOnly) return;
     if (!writeUpMeta.jobId || saving) {
       return;
     }
@@ -1873,7 +1976,7 @@ export default function WriteUpForm({
         autoSaveTimeoutRef.current = null;
       }
     };
-  }, [writeUpMeta.jobId, writeUpData.tasks, writeUpData.completionStatus, saving, performWriteUpSave]);
+  }, [readOnly, writeUpMeta.jobId, writeUpData.tasks, writeUpData.completionStatus, saving, performWriteUpSave]);
 
   useEffect(() => {
     onCompletionChangeRef.current = onCompletionChange;
@@ -1898,6 +2001,7 @@ export default function WriteUpForm({
   }, [writeUpData.tasks]);
 
   useEffect(() => {
+    if (readOnly) return;
     if (!writeUpMeta.jobId) {
       return;
     }
@@ -1942,7 +2046,7 @@ export default function WriteUpForm({
         liveSyncTimeoutRef.current = null;
       }
     };
-  }, [
+  }, [readOnly,
     writeUpData.fault,
     writeUpData.caused,
     writeUpData.rectification,
@@ -1954,22 +2058,12 @@ export default function WriteUpForm({
   ]);
 
   useEffect(() => {
+    if (readOnly) return;
     if (!writeUpMeta.jobId || saving) {
       return;
     }
 
-    const signature = JSON.stringify({
-      warrantyClaim: writeUpData.warrantyClaim || "",
-      tsrNumber: writeUpData.tsrNumber || "",
-      pwaNumber: writeUpData.pwaNumber || "",
-      technicalBulletins: writeUpData.technicalBulletins || "",
-      technicalSignature: writeUpData.technicalSignature || "",
-      qualityControl: writeUpData.qualityControl || "",
-      additionalParts: writeUpData.additionalParts || "",
-      qty: writeUpData.qty || [],
-      booked: writeUpData.booked || [],
-      jobDescription: writeUpData.jobDescription || "",
-    });
+    const signature = computeExtrasSignature(writeUpData);
 
     if (signature === lastSyncedExtrasRef.current.signature) {
       return;
@@ -1991,7 +2085,7 @@ export default function WriteUpForm({
         autoSaveExtrasTimeoutRef.current = null;
       }
     };
-  }, [
+  }, [readOnly,
     writeUpData.warrantyClaim,
     writeUpData.tsrNumber,
     writeUpData.pwaNumber,
@@ -2385,6 +2479,22 @@ export default function WriteUpForm({
         gap: "8px"
       }}>
         <div style={{ flex: 1, minHeight: 0 }}>
+          {readOnly && (
+            <div
+              style={{
+                marginBottom: "12px",
+                padding: "12px 14px",
+                borderRadius: "var(--radius-xs)",
+                backgroundColor: "var(--info-surface)",
+                color: "var(--info-dark)",
+                fontSize: "13px",
+                fontWeight: 600,
+              }}
+            >
+              Write-up is read-only because this job is invoiced or released.
+            </div>
+          )}
+          <fieldset disabled={readOnly} style={{ border: "none", margin: 0, padding: 0, minWidth: 0 }}>
           {isWarrantyJob && (
             <div
               style={{
@@ -2716,6 +2826,7 @@ export default function WriteUpForm({
               ))}
             </div>
           )}
+          </fieldset>
         </div>
       </div>
 

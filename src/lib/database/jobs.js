@@ -2025,7 +2025,17 @@ const determineCompletionStatus = (tasks, fallbackStatus = "additional_work") =>
   if (!Array.isArray(tasks) || tasks.length === 0) {
     return fallbackStatus || "additional_work";
   }
-  return tasks.every((task) => task.status === "complete") ? "complete" : "additional_work";
+  const allComplete = tasks.every((task) => {
+    if (!task || typeof task !== "object") return false;
+    if (typeof task.checked === "boolean") return task.checked;
+    return task.status === "complete";
+  });
+  if (!allComplete) {
+    return "additional_work";
+  }
+
+  const hasAdditionalWork = tasks.some((task) => task?.source && task.source !== "request");
+  return hasAdditionalWork ? "waiting_additional_work" : "complete";
 };
 
 /* ============================================
@@ -2662,6 +2672,21 @@ export const updateJob = async (jobId, updates) => {
         );
       } else {
         statusSnapshot = currentStatusRow;
+        const currentMainStatusId = resolveMainStatusId(currentStatusRow?.status);
+        if (currentMainStatusId && currentMainStatusId === targetMainStatusId) {
+          const { data: existingJob, error: existingJobError } = await supabase
+            .from("jobs")
+            .select("*")
+            .eq("id", jobId)
+            .single();
+
+          if (existingJobError) {
+            console.error("❌ Unable to read existing job for no-op status update:", existingJobError);
+            return { success: false, error: existingJobError };
+          }
+
+          return { success: true, data: formatJobData(existingJob) };
+        }
       }
     }
     

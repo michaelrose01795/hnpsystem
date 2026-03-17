@@ -419,14 +419,16 @@ const pickMileageValue = (...values) => {
   return null;
 };
 
+const isRemovedAllocation = (item = {}) => normalizeStatusId(item?.status) === "removed";
+
 const arePartsPricedAndAssigned = (allocations = []) => {
   const parts = Array.isArray(allocations) ? allocations : [];
-  if (parts.length === 0) {
+  const active = parts.filter((item) => item && !isRemovedAllocation(item)); // Skip removed parts
+  if (active.length === 0) {
     return true;
   }
 
-  return parts.every((item) => {
-    if (!item) return false;
+  return active.every((item) => {
     const requestedQty = Number(item.quantityRequested ?? 0);
     const allocatedQty = Number(item.quantityAllocated ?? 0);
     const hasAllocated =
@@ -441,7 +443,7 @@ const getPartsValidationIssues = (allocations = []) => {
   const parts = Array.isArray(allocations) ? allocations : [];
   const issues = [];
   parts.forEach((item) => {
-    if (!item) return;
+    if (!item || isRemovedAllocation(item)) return; // Skip removed parts
     const requestedQty = Number(item.quantityRequested ?? 0);
     const allocatedQty = Number(item.quantityAllocated ?? 0);
     const hasAllocated =
@@ -462,14 +464,15 @@ const getPartsValidationIssues = (allocations = []) => {
 
 const areAllPartsAllocated = (allocations = []) => {
   const parts = Array.isArray(allocations) ? allocations : [];
-  if (parts.length === 0) {
+  const active = parts.filter((item) => item && !isRemovedAllocation(item)); // Skip removed parts
+  if (active.length === 0) {
     return true;
   }
 
-  return parts.every((item) => {
-    if (!item) return false;
-    const assigned = item.allocatedToRequestId ?? item.allocated_to_request_id ?? null;
-    return Boolean(assigned);
+  return active.every((item) => {
+    const assignedToRequest = item.allocatedToRequestId ?? item.allocated_to_request_id ?? null;
+    const assignedToVhc = item.vhcItemId ?? item.vhc_item_id ?? null;
+    return Boolean(assignedToRequest) || Boolean(assignedToVhc); // VHC-allocated parts count as allocated
   });
 };
 
@@ -482,6 +485,31 @@ const isPartsRowAllocated = (item = {}) =>
       item?.vhc_item_id ??
       item?.vhcItemId
   );
+
+const getRowTimestamp = (item = {}) => {
+  const raw = item?.updatedAt ?? item?.updated_at ?? item?.createdAt ?? item?.created_at ?? null;
+  const timestamp = raw ? new Date(raw).getTime() : 0;
+  return Number.isFinite(timestamp) ? timestamp : 0;
+};
+
+const preferLatestPartRow = (current = null, candidate = null) => {
+  if (!current) return candidate;
+  if (!candidate) return current;
+
+  const currentTime = getRowTimestamp(current);
+  const candidateTime = getRowTimestamp(candidate);
+  if (candidateTime !== currentTime) {
+    return candidateTime > currentTime ? candidate : current;
+  }
+
+  const currentRemoved = isRemovedPartsRow(current);
+  const candidateRemoved = isRemovedPartsRow(candidate);
+  if (currentRemoved !== candidateRemoved) {
+    return candidateRemoved ? candidate : current;
+  }
+
+  return candidate;
+};
 
 const buildDateTimeFromInputs = (dateValue = "", timeValue = "") => {
   if (!dateValue || !timeValue) return null;
@@ -3524,8 +3552,8 @@ export default function JobCardDetailPage() {
         <section
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr 0.9fr 1fr",
-            gap: "16px",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))",
+            gap: "10px",
             flexShrink: 0,
             backgroundColor: sharedJobCardShellBackground,
             borderRadius: "var(--radius-sm)",
@@ -3543,10 +3571,12 @@ export default function JobCardDetailPage() {
             data-dev-section-type="content-card"
             data-dev-section-parent="jobcard-summary-shell"
             style={{
-            padding: "16px 20px",
+            padding: "12px 14px",
             backgroundColor: "var(--surface)",
             borderRadius: "var(--radius-sm)",
-            border: "none"
+            border: "none",
+            minWidth: 0,
+            overflow: "hidden",
           }}>
             <div
               style={{
@@ -3557,7 +3587,7 @@ export default function JobCardDetailPage() {
                 marginBottom: "4px",
               }}
             >
-              <div style={{ fontSize: "20px", fontWeight: "700", color: "var(--primary)" }}>
+              <div style={{ fontSize: "18px", fontWeight: "700", color: "var(--primary)" }}>
                 {jobData.reg || "N/A"}
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
@@ -3615,20 +3645,22 @@ export default function JobCardDetailPage() {
               }
             }}
             style={{
-              padding: "16px 20px",
+              padding: "12px 14px",
               backgroundColor: "var(--surface)",
               borderRadius: "var(--radius-sm)",
                 border: "none",
+              minWidth: 0,
+              overflow: "hidden",
               cursor:
                 jobData.customerId || jobData.customerFirstName || jobData.customerLastName || jobData.customer
                   ? "pointer"
                   : "default",
             }}
           >
-            <div style={{ fontSize: "18px", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "4px" }}>
+            <div style={{ fontSize: "16px", fontWeight: "600", color: "var(--text-secondary)", marginBottom: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {jobData.customer || "N/A"}
             </div>
-            <div style={{ fontSize: "14px", color: "var(--grey-accent)" }}>
+            <div style={{ fontSize: "13px", color: "var(--grey-accent)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {jobData.customerPhone || jobData.customerEmail || "No contact info"}
             </div>
           </div>
@@ -3639,22 +3671,24 @@ export default function JobCardDetailPage() {
             data-dev-section-type="stat-card"
             data-dev-section-parent="jobcard-summary-shell"
             style={{
-            padding: "16px 20px",
+            padding: "12px 14px",
             backgroundColor: "var(--surface)",
             borderRadius: "var(--radius-sm)",
-            border: "none"
+            border: "none",
+            minWidth: 0,
+            overflow: "hidden",
           }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: "12px", color: "var(--danger)", marginBottom: "4px" }}>DECLINED</div>
-                <div style={{ fontSize: "18px", fontWeight: "700", color: "var(--danger)", marginBottom: "4px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: "8px" }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: "11px", color: "var(--danger)", marginBottom: "4px" }}>DECLINED</div>
+                <div style={{ fontSize: "16px", fontWeight: "700", color: "var(--danger)", marginBottom: "4px" }}>
                   {formatCurrency(vhcFinancialTotals.declined)}
                 </div>
               </div>
-              <div style={{ width: "1px", backgroundColor: "var(--surface-light)" }} />
-              <div style={{ flex: 1, textAlign: "right" }}>
-                <div style={{ fontSize: "12px", color: "var(--success)", marginBottom: "4px" }}>AUTHORISED</div>
-                <div style={{ fontSize: "18px", fontWeight: "700", color: "var(--success)", marginBottom: "4px" }}>
+              <div style={{ width: "1px", backgroundColor: "var(--surface-light)", flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0, textAlign: "right" }}>
+                <div style={{ fontSize: "11px", color: "var(--success)", marginBottom: "4px" }}>AUTHORISED</div>
+                <div style={{ fontSize: "16px", fontWeight: "700", color: "var(--success)", marginBottom: "4px" }}>
                   {formatCurrency(vhcFinancialTotals.authorized)}
                 </div>
               </div>
@@ -3672,31 +3706,33 @@ export default function JobCardDetailPage() {
               }
             }}
             style={{
-              padding: "16px 20px",
+              padding: "12px 14px",
               backgroundColor: "var(--surface)",
               borderRadius: "var(--radius-sm)",
                 border: "none",
               display: "flex",
               flexDirection: "row",
               alignItems: "stretch",
+              minWidth: 0,
+              overflow: "hidden",
               cursor: canEditTrackingLocations ? "pointer" : "default",
               opacity: canEditTrackingLocations ? 1 : 0.75,
             }}
           >
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "4px" }}>
+              <div style={{ fontSize: "11px", color: "var(--text-secondary)", marginBottom: "4px" }}>
                 Key location
               </div>
-              <div style={{ fontSize: "14px", fontWeight: "700", color: "var(--text-primary)" }}>
+              <div style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {normalizeKeyLocationLabel(trackerEntry?.keyLocation) || KEY_LOCATIONS[0].label}
               </div>
             </div>
-            <div style={{ width: "1px", backgroundColor: "var(--surface-light)" }} />
+            <div style={{ width: "1px", backgroundColor: "var(--surface-light)", flexShrink: 0 }} />
             <div style={{ flex: 1, minWidth: 0, textAlign: "right" }}>
-              <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "4px" }}>
+              <div style={{ fontSize: "11px", color: "var(--text-secondary)", marginBottom: "4px" }}>
                 Car location
               </div>
-              <div style={{ fontSize: "14px", fontWeight: "700", color: "var(--text-primary)" }}>
+              <div style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {trackerEntry?.vehicleLocation || CAR_LOCATIONS[0].label}
               </div>
             </div>
@@ -3928,6 +3964,7 @@ export default function JobCardDetailPage() {
                 jobNumber={jobData?.jobNumber || jobNumber}
                 jobCardData={jobData}
                 showHeader={false}
+                readOnly={!canEdit}
                 onSaveSuccess={() => fetchJobData({ silent: true, force: true })}
                 onCompletionChange={(nextStatus) => {
                   applyWriteUpOptimisticState({ completionStatus: nextStatus });
@@ -3954,6 +3991,7 @@ export default function JobCardDetailPage() {
             <VHCTab
               jobNumber={jobNumber}
               jobData={jobData}
+              canEdit={canEdit}
               actingUserId={actingUserId}
               actingUserNumericId={actingUserNumericId}
               actingUserName={user?.name || user?.email || ""}
@@ -3998,6 +4036,7 @@ export default function JobCardDetailPage() {
               thread={jobData?.messagingThread}
               jobNumber={jobData?.jobNumber || jobNumber}
               customerEmail={jobData?.customerEmail}
+              customerName={jobData?.customer || ""}
             />
           </div>
 
@@ -4319,19 +4358,6 @@ function CustomerRequestsTab({
     return map;
   }, [notes]);
 
-  const partsByRequestId = useMemo(() => {
-    const allocations = Array.isArray(jobData?.partsAllocations) ? jobData.partsAllocations : [];
-    const map = {};
-    allocations.forEach((item) => {
-      const reqId = item.allocatedToRequestId ?? item.allocated_to_request_id ?? null;
-      if (!reqId) return;
-      const key = String(reqId);
-      if (!map[key]) map[key] = [];
-      map[key].push(item);
-    });
-    return map;
-  }, [jobData?.partsAllocations]);
-
   const linkedPrePickPartsSource = useMemo(
     () => [
       ...(Array.isArray(jobData?.partsAllocations) ? jobData.partsAllocations : []),
@@ -4364,6 +4390,53 @@ function CustomerRequestsTab({
     [vhcAliasMap]
   );
 
+  const getLinkedPartsForRequestRow = useCallback(
+    (row) => {
+      const requestId = row?.requestId ?? row?.request_id ?? null;
+      const canonicalVhcId = resolveCanonicalVhcId(row?.vhcItemId ?? row?.vhc_item_id ?? null);
+      const normalizedRequestId =
+        requestId === null || requestId === undefined || requestId === ""
+          ? null
+          : String(requestId).trim();
+      const normalizedVhcId =
+        canonicalVhcId === null || canonicalVhcId === undefined || canonicalVhcId === ""
+          ? null
+          : String(canonicalVhcId).trim();
+
+      const matchedRows = linkedPrePickPartsSource.filter((item) => {
+        if (!item) return false;
+        const itemRequestId = item?.allocatedToRequestId ?? item?.allocated_to_request_id ?? item?.requestId ?? item?.request_id ?? null;
+        const itemVhcId = resolveCanonicalVhcId(item?.vhcItemId ?? item?.vhc_item_id ?? null);
+        const matchesRequest =
+          normalizedRequestId &&
+          itemRequestId !== null &&
+          itemRequestId !== undefined &&
+          String(itemRequestId).trim() === normalizedRequestId;
+        const matchesVhc =
+          normalizedVhcId &&
+          itemVhcId !== null &&
+          itemVhcId !== undefined &&
+          String(itemVhcId).trim() === normalizedVhcId;
+        if (!matchesRequest && !matchesVhc) return false;
+
+      });
+
+      const deduped = new Map();
+      matchedRows.forEach((item) => {
+        const itemRequestId = item?.allocatedToRequestId ?? item?.allocated_to_request_id ?? item?.requestId ?? item?.request_id ?? null;
+        const itemVhcId = resolveCanonicalVhcId(item?.vhcItemId ?? item?.vhc_item_id ?? null);
+        const itemKey =
+          item?.id !== null && item?.id !== undefined
+            ? `id:${item.id}`
+            : `link:${String(itemRequestId || "")}:${String(itemVhcId || "")}:${String(item?.part_id ?? item?.partId ?? item?.part?.id ?? "")}`;
+        deduped.set(itemKey, preferLatestPartRow(deduped.get(itemKey) || null, item));
+      });
+
+      return Array.from(deduped.values());
+    },
+    [linkedPrePickPartsSource, resolveCanonicalVhcId]
+  );
+
   const vhcChecksheetPayload = useMemo(() => {
     const checks = Array.isArray(jobData?.vhcChecks) ? jobData.vhcChecks : [];
     const builderRecord = checks.find((check) => {
@@ -4392,6 +4465,7 @@ function CustomerRequestsTab({
   const normaliseAuthorizationState = useCallback((value) => {
     const lower = String(value || "").toLowerCase().trim();
     if (!lower) return "";
+    if (lower.includes("added_to_job")) return "added_to_job";
     if (lower === "authorised" || lower === "approved") return "authorized";
     if (lower === "complete") return "completed";
     if (lower === "rejected") return "declined";
@@ -4407,6 +4481,8 @@ function CustomerRequestsTab({
     const UK_LABELS = {
       authorized: "Authorised",
       authorised: "Authorised",
+      added_to_job: "Added to Job",
+      removed: "Removed",
       completed: "Completed",
       declined: "Declined",
       inprogress: "In Progress",
@@ -4429,7 +4505,11 @@ function CustomerRequestsTab({
       fontWeight: "600",
       whiteSpace: "nowrap",
       backgroundColor:
-        normalizedStatus === "completed" || normalizedStatus === "done"
+        normalizedStatus === "added_to_job"
+          ? "var(--success-surface)"
+          : normalizedStatus === "removed"
+          ? "var(--danger-surface)"
+          : normalizedStatus === "completed" || normalizedStatus === "done"
           ? "var(--success-surface)"
           : normalizedStatus === "on_hold" || normalizedStatus === "hold"
           ? "var(--warning-surface)"
@@ -4441,7 +4521,11 @@ function CustomerRequestsTab({
           ? "var(--success-surface)"
           : "var(--surface-light)",
       color:
-        normalizedStatus === "completed" || normalizedStatus === "done"
+        normalizedStatus === "added_to_job"
+          ? "var(--success-dark)"
+          : normalizedStatus === "removed"
+          ? "var(--danger-dark)"
+          : normalizedStatus === "completed" || normalizedStatus === "done"
           ? "var(--success-dark)"
           : normalizedStatus === "on_hold" || normalizedStatus === "hold"
           ? "var(--warning-dark)"
@@ -4466,7 +4550,7 @@ function CustomerRequestsTab({
       return (
         requestSource === "vhc_authorised" ||
         requestSource === "vhc_authorized" ||
-        (hasVhcLink && (status === "authorized" || status === "completed"))
+        (hasVhcLink && (status === "authorized" || status === "completed" || status === "added_to_job"))
       );
     });
     const authorisedRequestRowByRequestId = new Map();
@@ -4543,7 +4627,13 @@ function CustomerRequestsTab({
         const section = String(row?.section || "").trim();
         if (section === "VHC_CHECKSHEET" || section === "VHC Checksheet") return false;
         const decision = normaliseAuthorizationState(row?.authorization_state || row?.approval_status);
-        return decision === "authorized" || decision === "completed" || row?.Complete === true || row?.complete === true;
+        return (
+          decision === "authorized" ||
+          decision === "completed" ||
+          decision === "added_to_job" ||
+          row?.Complete === true ||
+          row?.complete === true
+        );
       })
       .map((row) => {
         const decision = normaliseAuthorizationState(row?.authorization_state || row?.approval_status);
@@ -5198,8 +5288,11 @@ function CustomerRequestsTab({
             {customerRequestRows.map((req, index) => {
               const linkedNoteTexts = linkedNotesByRequestIndex.get(index + 1) || [];
               const prePickRowKey = getPrePickRowKey(req);
+              const linkedParts = getLinkedPartsForRequestRow(req);
+              const hasActiveLinkedPart = linkedParts.some((item) => !isRemovedPartsRow(item));
+              const hasOnlyRemovedLinkedParts = linkedParts.length > 0 && linkedParts.every((item) => isRemovedPartsRow(item));
               const { statusLabel, statusBadgeStyle } = getRequestStatusPresentation(
-                req.status,
+                hasActiveLinkedPart ? "added_to_job" : hasOnlyRemovedLinkedParts ? "removed" : req.status,
                 "inprogress"
               );
               return (
@@ -5309,8 +5402,12 @@ function CustomerRequestsTab({
             {authorisedRows.map((row, index) => {
               const rowKey = row.requestId || row.vhcItemId || `authorized-row-${index}`;
               const prePickRowKey = getPrePickRowKey(row);
-              const linkedParts = row.requestId ? (partsByRequestId[String(row.requestId)] || []) : [];
+              const linkedParts = getLinkedPartsForRequestRow(row);
+              const hasActiveLinkedPart = linkedParts.some((item) => !isRemovedPartsRow(item));
+              const hasOnlyRemovedLinkedParts = linkedParts.length > 0 && linkedParts.every((item) => isRemovedPartsRow(item));
               const authorisedStatusSource =
+                (hasActiveLinkedPart ? "added_to_job" : null) ||
+                (hasOnlyRemovedLinkedParts ? "removed" : null) ||
                 row.status ||
                 (row.complete ? "completed" : null) ||
                 normaliseAuthorizationState(row.approvalStatus || row.authorizationState) ||
@@ -5474,7 +5571,7 @@ function CustomerRequestsTab({
                                 backgroundColor: normalizeStatusId(item.status) === "removed" ? undefined : "var(--surface)",
                               }}
                             >
-                              <td style={{ padding: "4px 8px 4px 0", fontWeight: "500", color: "var(--text-primary)" }}>{item.part?.partNumber || "\u2014"}</td>
+                              <td style={{ padding: "4px 8px 4px 0", fontWeight: "500", color: "var(--text-primary)" }}>{item.part?.partNumber || item.part_number || "\u2014"}</td>
                               <td style={{ padding: "4px 8px" }}>{item.part?.name || item.part?.description || "\u2014"}</td>
                               <td style={{ padding: "4px 8px", textAlign: "right" }}>{item.quantityAllocated ?? item.quantityRequested ?? 0}</td>
                               <td style={{ padding: "4px 8px", textAlign: "right" }}>{item.unitPrice != null ? `\u00A3${Number(item.unitPrice).toFixed(2)}` : "\u2014"}</td>
@@ -6498,7 +6595,7 @@ function SchedulingTab({
   };
   const headerBadgeStyle = {
     padding: "4px 10px",
-    borderRadius: "var(--radius-pill)",
+    borderRadius: "var(--control-radius)",
     background: "var(--surface-light)",
     border: "none",
     color: "var(--text-secondary)",
@@ -7019,7 +7116,7 @@ function ServiceHistoryTab({ vehicleJobHistory }) {
                   <span style={{
                     padding: "4px 10px",
                     backgroundColor: "var(--info-surface)",
-                    borderRadius: "var(--radius-pill)",
+                    borderRadius: "var(--control-radius)",
                     fontSize: "11px",
                     fontWeight: "600",
                     color: "var(--info-dark)"
@@ -7796,7 +7893,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
                         <span
                           style={{
                             padding: "6px 12px",
-                            borderRadius: "var(--radius-pill)",
+                            borderRadius: "var(--control-radius)",
                             fontSize: "12px",
                             fontWeight: "600",
                             color: statusMeta.color,
@@ -7908,7 +8005,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
                         <span
                           style={{
                             padding: "6px 12px",
-                            borderRadius: "var(--radius-pill)",
+                            borderRadius: "var(--control-radius)",
                             fontSize: "12px",
                             fontWeight: "600",
                             color: statusMeta.color,
@@ -8053,6 +8150,7 @@ function NotesTab({ value, onChange, canEdit, saving, meta }) {
 function VHCTab({
   jobNumber,
   jobData,
+  canEdit = true,
   actingUserId = null,
   actingUserNumericId = null,
   actingUserName = "",
@@ -8069,7 +8167,7 @@ function VHCTab({
   // Enable actions only when all Summary tab tickboxes are complete.
   const [allCheckboxesComplete, setAllCheckboxesComplete] = useState(false);
   const [checkboxesLockReason, setCheckboxesLockReason] = useState("");
-  const actionsEnabled = allCheckboxesComplete;
+  const actionsEnabled = canEdit && allCheckboxesComplete;
 
   const customerViewUrl = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -8247,6 +8345,7 @@ function VHCTab({
     >
       <VhcDetailsPanel
         jobNumber={jobNumber}
+        readOnly={!canEdit}
         showNavigation={false}
         customActions={customActions}
         onCheckboxesComplete={setAllCheckboxesComplete}
@@ -8340,7 +8439,7 @@ const renderMessageContentWithLinks = (content) => {
   return parts.length > 0 ? parts : content;
 };
 
-function MessagesTab({ thread, jobNumber, customerEmail }) {
+function MessagesTab({ thread, jobNumber, customerEmail, customerName }) {
   const router = useRouter();
   const participants = Array.isArray(thread?.participants) ? thread.participants : [];
   const normalizeRole = (value = "") => (value || "").toLowerCase().trim();
@@ -8373,7 +8472,12 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
   });
 
   const handleOpenMessagingHub = () => {
-    router.push("/messages");
+    const params = new URLSearchParams(); // Build query params for messages page
+    if (jobNumber) params.set("jobNumber", jobNumber); // Pass the job number for /job prefix
+    if (customerEmail) params.set("customerEmail", customerEmail); // Pass customer email to find/create thread
+    if (customerName) params.set("customerName", customerName); // Customer display name for thread lookup
+    const qs = params.toString(); // Assemble query string
+    router.push(qs ? `/messages?${qs}` : "/messages"); // Navigate with params
   };
 
   return (
@@ -8448,7 +8552,7 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
                   key={member.userId || `staff-${index}`}
                   style={{
                     padding: "6px 12px",
-                    borderRadius: "var(--radius-pill)",
+                    borderRadius: "var(--control-radius)",
                     fontSize: "12px",
                     backgroundColor: "var(--info-surface)",
                     color: "var(--info-dark)"
@@ -8461,7 +8565,7 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
                 <span
                   style={{
                     padding: "6px 12px",
-                    borderRadius: "var(--radius-pill)",
+                    borderRadius: "var(--control-radius)",
                     fontSize: "12px",
                     backgroundColor: "var(--info-surface)",
                     color: "var(--accent-purple)"
@@ -8541,7 +8645,7 @@ function MessagesTab({ thread, jobNumber, customerEmail }) {
                       <span
                         style={{
                           padding: "4px 10px",
-                          borderRadius: "var(--radius-pill)",
+                          borderRadius: "var(--control-radius)",
                           fontSize: "11px",
                           fontWeight: "600",
                           color: isStaffOnly ? "var(--danger)" : "var(--info-dark)",
@@ -8858,7 +8962,7 @@ function ClockingTab({ jobData, canEdit }) {
 
   const infoPillStyle = {
     padding: "8px 14px",
-    borderRadius: "var(--radius-pill)",
+    borderRadius: "var(--control-radius)",
     backgroundColor: "var(--info-surface)",
     color: "var(--info-dark)",
     fontWeight: 600,
@@ -9304,43 +9408,21 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
         }}
       >
         <div>
-          <label
-            style={{
-              display: "block",
-              fontSize: "13px",
-              color: "var(--info-dark)",
-              fontWeight: "600",
-              marginBottom: "6px"
-            }}
-          >
-            Select Warranty Job
-          </label>
-          <select
-            value={selectedJobId}
-            onChange={(event) => setSelectedJobId(event.target.value)}
-            disabled={loadingJobs || linking}
-            style={{
-              width: "100%",
-              padding: "var(--control-padding)",
-              borderRadius: "var(--control-radius)",
-              border: "none",
-              fontSize: "var(--control-font-size)",
-              minHeight: "var(--control-height)",
-              backgroundColor: "var(--surface)"
-            }}
-          >
-            <option value="">
-              {loadingJobs
+          <DropdownField
+            label="Select Warranty Job"
+            placeholder={
+              loadingJobs
                 ? "Loading warranty jobs..."
-                : "Choose a warranty job number"}
-            </option>
-            {availableJobs.map((job) => (
-              <option key={job.id} value={job.id}>
-                {job.job_number} · {job.vehicle_reg || "No Reg"} ·{" "}
-                {job.vehicle_make_model || "Warranty Job"}
-              </option>
-            ))}
-          </select>
+                : "Choose a warranty job number"
+            }
+            value={selectedJobId}
+            onValueChange={(val) => setSelectedJobId(val)}
+            disabled={loadingJobs || linking}
+            options={availableJobs.map((job) => ({
+              value: String(job.id),
+              label: `${job.job_number} · ${job.vehicle_reg || "No Reg"} · ${job.vehicle_make_model || "Warranty Job"}`,
+            }))}
+          />
           {linkError && (
             <p style={{ marginTop: "6px", fontSize: "12px", color: "var(--danger)" }}>
               {linkError}
@@ -9374,6 +9456,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
               borderRadius: "var(--radius-sm)",
               border: "1px solid var(--info)",
               backgroundColor: "var(--surface)",
+              color: "var(--text-primary)",
               fontWeight: "600",
               cursor: linking ? "not-allowed" : "pointer"
             }}
@@ -9422,6 +9505,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
                   borderRadius: "var(--control-radius)",
                   border: "1px solid var(--info)",
                   backgroundColor: "var(--surface)",
+                  color: "var(--text-primary)",
                   cursor: "pointer",
                   fontWeight: "600",
                   fontSize: "13px"

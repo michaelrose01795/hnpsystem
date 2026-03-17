@@ -143,6 +143,16 @@ export default async function handler(req, res) {
       return res.status(404).json({ success: false, error: "Invoice not found" });
     }
 
+    if (
+      invoice.paid === true ||
+      String(invoice.payment_status || "").trim().toLowerCase() === "paid"
+    ) {
+      return res.status(409).json({
+        success: false,
+        error: "Payment has already been captured for this invoice",
+      });
+    }
+
     if (COMMUNICATION_METHODS.has(method.id)) {
       if (!PAYMENT_SUCCESS_OUTCOMES.has(outcome)) {
         return res.status(200).json({

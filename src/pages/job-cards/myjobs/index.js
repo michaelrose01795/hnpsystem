@@ -524,16 +524,7 @@ export default function MyJobsPage() {
           justifyContent: "space-between",
           alignItems: "center"
         }}>
-          <div>
-            <h1 style={{
-              color: "var(--primary)",
-              fontSize: "32px",
-              fontWeight: "700",
-              margin: "0 0 8px 0"
-            }}>
-              My Assigned Jobs
-            </h1>
-          </div>
+          <div></div>
 
         </div>
 
@@ -690,6 +681,7 @@ export default function MyJobsPage() {
               }}
             >
               <div
+                className="myjobs-header"
                 style={{
                   display: "flex",
                   alignItems: "center",

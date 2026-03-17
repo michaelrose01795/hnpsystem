@@ -1420,7 +1420,7 @@ const JobListCard = ({ job, onNavigate, onQuickView, index = 0, sectionKey, pare
           <span
             style={{
               padding: "4px 10px",
-              borderRadius: "var(--radius-pill)",
+              borderRadius: "var(--control-radius)",
               fontWeight: 600,
               fontSize: "12px",
               textTransform: "capitalize",
@@ -1432,7 +1432,7 @@ const JobListCard = ({ job, onNavigate, onQuickView, index = 0, sectionKey, pare
           <span
             style={{
               padding: "4px 10px",
-              borderRadius: "var(--radius-pill)",
+              borderRadius: "var(--control-radius)",
               backgroundColor: "var(--accent-purple-surface)",
               color: "var(--accent-purple)",
               fontWeight: 600,
@@ -1570,7 +1570,7 @@ const OrderListCard = ({ order, onNavigate, index = 0, sectionKey, parentKey }) 
         <span
           style={{
             padding: "4px 10px",
-            borderRadius: "var(--radius-pill)",
+            borderRadius: "var(--control-radius)",
             backgroundColor: "var(--accent-purple-surface)",
             color: "var(--accent-purple)",
             fontWeight: 600,
