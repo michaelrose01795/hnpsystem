@@ -1,75 +1,14 @@
 
 
 CLAUDE
-CHECK/DONE
-have it so Job Progress Tracker section follows the design when using iPhone in vertical mode as well as the other sections. 
-
-CHECK/DONE
-Have it so when in phone view the whole background colour is accent colour atm it cuts off and turns white on the bottom and top sections in the web browsers as the browser tab section goes smaller and the app wasn’t added full accent colour. 
-
-CHECK/DONE
+CHECK
 Have it so the messages page works like iPhone messages does on iPhone instead of the current design for bigger screens, have it so it only uses this messages page feature when in iPhone view and other view when in bigger screens view. 
 
-CHECK/DONE
-Have it so within the tracking page it shows each tracking card in a row instead of being in a 2 column layout. Only make this change with iPhone view. (CHANGE users can click add location and if a job number, reg, or customer already exists it auto fills the information and changes to “Edit existing” instead of “log new”)
+CHECK
+Deep dive to override anything stopping this from happening front end as the hcanges havent taken place "Have it so within the tracking page it shows each tracking card in a row instead of being in a 2 column layout. Only make this change with iPhone view. (CHANGE users can click add location and if a job number, reg, or customer already exists it auto fills the information and changes to “Edit existing” instead of “log new”)"
 
 CHECK
-Have it so within the “My Assigned Jobs” page the table is in full use when in phone vertical view as atm the contents of the table looks like it’s in the first column. 
+Deep dive to override anything stopping this from happening front end as the hcanges havent taken place "Have it so within the “My Assigned Jobs” page the table is in full use when in phone vertical view as atm the contents of the table looks like it’s in the first column."
 
 CHECK
-Within the profile page have it so the leave summary and emergency contact sections aren’t in a 50/50 side plot but in line like the other sections when within phone vertical view
-
-CHECK
-Have it so when the calendar picker is used within all pages it shows within the middle of the screen when in phone vertical mode 
-
-CHECK
-Fix Users table changes are restricted to HR Manager > Employees. Emergency contact updates are disabled here. When clicking save within the emergency contact section inside the /profile page 
-
-CHECK
-Have it so the techs dashboard fits phone vertical mode better.
-
-CHECK
-have it so job-cards/myjobs/[jobnumber] page requires horizontal phone view. 
-
-CHECK
-Have it so “Cancel”, “View Linked Job” button within the warranty tab within the job-cards/[Jobnumber] page follows the light/dark text colour. Have it so “Select Warranty Job” drop down follows the drop down style within global.css
-
-CHECK
-Have it so “6 techsJob #00056” bubbles follow more of the button style than bubbles, change this front end and find any other sections which use this shape instead of follow the button style (even though it’s not a button). 
-
-CHECk
-within the job-cards/[jobnumber] page have it so "Retail" and the status bubbles and anywhere else within the app like wihtin the create page the retail bubble is used have it follow more of the button style than bubbles. 
-
-CHECK
-Have it so within the messages tab the “Open Messaging Hub” button opens up the messages page, with a message which is linked to the customer (not another user (this is the only way a user can message a customer though end to end encryption messages from the job card/[jobnumber] page it’s self)) and opens the chat section with “/job[jobnumber] already in the chat box which indicates they are taking about that job. 
-
-CHECK
-Fix “Review the invoice layout below, but complete these tasks before sharing with the customer:Allocate every booked part to a request or additional request.Parts tab 
-
-CHECK
-have it so the cutomer name is shown inside the "Add goods-in parts to a job" popup when searched for jobnumber atm it shows "unknown customer", Remove "Detected from search: job number, vehicle reg, customer name, and job description." and "Search job number, registration, or customer name" and "No parts selected yet. Add quantities from the available list below." text to give a cleaner look. 
-
-
-
-
-
-CHECK CODEX
-if wihtin the Parts Added to Job  section the part has been added to the job change the status within the "Parts Authorised" tab so it shows added to job instead of order for example.
-
-
-CHECK CODEX
-have it os when the page is realosed it doesnt think the write up check boxes are ticked every time as it shows "Technician Work Completed Workshop Tech complete by System 15 Mar, 23:28 Tech has completed all work on this job." everytime the page is reloaded wihtit he "Job Progress Tracker" which means it messing up the databse as well. fix this 
-
-CHECK CODEX
-Make sure if the job status is within the Invovce or release status then only the "Key location Service showroom Car location Service" section can be edited, nothing else within the customer request, Parts, Write Up, VHC tab can be changed, have it so another Payment cannot be captured once its already be captured.
-
-
-
-
-
-TODO CLAUDE
-Do a deep dive into why the writeup tab within the jobcards/[jobnumber] page is constatntly reloading front end. deep dive to fix this so its not costatnly relaoding front end so the user cannot use it, have it load backend so it doesnt effect the user at all but it saves to the database with any changes in correct time. 
-
-
-CHECK CODEX
-Have it so the click and drag of the rows with the in the tech cards works within this section /job-cards/waiting/nextjobs :: 2.2 (nextjobs-technicians) And /job-cards/waiting/nextjobs :: 2.1.1 (nextjobs-outstanding-scroll) section so the user can just click on the job card card adn drag into the tech/mot tests/ back into the Outstanding Jobs section easily, this is a quicker way of assigning a job to a tech and works the same as clicking as clicking assign tech button. Make sure this works on iPad as well as windows, and when click and dragging give an indication on where its going to go with a accent colour line, the rows and be placed above r in the middle or below other rows for easy job sorting as well. Have it so when click and drag is active highlighting is disabled like when moving the floating notes section. 
+deep dive to make sure this is change happens front end "Have it so “6 techsJob #00056” bubbles follow more of the button style than bubbles, change this front end and find any other sections which use this shape instead of follow the button style (even though it’s not a button)." this is within the clocking tab inside the job-cards/[jobnumber] pge. 

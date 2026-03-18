@@ -107,6 +107,39 @@ const getAppointmentDisplay = (job) => {
   return "Not scheduled";
 };
 
+const popupPrimaryActionButtonStyle = {
+  flex: 1,
+  padding: "12px 20px",
+  backgroundColor: "var(--accent-purple)",
+  color: "var(--text-inverse)",
+  border: "1px solid var(--accent-purple)",
+  borderRadius: "var(--radius-xs)",
+  cursor: "pointer",
+  fontSize: "14px",
+  fontWeight: "600",
+  transition: "background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease",
+};
+
+const popupSecondaryActionButtonStyle = {
+  ...popupPrimaryActionButtonStyle,
+  backgroundColor: "var(--accent-purple-surface)",
+  color: "var(--accent-purple)",
+};
+
+const popupQuietActionButtonStyle = {
+  width: "100%",
+  marginTop: "16px",
+  padding: "12px 20px",
+  backgroundColor: "var(--surface-light)",
+  color: "var(--accent-purple)",
+  border: "1px solid var(--accent-purple-surface)",
+  borderRadius: "var(--radius-xs)",
+  cursor: "pointer",
+  fontSize: "14px",
+  fontWeight: "600",
+  transition: "background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease",
+};
+
 const renderVhcBadge = (job) => {
   if (!job.vhcRequired) {
     return (
@@ -1232,60 +1265,45 @@ export default function ViewJobCards() {
               <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
                 <button
                   onClick={() => goToJobCard(popupJob.jobNumber)}
-                  style={{
-                    flex: 1,
-                    padding: "12px 20px",
-                    backgroundColor: "var(--primary)",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "var(--radius-xs)",
-                    cursor: "pointer",
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    transition: "background-color 0.2s"
+                  style={popupPrimaryActionButtonStyle}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "var(--primary-dark)";
+                    e.currentTarget.style.borderColor = "var(--primary-dark)";
                   }}
-                  onMouseEnter={(e) => e.target.style.backgroundColor = "var(--primary-dark)"}
-                  onMouseLeave={(e) => e.target.style.backgroundColor = "var(--primary)"}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "var(--accent-purple)";
+                    e.currentTarget.style.borderColor = "var(--accent-purple)";
+                  }}
                 >
                   View Full Details
                 </button>
 
                 <button
                   onClick={() => router.push(`/job-cards/myjobs/${popupJob.jobNumber}?tab=vhc`)}
-                  style={{
-                    flex: 1,
-                    padding: "12px 20px",
-                    backgroundColor: "var(--primary)",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "var(--radius-xs)",
-                    cursor: "pointer",
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    transition: "background-color 0.2s"
+                  style={popupSecondaryActionButtonStyle}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "var(--surface-light)";
+                    e.currentTarget.style.borderColor = "var(--accent-purple)";
                   }}
-                  onMouseEnter={(e) => e.target.style.backgroundColor = "var(--primary)"}
-                  onMouseLeave={(e) => e.target.style.backgroundColor = "var(--primary)"}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "var(--accent-purple-surface)";
+                    e.currentTarget.style.borderColor = "var(--accent-purple)";
+                  }}
                 >
                   View VHC
                 </button>
 
                 <button
                   onClick={() => router.push(`/job-cards/${popupJob.jobNumber}/write-up`)}
-                  style={{
-                    flex: 1,
-                    padding: "12px 20px",
-                    backgroundColor: "var(--info)",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "var(--radius-xs)",
-                    cursor: "pointer",
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    transition: "background-color 0.2s"
+                  style={popupSecondaryActionButtonStyle}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "var(--surface-light)";
+                    e.currentTarget.style.borderColor = "var(--accent-purple)";
                   }}
-                  onMouseEnter={(e) => e.target.style.backgroundColor = "var(--info-dark)"}
-                  onMouseLeave={(e) => e.target.style.backgroundColor = "var(--info)"}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "var(--accent-purple-surface)";
+                    e.currentTarget.style.borderColor = "var(--accent-purple)";
+                  }}
                 >
                   Write-Up
                 </button>
@@ -1294,21 +1312,15 @@ export default function ViewJobCards() {
               {/* Close Button */}
               <button
                 onClick={() => setPopupJob(null)}
-                style={{
-                  width: "100%",
-                  marginTop: "16px",
-                  padding: "12px 20px",
-                  backgroundColor: "var(--surface)",
-                  color: "var(--grey-accent)",
-                  border: "none",
-                  borderRadius: "var(--radius-xs)",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  fontWeight: "600",
-                  transition: "background-color 0.2s"
+                style={popupQuietActionButtonStyle}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "var(--accent-purple-surface)";
+                  e.currentTarget.style.borderColor = "var(--accent-purple)";
                 }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = "var(--surface-light)"}
-                onMouseLeave={(e) => e.target.style.backgroundColor = "var(--surface)"}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "var(--surface-light)";
+                  e.currentTarget.style.borderColor = "var(--accent-purple-surface)";
+                }}
               >
                 Close
               </button>

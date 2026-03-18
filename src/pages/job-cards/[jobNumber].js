@@ -766,22 +766,6 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     []
   );
 
-  // Stable callbacks for WriteUpForm — avoids re-creating on every parent render
-  const handleWriteUpSaveSuccess = useCallback(() => {
-    fetchJobData({ silent: true, force: true });
-  }, [fetchJobData]);
-  const handleWriteUpCompletionChange = useCallback((nextStatus) => {
-    applyWriteUpOptimisticState({ completionStatus: nextStatus });
-  }, [applyWriteUpOptimisticState]);
-  const handleWriteUpRequestStatusesChange = useCallback((requestStatuses = []) => {
-    applyWriteUpOptimisticState({ requestStatuses });
-  }, [applyWriteUpOptimisticState]);
-  const handleWriteUpTasksSnapshotChange = useCallback((tasksSnapshot = []) => {
-    applyWriteUpOptimisticState({
-      tasks: Array.isArray(tasksSnapshot) ? tasksSnapshot : [],
-    });
-  }, [applyWriteUpOptimisticState]);
-
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -1354,6 +1338,22 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
   useEffect(() => {
     fetchJobData();
   }, [fetchJobData]);
+
+  // Stable callbacks for WriteUpForm — avoids re-creating on every parent render
+  const handleWriteUpSaveSuccess = useCallback(() => {
+    fetchJobData({ silent: true, force: true });
+  }, [fetchJobData]);
+  const handleWriteUpCompletionChange = useCallback((nextStatus) => {
+    applyWriteUpOptimisticState({ completionStatus: nextStatus });
+  }, [applyWriteUpOptimisticState]);
+  const handleWriteUpRequestStatusesChange = useCallback((requestStatuses = []) => {
+    applyWriteUpOptimisticState({ requestStatuses });
+  }, [applyWriteUpOptimisticState]);
+  const handleWriteUpTasksSnapshotChange = useCallback((tasksSnapshot = []) => {
+    applyWriteUpOptimisticState({
+      tasks: Array.isArray(tasksSnapshot) ? tasksSnapshot : [],
+    });
+  }, [applyWriteUpOptimisticState]);
 
   // Hydrate local state from SWR cache (prefetch or previous visit) for instant rendering
   useEffect(() => {
@@ -9027,6 +9027,8 @@ function ClockingTab({ jobData, canEdit }) {
   const [formSuccess, setFormSuccess] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [refreshSignal, setRefreshSignal] = useState(0);
+  const [techAbsences, setTechAbsences] = useState([]); // today's approved absences for tech roles
+  const [showTechsPopup, setShowTechsPopup] = useState(false); // staff-off style popup toggle
 
   const jobId = useMemo(() => {
     if (jobData?.id === undefined || jobData?.id === null) {
@@ -9074,6 +9076,69 @@ function ClockingTab({ jobData, canEdit }) {
       isMounted = false;
     };
   }, []);
+
+  // Fetch today's approved absences for tech roles (mirrors appointment page Staff Off section)
+  useEffect(() => {
+    let isMounted = true;
+    const loadTechAbsences = async () => {
+      try {
+        const todayIso = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+        const { data, error: queryError } = await supabase
+          .from("hr_absences")
+          .select(`
+            absence_id,
+            type,
+            start_date,
+            end_date,
+            approval_status,
+            user:user_id(
+              user_id,
+              first_name,
+              last_name,
+              email,
+              role
+            )
+          `)
+          .eq("approval_status", "Approved")
+          .lte("start_date", todayIso) // absence started on or before today
+          .gte("end_date", todayIso); // absence ends on or after today
+
+        if (queryError) throw queryError;
+
+        // Filter to tech-related roles only
+        const techRoles = new Set(["technician", "techs", "technician lead", "lead technician", "mot tester", "tester"]);
+        const filtered = (data || []).filter((absence) => {
+          const role = (absence?.user?.role || "").trim().toLowerCase();
+          return techRoles.has(role);
+        }).map((absence) => {
+          const user = absence.user || {};
+          const first = (user.first_name || "").trim();
+          const last = (user.last_name || "").trim();
+          return {
+            id: absence.absence_id,
+            userId: user.user_id || null,
+            name: [first, last].filter(Boolean).join(" ") || user.email || "Staff Member",
+            role: (user.role || "Staff").split(/\s+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" "),
+            type: absence.type || "Holiday",
+          };
+        });
+
+        if (isMounted) setTechAbsences(filtered);
+      } catch (err) {
+        console.error("Failed to load tech absences for clocking tab:", err);
+        if (isMounted) setTechAbsences([]);
+      }
+    };
+
+    loadTechAbsences();
+    return () => { isMounted = false; };
+  }, []);
+
+  // Build a set of userId values that are off today for quick lookup
+  const techsOffTodayIds = useMemo(
+    () => new Set(techAbsences.map((a) => a.userId).filter(Boolean)),
+    [techAbsences]
+  );
 
   const technicianOptions = useMemo(
     () =>
@@ -9302,11 +9367,13 @@ function ClockingTab({ jobData, canEdit }) {
 
   const infoPillStyle = {
     padding: "8px 14px",
-    borderRadius: "var(--control-radius)",
+    borderRadius: "var(--radius-xs)", // button-style rectangle instead of rounded bubble
     backgroundColor: "var(--info-surface)",
     color: "var(--info-dark)",
     fontWeight: 600,
     fontSize: "0.85rem",
+    border: "1px solid var(--info)", // subtle border to match button appearance
+    lineHeight: 1.4,
   };
 
   const disabledMessage =
@@ -9524,16 +9591,42 @@ function ClockingTab({ jobData, canEdit }) {
               Reset form
             </button>
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", justifyContent: "flex-end" }}>
-            <span style={infoPillStyle}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", justifyContent: "flex-end", alignItems: "center" }}>
+            <button
+              type="button"
+              onClick={() => setShowTechsPopup(true)}
+              style={{
+                ...infoPillStyle,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+            >
               {techniciansLoading ? "Loading technicians…" : `${technicianOptions.length} techs`}
-            </span>
+              {techAbsences.length > 0 && (
+                <span
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: "700",
+                    padding: "2px 8px",
+                    borderRadius: "var(--radius-xs)",
+                    backgroundColor: "var(--warning-surface)",
+                    color: "var(--warning)",
+                    border: "1px solid var(--warning)",
+                  }}
+                >
+                  {techAbsences.length} off
+                </span>
+              )}
+            </button>
             {normalizedJobNumber ? (
               <span
                 style={{
                   ...infoPillStyle,
                   backgroundColor: "var(--success-surface)",
                   color: "var(--success-dark)",
+                  border: "1px solid var(--success)", // match success theme border
                 }}
               >
                 Job #{normalizedJobNumber}
@@ -9554,6 +9647,118 @@ function ClockingTab({ jobData, canEdit }) {
             enableRequestClick={false}
             title="Clocking history"
           />
+        </div>
+      )}
+
+      {/* Techs / Staff Off popup — mirrors appointment page Staff Off section */}
+      {showTechsPopup && (
+        <div
+          style={{
+            ...popupOverlayStyles,
+            zIndex: 1200,
+          }}
+          onClick={() => setShowTechsPopup(false)}
+        >
+          <div
+            style={{
+              ...popupCardStyles,
+              maxWidth: "520px",
+              width: "100%",
+              maxHeight: "80vh",
+              overflowY: "auto",
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
+            }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3 style={{ marginTop: 0, marginBottom: 0, fontSize: "20px", fontWeight: "600" }}>
+              Technicians · {new Date().toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric" })}
+            </h3>
+            <p style={{ margin: 0, color: "var(--grey-accent)", fontSize: "14px" }}>
+              Showing all technicians{techAbsences.length > 0 ? ` — ${techAbsences.length} with approved time off today.` : "."}
+            </p>
+
+            {techniciansLoading ? (
+              <div style={{ color: "var(--grey-accent)", padding: "12px 0" }}>Loading technicians…</div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                {technicianOptions.map((tech) => {
+                  const absence = techAbsences.find((a) => a.userId === Number(tech.value));
+                  const isOff = Boolean(absence);
+                  return (
+                    <div
+                      key={tech.key}
+                      style={{
+                        padding: "12px",
+                        borderRadius: "var(--radius-xs)",
+                        backgroundColor: "var(--surface)",
+                        border: "none",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        gap: "8px",
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <div style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-secondary)" }}>
+                            {tech.label}
+                          </div>
+                          {isOff && (
+                            <span
+                              style={{
+                                fontSize: "11px",
+                                fontWeight: "600",
+                                padding: "2px 8px",
+                                borderRadius: "var(--radius-xs)",
+                                backgroundColor: "var(--warning-surface)",
+                                color: "var(--warning)",
+                              }}
+                            >
+                              On {absence.type}
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: "13px", color: "var(--grey-accent-dark)", marginTop: "4px" }}>
+                          {isOff ? absence.role : (tech.description || "Technician")}
+                        </div>
+                      </div>
+                      {isOff ? (
+                        <span style={{ fontSize: "12px", fontWeight: "600", color: "var(--warning)" }}>Unavailable</span>
+                      ) : (
+                        <span style={{ fontSize: "12px", fontWeight: "600", color: "var(--success)" }}>Available</span>
+                      )}
+                    </div>
+                  );
+                })}
+                {technicianOptions.length === 0 && (
+                  <div style={{ color: "var(--grey-accent)", padding: "8px 0" }}>No technicians found.</div>
+                )}
+              </div>
+            )}
+
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "4px" }}>
+              <button
+                type="button"
+                onClick={() => setShowTechsPopup(false)}
+                style={{
+                  padding: "10px 20px",
+                  borderRadius: "var(--radius-xs)",
+                  border: "none",
+                  backgroundColor: "var(--primary)",
+                  color: "var(--surface)",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  transition: "background-color 0.2s",
+                }}
+                onMouseEnter={(event) => (event.currentTarget.style.backgroundColor = "var(--danger)")}
+                onMouseLeave={(event) => (event.currentTarget.style.backgroundColor = "var(--primary)")}
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

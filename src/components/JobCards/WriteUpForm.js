@@ -19,6 +19,7 @@ import CheckSheetPopup from "@/components/popups/CheckSheetPopup";
 import { useTheme } from "@/styles/themeProvider";
 import ModalPortal from "@/components/popups/ModalPortal";
 import { revalidateAllJobs } from "@/lib/swr/mutations";
+import { TabGroup } from "@/components/tabAPI/TabGroup";
 
 // ✅ Helper ensures every paragraph is prefixed with a bullet dash
 const formatNoteValue = (value = "") => {
@@ -784,8 +785,8 @@ const checkboxStyle = {
 
 const causeRowStyle = {
   borderRadius: "var(--radius-sm)",
-  border: "1px solid var(--info)",
-  backgroundColor: "var(--layer-section-level-3)",
+  border: "1px solid var(--accent-purple)",
+  backgroundColor: "var(--accent-purple-surface)",
   padding: "12px",
   display: "flex",
   flexDirection: "column",
@@ -2386,6 +2387,13 @@ function WriteUpForm({
     { label: "Quality Control", field: "qualityControl", type: "input" },
     { label: "Additional Parts", field: "additionalParts", type: "textarea" },
   ];
+  const warrantyTabItems = useMemo(
+    () => [
+      { value: "writeup", label: "Write-Up" },
+      { value: "extras", label: "Warranty Extras" },
+    ],
+    []
+  );
 
   useEffect(() => {
     const aggregated = requestTasks
@@ -2552,53 +2560,12 @@ function WriteUpForm({
                 marginBottom: "12px",
               }}
             >
-              <div
-                style={{
-                  display: "inline-flex",
-                  gap: "6px",
-                  padding: "6px",
-                  borderRadius: "var(--radius-pill)",
-                  border: "none",
-                  backgroundColor: "var(--layer-section-level-3)",
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("writeup")}
-                  style={{
-                    borderRadius: "var(--radius-pill)",
-                    border: "1px solid transparent",
-                    padding: "8px 14px",
-                    fontSize: "12px",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    background: activeTab === "writeup" ? "var(--accent-purple)" : "transparent",
-                    color: activeTab === "writeup" ? "white" : "var(--text-primary)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.04em",
-                  }}
-                >
-                  Write-Up
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("extras")}
-                  style={{
-                    borderRadius: "var(--radius-pill)",
-                    border: "1px solid transparent",
-                    padding: "8px 14px",
-                    fontSize: "12px",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    background: activeTab === "extras" ? "var(--accent-purple)" : "transparent",
-                    color: activeTab === "extras" ? "white" : "var(--text-primary)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.04em",
-                  }}
-                >
-                  Warranty Extras
-                </button>
-              </div>
+              <TabGroup
+                items={warrantyTabItems}
+                value={activeTab}
+                onChange={setActiveTab}
+                ariaLabel="Warranty write-up sections"
+              />
             </div>
           )}
           {activeTab === "writeup" ? (
@@ -2685,7 +2652,13 @@ function WriteUpForm({
                 </div>
               </div>
               {isWarrantyJob && (
-                <div style={sectionBoxStyle}>
+                <div
+                  style={{
+                    ...sectionBoxStyle,
+                    backgroundColor: "var(--surface)",
+                    border: "1px solid var(--accent-purple-surface)",
+                  }}
+                >
                   <div style={sectionHeaderStyle}>
                   <div>
                     <div style={{ display: "flex", gap: "8px", alignItems: "baseline", flexWrap: "wrap" }}>
@@ -2840,11 +2813,11 @@ function WriteUpForm({
                 <div
                   key={fieldConfig.field}
                   style={{
-                    backgroundColor: "var(--layer-section-level-3)",
+                    backgroundColor: "var(--surface)",
                     padding: "16px",
                     borderRadius: "var(--radius-xs)",
                     border: "none",
-                                      display: "flex",
+                    display: "flex",
                     flexDirection: "column",
                     minHeight: "140px",
                     gap: "8px"
@@ -2857,7 +2830,12 @@ function WriteUpForm({
                       <textarea
                         value={writeUpData[fieldConfig.field]}
                         onChange={handleNoteChange(fieldConfig.field)}
-                        style={{ ...modernTextareaStyle, minHeight: "90px", flex: 1 }}
+                        style={{
+                          ...modernTextareaStyle,
+                          minHeight: "90px",
+                          flex: 1,
+                          backgroundColor: "var(--accent-purple-surface)",
+                        }}
                         onFocus={(e) => (e.currentTarget.style.borderColor = "var(--primary)")}
                         onBlur={(e) => (e.currentTarget.style.borderColor = "var(--info)")}
                       />
@@ -2866,7 +2844,11 @@ function WriteUpForm({
                         type="text"
                         value={writeUpData[fieldConfig.field]}
                         onChange={handleInputChange(fieldConfig.field)}
-                        style={{ ...modernInputStyle, flex: 1 }}
+                        style={{
+                          ...modernInputStyle,
+                          flex: 1,
+                          backgroundColor: "var(--accent-purple-surface)",
+                        }}
                         onFocus={(e) => (e.currentTarget.style.borderColor = "var(--primary)")}
                         onBlur={(e) => (e.currentTarget.style.borderColor = "var(--info)")}
                       />

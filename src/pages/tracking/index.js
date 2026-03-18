@@ -1355,7 +1355,7 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
   );
 };
 
-const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
+const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries = [] }) => {
   useBodyModalLock(true);
 
   const [form, setForm] = useState(() => ({
@@ -1365,6 +1365,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
     keyLocation: normalizeKeyLocationLabel(entry?.keyLocation) || KEY_LOCATIONS[0].label,
     status: entry?.status || "Waiting For Collection",
   }));
+  const [matchedExisting, setMatchedExisting] = useState(Boolean(entry)); // tracks whether form auto-filled from existing entry
   const vehicleLocationOptions = useMemo(
     () => ensureDropdownOption(CAR_LOCATION_OPTIONS, form.vehicleLocation),
     [form.vehicleLocation]
@@ -1374,8 +1375,49 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
     [form.keyLocation]
   );
 
+  // Auto-fill from existing entries when job number, reg, or customer matches
+  const tryAutoFill = useCallback(
+    (field, value) => {
+      if (!value || !value.trim() || entry) return null; // skip if already editing an entry
+      const trimmed = value.trim().toLowerCase();
+      const match = existingEntries.find((e) => {
+        if (field === "jobNumber") return e.jobNumber && e.jobNumber.trim().toLowerCase() === trimmed;
+        if (field === "reg") return e.reg && e.reg.trim().toLowerCase() === trimmed;
+        if (field === "customer") return e.customer && e.customer.trim().toLowerCase() === trimmed;
+        return false;
+      });
+      return match || null;
+    },
+    [existingEntries, entry]
+  );
+
   const handleChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+
+    // Auto-fill when typing in jobNumber, reg, or customer and a match is found
+    if (["jobNumber", "reg", "customer"].includes(field)) {
+      const match = tryAutoFill(field, value);
+      if (match) {
+        setForm((prev) => ({
+          ...prev,
+          [field]: value, // keep what user typed for this field
+          id: match.id || prev.id,
+          jobId: match.jobId || prev.jobId,
+          jobNumber: field === "jobNumber" ? value : (match.jobNumber || prev.jobNumber),
+          reg: field === "reg" ? value : (match.reg || prev.reg),
+          customer: field === "customer" ? value : (match.customer || prev.customer),
+          serviceType: match.serviceType || prev.serviceType,
+          colour: match.colour || prev.colour,
+          vehicleLocation: match.vehicleLocation || prev.vehicleLocation,
+          keyLocation: normalizeKeyLocationLabel(match.keyLocation) || prev.keyLocation,
+          status: match.status || prev.status,
+          notes: match.notes || prev.notes,
+        }));
+        setMatchedExisting(true); // switch heading to "Edit existing"
+      } else {
+        setMatchedExisting(false); // revert to "Log new" if no match
+      }
+    }
   };
 
   const handleSubmit = (event) => {
@@ -1414,7 +1456,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave }) => {
         }}
       >
         <div>
-          <h2 style={{ margin: 0 }}>{entry ? "Edit existing" : "Log new"}</h2>
+          <h2 style={{ margin: 0 }}>{entry || matchedExisting ? "Edit existing" : "Log new"}</h2>
         </div>
 
         <div
@@ -1554,6 +1596,16 @@ export default function TrackingDashboard() {
   const [oilLoading, setOilLoading] = useState(false);
   const [activeTopUpId, setActiveTopUpId] = useState(null);
   const [topUpValue, setTopUpValue] = useState("");
+  const [isMobileView, setIsMobileView] = useState(false); // iPhone-style single-column toggle
+
+  // Detect mobile viewport (≤480px) for iPhone-style single-column layout
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 480px)");
+    setIsMobileView(mediaQuery.matches);
+    const handler = (event) => setIsMobileView(event.matches);
+    mediaQuery.addEventListener("change", handler);
+    return () => mediaQuery.removeEventListener("change", handler);
+  }, []);
 
   const loadEntries = useCallback(async () => {
     setLoading(true);
@@ -2100,9 +2152,9 @@ export default function TrackingDashboard() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(2, 1fr)",
+          gridTemplateColumns: isMobileView ? "1fr" : "repeat(2, 1fr)", // single column on iPhone
           gap: "12px",
-          maxHeight: "calc(4 * 180px + 3 * 12px)",
+          maxHeight: isMobileView ? "none" : "calc(4 * 180px + 3 * 12px)", // no max height on mobile
           overflowY: "auto",
           paddingRight: "4px",
         }}
@@ -2611,6 +2663,7 @@ export default function TrackingDashboard() {
           entry={entryModal.entry}
           onClose={closeEntryModal}
           onSave={handleSave}
+          existingEntries={entries}
         />
       )}
 

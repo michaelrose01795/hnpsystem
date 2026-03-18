@@ -137,6 +137,12 @@ const compactFieldWrapStyle = {
   width: "fit-content",
 };
 
+const wideCompactFieldWrapStyle = {
+  ...compactFieldWrapStyle,
+  width: "320px",
+  minWidth: "320px",
+};
+
 const primaryButtonStyle = (disabled = false) => ({
   padding: "12px 20px",
   borderRadius: "var(--radius-sm)",
@@ -1036,7 +1042,7 @@ function GoodsInPage() {
                   </DropdownField>
                 </div>
               </div>
-              <div style={compactFieldWrapStyle}>
+              <div style={wideCompactFieldWrapStyle}>
                 <label style={labelStyle}>Franchise</label>
                 <div className="compact-dropdown">
                   <DropdownField

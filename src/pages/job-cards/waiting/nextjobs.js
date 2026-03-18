@@ -110,6 +110,38 @@ const formatCustomerStatus = (value) => {
   return value;
 };
 
+const jobDetailsPopupPrimaryButtonStyle = {
+  backgroundColor: "var(--accent-purple)",
+  color: "var(--text-inverse)",
+  padding: "12px 16px",
+  borderRadius: "var(--radius-xs)",
+  cursor: "pointer",
+  border: "1px solid var(--accent-purple)",
+  fontSize: "14px",
+  fontWeight: "600",
+  transition: "background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease",
+};
+
+const jobDetailsPopupSecondaryButtonStyle = {
+  ...jobDetailsPopupPrimaryButtonStyle,
+  backgroundColor: "var(--accent-purple-surface)",
+  color: "var(--accent-purple)",
+};
+
+const jobDetailsPopupWarningButtonStyle = {
+  ...jobDetailsPopupPrimaryButtonStyle,
+  backgroundColor: "var(--warning-surface)",
+  color: "var(--warning-dark)",
+  border: "1px solid var(--warning)",
+};
+
+const jobDetailsPopupQuietButtonStyle = {
+  ...jobDetailsPopupPrimaryButtonStyle,
+  backgroundColor: "var(--surface-light)",
+  color: "var(--accent-purple)",
+  border: "1px solid var(--accent-purple-surface)",
+};
+
 const getJobRequestsCountFromPayload = (payload) => {
   if (!payload) return 0;
   if (Array.isArray(payload)) return payload.length;
@@ -1936,18 +1968,24 @@ export default function NextJobsPage() {
                   position: "absolute",
                   top: "20px",
                   right: "20px",
-                  backgroundColor: "var(--danger)",
-                  color: "white",
+                  backgroundColor: "var(--accent-purple-surface)",
+                  color: "var(--accent-purple)",
                   padding: "8px 16px",
                   borderRadius: "var(--radius-xs)",
                   cursor: "pointer",
-                  border: "none",
+                  border: "1px solid var(--accent-purple)",
                   fontSize: "13px",
                   fontWeight: "600",
-                  transition: "background-color 0.2s",
+                  transition: "background-color 0.2s ease, border-color 0.2s ease",
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--danger-hover)"}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "var(--danger)"}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "var(--surface-light)";
+                  e.currentTarget.style.borderColor = "var(--accent-purple)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "var(--accent-purple-surface)";
+                  e.currentTarget.style.borderColor = "var(--accent-purple)";
+                }}
               >
                 Edit Job
               </button>
@@ -2014,76 +2052,60 @@ export default function NextJobsPage() {
                 }}
               >
                 <button
-                  style={{
-                    backgroundColor: "var(--grey-accent)",
-                    color: "white",
-                    padding: "12px 16px",
-                    borderRadius: "var(--radius-xs)",
-                    cursor: "pointer",
-                    border: "none",
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    transition: "background-color 0.2s"
-                  }}
+                  style={jobDetailsPopupSecondaryButtonStyle}
                   onClick={handleOpenAssignPopup} // Open assign popup
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--grey-accent)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--grey-accent)")}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "var(--surface-light)";
+                    e.currentTarget.style.borderColor = "var(--accent-purple)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "var(--accent-purple-surface)";
+                    e.currentTarget.style.borderColor = "var(--accent-purple)";
+                  }}
                 >
                   Assign Tech
                 </button>
                 <button
-                  style={{
-                    backgroundColor: "var(--accent-purple)",
-                    color: "white",
-                    padding: "12px 16px",
-                    borderRadius: "var(--radius-xs)",
-                    cursor: "pointer",
-                    border: "none",
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    transition: "background-color 0.2s"
-                  }}
+                  style={jobDetailsPopupPrimaryButtonStyle}
                   onClick={handleViewSelectedJobCard}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--accent-purple)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--accent-purple)")}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "var(--primary-dark)";
+                    e.currentTarget.style.borderColor = "var(--primary-dark)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "var(--accent-purple)";
+                    e.currentTarget.style.borderColor = "var(--accent-purple)";
+                  }}
                 >
                   View Job Card
                 </button>
                 {selectedJob.assignedTech && (
                   <button
-                    style={{
-                      backgroundColor: "var(--warning)",
-                      color: "white",
-                      padding: "12px 16px",
-                      borderRadius: "var(--radius-xs)",
-                      cursor: "pointer",
-                      border: "none",
-                      fontSize: "14px",
-                      fontWeight: "600",
-                      transition: "background-color 0.2s"
-                    }}
+                    style={jobDetailsPopupWarningButtonStyle}
                     onClick={unassignTechFromJob} // Unassign technician
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--warning-hover)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--warning)")}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "var(--warning)";
+                      e.currentTarget.style.color = "var(--text-inverse)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "var(--warning-surface)";
+                      e.currentTarget.style.color = "var(--warning-dark)";
+                    }}
                   >
                     Unassign
                   </button>
                 )}
                 <button
-                  style={{
-                    backgroundColor: "var(--primary)",
-                    color: "white",
-                    padding: "12px 16px",
-                    borderRadius: "var(--radius-xs)",
-                    cursor: "pointer",
-                    border: "none",
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    transition: "background-color 0.2s"
-                  }}
+                  style={jobDetailsPopupQuietButtonStyle}
                   onClick={handleCloseJobDetails} // Close popup
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--danger-dark)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--primary)")}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "var(--accent-purple-surface)";
+                    e.currentTarget.style.borderColor = "var(--accent-purple)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "var(--surface-light)";
+                    e.currentTarget.style.borderColor = "var(--accent-purple-surface)";
+                  }}
                 >
                   Close
                 </button>

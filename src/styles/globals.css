@@ -3298,6 +3298,56 @@ input[type="search"]::-webkit-search-results-decoration {
   }
 }
 
+/* iPhone / phone vertical view — full-width stacked card rows */
+@media (max-width: 480px) {
+  .myjobs-header {
+    display: none !important;
+  }
+
+  .myjobs-row {
+    flex-wrap: wrap !important;
+    row-gap: 4px !important;
+    padding: 10px 12px !important;
+  }
+
+  .myjobs-cell {
+    min-width: 0 !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+  }
+
+  /* Status spans full width as a header badge */
+  .myjobs-status {
+    flex: 1 1 100% !important;
+    min-width: 0 !important;
+    text-align: left !important;
+    max-width: fit-content !important;
+  }
+
+  /* Job number and Reg share a row — each takes half */
+  .myjobs-jobnumber,
+  .myjobs-reg {
+    flex: 1 1 calc(50% - 6px) !important;
+    min-width: 0 !important;
+  }
+
+  /* Customer, Make/Model, Type each get full width */
+  .myjobs-customer,
+  .myjobs-make,
+  .myjobs-type,
+  .myjobs-date {
+    flex: 1 1 100% !important;
+    min-width: 0 !important;
+  }
+
+  .myjobs-clock,
+  .myjobs-writeup {
+    flex: 0 1 calc(50% - 6px) !important;
+    min-width: 0 !important;
+  }
+}
+
 /* ===========================
    PRINT STYLES – Invoice Only
    =========================== */

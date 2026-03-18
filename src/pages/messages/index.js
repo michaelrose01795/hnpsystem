@@ -840,6 +840,24 @@ function MessagesPage() {
   const [leaveDeclineModal, setLeaveDeclineModal] = useState({ open: false, message: null });
   const [leaveDeclineReason, setLeaveDeclineReason] = useState("");
 
+  const [isMobileView, setIsMobileView] = useState(false); // iPhone-style single-panel toggle
+
+  // Detect mobile viewport (≤480px) for iPhone-style message navigation
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 480px)");
+    setIsMobileView(mediaQuery.matches);
+    const handler = (event) => setIsMobileView(event.matches);
+    mediaQuery.addEventListener("change", handler);
+    return () => mediaQuery.removeEventListener("change", handler);
+  }, []);
+
+  // Helper: go back to thread list on mobile
+  const handleMobileBack = useCallback(() => {
+    setActiveThreadId(null); // deselect thread to show list
+    setActiveSystemView(false); // exit system view too
+    setMessages([]); // clear messages panel
+  }, []);
+
   const scrollerRef = useRef(null);
   const unreadMarkerTimersRef = useRef(new Map());
   const activeUnreadMarkerKeyRef = useRef(null);
@@ -2012,13 +2030,19 @@ function MessagesPage() {
         <div
           style={{
             flex: 1,
-            display: "grid",
-            gridTemplateColumns: "360px minmax(0, 1fr)",
-            gap: "20px",
-            minHeight: "520px",
+            display: isMobileView ? "flex" : "grid", // flex on mobile for single-panel view
+            flexDirection: isMobileView ? "column" : undefined,
+            gridTemplateColumns: isMobileView ? undefined : "360px minmax(0, 1fr)",
+            gap: isMobileView ? "0px" : "20px",
+            minHeight: isMobileView ? "100%" : "520px",
           }}
         >
-          <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+          <div style={{
+            display: isMobileView && (activeThreadId || activeSystemView) ? "none" : "flex", // hide thread list on mobile when viewing a conversation
+            flexDirection: "column",
+            gap: "18px",
+            ...(isMobileView ? { flex: 1, minHeight: 0 } : {}),
+          }}>
             <div style={{ ...cardStyle, flex: 1, minHeight: 0 }}>
               <SectionTitle
                 title={threadSelectionMode ? "Selected" : ""}
@@ -2239,7 +2263,7 @@ function MessagesPage() {
                 style={{
                   flex: 1,
                   minHeight: 0,
-                  maxHeight: "700px",
+                  maxHeight: isMobileView ? "none" : "700px", // fill available space on mobile
                   overflowY: "auto",
                   display: "flex",
                   flexDirection: "column",
@@ -2389,7 +2413,34 @@ function MessagesPage() {
             </div>
           </div>
 
-          <div style={{ ...cardStyle, flex: 1, minHeight: 0 }}>
+          <div style={{
+            ...cardStyle,
+            flex: 1,
+            minHeight: 0,
+            display: isMobileView && !activeThreadId && !activeSystemView ? "none" : "flex", // hide conversation panel on mobile when no thread selected
+          }}>
+            {/* Mobile back button — iPhone-style navigation */}
+            {isMobileView && (activeThreadId || activeSystemView) && (
+              <button
+                type="button"
+                onClick={handleMobileBack}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "8px 0",
+                  border: "none",
+                  background: "transparent",
+                  color: palette.accent,
+                  fontWeight: 600,
+                  fontSize: "var(--text-body)",
+                  cursor: "pointer",
+                  marginBottom: "4px",
+                }}
+              >
+                <span style={{ fontSize: "var(--text-h4)", lineHeight: 1 }}>←</span> Back
+              </button>
+            )}
             {activeSystemView ? (
               <>
                 <div
@@ -2547,14 +2598,14 @@ function MessagesPage() {
                 <div
                   ref={scrollerRef}
                   style={{
-                    marginTop: "16px",
+                    marginTop: isMobileView ? "8px" : "16px",
                     flex: 1,
                     minHeight: 0,
-                    maxHeight: "540px",
+                    maxHeight: isMobileView ? "none" : "540px", // fill available space on mobile
                     overflowY: "auto",
                     display: "flex",
                     flexDirection: "column",
-                    gap: "18px",
+                    gap: isMobileView ? "12px" : "18px",
                     paddingRight: "6px",
                   }}
                 >
