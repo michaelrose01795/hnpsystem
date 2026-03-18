@@ -67,7 +67,8 @@
       "Bash(winget install:*)",
       "Read(//f/hnpsystem/**)",
       "Read(//tmp/**)",
-      "Bash(find /f/hnpsystem/src/components -type f \\\\\\(-name *.js -o -name *.jsx -o -name *.ts -o -name *.tsx \\\\\\))"
+      "Bash(find /f/hnpsystem/src/components -type f \\\\\\(-name *.js -o -name *.jsx -o -name *.ts -o -name *.tsx \\\\\\))",
+      "Bash(echo \"exit: $?\")"
     ],
     "deny": [],
     "ask": []

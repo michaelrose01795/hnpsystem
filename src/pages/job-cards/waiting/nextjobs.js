@@ -1024,6 +1024,9 @@ export default function NextJobsPage() {
         return (
           <div
             key={panelKey}
+            data-dev-section-key={`nextjobs-panel-${panelKey}`}
+            data-dev-section-type="content-card"
+            data-dev-background-token="surface"
             style={{
               background: "var(--surface)",
               border: dragOverTarget === assignee.name ? "3px solid var(--primary)" : "1px solid var(--surface-light)",
@@ -1056,6 +1059,10 @@ export default function NextJobsPage() {
         {assignee.name} ({assignee.jobs.length})
       </p>
       <div
+        data-dev-section-key={`nextjobs-clocking-${panelKey}`}
+        data-dev-section-parent={`nextjobs-panel-${panelKey}`}
+        data-dev-section-type="stat-card"
+        data-dev-background-token={currentClocking ? "success-surface" : "layer-section-level-1"}
         style={{
           marginBottom: "12px",
           padding: "12px",
@@ -1124,13 +1131,17 @@ export default function NextJobsPage() {
           </p>
         )}
       </div>
-      <div style={{
-        flex: 1,
-        minHeight: JOB_LIST_MAX_HEIGHT_PX,
-        maxHeight: JOB_LIST_MAX_HEIGHT_PX,
-        overflowY: shouldScroll ? "auto" : "hidden",
-        paddingRight: shouldScroll ? "8px" : "4px"
-      }}>
+      <div
+        data-dev-section-key={`nextjobs-joblist-${panelKey}`}
+        data-dev-section-parent={`nextjobs-panel-${panelKey}`}
+        data-dev-section-type="section-shell"
+        style={{
+          flex: 1,
+          minHeight: JOB_LIST_MAX_HEIGHT_PX,
+          maxHeight: JOB_LIST_MAX_HEIGHT_PX,
+          overflowY: shouldScroll ? "auto" : "hidden",
+          paddingRight: shouldScroll ? "8px" : "4px"
+        }}>
             {assignee.jobs.length === 0 ? (
               <p style={{
             color: "var(--text-primary)",
@@ -1169,20 +1180,20 @@ export default function NextJobsPage() {
                   padding: "10px",
                   marginBottom: "8px",
                   backgroundColor:
-                    draggingJob?.jobNumber === job.jobNumber ? "var(--surface-light)" : "var(--surface)",
+                    draggingJob?.jobNumber === job.jobNumber ? "var(--accent-layer-3)" : "var(--accent-purple-surface)",
                   cursor: hasAccess ? "grab" : "pointer",
                   transition: "all 0.2s",
                   opacity: draggingJob?.jobNumber === job.jobNumber ? 0.5 : 1
                 }}
                 onMouseEnter={(e) => {
                   if (draggingJob?.jobNumber !== job.jobNumber) {
-                  e.currentTarget.style.backgroundColor = "var(--surface-light)";
-                    e.currentTarget.style.boxShadow = "0 2px 6px rgba(var(--primary-rgb),0.12)";
+                  e.currentTarget.style.backgroundColor = "var(--accent-layer-3)";
+                    e.currentTarget.style.boxShadow = "0 2px 6px rgba(var(--accent-purple-rgb),0.12)";
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (draggingJob?.jobNumber !== job.jobNumber) {
-                    e.currentTarget.style.backgroundColor = "var(--surface)";
+                    e.currentTarget.style.backgroundColor = "var(--accent-purple-surface)";
                     e.currentTarget.style.boxShadow = "none";
                   }
                 }}
@@ -1285,16 +1296,25 @@ export default function NextJobsPage() {
   // ✅ Page layout
   return (
     <Layout>
-      <div style={{ 
-        minHeight: "100vh", 
-        display: "flex", 
-        flexDirection: "column", 
-        padding: "8px 16px",
-        gap: "12px"
-      }}>
+      <div
+        data-dev-section-key="nextjobs-page-shell"
+        data-dev-shell="1"
+        data-dev-section-type="page-shell"
+        data-dev-background-token="none"
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          padding: "8px 16px",
+          gap: "12px"
+        }}>
         
         {/* ✅ Outstanding Jobs Section with Drop Zone */}
             <div
+              data-dev-section-key="nextjobs-outstanding"
+              data-dev-section-parent="nextjobs-page-shell"
+              data-dev-section-type="content-card"
+              data-dev-background-token="layer-section-level-3"
               style={{
                 marginBottom: "12px",
                 background: "var(--layer-section-level-3)",
@@ -1315,15 +1335,19 @@ export default function NextJobsPage() {
           onDragLeave={handleDragLeave}
           onDrop={handleDropOnOutstanding}
         >
-          <div style={{ 
-            display: "flex", 
-            justifyContent: "space-between", 
-            alignItems: "center", 
-            marginBottom: "12px" 
-          }}>
-            <h2 style={{ 
-              fontSize: "18px", 
-              fontWeight: "600", 
+          <div
+            data-dev-section-key="nextjobs-outstanding-header"
+            data-dev-section-parent="nextjobs-outstanding"
+            data-dev-section-type="toolbar"
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "12px"
+            }}>
+            <h2 style={{
+              fontSize: "18px",
+              fontWeight: "600",
               color: "var(--accent-purple)",
               margin: 0
             }}>
@@ -1341,7 +1365,11 @@ export default function NextJobsPage() {
             }}
           />
 
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          <div
+            data-dev-section-key="nextjobs-outstanding-scroll"
+            data-dev-section-parent="nextjobs-outstanding"
+            data-dev-section-type="section-shell"
+            style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
             <div
               style={{
                 flex: 1,
@@ -1479,29 +1507,44 @@ export default function NextJobsPage() {
         </div>
 
         {/* ✅ Technicians Grid Section */}
-            <div style={{
-              flex: "1 0 auto",
-              borderRadius: "var(--radius-xs)",
-              border: "none",
-              background: "var(--layer-section-level-3)",
-              padding: "24px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "24px"
-            }}>
+            <div
+              data-dev-section-key="nextjobs-technicians"
+              data-dev-section-parent="nextjobs-page-shell"
+              data-dev-shell="1"
+              data-dev-section-type="content-card"
+              data-dev-background-token="layer-section-level-3"
+              style={{
+                flex: "1 0 auto",
+                borderRadius: "var(--radius-xs)",
+                border: "none",
+                background: "var(--layer-section-level-3)",
+                padding: "24px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "24px"
+              }}>
           
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-            gridAutoRows: PANEL_HEIGHT_PX,
-            gap: "16px",
-            width: "100%"
-          }}>
+          <div
+            data-dev-section-key="nextjobs-tech-grid"
+            data-dev-section-parent="nextjobs-technicians"
+            data-dev-section-type="data-table"
+            data-dev-width-mode="full"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              gridAutoRows: PANEL_HEIGHT_PX,
+              gap: "16px",
+              width: "100%"
+            }}>
             {assignedJobs.slice(0, 6).map(renderAssigneePanel)}
           </div>
 
               {motPanelList.length > 0 && (
-                <div>
+                <div
+                  data-dev-section-key="nextjobs-mot-section"
+                  data-dev-section-parent="nextjobs-technicians"
+                  data-dev-section-type="section-shell"
+                >
                   <h3 style={{
                     margin: "0 0 12px 0",
                     fontSize: "18px",
@@ -1510,12 +1553,17 @@ export default function NextJobsPage() {
                   }}>
                     MOT Testers
                   </h3>
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                gridAutoRows: PANEL_HEIGHT_PX,
-                gap: "16px"
-              }}>
+              <div
+                data-dev-section-key="nextjobs-mot-grid"
+                data-dev-section-parent="nextjobs-mot-section"
+                data-dev-section-type="data-table"
+                data-dev-width-mode="full"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                  gridAutoRows: PANEL_HEIGHT_PX,
+                  gap: "16px"
+                }}>
                 {assignedMotJobs.slice(0, 2).map(renderAssigneePanel)}
               </div>
             </div>
@@ -1527,6 +1575,9 @@ export default function NextJobsPage() {
           <div className="popup-backdrop" onClick={handleCloseJobDetails}>
             <div
               className="popup-card"
+              data-dev-section-key="nextjobs-job-details-popup"
+              data-dev-section-type="content-card"
+              data-dev-background-token="surface"
               style={{
                 borderRadius: "var(--radius-xl)",
                 width: "100%",
@@ -1712,6 +1763,9 @@ export default function NextJobsPage() {
             onClick={() => setAssignPopup(false)} // Close when clicking overlay
           >
             <div
+              data-dev-section-key="nextjobs-assign-popup"
+              data-dev-section-type="content-card"
+              data-dev-background-token="surface"
               style={{
                 ...popupCardStyles,
                 width: "min(450px, 90%)",

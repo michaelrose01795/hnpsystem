@@ -19,6 +19,7 @@ import {
 import { autoSetCheckedInStatus } from "@/lib/services/jobStatusService"; // Shared status transition helper
 import supabase from "@/lib/supabaseClient"; // Supabase client for live tech availability
 import { useConfirmation } from "@/context/ConfirmationContext";
+import { parseLeaveRequestNotes } from "@/lib/hr/leaveRequests";
 
 const TECH_AVAILABILITY_TABLE = "job_clocking"; // Source table for tech availability data
 
@@ -73,6 +74,19 @@ const parseHoursValue = (value) => {
   return Number.isFinite(numeric) ? numeric : null;
 };
 
+const getDailyHoursFromWeeklyContracted = (value) => {
+  const weeklyHours = parseHoursValue(value);
+  if (weeklyHours === null || weeklyHours <= 0) return null;
+  return parseFloat((weeklyHours / 5).toFixed(2));
+};
+
+const getTechDailyHours = (source, fallbackHours = DEFAULT_RETAIL_TECH_HOURS) => {
+  const contractedDailyHours = getDailyHoursFromWeeklyContracted(
+    source?.contracted_hours ?? source?.contractedHours
+  );
+  return contractedDailyHours ?? fallbackHours;
+};
+
 const deriveAvailableHours = (entry) => {
   if (!entry || typeof entry !== "object") {
     return null;
@@ -95,6 +109,23 @@ const deriveAvailableHours = (entry) => {
   }
 
   return null;
+};
+
+const normalizeStatusValue = (value) => String(value || "").trim().toLowerCase();
+
+const isJobActuallyCheckedIn = (job) => {
+  if (!job) return false;
+  if (job.checked_in_at || job.checkedInAt) return true;
+
+  const appointmentStatus = normalizeStatusValue(job.appointment?.status);
+  const jobStatus = normalizeStatusValue(job.status);
+
+  return (
+    appointmentStatus === "checked_in" ||
+    appointmentStatus === "checked in" ||
+    jobStatus === "checked_in" ||
+    jobStatus === "checked in"
+  );
 };
 
 const getCapacityStatus = (booked, available) => {
@@ -223,6 +254,19 @@ const normalizeKey = (value) => {
   return String(value);
 };
 
+const getAbsenceUnavailableHours = (absence, currentDate) => {
+  const noteData = parseLeaveRequestNotes(absence?.notes);
+  const currentDateKey = toMidnightDate(currentDate)?.getTime();
+  const absenceEndKey = toMidnightDate(absence?.end_date)?.getTime();
+  if (!currentDateKey || !absenceEndKey) return null;
+
+  const dailyHours = getTechDailyHours(absence?.user);
+
+  return noteData.halfDay && noteData.halfDay !== "None" && currentDateKey === absenceEndKey
+    ? dailyHours / 2
+    : dailyHours;
+};
+
 const buildStaffAbsenceMap = (records = [], calendarStart, calendarEnd) => {
   const map = {};
   const startBoundary = toMidnightDate(calendarStart);
@@ -256,12 +300,16 @@ const buildStaffAbsenceMap = (records = [], calendarStart, calendarEnd) => {
     };
 
     for (let currentMs = effectiveStartMs; currentMs <= effectiveEndMs; currentMs += oneDayMs) {
-      const dateKey = new Date(currentMs).toDateString();
+      const currentDate = new Date(currentMs);
+      const dateKey = currentDate.toDateString();
       if (!map[dateKey]) {
         map[dateKey] = [];
       }
 
-      map[dateKey].push(entryBase);
+      map[dateKey].push({
+        ...entryBase,
+        unavailableHours: getAbsenceUnavailableHours(absence, currentDate),
+      });
     }
   });
 
@@ -302,7 +350,7 @@ const buildTechAvailabilityMap = (records = []) => {
     );
 
     if (!techRecord) {
-      techRecord = {
+        techRecord = {
         techId,
         name: normalizedName,
         totalHours: 0,
@@ -310,7 +358,7 @@ const buildTechAvailabilityMap = (records = []) => {
         latestClockIn: entry.clock_in,
         latestClockOut: entry.clock_out || null,
         currentlyClockedIn: !entry.clock_out,
-        availableHours: deriveAvailableHours(entry) ?? DEFAULT_RETAIL_TECH_HOURS,
+        availableHours: deriveAvailableHours(entry) ?? getTechDailyHours(entry.user),
       };
       availability[dateKey].techs.push(techRecord);
     }
@@ -387,6 +435,7 @@ export default function Appointments() {
   const [activeDayTab, setActiveDayTab] = useState("jobs");
   const [techHoursOverrides, setTechHoursOverrides] = useState({});
   const [techUsers, setTechUsers] = useState([]);
+  const [isCompactMobile, setIsCompactMobile] = useState(false);
 
   const techUserNameMap = useMemo(() => {
     const map = new Map();
@@ -396,6 +445,18 @@ export default function Appointments() {
     });
     return map;
   }, [techUsers]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const updateViewportFlags = () => {
+      setIsCompactMobile(window.innerWidth <= 640);
+    };
+
+    updateViewportFlags();
+    window.addEventListener("resize", updateViewportFlags);
+    return () => window.removeEventListener("resize", updateViewportFlags);
+  }, []);
 
   // ---------------- Fetch Jobs ----------------
   const fetchJobs = async () => {
@@ -508,7 +569,8 @@ export default function Appointments() {
           user:user_id(
             user_id,
             first_name,
-            last_name
+            last_name,
+            contracted_hours
           )
         `)
         .gte("clock_in", `${startDate}T00:00:00.000Z`)
@@ -530,7 +592,7 @@ export default function Appointments() {
     try {
       const { data, error } = await supabase
         .from("users")
-        .select("user_id, first_name, last_name, email, role")
+        .select("user_id, first_name, last_name, email, role, contracted_hours")
         .in("role", TECH_USER_ROLES)
         .order("first_name", { ascending: true });
 
@@ -556,13 +618,15 @@ export default function Appointments() {
           type,
           start_date,
           end_date,
+          notes,
           approval_status,
           user:user_id(
             user_id,
             first_name,
             last_name,
             email,
-            role
+            role,
+            contracted_hours
           )
         `)
         .eq("approval_status", "Approved")
@@ -885,6 +949,7 @@ export default function Appointments() {
       return {
         dateKey: "",
         techs: [],
+        availableTechs: DEFAULT_RETAIL_TECH_COUNT,
         totalTechs: DEFAULT_RETAIL_TECH_COUNT,
         totalAvailableHours: DEFAULT_RETAIL_TECH_COUNT * DEFAULT_RETAIL_TECH_HOURS,
       };
@@ -908,15 +973,31 @@ export default function Appointments() {
       const techKey = normalizeKey(techId);
       const overrideHours = parseHoursValue(overridesForDay[techId]);
       const baseAvailable = parseHoursValue(tech.availableHours);
+      const defaultDailyHours =
+        getTechDailyHours(
+          roster.find((user) => normalizeKey(user.user_id) === techKey) || tech.user || tech
+        );
       const staffEntry = staffOffByUserId.get(techKey);
       const isOnHoliday = Boolean(staffEntry);
+      const unavailableHours = parseHoursValue(staffEntry?.unavailableHours);
+      const adjustedAvailableHours =
+        unavailableHours === null
+          ? isOnHoliday
+            ? 0
+            : baseAvailable ?? defaultDailyHours
+          : Math.max(0, (baseAvailable ?? defaultDailyHours) - unavailableHours);
       const availableHours =
-        overrideHours ?? (isOnHoliday ? 0 : baseAvailable ?? DEFAULT_RETAIL_TECH_HOURS);
+        overrideHours ?? adjustedAvailableHours;
       return {
         ...tech,
         techId,
         name: techUserNameMap.get(techKey) || tech.name || `Tech #${techId}`,
         availableHours,
+        contractedHours:
+          tech.contractedHours ??
+          tech.contracted_hours ??
+          roster.find((user) => normalizeKey(user.user_id) === techKey)?.contracted_hours ??
+          null,
         isOnHoliday,
         absenceType: staffEntry?.type || null,
       };
@@ -930,12 +1011,21 @@ export default function Appointments() {
             const techId = user.user_id;
             const techKey = normalizeKey(techId);
             const overrideHours = parseHoursValue(overridesForDay[techId]);
+            const defaultDailyHours = getTechDailyHours(user);
             const staffEntry = staffOffByUserId.get(techKey);
             const isOnHoliday = Boolean(staffEntry);
+            const unavailableHours = parseHoursValue(staffEntry?.unavailableHours);
+            const adjustedAvailableHours =
+              unavailableHours === null
+                ? isOnHoliday
+                  ? 0
+                  : defaultDailyHours
+                : Math.max(0, defaultDailyHours - unavailableHours);
             return {
               techId,
               name: techUserNameMap.get(techKey) || formatStaffName(user),
-              availableHours: overrideHours ?? (isOnHoliday ? 0 : DEFAULT_RETAIL_TECH_HOURS),
+              availableHours: overrideHours ?? adjustedAvailableHours,
+              contractedHours: user.contracted_hours ?? null,
               totalHours: 0,
               segments: [],
               currentlyClockedIn: false,
@@ -952,6 +1042,7 @@ export default function Appointments() {
             techId: placeholderId,
             name: DEFAULT_RETAIL_TECH_NAMES[idx] || `Retail Tech ${idx + 1}`,
             availableHours: overrideHours ?? DEFAULT_RETAIL_TECH_HOURS,
+            contractedHours: null,
             totalHours: 0,
             segments: [],
             currentlyClockedIn: false,
@@ -963,6 +1054,9 @@ export default function Appointments() {
     const finalTechs = [...normalizedTechs, ...placeholders].sort((a, b) =>
       (a.name || "").localeCompare(b.name || "")
     );
+    const availableTechs = finalTechs.filter(
+      (tech) => (parseHoursValue(tech.availableHours) ?? 0) > 0
+    ).length;
     const totalAvailableHours = finalTechs.reduce(
       (sum, tech) => sum + (parseHoursValue(tech.availableHours) ?? 0),
       0
@@ -971,6 +1065,7 @@ export default function Appointments() {
     return {
       dateKey,
       techs: finalTechs,
+      availableTechs,
       totalTechs: Math.max(finalTechs.length, expectedTechCount),
       totalAvailableHours,
     };
@@ -1119,12 +1214,11 @@ export default function Appointments() {
   const getCheckinStatsForDate = (date) => {
     const targetDateKey = date.toISOString().split("T")[0];
     const appointmentsForDate = jobs.filter((job) => job.appointment?.date === targetDateKey);
-    const normalizedStatus = (job) => (job.status || "").trim().toLowerCase();
     const total = appointmentsForDate.length;
-    const checkedIn = appointmentsForDate.filter((job) => normalizedStatus(job) !== "booked").length;
+    const checkedIn = appointmentsForDate.filter((job) => isJobActuallyCheckedIn(job)).length;
     const awaiting =
       isSameDate(date, new Date()) ?
-        appointmentsForDate.filter((job) => normalizedStatus(job) === "booked").length
+        appointmentsForDate.filter((job) => !isJobActuallyCheckedIn(job)).length
         : 0;
     return { total, checkedIn, awaiting };
   };
@@ -1271,6 +1365,12 @@ export default function Appointments() {
               onClear={() => setSearchQuery("")}
               placeholder="Search by Job #, Name, Reg, or Vehicle..."
               disabled={isLoading}
+              style={{
+                width: "100%",
+                minHeight: "var(--control-height-sm)",
+                padding: "var(--control-padding-sm)",
+                borderRadius: "var(--control-radius-sm)",
+              }}
             />
           </div>
             <input
@@ -1389,7 +1489,7 @@ export default function Appointments() {
                 const dayTechSummary = getDayTechSummary(date);
                 const bookedHours = parseFloat(counts.totalHours) || 0;
                 const totalAvailableHours =
-                  dayTechSummary.totalAvailableHours || DEFAULT_RETAIL_TECH_COUNT * DEFAULT_RETAIL_TECH_HOURS;
+                  dayTechSummary.totalAvailableHours ?? DEFAULT_RETAIL_TECH_COUNT * DEFAULT_RETAIL_TECH_HOURS;
                 const bookingPercent = totalAvailableHours > 0 ? (bookedHours / totalAvailableHours) * 100 : 0;
                 const severity = getBookingSeverity(bookingPercent);
                 const isWeekendSaturday = date.getDay() === 6;
@@ -1470,8 +1570,8 @@ export default function Appointments() {
                           color: availabilityLabelColor,
                         }}
                       >
-                        {dayTechSummary.totalTechs} tech
-                        {dayTechSummary.totalTechs !== 1 ? "s" : ""} · {totalAvailableHours.toFixed(1)}h avail
+                        {dayTechSummary.availableTechs} tech
+                        {dayTechSummary.availableTechs !== 1 ? "s" : ""} · {totalAvailableHours.toFixed(1)}h avail
                       </div>
                       <div
                         style={{
@@ -1532,7 +1632,8 @@ export default function Appointments() {
                           type="button"
                           onClick={(event) => handleShowStaffOff(event, date, staffEntries)}
                           style={{
-                            padding: "6px 12px",
+                            minWidth: "32px",
+                            padding: "6px 10px",
                             borderRadius: "var(--radius-pill)",
                             border: "1px solid var(--primary)",
                             backgroundColor: "var(--surface-light)",
@@ -1544,7 +1645,7 @@ export default function Appointments() {
                           onMouseEnter={(event) => event.currentTarget.style.backgroundColor = "var(--surface-light)"}
                           onMouseLeave={(event) => event.currentTarget.style.backgroundColor = "var(--surface-light)"}
                         >
-                          {`View ${staffEntries.length} staff off`}
+                          {staffEntries.length}
                         </button>
                       ) : (
                         "-"
@@ -1730,7 +1831,7 @@ export default function Appointments() {
                     const latestClockOut = tech.latestClockOut
                       ? new Date(tech.latestClockOut).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
                       : "-";
-                    const availableHoursValue = parseHoursValue(tech.availableHours) ?? DEFAULT_RETAIL_TECH_HOURS;
+                    const availableHoursValue = parseHoursValue(tech.availableHours) ?? getTechDailyHours(tech);
                     const totalLogged = parseHoursValue(tech.totalHours) ?? 0;
                     const absenceLabel = tech.absenceType || "Holiday";
 
@@ -1841,7 +1942,7 @@ export default function Appointments() {
                   "Customer",
                   "Job Type",
                   "Customer Status",
-                  "Estimated Finish Time",
+                  "EST Time",
                   "Check-In"
                 ].map(head => (
                     <th 
@@ -1870,12 +1971,7 @@ export default function Appointments() {
               >
                 {sortedJobs.length > 0 ? (
                   sortedJobs.map((job, idx) => {
-                    const statusNormalized = (job.status || "").trim().toLowerCase();
-                    const isBooked = statusNormalized === "booked";
-                    const isCheckedIn =
-                      ["checked in", "workshop/mot", "vhc complete", "vhc sent", "being washed", "complete"].includes(
-                        statusNormalized
-                      ) || !isBooked;
+                    const isCheckedIn = isJobActuallyCheckedIn(job);
                     const isCurrentlyCheckingIn = checkingInJobId === job.id;
                     const rowBackground =
                       highlightJob === job.jobNumber
@@ -1889,10 +1985,8 @@ export default function Appointments() {
                         key={idx} 
                         style={{ 
                           backgroundColor: rowBackground, 
-                          transition: "background-color 0.5s",
-                          cursor: "pointer"
+                          transition: "background-color 0.5s"
                         }}
-                        onClick={() => handleJobRowClick(job.jobNumber || job.id)}
                         onMouseEnter={(e) => {
                           if (highlightJob !== job.jobNumber) {
                             e.currentTarget.style.backgroundColor = "var(--surface)";
@@ -1908,8 +2002,26 @@ export default function Appointments() {
                           {job.appointment?.time || "-"}
                         </td>
                         <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)", color: "var(--primary)", fontWeight: "600" }}>
-                          <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                            {job.jobNumber || job.id || "-"}
+                          <button
+                            type="button"
+                            onClick={() => handleJobRowClick(job.jobNumber || job.id)}
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "6px",
+                              padding: 0,
+                              minHeight: 0,
+                              background: "transparent",
+                              border: "none",
+                              color: "var(--primary)",
+                              fontWeight: "600",
+                              fontSize: "inherit",
+                              cursor: "pointer",
+                              textDecoration: "underline",
+                              textUnderlineOffset: "2px",
+                            }}
+                          >
+                            <span>{job.jobNumber || job.id || "-"}</span>
                             {job.primeJobNumber && (
                               <span
                                 style={{
@@ -1925,7 +2037,7 @@ export default function Appointments() {
                                 {job.isPrimeJob ? "🔗" : `↳${job.primeJobNumber}`}
                               </span>
                             )}
-                          </span>
+                          </button>
                         </td>
                         <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)", fontWeight: "500" }}>
                           {job.reg || "-"}
@@ -1970,14 +2082,14 @@ export default function Appointments() {
                         <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)", textAlign: "center" }}>
                           {isCheckedIn ? (
                             <span style={{
-                              padding: "8px 16px",
+                              padding: isCompactMobile ? "8px 12px" : "8px 16px",
                               borderRadius: "var(--radius-xs)",
                               fontSize: "13px",
                               fontWeight: "600",
                               backgroundColor: "var(--success)",
                               color: "var(--info-dark)"
                             }}>
-                              ✓ Checked In
+                              {isCompactMobile ? "Checked In" : "✓ Checked In"}
                             </span>
                           ) : (
                             <button
@@ -1987,7 +2099,7 @@ export default function Appointments() {
                               }}
                               disabled={isCurrentlyCheckingIn}
                               style={{
-                                padding: "8px 16px",
+                                padding: isCompactMobile ? "8px 12px" : "8px 16px",
                                 backgroundColor: isCurrentlyCheckingIn ? "var(--background)" : "var(--primary)",
                                 color: "white",
                                 border: "none",
