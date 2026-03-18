@@ -14,6 +14,8 @@ import { DropdownField } from "@/components/dropdownAPI";
 import { SearchBar } from "@/components/searchBarAPI";
 import { TabGroup } from "@/components/tabAPI/TabGroup";
 import { deriveJobTypeDisplay, formatDetectedJobTypeLabel } from "@/lib/jobType/display";
+import { revalidateAllJobs } from "@/lib/swr/mutations"; // SWR cache invalidation after mutations
+import { prefetchJob } from "@/lib/swr/prefetch"; // warm SWR cache on hover for instant navigation
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { ContentWidth, FilterToolbarRow, PageShell, SectionShell } from "@/components/ui";
 
@@ -277,6 +279,7 @@ export default function ViewJobCards() {
      Go to job card page
   ---------------------------- */
   const goToJobCard = (jobNumber) => {
+    prefetchJob(jobNumber); // warm SWR cache for instant load
     router.push(`/job-cards/${jobNumber}`); // navigate to job card detail page
   };
 
@@ -295,6 +298,7 @@ export default function ViewJobCards() {
     const result = await updateJobStatus(jobId, newStatus); // update status in database
     if (result?.success && result.data) {
       fetchJobs(); // refresh jobs list after update
+      revalidateAllJobs(); // sync status change to other pages via SWR
       if (popupJob && popupJob.id === jobId) {
         setPopupJob({ ...popupJob, status: result.data.status }); // update popup if open
       }
@@ -930,6 +934,7 @@ export default function ViewJobCards() {
                       job={job}
                       index={index}
                       onNavigate={() => handleCardNavigation(job.jobNumber)}
+                      onMouseEnter={() => prefetchJob(job.jobNumber)}
                     />
                   )
                 )
@@ -1318,7 +1323,7 @@ export default function ViewJobCards() {
   );
 }
 
-const JobListCard = ({ job, onNavigate, onQuickView, index = 0, sectionKey, parentKey }) => {
+const JobListCard = ({ job, onNavigate, onQuickView, onMouseEnter, index = 0, sectionKey, parentKey }) => {
   // top-layer
   const rowBackground = "var(--surface)";
   const jobType = deriveJobType(job);
@@ -1368,6 +1373,7 @@ const JobListCard = ({ job, onNavigate, onQuickView, index = 0, sectionKey, pare
         transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
       }}
       onMouseEnter={(event) => {
+        if (onMouseEnter) onMouseEnter(); // prefetch job data on hover
         event.currentTarget.style.position = "relative";
         event.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
         event.currentTarget.style.transform = "translateY(-2px)";

@@ -77,7 +77,7 @@
   --accent-blue: #0ea5e9;
   --accent-blue-surface: #e0f2fe;
   --calendar-selection-border: #facc15;
-  --calendar-saturday-row-bg: #fff8ed;
+  --calendar-saturday-row-bg: #fefce8;
   --calendar-amber-selected-bg: #ffe2c4;
   --calendar-red-selected-bg: #ffd6d6;
   --calendar-today-row-bg: rgba(var(--primary-rgb), 0.06);
@@ -340,7 +340,7 @@
   --accent-blue: #f87171;
   --accent-blue-surface: rgba(var(--info-rgb), 0.2);
   --calendar-selection-border: #c8641a;
-  --calendar-saturday-row-bg: #1c1a27;
+  --calendar-saturday-row-bg: #1a1a0e;
   --calendar-amber-selected-bg: #3a2614;
   --calendar-red-selected-bg: #321616;
   --calendar-today-row-bg: rgba(var(--primary-rgb), 0.16);

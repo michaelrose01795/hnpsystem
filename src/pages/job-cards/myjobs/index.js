@@ -16,6 +16,7 @@ import { summarizePartsPipeline } from "@/lib/partsPipeline";
 import { normalizeDisplayName } from "@/utils/nameUtils";
 import { deriveJobTypeDisplay } from "@/lib/jobType/display";
 import { SearchBar } from "@/components/searchBarAPI";
+import { prefetchJob } from "@/lib/swr/prefetch";
 
 const STATUS_BADGE_STYLES = {
   Waiting: { background: "var(--warning-surface)", color: "var(--danger-dark)" },
@@ -767,6 +768,7 @@ export default function MyJobsPage() {
                       e.currentTarget.style.transform = "translateY(-1px)";
                       e.currentTarget.style.borderColor = "var(--primary)";
                       e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
+                      prefetchJob(job.jobNumber); // warm SWR cache on hover
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.transform = "translateY(0)";

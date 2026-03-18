@@ -21,6 +21,8 @@ import { DevLayoutRegistryProvider } from "@/context/DevLayoutRegistryContext";
 import GlobalNotesWidget from "@/components/GlobalNotesWidget";
 import GlobalDraftPersistence from "@/components/App/GlobalDraftPersistence";
 import DevLayoutOverlayRoot from "@/components/dev-layout-overlay/DevLayoutOverlayRoot";
+import { SWRConfig } from "swr"; // global SWR cache and revalidation config
+import { swrConfig } from "@/lib/swr/config"; // HNP-tuned SWR defaults
 
 function AppWrapper({ Component, pageProps }) {
   const router = useRouter();
@@ -74,7 +76,7 @@ function AppWrapper({ Component, pageProps }) {
 
   useEffect(() => {
     const isBusy = !suppressGlobalLoader && (isRouteLoading || (isProtectedRoute && authLoading));
-    const SHOW_DELAY_MS = 600;
+    const SHOW_DELAY_MS = 300; // reduced from 600ms — SWR provides instant cached renders so loader rarely needed
     const MIN_VISIBLE_MS = 220;
 
     if (hideTimerRef.current) {
@@ -217,15 +219,17 @@ export default function MyApp({ Component, pageProps }) {
             <DevLayoutOverlayProvider>
               <DevLayoutRegistryProvider>
                 <ThemeProvider defaultMode="system">
-                  <NextActionProvider>
-                    <JobsProvider>
-                      <ClockingProvider>
-                        <RosterProvider>
-                          <AppWrapper Component={Component} pageProps={pageProps} />
-                        </RosterProvider>
-                      </ClockingProvider>
-                    </JobsProvider>
-                  </NextActionProvider>
+                  <SWRConfig value={swrConfig}>
+                    <NextActionProvider>
+                      <JobsProvider>
+                        <ClockingProvider>
+                          <RosterProvider>
+                            <AppWrapper Component={Component} pageProps={pageProps} />
+                          </RosterProvider>
+                        </ClockingProvider>
+                      </JobsProvider>
+                    </NextActionProvider>
+                  </SWRConfig>
                 </ThemeProvider>
               </DevLayoutRegistryProvider>
             </DevLayoutOverlayProvider>

@@ -7,6 +7,7 @@ import CompanyAccountForm from "@/components/companyAccounts/CompanyAccountForm"
 import { useUser } from "@/context/UserContext";
 import { deriveAccountPermissions } from "@/lib/accounts/permissions";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
+import { prefetchJob } from "@/lib/swr/prefetch";
 
 const ALLOWED_ROLES = ["ADMIN", "OWNER", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER"];
 const HISTORY_DEFAULT = { jobs: [], invoices: [] };
@@ -197,6 +198,7 @@ export default function CompanyAccountDetailPage() {
                     e.currentTarget.style.borderColor = "var(--primary)";
                     e.currentTarget.style.transform = "translateY(-2px)";
                     e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
+                    prefetchJob(job.job_number); // warm SWR cache on hover
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.borderColor = "var(--surface-light)";

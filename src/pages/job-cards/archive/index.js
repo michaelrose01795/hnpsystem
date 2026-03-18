@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import { SearchBar } from "@/components/searchBarAPI";
+import { prefetchJob } from "@/lib/swr/prefetch";
 
 const STATUS_BADGES = {
   Complete: { bg: "var(--success-surface)", color: "var(--info-dark)" },
@@ -154,6 +155,7 @@ export default function ArchivedJobsPage() {
                       <td style={{ padding: "16px 24px" }}>
                         <Link
                           href={`/job-cards/${encodeURIComponent(job.jobNumber)}?archive=1`}
+                          onMouseEnter={() => prefetchJob(job.jobNumber)} // warm SWR cache on hover
                           style={{
                             textDecoration: "none",
                             padding: "8px 14px",

@@ -8446,9 +8446,21 @@ export default function VhcDetailsPanel({
                     }}
                   >
                     <div style={{ flex: 1, minWidth: "240px" }}>
-                      <h3 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--accent-purple)" }}>
-                        Health check
-                      </h3>
+                      {!hasHealthData ? (
+                        <div
+                          style={{
+                            border: "1px solid var(--accent-purple-surface)",
+                            borderRadius: "var(--radius-md)",
+                            padding: "20px",
+                            background: "var(--accent-purple-surface)",
+                            color: "var(--accent-purple)",
+                            fontSize: "13px",
+                            textAlign: "center",
+                          }}
+                        >
+                          VHC has not been started yet.
+                        </div>
+                      ) : null}
                     </div>
                     {sectionSaveMessage ? (
                       <span style={{ fontSize: "12px", fontWeight: 600, color: sectionSaveColor }}>
@@ -8467,21 +8479,6 @@ export default function VhcDetailsPanel({
                     />
                   ))}
 
-                  {!hasHealthData && (
-                    <div
-                      style={{
-                        border: "1px dashed var(--accent-purple-surface)",
-                        borderRadius: "var(--radius-md)",
-                        padding: "20px",
-                        background: "var(--surface)",
-                        color: "var(--info)",
-                        fontSize: "13px",
-                        textAlign: "center",
-                      }}
-                    >
-                      VHC has not been started yet.
-                    </div>
-                  )}
                 </div>
               )}
 
@@ -8743,9 +8740,22 @@ export default function VhcDetailsPanel({
                     }}
                   >
                     <div style={{ flex: 1, minWidth: "240px" }}>
-                      <h3 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--accent-purple)" }}>
-                        Health check
-                      </h3>
+                      {!hasHealthData ? (
+                        <div
+                          style={{
+                            border: "1px solid var(--accent-purple-surface)",
+                            borderRadius: "var(--radius-md)",
+                            padding: "20px",
+                            background: "var(--accent-purple-surface)",
+                            color: "var(--accent-purple)",
+                            fontSize: "13px",
+                            textAlign: "center",
+                          }}
+                        >
+                          Technicians have not recorded any VHC data yet. Use the section buttons above to open the full builder
+                          forms and start a health check for this job.
+                        </div>
+                      ) : null}
                     </div>
                     {sectionSaveMessage ? (
                       <span style={{ fontSize: "12px", fontWeight: 600, color: sectionSaveColor }}>
@@ -8764,22 +8774,6 @@ export default function VhcDetailsPanel({
                     />
                   ))}
 
-                  {!hasHealthData && (
-                    <div
-                      style={{
-                        border: "1px dashed var(--accent-purple-surface)",
-                        borderRadius: "var(--radius-md)",
-                        padding: "20px",
-                        background: "var(--surface)",
-                        color: "var(--info)",
-                        fontSize: "13px",
-                        textAlign: "center",
-                      }}
-                    >
-                      Technicians have not recorded any VHC data yet. Use the section buttons above to open the full builder
-                      forms and start a health check for this job.
-                    </div>
-                  )}
                 </div>
 
                 <div id="parts-identified">

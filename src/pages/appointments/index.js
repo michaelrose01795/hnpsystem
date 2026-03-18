@@ -10,9 +10,8 @@ import { SearchBar } from "@/components/searchBarAPI";
 import { useRouter } from "next/router"; // For reading query params
 import { useUser } from "@/context/UserContext"; // Access current user for check-in attribution
 import { useNextAction } from "@/context/NextActionContext"; // Trigger follow-up actions after check-in
-import { 
-  getAllJobs, 
-  createOrUpdateAppointment, 
+import {
+  createOrUpdateAppointment,
   getJobByNumberOrReg,
   getJobsByDate // ✅ NEW: Get appointments by date
 } from "@/lib/database/jobs"; // DB functions
@@ -20,6 +19,10 @@ import { autoSetCheckedInStatus } from "@/lib/services/jobStatusService"; // Sha
 import supabase from "@/lib/supabaseClient"; // Supabase client for live tech availability
 import { useConfirmation } from "@/context/ConfirmationContext";
 import { parseLeaveRequestNotes } from "@/lib/hr/leaveRequests";
+import { invalidateCache } from "@/lib/database/queryCache"; // clear stale cache after mutations
+import { revalidateAllJobs } from "@/lib/swr/mutations"; // SWR cache invalidation after mutations
+import { useJobsList } from "@/hooks/useJobsList"; // SWR-powered jobs list with auto-refresh
+import { prefetchJob } from "@/lib/swr/prefetch"; // warm SWR cache on hover for instant navigation
 
 const TECH_AVAILABILITY_TABLE = "job_clocking"; // Source table for tech availability data
 
@@ -408,8 +411,11 @@ export default function Appointments() {
   const { triggerNextAction } = useNextAction();
   const { confirm } = useConfirmation();
 
+  // ---------------- SWR-powered jobs list (auto-refresh, cached, deduplicated) ----------------
+  const { jobs: allJobs, mutate: mutateJobs } = useJobsList({ enabled: !!user });
+  const jobs = useMemo(() => (allJobs || []).filter((job) => job.appointment), [allJobs]); // filter to only jobs with appointments
+
   // ---------------- States ----------------
-  const [jobs, setJobs] = useState([]);
   const [dates, setDates] = useState([]);
   const [selectedDay, setSelectedDay] = useState(new Date());
   const [notes, setNotes] = useState({});
@@ -457,28 +463,6 @@ export default function Appointments() {
     window.addEventListener("resize", updateViewportFlags);
     return () => window.removeEventListener("resize", updateViewportFlags);
   }, []);
-
-  // ---------------- Fetch Jobs ----------------
-  const fetchJobs = async () => {
-    console.log("Fetching all jobs...");
-    setIsLoading(true);
-    
-    try {
-      const jobsFromDb = await getAllJobs();
-      console.log("Jobs fetched:", jobsFromDb.length);
-      
-      // ✅ Filter only jobs with appointments
-      const jobsWithAppointments = jobsFromDb.filter(job => job.appointment);
-      console.log("Jobs with appointments:", jobsWithAppointments.length);
-      
-      setJobs(jobsWithAppointments);
-    } catch (error) {
-      console.error("Error fetching jobs:", error);
-      alert("Failed to load appointments. Please refresh the page.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const fetchJobRequestHours = useCallback(async (jobIds = []) => {
     if (!jobIds || jobIds.length === 0) {
@@ -645,7 +629,6 @@ export default function Appointments() {
 
   useEffect(() => {
     setDates(generateDates(60));
-    fetchJobs();
   }, []);
 
   useEffect(() => {
@@ -697,6 +680,25 @@ export default function Appointments() {
     };
   }, [dates, fetchTechAvailability]);
 
+  // Real-time subscription for jobs and appointments tables — revalidate SWR when data changes
+  useEffect(() => {
+    const channel = supabase
+      .channel("appointments-page-jobs-sync") // unique channel name for this page
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "jobs" }, // listen for all job changes
+        () => { mutateJobs(); } // trigger SWR revalidation (deduplicated)
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "appointments" }, // listen for appointment changes
+        () => { mutateJobs(); } // trigger SWR revalidation (deduplicated)
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); }; // clean up on unmount
+  }, [mutateJobs]);
+
   useEffect(() => {
     setJobParamActive(true);
   }, [jobQueryParam]);
@@ -735,6 +737,12 @@ export default function Appointments() {
     setStaffOffPopupDetails(entries.slice());
     setShowStaffOffPopup(true);
   };
+
+  // Prefetch job card data on hover so navigation is instant
+  const handleJobRowHover = useCallback(
+    (jobNumberValue) => { prefetchJob(jobNumberValue); }, // warm SWR cache ahead of navigation
+    []
+  );
 
   const handleJobRowClick = useCallback(
     (jobNumberValue) => {
@@ -833,14 +841,20 @@ export default function Appointments() {
         status: "Booked"
       };
 
-      const jobIndex = jobs.findIndex((j) => j.id === job.id);
-      if (jobIndex !== -1) {
-        const updatedJobs = [...jobs];
-        updatedJobs[jobIndex] = updatedJob;
-        setJobs(updatedJobs);
-      } else {
-        setJobs([...jobs, updatedJob]);
-      }
+      // Optimistically update SWR cache so UI reflects the change instantly
+      mutateJobs(
+        (prevAll) => {
+          if (!prevAll) return [updatedJob]; // edge case: no jobs yet
+          const idx = prevAll.findIndex((j) => j.id === job.id); // find existing job
+          if (idx !== -1) {
+            const updated = [...prevAll]; // clone the array
+            updated[idx] = updatedJob; // replace with updated job
+            return updated;
+          }
+          return [...prevAll, updatedJob]; // add as new job
+        },
+        { revalidate: true } // also refetch from server in background
+      );
 
       // ✅ Visual feedback
       setHighlightJob(job.jobNumber || job.id.toString());
@@ -862,6 +876,7 @@ export default function Appointments() {
       setJobNumber("");
       setTime("");
       setCurrentNote("");
+      invalidateCache("jobs:"); // clear stale queryCache after appointment change
 
     } catch (error) {
       console.error("Unexpected error booking appointment:", error);
@@ -912,19 +927,23 @@ export default function Appointments() {
         }
 
         const updatedJob = result.data || {};
-        setJobs((prevJobs) =>
-          prevJobs.map((existing) => {
-            if (existing.id !== job.id) return existing;
-            const nextAppointment = updatedJob.appointment ?? existing.appointment;
-            return {
-              ...existing,
-              ...updatedJob,
-              appointment: nextAppointment,
-              status: updatedJob.status || "Checked In",
-              checked_in_at: updatedJob.checked_in_at || new Date().toISOString(),
-            };
-          })
+        // Optimistically update SWR cache so UI reflects check-in instantly
+        mutateJobs(
+          (prevAll) =>
+            (prevAll || []).map((existing) => {
+              if (existing.id !== job.id) return existing; // skip other jobs
+              const nextAppointment = updatedJob.appointment ?? existing.appointment; // preserve appointment data
+              return {
+                ...existing,
+                ...updatedJob,
+                appointment: nextAppointment,
+                status: updatedJob.status || "Checked In", // update status immediately
+                checked_in_at: updatedJob.checked_in_at || new Date().toISOString(), // set check-in timestamp
+              };
+            }),
+          { revalidate: true } // also refetch from server in background
         );
+        invalidateCache("jobs:"); // clear stale queryCache so job card page gets fresh data
       } else {
         console.error("❌ Check-in failed:", result.error);
         alert(`❌ Failed to check in: ${result.error?.message || "Unknown error"}`);
@@ -1440,14 +1459,14 @@ export default function Appointments() {
           marginBottom: "12px", 
           borderRadius: "var(--radius-sm)", 
           boxShadow: "none", 
-          backgroundColor: "rgba(var(--primary-rgb), 0.14)" 
+          backgroundColor: "var(--accent-layer-4)"
         }}
         >
           <table
             id="appointments-auto-data-table-2"
             data-dev-section-key="appointments-auto-data-table-2"
             data-dev-section-type="data-table"
-            style={{ width: "100%", borderCollapse: "collapse", backgroundColor: "rgba(var(--primary-rgb), 0.12)" }}
+            style={{ width: "100%", borderCollapse: "collapse", backgroundColor: "var(--accent-layer-4)" }}
           >
             <thead
               data-dev-section-key="appointments-auto-data-table-2-headings"
@@ -2005,6 +2024,7 @@ export default function Appointments() {
                           <button
                             type="button"
                             onClick={() => handleJobRowClick(job.jobNumber || job.id)}
+                            onMouseEnter={() => handleJobRowHover(job.jobNumber || job.id)}
                             style={{
                               display: "inline-flex",
                               alignItems: "center",

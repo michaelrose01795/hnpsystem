@@ -1991,26 +1991,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
               <button
                 type="button"
-                onClick={() => setShowPrePickPopup(true)}
-                disabled={!canEdit || prePickPartOptions.length === 0}
-                style={{
-                  padding: "6px 12px",
-                  borderRadius: "var(--radius-xs)",
-                  border: "1px solid transparent",
-                  background: "var(--info-surface)",
-                  color: "var(--info-dark)",
-                  fontSize: "var(--text-caption)",
-                  fontWeight: 600,
-                  cursor: !canEdit || prePickPartOptions.length === 0 ? "not-allowed" : "pointer",
-                  transition: "all 0.15s ease",
-                  whiteSpace: "nowrap",
-                  opacity: !canEdit || prePickPartOptions.length === 0 ? 0.6 : 1,
-                }}
-              >
-                Pre Picked
-              </button>
-              <button
-                type="button"
                 onClick={toggleBookPartPanel}
                 style={{
                   padding: "6px 12px",

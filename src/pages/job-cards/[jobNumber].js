@@ -51,6 +51,8 @@ import {
   normalizePrePickLocation,
   resolveLinkedPrePickLocation,
 } from "@/lib/prePickLocations";
+import { revalidateJob, revalidateAllJobs } from "@/lib/swr/mutations"; // SWR cache invalidation after mutations
+import { useJob } from "@/hooks/useJob"; // SWR-powered job card data with caching and revalidation
 
 const WriteUpForm = dynamic(() => import("@/components/JobCards/WriteUpForm"), {
   ssr: false,
@@ -674,6 +676,11 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
 
   const actingUserNumericId = useMemo(() => sanitizeNumericId(dbUserId), [dbUserId]);
 
+  const isArchiveMode = router.query.archive === "1"; // moved up so useJob can reference it
+
+  // SWR-powered initial data — provides cached data instantly on revisit or prefetch
+  const { jobResponse: swrJobResponse, mutate: mutateSwrJob } = useJob(jobNumber, { archive: isArchiveMode });
+
   // ✅ State Management
   const [jobData, setJobData] = useState(null);
   const [statusSnapshot, setStatusSnapshot] = useState(null);
@@ -728,8 +735,6 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
   const [relatedJobs, setRelatedJobs] = useState([]);
   const [relatedJobsLoading, setRelatedJobsLoading] = useState(false);
 
-  const isArchiveMode = router.query.archive === "1";
-
   const applyWriteUpOptimisticState = useCallback(
     ({ completionStatus, tasks, requestStatuses } = {}) => {
       const now = Date.now();
@@ -760,6 +765,22 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     },
     []
   );
+
+  // Stable callbacks for WriteUpForm — avoids re-creating on every parent render
+  const handleWriteUpSaveSuccess = useCallback(() => {
+    fetchJobData({ silent: true, force: true });
+  }, [fetchJobData]);
+  const handleWriteUpCompletionChange = useCallback((nextStatus) => {
+    applyWriteUpOptimisticState({ completionStatus: nextStatus });
+  }, [applyWriteUpOptimisticState]);
+  const handleWriteUpRequestStatusesChange = useCallback((requestStatuses = []) => {
+    applyWriteUpOptimisticState({ requestStatuses });
+  }, [applyWriteUpOptimisticState]);
+  const handleWriteUpTasksSnapshotChange = useCallback((tasksSnapshot = []) => {
+    applyWriteUpOptimisticState({
+      tasks: Array.isArray(tasksSnapshot) ? tasksSnapshot : [],
+    });
+  }, [applyWriteUpOptimisticState]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1327,12 +1348,22 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         }
       }
     },
-    [jobNumber, fetchSharedNote, isArchiveMode]
+    [jobNumber, fetchSharedNote, isArchiveMode, mutateSwrJob]
   );
 
   useEffect(() => {
     fetchJobData();
   }, [fetchJobData]);
+
+  // Hydrate local state from SWR cache (prefetch or previous visit) for instant rendering
+  useEffect(() => {
+    if (!swrJobResponse) return; // no cached data available yet
+    if (jobData) return; // already have local data, don't overwrite
+    const jobCard = swrJobResponse.job || swrJobResponse.jobCard; // handle both API response shapes
+    if (!jobCard) return; // no job card in the response
+    setJobData(jobCard); // hydrate local state from SWR cache
+    setLoading(false); // remove loading state since we have data
+  }, [swrJobResponse, jobData]);
 
   useEffect(() => {
     writeUpOptimisticSyncRef.current = null;
@@ -1607,6 +1638,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         prev
           ? {
               ...prev,
+              status: "Checked In", // optimistic: update status immediately so UI reflects the change
               checkedInAt: prev.checkedInAt || new Date().toISOString(),
               appointment: prev.appointment
                 ? { ...prev.appointment, status: "checked_in" }
@@ -1623,6 +1655,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       );
 
       await fetchJobData({ silent: true, force: true });
+      revalidateAllJobs(); // tell other pages (appointments, dashboard) to refresh
     } catch (error) {
       console.error("❌ Error checking in:", error);
       alert("❌ Error checking in customer. Please try again.");
@@ -1852,6 +1885,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         }
 
         await fetchJobData({ silent: true, force: true });
+        revalidateAllJobs(); // sync customer changes to other pages
         return { success: true };
       } catch (saveError) {
         console.error("❌ Failed to update customer:", saveError);
@@ -1917,6 +1951,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         }
 
         await fetchJobData({ silent: true, force: true });
+        revalidateAllJobs(); // sync appointment changes to other pages
         return { success: true };
       } catch (appointmentError) {
         console.error("❌ Failed to update appointment:", appointmentError);
@@ -2426,6 +2461,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       return { success: false, error: "Job not found" };
     }
     await fetchJobData({ silent: true, force: true });
+    revalidateAllJobs(); // sync status changes to other pages
     await loadStatusSnapshot(jobData.id);
     return { success: true };
   }, [fetchJobData, jobData?.id, loadStatusSnapshot, updateJobStatus]);
@@ -2464,6 +2500,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     );
 
     await fetchJobData({ silent: true, force: true });
+    revalidateAllJobs(); // sync release to other pages
     await loadStatusSnapshot(jobData.id);
     await router.push("/newsfeed");
     return { success: true };
@@ -4120,18 +4157,10 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
                   jobCardData={jobData}
                   showHeader={false}
                   readOnly={!canEditPartsWriteUpVhc}
-                  onSaveSuccess={() => fetchJobData({ silent: true, force: true })}
-                  onCompletionChange={(nextStatus) => {
-                    applyWriteUpOptimisticState({ completionStatus: nextStatus });
-                  }}
-                  onRequestStatusesChange={(requestStatuses = []) => {
-                    applyWriteUpOptimisticState({ requestStatuses });
-                  }}
-                  onTasksSnapshotChange={(tasksSnapshot = []) => {
-                    applyWriteUpOptimisticState({
-                      tasks: Array.isArray(tasksSnapshot) ? tasksSnapshot : [],
-                    });
-                  }}
+                  onSaveSuccess={handleWriteUpSaveSuccess}
+                  onCompletionChange={handleWriteUpCompletionChange}
+                  onRequestStatusesChange={handleWriteUpRequestStatusesChange}
+                  onTasksSnapshotChange={handleWriteUpTasksSnapshotChange}
                 />
               ) : null}
             </div>
@@ -4154,6 +4183,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
               jobNumber={jobNumber}
               jobData={jobData}
               canEdit={canEditPartsWriteUpVhc}
+              canShowCustomerActions={vhcTabAmberReadyInstant}
               actingUserId={actingUserId}
               actingUserNumericId={actingUserNumericId}
               actingUserName={user?.name || user?.email || ""}
@@ -6880,6 +6910,19 @@ function SchedulingTab({
     gap: "10px",
     marginBottom: "16px",
   };
+  const schedulingRowSubtitleStyle = {
+    fontSize: "11px",
+    color: "var(--grey-accent)",
+    fontWeight: "700",
+    letterSpacing: "0.12em",
+    textTransform: "uppercase",
+  };
+  const reportedIssueRowStyle = {
+    padding: "14px",
+    backgroundColor: "var(--surface)",
+    borderLeft: "4px solid var(--primary)",
+    borderRadius: "var(--control-radius)",
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -6983,30 +7026,22 @@ function SchedulingTab({
             }}
           >
             {bookingRequestLines.length > 0 ? (
-              <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                 {bookingRequestLines.map((line, index) => (
-                  <li
+                  <div
                     key={`${index}-${line}`}
                     style={{
-                      display: "flex",
-                      alignItems: "flex-start",
-                      gap: "10px",
-                      padding: "8px 6px",
-                      borderBottom: index < bookingRequestLines.length - 1 ? "1px solid var(--surface-light)" : "none",
+                      ...reportedIssueRowStyle,
+                      marginBottom: 0,
                     }}
                   >
-                    <span style={{
-                      width: "6px",
-                      height: "6px",
-                      borderRadius: "var(--radius-full)",
-                      background: "var(--warning)",
-                      flexShrink: 0,
-                      marginTop: "8px",
-                    }} />
-                    <span style={{ color: "var(--text-primary)", fontWeight: "500" }}>{line}</span>
-                  </li>
+                    <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "6px" }}>
+                      <span style={schedulingRowSubtitleStyle}>Reported Issue {index + 1}</span>
+                      <span style={{ color: "var(--text-secondary)", fontSize: "14px" }}>{line}</span>
+                    </div>
+                  </div>
                 ))}
-              </ul>
+              </div>
             ) : (
               <div style={{ padding: "8px 6px", color: "var(--grey-accent)" }}>No reported issues found.</div>
             )}
@@ -7116,15 +7151,16 @@ function SchedulingTab({
         </div>
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: "0",
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "8px",
+            padding: "8px",
+            backgroundColor: "rgba(var(--primary-rgb), 0.05)",
             border: "none",
             borderRadius: "var(--radius-sm)",
-            overflow: "hidden",
           }}
         >
-          {waitingOptions.map((option, idx) => {
+          {waitingOptions.map((option) => {
             const isActive =
               bookingWaitingStatus === option ||
               (!bookingWaitingStatus && option === "Neither");
@@ -7133,16 +7169,21 @@ function SchedulingTab({
                 key={option}
                 onClick={() => handleBookingWaitingSelect(option)}
                 disabled={!canEdit}
+                aria-pressed={isActive}
                 style={{
-                  padding: "14px 8px",
+                  flex: "1 1 150px",
+                  minWidth: "120px",
+                  padding: "12px 14px",
                   border: "none",
-                  borderRight: "none",
-                  backgroundColor: isActive ? "var(--primary)" : "rgba(var(--primary-rgb), 0.04)",
-                  color: isActive ? "var(--text-inverse)" : "var(--primary-dark)",
+                  borderRadius: "calc(var(--radius-sm) - 2px)",
+                  backgroundColor: isActive ? "var(--surface)" : "transparent",
+                  color: isActive ? "var(--primary-dark)" : "var(--text-secondary)",
                   fontWeight: "600",
                   fontSize: "var(--control-font-size)",
                   cursor: canEdit ? "pointer" : "default",
-                  transition: "background-color 0.15s, color 0.15s",
+                  boxShadow: isActive ? "0 0 0 1px rgba(var(--primary-rgb), 0.18), 0 8px 18px rgba(var(--primary-rgb), 0.12)" : "none",
+                  transition: "background-color 0.15s, color 0.15s, box-shadow 0.15s",
+                  textAlign: "center",
                 }}
               >
                 {option}
@@ -7302,6 +7343,44 @@ function ServiceHistoryTab({ vehicleJobHistory }) {
     }
   };
 
+  const tableHeaderCellStyle = {
+    textAlign: "left",
+    padding: "12px 12px",
+    position: "sticky",
+    top: 0,
+    background: "var(--layer-section-level-2)",
+    zIndex: 1,
+    fontSize: "11px",
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    color: "var(--text-secondary)",
+    fontWeight: "700",
+    whiteSpace: "nowrap",
+  };
+  const tableCellStyle = {
+    padding: "12px",
+    verticalAlign: "top",
+    borderTop: "1px solid var(--surface-light)",
+    fontSize: "12px",
+    color: "var(--text-primary)",
+    overflowWrap: "anywhere",
+  };
+  const rowLabelStyle = {
+    fontSize: "11px",
+    color: "var(--grey-accent)",
+    fontWeight: "700",
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+  };
+  const requestListScrollStyle = {
+    display: "flex",
+    flexDirection: "column",
+    gap: "4px",
+    maxHeight: "212px",
+    overflowY: "auto",
+    paddingRight: "4px",
+  };
+
   return (
     <DevLayoutSection
       sectionKey="jobcard-tab-service-history-panel"
@@ -7313,88 +7392,111 @@ function ServiceHistoryTab({ vehicleJobHistory }) {
       {history.length > 0 ? (
         <DevLayoutSection
           sectionKey="jobcard-tab-service-history-list"
-          sectionType="list"
+          sectionType="table"
           parentKey="jobcard-tab-service-history-panel"
-          style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+          style={{
+            borderRadius: "var(--radius-md)",
+            backgroundColor: "var(--surface)",
+            overflow: "hidden",
+          }}
         >
-          {history.map((job) => (
-            <DevLayoutSection
-              key={job.id}
-              sectionKey={`jobcard-tab-service-history-entry-${job.id || job.jobNumber || "row"}`}
-              sectionType="content-card"
-              parentKey="jobcard-tab-service-history-list"
-              onClick={() => handleInvoiceOpen(job)}
-              style={{
-                padding: "16px",
-                backgroundColor: "var(--surface)",
-                border: "1px solid var(--accent-purple-surface)",
-                borderRadius: "var(--radius-sm)",
-                cursor: job.invoiceAvailable ? "pointer" : "default",
-                transition: "all 0.2s"
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "var(--info-surface)";
-                e.currentTarget.style.boxShadow = "0 2px 8px rgba(var(--shadow-rgb),0.08)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "var(--surface)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                  <span style={{ fontSize: "16px", fontWeight: "600", color: "var(--primary)" }}>
-                    Job #{job.jobNumber}
-                  </span>
-                  <span style={{
-                    padding: "4px 10px",
-                    backgroundColor: "var(--info-surface)",
-                    borderRadius: "var(--control-radius)",
-                    fontSize: "11px",
-                    fontWeight: "600",
-                    color: "var(--info-dark)"
-                  }}>
-                    {job.serviceDateFormatted}
-                  </span>
-                </div>
-                {job.invoiceAvailable ? (
-                  <span style={{ fontSize: "12px", color: "var(--info)", fontWeight: "600" }}>
-                    Invoice Available
-                  </span>
-                ) : (
-                  <span style={{ fontSize: "12px", color: "var(--info)", fontWeight: "600" }}>
-                    No Invoice
-                  </span>
-                )}
-              </div>
-
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", fontSize: "13px", color: "var(--info-dark)" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  <strong>Mileage:</strong>
-                  <span>{job.mileage ? `${job.mileage} miles` : "Not recorded"}</span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  <strong>Requests:</strong>
-                  <span>{job.requests.length}</span>
-                </div>
-              </div>
-
-              {job.requests.length > 0 && (
-                <ul style={{ margin: "12px 0 0 0", paddingLeft: "18px", color: "var(--info-dark)", fontSize: "13px" }}>
-                  {job.requests.slice(0, 3).map((req, index) => (
-                    <li key={`${job.id}-req-${index}`}>
-                      {req.text || req.description || "Request"}
-                    </li>
-                  ))}
-                  {job.requests.length > 3 && (
-                    <li style={{ listStyle: "none", color: "var(--info)" }}>
-                      +{job.requests.length - 3} more request{job.requests.length - 3 === 1 ? "" : "s"}
-                    </li>
-                  )}
-                </ul>
-              )}
-            </DevLayoutSection>
-          ))}
+          <table style={{ width: "100%", tableLayout: "fixed", borderCollapse: "separate", borderSpacing: 0 }}>
+            <thead>
+              <tr>
+                <th style={{ ...tableHeaderCellStyle, width: "11%" }}>Job Number</th>
+                <th style={{ ...tableHeaderCellStyle, width: "16%" }}>Invoice Number</th>
+                <th style={{ ...tableHeaderCellStyle, width: "17%" }}>Date of Appointment</th>
+                <th style={{ ...tableHeaderCellStyle, width: "10%" }}>Mileage</th>
+                <th style={{ ...tableHeaderCellStyle, width: "46%" }}>Requests</th>
+              </tr>
+            </thead>
+            <tbody>
+              {history.map((job) => {
+                const combinedRequests = Array.isArray(job.combinedRequests) ? job.combinedRequests : [];
+                return (
+                  <tr key={job.id || job.jobNumber} style={{ backgroundColor: "var(--surface)" }}>
+                    <td style={tableCellStyle}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <span style={{ fontSize: "15px", fontWeight: "700", color: "var(--primary)" }}>
+                          {job.jobNumber || "—"}
+                        </span>
+                        <span style={rowLabelStyle}>Job Card</span>
+                      </div>
+                    </td>
+                    <td style={tableCellStyle}>
+                      {job.invoiceNumber ? (
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "8px" }}>
+                          <span style={{ fontWeight: "600", overflowWrap: "anywhere" }}>{job.invoiceNumber}</span>
+                          {job.invoiceAvailable ? (
+                            <button
+                              type="button"
+                              onClick={() => handleInvoiceOpen(job)}
+                              style={{
+                                padding: "6px 8px",
+                                borderRadius: "var(--control-radius)",
+                                border: "none",
+                                backgroundColor: "rgba(var(--primary-rgb), 0.08)",
+                                color: "var(--primary-dark)",
+                                fontSize: "11px",
+                                fontWeight: "600",
+                                cursor: "pointer",
+                              }}
+                            >
+                              Open Invoice
+                            </button>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <span style={{ color: "var(--grey-accent)" }}>Not assigned</span>
+                      )}
+                    </td>
+                    <td style={tableCellStyle}>
+                      <span>{job.serviceDateFormatted || "Unknown"}</span>
+                    </td>
+                    <td style={tableCellStyle}>
+                      <span>{job.mileage ? `${job.mileage} miles` : "Not recorded"}</span>
+                    </td>
+                    <td style={tableCellStyle}>
+                      {combinedRequests.length > 0 ? (
+                        <div style={requestListScrollStyle}>
+                          {combinedRequests.map((item, index) => {
+                            const isVhcApproved = item?.kind === "vhc_authorized";
+                            const requestText = item?.text || item?.description || "Request";
+                            const detailText =
+                              isVhcApproved && item?.detail && item.detail !== requestText ? item.detail : "";
+                            return (
+                              <div
+                                key={`${job.id || job.jobNumber}-request-${index}`}
+                                style={{
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: "2px",
+                                  padding: "6px 10px",
+                                  borderRadius: "var(--radius-xs)",
+                                  backgroundColor: isVhcApproved ? "var(--success-surface)" : "var(--layer-section-level-1)",
+                                  borderLeft: `4px solid ${isVhcApproved ? "var(--success)" : "var(--primary)"}`,
+                                }}
+                              >
+                                <span style={rowLabelStyle}>
+                                  {isVhcApproved ? "VHC Approved Request" : `Customer Request ${index + 1}`}
+                                </span>
+                                <span style={{ color: "var(--text-primary)", lineHeight: "1.25", overflowWrap: "anywhere" }}>{requestText}</span>
+                                {detailText ? (
+                                  <span style={{ color: "var(--text-secondary)", fontSize: "11px", lineHeight: "1.25", overflowWrap: "anywhere" }}>{detailText}</span>
+                                ) : null}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <span style={{ color: "var(--grey-accent)" }}>No requests recorded</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </DevLayoutSection>
       ) : (
         <DevLayoutSection
@@ -8384,6 +8486,7 @@ function VHCTab({
   jobNumber,
   jobData,
   canEdit = true,
+  canShowCustomerActions = false,
   actingUserId = null,
   actingUserNumericId = null,
   actingUserName = "",
@@ -8487,52 +8590,56 @@ function VHCTab({
 
   const customActions = (
     <>
-      <button
-        type="button"
-        onClick={handleCustomerViewClick}
-        disabled={!actionsEnabled}
-        style={{
-          padding: "8px 16px",
-          borderRadius: "var(--control-radius)",
-          border: `1px solid ${actionsEnabled ? "var(--primary)" : "var(--grey-accent)"}`,
-          backgroundColor: actionsEnabled ? "var(--primary)" : "var(--surface-light)",
-          color: actionsEnabled ? "var(--surface)" : "var(--grey-accent)",
-          fontWeight: 600,
-          cursor: actionsEnabled ? "pointer" : "not-allowed",
-          opacity: actionsEnabled ? 1 : 0.5,
-          fontSize: "13px",
-        }}
-        title={!actionsEnabled ? (checkboxesLockReason || "Summary checks are incomplete.") : "Open customer preview"}
-      >
-        Customer Preview
-      </button>
-      <button
-        type="button"
-        onClick={handleCopyToClipboard}
-        disabled={!actionsEnabled || generatingLink}
-        style={{
-          padding: "var(--control-padding)",
-          borderRadius: "var(--control-radius)",
-          border: "none",
-          fontSize: "var(--control-font-size)",
-          fontWeight: "600",
-          cursor: actionsEnabled && !generatingLink ? "pointer" : "not-allowed",
-          minHeight: "var(--control-height)",
-          backgroundColor: copied ? "rgba(var(--success-rgb, 22, 163, 74), 0.08)" : "rgba(var(--primary-rgb), 0.08)",
-          color: copied ? "var(--success-dark, var(--success))" : "var(--primary-dark)",
-          opacity: actionsEnabled ? 1 : 0.5,
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.opacity = "0.9";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.opacity = actionsEnabled ? "1" : "0.5";
-        }}
-        title={!actionsEnabled ? (checkboxesLockReason || "Summary checks are incomplete.") : copied ? "Copied!" : "Copy shareable link (expires in 24 hours)"}
-      >
-        {generatingLink ? "..." : copied ? "Copied" : "Copy Link"}
-      </button>
-      {previewOpened ? (
+      {canShowCustomerActions ? (
+        <>
+          <button
+            type="button"
+            onClick={handleCustomerViewClick}
+            disabled={!actionsEnabled}
+            style={{
+              padding: "8px 16px",
+              borderRadius: "var(--control-radius)",
+              border: `1px solid ${actionsEnabled ? "var(--primary)" : "var(--grey-accent)"}`,
+              backgroundColor: actionsEnabled ? "var(--primary)" : "var(--surface-light)",
+              color: actionsEnabled ? "var(--surface)" : "var(--grey-accent)",
+              fontWeight: 600,
+              cursor: actionsEnabled ? "pointer" : "not-allowed",
+              opacity: actionsEnabled ? 1 : 0.5,
+              fontSize: "13px",
+            }}
+            title={!actionsEnabled ? (checkboxesLockReason || "Summary checks are incomplete.") : "Open customer preview"}
+          >
+            Customer Preview
+          </button>
+          <button
+            type="button"
+            onClick={handleCopyToClipboard}
+            disabled={!actionsEnabled || generatingLink}
+            style={{
+              padding: "var(--control-padding)",
+              borderRadius: "var(--control-radius)",
+              border: "none",
+              fontSize: "var(--control-font-size)",
+              fontWeight: "600",
+              cursor: actionsEnabled && !generatingLink ? "pointer" : "not-allowed",
+              minHeight: "var(--control-height)",
+              backgroundColor: copied ? "rgba(var(--success-rgb, 22, 163, 74), 0.08)" : "rgba(var(--primary-rgb), 0.08)",
+              color: copied ? "var(--success-dark, var(--success))" : "var(--primary-dark)",
+              opacity: actionsEnabled ? 1 : 0.5,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = "0.9";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = actionsEnabled ? "1" : "0.5";
+            }}
+            title={!actionsEnabled ? (checkboxesLockReason || "Summary checks are incomplete.") : copied ? "Copied!" : "Copy shareable link (expires in 24 hours)"}
+          >
+            {generatingLink ? "..." : copied ? "Copied" : "Copy Link"}
+          </button>
+        </>
+      ) : null}
+      {canShowCustomerActions && previewOpened ? (
         <button
           type="button"
           onClick={handleSendVhc}

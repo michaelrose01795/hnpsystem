@@ -68,7 +68,9 @@
       "Read(//f/hnpsystem/**)",
       "Read(//tmp/**)",
       "Bash(find /f/hnpsystem/src/components -type f \\\\\\(-name *.js -o -name *.jsx -o -name *.ts -o -name *.tsx \\\\\\))",
-      "Bash(echo \"exit: $?\")"
+      "Bash(echo \"exit: $?\")",
+      "Bash(find /workspaces/hnpsystem/src -name \"*.js\" -type f -exec grep -l \"<Link\" {})",
+      "Bash(grep -n \"<Link\" /workspaces/hnpsystem/src/pages/customers/[customerSlug].js)"
     ],
     "deny": [],
     "ask": []

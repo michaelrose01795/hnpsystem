@@ -15,6 +15,7 @@ import { createCustomerDisplaySlug, normalizeCustomerSlug } from "@/lib/customer
 import { isValidUuid } from "@/lib/utils/ids";
 import { createOrUpdateVehicle } from "@/lib/database/vehicles";
 import { TabGroup } from "@/components/tabAPI/TabGroup";
+import { prefetchJob } from "@/lib/swr/prefetch";
 
 const TAB_DEFINITIONS = [
   { id: "vehicles", label: "Vehicles" },
@@ -623,6 +624,7 @@ const HistoryTab = ({ jobs }) => {
             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
               <Link
                 href={`/job-cards/${encodeURIComponent(job.job_number)}`}
+                onMouseEnter={() => prefetchJob(job.job_number)} // warm SWR cache on hover
                 style={{
                   borderRadius: "var(--radius-pill)",
                   padding: "10px 18px",

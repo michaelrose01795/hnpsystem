@@ -10,6 +10,7 @@ import { getAllJobs, updateJob } from "@/lib/database/jobs";
 import { resolveMainStatusId } from "@/lib/status/statusFlow";
 import { logJobSubStatus } from "@/lib/services/jobStatusService";
 import { SearchBar } from "@/components/searchBarAPI";
+import { revalidateAllJobs } from "@/lib/swr/mutations";
 
 const WASH_KEYWORDS = ["wash", "valet", "clean"];
 const VALET_TABLE_COLUMNS =
@@ -449,6 +450,7 @@ export default function ValetDashboard() {
 
         if (!cancelled) {
           setJobs(syncedJobs);
+          revalidateAllJobs(); // sync SWR cache after auto-field updates
           const initial = {};
           syncedJobs.forEach((job) => {
             initial[job.id] = buildChecklist(job);
@@ -549,6 +551,7 @@ export default function ValetDashboard() {
           ...prev,
           [jobId]: persistedChecklist,
         }));
+        revalidateAllJobs(); // sync SWR cache after wash toggle
       } catch (err) {
         setValetState((prev) => ({
           ...prev,

@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/router";
 import { createCustomerDisplaySlug } from "@/lib/customers/slug";
+import { prefetchJob } from "@/lib/swr/prefetch";
 
 const MIN_QUERY_LENGTH = 2;
 
@@ -274,6 +275,12 @@ const GlobalSearch = ({
     setNavResults([]);
     setActiveIndex(0);
 
+    // Prefetch job data before navigating to a job card page
+    if (typeof normalisedDestination === "string" && normalisedDestination.includes("/job-cards/")) {
+      const jobSegment = normalisedDestination.split("/job-cards/")[1]?.split("?")[0]?.split("/").pop();
+      if (jobSegment) prefetchJob(decodeURIComponent(jobSegment));
+    }
+
     router.push(normalisedDestination);
   };
 
@@ -352,7 +359,11 @@ const GlobalSearch = ({
                 <button
                   key={`${item.type}-${item.title}-${index}`}
                   type="button"
-                  onMouseEnter={() => setActiveIndex(index)}
+                  onMouseEnter={() => {
+                    setActiveIndex(index);
+                    // Prefetch job data when hovering over a job card search result
+                    if (item.type === "job" && item.jobNumber) prefetchJob(item.jobNumber);
+                  }}
                   onClick={() => handleSelect(item)}
                   style={{
                     display: "flex",

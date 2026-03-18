@@ -37,6 +37,7 @@
     "react-dom": "^19.2.1",
     "react-pdf": "^10.2.0",
     "react-select": "^5.10.2",
+    "swr": "^2.4.1",
     "tailwindcss": "^4.1.17",
     "vercel": "^50.32.5"
   },

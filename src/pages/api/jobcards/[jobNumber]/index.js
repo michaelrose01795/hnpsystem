@@ -143,13 +143,13 @@ export default async function handler(req, res) {
 
     const { data } = liveResult;
     const { jobCard, customer, vehicle } = data;
-    const notes = jobCard.id ? await getNotesByJob(jobCard.id) : [];
+    // Fetch notes and customer history in parallel to reduce response time
+    const [notes, customerJobs] = await Promise.all([
+      jobCard.id ? getNotesByJob(jobCard.id) : [], // fetch job notes
+      jobCard.customerId ? getCustomerJobs(jobCard.customerId) : [], // fetch customer job history
+    ]);
     const sharedNote = notes[0] || null;
-    let vehicleJobHistory = [];
-    if (jobCard.customerId) {
-      const customerJobs = await getCustomerJobs(jobCard.customerId);
-      vehicleJobHistory = mapCustomerJobsToHistory(customerJobs, jobCard.reg);
-    }
+    const vehicleJobHistory = mapCustomerJobsToHistory(customerJobs, jobCard.reg);
 
     // Serve hot cache for fast reloads; callers can bypass with force=1.
     res.setHeader("Cache-Control", requestForce ? "no-store, max-age=0, must-revalidate" : HOT_CACHE_HEADER);

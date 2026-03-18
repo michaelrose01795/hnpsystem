@@ -63,3 +63,13 @@ have it os when the page is realosed it doesnt think the write up check boxes ar
 CHECK CODEX
 Make sure if the job status is within the Invovce or release status then only the "Key location Service showroom Car location Service" section can be edited, nothing else within the customer request, Parts, Write Up, VHC tab can be changed, have it so another Payment cannot be captured once its already be captured.
 
+
+
+
+
+TODO CLAUDE
+Do a deep dive into why the writeup tab within the jobcards/[jobnumber] page is constatntly reloading front end. deep dive to fix this so its not costatnly relaoding front end so the user cannot use it, have it load backend so it doesnt effect the user at all but it saves to the database with any changes in correct time. 
+
+
+CHECK CODEX
+Have it so the click and drag of the rows with the in the tech cards works within this section /job-cards/waiting/nextjobs :: 2.2 (nextjobs-technicians) And /job-cards/waiting/nextjobs :: 2.1.1 (nextjobs-outstanding-scroll) section so the user can just click on the job card card adn drag into the tech/mot tests/ back into the Outstanding Jobs section easily, this is a quicker way of assigning a job to a tech and works the same as clicking as clicking assign tech button. Make sure this works on iPad as well as windows, and when click and dragging give an indication on where its going to go with a accent colour line, the rows and be placed above r in the middle or below other rows for easy job sorting as well. Have it so when click and drag is active highlighting is disabled like when moving the floating notes section. 

@@ -18,6 +18,7 @@ import { useRoster } from "@/context/RosterContext";
 import CheckSheetPopup from "@/components/popups/CheckSheetPopup";
 import { useTheme } from "@/styles/themeProvider";
 import ModalPortal from "@/components/popups/ModalPortal";
+import { revalidateAllJobs } from "@/lib/swr/mutations";
 
 // ✅ Helper ensures every paragraph is prefixed with a bullet dash
 const formatNoteValue = (value = "") => {
@@ -864,7 +865,7 @@ const withTimeout = async (promise, timeoutMs = 10000) => {
   }
 };
 
-export default function WriteUpForm({
+function WriteUpForm({
   jobNumber,
   jobCardData = null,
   showHeader = true,
@@ -952,6 +953,13 @@ export default function WriteUpForm({
   const [writeUpMeta, setWriteUpMeta] = useState({ jobId: null, writeupId: null });
   const warmHydratedJobRef = useRef(null);
   const warmStartReadyRef = useRef(Boolean(jobCardData?.jobCard));
+  // Tracks when we last wrote to the DB so the realtime handler can skip echoes
+  const lastLocalSaveAtRef = useRef(0);
+  // Ref-mirror of writeUpData — lets performWriteUpSave / persistLiveNotes read
+  // the latest state without being in their dependency arrays, breaking the
+  // cascade where every keystroke recreates those callbacks + all autosave effects.
+  const writeUpDataRef = useRef(writeUpData);
+  useEffect(() => { writeUpDataRef.current = writeUpData; });
 
   const markFieldsSynced = useCallback((fields) => {
     lastSyncedFieldsRef.current = {
@@ -1171,20 +1179,22 @@ export default function WriteUpForm({
         if (!silent) {
           setSaving(true);
         }
-        const result = await saveWriteUpToDatabase(jobNumber, writeUpData);
+        const currentWriteUp = writeUpDataRef.current;
+        const result = await saveWriteUpToDatabase(jobNumber, currentWriteUp);
 
         if (result?.success) {
-          const nextCompletionStatus = result.completionStatus || writeUpData.completionStatus;
+          const nextCompletionStatus = result.completionStatus || currentWriteUp.completionStatus;
           setWriteUpData((prev) => ({
             ...prev,
             completionStatus: nextCompletionStatus,
           }));
 
           const requestsForPartsStatus = jobData?.jobCard?.partsRequests || [];
+          const hasRectificationTasks = currentWriteUp.tasks.some((t) => t && !isFaultTaskSource(t.source));
           const desiredStatus = determineJobStatusFromTasks(
-            writeUpData.tasks,
+            currentWriteUp.tasks,
             requestsForPartsStatus,
-            rectificationTasks.length > 0
+            hasRectificationTasks
           );
           const currentMainStatus = jobData?.jobCard?.status || "";
           const currentTechCompletionStatus = jobData?.jobCard?.techCompletionStatus || "";
@@ -1216,8 +1226,10 @@ export default function WriteUpForm({
             }
           }
 
-          markTasksSynced(computeTaskSignature(writeUpData.tasks, nextCompletionStatus));
-          markExtrasSynced(computeExtrasSignature(writeUpData));
+          lastLocalSaveAtRef.current = Date.now(); // suppress realtime echo
+          revalidateAllJobs(); // sync SWR cache after write-up save / status change
+          markTasksSynced(computeTaskSignature(currentWriteUp.tasks, nextCompletionStatus));
+          markExtrasSynced(computeExtrasSignature(currentWriteUp));
           if (typeof window !== "undefined") {
             window.dispatchEvent(new CustomEvent("app:drafts:clear-route"));
           }
@@ -1255,10 +1267,8 @@ export default function WriteUpForm({
     },
     [
       jobNumber,
-      writeUpData,
       jobData?.jobCard?.partsRequests,
       jobData?.jobCard?.id,
-      rectificationTasks.length,
       userId,
       onSaveSuccess,
       isTech,
@@ -1707,8 +1717,8 @@ export default function WriteUpForm({
           tasks: checklistTasks,
           meta: {
             caused: sanitizedFields.caused || "",
-            additionalParts: writeUpData.additionalParts || "",
-            vhcAuthorizationId: writeUpData.vhcAuthorizationId || null,
+            additionalParts: writeUpDataRef.current.additionalParts || "",
+            vhcAuthorizationId: writeUpDataRef.current.vhcAuthorizationId || null,
             sectionEditors: normalizedEditors,
           },
         },
@@ -1759,6 +1769,7 @@ export default function WriteUpForm({
           }));
         }
 
+        lastLocalSaveAtRef.current = Date.now(); // suppress realtime echo
         markFieldsSynced({
           ...sanitizedFields,
           causeSignature: buildCauseSignature(normalizedCauseEntries),
@@ -1773,11 +1784,16 @@ export default function WriteUpForm({
       username,
       writeUpMeta.jobId,
       writeUpMeta.writeupId,
-      writeUpData.additionalParts,
-      writeUpData.vhcAuthorizationId,
       markFieldsSynced,
     ]
   );
+
+  // Stable refs for save callbacks — autosave effects read these instead of
+  // depending on the callbacks directly, preventing cascade re-fires.
+  const performWriteUpSaveRef = useRef(performWriteUpSave);
+  useEffect(() => { performWriteUpSaveRef.current = performWriteUpSave; });
+  const persistLiveNotesRef = useRef(persistLiveNotes);
+  useEffect(() => { persistLiveNotesRef.current = persistLiveNotes; });
 
   // ✅ Toggle checklist status and auto-update completion state
   const toggleTaskStatus = (taskKey) => {
@@ -1994,7 +2010,7 @@ export default function WriteUpForm({
 
     autoSaveTimeoutRef.current = setTimeout(() => {
       autoSaveTimeoutRef.current = null;
-      void performWriteUpSave({ silent: true });
+      void performWriteUpSaveRef.current({ silent: true });
     }, 800);
 
     return () => {
@@ -2003,7 +2019,7 @@ export default function WriteUpForm({
         autoSaveTimeoutRef.current = null;
       }
     };
-  }, [readOnly, writeUpMeta.jobId, writeUpData.tasks, writeUpData.completionStatus, saving, performWriteUpSave]);
+  }, [readOnly, writeUpMeta.jobId, writeUpData.tasks, writeUpData.completionStatus, saving]);
 
   useEffect(() => {
     onCompletionChangeRef.current = onCompletionChange;
@@ -2017,14 +2033,18 @@ export default function WriteUpForm({
     if (typeof onCompletionChangeRef.current !== "function") {
       return;
     }
-    onCompletionChangeRef.current?.(writeUpData.completionStatus || "additional_work");
+    // Defer parent state update so React can batch with other pending updates
+    const status = writeUpData.completionStatus || "additional_work";
+    queueMicrotask(() => { onCompletionChangeRef.current?.(status); });
   }, [writeUpData.completionStatus]);
 
   useEffect(() => {
     if (typeof onTasksSnapshotChangeRef.current !== "function") {
       return;
     }
-    onTasksSnapshotChangeRef.current(buildTaskChecklistSnapshot(writeUpData.tasks || []));
+    // Defer parent state update so React can batch with other pending updates
+    const snapshot = buildTaskChecklistSnapshot(writeUpData.tasks || []);
+    queueMicrotask(() => { onTasksSnapshotChangeRef.current?.(snapshot); });
   }, [writeUpData.tasks]);
 
   useEffect(() => {
@@ -2059,7 +2079,7 @@ export default function WriteUpForm({
 
       liveSyncTimeoutRef.current = setTimeout(() => {
         liveSyncTimeoutRef.current = null;
-        persistLiveNotes({
+        persistLiveNotesRef.current({
           ...snapshot,
           causeEntries: writeUpData.causeEntries,
           sectionEditors: snapshot.sectionEditors,
@@ -2080,7 +2100,6 @@ export default function WriteUpForm({
     writeUpData.causeEntries,
     writeUpData.sectionEditors,
     writeUpMeta.jobId,
-    persistLiveNotes,
     saving,
   ]);
 
@@ -2103,7 +2122,7 @@ export default function WriteUpForm({
     autoSaveExtrasTimeoutRef.current = setTimeout(() => {
       autoSaveExtrasTimeoutRef.current = null;
       lastSyncedExtrasRef.current.signature = signature;
-      void performWriteUpSave({ silent: true });
+      void performWriteUpSaveRef.current({ silent: true });
     }, 800);
 
     return () => {
@@ -2124,7 +2143,6 @@ export default function WriteUpForm({
     writeUpData.booked,
     writeUpData.jobDescription,
     writeUpMeta.jobId,
-    performWriteUpSave,
     saving,
   ]);
 
@@ -2149,6 +2167,10 @@ export default function WriteUpForm({
 
     const channel = supabase.channel(`write-up-live-${writeUpMeta.jobId}`);
     const handleRealtime = (payload) => {
+      // Skip echoes from our own recent saves (avoids unnecessary state comparisons)
+      if (Date.now() - lastLocalSaveAtRef.current < 1500) {
+        return;
+      }
       const incoming = payload?.new;
       if (!incoming) {
         return;
@@ -2960,3 +2982,24 @@ export default function WriteUpForm({
     </div>
   );
 }
+
+// Prevent parent re-renders (SWR polling, realtime listeners, focus revalidation)
+// from cascading into WriteUpForm. Only re-render when writeUp-relevant data changes.
+export default React.memo(WriteUpForm, (prevProps, nextProps) => {
+  // Return true = skip re-render (props are equal)
+  if (prevProps.jobNumber !== nextProps.jobNumber) return false;
+  if (prevProps.readOnly !== nextProps.readOnly) return false;
+  if (prevProps.showHeader !== nextProps.showHeader) return false;
+  if (prevProps.onSaveSuccess !== nextProps.onSaveSuccess) return false;
+  if (prevProps.onCompletionChange !== nextProps.onCompletionChange) return false;
+  if (prevProps.onRequestStatusesChange !== nextProps.onRequestStatusesChange) return false;
+  if (prevProps.onTasksSnapshotChange !== nextProps.onTasksSnapshotChange) return false;
+  const prevJob = prevProps.jobCardData?.jobCard;
+  const nextJob = nextProps.jobCardData?.jobCard;
+  if (prevJob !== nextJob) {
+    if (!prevJob || !nextJob) return false;
+    if (prevJob.writeUp !== nextJob.writeUp) return false;
+    if (prevJob.authorizedVhcItems !== nextJob.authorizedVhcItems) return false;
+  }
+  return true;
+});

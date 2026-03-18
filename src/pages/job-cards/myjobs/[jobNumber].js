@@ -28,6 +28,7 @@ import {
   resolveSubStatusId,
 } from "@/lib/status/statusFlow";
 import { DISPLAY as TECH_DISPLAY } from "@/lib/status/catalog/tech";
+import { revalidateAllJobs } from "@/lib/swr/mutations"; // SWR cache invalidation after mutations
 
 // VHC Section Modals
 import WheelsTyresDetailsModal from "@/components/VHC/WheelsTyresDetailsModal";
@@ -678,6 +679,7 @@ export default function TechJobDetailPage() {
             }
           }
           await logJobSubStatus(jobCardId, targetStatus, dbUserId, restUpdates?.status_change_reason);
+          revalidateAllJobs(); // sync status change to other pages
           return { status: targetStatus };
         } catch (error) {
           console.error("syncJobStatus error:", error);
@@ -719,6 +721,7 @@ export default function TechJobDetailPage() {
               },
             };
           });
+          revalidateAllJobs(); // sync status change to other pages
           return response.data;
         }
       } catch (error) {
@@ -1644,6 +1647,7 @@ export default function TechJobDetailPage() {
           },
         };
       });
+      revalidateAllJobs(); // sync status change to other pages
 
       const actionType = resolveNextActionType(result.data.status);
       if (actionType) {
@@ -2313,6 +2317,7 @@ export default function TechJobDetailPage() {
             },
           };
         });
+        revalidateAllJobs(); // sync completion status to other pages
       }
     }
     router.push("/job-cards/myjobs");

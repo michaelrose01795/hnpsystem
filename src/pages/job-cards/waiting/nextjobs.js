@@ -2,7 +2,7 @@
 // file location: src/pages/job-cards/waiting/nextjobs.js
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback } from "react"; // Core React hooks
+import React, { useState, useMemo, useEffect, useCallback, useRef } from "react"; // Core React hooks
 import Layout from "@/components/Layout"; // Main layout wrapper
 import { useUser } from "@/context/UserContext"; // Logged-in user context
 import { useRoster } from "@/context/RosterContext";
@@ -18,6 +18,8 @@ import { supabase } from "@/lib/supabaseClient";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { SearchBar } from "@/components/searchBarAPI";
 import { deriveJobTypeDisplay } from "@/lib/jobType/display";
+import { revalidateAllJobs } from "@/lib/swr/mutations";
+import { prefetchJob } from "@/lib/swr/prefetch"; // warm SWR cache on hover for instant navigation
 
 // Layout constants ensure consistent panel sizing and scroll thresholds
 const VISIBLE_JOBS_PER_PANEL = 5;
@@ -82,6 +84,8 @@ const toStatusKey = (status) => (status ? String(status).trim().toUpperCase() : 
 const OUTSTANDING_VISIBLE_ROWS = 1;
 const OUTSTANDING_CARD_HEIGHT = 210;
 const OUTSTANDING_GRID_MAX_HEIGHT_PX = `${OUTSTANDING_VISIBLE_ROWS * OUTSTANDING_CARD_HEIGHT}px`;
+const DRAG_START_THRESHOLD_PX = 8;
+const DRAG_PREVIEW_OFFSET_PX = 16;
 
 const formatCheckedInTime = (value) => {
   if (!value) return "Not recorded";
@@ -155,6 +159,34 @@ const toUserIdKey = (value) => {
   return Number.isFinite(numeric) ? String(numeric) : null;
 };
 
+const getSortablePosition = (job) => {
+  const numeric = Number(job?.position);
+  return Number.isFinite(numeric) ? numeric : null;
+};
+
+const getComparableTimestamp = (value) => {
+  if (!value) return 0;
+  const timestamp = new Date(value).getTime();
+  return Number.isFinite(timestamp) ? timestamp : 0;
+};
+
+const compareJobsForBoard = (left, right) => {
+  const leftPosition = getSortablePosition(left);
+  const rightPosition = getSortablePosition(right);
+
+  if (leftPosition !== null && rightPosition !== null && leftPosition !== rightPosition) {
+    return leftPosition - rightPosition;
+  }
+  if (leftPosition !== null && rightPosition === null) return -1;
+  if (leftPosition === null && rightPosition !== null) return 1;
+
+  const checkedInDifference =
+    getComparableTimestamp(right?.checkedInAt) - getComparableTimestamp(left?.checkedInAt);
+  if (checkedInDifference !== 0) return checkedInDifference;
+
+  return getComparableTimestamp(right?.createdAt) - getComparableTimestamp(left?.createdAt);
+};
+
 const mapActiveClockingRow = (row = {}) => {
   const job = row.job || {};
   const vehicle = job.vehicle || {};
@@ -222,11 +254,13 @@ export default function NextJobsPage() {
   const [assignPopup, setAssignPopup] = useState(false); // Assign popup
   const [searchTerm, setSearchTerm] = useState(""); // Search filter
   const [draggingJob, setDraggingJob] = useState(null); // Job being dragged
-  const [dragOverTarget, setDragOverTarget] = useState(null); // Track which section/tech is being hovered over
-  const [dragOverJob, setDragOverJob] = useState(null); // Track which specific job is being hovered over
+  const [dragState, setDragState] = useState(null);
+  const [dropIndicator, setDropIndicator] = useState(null);
   const [feedbackMessage, setFeedbackMessage] = useState(null); // Success/error feedback
   const [loading, setLoading] = useState(true); // Loading state
   const [activeClockingsByUser, setActiveClockingsByUser] = useState({});
+  const dragStateRef = useRef(null);
+  const dropIndicatorRef = useRef(null);
 
   // ✅ Manager access check
   const username = user?.username;
@@ -680,7 +714,7 @@ export default function NextJobsPage() {
         const statusKey = toStatusKey(job.status);
         const isCheckedIn = Boolean(job.checkedInAt) || statusKey === "CHECKED IN";
         return isCheckedIn && !assignedToStaff;
-      }),
+      }).sort(compareJobsForBoard),
     [jobs, techIdSet, motIdSet, dbTechnicians, dbMotTesters]
   );
 
@@ -727,7 +761,7 @@ export default function NextJobsPage() {
 
         return jobAssignedName && jobAssignedName === normalizedAssignee;
       })
-      .sort((a, b) => (a.position || 0) - (b.position || 0));
+      .sort(compareJobsForBoard);
   };
 
   const assignedJobs = useMemo(
@@ -748,6 +782,39 @@ export default function NextJobsPage() {
         jobs: getJobsForAssignee(tester),
       })),
     [techPanelJobs, motPanelList]
+  );
+
+  const assigneeLookup = useMemo(() => {
+    const map = new Map();
+    [...assignedJobs, ...assignedMotJobs].forEach((assignee) => {
+      map.set(String(assignee.panelKey), assignee);
+    });
+    return map;
+  }, [assignedJobs, assignedMotJobs]);
+
+  const findAssigneeForJob = useCallback(
+    (job) => {
+      if (!job) return null;
+      const jobAssignedIdKey = toUserIdKey(job.assignedTech?.id ?? job.assignedTo);
+      const jobAssignedName = normalizeDisplayName(
+        job.assignedTech?.name ||
+          job.technician ||
+          (typeof job.assignedTo === "string" ? job.assignedTo : "")
+      );
+
+      for (const assignee of assigneeLookup.values()) {
+        const assigneeIdKey = toUserIdKey(assignee.id);
+        if (jobAssignedIdKey && assigneeIdKey === jobAssignedIdKey) {
+          return assignee;
+        }
+        if (jobAssignedName && normalizeDisplayName(assignee.name) === jobAssignedName) {
+          return assignee;
+        }
+      }
+
+      return null;
+    },
+    [assigneeLookup]
   );
 
   const handleOpenJobDetails = (job) => {
@@ -786,6 +853,7 @@ export default function NextJobsPage() {
 
   const handleViewSelectedJobCard = () => {
     if (!selectedJob?.jobNumber) return;
+    prefetchJob(selectedJob.jobNumber); // warm SWR cache for instant load
     router.push(`/job-cards/${encodeURIComponent(selectedJob.jobNumber)}`);
   };
 
@@ -837,6 +905,7 @@ export default function NextJobsPage() {
     console.log("✅ Technician assigned successfully:", updatedJob); // Debug log
 
     const latestJobs = await fetchJobs();
+    revalidateAllJobs(); // sync SWR cache after technician assignment
     const refreshedJob = latestJobs.find((job) => job.id === jobId);
 
     setAssignPopup(false); // Close assign popup
@@ -883,6 +952,7 @@ export default function NextJobsPage() {
     console.log("✅ Technician unassigned successfully:", updatedJob); // Debug log
 
     const latestJobs = await fetchJobs();
+    revalidateAllJobs(); // sync SWR cache after technician unassignment
     const refreshedJob = latestJobs.find((job) => job.id === jobId);
 
     setSelectedJob(refreshedJob || selectedJob);
@@ -892,123 +962,298 @@ export default function NextJobsPage() {
     });
   };
 
-  // ✅ Drag handlers for reordering and reassigning
-  const handleDragStart = (job, e) => {
-    if (!hasAccess) return; // Only managers can drag
-    setDraggingJob(job); // Set the job being dragged
-    e.dataTransfer.effectAllowed = "move"; // Set cursor effect
-  };
+  const clearDragState = useCallback(() => {
+    dragStateRef.current = null;
+    dropIndicatorRef.current = null;
+    setDragState(null);
+    setDraggingJob(null);
+    setDropIndicator(null);
+  }, []);
 
-  const handleDragOver = (e) => {
-    if (!hasAccess) return; // Only managers can drop
-    e.preventDefault(); // Allow drop
-    e.dataTransfer.dropEffect = "move"; // Set cursor effect
-  };
+  const resolveDropIndicator = useCallback((clientX, clientY, job) => {
+    if (typeof document === "undefined" || !job) return null;
 
-  // ✅ IMPROVED: Track which section is being hovered over (works for entire box)
-  const handleDragEnterSection = (target, e) => {
-    if (!hasAccess || !draggingJob) return;
-    e.stopPropagation(); // Prevent event bubbling
-    setDragOverTarget(target); // Set the target being hovered over
-  };
+    const element = document.elementFromPoint(clientX, clientY);
+    if (!element) return null;
 
-  // ✅ IMPROVED: Track which specific job is being hovered over
-  const handleDragEnterJob = (jobNumber, techName, e) => {
-    if (!hasAccess || !draggingJob) return;
-    e.stopPropagation(); // Prevent event bubbling
-    setDragOverJob(jobNumber); // Set the specific job being hovered over
-    setDragOverTarget(techName); // Also set the tech section as active
-  };
+    const targetContainer = element.closest("[data-dnd-target-type]");
+    if (!targetContainer) return null;
 
-  const handleDragLeave = (e) => {
-    if (!hasAccess || !draggingJob) return;
-    // Only clear if we're leaving the container entirely
-    const relatedTarget = e.relatedTarget;
-    if (!relatedTarget || !e.currentTarget.contains(relatedTarget)) {
-      setDragOverTarget(null); // Clear hover target
-      setDragOverJob(null); // Clear job hover
-    }
-  };
+    const targetType = targetContainer.getAttribute("data-dnd-target-type");
+    const targetKey = targetContainer.getAttribute("data-dnd-target-key") || targetType;
+    const jobCard = element.closest("[data-dnd-job-card='true']");
 
-  // ✅ NEW: Handle drop on tech section (assign tech and reorder)
-  const handleDropOnTech = async (targetJob, tech) => {
-    if (!hasAccess || !draggingJob) return; // Only managers can reorder
-
-    console.log("🔄 Dropping job on tech section:", tech.name); // Debug log
-
-    // Get the current technician of the dragged job
-    const draggingJobTechRaw =
-      draggingJob.assignedTech?.name || draggingJob.technician || "";
-    const draggingJobTech = normalizeDisplayName(draggingJobTechRaw);
-    const targetTech = normalizeDisplayName(tech.name);
-
-    // If dropping on a different technician, reassign the job
-    if (draggingJobTech !== targetTech) {
-      console.log("🔄 Reassigning job to new technician:", tech.name); // Debug log
-      const identifier =
-        tech.id && Number.isInteger(Number(tech.id))
-          ? Number(tech.id)
-          : tech.id || tech.name;
-      await assignTechnicianToJob(draggingJob.id, identifier, tech.name);
+    if (jobCard && targetContainer.contains(jobCard)) {
+      const targetJobNumber = jobCard.getAttribute("data-dnd-job-number");
+      const rect = jobCard.getBoundingClientRect();
+      return {
+        targetType,
+        targetKey,
+        targetJobNumber,
+        placement: clientY < rect.top + rect.height / 2 ? "before" : "after",
+      };
     }
 
-    // Remove the dragged job from the tech's job list
-    const updatedTechJobs = tech.jobs.filter(
-      (j) => j.jobNumber !== draggingJob.jobNumber
-    );
-    
-    // Find where to insert the dragged job (at the target job's position)
-    const dropIndex = targetJob 
-      ? updatedTechJobs.findIndex((j) => j.jobNumber === targetJob.jobNumber)
-      : updatedTechJobs.length; // If no target job, add to end
-    
-    // Insert the dragged job at the drop position
-    updatedTechJobs.splice(dropIndex, 0, draggingJob);
+    return {
+      targetType,
+      targetKey,
+      targetJobNumber: null,
+      placement: "after",
+    };
+  }, []);
 
-    // Reindex positions (1-based index)
-    const reindexed = updatedTechJobs.map((j, i) => ({
-      ...j,
-      position: i + 1, // Position starts at 1
+  const handleCardPointerDown = useCallback(
+    (job, onClick) => (event) => {
+      if (
+        !hasAccess ||
+        (event.pointerType === "mouse" && event.button !== 0)
+      ) {
+        return;
+      }
+
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+
+      const nextState = {
+        job,
+        pointerId: event.pointerId,
+        originX: event.clientX,
+        originY: event.clientY,
+        clientX: event.clientX,
+        clientY: event.clientY,
+        onClick,
+        started: false,
+      };
+
+      dragStateRef.current = nextState;
+      setDragState(nextState);
+    },
+    [hasAccess]
+  );
+
+  const updateJobPositions = useCallback(async (jobsToUpdate) => {
+    const reindexed = jobsToUpdate.map((job, index) => ({
+      ...job,
+      position: index + 1,
     }));
 
-    console.log("📝 Updating positions for", reindexed.length, "jobs"); // Debug log
+    await Promise.all(
+      reindexed
+        .filter((job) => job?.id)
+        .map((job) => updateJobPosition(job.id, job.position))
+    );
+  }, []);
 
-    // Update all reindexed jobs in Supabase using the helper function
-    for (const job of reindexed) {
-      await updateJobPosition(job.id, job.position); // Update each job's position
+  const handleDropOnTech = useCallback(
+    async (job, indicator) => {
+      const tech = assigneeLookup.get(String(indicator?.targetKey));
+      if (!tech || !job) return;
+
+      const sourceAssignee = findAssigneeForJob(job);
+      const draggingJobTechRaw = job.assignedTech?.name || job.technician || "";
+      const draggingJobTech = normalizeDisplayName(draggingJobTechRaw);
+      const targetTech = normalizeDisplayName(tech.name);
+      const sameAssignee = draggingJobTech && draggingJobTech === targetTech;
+
+      if (sameAssignee && indicator?.targetJobNumber === job.jobNumber) {
+        return;
+      }
+
+      if (!sameAssignee) {
+        const identifier =
+          tech.id && Number.isInteger(Number(tech.id))
+            ? Number(tech.id)
+            : tech.id || tech.name;
+        await assignTechnicianToJob(job.id, identifier, tech.name);
+      }
+
+      const updatedTechJobs = tech.jobs.filter((entry) => entry.jobNumber !== job.jobNumber);
+      const targetIndex = indicator?.targetJobNumber
+        ? updatedTechJobs.findIndex((entry) => entry.jobNumber === indicator.targetJobNumber)
+        : -1;
+      const insertIndex =
+        targetIndex === -1
+          ? updatedTechJobs.length
+          : targetIndex + (indicator?.placement === "after" ? 1 : 0);
+
+      updatedTechJobs.splice(insertIndex, 0, job);
+      await updateJobPositions(updatedTechJobs);
+
+      if (sourceAssignee && String(sourceAssignee.panelKey) !== String(tech.panelKey)) {
+        const sourceJobs = sourceAssignee.jobs.filter(
+          (entry) => entry.jobNumber !== job.jobNumber
+        );
+        await updateJobPositions(sourceJobs);
+      }
+    },
+    [assigneeLookup, findAssigneeForJob, updateJobPositions]
+  );
+
+  const handleDropOnOutstanding = useCallback(
+    async (job, indicator) => {
+      if (!job) return;
+
+      const sourceAssignee = findAssigneeForJob(job);
+      const draggingJobTechRaw = job.assignedTech?.name || job.technician || "";
+      const isAssigned = normalizeDisplayName(draggingJobTechRaw) !== "";
+
+      if (!isAssigned && indicator?.targetJobNumber === job.jobNumber) {
+        return;
+      }
+
+      if (isAssigned) {
+        await unassignTechnicianFromJob(job.id);
+        if (sourceAssignee) {
+          const sourceJobs = sourceAssignee.jobs.filter(
+            (entry) => entry.jobNumber !== job.jobNumber
+          );
+          await updateJobPositions(sourceJobs);
+        }
+      }
+
+      const updatedOutstandingJobs = outstandingJobs.filter(
+        (entry) => entry.jobNumber !== job.jobNumber
+      );
+      const targetIndex = indicator?.targetJobNumber
+        ? updatedOutstandingJobs.findIndex(
+            (entry) => entry.jobNumber === indicator.targetJobNumber
+          )
+        : -1;
+      const insertIndex =
+        targetIndex === -1
+          ? updatedOutstandingJobs.length
+          : targetIndex + (indicator?.placement === "after" ? 1 : 0);
+
+      updatedOutstandingJobs.splice(insertIndex, 0, job);
+      await updateJobPositions(updatedOutstandingJobs);
+    },
+    [findAssigneeForJob, outstandingJobs, updateJobPositions]
+  );
+
+  const completePointerDrop = useCallback(
+    async (job, indicator) => {
+      if (!job || !indicator) return;
+
+      if (indicator.targetType === "assignee") {
+        await handleDropOnTech(job, indicator);
+      }
+
+      if (indicator.targetType === "outstanding") {
+        await handleDropOnOutstanding(job, indicator);
+      }
+
+      await fetchJobs();
+      revalidateAllJobs();
+    },
+    [fetchJobs, handleDropOnOutstanding, handleDropOnTech, revalidateAllJobs]
+  );
+
+  useEffect(() => {
+    if (!dragStateRef.current) return undefined;
+
+    const handlePointerMove = (event) => {
+      if (event.pointerId !== dragStateRef.current?.pointerId) return;
+
+      const currentState = dragStateRef.current;
+      if (!currentState) return;
+
+      const movedEnough =
+        Math.abs(event.clientX - currentState.originX) >= DRAG_START_THRESHOLD_PX ||
+        Math.abs(event.clientY - currentState.originY) >= DRAG_START_THRESHOLD_PX;
+
+      const nextState = {
+        ...currentState,
+        clientX: event.clientX,
+        clientY: event.clientY,
+        started: currentState.started || movedEnough,
+      };
+
+      dragStateRef.current = nextState;
+      setDragState(nextState);
+
+      if (nextState.started) {
+        event.preventDefault();
+        setDraggingJob(nextState.job);
+        const nextIndicator = resolveDropIndicator(event.clientX, event.clientY, nextState.job);
+        dropIndicatorRef.current = nextIndicator;
+        setDropIndicator(nextIndicator);
+      }
+    };
+
+    const handlePointerEnd = async (event) => {
+      if (event.pointerId !== dragStateRef.current?.pointerId) return;
+
+      const currentState = dragStateRef.current;
+      const currentIndicator = dropIndicatorRef.current;
+      clearDragState();
+
+      if (!currentState?.started) {
+        currentState?.onClick?.();
+        return;
+      }
+
+      if (!currentIndicator) return;
+
+      try {
+        await completePointerDrop(currentState.job, currentIndicator);
+      } catch (error) {
+        console.error("❌ Failed to drop job:", error);
+        setFeedbackMessage({
+          type: "error",
+          text: `Failed to move ${currentState.job?.jobNumber || "job"}: ${
+            error?.message || "Unknown error"
+          }`,
+        });
+      }
+    };
+
+    window.addEventListener("pointermove", handlePointerMove, { passive: false });
+    window.addEventListener("pointerup", handlePointerEnd);
+    window.addEventListener("pointercancel", handlePointerEnd);
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerEnd);
+      window.removeEventListener("pointercancel", handlePointerEnd);
+    };
+  }, [clearDragState, completePointerDrop, Boolean(dragState), resolveDropIndicator]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+
+    const body = document.body;
+    if (dragState?.started) {
+      body.classList.add("nextjobs-drag-active");
+    } else {
+      body.classList.remove("nextjobs-drag-active");
     }
 
-    console.log("✅ Positions updated successfully"); // Debug log
-
-    // Refresh jobs from database
-    await fetchJobs();
-    setDraggingJob(null); // Clear dragging state
-    setDragOverTarget(null); // Clear hover target
-    setDragOverJob(null); // Clear job hover
-  };
-
-  // ✅ NEW: Handle drop on outstanding section (unassign tech)
-  const handleDropOnOutstanding = async () => {
-    if (!hasAccess || !draggingJob) return;
-
-    console.log("🔄 Dropping job on outstanding section"); // Debug log
-
-    // Unassign the technician from the job
-    await unassignTechnicianFromJob(draggingJob.id);
-
-    // Refresh jobs from database
-    await fetchJobs();
-    setDraggingJob(null); // Clear dragging state
-    setDragOverTarget(null); // Clear hover target
-    setDragOverJob(null); // Clear job hover
-  };
+    return () => {
+      body.classList.remove("nextjobs-drag-active");
+    };
+  }, [dragState?.started]);
 
   const handleNavigateToJobCard = useCallback(
     (jobNumber) => {
       if (!jobNumber) return;
+      prefetchJob(jobNumber); // warm SWR cache for instant load
       router.push(`/job-cards/${encodeURIComponent(jobNumber)}`);
     },
     [router]
+  );
+
+  const activeDropTarget =
+    dropIndicator?.targetType === "outstanding"
+      ? "outstanding"
+      : dropIndicator?.targetKey || null;
+  const isDragActive = Boolean(dragState?.started && draggingJob);
+
+  const matchesDropIndicator = useCallback(
+    (targetType, targetKey, targetJobNumber, placement) =>
+      dropIndicator?.targetType === targetType &&
+      String(dropIndicator?.targetKey || "") === String(targetKey || "") &&
+      String(dropIndicator?.targetJobNumber || "") === String(targetJobNumber || "") &&
+      dropIndicator?.placement === placement,
+    [dropIndicator]
   );
 
   const renderAssigneePanel = (assignee) => {
@@ -1021,33 +1266,35 @@ export default function NextJobsPage() {
     if (currentClocking?.customer) clockingSubtitleParts.push(currentClocking.customer);
     const clockingSubtitle = clockingSubtitleParts.join(" • ");
     const clockInLabel = currentClocking ? formatClockInTime(currentClocking.clockIn) : "";
-        return (
-          <div
-            key={panelKey}
-            data-dev-section-key={`nextjobs-panel-${panelKey}`}
-            data-dev-section-type="content-card"
-            data-dev-background-token="surface"
-            style={{
-              background: "var(--surface)",
-              border: dragOverTarget === assignee.name ? "3px solid var(--primary)" : "1px solid var(--surface-light)",
-              borderRadius: "var(--radius-xs)",
-              padding: "16px",
-              display: "flex",
-              flexDirection: "column",
-              height: PANEL_HEIGHT_PX,
-              minHeight: PANEL_HEIGHT_PX,
-              maxHeight: PANEL_HEIGHT_PX,
-              boxShadow: dragOverTarget === assignee.name ? "0 4px 12px rgba(0, 0, 0, 0.2)" : "0 2px 4px rgba(var(--shadow-rgb),0.14)",
-              transition: "all 0.2s ease",
-              backgroundColor: dragOverTarget === assignee.name ? "var(--surface-light)" : "var(--surface)"
-            }}
-      onDragOver={handleDragOver}
-      onDragEnter={(e) => handleDragEnterSection(assignee.name, e)}
-      onDragLeave={handleDragLeave}
-      onDrop={(e) => {
-        e.preventDefault();
-        handleDropOnTech(null, assignee);
-      }}
+    return (
+      <div
+        key={panelKey}
+        data-dev-section-key={`nextjobs-panel-${panelKey}`}
+        data-dev-section-type="content-card"
+        data-dev-background-token="surface"
+        data-dnd-target-type="assignee"
+        data-dnd-target-key={panelKey}
+        style={{
+          background: "var(--surface)",
+          border:
+            activeDropTarget === panelKey
+              ? "3px solid var(--primary)"
+              : "1px solid var(--surface-light)",
+          borderRadius: "var(--radius-xs)",
+          padding: "16px",
+          display: "flex",
+          flexDirection: "column",
+          height: PANEL_HEIGHT_PX,
+          minHeight: PANEL_HEIGHT_PX,
+          maxHeight: PANEL_HEIGHT_PX,
+          boxShadow:
+            activeDropTarget === panelKey
+              ? "0 4px 12px rgba(0, 0, 0, 0.2)"
+              : "0 2px 4px rgba(var(--shadow-rgb),0.14)",
+          transition: "all 0.2s ease",
+          backgroundColor:
+            activeDropTarget === panelKey ? "var(--surface-light)" : "var(--surface)",
+        }}
       >
       <p style={{
         fontWeight: "600",
@@ -1135,6 +1382,8 @@ export default function NextJobsPage() {
         data-dev-section-key={`nextjobs-joblist-${panelKey}`}
         data-dev-section-parent={`nextjobs-panel-${panelKey}`}
         data-dev-section-type="section-shell"
+        data-dnd-target-type="assignee"
+        data-dnd-target-key={panelKey}
         style={{
           flex: 1,
           minHeight: JOB_LIST_MAX_HEIGHT_PX,
@@ -1151,9 +1400,9 @@ export default function NextJobsPage() {
             No jobs assigned
           </p>
         ) : (
-          assignee.jobs.map((job, index) => (
+          assignee.jobs.map((job) => (
             <React.Fragment key={job.jobNumber}>
-              {dragOverJob === job.jobNumber && dragOverTarget === assignee.name && (
+              {matchesDropIndicator("assignee", panelKey, job.jobNumber, "before") && (
                 <div style={{
                   height: "3px",
                   backgroundColor: "var(--primary)",
@@ -1163,27 +1412,22 @@ export default function NextJobsPage() {
               )}
 
               <div
-                draggable={hasAccess}
-                onDragStart={(e) => handleDragStart(job, e)}
-                onDragOver={handleDragOver}
-                onDragEnter={(e) => handleDragEnterJob(job.jobNumber, assignee.name, e)}
-                onDragLeave={handleDragLeave}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleDropOnTech(job, assignee);
-                }}
-                onClick={() => handleOpenJobDetails(job)}
+                data-dnd-job-card="true"
+                data-dnd-job-number={job.jobNumber}
+                onPointerDown={handleCardPointerDown(job, () => handleOpenJobDetails(job))}
                 style={{
                   border: "none",
                   borderRadius: "var(--radius-xs)",
                   padding: "10px",
                   marginBottom: "8px",
                   backgroundColor:
-                    draggingJob?.jobNumber === job.jobNumber ? "var(--accent-layer-3)" : "var(--accent-purple-surface)",
+                    draggingJob?.jobNumber === job.jobNumber
+                      ? "var(--accent-layer-3)"
+                      : "var(--accent-purple-surface)",
                   cursor: hasAccess ? "grab" : "pointer",
                   transition: "all 0.2s",
-                  opacity: draggingJob?.jobNumber === job.jobNumber ? 0.5 : 1
+                  opacity: draggingJob?.jobNumber === job.jobNumber ? 0.5 : 1,
+                  touchAction: "none",
                 }}
                 onMouseEnter={(e) => {
                   if (draggingJob?.jobNumber !== job.jobNumber) {
@@ -1215,14 +1459,10 @@ export default function NextJobsPage() {
                 </p>
               </div>
 
-              {index === assignee.jobs.length - 1 &&
-                dragOverTarget === assignee.name &&
-                !dragOverJob &&
-                draggingJob && (
+              {matchesDropIndicator("assignee", panelKey, job.jobNumber, "after") && (
                   <div style={{
                     height: "3px",
                     backgroundColor: "var(--primary)",
-                    marginTop: "-8px",
                     marginBottom: "8px",
                     borderRadius: "var(--radius-xs)",
                     }} />
@@ -1231,13 +1471,26 @@ export default function NextJobsPage() {
           ))
         )}
 
-        {assignee.jobs.length === 0 &&
-          dragOverTarget === assignee.name &&
+        {assignee.jobs.length > 0 &&
+          activeDropTarget === panelKey &&
+          !dropIndicator?.targetJobNumber &&
           draggingJob && (
             <div style={{
               height: "3px",
               backgroundColor: "var(--primary)",
               borderRadius: "var(--radius-xs)",
+              marginTop: "4px",
+            }} />
+          )}
+
+        {assignee.jobs.length === 0 &&
+          activeDropTarget === panelKey &&
+          draggingJob && (
+            <div style={{
+              height: "3px",
+              backgroundColor: "var(--primary)",
+              borderRadius: "var(--radius-xs)",
+              marginTop: "12px",
             }} />
           )}
       </div>
@@ -1315,25 +1568,21 @@ export default function NextJobsPage() {
               data-dev-section-parent="nextjobs-page-shell"
               data-dev-section-type="content-card"
               data-dev-background-token="layer-section-level-3"
-              style={{
+            style={{
                 marginBottom: "12px",
                 background: "var(--layer-section-level-3)",
                 borderRadius: "var(--radius-xs)",
-            border: dragOverTarget === "outstanding" ? "3px solid var(--primary)" : "1px solid var(--surface-light)",
-            boxShadow: dragOverTarget === "outstanding" ? "0 4px 12px rgba(0, 0, 0, 0.2)" : "0 2px 4px rgba(var(--shadow-rgb),0.08)",
+            border: activeDropTarget === "outstanding" ? "3px solid var(--primary)" : "1px solid var(--surface-light)",
+            boxShadow: activeDropTarget === "outstanding" ? "0 4px 12px rgba(0, 0, 0, 0.2)" : "0 2px 4px rgba(var(--shadow-rgb),0.08)",
             padding: "16px",
             display: "flex",
             flexDirection: "column",
             minHeight: OUTSTANDING_GRID_MAX_HEIGHT_PX,
             flexShrink: 0,
             transition: "all 0.2s ease",
-            backgroundColor: dragOverTarget === "outstanding" ? "var(--surface-light)" : "var(--layer-section-level-3)",
+            backgroundColor: activeDropTarget === "outstanding" ? "var(--surface-light)" : "var(--layer-section-level-3)",
             color: "var(--text-primary)"
           }}
-          onDragOver={handleDragOver}
-          onDragEnter={(e) => handleDragEnterSection("outstanding", e)}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDropOnOutstanding}
         >
           <div
             data-dev-section-key="nextjobs-outstanding-header"
@@ -1369,8 +1618,12 @@ export default function NextJobsPage() {
             data-dev-section-key="nextjobs-outstanding-scroll"
             data-dev-section-parent="nextjobs-outstanding"
             data-dev-section-type="section-shell"
+            data-dnd-target-type="outstanding"
+            data-dnd-target-key="outstanding"
             style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
             <div
+              data-dnd-target-type="outstanding"
+              data-dnd-target-key="outstanding"
               style={{
                 flex: 1,
                 overflowY: "auto",
@@ -1379,9 +1632,21 @@ export default function NextJobsPage() {
               }}
             >
               {filteredOutstandingJobs.length === 0 ? (
-                <p style={{ color: "var(--text-primary)", fontSize: "14px", margin: 0 }}>
-                  {searchTerm.trim() ? "No matching jobs found." : "No outstanding jobs."}
-                </p>
+                <>
+                  <p style={{ color: "var(--text-primary)", fontSize: "14px", margin: 0 }}>
+                    {searchTerm.trim() ? "No matching jobs found." : "No outstanding jobs."}
+                  </p>
+                  {activeDropTarget === "outstanding" && draggingJob && (
+                    <div
+                      style={{
+                        height: "3px",
+                        backgroundColor: "var(--primary)",
+                        borderRadius: "var(--radius-xs)",
+                        marginTop: "12px",
+                      }}
+                    />
+                  )}
+                </>
               ) : (
                 <div className="outstanding-grid">
                   {filteredOutstandingJobs.map((job) => {
@@ -1390,116 +1655,145 @@ export default function NextJobsPage() {
                     const requestsCount = getJobRequestsCount(job);
                     const appointmentDisplay = formatAppointmentTime(job);
                     return (
-                      <div
-                        key={job.jobNumber}
-                        draggable={hasAccess}
-                        onDragStart={(e) => handleDragStart(job, e)}
-                        onClick={(event) => {
-                          event.preventDefault();
-                          if (draggingJob) return;
-                          handleOpenJobDetails(job);
-                        }}
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "8px",
-                          padding: "14px",
-                          borderRadius: "var(--radius-md)",
-                          border:
-                            draggingJob?.jobNumber === job.jobNumber
-                              ? "2px dashed var(--primary)"
-                              : "1px solid var(--surface-light)",
-                          backgroundColor:
-                            draggingJob?.jobNumber === job.jobNumber ? "var(--surface-light)" : "var(--surface)",
-                          cursor: hasAccess ? "grab" : "pointer",
-                                      transition: "border 0.2s, background-color 0.2s, transform 0.2s",
-                        }}
-                        title={`${job.jobNumber} – ${job.customer || "Unknown customer"}`}
-                      >
+                      <React.Fragment key={job.jobNumber}>
+                        {matchesDropIndicator("outstanding", "outstanding", job.jobNumber, "before") && (
+                          <div style={{
+                            height: "3px",
+                            backgroundColor: "var(--primary)",
+                            marginBottom: "8px",
+                            borderRadius: "var(--radius-xs)",
+                          }} />
+                        )}
                         <div
+                          data-dnd-job-card="true"
+                          data-dnd-job-number={job.jobNumber}
+                          onPointerDown={handleCardPointerDown(job, () => handleOpenJobDetails(job))}
                           style={{
                             display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "flex-start",
-                            gap: "12px",
+                            flexDirection: "column",
+                            gap: "8px",
+                            padding: "14px",
+                            borderRadius: "var(--radius-md)",
+                            border:
+                              draggingJob?.jobNumber === job.jobNumber
+                                ? "2px dashed var(--primary)"
+                                : "1px solid var(--surface-light)",
+                            backgroundColor:
+                              draggingJob?.jobNumber === job.jobNumber
+                                ? "var(--surface-light)"
+                                : "var(--surface)",
+                            cursor: hasAccess ? "grab" : "pointer",
+                            transition: "border 0.2s, background-color 0.2s, transform 0.2s",
+                            touchAction: "none",
                           }}
+                          title={`${job.jobNumber} – ${job.customer || "Unknown customer"}`}
                         >
-                          <div>
-                            <div
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "flex-start",
+                              gap: "12px",
+                            }}
+                          >
+                            <div>
+                              <div
+                                style={{
+                                  fontWeight: 700,
+                                  fontSize: "16px",
+                                  color: "var(--accent-purple)",
+                                }}
+                              >
+                                {job.jobNumber}
+                              </div>
+                              <div style={{ fontSize: "13px", color: "var(--text-primary)" }}>
+                                {job.reg || "Reg TBC"}
+                              </div>
+                            </div>
+                            <span
                               style={{
+                                padding: "4px 10px",
+                                borderRadius: "var(--control-radius)",
+                                backgroundColor: "var(--danger-surface)",
+                                color: "var(--danger)",
+                                fontSize: "12px",
                                 fontWeight: 700,
-                                fontSize: "16px",
+                              }}
+                            >
+                              {jobTypeLabel}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: "13px", color: "var(--text-primary)" }}>
+                            {job.customer || "Unknown customer"}
+                          </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              flexWrap: "wrap",
+                              gap: "8px",
+                              fontSize: "12px",
+                              color: "var(--text-primary)",
+                            }}
+                          >
+                            <span>
+                              <strong>Requests:</strong> {requestsCount}
+                            </span>
+                            <span>
+                              <strong>Appointment:</strong> {appointmentDisplay}
+                            </span>
+                            <span>
+                              <strong>Checked in:</strong> {formatCheckedInTime(job.checkedInAt)}
+                            </span>
+                          </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              gap: "8px",
+                            }}
+                          >
+                            <span
+                              style={{
+                                padding: "4px 10px",
+                                borderRadius: "var(--radius-sm)",
+                                fontSize: "11px",
+                                fontWeight: 600,
+                                backgroundColor: "var(--surface-light)",
                                 color: "var(--accent-purple)",
                               }}
                             >
-                              {job.jobNumber}
-                            </div>
-                            <div style={{ fontSize: "13px", color: "var(--text-primary)" }}>
-                              {job.reg || "Reg TBC"}
-                            </div>
+                              {customerStatus}
+                            </span>
+                            <span style={{ fontSize: "12px", color: "var(--text-primary)" }}>
+                              {job.status || "Status pending"}
+                            </span>
                           </div>
-                          <span
-                            style={{
-                              padding: "4px 10px",
-                              borderRadius: "var(--control-radius)",
-                              backgroundColor: "var(--danger-surface)",
-                              color: "var(--danger)",
-                              fontSize: "12px",
-                              fontWeight: 700,
-                            }}
-                          >
-                            {jobTypeLabel}
-                          </span>
                         </div>
-                        <div style={{ fontSize: "13px", color: "var(--text-primary)" }}>
-                          {job.customer || "Unknown customer"}
-                        </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            flexWrap: "wrap",
-                            gap: "8px",
-                            fontSize: "12px",
-                          color: "var(--text-primary)",
-                        }}
-                      >
-                        <span>
-                          <strong>Requests:</strong> {requestsCount}
-                          </span>
-                          <span>
-                            <strong>Appointment:</strong> {appointmentDisplay}
-                          </span>
-                          <span>
-                            <strong>Checked in:</strong> {formatCheckedInTime(job.checkedInAt)}
-                          </span>
-                        </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            gap: "8px",
-                          }}
-                        >
-                          <span
-                            style={{
-                              padding: "4px 10px",
-                              borderRadius: "var(--radius-sm)",
-                              fontSize: "11px",
-                              fontWeight: 600,
-                              backgroundColor: "var(--surface-light)",
-                              color: "var(--accent-purple)",
-                            }}
-                          >
-                            {customerStatus}
-                          </span>
-                          <span style={{ fontSize: "12px", color: "var(--text-primary)" }}>
-                            {job.status || "Status pending"}
-                          </span>
-                        </div>
-                      </div>
+                        {matchesDropIndicator("outstanding", "outstanding", job.jobNumber, "after") && (
+                          <div style={{
+                            height: "3px",
+                            backgroundColor: "var(--primary)",
+                            marginBottom: "8px",
+                            borderRadius: "var(--radius-xs)",
+                          }} />
+                        )}
+                      </React.Fragment>
                     );
                   })}
+                  {filteredOutstandingJobs.length > 0 &&
+                    activeDropTarget === "outstanding" &&
+                    !dropIndicator?.targetJobNumber &&
+                    draggingJob && (
+                      <div
+                        style={{
+                          height: "3px",
+                          backgroundColor: "var(--primary)",
+                          borderRadius: "var(--radius-xs)",
+                          marginTop: "4px",
+                        }}
+                      />
+                    )}
                 </div>
               )}
             </div>
@@ -1569,6 +1863,51 @@ export default function NextJobsPage() {
             </div>
           )}
         </div>
+
+        {isDragActive && draggingJob && (
+          <div
+            aria-hidden="true"
+            style={{
+              position: "fixed",
+              left: dragState.clientX + DRAG_PREVIEW_OFFSET_PX,
+              top: dragState.clientY + DRAG_PREVIEW_OFFSET_PX,
+              pointerEvents: "none",
+              zIndex: 3200,
+              minWidth: "180px",
+              maxWidth: "260px",
+              padding: "10px 12px",
+              borderRadius: "var(--radius-md)",
+              border: "1px solid rgba(var(--primary-rgb), 0.28)",
+              background: "rgba(255, 255, 255, 0.96)",
+              boxShadow: "0 12px 28px rgba(0, 0, 0, 0.16)",
+              backdropFilter: "blur(8px)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "13px",
+                fontWeight: 700,
+                color: "var(--accent-purple)",
+                marginBottom: "2px",
+              }}
+            >
+              {draggingJob.jobNumber}
+            </div>
+            <div style={{ fontSize: "12px", color: "var(--text-primary)" }}>
+              {draggingJob.reg || "Reg TBC"}
+            </div>
+          </div>
+        )}
+
+        <style jsx global>{`
+          body.nextjobs-drag-active,
+          body.nextjobs-drag-active * {
+            user-select: none !important;
+            -webkit-user-select: none !important;
+            -webkit-touch-callout: none !important;
+            cursor: grabbing !important;
+          }
+        `}</style>
 
         {/* ✅ JOB DETAILS POPUP WITH EDIT BUTTON */}
         {selectedJob && (

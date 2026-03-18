@@ -7,6 +7,7 @@ import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
 import { getAllJobs } from "@/lib/database/jobs";
 import { getClockingStatus } from "@/lib/database/clocking";
+import { prefetchJob } from "@/lib/swr/prefetch";
 
 export default function TechsDashboard() {
   const router = useRouter();
@@ -292,7 +293,10 @@ export default function TechsDashboard() {
                   transition: "all 0.2s",
                   width: "100%",
                 }}
-                onMouseEnter={(e) => (e.target.style.backgroundColor = "var(--primary-dark)")}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = "var(--primary-dark)";
+                  prefetchJob(currentJob?.jobNumber); // warm SWR cache on hover
+                }}
                 onMouseLeave={(e) => (e.target.style.backgroundColor = "var(--primary)")}
               >
                 Continue Job
@@ -357,7 +361,10 @@ export default function TechsDashboard() {
                   transition: "all 0.2s",
                   width: "100%",
                 }}
-                onMouseEnter={(e) => (e.target.style.backgroundColor = "var(--primary-dark)")}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = "var(--primary-dark)";
+                  prefetchJob(nextJob?.jobNumber); // warm SWR cache on hover
+                }}
                 onMouseLeave={(e) => (e.target.style.backgroundColor = "var(--primary)")}
               >
                 Start Job
@@ -420,6 +427,7 @@ export default function TechsDashboard() {
                   onMouseEnter={(e) => {
                     e.currentTarget.style.backgroundColor = "rgba(var(--primary-rgb), 0.06)";
                     e.currentTarget.style.borderColor = "var(--primary)";
+                    prefetchJob(job.jobNumber); // warm SWR cache on hover
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.backgroundColor = "var(--surface)";

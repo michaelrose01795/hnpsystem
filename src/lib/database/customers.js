@@ -246,7 +246,39 @@ export const getCustomerJobs = async (customerId) => {
       job_source,
       waiting_status,
       created_at,
-      updated_at
+      updated_at,
+      appointments(appointment_id, scheduled_time, status, notes, created_at, updated_at),
+      job_requests(
+        request_id,
+        job_id,
+        description,
+        hours,
+        job_type,
+        sort_order,
+        status,
+        request_source,
+        vhc_item_id,
+        pre_pick_location,
+        note_text,
+        created_at,
+        updated_at
+      ),
+      vhc_checks(
+        vhc_id,
+        section,
+        issue_title,
+        issue_description,
+        approval_status,
+        authorization_state,
+        display_status,
+        severity,
+        approved_at,
+        request_id,
+        created_at,
+        updated_at
+      ),
+      job_files(file_id, file_name, file_url, file_type, folder, uploaded_by, uploaded_at),
+      invoices(invoice_number, payment_status, created_at, invoice_date)
     `)
     .eq("customer_id", customerId)
     .order('created_at', { ascending: false });
