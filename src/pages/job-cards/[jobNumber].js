@@ -4327,6 +4327,8 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
               valetJobId={jobData?.id || null}
               valetJobNumber={jobData?.jobNumber || jobNumber || ""}
               valetUserId={dbUserId || null}
+              clockingLocked={isClockingLockedByStatus}
+              clockingLockDescription={clockingLockDescription}
               onValetUploadComplete={() => fetchJobData({ silent: true, force: true })}
             />
           </div>
@@ -10594,6 +10596,8 @@ function DocumentsTab({
   valetJobId = null,
   valetJobNumber = "",
   valetUserId = null,
+  clockingLocked = false,
+  clockingLockDescription = "",
   onValetUploadComplete = () => {},
 }) {
   const [valetUploadFile, setValetUploadFile] = useState(null);
@@ -10686,7 +10690,7 @@ function DocumentsTab({
               jobId={valetJobId}
               jobNumber={valetJobNumber}
               userId={valetUserId}
-              clockingLocked={isClockingLockedByStatus}
+              clockingLocked={clockingLocked}
               lockMessage={clockingLockDescription}
             />
           </div>

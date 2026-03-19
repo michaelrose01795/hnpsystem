@@ -754,6 +754,11 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
         activeTechUserId: activeClocking?.user_id || null,
         startedAt: activeClocking?.clock_in || null,
       },
+      wash: {
+        complete: Boolean(jobRow?.maintenance_info?.valetChecklist?.wash), // Source of truth for wash status
+        completedBy: washChecklistUserName, // Who last toggled the wash checkbox
+        updatedAt: jobRow?.maintenance_info?.valetChecklist?.updatedAt || null, // When checklist was last updated
+      },
     },
     timeline: timelineEntries,
     blockingReasons: buildBlockingReasons({

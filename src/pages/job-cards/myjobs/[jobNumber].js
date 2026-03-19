@@ -38,6 +38,7 @@ import ExternalDetailsModal from "@/components/VHC/ExternalDetailsModal";
 import InternalElectricsDetailsModal from "@/components/VHC/InternalElectricsDetailsModal";
 import UndersideDetailsModal from "@/components/VHC/UndersideDetailsModal";
 import VhcCameraButton from "@/components/VHC/VhcCameraButton";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import themeConfig, {
   createVhcButtonStyle, // VHC button style factory — still comes from appTheme
   vhcCardStates, // VHC section state colours — still comes from appTheme
@@ -2333,7 +2334,11 @@ export default function TechJobDetailPage() {
 
   return (
     <Layout jobNumber={jobNumber} requiresLandscape>
-      <div
+      <DevLayoutSection
+        as="div"
+        sectionKey="myjob-page-shell"
+        sectionType="page-shell"
+        shell
         style={{
           height: "100%",
           display: "flex",
@@ -2345,7 +2350,12 @@ export default function TechJobDetailPage() {
       >
         
         {/* Header Section */}
-        <div style={{
+        <DevLayoutSection
+          as="div"
+          sectionKey="myjob-header"
+          sectionType="section-header-row"
+          parentKey="myjob-page-shell"
+          style={{
           display: "flex",
           gap: "12px",
           alignItems: "center",
@@ -2354,7 +2364,8 @@ export default function TechJobDetailPage() {
           backgroundColor: "var(--surface)",
           borderRadius: "var(--radius-xs)",
           flexShrink: 0
-        }}>
+        }}
+        >
           <div style={{
             display: "inline-flex",
             alignItems: "center",
@@ -2484,16 +2495,22 @@ export default function TechJobDetailPage() {
               </button>
             </div>
           </div>
-        </div>
+        </DevLayoutSection>
 
         {/* Quick Stats Grid */}
-        <div style={{
+        <DevLayoutSection
+          as="div"
+          sectionKey="myjob-quick-stats"
+          sectionType="section-shell"
+          parentKey="myjob-page-shell"
+          style={{
           display: "grid",
           gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
           gap: "12px",
           marginBottom: "12px",
           flexShrink: 0
-        }}>
+        }}
+        >
           {quickStats.map((stat) => {
             const isClockedHours = stat.label === "Clocked Hours";
             const isClickable = Boolean(stat.onClick);
@@ -2546,10 +2563,15 @@ export default function TechJobDetailPage() {
               </CardTag>
             );
           })}
-        </div>
+        </DevLayoutSection>
 
         {/* Tabs Navigation */}
-        <div style={{
+        <DevLayoutSection
+          as="div"
+          sectionKey="myjob-tab-row"
+          sectionType="tab-row"
+          parentKey="myjob-page-shell"
+          style={{
           borderRadius: "var(--control-radius)",
           border: "none",
           background: "var(--surface)",
@@ -2566,7 +2588,8 @@ export default function TechJobDetailPage() {
           scrollBehavior: "smooth",
           WebkitOverflowScrolling: "touch",
           marginBottom: "12px",
-        }}>
+        }}
+        >
           {visibleTabs.map((tab) => {
             const isActive = activeTab === tab;
             const isComplete =
@@ -2616,10 +2639,15 @@ export default function TechJobDetailPage() {
               </button>
             );
           })}
-        </div>
+        </DevLayoutSection>
 
         {/* Main Content Area with Scrolling */}
-        <div
+        <DevLayoutSection
+          as="div"
+          sectionKey="myjob-main-content"
+          sectionType="section-shell"
+          parentKey="myjob-page-shell"
+          shell
           style={{
             flex: 1,
             borderRadius: "var(--radius-xs)",
@@ -2633,18 +2661,36 @@ export default function TechJobDetailPage() {
           }}
         >
           
-          <div style={{ flex: 1, overflowY: "auto", paddingRight: "8px", minHeight: 0 }}>
+          <DevLayoutSection
+            as="div"
+            sectionKey="myjob-main-scroll"
+            sectionType="section-shell"
+            parentKey="myjob-main-content"
+            style={{ flex: 1, overflowY: "auto", paddingRight: "8px", minHeight: 0 }}
+          >
           
           {/* OVERVIEW TAB */}
           {activeTab === "overview" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <DevLayoutSection
+              as="div"
+              sectionKey="myjob-tab-overview"
+              sectionType="section-shell"
+              parentKey="myjob-main-scroll"
+              style={{ display: "flex", flexDirection: "column", gap: "16px" }}
+            >
               {/* Job Details */}
-              <div style={{
+              <DevLayoutSection
+                as="div"
+                sectionKey="myjob-overview-details"
+                sectionType="content-card"
+                parentKey="myjob-tab-overview"
+                style={{
                 backgroundColor: "var(--surface)",
                 padding: "24px",
                 borderRadius: "var(--radius-sm)",
                 border: "none"
-              }}>
+              }}
+              >
                 <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px" }}>
                   Job Details
                 </h3>
@@ -2767,16 +2813,28 @@ export default function TechJobDetailPage() {
                     <p style={{ marginTop: "10px", color: "var(--info-dark)", lineHeight: 1.6 }}>{jobCard.cosmeticNotes}</p>
                   </div>
                 )}
-              </div>
+              </DevLayoutSection>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px" }}>
+              <DevLayoutSection
+                as="div"
+                sectionKey="myjob-overview-summary-grid"
+                sectionType="section-shell"
+                parentKey="myjob-tab-overview"
+                style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px" }}
+              >
                 {/* Vehicle Info */}
-                <div style={{
+                <DevLayoutSection
+                  as="div"
+                  sectionKey="myjob-overview-vehicle"
+                  sectionType="content-card"
+                  parentKey="myjob-overview-summary-grid"
+                  style={{
                   backgroundColor: "var(--surface)",
                   padding: "24px",
                   borderRadius: "var(--radius-sm)",
                   border: "none"
-                }}>
+                }}
+                >
                   <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px" }}>
                     Vehicle Information
                   </h3>
@@ -2810,15 +2868,21 @@ export default function TechJobDetailPage() {
                       </div>
                     )}
                   </div>
-                </div>
+                </DevLayoutSection>
 
                 {/* Customer Info */}
-                <div style={{
+                <DevLayoutSection
+                  as="div"
+                  sectionKey="myjob-overview-customer"
+                  sectionType="content-card"
+                  parentKey="myjob-overview-summary-grid"
+                  style={{
                   backgroundColor: "var(--surface)",
                   padding: "24px",
                   borderRadius: "var(--radius-sm)",
                   border: "none"
-                }}>
+                }}
+                >
                   <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px" }}>
                     Customer Information
                   </h3>
@@ -2844,16 +2908,27 @@ export default function TechJobDetailPage() {
                       </div>
                     )}
                   </div>
-                </div>
-              </div>
-            </div>
+                </DevLayoutSection>
+              </DevLayoutSection>
+            </DevLayoutSection>
           )}
 
           {/* VHC TAB */}
           {activeTab === "vhc" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "20px", height: "100%" }}>
+            <DevLayoutSection
+              as="div"
+              sectionKey="myjob-tab-vhc"
+              sectionType="section-shell"
+              parentKey="myjob-main-scroll"
+              style={{ display: "flex", flexDirection: "column", gap: "20px", height: "100%" }}
+            >
               {!activeSection && (showVhcReopenButton ? (
-                <div style={{
+                <DevLayoutSection
+                  as="div"
+                  sectionKey="myjob-vhc-reopen-banner"
+                  sectionType="content-card"
+                  parentKey="myjob-tab-vhc"
+                  style={{
                   backgroundColor: "var(--layer-section-level-2)",
                   borderRadius: "var(--radius-sm)",
                   border: "none",
@@ -2862,7 +2937,8 @@ export default function TechJobDetailPage() {
                   alignItems: "center",
                   justifyContent: "space-between",
                   gap: "16px",
-                }}>
+                }}
+                >
                   <div>
                     <h2 style={{ margin: 0, fontSize: "20px", fontWeight: "700", color: "var(--accent-purple)" }}>
                       VHC Completed
@@ -2888,11 +2964,16 @@ export default function TechJobDetailPage() {
                   >
                     Reopen VHC
                   </button>
-                </div>
+                </DevLayoutSection>
               ) : (
                 <>
                   {/* VHC Header with Save Status */}
-                  <div style={{
+                  <DevLayoutSection
+                    as="div"
+                    sectionKey="myjob-vhc-header"
+                    sectionType="toolbar"
+                    parentKey="myjob-tab-vhc"
+                    style={{
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
@@ -2900,7 +2981,8 @@ export default function TechJobDetailPage() {
                     backgroundColor: "var(--layer-section-level-3)",
                     borderRadius: "var(--radius-sm)",
                     border: "1px solid var(--accent-purple)"
-                  }}>
+                  }}
+                  >
                     <div>
                       <h2 style={{ margin: 0, fontSize: "20px", fontWeight: "700", color: "var(--accent-purple)" }}>
                         Vehicle Health Check
@@ -2965,12 +3047,18 @@ export default function TechJobDetailPage() {
                         />
                       )}
                     </div>
-                  </div>
+                  </DevLayoutSection>
 
                   {!showVhcSummary && (
                     <>
                       {/* Mandatory Sections */}
-                      <div style={{ backgroundColor: "var(--layer-section-level-1)", borderRadius: "var(--radius-sm)", padding: "16px" }}>
+                      <DevLayoutSection
+                        as="div"
+                        sectionKey="myjob-vhc-mandatory"
+                        sectionType="content-card"
+                        parentKey="myjob-tab-vhc"
+                        style={{ backgroundColor: "var(--layer-section-level-1)", borderRadius: "var(--radius-sm)", padding: "16px" }}
+                      >
                     <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "12px", color: "var(--accent-purple)" }}>
                       Mandatory Sections
                     </h3>
@@ -3105,10 +3193,16 @@ export default function TechJobDetailPage() {
                     </p>
                   </div>
                 </div>
-              </div>
+                      </DevLayoutSection>
 
               {/* Additional Checks (Optional) */}
-              <div style={{ backgroundColor: "var(--layer-section-level-1)", borderRadius: "var(--radius-sm)", padding: "16px" }}>
+              <DevLayoutSection
+                as="div"
+                sectionKey="myjob-vhc-additional"
+                sectionType="content-card"
+                parentKey="myjob-tab-vhc"
+                style={{ backgroundColor: "var(--layer-section-level-1)", borderRadius: "var(--radius-sm)", padding: "16px" }}
+              >
                 <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "12px", color: "var(--info)" }}>
                   Additional Checks
                   <span style={{ fontSize: "12px", fontWeight: "normal", marginLeft: "8px", color: "var(--grey-accent)" }}>
@@ -3249,18 +3343,24 @@ export default function TechJobDetailPage() {
                     </p>
                   </div>
                 </div>
-                  </div>
+              </DevLayoutSection>
                 </>
               )}
 
               {/* VHC Summary */}
               {showVhcSummary && (
-                <div style={{
+                <DevLayoutSection
+                  as="div"
+                  sectionKey="myjob-vhc-summary"
+                  sectionType="content-card"
+                  parentKey="myjob-tab-vhc"
+                  style={{
                   backgroundColor: "var(--layer-section-level-1)",
                   border: "1px solid var(--info)",
                   borderRadius: "var(--radius-sm)",
                   padding: "20px"
-                }}>
+                }}
+                >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
                     <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "var(--info)" }}>
                       VHC Summary
@@ -3388,9 +3488,8 @@ export default function TechJobDetailPage() {
                       </p>
                     )}
                   </div>
-                </div>
+                </DevLayoutSection>
               )}
-                </>
               ))}
 
               {/* VHC Modals */}
@@ -3459,12 +3558,17 @@ export default function TechJobDetailPage() {
                   isReopenMode={isReopenMode}
                 />
               )}
-            </div>
+            </DevLayoutSection>
           )}
 
           {/* PARTS TAB */}
           {activeTab === "parts" && (
-            <div style={{
+            <DevLayoutSection
+              as="div"
+              sectionKey="myjob-tab-parts"
+              sectionType="content-card"
+              parentKey="myjob-main-scroll"
+              style={{
               backgroundColor: "var(--layer-section-level-2)",
               padding: "24px",
               borderRadius: "var(--radius-sm)",
@@ -3473,7 +3577,8 @@ export default function TechJobDetailPage() {
               flexDirection: "column",
               gap: "16px",
               alignItems: "stretch"
-            }}>
+            }}
+            >
               <div style={{
                 backgroundColor: "var(--layer-section-level-3)",
                 borderRadius: "var(--radius-sm)",
@@ -3802,12 +3907,17 @@ export default function TechJobDetailPage() {
                   </div>
                 )}
               </div>
-            </div>
+            </DevLayoutSection>
           )}
 
           {/* NOTES TAB */}
           {activeTab === "notes" && (
-            <div style={{
+            <DevLayoutSection
+              as="div"
+              sectionKey="myjob-tab-notes"
+              sectionType="content-card"
+              parentKey="myjob-main-scroll"
+              style={{
               backgroundColor: "var(--layer-section-level-2)",
               padding: "24px",
               borderRadius: "var(--radius-sm)",
@@ -3815,7 +3925,8 @@ export default function TechJobDetailPage() {
               display: "flex",
               flexDirection: "column",
               gap: "20px"
-            }}>
+            }}
+            >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <h3 style={{ fontSize: "18px", fontWeight: "600", margin: 0 }}>
                   Technician Notes
@@ -3970,11 +4081,16 @@ export default function TechJobDetailPage() {
                   })}
                 </div>
               )}
-            </div>
+            </DevLayoutSection>
           )}
 
           {/* WRITE-UP TAB */}
-          <div style={{
+          <DevLayoutSection
+            as="div"
+            sectionKey="myjob-tab-writeup"
+            sectionType="content-card"
+            parentKey="myjob-main-scroll"
+            style={{
             height: "100%",
             overflow: "hidden",
             display: activeTab === "write-up" ? "flex" : "none",
@@ -3982,7 +4098,8 @@ export default function TechJobDetailPage() {
             borderRadius: 0,
             border: "none",
             backgroundColor: "transparent"
-          }}>
+          }}
+          >
             <WriteUpForm
               jobNumber={jobNumber}
               jobCardData={jobData}
@@ -4005,29 +4122,35 @@ export default function TechJobDetailPage() {
                 });
               }}
             />
-          </div>
+          </DevLayoutSection>
 
           {/* DOCUMENTS TAB */}
           {activeTab === "documents" && (
-            <div style={{
+            <DevLayoutSection
+              as="div"
+              sectionKey="myjob-tab-documents"
+              sectionType="content-card"
+              parentKey="myjob-main-scroll"
+              style={{
               backgroundColor: "var(--layer-section-level-2)",
               padding: "24px",
               borderRadius: "var(--radius-sm)",
               border: "none",
-            }}>
+            }}
+            >
               <DocumentsTab
                 documents={jobDocuments}
                 canDelete={canManageDocuments}
                 onDelete={handleDeleteDocument}
                 onManageDocuments={canManageDocuments ? () => setShowDocumentsPopup(true) : undefined}
               />
-            </div>
+            </DevLayoutSection>
           )}
-        </div>
-        </div>
+          </DevLayoutSection>
+        </DevLayoutSection>
 
         {/* Bottom Action Bar */}
-      </div>
+      </DevLayoutSection>
       <DocumentsUploadPopup
         open={showDocumentsPopup}
         onClose={() => setShowDocumentsPopup(false)}
@@ -4172,8 +4295,17 @@ function DocumentsTab({
   };
 
   return (
-    <div>
-      <div
+    <DevLayoutSection
+      as="div"
+      sectionKey="myjob-documents-panel"
+      sectionType="section-shell"
+      parentKey="myjob-tab-documents"
+    >
+      <DevLayoutSection
+        as="div"
+        sectionKey="myjob-documents-toolbar"
+        sectionType="toolbar"
+        parentKey="myjob-documents-panel"
         style={{
           display: "flex",
           justifyContent: "space-between",
@@ -4202,10 +4334,14 @@ function DocumentsTab({
             Upload Documents
           </button>
         )}
-      </div>
+      </DevLayoutSection>
 
       {sortedDocuments.length === 0 ? (
-        <div
+        <DevLayoutSection
+          as="div"
+          sectionKey="myjob-documents-empty"
+          sectionType="content-card"
+          parentKey="myjob-documents-panel"
           style={{
             padding: "28px",
             borderRadius: "var(--radius-sm)",
@@ -4217,9 +4353,13 @@ function DocumentsTab({
         >
           No stored documents yet. Upload check-sheets, signed paperwork, or customer photos to keep
           everything in one place.
-        </div>
+        </DevLayoutSection>
       ) : (
-        <div
+        <DevLayoutSection
+          as="div"
+          sectionKey="myjob-documents-table"
+          sectionType="data-table"
+          parentKey="myjob-documents-panel"
           style={{
             borderRadius: "var(--radius-sm)",
             border: "1px solid var(--accent-purple-surface)",
@@ -4309,8 +4449,8 @@ function DocumentsTab({
               </div>
             </div>
           ))}
-        </div>
+        </DevLayoutSection>
       )}
-    </div>
+    </DevLayoutSection>
   );
 }

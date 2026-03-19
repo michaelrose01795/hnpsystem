@@ -24,6 +24,8 @@ export function canUseDevLayoutOverlay(user) {
 
   if (!envAllows) return false;
 
+  if (user.isDevLogin) return true;
+
   const roleValues = Array.isArray(user.roles)
     ? user.roles
     : user.role
@@ -39,4 +41,3 @@ export function canUseDevLayoutOverlay(user) {
     return role.includes("admin") || role.includes("manager") || role.includes("dev");
   });
 }
-

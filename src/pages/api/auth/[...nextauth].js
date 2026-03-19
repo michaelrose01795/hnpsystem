@@ -49,6 +49,7 @@ export const authOptions = {
               name: [data.first_name, data.last_name].filter(Boolean).join(" ") || "User",
               email: data.email,
               role: data.role,
+              isDevLogin: true,
             };
           }
 
@@ -69,6 +70,7 @@ export const authOptions = {
             name: [data.first_name, data.last_name].filter(Boolean).join(" ") || "User",
             email: data.email,
             role: data.role,
+            isDevLogin: false,
           };
         } catch (err) {
           console.error("NextAuth credentials authorize error:", err);
@@ -126,6 +128,7 @@ export const authOptions = {
           // Credentials login — user object comes from authorize()
           token.userId = user.id;
           token.roles = user.role ? [user.role] : [];
+          token.isDevLogin = Boolean(user.isDevLogin);
           token.accessToken = null;
           token.idToken = null;
         }
@@ -140,6 +143,7 @@ export const authOptions = {
       session.user = session.user || {};
       session.user.id = token.userId || session.user.id || null;
       session.user.roles = token.roles || [];
+      session.user.isDevLogin = Boolean(token.isDevLogin);
       session.accessToken = token.accessToken || null;
       session.idToken = token.idToken || null;
       return session;

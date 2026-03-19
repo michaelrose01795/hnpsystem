@@ -48,17 +48,27 @@ function resolveTrackingStatus(snapshot) {
   return parts.join(" · "); // Join with separator
 }
 
-// Resolve wash/valet status from timeline and job stage.
+// Resolve wash/valet status from the valet checklist flag (source of truth),
+// falling back to timeline entries for older jobs without checklist data.
 function resolveWashStatus(snapshot) {
-  if (!snapshot?.timeline) return null; // No timeline data
+  // Check the actual valet checklist flag first — this is the source of truth.
+  // The timeline may contain an old wash_complete entry that was later unchecked.
+  const washChecklist = snapshot?.workflows?.wash; // Wash checklist data from snapshot
+  if (washChecklist) {
+    if (washChecklist.complete) return "Complete"; // Wash checkbox is currently ticked
+    // Checklist exists but wash is false — it was unchecked or not yet done.
+    const stage = snapshot.job?.overallStatus; // Current overall status
+    if (stage === "invoiced" || stage === "released") return "Complete"; // Assume done if job is past workshop
+    return "Pending"; // Wash not yet completed
+  }
 
-  // Check for wash_complete event in timeline.
+  // Fallback: no checklist data, check timeline (legacy path for older jobs).
+  if (!snapshot?.timeline) return null; // No timeline data
   const washComplete = snapshot.timeline.find(
     (entry) => entry.status === "wash_complete" || entry.label === "Wash Complete"
   );
-  if (washComplete) return "Complete"; // Wash is done
+  if (washComplete) return "Complete"; // Wash event found in timeline
 
-  // If job is past in_progress (invoiced or released), wash might be pending.
   const stage = snapshot.job?.overallStatus; // Current overall status
   if (stage === "invoiced" || stage === "released") return "Complete"; // Assume done if job is past workshop
   if (stage === "in_progress") return "Pending"; // Still in workshop, wash not done yet

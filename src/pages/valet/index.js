@@ -14,7 +14,7 @@ import { revalidateAllJobs } from "@/lib/swr/mutations";
 
 const WASH_KEYWORDS = ["wash", "valet", "clean"];
 const VALET_TABLE_COLUMNS =
-  "minmax(108px, 0.75fr) minmax(96px, 0.7fr) minmax(220px, 1.55fr) minmax(92px, 0.72fr) minmax(92px, 0.72fr) minmax(92px, 0.72fr) minmax(118px, 0.86fr) minmax(112px, 0.7fr) minmax(210px, 1.35fr)";
+  "minmax(0, 0.8fr) minmax(0, 0.72fr) minmax(0, 1.45fr) 48px 48px 48px 64px minmax(0, 0.88fr) minmax(0, 1.18fr) minmax(0, 1fr)";
 
 const normalizeTextArray = (values) => {
   if (!Array.isArray(values)) return [];
@@ -191,6 +191,27 @@ const buildChecklist = (job) => {
   return result;
 };
 
+const resolveEstimatedTechCompletion = (job) => {
+  return job?.bookingRequest?.estimatedCompletion || null;
+};
+
+const formatEstimatedTechCompletion = (value) => {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+
+  return {
+    dateLabel: parsed.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+    }),
+    timeLabel: parsed.toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+  };
+};
+
 const resolveValetRowStatusLabel = (job, checklist) => {
   if (checklist?.wash) return "Wash Complete";
   return job?.status || "N/A";
@@ -243,6 +264,10 @@ const logChecklistCompletionTransitions = async ({
 };
 
 const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob }) => {
+  const estimatedCompletion = formatEstimatedTechCompletion(
+    resolveEstimatedTechCompletion(job)
+  );
+
   const handleChange = (field) => (event) => {
     onToggle(job.id, field, event.target.checked);
   };
@@ -262,20 +287,48 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob }) => {
         boxShadow: "none",
         display: "grid",
         gridTemplateColumns: VALET_TABLE_COLUMNS,
-        gap: "8px",
+        gap: "6px",
         alignItems: "center",
         width: "100%",
-        minWidth: "1120px",
         cursor: "pointer",
       }}
     >
-      <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--accent-purple)" }}>
+      <span
+        style={{
+          fontSize: "14px",
+          fontWeight: 700,
+          color: "var(--accent-purple)",
+          minWidth: 0,
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}
+      >
         {job.jobNumber || "No Job Number"}
       </span>
-      <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--accent-purple)" }}>
+      <span
+        style={{
+          fontSize: "16px",
+          fontWeight: 700,
+          color: "var(--accent-purple)",
+          minWidth: 0,
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}
+      >
         {job.reg || "N/A"}
       </span>
-      <span style={{ fontSize: "14px", color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+      <span
+        style={{
+          fontSize: "14px",
+          color: "var(--text-primary)",
+          minWidth: 0,
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}
+      >
         {job.customer || "No customer assigned"}
       </span>
 
@@ -304,7 +357,18 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob }) => {
         </div>
       ))}
 
-      <span style={{ fontSize: "13px", color: "var(--text-primary)", fontWeight: 600, textAlign: "right" }}>
+      <span
+        style={{
+          fontSize: "13px",
+          color: "var(--text-primary)",
+          fontWeight: 600,
+          textAlign: "right",
+          minWidth: 0,
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}
+      >
         {resolveValetRowStatusLabel(job, checklist)}
       </span>
 
@@ -337,6 +401,33 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob }) => {
           </span>
         )}
       </div>
+
+      <span
+        style={{
+          fontSize: "13px",
+          color: "var(--text-primary)",
+          fontWeight: 600,
+          textAlign: "right",
+          minWidth: 0,
+        }}
+      >
+        {estimatedCompletion ? (
+          <span
+            style={{
+              display: "inline-flex",
+              flexDirection: "column",
+              alignItems: "flex-end",
+              gap: "2px",
+              color: "var(--text-primary)",
+            }}
+          >
+            <span>{estimatedCompletion.dateLabel}</span>
+            <span>{estimatedCompletion.timeLabel}</span>
+          </span>
+        ) : (
+          <span style={{ color: "var(--text-secondary)" }}>No estimate</span>
+        )}
+      </span>
     </div>
   );
 };
@@ -649,7 +740,6 @@ export default function ValetDashboard() {
             display: "flex",
             flexDirection: "column",
             gap: "12px",
-            overflowX: "auto",
           }}
         >
           <DevLayoutSection
@@ -686,27 +776,27 @@ export default function ValetDashboard() {
               style={{
                 display: "grid",
                 gridTemplateColumns: VALET_TABLE_COLUMNS,
-                gap: "8px",
+                gap: "6px",
                 width: "100%",
-                minWidth: "1120px",
                 padding: "0 16px 4px",
                 alignItems: "center",
-                fontSize: "12px",
+                fontSize: "11px",
                 fontWeight: 700,
                 color: "var(--text-secondary)",
                 textTransform: "uppercase",
                 letterSpacing: "0.03em",
               }}
             >
-              <span>Job Number</span>
-              <span>Reg</span>
-              <span>Customer</span>
+              <span style={{ minWidth: 0 }}>Job Number</span>
+              <span style={{ minWidth: 0 }}>Reg</span>
+              <span style={{ minWidth: 0 }}>Customer</span>
               <span style={{ textAlign: "center" }}>Vehicle Here</span>
               <span style={{ textAlign: "center" }}>Workshop</span>
               <span style={{ textAlign: "center" }}>MOT</span>
               <span style={{ textAlign: "center" }}>Wash</span>
               <span style={{ textAlign: "right" }}>Status</span>
               <span style={{ textAlign: "right" }}>Updated At</span>
+              <span style={{ textAlign: "right" }}>Estimated Tech Completion</span>
             </DevLayoutSection>
           )}
           {error && (
@@ -769,7 +859,6 @@ export default function ValetDashboard() {
               gap: "14px",
               paddingBottom: "24px",
               width: "100%",
-              overflowX: "auto",
             }}
           >
             {filteredJobs.map((job) => (

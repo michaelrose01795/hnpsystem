@@ -35,6 +35,30 @@ function getActor(entry) {
   return name;
 }
 
+// Resolve the technician name from clocking data (authoritative source).
+// The valet page can auto-log "Technician Work Completed" with the valeter as actor,
+// so timeline entry actors are not reliable for technician identity.
+function resolveClockingTechnician(snapshot) {
+  if (!snapshot) return null; // Null guard
+
+  // Check active clocking first — the technician currently working.
+  const clocking = snapshot.workflows?.clocking; // Clocking workflow data
+  if (clocking?.active && clocking?.activeTechUserId) {
+    const match = (snapshot.timeline || []).find(
+      (e) => e.eventType === "clocking" && String(e.userId) === String(clocking.activeTechUserId)
+    );
+    if (match?.userName) return match.userName; // Found active technician name
+  }
+
+  // Fall back to the most recent clocking entry with a userName.
+  const clockingEntries = (snapshot.timeline || [])
+    .filter((e) => e.eventType === "clocking" && e.userName) // Named clocking entries only
+    .reverse(); // Most recent first
+  if (clockingEntries.length > 0) return clockingEntries[0].userName; // Return most recent technician
+
+  return null; // No technician found from clocking data
+}
+
 // Main export: build a natural-language job story from snapshot and enhanced timeline.
 export function buildJobStory(snapshot, enhancedTimeline = []) {
   if (!snapshot?.job) return ""; // No job data
@@ -74,10 +98,13 @@ export function buildJobStory(snapshot, enhancedTimeline = []) {
   }
 
   // Sentence 2: Workshop and VHC activity.
+  // Resolve technician from clocking data first (authoritative), then fall back
+  // to technician_started entry actor. NEVER use technician_work_completed actor
+  // because it can be auto-logged by the valet checklist with the valeter as actor.
   const techStarted = findEntry(timelineEntries, "technician_started"); // Tech start event
   const techComplete = findEntry(timelineEntries, "technician_work_completed"); // Tech complete event
   const vhcComplete = findEntry(timelineEntries, "vhc_completed"); // VHC complete event
-  const techName = getActor(techStarted) || getActor(techComplete); // Resolve technician name
+  const techName = resolveClockingTechnician(snapshot) || getActor(techStarted); // Clocking first, then techStarted only
 
   if (techComplete && vhcComplete) {
     const byClause = techName ? `${techName}` : "A technician"; // Actor or generic
@@ -105,8 +132,16 @@ export function buildJobStory(snapshot, enhancedTimeline = []) {
     const summary = workflows.parts.summary || {}; // Parts count
     const count = (summary.waiting || 0) + (summary.onOrder || 0); // Total waiting
     sentences.push(`Parts are currently on order (${count} item${count === 1 ? "" : "s"}).`); // Parts blocking
-  } else if (hasStatus(timelineEntries, "wash_complete")) {
-    sentences.push("Wash has been completed."); // Wash done
+  } else if (workflows.wash?.complete) {
+    // Use the checklist flag (source of truth) for wash status, with actor attribution.
+    const washActor = workflows.wash.completedBy; // Who completed the wash
+    sentences.push(washActor
+      ? `Wash was completed by ${washActor}.` // With actor name
+      : "Wash has been completed." // Without actor
+    );
+  } else if (!workflows.wash && hasStatus(timelineEntries, "wash_complete")) {
+    // Legacy fallback: no checklist data but wash_complete exists in timeline.
+    sentences.push("Wash has been completed."); // Wash done (legacy)
   } else if (hasStatus(timelineEntries, "customer_authorised")) {
     sentences.push("Customer has authorised additional work."); // Customer approved
   } else if (hasStatus(timelineEntries, "customer_declined")) {

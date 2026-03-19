@@ -152,6 +152,7 @@ export function UserProvider({ children }) {
           .map((r) => String(r || "").trim().toUpperCase())
           .filter(Boolean),
         authUuid: resolvedSessionId || null,
+        isDevLogin: Boolean(session.user.isDevLogin),
       };
       setUser(sessionUser);
       setLoading(false);
@@ -260,6 +261,7 @@ export function UserProvider({ children }) {
             email: resolved.email,
             roles: [resolved.role?.toUpperCase() || role.toUpperCase()],
             authUuid: null,
+            isDevLogin: true,
           }
         : {
             id: Date.now(),
@@ -267,6 +269,7 @@ export function UserProvider({ children }) {
             email: userChoice?.email || "",
             roles: [role.toUpperCase()],
             authUuid: null,
+            isDevLogin: true,
           };
 
       setUser(finalUser);
