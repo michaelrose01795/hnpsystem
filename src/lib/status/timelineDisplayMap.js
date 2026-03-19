@@ -3,6 +3,7 @@
 
 import { DISPLAY as JOB_DISPLAY } from "@/lib/status/catalog/job"; // Main status display labels
 import { DISPLAY as TIMELINE_DISPLAY } from "@/lib/status/catalog/timeline"; // Sub-status display labels
+import { buildExplanation } from "@/lib/status/explanationBuilder"; // Plain-English explanation text
 
 // Additional display mappings for event types not covered by the status catalogs.
 const EVENT_DISPLAY = {
@@ -111,4 +112,9 @@ export function resolveBadgeLabel(entry) {
     return entry.department || titleCase(eventType) || "Action"; // Fall back to department or event type
   }
   return entry.department || "Status"; // Status entries use department or generic label
+}
+
+// Resolve an explanation string for an entry (delegates to explanationBuilder).
+export function resolveExplanation(entry) {
+  return buildExplanation(entry); // Return plain-English explanation or null
 }

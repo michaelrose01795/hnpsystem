@@ -201,16 +201,16 @@ export default function StatusSidebar({
   // Resolve feature flags for tracker enhancements.
   const trackerFlags = useMemo(() => getAllTrackerFlags(), []); // Stable reference for flags
 
-  // Build Smart Summary from the full snapshot data when available.
-  const smartSummary = useMemo(() => {
-    if (!snapshot) return null; // No snapshot yet
-    return buildSmartSummary(snapshot); // Generate summary from snapshot
-  }, [snapshot]);
-
-  // Run the enhancement pipeline on raw timeline statuses.
+  // Run the enhancement pipeline on raw timeline statuses first (needed by smart summary).
   const enhancedTimeline = useMemo(() => {
     return enhanceTimeline(timelineStatuses, trackerFlags); // Apply display titles, dedup, grouping, highlights
   }, [timelineStatuses, trackerFlags]);
+
+  // Build Smart Summary from the full snapshot data + enhanced timeline.
+  const smartSummary = useMemo(() => {
+    if (!snapshot) return null; // No snapshot yet
+    return buildSmartSummary(snapshot, enhancedTimeline); // Generate summary with anomaly detection and story
+  }, [snapshot, enhancedTimeline]);
 
   // Format seconds to hours + minutes (e.g., 1h 50min(s))
   const formatTime = (seconds) => {
@@ -530,6 +530,7 @@ export default function StatusSidebar({
                   summary={smartSummary}
                   isCompact={compactMode}
                   isWide={isWideLayout}
+                  flags={trackerFlags}
                 />
               )}
               <div style={{ minHeight: 0 }}>

@@ -1,157 +1,216 @@
-# Job Progress Tracker — AI-Like Enhancement Layer
+# Job Progress Tracker — Intelligent Activity Layer
 
 ## Overview
 
-The Job Progress Tracker has been enhanced with an intelligent display layer that makes the timeline section cleaner, smarter, and more helpful — without changing the underlying audit data or backend APIs.
+The Job Progress Tracker has been enhanced with a 7-layer intelligence system that makes the timeline section feel like a smart workshop activity feed — interpreting the job, highlighting what matters, reducing noise, and spotting workflow issues.
 
-All enhancements are **code-driven** (no external AI dependency). A feature flag (`ai_text_enhancement_enabled`) is reserved for optional future AI text refinement.
-
----
-
-## What Was Added
-
-### Smart Summary Block
-A summary panel above the timeline that shows:
-- Current job stage with colour-coded badge
-- Latest meaningful update with relative time
-- Technician name (if known)
-- Tracking status (vehicle/key location)
-- Wash/valet status
-- Plain-English summary sentence
-- Next likely step with description
-- Blocking reasons (if any)
-
-### Display Title Mapping
-Raw status IDs and event labels are mapped to clean, user-facing titles:
-- `technician_started` → "Technician Started"
-- `initial` clocking → "Technician Started"
-- `vehicle_tracking` with location → "Parking Updated: Bay 5"
-- `tracking_registered` → "Added to Parking & Key Tracking"
-
-### Timeline Enhancement Pipeline
-A multi-step processing pipeline applied to raw timeline entries:
-1. Display title mapping
-2. Actor propagation (fills orphan entries from neighbours)
-3. Deduplication (removes exact duplicates and overlapping clocking/technician_started events)
-4. Visual grouping (collapses related entries)
-5. Highlight tagging (mutes low-value noise)
-
-### Visual Grouping
-Related entries are collapsed into expandable groups:
-- **Tracking clusters**: consecutive vehicle/key tracking events within 5 minutes
-- **Clocking pairs**: clock-on + clock-off for the same technician
-- **VHC workflow**: consecutive VHC sub-status events
-
-Groups show a count label and expand/collapse with a click.
-
-### Layout Polish
-- Tighter card padding and entry spacing
-- Performer + timestamp on a single row with dot separator
-- Smaller, pill-shaped category badges
-- Non-highlighted entries rendered at 70% opacity
-- Thicker connector line (2.5px)
-- Current status dot has a subtle glow
-- Removed non-functional hover translate effect
-- Cleaner detail blocks without heavy borders
+All enhancements are **code-driven** (no external AI dependency). Optional AI text refinement is available behind a feature flag but the system works fully without it.
 
 ---
 
-## Files Changed
+## Architecture: 7 Layers
 
-### New Files (6)
+### Layer 1: Importance Scoring
+Every timeline entry gets a numeric importance score (1-5):
+- **Milestone (5)**: Booked, Checked In, In Progress, Invoiced, Released, Tech Work Completed, Wash Complete
+- **Major (4)**: Technician Started, VHC Completed, Customer Authorised/Declined, Parts Ready, MOT Completed
+- **Normal (3)**: VHC Started, pricing steps, clocking events, first tracking event
+- **Minor (2)**: Subsequent tracking/key updates
+- **Noise (1)**: Unrecognised system events
+
+Drives: card opacity, milestone accent borders, summary prominence.
+
+### Layer 2: Explanation Text
+Each entry gets an optional plain-English explanation:
+- "Initial workshop work was started by Jake Smith"
+- "Vehicle was moved to the Service area"
+- "Jake Smith clocked off after 2h 15m"
+
+Generated from event type + metadata. Displayed below the card title in italic.
+
+### Layer 3: Phase Grouping
+Entries are grouped into named workflow phases instead of basic time-window clusters:
+- Booking & Check-in
+- Workshop Activity
+- VHC & Authorisation
+- Parts & Ordering
+- Wash & Final Prep
+- Invoice & Collection
+- Tracking Updates
+- System Updates
+
+Phase assignment is deterministic from status/eventType. Consecutive same-phase entries form collapsible groups with phase-specific accent colours.
+
+### Layer 4: Anomaly Detection
+10 rules detect suspicious or missing workflow patterns:
+1. Checked in > 2 hours with no technician start
+2. Technician started > 4 hours with no progress
+3. Active clocking session > 8 hours
+4. Parts blocking with no parts_ready event
+5. VHC required but pending while in progress
+6. Wash complete before tech work completed
+7. Invoiced but no invoice record
+8. Important event with no recorded actor
+9. Timeline events don't match overall status
+10. Multiple simultaneous clock-ins
+
+Displayed as an "Attention Needed" banner in the Smart Summary.
+
+### Layer 5: Confidence Model
+Inferred fields get confidence levels (high/medium/low):
+- **Actor confidence**: high (from DB), medium (propagated from neighbours), low (unresolved)
+- **Next step confidence**: high (deterministic), medium (ambiguous), low (conflicting)
+- **Summary confidence**: based on count of available key fields
+
+Visible only in debug mode as coloured pills.
+
+### Layer 6: Enhanced Smart Summary
+The summary panel now includes:
+- Current stage with colour badge
+- Latest meaningful update
+- Technician, tracking, wash, invoice status
+- Current responsible department
+- Job story (2-3 sentence natural narrative)
+- Next likely step with confidence
+- Attention items from anomaly detection
+- Blocking reasons
+
+### Layer 7: Optional AI Enhancement
+Behind `ai_text_enhancement_enabled` flag:
+- API route `/api/ai/enhance-summary` sends code-generated text to external AI
+- Client hook `useAiEnhancement` manages the request
+- 10-second timeout, schema validation, silent fallback
+- Code-generated text remains source of truth
+
+---
+
+## Files
+
+### New Files (9)
 
 | File | Purpose |
 |------|---------|
-| `src/config/trackerFlags.js` | Feature flag configuration and helpers |
-| `src/lib/status/timelineDisplayMap.js` | Display title and badge label mapping |
-| `src/lib/status/timelineGrouping.js` | Visual grouping logic (tracking, clocking, VHC) |
-| `src/lib/status/timelineEnhancer.js` | Enhancement pipeline orchestrator |
-| `src/lib/status/smartSummaryBuilder.js` | Smart Summary generation from snapshot data |
-| `src/components/StatusTracking/SmartSummaryBlock.js` | Smart Summary UI component |
+| `src/lib/status/timeUtils.js` | Shared time utilities: relativeTime, formatDuration, hoursSince, withinWindow, shortDate |
+| `src/lib/status/importanceScoring.js` | Importance scoring (1-5) for timeline entries |
+| `src/lib/status/explanationBuilder.js` | Plain-English explanation text generator |
+| `src/lib/status/phaseGrouping.js` | Phase-based semantic grouping of timeline entries |
+| `src/lib/status/anomalyDetector.js` | 10-rule anomaly detection engine |
+| `src/lib/status/confidenceModel.js` | Confidence assessment for actors, next step, summary |
+| `src/lib/status/jobStoryBuilder.js` | Natural-language job narrative builder |
+| `src/pages/api/ai/enhance-summary.js` | Optional AI text enhancement API route |
+| `src/hooks/useAiEnhancement.js` | Client hook for AI enhancement |
 
-### Modified Files (2)
+### Modified Files (8)
 
 | File | Changes |
 |------|---------|
-| `src/components/StatusTracking/StatusSidebar.js` | Imports + wiring: computes summary and enhanced timeline, renders SmartSummaryBlock, passes enhanced data to tracker |
-| `src/components/StatusTracking/JobProgressTracker.js` | Layout polish, uses enhanced display titles, supports grouped entries with expand/collapse, accepts flags prop, debug mode |
+| `src/config/trackerFlags.js` | Added 4 new flags: importance_scoring, phase_grouping, anomaly_detection, confidence_display |
+| `src/lib/status/timelineDisplayMap.js` | Added resolveExplanation export, imports explanationBuilder |
+| `src/lib/status/timelineGrouping.js` | Extracted utils to timeUtils.js, exported groupClockingPairs |
+| `src/lib/status/timelineEnhancer.js` | 8-step pipeline: titles → explanations → actors → importance → dedup → phase grouping → highlights → confidence |
+| `src/lib/status/smartSummaryBuilder.js` | Extracted relativeTime, added invoiceStatus, currentResponsible, jobStory, attentionItems, confidence scores |
+| `src/components/StatusTracking/SmartSummaryBlock.js` | Renders job story, attention items, invoice/responsible in grid, confidence badges in debug mode |
+| `src/components/StatusTracking/JobProgressTracker.js` | Importance-driven opacity + milestone borders, explanation text, phase-coloured group headers, extended debug output |
+| `src/components/StatusTracking/StatusSidebar.js` | Reordered useMemo (enhanced timeline before summary), passes flags to SmartSummaryBlock |
 
 ---
 
-## How Smart Summary Works
+## Enhancement Pipeline
 
-`buildSmartSummary(snapshot)` in `smartSummaryBuilder.js` takes the full job status snapshot (already fetched by StatusSidebar from `/api/status/snapshot`) and derives:
-
-- **Stage**: from `snapshot.job.statusLabel`
-- **Latest update**: most recent timeline entry's clean display title + relative time
-- **Technician**: resolved from active clocking, then most recent clocking entry, then technician_started event
-- **Tracking**: from `snapshot.workflows.tracking` (vehicleStatus + keyStatus)
-- **Wash status**: checks timeline for wash_complete event, infers from job stage
-- **Summary sentence**: template: "Job {number} is {stage}. {tech info}. {blocking info}."
-- **Next step**: decision tree based on `overallStatus` + workflow states (parts, VHC, clocking, write-up)
-
----
-
-## How Actor Resolution Works
-
-Actor resolution happens at two levels:
-
-1. **Server-side** (`jobStatusSnapshot.js`): `inferMissingActor()` cross-references clocking, tracking, and booking tables to fill missing actors on booked, checked_in, technician_started, and wash_complete entries.
-
-2. **Client-side** (`timelineEnhancer.js`): `propagateActors()` fills orphan entries (no actor) when both adjacent entries share the same actor within 2 minutes. This is a conservative heuristic to avoid false attribution.
-
-The component-level `resolvePerformer()` in `JobProgressTracker.js` checks `item.user`, `item.userName`, `item.performedBy`, and `item.meta.userName` before falling back to "System".
+```
+enhanceTimeline(entries, flags):
+  1. applyDisplayTitles      — clean user-facing titles + badge labels
+  2. applyExplanations       — plain-English context for each entry
+  3. propagateActors         — fill orphan entries from neighbours (tags _actorPropagated)
+  4. applyImportanceScores   — 1-5 scoring (gated by flag)
+  5. deduplicateEntries      — key-based dedup + initial clocking suppression
+  6. groupByPhase / groupTimelineEntries — semantic or basic grouping (gated by flags)
+  7. tagHighlights           — isHighlighted boolean for emphasis
+  8. applyActorConfidence    — high/medium/low per entry
+```
 
 ---
 
-## How Duplicate Suppression Works
+## Smart Summary Data Shape
 
-Deduplication in `timelineEnhancer.js`:
+```javascript
+{
+  stage, stageColor, latestUpdate,
+  technician, trackingStatus, washStatus,
+  summary, nextStep, blockingReasons,
+  invoiceStatus,          // "missing" | "Draft" | payment status
+  currentResponsible,     // "Workshop" | "Parts" | "VHC" | "Accounts" | "Service Reception"
+  jobStory,               // "Vehicle was booked and checked in on 18 Mar. Jake Smith started work..."
+  attentionItems,         // [{ code, severity, message, detail, workflowKey }]
+  nextStepConfidence,     // "high" | "medium" | "low"
+  summaryConfidence,      // "high" | "medium" | "low"
+}
+```
 
-1. **Exact duplicates**: entries with identical kind, status, label, department, timestamp, userId, userName, description, and meta fields are deduplicated using a Set-based key.
+## Enhanced Timeline Entry Shape
 
-2. **Clocking overlap**: initial clocking entries are suppressed when a matching `technician_started` status exists for the same user within 60 seconds — they represent the same event from different sources.
-
----
-
-## How Grouping Works
-
-`timelineGrouping.js` runs three grouping passes:
-
-1. **Tracking clusters**: consecutive `vehicle_tracking`, `key_tracking`, or `tracking_registered` events within 5 minutes are collapsed into a "Tracking Updates (N)" group.
-
-2. **Clocking pairs**: a clock-on entry immediately followed by a clock-off for the same user becomes a "Technician Session: Xh Ym" group showing the session duration.
-
-3. **VHC workflow**: consecutive VHC sub-status events (vhc_started through customer_authorised/declined) become a "VHC Workflow (N)" group.
-
-Groups are display-only — individual audit entries remain intact inside the group and are visible when expanded.
-
----
-
-## What Is Rule-Based vs Optional AI-Enhanced
-
-| Feature | Rule-based | Optional AI |
-|---------|-----------|-------------|
-| Display title mapping | Code mapping utility | Could refine wording |
-| Smart Summary text | Template sentences | Could generate natural language |
-| Next step inference | Decision tree | Could consider more context |
-| Grouping | Pattern matching | N/A |
-| Duplicate suppression | Key-based dedup | N/A |
-| Actor resolution | Field fallback chain | N/A |
-
-The `ai_text_enhancement_enabled` flag (default: false) is the hook point. When enabled, summary text could be post-processed by an AI endpoint. All current functionality works without any AI provider.
+```javascript
+{
+  displayTitle, badgeLabel, isHighlighted,
+  explanation,            // "Initial workshop work was started by Jake Smith"
+  importance,             // 1-5
+  importanceLabel,        // "milestone" | "major" | "normal" | "minor" | "noise"
+  phase,                  // "workshop" | "booking_checkin" | "vhc_auth" | ...
+  actorConfidence,        // "high" | "medium" | "low"
+  _actorPropagated,       // boolean (internal flag)
+  group: {                // present on grouped entries
+    groupId, groupLabel, items, isCollapsible,
+    phaseId, phaseColor,  // for phase groups
+  }
+}
+```
 
 ---
 
 ## Feature Flags
 
-Defined in `src/config/trackerFlags.js`:
-
 | Flag | Default | Description |
 |------|---------|-------------|
-| `smart_summary_enabled` | `true` | Show/hide the Smart Summary block |
-| `ai_text_enhancement_enabled` | `false` | Placeholder for future AI text refinement |
-| `grouping_enabled` | `true` | Enable/disable visual grouping of timeline entries |
-| `debug_mode_enabled` | `false` | Show raw entry data at the bottom of the tracker |
+| `smart_summary_enabled` | `true` | Show/hide Smart Summary block |
+| `ai_text_enhancement_enabled` | `false` | Enable optional AI text refinement |
+| `grouping_enabled` | `true` | Enable basic time-window grouping (fallback) |
+| `debug_mode_enabled` | `false` | Show raw entry data + confidence badges |
+| `importance_scoring_enabled` | `true` | Enable importance-driven opacity/ordering |
+| `phase_grouping_enabled` | `true` | Enable phase-based semantic grouping |
+| `anomaly_detection_enabled` | `true` | Enable anomaly detection in Smart Summary |
+| `confidence_display_enabled` | `false` | Show confidence badges in standard UI |
 
-Override via environment variables: `NEXT_PUBLIC_TRACKER_<FLAG_NAME>=true|false`
+Override via env: `NEXT_PUBLIC_TRACKER_<FLAG_NAME>=true|false`
+
+---
+
+## Anomaly Detection Rules
+
+| Code | Severity | Trigger |
+|------|----------|---------|
+| STALE_CHECKIN | warning | Checked in > 2 hrs, no tech start |
+| STALE_TECHNICIAN | warning | Tech started > 4 hrs, no progress |
+| LONG_CLOCKING | warning | Active clocking > 8 hrs |
+| PARTS_BLOCKING | info | Parts blocking, no parts_ready |
+| VHC_REQUIRED_PENDING | info | VHC required but pending while in_progress |
+| WASH_BEFORE_WORK | warning | Wash complete before tech complete |
+| INVOICE_NO_RECORD | warning | Invoiced but no invoice ID |
+| MISSING_ACTOR | info | Important event with no actor |
+| STATUS_MISMATCH | warning | Timeline doesn't match overall status |
+| MULTIPLE_CLOCKINS | info | Multiple simultaneous clock-ins |
+
+---
+
+## What Is Rule-Based vs Optional AI
+
+| Feature | Rule-based | Optional AI |
+|---------|-----------|-------------|
+| Display titles | Code mapping | N/A |
+| Explanation text | Template sentences | Could refine wording |
+| Smart Summary | Template sentences | Could refine natural language |
+| Job story | Milestone-based narrative | Could improve flow |
+| Next step | Decision tree | Could consider more context |
+| Anomaly detection | 10 hardcoded rules | N/A |
+| Importance scoring | Status-based scoring | N/A |
+| Phase grouping | Deterministic dispatch | N/A |
+| Confidence model | Field-counting heuristic | N/A |

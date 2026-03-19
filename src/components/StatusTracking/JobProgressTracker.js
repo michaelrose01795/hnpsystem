@@ -100,11 +100,17 @@ const flattenForFilter = (entries) => {
   return flat;
 };
 
+// Map importance levels to opacity values for visual emphasis.
+const IMPORTANCE_OPACITY = { 5: 1.0, 4: 1.0, 3: 0.9, 2: 0.7, 1: 0.5 }; // milestone/major/normal/minor/noise
+
 // Render a single timeline entry card (used for both individual and group-child entries).
 function TimelineCard({ item, isCompact, isEvent, isCurrent, isHighlighted, performer, isGroupChild }) {
   const isTechComplete = isTechCompleteStatus(item?.status) || isTechCompleteStatus(item?.label); // Check tech complete
   const displayTitle = item?.displayTitle || item?.label || item?.status || "Status"; // Use enhanced title
   const badgeLabel = item?.badgeLabel || (isEvent ? item?.department || "Action" : item?.department || "Status"); // Category badge
+  const importance = item?.importance || 3; // Default to normal importance
+  const isMilestone = importance >= 5; // Milestone entries get accent styling
+  const explanation = item?.explanation || null; // Explanation text from explanationBuilder
 
   // Build contextual performer label.
   const performerLabel =
@@ -120,7 +126,10 @@ function TimelineCard({ item, isCompact, isEvent, isCurrent, isHighlighted, perf
     (isTechComplete ? "Tech has completed all work on this job." : null) ||
     null; // Primary detail text
 
-  const cardOpacity = isHighlighted === false ? 0.7 : 1; // Mute non-highlighted entries
+  // Importance-driven opacity: use importance score when available, fall back to highlight flag.
+  const cardOpacity = item?.importance
+    ? (IMPORTANCE_OPACITY[importance] || 0.9) // Score-based opacity
+    : (isHighlighted === false ? 0.7 : 1); // Fallback to highlight-based
 
   return (
     <div
@@ -129,13 +138,14 @@ function TimelineCard({ item, isCompact, isEvent, isCurrent, isHighlighted, perf
         backgroundColor: "var(--surface)", // Card background
         borderRadius: isCompact ? "var(--radius-sm)" : "var(--radius-xs)", // Rounded corners
         border: "1px solid var(--border)", // Subtle border
+        borderLeft: isMilestone ? "3px solid var(--accent-purple)" : "1px solid var(--border)", // Accent for milestones
         padding: isCompact ? "10px 12px" : "10px 12px", // Tightened padding
         display: "flex",
         flexDirection: "column",
         gap: "6px", // Tightened internal spacing
         fontFamily: "'Inter','Segoe UI','Helvetica Neue',Arial,sans-serif", // Font stack
         minHeight: isGroupChild ? "auto" : isCompact ? "52px" : "60px", // Reduced min height
-        opacity: cardOpacity, // Highlight-aware opacity
+        opacity: cardOpacity, // Importance-aware opacity
         transition: "opacity 0.2s ease", // Smooth opacity transition
       }}
     >
@@ -144,7 +154,7 @@ function TimelineCard({ item, isCompact, isEvent, isCurrent, isHighlighted, perf
         <div
           style={{
             fontSize: isGroupChild ? "13px" : isCompact ? "14px" : "15px", // Slightly reduced title size
-            fontWeight: 700, // Bold title
+            fontWeight: isMilestone ? 800 : 700, // Extra bold for milestones
             color: COLORS.textDark, // Primary text colour
             lineHeight: 1.25, // Tight line height
             display: "flex",
@@ -189,6 +199,21 @@ function TimelineCard({ item, isCompact, isEvent, isCurrent, isHighlighted, perf
           <span style={{ color: "var(--grey-accent-light)" }}>·</span>
           <span>{formatTimestamp(item?.timestamp)}</span>
         </div>
+
+        {/* Explanation line — plain-English context for the event */}
+        {explanation && (
+          <div
+            style={{
+              fontSize: "11px",
+              color: "var(--grey-accent)",
+              lineHeight: 1.4,
+              marginTop: "3px",
+              fontStyle: "italic",
+            }}
+          >
+            {explanation}
+          </div>
+        )}
 
         {/* Detail block — subtler styling without heavy borders */}
         {primaryDetail && (
@@ -288,6 +313,7 @@ function TimelineGroup({ entry, isCompact, isExpanded, onToggle, nodeColor, conn
           gap: "8px",
           backgroundColor: "var(--surface-light)", // Subtle group header background
           border: "1px solid var(--border)",
+          borderLeft: group.phaseColor ? `3px solid ${group.phaseColor}` : "1px solid var(--border)", // Phase-specific accent
           borderRadius: "var(--radius-xs)",
           padding: "8px 12px",
           cursor: "pointer",
@@ -717,7 +743,13 @@ export default function JobProgressTracker({
                 kind: item.kind,
                 eventType: item.eventType,
                 isHighlighted: item.isHighlighted,
+                importance: item.importance,
+                importanceLabel: item.importanceLabel,
+                phase: item.phase,
+                actorConfidence: item.actorConfidence,
+                explanation: item.explanation,
                 group: item.group ? item.group.groupLabel : null,
+                phaseId: item.group?.phaseId || null,
               })),
               null,
               2

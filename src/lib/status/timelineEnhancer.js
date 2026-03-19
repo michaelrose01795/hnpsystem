@@ -1,9 +1,13 @@
 // file location: src/lib/status/timelineEnhancer.js
-// Orchestrates all timeline enhancement passes: display titles, actor propagation,
-// deduplication, grouping, and highlight tagging.
+// Orchestrates all timeline enhancement passes: display titles, explanations,
+// actor propagation, importance scoring, deduplication, phase/basic grouping,
+// highlight tagging, and actor confidence assessment.
 
-import { resolveDisplayTitle, resolveBadgeLabel } from "@/lib/status/timelineDisplayMap"; // Clean display title mapping
-import { groupTimelineEntries } from "@/lib/status/timelineGrouping"; // Visual grouping logic
+import { resolveDisplayTitle, resolveBadgeLabel, resolveExplanation } from "@/lib/status/timelineDisplayMap"; // Display mapping + explanations
+import { groupTimelineEntries } from "@/lib/status/timelineGrouping"; // Basic grouping (fallback)
+import { groupByPhase } from "@/lib/status/phaseGrouping"; // Phase-based grouping (preferred)
+import { scoreImportance } from "@/lib/status/importanceScoring"; // Importance scoring
+import { assessActorConfidence } from "@/lib/status/confidenceModel"; // Actor confidence model
 
 // Statuses that count as "highlighted" (important, not noise).
 const HIGHLIGHTED_KINDS = new Set(["status"]); // Main status changes are always highlighted
@@ -17,6 +21,7 @@ const NOISE_EVENT_TYPES = new Set([ // Event types considered low-value noise
 ]);
 
 // Build a dedup key from an entry's core fields.
+// Case-insensitive to catch near-duplicates like "Darrell W" vs "Darrell w".
 function buildEntryKey(item) {
   return [
     item?.kind || "",
@@ -25,12 +30,12 @@ function buildEntryKey(item) {
     item?.department || "",
     item?.timestamp || "",
     item?.userId || "",
-    item?.userName || "",
+    (item?.userName || "").toLowerCase(), // Normalise actor name case
     item?.description || "",
     item?.meta?.location || "",
     item?.meta?.action || "",
     item?.meta?.notes || "",
-  ].join("|"); // Concatenate all fields into a single key
+  ].join("|").toLowerCase(); // Lowercase the entire key for case-insensitive dedup
 }
 
 // Check if two timestamps are within 60 seconds of each other.
@@ -51,8 +56,17 @@ function applyDisplayTitles(entries) {
   }));
 }
 
-// Step 2: Propagate known actors to orphan adjacent entries.
+// Step 2: Map explanation text onto each entry.
+function applyExplanations(entries) {
+  return entries.map((entry) => ({
+    ...entry,
+    explanation: resolveExplanation(entry), // Plain-English explanation or null
+  }));
+}
+
+// Step 3: Propagate known actors to orphan adjacent entries.
 // If entry N has no actor but N-1 and N+1 share the same actor within 2 min, assign it.
+// Now tags propagated actors with _actorPropagated for confidence model.
 function propagateActors(entries) {
   if (entries.length < 3) return entries; // Need at least 3 entries for propagation
   const result = [...entries]; // Clone to avoid mutation
@@ -79,19 +93,47 @@ function propagateActors(entries) {
       ...current,
       userName: prevActor, // Assign the shared actor
       userId: prev.userId || next.userId || null, // Carry over user ID if available
+      _actorPropagated: true, // Flag for confidence model
     };
   }
 
   return result;
 }
 
-// Step 3: Deduplicate entries (ported from JobProgressTracker.js).
+// Step 4: Apply importance scores to each entry.
+function applyImportanceScores(entries) {
+  return entries.map((entry) => ({
+    ...entry,
+    ...scoreImportance(entry), // Merge importance and importanceLabel
+  }));
+}
+
+// Build a short semantic key for same-status-same-time dedup.
+// Catches duplicates from different sources (e.g., status history row + sub-status row for the same event).
+function buildSemanticKey(item) {
+  const status = (item?.status || "").toLowerCase(); // Normalised status
+  const ts = item?.timestamp || ""; // Timestamp string
+  // Round timestamp to the nearest minute for fuzzy matching.
+  const roundedTs = ts ? ts.substring(0, 16) : ""; // "2026-03-18T13:03" — minute precision
+  return `${status}|${roundedTs}`; // Semantic key
+}
+
+// Step 5: Deduplicate entries (ported from original JobProgressTracker.js).
 function deduplicateEntries(entries) {
-  const seen = new Set(); // Track seen dedup keys
+  const seen = new Set(); // Track seen dedup keys (full key)
+  const seenSemantic = new Set(); // Track seen semantic keys (status + minute)
 
   return entries.filter((item) => {
     const dedupeKey = buildEntryKey(item); // Build unique key for this entry
     if (seen.has(dedupeKey)) return false; // Skip exact duplicates
+
+    // Secondary dedup: same status at the same minute from different sources.
+    const status = (item?.status || "").toLowerCase(); // Normalised status
+    if (status) {
+      const semanticKey = buildSemanticKey(item); // Short semantic key
+      if (seenSemantic.has(semanticKey)) return false; // Skip same-status-same-minute duplicate
+      seenSemantic.add(semanticKey); // Mark semantic key as seen
+    }
 
     // Suppress initial clocking entries that overlap with a technician_started event.
     const isInitialClocking =
@@ -117,7 +159,7 @@ function deduplicateEntries(entries) {
   });
 }
 
-// Step 4: Tag each entry with an isHighlighted boolean.
+// Step 7: Tag each entry with an isHighlighted boolean.
 function tagHighlights(entries) {
   return entries.map((entry) => {
     // If this is a group wrapper, tag it as highlighted if any child is highlighted.
@@ -136,18 +178,36 @@ function tagHighlights(entries) {
   });
 }
 
+// Step 8: Apply actor confidence assessment to each entry.
+function applyActorConfidence(entries) {
+  return entries.map((entry) => ({
+    ...entry,
+    actorConfidence: assessActorConfidence(entry), // "high", "medium", or "low"
+  }));
+}
+
 // Main export: run the full enhancement pipeline on raw timeline entries.
 export function enhanceTimeline(entries, flags = {}) {
   if (!Array.isArray(entries) || entries.length === 0) return []; // Guard against invalid input
 
   let result = applyDisplayTitles(entries); // Step 1: display titles
-  result = propagateActors(result); // Step 2: actor propagation
-  result = deduplicateEntries(result); // Step 3: deduplication
+  result = applyExplanations(result); // Step 2: explanation text
+  result = propagateActors(result); // Step 3: actor propagation (with _actorPropagated flag)
 
-  if (flags.grouping_enabled) {
-    result = groupTimelineEntries(result); // Step 4: visual grouping
+  if (flags.importance_scoring_enabled) {
+    result = applyImportanceScores(result); // Step 4: importance scoring
   }
 
-  result = tagHighlights(result); // Step 5: highlight tagging
+  result = deduplicateEntries(result); // Step 5: deduplication
+
+  // Step 6: grouping — prefer phase grouping, fall back to basic grouping.
+  if (flags.phase_grouping_enabled) {
+    result = groupByPhase(result); // Phase-based semantic grouping
+  } else if (flags.grouping_enabled) {
+    result = groupTimelineEntries(result); // Basic time-window clustering
+  }
+
+  result = tagHighlights(result); // Step 7: highlight tagging
+  result = applyActorConfidence(result); // Step 8: actor confidence
   return result;
 }

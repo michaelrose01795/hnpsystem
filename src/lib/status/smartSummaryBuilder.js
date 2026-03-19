@@ -3,21 +3,10 @@
 // All text is code-generated (no external AI dependency).
 
 import { resolveDisplayTitle } from "@/lib/status/timelineDisplayMap"; // Clean display titles for latest update
-
-// Format a timestamp as a relative time string ("5 min ago", "2 hours ago").
-function relativeTime(timestamp) {
-  if (!timestamp) return null; // No timestamp to format
-  const ms = new Date(timestamp).getTime(); // Parse timestamp
-  if (Number.isNaN(ms)) return null; // Invalid date
-  const diffMs = Date.now() - ms; // Milliseconds since the event
-  const diffMin = Math.floor(diffMs / 60000); // Convert to minutes
-  if (diffMin < 1) return "just now"; // Less than a minute ago
-  if (diffMin < 60) return `${diffMin} min ago`; // Minutes
-  const diffHours = Math.floor(diffMin / 60); // Convert to hours
-  if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`; // Hours
-  const diffDays = Math.floor(diffHours / 24); // Convert to days
-  return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`; // Days
-}
+import { relativeTime } from "@/lib/status/timeUtils"; // Shared time utilities
+import { detectAnomalies } from "@/lib/status/anomalyDetector"; // Workflow anomaly detection
+import { buildJobStory } from "@/lib/status/jobStoryBuilder"; // Natural-language job narrative
+import { assessNextStepConfidence, assessSummaryConfidence } from "@/lib/status/confidenceModel"; // Confidence scoring
 
 // Resolve the technician name from snapshot clocking data or timeline entries.
 function resolveTechnician(snapshot) {
@@ -232,8 +221,25 @@ function buildSummarySentence(snapshot, technician) {
   return parts.join(" "); // Combine into single sentence
 }
 
+// Infer which department or person is currently responsible for the job.
+function resolveCurrentResponsible(snapshot) {
+  if (!snapshot?.job) return null; // No job data
+  const stage = snapshot.job.overallStatus; // Current main status
+  const workflows = snapshot.workflows || {}; // Workflow states
+  if (stage === "booked" || stage === "checked_in") return "Service Reception"; // Pre-workshop stages
+  if (stage === "in_progress") {
+    if (workflows.parts?.blocking) return "Parts"; // Parts department if blocking
+    const vhc = workflows.vhc || {}; // VHC workflow state
+    if (vhc.required && (vhc.status === "completed" || vhc.status === "sent")) return "VHC"; // VHC team handling
+    return "Workshop"; // Default in-progress responsibility
+  }
+  if (stage === "invoiced" || stage === "released") return "Accounts"; // Post-workshop stages
+  return null; // Unknown stage
+}
+
 // Main export: build the complete Smart Summary from a snapshot object.
-export function buildSmartSummary(snapshot) {
+// Accepts optional enhancedTimeline for anomaly detection and story building.
+export function buildSmartSummary(snapshot, enhancedTimeline = []) {
   if (!snapshot) return null; // Guard against null snapshot
 
   // Resolve the latest meaningful timeline entry.
@@ -247,6 +253,12 @@ export function buildSmartSummary(snapshot) {
   const washStatus = resolveWashStatus(snapshot); // Resolve wash status
   const nextStep = inferNextStep(snapshot); // Infer next likely step
   const summary = buildSummarySentence(snapshot, technician); // Build summary sentence
+  const invoiceStatus = snapshot.workflows?.invoice?.status || null; // Invoice readiness
+  const currentResponsible = resolveCurrentResponsible(snapshot); // Department or person responsible
+  const jobStory = buildJobStory(snapshot, enhancedTimeline); // Natural-language job narrative
+  const attentionItems = detectAnomalies(snapshot, enhancedTimeline); // Workflow anomaly checks
+  const nextStepConfidence = assessNextStepConfidence(snapshot, nextStep); // Next step confidence
+  const summaryConfidence = assessSummaryConfidence(snapshot, { technician, trackingStatus, nextStep, timeline }); // Summary confidence
 
   return {
     stage: snapshot.job?.statusLabel || snapshot.job?.status || "Unknown", // Current stage label
@@ -260,5 +272,11 @@ export function buildSmartSummary(snapshot) {
     summary, // Plain-English summary sentence
     nextStep, // Next likely step object or null
     blockingReasons: snapshot.blockingReasons || [], // Passthrough blocking reasons
+    invoiceStatus, // Invoice readiness status
+    currentResponsible, // Department or person responsible
+    jobStory, // 2-3 sentence narrative of the job so far
+    attentionItems, // Anomaly detection results
+    nextStepConfidence, // Confidence in next step inference
+    summaryConfidence, // Confidence in overall summary
   };
 }

@@ -2,6 +2,8 @@
 // Groups related low-value timeline entries for visual collapsing.
 // This is a display-layer transformation only — audit entries remain intact.
 
+import { formatDuration, withinWindow } from "@/lib/status/timeUtils"; // Shared time utilities
+
 const TRACKING_EVENT_TYPES = new Set(["vehicle_tracking", "key_tracking", "tracking_registered"]); // Event types that form tracking clusters
 const VHC_EVENT_STATUSES = new Set([ // Sub-status IDs that belong to the VHC workflow
   "vhc_started", "vhc_reopened", "vhc_completed",
@@ -9,24 +11,6 @@ const VHC_EVENT_STATUSES = new Set([ // Sub-status IDs that belong to the VHC wo
   "sent_to_customer", "customer_authorised", "customer_declined",
 ]);
 const CLUSTER_WINDOW_MS = 5 * 60 * 1000; // 5 minutes — max gap between entries in a tracking cluster
-
-// Check if two timestamps are within a given window.
-function withinWindow(timestampA, timestampB, windowMs) {
-  if (!timestampA || !timestampB) return false; // Guard against missing timestamps
-  const msA = new Date(timestampA).getTime(); // Parse first timestamp
-  const msB = new Date(timestampB).getTime(); // Parse second timestamp
-  if (Number.isNaN(msA) || Number.isNaN(msB)) return false; // Guard against invalid dates
-  return Math.abs(msA - msB) <= windowMs; // Compare distance against window
-}
-
-// Format seconds into a human-readable duration string.
-function formatDuration(seconds) {
-  if (!seconds || seconds <= 0) return null; // No duration to display
-  const hours = Math.floor(seconds / 3600); // Calculate whole hours
-  const minutes = Math.floor((seconds % 3600) / 60); // Calculate remaining minutes
-  if (hours > 0) return `${hours}h ${minutes}m`; // Hours and minutes
-  return `${minutes}m`; // Minutes only
-}
 
 // Identify and group consecutive tracking events into clusters.
 function groupTrackingClusters(entries) {
@@ -70,7 +54,8 @@ function groupTrackingClusters(entries) {
 }
 
 // Identify and group consecutive clocking pairs (clock-on followed by clock-off for same user).
-function groupClockingPairs(entries) {
+// Exported as a named export so phaseGrouping.js can reuse it.
+export function groupClockingPairs(entries) {
   const result = []; // Output array
   let i = 0; // Index cursor
 
@@ -150,6 +135,7 @@ function groupVhcWorkflow(entries) {
 }
 
 // Main export: run all grouping passes on the timeline entries.
+// Kept for backward compatibility — phaseGrouping.js is the preferred grouping engine.
 export function groupTimelineEntries(entries) {
   if (!Array.isArray(entries) || entries.length === 0) return []; // Guard against invalid input
   let result = groupTrackingClusters(entries); // First pass: tracking clusters

@@ -4,8 +4,12 @@
 const TRACKER_FLAGS = {
   smart_summary_enabled: true, // Show the Smart Summary block above the timeline
   ai_text_enhancement_enabled: false, // Placeholder for optional AI text refinement (not implemented yet)
-  grouping_enabled: true, // Group related low-value timeline entries visually
+  grouping_enabled: true, // Group related low-value timeline entries visually (basic clustering)
   debug_mode_enabled: false, // Show raw status IDs and entry metadata in the tracker
+  importance_scoring_enabled: true, // Enable importance-driven opacity and ordering in timeline
+  phase_grouping_enabled: true, // Enable phase-based grouping (replaces basic grouping when true)
+  anomaly_detection_enabled: true, // Enable anomaly detection in Smart Summary
+  confidence_display_enabled: false, // Show confidence badges in UI (debug-adjacent feature)
 };
 
 // Read a tracker flag, allowing env var override via NEXT_PUBLIC_TRACKER_<KEY>.
@@ -26,6 +30,10 @@ export function getAllTrackerFlags() {
     ai_text_enhancement_enabled: getTrackerFlag("ai_text_enhancement_enabled"),
     grouping_enabled: getTrackerFlag("grouping_enabled"),
     debug_mode_enabled: getTrackerFlag("debug_mode_enabled"),
+    importance_scoring_enabled: getTrackerFlag("importance_scoring_enabled"),
+    phase_grouping_enabled: getTrackerFlag("phase_grouping_enabled"),
+    anomaly_detection_enabled: getTrackerFlag("anomaly_detection_enabled"),
+    confidence_display_enabled: getTrackerFlag("confidence_display_enabled"),
   };
 }
 
