@@ -2947,8 +2947,21 @@ export const upsertJobRequestsForJob = async (jobId, requestEntries = []) => {
 /* ============================================
    UPDATE JOB STATUS
 ============================================ */
-export const updateJobStatus = async (jobId, newStatus) => {
-  return updateJob(jobId, { status: newStatus });
+export const updateJobStatus = async (
+  jobId,
+  newStatus,
+  statusUpdatedBy = null,
+  statusChangeReason = null
+) => {
+  const updates = { status: newStatus };
+  if (statusUpdatedBy !== null && statusUpdatedBy !== undefined && statusUpdatedBy !== "") {
+    updates.status_updated_by = statusUpdatedBy;
+    updates.status_updated_at = new Date().toISOString();
+  }
+  if (statusChangeReason) {
+    updates.status_change_reason = statusChangeReason;
+  }
+  return updateJob(jobId, updates);
 };
 
 /* ============================================
@@ -3020,7 +3033,13 @@ export const unassignTechnicianFromJob = async (jobId) => {
    CREATE OR UPDATE APPOINTMENT
    Handle appointment booking
 ============================================ */
-export const createOrUpdateAppointment = async (jobNumber, appointmentDate, appointmentTime, notes) => {
+export const createOrUpdateAppointment = async (
+  jobNumber,
+  appointmentDate,
+  appointmentTime,
+  notes,
+  bookedBy = null
+) => {
   try {
     console.log("📅 createOrUpdateAppointment called with:", { jobNumber, appointmentDate, appointmentTime, notes });
     
@@ -3095,7 +3114,12 @@ export const createOrUpdateAppointment = async (jobNumber, appointmentDate, appo
     }
 
     // Update job status to "Booked"
-    await updateJobStatus(job.id, "Booked");
+    await updateJobStatus(
+      job.id,
+      "Booked",
+      bookedBy,
+      existingAppointment ? "Appointment updated" : "Appointment created"
+    );
 
     return { 
       success: true, 

@@ -556,7 +556,12 @@ export default function ViewJobCards() {
 
   const sortedJobs = filteredJobs
     .slice()
-    .sort((a, b) => getSortValue(a) - getSortValue(b));
+    .sort((a, b) => {
+      if (isOrdersTab) {
+        return getSortValue(a) - getSortValue(b);
+      }
+      return getSortValue(b) - getSortValue(a);
+    });
 
   const popupStatusLabel = useMemo(() => {
     if (!popupJob) return "";

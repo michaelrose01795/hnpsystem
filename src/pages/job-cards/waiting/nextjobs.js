@@ -18,6 +18,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { SearchBar } from "@/components/searchBarAPI";
 import { deriveJobTypeDisplay } from "@/lib/jobType/display";
+import { normalizeRequests } from "@/lib/jobcards/utils";
 import { revalidateAllJobs } from "@/lib/swr/mutations";
 import { prefetchJob } from "@/lib/swr/prefetch"; // warm SWR cache on hover for instant navigation
 
@@ -78,7 +79,7 @@ const STATUS_COMPLETED = new Set([
   "FINISHED",
   "CANCELLED",
 ]);
-const STATUS_EXCLUDED_TECH_PANEL = new Set(["BOOKED"]);
+const STATUS_EXCLUDED_TECH_PANEL = new Set(["BOOKED", "INVOICED", "RELEASED"]);
 
 const toStatusKey = (status) => (status ? String(status).trim().toUpperCase() : "");
 const OUTSTANDING_VISIBLE_ROWS = 1;
@@ -172,6 +173,108 @@ const formatAppointmentTime = (job) => {
 };
 
 const deriveJobTypeLabel = (job) => deriveJobTypeDisplay(job, { includeExtraCount: true });
+
+const getRequestText = (request = {}, index = 0) => {
+  const text = [
+    request?.text,
+    request?.description,
+    request?.request,
+    request?.title,
+    request?.label,
+    request?.name,
+    request?.issue_title,
+    request?.issueDescription,
+    request?.issue_description,
+    request?.detail,
+    request?.noteText,
+    request?.note_text,
+  ]
+    .map((value) => String(value || "").trim())
+    .find(Boolean);
+
+  return text || `Request ${index + 1}`;
+};
+
+const getJobRequestItems = (job) =>
+  normalizeRequests(job?.requests).map((request, index) => ({
+    id:
+      request?.requestId ??
+      request?.request_id ??
+      request?.id ??
+      `${job?.jobNumber || "job"}-request-${index}`,
+    text: getRequestText(request, index),
+  }));
+
+const normalizeApprovalDecision = (value = "") => {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (normalized === "authorised") return "authorized";
+  return normalized;
+};
+
+const getApprovedVhcItems = (job) => {
+  const rows = Array.isArray(job?.vhcChecks)
+    ? job.vhcChecks
+    : Array.isArray(job?.vhc_checks)
+    ? job.vhc_checks
+    : [];
+
+  return rows
+    .filter((row) => {
+      const approval = normalizeApprovalDecision(row?.approval_status);
+      const state = normalizeApprovalDecision(row?.authorization_state);
+      return approval === "authorized" || approval === "completed" || state === "authorized";
+    })
+    .map((row, index) => ({
+      id: row?.vhc_id ?? row?.id ?? `vhc-${index}`,
+      text:
+        [
+          row?.issue_title,
+          row?.issue_description,
+          row?.section,
+        ]
+          .map((value) => String(value || "").trim())
+          .find(Boolean) || `Approved VHC ${index + 1}`,
+    }));
+};
+
+const getJobDetailsRequestRows = (job) => {
+  const requestItems = getJobRequestItems(job).map((item, index) => ({
+    id: `request-${item.id}`,
+    label: `Request ${index + 1}`,
+    text: item.text,
+  }));
+
+  const approvedVhcItems = getApprovedVhcItems(job).map((item, index) => ({
+    id: `vhc-${item.id}`,
+    label: `VHC Approved ${index + 1}`,
+    text: item.text,
+  }));
+
+  return [...requestItems, ...approvedVhcItems];
+};
+
+const jobMatchesSearchTerm = (job, rawSearchTerm = "") => {
+  const lower = String(rawSearchTerm || "").trim().toLowerCase();
+  if (!lower) return false;
+
+  const haystack = [
+    job?.jobNumber,
+    job?.customer,
+    job?.make,
+    job?.model,
+    job?.makeModel,
+    job?.reg,
+    job?.type,
+    job?.status,
+    job?.waitingStatus,
+    job?.assignedTech?.name,
+    job?.technician,
+  ]
+    .filter(Boolean)
+    .map((value) => value.toString().toLowerCase());
+
+  return haystack.some((value) => value.includes(lower));
+};
 
 const formatClockInTime = (value) => {
   if (!value) return "";
@@ -291,8 +394,12 @@ export default function NextJobsPage() {
   const [feedbackMessage, setFeedbackMessage] = useState(null); // Success/error feedback
   const [loading, setLoading] = useState(true); // Loading state
   const [activeClockingsByUser, setActiveClockingsByUser] = useState({});
+  const [hoveredRequestJobNumber, setHoveredRequestJobNumber] = useState(null);
+  const [highlightedSearchJobNumbers, setHighlightedSearchJobNumbers] = useState([]);
   const dragStateRef = useRef(null);
   const dropIndicatorRef = useRef(null);
+  const searchHighlightTimeoutRef = useRef(null);
+  const jobCardRefs = useRef({});
 
   // ✅ Manager access check
   const username = user?.username;
@@ -420,6 +527,7 @@ export default function NextJobsPage() {
         : [],
       requests: row.requests || null,
       jobRequestsCount: getJobRequestsCountFromPayload(row.requests),
+      vhcChecks: Array.isArray(row.vhc_checks) ? row.vhc_checks : [],
       vhcRequired: Boolean(row.vhc_required),
       assignedTo: row.assigned_to,
       assignedTech,
@@ -477,7 +585,8 @@ export default function NextJobsPage() {
         technician:assigned_to(user_id, first_name, last_name, email, role),
         customer:customer_id(firstname, lastname, name, mobile, telephone, email, address, postcode, contact_preference),
         vehicle:vehicle_id(registration, reg_number, make, model, make_model),
-        appointments(appointment_id, scheduled_time, status, notes)
+        appointments(appointment_id, scheduled_time, status, notes),
+        vhc_checks(vhc_id, section, issue_title, issue_description, approval_status, authorization_state)
       `
       )
       .order("checked_in_at", { ascending: false })
@@ -753,23 +862,21 @@ export default function NextJobsPage() {
   // ✅ Search logic for job cards in the outstanding section
   const filteredOutstandingJobs = useMemo(() => {
     if (!searchTerm.trim()) return outstandingJobs;
-    const lower = searchTerm.toLowerCase();
-    return outstandingJobs.filter((job) => {
-      const haystack = [
-        job.jobNumber,
-        job.customer,
-        job.make,
-        job.model,
-        job.reg,
-        job.type,
-        job.waitingStatus,
-      ]
-        .filter(Boolean)
-        .map((value) => value.toString().toLowerCase());
-
-      return haystack.some((value) => value.includes(lower));
-    });
+    return outstandingJobs.filter((job) => jobMatchesSearchTerm(job, searchTerm));
   }, [searchTerm, outstandingJobs]);
+
+  const matchedSearchJobs = useMemo(() => {
+    if (!searchTerm.trim()) return [];
+
+    const seen = new Set();
+    return jobs.filter((job) => {
+      const jobNumber = String(job?.jobNumber || "").trim();
+      if (!jobNumber || seen.has(jobNumber)) return false;
+      const matches = jobMatchesSearchTerm(job, searchTerm);
+      if (matches) seen.add(jobNumber);
+      return matches;
+    });
+  }, [jobs, searchTerm]);
 
   // ✅ Group jobs by technician (using assignedTech.name)
   const getJobsForAssignee = (assignee) => {
@@ -875,12 +982,6 @@ export default function NextJobsPage() {
   const handleOpenAssignPopup = () => {
     setFeedbackMessage(null);
     setAssignPopup(true);
-  };
-
-  // ✅ NEW: Handle Edit Job - Navigate to create page with job data
-  const handleEditJob = () => {
-    if (!selectedJob) return;
-    router.push(`/job-cards/create?edit=${selectedJob.id}`);
   };
 
   const handleViewSelectedJobCard = () => {
@@ -1264,6 +1365,42 @@ export default function NextJobsPage() {
     };
   }, [dragState?.started]);
 
+  useEffect(() => {
+    if (searchHighlightTimeoutRef.current) {
+      clearTimeout(searchHighlightTimeoutRef.current);
+      searchHighlightTimeoutRef.current = null;
+    }
+
+    if (!searchTerm.trim() || matchedSearchJobs.length === 0) {
+      setHighlightedSearchJobNumbers([]);
+      return undefined;
+    }
+
+    const jobNumbers = matchedSearchJobs
+      .map((job) => String(job?.jobNumber || "").trim())
+      .filter(Boolean);
+
+    setHighlightedSearchJobNumbers(jobNumbers);
+
+    const firstMatch = jobNumbers[0];
+    const firstMatchElement = firstMatch ? jobCardRefs.current[firstMatch] : null;
+    if (firstMatchElement && typeof firstMatchElement.scrollIntoView === "function") {
+      firstMatchElement.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    searchHighlightTimeoutRef.current = window.setTimeout(() => {
+      setHighlightedSearchJobNumbers([]);
+      searchHighlightTimeoutRef.current = null;
+    }, 5000);
+
+    return () => {
+      if (searchHighlightTimeoutRef.current) {
+        clearTimeout(searchHighlightTimeoutRef.current);
+        searchHighlightTimeoutRef.current = null;
+      }
+    };
+  }, [matchedSearchJobs, searchTerm]);
+
   const handleNavigateToJobCard = useCallback(
     (jobNumber) => {
       if (!jobNumber) return;
@@ -1432,7 +1569,9 @@ export default function NextJobsPage() {
             No jobs assigned
           </p>
         ) : (
-          assignee.jobs.map((job) => (
+          assignee.jobs.map((job) => {
+            const isSearchHighlighted = highlightedSearchJobNumbers.includes(job.jobNumber);
+            return (
             <React.Fragment key={job.jobNumber}>
               {matchesDropIndicator("assignee", panelKey, job.jobNumber, "before") && (
                 <div style={{
@@ -1444,33 +1583,49 @@ export default function NextJobsPage() {
               )}
 
               <div
+                ref={(node) => {
+                  if (node) {
+                    jobCardRefs.current[job.jobNumber] = node;
+                  } else if (jobCardRefs.current[job.jobNumber]) {
+                    delete jobCardRefs.current[job.jobNumber];
+                  }
+                }}
                 data-dnd-job-card="true"
                 data-dnd-job-number={job.jobNumber}
                 onPointerDown={handleCardPointerDown(job, () => handleOpenJobDetails(job))}
                 style={{
-                  border: "none",
+                  border: isSearchHighlighted ? "2px solid var(--success)" : "none",
                   borderRadius: "var(--radius-xs)",
                   padding: "10px",
                   marginBottom: "8px",
                   backgroundColor:
                     draggingJob?.jobNumber === job.jobNumber
                       ? "var(--accent-layer-3)"
+                      : isSearchHighlighted
+                      ? "var(--success-surface)"
                       : "var(--accent-purple-surface)",
                   cursor: hasAccess ? "grab" : "pointer",
                   transition: "all 0.2s",
                   opacity: draggingJob?.jobNumber === job.jobNumber ? 0.5 : 1,
                   touchAction: "none",
+                  boxShadow: isSearchHighlighted
+                    ? "0 0 0 2px rgba(34, 197, 94, 0.18), 0 8px 18px rgba(34, 197, 94, 0.22)"
+                    : "none",
                 }}
                 onMouseEnter={(e) => {
                   if (draggingJob?.jobNumber !== job.jobNumber) {
-                  e.currentTarget.style.backgroundColor = "var(--accent-layer-3)";
-                    e.currentTarget.style.boxShadow = "0 2px 6px rgba(var(--accent-purple-rgb),0.12)";
+                    e.currentTarget.style.backgroundColor = isSearchHighlighted ? "var(--success-surface)" : "var(--accent-layer-3)";
+                    e.currentTarget.style.boxShadow = isSearchHighlighted
+                      ? "0 0 0 2px rgba(34, 197, 94, 0.18), 0 8px 18px rgba(34, 197, 94, 0.22)"
+                      : "0 2px 6px rgba(var(--accent-purple-rgb),0.12)";
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (draggingJob?.jobNumber !== job.jobNumber) {
-                    e.currentTarget.style.backgroundColor = "var(--accent-purple-surface)";
-                    e.currentTarget.style.boxShadow = "none";
+                    e.currentTarget.style.backgroundColor = isSearchHighlighted ? "var(--success-surface)" : "var(--accent-purple-surface)";
+                    e.currentTarget.style.boxShadow = isSearchHighlighted
+                      ? "0 0 0 2px rgba(34, 197, 94, 0.18), 0 8px 18px rgba(34, 197, 94, 0.22)"
+                      : "none";
                   }
                 }}
               >
@@ -1500,7 +1655,8 @@ export default function NextJobsPage() {
                     }} />
                 )}
             </React.Fragment>
-          ))
+          );
+          })
         )}
 
         {assignee.jobs.length > 0 &&
@@ -1685,6 +1841,9 @@ export default function NextJobsPage() {
                     const jobTypeLabel = deriveJobTypeLabel(job);
                     const customerStatus = formatCustomerStatus(job.waitingStatus);
                     const requestsCount = getJobRequestsCount(job);
+                    const requestItems = getJobRequestItems(job);
+                    const isSearchHighlighted = highlightedSearchJobNumbers.includes(job.jobNumber);
+                    const showRequestsHover = hoveredRequestJobNumber === job.jobNumber && requestItems.length > 0;
                     const appointmentDisplay = formatAppointmentTime(job);
                     return (
                       <React.Fragment key={job.jobNumber}>
@@ -1697,6 +1856,13 @@ export default function NextJobsPage() {
                           }} />
                         )}
                         <div
+                          ref={(node) => {
+                            if (node) {
+                              jobCardRefs.current[job.jobNumber] = node;
+                            } else if (jobCardRefs.current[job.jobNumber]) {
+                              delete jobCardRefs.current[job.jobNumber];
+                            }
+                          }}
                           data-dnd-job-card="true"
                           data-dnd-job-number={job.jobNumber}
                           onPointerDown={handleCardPointerDown(job, () => handleOpenJobDetails(job))}
@@ -1705,18 +1871,26 @@ export default function NextJobsPage() {
                             flexDirection: "column",
                             gap: "8px",
                             padding: "14px",
+                            position: "relative",
                             borderRadius: "var(--radius-md)",
                             border:
                               draggingJob?.jobNumber === job.jobNumber
                                 ? "2px dashed var(--primary)"
+                                : isSearchHighlighted
+                                ? "2px solid var(--success)"
                                 : "1px solid var(--surface-light)",
                             backgroundColor:
                               draggingJob?.jobNumber === job.jobNumber
                                 ? "var(--surface-light)"
+                                : isSearchHighlighted
+                                ? "var(--success-surface)"
                                 : "var(--surface)",
                             cursor: hasAccess ? "grab" : "pointer",
                             transition: "border 0.2s, background-color 0.2s, transform 0.2s",
                             touchAction: "none",
+                            boxShadow: isSearchHighlighted
+                              ? "0 0 0 2px rgba(34, 197, 94, 0.18), 0 8px 18px rgba(34, 197, 94, 0.22)"
+                              : "none",
                           }}
                           title={`${job.jobNumber} – ${job.customer || "Unknown customer"}`}
                         >
@@ -1743,6 +1917,17 @@ export default function NextJobsPage() {
                               </div>
                             </div>
                             <span
+                              onPointerDown={(event) => event.stopPropagation()}
+                              onMouseEnter={() => {
+                                if (requestItems.length > 0) {
+                                  setHoveredRequestJobNumber(job.jobNumber);
+                                }
+                              }}
+                              onMouseLeave={() => {
+                                setHoveredRequestJobNumber((current) =>
+                                  current === job.jobNumber ? null : current
+                                );
+                              }}
                               style={{
                                 padding: "4px 10px",
                                 borderRadius: "var(--control-radius)",
@@ -1750,11 +1935,77 @@ export default function NextJobsPage() {
                                 color: "var(--danger)",
                                 fontSize: "12px",
                                 fontWeight: 700,
+                                cursor: requestItems.length > 0 ? "help" : "default",
                               }}
                             >
                               {jobTypeLabel}
                             </span>
                           </div>
+                          {showRequestsHover ? (
+                            <div
+                              onPointerDown={(event) => event.stopPropagation()}
+                              onMouseEnter={() => setHoveredRequestJobNumber(job.jobNumber)}
+                              onMouseLeave={() => {
+                                setHoveredRequestJobNumber((current) =>
+                                  current === job.jobNumber ? null : current
+                                );
+                              }}
+                              style={{
+                                position: "absolute",
+                                top: "48px",
+                                right: "14px",
+                                width: "min(320px, calc(100% - 28px))",
+                                maxHeight: "160px",
+                                overflowY: "auto",
+                                padding: "12px",
+                                borderRadius: "var(--radius-sm)",
+                                border: "1px solid var(--accent-purple-surface)",
+                                backgroundColor: "var(--surface)",
+                                boxShadow: "0 12px 28px rgba(var(--shadow-rgb), 0.18)",
+                                zIndex: 3,
+                              }}
+                            >
+                              <div
+                                style={{
+                                  marginBottom: "8px",
+                                  fontSize: "11px",
+                                  fontWeight: 700,
+                                  letterSpacing: "0.08em",
+                                  textTransform: "uppercase",
+                                  color: "var(--accent-purple)",
+                                }}
+                              >
+                                Job Requests
+                              </div>
+                              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                                {requestItems.map((request, index) => (
+                                  <div
+                                    key={request.id}
+                                    style={{
+                                      display: "flex",
+                                      gap: "8px",
+                                      alignItems: "flex-start",
+                                      fontSize: "12px",
+                                      color: "var(--text-primary)",
+                                      lineHeight: "1.4",
+                                    }}
+                                  >
+                                    <span
+                                      style={{
+                                        flexShrink: 0,
+                                        width: "18px",
+                                        color: "var(--accent-purple)",
+                                        fontWeight: 700,
+                                      }}
+                                    >
+                                      {index + 1}.
+                                    </span>
+                                    <span>{request.text}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ) : null}
                           <div style={{ fontSize: "13px", color: "var(--text-primary)" }}>
                             {job.customer || "Unknown customer"}
                           </div>
@@ -1941,8 +2192,13 @@ export default function NextJobsPage() {
           }
         `}</style>
 
-        {/* ✅ JOB DETAILS POPUP WITH EDIT BUTTON */}
+        {/* ✅ JOB DETAILS POPUP */}
         {selectedJob && (
+          (() => {
+            const detailsRows = getJobDetailsRequestRows(selectedJob);
+            const hasScrollableDetails = detailsRows.length > 5;
+            const assignedToName = selectedJob.assignedTech?.name || "Unassigned";
+            return (
           <div className="popup-backdrop" onClick={handleCloseJobDetails}>
             <div
               className="popup-card"
@@ -1961,41 +2217,11 @@ export default function NextJobsPage() {
               }}
               onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
             >
-              {/* ✅ NEW: Edit Job Button in top right */}
-              <button
-                onClick={handleEditJob}
-                style={{
-                  position: "absolute",
-                  top: "20px",
-                  right: "20px",
-                  backgroundColor: "var(--accent-purple-surface)",
-                  color: "var(--accent-purple)",
-                  padding: "8px 16px",
-                  borderRadius: "var(--radius-xs)",
-                  cursor: "pointer",
-                  border: "1px solid var(--accent-purple)",
-                  fontSize: "13px",
-                  fontWeight: "600",
-                  transition: "background-color 0.2s ease, border-color 0.2s ease",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "var(--surface-light)";
-                  e.currentTarget.style.borderColor = "var(--accent-purple)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "var(--accent-purple-surface)";
-                  e.currentTarget.style.borderColor = "var(--accent-purple)";
-                }}
-              >
-                Edit Job
-              </button>
-
               <h3 style={{ 
                 fontWeight: "700", 
                 marginBottom: "16px",
                 fontSize: "20px",
                 color: "var(--primary)",
-                paddingRight: "100px" // Make space for edit button
               }}>
                 Job Details
               </h3>
@@ -2019,29 +2245,118 @@ export default function NextJobsPage() {
               )}
               
               <div style={{ marginBottom: "20px" }}>
-                <p style={{ marginBottom: "8px", fontSize: "14px" }}>
-                  <strong style={{ color: "var(--accent-purple)" }}>Job Number:</strong> {selectedJob.jobNumber}
-                </p>
-                <p style={{ marginBottom: "8px", fontSize: "14px" }}>
-                  <strong style={{ color: "var(--accent-purple)" }}>Status:</strong> {selectedJob.status}
-                </p>
-                <p style={{ marginBottom: "8px", fontSize: "14px" }}>
-                  <strong style={{ color: "var(--accent-purple)" }}>Make:</strong> {selectedJob.make} {selectedJob.model}
-                </p>
-                <p style={{ marginBottom: "8px", fontSize: "14px" }}>
-                  <strong style={{ color: "var(--accent-purple)" }}>Reg:</strong> {selectedJob.reg}
-                </p>
-                <p style={{ marginBottom: "8px", fontSize: "14px" }}>
-                  <strong style={{ color: "var(--accent-purple)" }}>Customer:</strong> {selectedJob.customer}
-                </p>
-                <p style={{ marginBottom: "8px", fontSize: "14px" }}>
-                  <strong style={{ color: "var(--accent-purple)" }}>Description:</strong> {selectedJob.description}
-                </p>
-                {selectedJob.assignedTech && (
-                  <p style={{ marginBottom: "8px", fontSize: "14px" }}>
-                    <strong style={{ color: "var(--accent-purple)" }}>Assigned To:</strong> {selectedJob.assignedTech.name}
-                  </p>
-                )}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                    gap: "12px",
+                    marginBottom: "12px",
+                  }}
+                >
+                  {[
+                    { label: "Job Number", value: selectedJob.jobNumber || "Not available" },
+                    { label: "Reg", value: selectedJob.reg || "Not available" },
+                    { label: "Customer", value: selectedJob.customer || "Unknown customer" },
+                  ].map((item) => (
+                    <div
+                      key={item.label}
+                      style={{
+                        padding: "12px",
+                        borderRadius: "var(--radius-sm)",
+                        backgroundColor: "var(--accent-purple-surface)",
+                      }}
+                    >
+                      <div style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--accent-purple)", marginBottom: "6px" }}>
+                        {item.label}
+                      </div>
+                      <div style={{ fontSize: "14px", color: "var(--text-primary)", fontWeight: 600 }}>
+                        {item.value}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                    gap: "12px",
+                    marginBottom: "16px",
+                  }}
+                >
+                  {[
+                    { label: "Make & Model", value: [selectedJob.make, selectedJob.model].filter(Boolean).join(" ") || selectedJob.makeModel || "Not available" },
+                    { label: "Status", value: selectedJob.status || "Status pending" },
+                    { label: "Assigned To", value: assignedToName },
+                  ].map((item) => (
+                    <div
+                      key={item.label}
+                      style={{
+                        padding: "12px",
+                        borderRadius: "var(--radius-sm)",
+                        backgroundColor: "var(--accent-purple-surface)",
+                      }}
+                    >
+                      <div style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--accent-purple)", marginBottom: "6px" }}>
+                        {item.label}
+                      </div>
+                      <div style={{ fontSize: "14px", color: "var(--text-primary)", fontWeight: 600 }}>
+                        {item.value}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div
+                  style={{
+                    padding: "14px",
+                    borderRadius: "var(--radius-sm)",
+                    backgroundColor: "var(--accent-purple-surface)",
+                  }}
+                >
+                  <div style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--accent-purple)", marginBottom: "8px" }}>
+                    Description
+                  </div>
+                  {detailsRows.length > 0 ? (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "8px",
+                        maxHeight: hasScrollableDetails ? "280px" : "none",
+                        overflowY: hasScrollableDetails ? "auto" : "visible",
+                        paddingRight: hasScrollableDetails ? "4px" : 0,
+                      }}
+                    >
+                      {detailsRows.map((row) => (
+                        <div
+                          key={row.id}
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "120px minmax(0, 1fr)",
+                            gap: "10px",
+                            alignItems: "start",
+                            padding: "10px 12px",
+                            borderRadius: "var(--radius-xs)",
+                            backgroundColor: "var(--surface)",
+                            border: "1px solid var(--accent-purple-surface)",
+                          }}
+                        >
+                          <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--accent-purple)" }}>
+                            {row.label}
+                          </div>
+                          <div style={{ fontSize: "13px", color: "var(--text-primary)", lineHeight: "1.45" }}>
+                            {row.text}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: "14px", color: "var(--text-primary)" }}>
+                      No request details recorded.
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div
@@ -2096,15 +2411,15 @@ export default function NextJobsPage() {
                   </button>
                 )}
                 <button
-                  style={jobDetailsPopupQuietButtonStyle}
+                  style={jobDetailsPopupSecondaryButtonStyle}
                   onClick={handleCloseJobDetails} // Close popup
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = "var(--accent-purple-surface)";
+                    e.currentTarget.style.backgroundColor = "var(--surface-light)";
                     e.currentTarget.style.borderColor = "var(--accent-purple)";
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "var(--surface-light)";
-                    e.currentTarget.style.borderColor = "var(--accent-purple-surface)";
+                    e.currentTarget.style.backgroundColor = "var(--accent-purple-surface)";
+                    e.currentTarget.style.borderColor = "var(--accent-purple)";
                   }}
                 >
                   Close
@@ -2112,6 +2427,8 @@ export default function NextJobsPage() {
               </div>
             </div>
           </div>
+            );
+          })()
         )}
 
         {/* ✅ ASSIGN TECH POPUP */}

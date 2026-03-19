@@ -407,7 +407,7 @@ export default function Appointments() {
   const jobQueryParam = Array.isArray(router.query.jobNumber)
     ? router.query.jobNumber[0]
     : router.query.jobNumber;
-  const { user } = useUser();
+  const { user, dbUserId } = useUser();
   const { triggerNextAction } = useNextAction();
   const { confirm } = useConfirmation();
 
@@ -815,7 +815,8 @@ export default function Appointments() {
         job.jobNumber, // Use job number for appointment creation
         appointmentDate,
         time,
-        currentNote || null // ✅ Pass notes if available
+        currentNote || null, // ✅ Pass notes if available
+        dbUserId || user?.user_id || user?.id || null
       );
 
       if (!appointmentResult.success) {
@@ -906,7 +907,10 @@ export default function Appointments() {
     setCheckingInJobId(job.id);
 
     try {
-      const result = await autoSetCheckedInStatus(job.id, user?.id || "SYSTEM");
+      const result = await autoSetCheckedInStatus(
+        job.id,
+        dbUserId || user?.user_id || user?.id || "SYSTEM"
+      );
 
       if (result.success) {
         alert(

@@ -11,7 +11,7 @@ const COLORS = {
   panelBg: "var(--surface)",
   textDark: "var(--info-dark)",
   textMuted: "var(--info)",
-  connector: "var(--danger)",
+  connector: "var(--accent-purple)",
 };
 
 const formatTimestamp = (timestamp) => {
@@ -39,6 +39,35 @@ const isTechCompleteStatus = (value) => {
     normalized === "technician work completed" ||
     normalized === "technician_work_completed"
   );
+};
+
+const formatBadgeLabel = (value) => {
+  if (!value) return "Status";
+  return String(value).replace(/_/g, " ").toUpperCase();
+};
+
+const buildEntryKey = (item) => {
+  return [
+    item?.kind || "",
+    item?.status || "",
+    item?.label || "",
+    item?.department || "",
+    item?.timestamp || "",
+    item?.userId || "",
+    item?.userName || "",
+    item?.description || "",
+    item?.meta?.location || "",
+    item?.meta?.action || "",
+    item?.meta?.notes || "",
+  ].join("|");
+};
+
+const isSameMinute = (left, right) => {
+  if (!left || !right) return false;
+  const leftDate = new Date(left);
+  const rightDate = new Date(right);
+  if (Number.isNaN(leftDate.getTime()) || Number.isNaN(rightDate.getTime())) return false;
+  return Math.abs(leftDate.getTime() - rightDate.getTime()) < 60000;
 };
 
 export default function JobProgressTracker({
@@ -150,12 +179,39 @@ export default function JobProgressTracker({
   }, [chronologicalStatuses]);
 
   const filteredStatuses = useMemo(() => {
+    const seen = new Set();
+
     return chronologicalStatuses.filter((item) => {
       const performer = resolvePerformer(item);
       const actionKey = resolveActionKey(item);
       const matchesUser = selectedUser === "all" || performer === selectedUser;
       const matchesAction = selectedAction === "all" || actionKey === selectedAction;
-      return matchesUser && matchesAction;
+      if (!matchesUser || !matchesAction) return false;
+
+      const dedupeKey = buildEntryKey(item);
+      if (seen.has(dedupeKey)) return false;
+
+      const isInitialClocking =
+        item?.eventType === "clocking" &&
+        String(item?.meta?.workType || "").toLowerCase() === "initial";
+
+      if (isInitialClocking) {
+        const hasMatchingTechnicianStarted = chronologicalStatuses.some((candidate) => {
+          if (candidate === item) return false;
+          const candidateStatus = String(candidate?.status || candidate?.label || "").toLowerCase();
+          return (
+            candidateStatus === "technician_started" ||
+            candidateStatus === "technician started"
+          ) &&
+            (candidate?.userId || null) === (item?.userId || null) &&
+            isSameMinute(candidate?.timestamp, item?.timestamp);
+        });
+
+        if (hasMatchingTechnicianStarted) return false;
+      }
+
+      seen.add(dedupeKey);
+      return true;
     });
   }, [chronologicalStatuses, selectedUser, selectedAction]);
 
@@ -302,20 +358,23 @@ export default function JobProgressTracker({
           const isTechComplete =
             isTechCompleteStatus(item?.status) || isTechCompleteStatus(item?.label);
           const performerLabel =
-            isTechComplete && performer ? `Tech complete by ${performer}` : performer;
-          const secondaryLine =
+            item?.eventType === "clocking"
+              ? `Technician: ${performer}`
+              : isTechComplete && performer
+              ? `Completed by ${performer}`
+              : performer;
+          const primaryDetail =
             item?.description ||
-            item?.notes ||
+            item?.meta?.notes ||
             (isTechComplete ? "Tech has completed all work on this job." : null) ||
-            item?.department ||
-            item?.meta?.location ||
             null;
+          const secondaryDetail = item?.meta?.location || item?.department || null;
           const badgeLabel = isEvent
-            ? (item?.eventType || "Action").replace(/_/g, " ")
+            ? formatBadgeLabel(item?.eventType || "Action")
             : item?.department || "Status";
           const showTopConnector = index > 0;
           const showBottomConnector =
-            index < orderedStatuses.length - 1 && index > 0;
+            index < displayStatuses.length - 1;
 
           return (
             <div
@@ -376,13 +435,13 @@ export default function JobProgressTracker({
                 style={{
                   width: "100%",
                   backgroundColor: "var(--surface)",
-                  borderRadius: isCompact ? "var(--radius-md)" : "var(--radius-sm)",
-                  border: "none",
+                  borderRadius: isCompact ? "var(--radius-sm)" : "var(--radius-xs)",
+                  border: "1px solid var(--border)",
                   boxShadow: "none",
                   padding: isCompact ? "12px 14px" : "12px 14px",
                   display: "flex",
                   flexDirection: "column",
-                  gap: "4px",
+                  gap: "8px",
                   fontFamily: "'Inter','Segoe UI','Helvetica Neue',Arial,sans-serif",
                   transition: "transform 0.2s ease",
                   minHeight: isCompact ? "60px" : "72px",
@@ -420,10 +479,10 @@ export default function JobProgressTracker({
                         textTransform: "uppercase",
                         letterSpacing: "0.06em",
                         backgroundColor: "var(--surface-light)",
-                        borderRadius: "var(--radius-pill)",
-                        padding: "2px 8px",
+                        borderRadius: "var(--radius-xs)",
+                        padding: "6px 10px",
                         color: isEvent ? "var(--accent-orange)" : "var(--grey-accent)",
-                        border: "none",
+                        border: "1px solid var(--border)",
                       }}
                     >
                       {badgeLabel}
@@ -431,30 +490,58 @@ export default function JobProgressTracker({
                   </div>
                   <div
                     style={{
-                      marginTop: "4px",
                       fontSize: "12px",
                       color: COLORS.textMuted,
                       display: "flex",
-                      justifyContent: "space-between",
-                      gap: "8px",
-                      flexWrap: "wrap",
+                      flexDirection: "column",
+                      gap: "6px",
                     }}
                   >
                     <span style={{ fontWeight: 600 }}>{performerLabel}</span>
                     <span>{formatTimestamp(item?.timestamp)}</span>
                   </div>
-                  {secondaryLine && (
+                  {(primaryDetail || secondaryDetail) && (
                     <div
                       style={{
-                        marginTop: "4px",
-                        fontSize: "12px",
-                        color: COLORS.textMuted,
-                        lineHeight: 1.4,
-                        whiteSpace: "normal",
-                        wordBreak: "break-word",
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: "8px",
                       }}
                     >
-                      {secondaryLine}
+                      {primaryDetail && (
+                        <span
+                          style={{
+                            fontSize: "12px",
+                            color: COLORS.textMuted,
+                            lineHeight: 1.4,
+                            whiteSpace: "normal",
+                            wordBreak: "break-word",
+                            backgroundColor: "var(--surface-light)",
+                            border: "1px solid var(--border)",
+                            borderRadius: "var(--radius-xs)",
+                            padding: "7px 10px",
+                          }}
+                        >
+                          {primaryDetail}
+                        </span>
+                      )}
+                      {secondaryDetail && (
+                        <span
+                          style={{
+                            fontSize: "12px",
+                            color: COLORS.textMuted,
+                            lineHeight: 1.4,
+                            whiteSpace: "normal",
+                            wordBreak: "break-word",
+                            backgroundColor: "var(--surface-light)",
+                            border: "1px solid var(--border)",
+                            borderRadius: "var(--radius-xs)",
+                            padding: "7px 10px",
+                          }}
+                        >
+                          {secondaryDetail}
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>

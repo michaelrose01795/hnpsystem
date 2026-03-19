@@ -1480,7 +1480,7 @@ export default function CreateJobCardPage() {
               gap: "4px",
               marginBottom: "12px",
               padding: "8px 12px",
-              backgroundColor: "var(--surface)",
+              backgroundColor: "var(--accent-purple-surface)",
               borderRadius: "var(--radius-sm)",
               border: "none",
             }}
@@ -1492,8 +1492,9 @@ export default function CreateJobCardPage() {
                 style={{
                   display: "flex",
                   alignItems: "center",
+                  minHeight: "var(--control-height)",
                   gap: "8px",
-                  padding: "8px 16px",
+                  padding: "0 16px",
                   borderRadius: "var(--radius-xs)",
                   backgroundColor: activeTabIndex === index ? "var(--primary)" : "var(--surface-light)",
                   color: activeTabIndex === index ? "white" : "var(--text-primary)",
@@ -1534,8 +1535,8 @@ export default function CreateJobCardPage() {
             <button
               onClick={addNewJobTab}
               style={{
-                width: "var(--control-height-xs)",
-                height: "var(--control-height-xs)",
+                width: "var(--control-height)",
+                height: "var(--control-height)",
                 borderRadius: "var(--radius-xs)",
                 border: "2px dashed var(--primary)",
                 backgroundColor: "transparent",
@@ -2456,21 +2457,23 @@ export default function CreateJobCardPage() {
                     style={{
                       width: "100%",
                       maxWidth: "320px",
-                      padding: "14px",
+                      padding: "12px 16px",
                       fontSize: "14px",
-                      backgroundColor: "var(--surface-light)",
-                      color: "var(--text-primary)",
-                      border: "none",
+                      backgroundColor: "var(--accent-purple-surface)",
+                      color: "var(--accent-purple)",
+                      border: "1px solid var(--accent-purple)",
                       borderRadius: "var(--radius-xs)",
                       cursor: "pointer",
                       fontWeight: "600",
-                      transition: "all 0.2s",
+                      transition: "background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease",
                     }}
                     onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = "var(--surface-muted)";
+                      e.target.style.backgroundColor = "var(--accent-purple)";
+                      e.target.style.color = "var(--text-inverse)";
                     }}
                     onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = "var(--surface-light)";
+                      e.target.style.backgroundColor = "var(--accent-purple-surface)";
+                      e.target.style.color = "var(--accent-purple)";
                     }}
                   >
                     Search Existing Customer

@@ -33,6 +33,7 @@ import InvoiceSection from "@/components/Invoices/InvoiceSection";
 import { calculateVhcFinancialTotals } from "@/lib/vhc/calculateVhcTotals";
 import { normaliseDecisionStatus } from "@/lib/vhc/summaryStatus";
 import { isValidUuid, sanitizeNumericId } from "@/lib/utils/ids";
+import { clockInToJob, getUserActiveJobs, switchJob } from "@/lib/database/jobClocking";
 import PartsTabNew from "@/components/PartsTab_New";
 import NotesTabNew from "@/components/NotesTab_New";
 import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
@@ -840,6 +841,18 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     mainStatusForEditLock === JOB_STATUSES.INVOICED ||
     mainStatusForEditLock === JOB_STATUSES.RELEASED;
   const canEditPartsWriteUpVhc = canEdit && !isPartsWriteUpVhcLockedByStatus;
+  const isClockingLockedByStatus =
+    mainStatusForEditLock === JOB_STATUSES.INVOICED ||
+    mainStatusForEditLock === JOB_STATUSES.RELEASED;
+  const clockingLockDescription =
+    mainStatusForEditLock === JOB_STATUSES.INVOICED
+      ? "Clocking is locked because this job has been invoiced."
+      : mainStatusForEditLock === JOB_STATUSES.RELEASED
+      ? "Clocking is locked because this job has been released."
+      : "Clocking is locked for the current job status.";
+  const generalReadOnlyLockDescription = isInvoiceOrBeyondReadOnly
+    ? `This tab is locked because the job is ${jobData?.status || "read-only"}.`
+    : "";
   const partsWriteUpVhcLockDescription =
     mainStatusForEditLock === JOB_STATUSES.BOOKED
       ? "This section unlocks when the job is moved to Checked In or In Progress."
@@ -1624,7 +1637,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     try {
       const result = await autoSetCheckedInStatus(
         jobData.id,
-        user?.id || user?.user_id || "SYSTEM"
+        dbUserId || user?.user_id || user?.id || "SYSTEM"
       );
 
       if (!result?.success) {
@@ -1661,7 +1674,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     } finally {
       setCheckingIn(false);
     }
-  }, [confirm, fetchJobData, jobData, user?.id, user?.user_id]);
+  }, [confirm, dbUserId, fetchJobData, jobData, user?.id, user?.user_id]);
 
   const scheduleRealtimeRefresh = useCallback(() => {
     const MIN_REFRESH_INTERVAL_MS = process.env.NODE_ENV === "production" ? 800 : 1200;
@@ -3282,6 +3295,25 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         { id: "documents", label: "Documents"},
         { id: "invoice", label: "Invoice"}
       ];
+  const lockedTabIds = new Set(
+    isInvoiceOrBeyondReadOnly
+      ? [
+          "customer-requests",
+          "contact",
+          "scheduling",
+          "parts",
+          "notes",
+          "write-up",
+          "vhc",
+          "warranty",
+          "clocking",
+          "documents",
+        ]
+      : [
+          ...(isPartsWriteUpVhcLockedByStatus ? ["parts", "write-up", "vhc"] : []),
+          ...(isClockingLockedByStatus ? ["clocking"] : []),
+        ]
+  );
 
   const pageStackStyle = {
     display: "flex",
@@ -3925,6 +3957,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
           >
             {tabs.map((tab) => {
               const isActive = activeTab === tab.id;
+              const isLocked = lockedTabIds.has(tab.id);
               const isPartsTab = tab.id === "parts";
               const isWriteUpTab = tab.id === "write-up";
               const isVhcTab = tab.id === "vhc";
@@ -3952,6 +3985,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
                 >
                   {tab.icon && <span>{tab.icon}</span>}
                   <span>{tab.label}</span>
+                  {isLocked && <span aria-hidden="true">Lock</span>}
                   {tab.badge && (
                     <span className="jobcard-tab-badge" data-tab-id={tab.id}>
                       {tab.badge}
@@ -4026,6 +4060,12 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
             data-dev-section-type="content-card"
             data-dev-section-parent="jobcard-tab-content-shell"
           >
+            {isInvoiceOrBeyondReadOnly && (
+              <div style={lockAlertStyle} role="status" aria-live="polite">
+                <strong>Locked: Customer Requests</strong>
+                <span>{generalReadOnlyLockDescription}</span>
+              </div>
+            )}
             <CustomerRequestsTab
               jobData={jobData}
               canEdit={canEdit}
@@ -4047,6 +4087,12 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
             data-dev-section-type="content-card"
             data-dev-section-parent="jobcard-tab-content-shell"
           >
+            {isInvoiceOrBeyondReadOnly && (
+              <div style={lockAlertStyle} role="status" aria-live="polite">
+                <strong>Locked: Contact</strong>
+                <span>{generalReadOnlyLockDescription}</span>
+              </div>
+            )}
             <ContactTab
               jobData={jobData}
               canEdit={canEdit}
@@ -4062,6 +4108,12 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
             data-dev-section-type="content-card"
             data-dev-section-parent="jobcard-tab-content-shell"
           >
+            {isInvoiceOrBeyondReadOnly && (
+              <div style={lockAlertStyle} role="status" aria-live="polite">
+                <strong>Locked: Scheduling</strong>
+                <span>{generalReadOnlyLockDescription}</span>
+              </div>
+            )}
             <SchedulingTab
               jobData={jobData}
               canEdit={canEdit}
@@ -4119,6 +4171,12 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
             data-dev-section-type="content-card"
             data-dev-section-parent="jobcard-tab-content-shell"
           >
+            {isInvoiceOrBeyondReadOnly && (
+              <div style={lockAlertStyle} role="status" aria-live="polite">
+                <strong>Locked: Notes</strong>
+                <span>{generalReadOnlyLockDescription}</span>
+              </div>
+            )}
             <NotesTabNew
               jobData={jobData}
               canEdit={canEdit}
@@ -4199,6 +4257,12 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
             data-dev-section-type="content-card"
             data-dev-section-parent="jobcard-tab-content-shell"
           >
+            {isInvoiceOrBeyondReadOnly && (
+              <div style={lockAlertStyle} role="status" aria-live="polite">
+                <strong>Locked: Warranty</strong>
+                <span>{generalReadOnlyLockDescription}</span>
+              </div>
+            )}
             <WarrantyTab
               jobData={jobData}
               canEdit={canEdit}
@@ -4213,7 +4277,17 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
             data-dev-section-type="content-card"
             data-dev-section-parent="jobcard-tab-content-shell"
           >
-            <ClockingTab jobData={jobData} canEdit={canEdit} />
+            {isClockingLockedByStatus && (
+              <div style={lockAlertStyle} role="status" aria-live="polite">
+                <strong>Locked: Clocking</strong>
+                <span>{clockingLockDescription}</span>
+              </div>
+            )}
+            <ClockingTab
+              jobData={jobData}
+              canEdit={canEdit && !isClockingLockedByStatus}
+              disabledMessageOverride={isClockingLockedByStatus ? clockingLockDescription : ""}
+            />
           </div>
 
           <div
@@ -4238,6 +4312,12 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
             data-dev-section-type="content-card"
             data-dev-section-parent="jobcard-tab-content-shell"
           >
+            {isInvoiceOrBeyondReadOnly && (
+              <div style={lockAlertStyle} role="status" aria-live="polite">
+                <strong>Locked: Documents</strong>
+                <span>{generalReadOnlyLockDescription}</span>
+              </div>
+            )}
             <DocumentsTab
               documents={jobDocuments}
               canDelete={canManageDocuments}
@@ -6926,78 +7006,136 @@ function SchedulingTab({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
 
-      {/* ── Section 1: Customer & Vehicle ── */}
-      <DevLayoutSection
-        sectionKey="jobcard-tab-scheduling-customer-vehicle"
-        sectionType="content-card"
-        parentKey="jobcard-tab-scheduling"
-        backgroundToken="surface"
-        style={sectionCardStyle}
-      >
-        <div style={sectionTitleRow}>
-          <div style={{ flex: 1 }}>
-            <h3 style={cardTitleStyle}>Customer &amp; Vehicle</h3>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", alignItems: "stretch" }}>
+        {/* ── Section 1: Customer & Vehicle ── */}
+        <DevLayoutSection
+          sectionKey="jobcard-tab-scheduling-customer-vehicle"
+          sectionType="content-card"
+          parentKey="jobcard-tab-scheduling"
+          backgroundToken="surface"
+          style={sectionCardStyle}
+        >
+          <div style={sectionTitleRow}>
+            <div style={{ flex: 1 }}>
+              <h3 style={cardTitleStyle}>Customer &amp; Vehicle</h3>
+            </div>
+            {bookingRequest ? (
+              <span style={{ ...headerBadgeStyle, backgroundColor: statusColor.background, color: statusColor.color }}>
+                {bookingStatus === "approved" ? "Approved" : "Awaiting Approval"}
+              </span>
+            ) : null}
+            <button
+              onClick={() => {
+                const slug = createCustomerDisplaySlug(jobData.customerFirstName || "", jobData.customerLastName || "");
+                const target = slug || jobData.customerId;
+                if (target) router.push(`/customers/${target}`);
+              }}
+              disabled={!jobData.customerFirstName && !jobData.customerLastName && !jobData.customerId}
+              style={{
+                padding: "var(--control-padding)",
+                borderRadius: "var(--control-radius)",
+                border: "none",
+                backgroundColor: "rgba(var(--primary-rgb), 0.08)",
+                color: "var(--primary-dark)",
+                fontSize: "var(--control-font-size)",
+                fontWeight: "600",
+                minHeight: "var(--control-height)",
+                cursor: jobData.customerFirstName || jobData.customerLastName || jobData.customerId ? "pointer" : "not-allowed",
+                whiteSpace: "nowrap",
+                opacity: !jobData.customerFirstName && !jobData.customerLastName && !jobData.customerId ? 0.5 : 1,
+              }}
+            >
+              View Profile
+            </button>
           </div>
-          {bookingRequest ? (
-            <span style={{ ...headerBadgeStyle, backgroundColor: statusColor.background, color: statusColor.color }}>
-              {bookingStatus === "approved" ? "Approved" : "Awaiting Approval"}
-            </span>
-          ) : null}
-          <button
-            onClick={() => {
-              const slug = createCustomerDisplaySlug(jobData.customerFirstName || "", jobData.customerLastName || "");
-              const target = slug || jobData.customerId;
-              if (target) router.push(`/customers/${target}`);
-            }}
-            disabled={!jobData.customerFirstName && !jobData.customerLastName && !jobData.customerId}
+
+          {/* Vehicle selector */}
+          <div>
+            {customerVehiclesLoading ? (
+              <div style={{ fontSize: "13px", color: "var(--text-secondary)", padding: "8px 0" }}>
+                Loading stored vehicles...
+              </div>
+            ) : vehicleOptions.length > 0 ? (
+              <DropdownField
+                label="Vehicle"
+                placeholder="Select stored vehicle"
+                value={selectedVehicleIdValue}
+                onChange={(event) => handleVehicleChange(event.target.value)}
+                disabled={!canEdit}
+                className="compact-picker"
+                options={vehicleOptions.map((vehicle) => ({
+                  value: String(vehicle.vehicle_id),
+                  label: `${vehicle.registration || vehicle.reg_number || "Vehicle"} \u00B7 ${
+                    vehicle.make_model ||
+                    [vehicle.make, vehicle.model].filter(Boolean).join(" ")
+                  }`,
+                }))}
+              />
+            ) : (
+              <div style={{ fontSize: "13px", color: "var(--danger)", padding: "8px 0" }}>
+                No stored vehicles found for this customer.
+              </div>
+            )}
+          </div>
+        </DevLayoutSection>
+
+        {/* ── Section 4: Customer Logistics ── */}
+        <DevLayoutSection
+          sectionKey="jobcard-tab-scheduling-logistics"
+          sectionType="content-card"
+          parentKey="jobcard-tab-scheduling"
+          backgroundToken="surface"
+          style={sectionCardStyle}
+        >
+          <div style={sectionTitleRow}>
+            <h3 style={cardTitleStyle}>Customer Logistics</h3>
+          </div>
+          <div
             style={{
-              padding: "var(--control-padding)",
-              borderRadius: "var(--control-radius)",
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "8px",
+              padding: "8px",
+              backgroundColor: "rgba(var(--primary-rgb), 0.05)",
               border: "none",
-              backgroundColor: "rgba(var(--primary-rgb), 0.08)",
-              color: "var(--primary-dark)",
-              fontSize: "var(--control-font-size)",
-              fontWeight: "600",
-              minHeight: "var(--control-height)",
-              cursor: jobData.customerFirstName || jobData.customerLastName || jobData.customerId ? "pointer" : "not-allowed",
-              whiteSpace: "nowrap",
-              opacity: !jobData.customerFirstName && !jobData.customerLastName && !jobData.customerId ? 0.5 : 1,
+              borderRadius: "var(--radius-sm)",
             }}
           >
-            View Profile
-          </button>
-        </div>
-
-        {/* Vehicle selector */}
-        <div>
-          {customerVehiclesLoading ? (
-            <div style={{ fontSize: "13px", color: "var(--text-secondary)", padding: "8px 0" }}>
-              Loading stored vehicles...
-            </div>
-          ) : vehicleOptions.length > 0 ? (
-            <DropdownField
-              label="Vehicle"
-              placeholder="Select stored vehicle"
-              value={selectedVehicleIdValue}
-              onChange={(event) => handleVehicleChange(event.target.value)}
-              disabled={!canEdit}
-              className="compact-picker"
-              options={vehicleOptions.map((vehicle) => ({
-                value: String(vehicle.vehicle_id),
-                label: `${vehicle.registration || vehicle.reg_number || "Vehicle"} \u00B7 ${
-                  vehicle.make_model ||
-                  [vehicle.make, vehicle.model].filter(Boolean).join(" ")
-                }`,
-              }))}
-            />
-          ) : (
-            <div style={{ fontSize: "13px", color: "var(--danger)", padding: "8px 0" }}>
-              No stored vehicles found for this customer.
-            </div>
-          )}
-        </div>
-
-      </DevLayoutSection>
+            {waitingOptions.map((option) => {
+              const isActive =
+                bookingWaitingStatus === option ||
+                (!bookingWaitingStatus && option === "Neither");
+              return (
+                <button
+                  key={option}
+                  onClick={() => handleBookingWaitingSelect(option)}
+                  disabled={!canEdit}
+                  aria-pressed={isActive}
+                  style={{
+                    flex: "1 1 150px",
+                    minWidth: "120px",
+                    padding: "12px 14px",
+                    border: "none",
+                    borderRadius: "calc(var(--radius-sm) - 2px)",
+                    backgroundColor: isActive ? "var(--surface)" : "transparent",
+                    color: isActive ? "var(--primary-dark)" : "var(--text-secondary)",
+                    fontWeight: "600",
+                    fontSize: "var(--control-font-size)",
+                    cursor: canEdit ? "pointer" : "default",
+                    boxShadow: isActive ? "0 0 0 1px rgba(var(--primary-rgb), 0.18), 0 8px 18px rgba(var(--primary-rgb), 0.12)" : "none",
+                    transition: "background-color 0.15s, color 0.15s, box-shadow 0.15s",
+                    textAlign: "center",
+                  }}
+                >
+                  {option}
+                </button>
+              );
+            })}
+          </div>
+          {/* Placeholder for future conditional fields (loan car details, collection time, etc.) */}
+          <div style={{ minHeight: "0px" }} />
+        </DevLayoutSection>
+      </div>
 
       {/* ── Row: Customer Reported Issues (left) + Appointment Information (right) ── */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", alignItems: "stretch" }}>
@@ -7137,63 +7275,6 @@ function SchedulingTab({
           </div>
         </DevLayoutSection>
       </div>
-
-      {/* ── Section 4: Customer Logistics ── */}
-      <DevLayoutSection
-        sectionKey="jobcard-tab-scheduling-logistics"
-        sectionType="content-card"
-        parentKey="jobcard-tab-scheduling"
-        backgroundToken="surface"
-        style={sectionCardStyle}
-      >
-        <div style={sectionTitleRow}>
-          <h3 style={cardTitleStyle}>Customer Logistics</h3>
-        </div>
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "8px",
-            padding: "8px",
-            backgroundColor: "rgba(var(--primary-rgb), 0.05)",
-            border: "none",
-            borderRadius: "var(--radius-sm)",
-          }}
-        >
-          {waitingOptions.map((option) => {
-            const isActive =
-              bookingWaitingStatus === option ||
-              (!bookingWaitingStatus && option === "Neither");
-            return (
-              <button
-                key={option}
-                onClick={() => handleBookingWaitingSelect(option)}
-                disabled={!canEdit}
-                aria-pressed={isActive}
-                style={{
-                  flex: "1 1 150px",
-                  minWidth: "120px",
-                  padding: "12px 14px",
-                  border: "none",
-                  borderRadius: "calc(var(--radius-sm) - 2px)",
-                  backgroundColor: isActive ? "var(--surface)" : "transparent",
-                  color: isActive ? "var(--primary-dark)" : "var(--text-secondary)",
-                  fontWeight: "600",
-                  fontSize: "var(--control-font-size)",
-                  cursor: canEdit ? "pointer" : "default",
-                  boxShadow: isActive ? "0 0 0 1px rgba(var(--primary-rgb), 0.18), 0 8px 18px rgba(var(--primary-rgb), 0.12)" : "none",
-                  transition: "background-color 0.15s, color 0.15s, box-shadow 0.15s",
-                  textAlign: "center",
-                }}
-              >
-                {option}
-              </button>
-            );
-          })}
-        </div>
-        {/* Placeholder for future conditional fields (loan car details, collection time, etc.) */}
-        <div style={{ minHeight: "0px" }} />
-      </DevLayoutSection>
 
       {/* ── Section 5: Actions ── */}
       <DevLayoutSection
@@ -9011,15 +9092,17 @@ function MessagesTab({ thread, jobNumber, customerEmail, customerName }) {
   );
 }
 
-function ClockingTab({ jobData, canEdit }) {
+function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
+  const { confirm } = useConfirmation();
   const jobNumberValue = jobData?.jobNumber ?? jobData?.job_number ?? "";
   const normalizedJobNumber = jobNumberValue ? String(jobNumberValue).trim() : "";
+  const getTodayInputValue = () => new Date().toISOString().split("T")[0];
   const [technicians, setTechnicians] = useState([]);
   const [techniciansLoading, setTechniciansLoading] = useState(false);
   const [techniciansError, setTechniciansError] = useState("");
   const [selectedTechnicianId, setSelectedTechnicianId] = useState("");
-  const [clockInDate, setClockInDate] = useState(() => new Date().toISOString().split("T")[0]);
-  const [clockOutDate, setClockOutDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [clockInDate, setClockInDate] = useState(() => getTodayInputValue());
+  const [clockOutDate, setClockOutDate] = useState(() => getTodayInputValue());
   const [clockInTime, setClockInTime] = useState("");
   const [clockOutTime, setClockOutTime] = useState("");
   const [selectedRequest, setSelectedRequest] = useState("job");
@@ -9154,12 +9237,41 @@ function ClockingTab({ jobData, canEdit }) {
     [technicians]
   );
 
+  const normalizedRequests = useMemo(
+    () => normalizeRequests(jobData?.requests || []),
+    [jobData?.requests]
+  );
+
+  const requestLookup = useMemo(() => {
+    return normalizedRequests.reduce((map, req, index) => {
+      const value = String(
+        req?.request_id ?? req?.requestId ?? req?.key ?? `request-${index}`
+      );
+      const label = req?.text || req?.title || req?.description || `Request ${index + 1}`;
+      const hoursRaw = req?.hours ?? req?.time ?? null;
+      const hours = Number(hoursRaw);
+      map.set(value, {
+        value,
+        requestId:
+          req?.request_id !== undefined && req?.request_id !== null
+            ? Number(req.request_id)
+            : req?.requestId !== undefined && req?.requestId !== null
+            ? Number(req.requestId)
+            : null,
+        title: label,
+        label,
+        hours: Number.isFinite(hours) ? hours : null,
+      });
+      return map;
+    }, new Map());
+  }, [normalizedRequests]);
+
   const requestOptions = useMemo(() => {
-    const normalized = normalizeRequests(jobData?.requests || []);
+    const normalized = normalizedRequests;
 
     // Calculate total allocated hours for all requests
     const totalAllocatedHours = normalized.reduce((sum, req) => {
-      const hours = parseFloat(req.time) || 0;
+      const hours = parseFloat(req?.time ?? req?.hours) || 0;
       return sum + hours;
     }, 0);
 
@@ -9177,18 +9289,191 @@ function ClockingTab({ jobData, canEdit }) {
     ];
 
     normalized.forEach((req, index) => {
-      const requestText = req.text || req.title || "Request";
-      const allocatedTime = req.time || req.hours || 0;
+      const optionValue = String(
+        req?.request_id ?? req?.requestId ?? req?.key ?? `request-${index}`
+      );
+      const requestText = req?.text || req?.title || req?.description || "Request";
+      const allocatedTime = req?.time ?? req?.hours ?? 0;
       options.push({
-        key: req.key || `request-${index}`,
-        value: req.key || `request-${index}`,
+        key: optionValue,
+        value: optionValue,
         label: requestText,
         description: `${allocatedTime}h allocated`
       });
     });
 
     return options;
-  }, [jobData?.requests, normalizedJobNumber]);
+  }, [normalizedJobNumber, normalizedRequests]);
+
+  const selectedTechnician = useMemo(
+    () =>
+      (technicians || []).find(
+        (tech) => String(tech.user_id) === String(selectedTechnicianId)
+      ) || null,
+    [technicians, selectedTechnicianId]
+  );
+
+  const selectedRequestMeta = useMemo(() => {
+    if (!selectedRequest || selectedRequest === "job") {
+      return {
+        requestId: null,
+        requestKey: "job",
+        requestLabel: `Job #${normalizedJobNumber}`,
+        requestTitle: `Job #${normalizedJobNumber}`,
+        requestHours: null,
+      };
+    }
+
+    const match = requestLookup.get(String(selectedRequest));
+    return {
+      requestId:
+        match?.requestId !== null && Number.isInteger(match?.requestId) && match.requestId > 0
+          ? match.requestId
+          : null,
+      requestKey: match?.value || String(selectedRequest),
+      requestLabel: match?.label || String(selectedRequest),
+      requestTitle: match?.title || String(selectedRequest),
+      requestHours: match?.hours ?? null,
+    };
+  }, [normalizedJobNumber, requestLookup, selectedRequest]);
+
+  const isJustClockState = useMemo(() => {
+    const today = getTodayInputValue();
+    return (
+      selectedRequest === "job" &&
+      clockInDate === today &&
+      clockOutDate === today &&
+      !clockInTime &&
+      !clockOutTime
+    );
+  }, [clockInDate, clockOutDate, clockInTime, clockOutTime, selectedRequest]);
+
+  const resetClockingForm = useCallback(() => {
+    const today = getTodayInputValue();
+    setSelectedTechnicianId("");
+    setClockInDate(today);
+    setClockOutDate(today);
+    setClockInTime("");
+    setClockOutTime("");
+    setSelectedRequest("job");
+  }, []);
+
+  const handleClockingSuccess = useCallback((message) => {
+    setFormError("");
+    setFormSuccess(message);
+    resetClockingForm();
+    setRefreshSignal((prev) => prev + 1);
+  }, [resetClockingForm]);
+
+  const handleJustClock = useCallback(async () => {
+    if (!canEdit) return;
+    setFormError("");
+    setFormSuccess("");
+
+    if (!jobId || !normalizedJobNumber) {
+      setFormError("Job details are unavailable for clocking.");
+      return;
+    }
+
+    if (!selectedTechnicianId) {
+      setFormError("Select a technician to clock onto this job.");
+      return;
+    }
+
+    const technicianId = Number(selectedTechnicianId);
+    if (Number.isNaN(technicianId) || technicianId <= 0) {
+      setFormError("Select a valid technician.");
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      const activeResult = await getUserActiveJobs(technicianId);
+      if (!activeResult?.success) {
+        throw new Error(activeResult?.error || "Unable to check the technician's current clocking.");
+      }
+
+      const activeJobs = Array.isArray(activeResult.data) ? activeResult.data : [];
+      const sameJobClocking = activeJobs.find(
+        (entry) =>
+          Number(entry?.jobId) === Number(jobId) &&
+          String(entry?.jobNumber || "") === normalizedJobNumber
+      );
+
+      if (sameJobClocking) {
+        const techName =
+          selectedTechnician?.first_name || selectedTechnician?.last_name
+            ? `${selectedTechnician?.first_name || ""} ${selectedTechnician?.last_name || ""}`.trim()
+            : "This technician";
+        handleClockingSuccess(
+          `${techName} is already clocked onto Job #${normalizedJobNumber}.`
+        );
+        return;
+      }
+
+      const currentClocking = activeJobs[0] || null;
+      if (currentClocking) {
+        const confirmed = await confirm({
+          title: "Technician already clocked on",
+          message: `${selectedTechnician?.first_name || selectedTechnician?.last_name ? `${selectedTechnician.first_name || ""} ${selectedTechnician.last_name || ""}`.trim() : "This technician"} is already clocked onto Job #${currentClocking.jobNumber || currentClocking.jobId || "current"}.`,
+          description: `Press Yes to clock them off their current job and onto Job #${normalizedJobNumber}. Press No to keep their current clocking.`,
+          confirmLabel: "Yes",
+          cancelLabel: "No",
+        });
+
+        if (!confirmed) {
+          setFormSuccess("Technician stayed on their current job.");
+          return;
+        }
+
+        const switchResult = await switchJob({
+          userId: technicianId,
+          currentJobId: currentClocking.jobId,
+          newJobId: jobId,
+          newJobNumber: normalizedJobNumber,
+          workType: "initial",
+        });
+
+        if (!switchResult?.success) {
+          throw new Error(switchResult?.error || "Unable to switch technician onto this job.");
+        }
+
+        handleClockingSuccess(
+          `${selectedTechnician?.first_name || selectedTechnician?.last_name ? `${selectedTechnician.first_name || ""} ${selectedTechnician.last_name || ""}`.trim() : "Technician"} clocked onto Job #${normalizedJobNumber}.`
+        );
+        return;
+      }
+
+      const clockInResult = await clockInToJob({
+        userId: technicianId,
+        jobId,
+        jobNumber: normalizedJobNumber,
+        workType: "initial",
+      });
+
+      if (!clockInResult?.success) {
+        throw new Error(clockInResult?.error || "Unable to clock technician onto this job.");
+      }
+
+      handleClockingSuccess(
+        `${selectedTechnician?.first_name || selectedTechnician?.last_name ? `${selectedTechnician.first_name || ""} ${selectedTechnician.last_name || ""}`.trim() : "Technician"} clocked onto Job #${normalizedJobNumber}.`
+      );
+    } catch (err) {
+      console.error("Just clock error:", err);
+      setFormError(err?.message || "Unable to clock the technician onto this job.");
+    } finally {
+      setSubmitting(false);
+    }
+  }, [
+    canEdit,
+    confirm,
+    handleClockingSuccess,
+    jobId,
+    normalizedJobNumber,
+    selectedTechnician,
+    selectedTechnicianId,
+  ]);
 
   const handleSubmit = useCallback(
     async (event) => {
@@ -9247,26 +9532,12 @@ function ClockingTab({ jobData, canEdit }) {
 
       try {
         const nowIso = new Date().toISOString();
-
-        // Build request snapshot for notes field
-        const normalized = normalizeRequests(jobData?.requests || []);
-        const selectedRequestData = normalized.find(r => r.key === selectedRequest);
-        let notesPayload = null;
-
-        if (selectedRequest && selectedRequest !== "job") {
-          notesPayload = JSON.stringify({
-            requestKey: selectedRequest,
-            requestLabel: selectedRequest,
-            requestTitle: selectedRequestData?.title || selectedRequest,
-            requestHours: selectedRequestData?.hours || null
-          });
-        } else {
-          notesPayload = JSON.stringify({
-            requestKey: "job",
-            requestLabel: `Job #${normalizedJobNumber}`,
-            requestTitle: `Job #${normalizedJobNumber}`
-          });
-        }
+        const notesPayload = JSON.stringify({
+          requestKey: selectedRequestMeta.requestKey,
+          requestLabel: selectedRequestMeta.requestLabel,
+          requestTitle: selectedRequestMeta.requestTitle,
+          requestHours: selectedRequestMeta.requestHours,
+        });
 
         const timeRecordPayload = {
           user_id: technicianId,
@@ -9294,6 +9565,7 @@ function ClockingTab({ jobData, canEdit }) {
             user_id: technicianId,
             job_id: jobId,
             job_number: normalizedJobNumber,
+            request_id: selectedRequestMeta.requestId,
             clock_in: startDate.toISOString(),
             clock_out: finishDate.toISOString(),
             work_type: "manual",
@@ -9315,14 +9587,7 @@ function ClockingTab({ jobData, canEdit }) {
           throw jobUpdateError;
         }
 
-        setFormSuccess("Manual clocking entry saved for this job.");
-        setClockInTime("");
-        setClockOutTime("");
-        setClockInDate(new Date().toISOString().split("T")[0]);
-        setClockOutDate(new Date().toISOString().split("T")[0]);
-        setSelectedRequest("job");
-        setSelectedTechnicianId("");
-        setRefreshSignal((prev) => prev + 1);
+        handleClockingSuccess("Manual clocking entry saved for this job.");
       } catch (err) {
         console.error("Manual clocking error:", err);
         setFormError(err?.message || "Unable to save the clocking entry.");
@@ -9339,18 +9604,13 @@ function ClockingTab({ jobData, canEdit }) {
       clockOutDate,
       clockInTime,
       clockOutTime,
-      selectedRequest,
-      jobData?.requests,
+      selectedRequestMeta,
+      handleClockingSuccess,
     ]
   );
 
   const handleReset = () => {
-    setSelectedTechnicianId("");
-    setClockInDate(new Date().toISOString().split("T")[0]);
-    setClockOutDate(new Date().toISOString().split("T")[0]);
-    setClockInTime("");
-    setClockOutTime("");
-    setSelectedRequest("job");
+    resetClockingForm();
     setFormError("");
     setFormSuccess("");
   };
@@ -9377,7 +9637,9 @@ function ClockingTab({ jobData, canEdit }) {
   };
 
   const disabledMessage =
-    !canEdit && "This job card is read-only. Clocking entries can only be added by staff with edit access.";
+    !canEdit &&
+    (disabledMessageOverride ||
+      "This job card is read-only. Clocking entries can only be added by staff with edit access.");
 
   return (
     <div
@@ -9538,7 +9800,11 @@ function ClockingTab({ jobData, canEdit }) {
               placeholder={techniciansLoading ? "Loading technicians…" : "Select technician"}
               options={technicianOptions}
               value={selectedTechnicianId}
-              onChange={(event) => setSelectedTechnicianId(event.target.value)}
+              onChange={(event) => {
+                setSelectedTechnicianId(event.target.value);
+                setFormError("");
+                setFormSuccess("");
+              }}
               disabled={!canEdit || techniciansLoading}
               required
               style={{ width: "100%" }}
@@ -9556,6 +9822,26 @@ function ClockingTab({ jobData, canEdit }) {
           }}
         >
           <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
+            {isJustClockState && selectedTechnicianId ? (
+              <button
+                type="button"
+                onClick={handleJustClock}
+                disabled={!canEdit || submitting}
+                style={{
+                  borderRadius: "var(--radius-sm)",
+                  border: "none",
+                  backgroundColor: "var(--success)",
+                  color: "var(--text-inverse)",
+                  padding: "12px 20px",
+                  fontSize: "0.95rem",
+                  fontWeight: 600,
+                  cursor: !canEdit || submitting ? "not-allowed" : "pointer",
+                  opacity: !canEdit || submitting ? 0.6 : 1,
+                }}
+              >
+                {submitting ? "Clocking…" : "Just clock"}
+              </button>
+            ) : null}
             <button
               type="submit"
               disabled={!canEdit || submitting}
@@ -9641,7 +9927,7 @@ function ClockingTab({ jobData, canEdit }) {
           <ClockingHistorySection
             jobId={jobId}
             jobNumber={normalizedJobNumber}
-            requests={normalizeRequests(jobData?.requests || [])}
+            requests={normalizedRequests}
             jobAllocatedHours={jobData?.labour_hours || null}
             refreshSignal={refreshSignal}
             enableRequestClick={false}
@@ -10096,7 +10382,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
   );
 }
 
-function ValetClockingPanel({ jobId, jobNumber, userId }) {
+function ValetClockingPanel({ jobId, jobNumber, userId, clockingLocked = false, lockMessage = "" }) {
   const [activeClocking, setActiveClocking] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -10136,6 +10422,10 @@ function ValetClockingPanel({ jobId, jobNumber, userId }) {
   }, [refreshActiveValetClocking]);
 
   const handleClockIn = useCallback(async () => {
+    if (clockingLocked) {
+      setError(lockMessage || "This job can no longer be clocked onto.");
+      return;
+    }
     if (!jobId || !userId || !jobNumber) return;
     setLoading(true);
     setError("");
@@ -10194,7 +10484,7 @@ function ValetClockingPanel({ jobId, jobNumber, userId }) {
     } finally {
       setLoading(false);
     }
-  }, [jobId, jobNumber, userId]);
+  }, [clockingLocked, lockMessage, jobId, jobNumber, userId]);
 
   const handleClockOut = useCallback(async () => {
     if (!activeClocking?.id || !jobId || !userId) return;
@@ -10266,7 +10556,7 @@ function ValetClockingPanel({ jobId, jobNumber, userId }) {
       <button
         type="button"
         onClick={isClockedOn ? handleClockOut : handleClockIn}
-        disabled={loading || !jobId || !userId}
+        disabled={loading || !jobId || !userId || (clockingLocked && !isClockedOn)}
         style={{
           padding: "8px 14px",
           borderRadius: "var(--radius-sm)",
@@ -10274,19 +10564,23 @@ function ValetClockingPanel({ jobId, jobNumber, userId }) {
           backgroundColor: isClockedOn ? "var(--danger)" : "var(--primary)",
           color: "var(--text-inverse)",
           fontWeight: 700,
-          cursor: loading || !jobId || !userId ? "not-allowed" : "pointer",
-          opacity: loading || !jobId || !userId ? 0.7 : 1,
+          cursor: loading || !jobId || !userId || (clockingLocked && !isClockedOn) ? "not-allowed" : "pointer",
+          opacity: loading || !jobId || !userId || (clockingLocked && !isClockedOn) ? 0.7 : 1,
           whiteSpace: "nowrap",
         }}
       >
-        {loading ? "Updating..." : isClockedOn ? "Clock Out (Valet)" : "Clock On To Job (Valet)"}
+        {loading ? "Updating..." : isClockedOn ? "Clock Out (Valet)" : clockingLocked ? "Clocking Locked" : "Clock On To Job (Valet)"}
       </button>
       {clockedSinceText && (
         <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
           Clocked on since {clockedSinceText}
         </span>
       )}
-      {error && <span style={{ fontSize: "12px", color: "var(--danger)" }}>{error}</span>}
+      {(error || (clockingLocked && lockMessage)) && (
+        <span style={{ fontSize: "12px", color: "var(--danger)" }}>
+          {error || lockMessage}
+        </span>
+      )}
     </div>
   );
 }
@@ -10388,7 +10682,13 @@ function DocumentsTab({
                 Upload wash/valet photos for Job #{valetJobNumber || "—"}.
               </p>
             </div>
-            <ValetClockingPanel jobId={valetJobId} jobNumber={valetJobNumber} userId={valetUserId} />
+            <ValetClockingPanel
+              jobId={valetJobId}
+              jobNumber={valetJobNumber}
+              userId={valetUserId}
+              clockingLocked={isClockingLockedByStatus}
+              lockMessage={clockingLockDescription}
+            />
           </div>
           <div style={{ display: "flex", gap: "10px", marginTop: "12px", alignItems: "center", flexWrap: "wrap" }}>
             <input

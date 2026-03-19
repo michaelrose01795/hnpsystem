@@ -134,6 +134,22 @@ const resolveActorName = (value) => {
   return trimmed;
 };
 
+const isValidUserId = (value) => Number.isInteger(value) && value > 0;
+
+const findMatchingEntryByTimestamp = (rows = [], timestamp, accessor, maxDistanceMs = 120000) => {
+  if (!timestamp || !Array.isArray(rows) || rows.length === 0) return null;
+  const targetMs = new Date(timestamp).getTime();
+  if (Number.isNaN(targetMs)) return null;
+
+  return rows.find((row) => {
+    const candidateValue = accessor(row);
+    if (!candidateValue) return false;
+    const candidateMs = new Date(candidateValue).getTime();
+    if (Number.isNaN(candidateMs)) return false;
+    return Math.abs(candidateMs - targetMs) <= maxDistanceMs;
+  }) || null;
+};
+
 const buildVhcStatus = ({ required, completedAt, sentAt, authorisedAt, declinedAt, hasChecks }) => {
   if (!required) return "not_required";
   if (declinedAt) return "declined";
@@ -238,7 +254,7 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
   const jobQuery = db
     .from("jobs")
     .select(
-      `id, job_number, vehicle_reg, status, tech_completion_status, waiting_status, updated_at, status_updated_at, status_updated_by, vhc_required, vhc_completed_at, vhc_sent_at, additional_work_authorized_at, job_source`
+      `id, job_number, vehicle_reg, status, tech_completion_status, waiting_status, updated_at, created_at, status_updated_at, status_updated_by, checked_in_at, workshop_started_at, maintenance_info, vhc_required, vhc_completed_at, vhc_sent_at, additional_work_authorized_at, job_source`
     )
     .limit(1);
 
@@ -299,7 +315,7 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
       .eq("job_id", jobIdValue),
     db
       .from("job_booking_requests")
-      .select("status, updated_at")
+      .select("status, updated_at, submitted_at, submitted_by, submitted_by_name, approved_at, approved_by, approved_by_name")
       .eq("job_id", jobIdValue)
       .maybeSingle(),
     db
@@ -334,6 +350,48 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
 
   const statusEntries = [];
   const subStatusEntries = [];
+  const collectedUserIds = new Set();
+  const collectUserId = (value) => {
+    if (value === null || value === undefined) return;
+    const parsed = Number(String(value).trim());
+    if (isValidUserId(parsed)) {
+      collectedUserIds.add(parsed);
+    }
+  };
+
+  (historyRes.data || []).forEach((row) => collectUserId(row.changed_by));
+  collectUserId(jobRow.status_updated_by);
+  collectUserId(bookingRes?.data?.submitted_by);
+  collectUserId(bookingRes?.data?.approved_by);
+
+  const userNameById = new Map();
+  if (collectedUserIds.size > 0) {
+    const { data: userRows, error: userError } = await db
+      .from("users")
+      .select("user_id, first_name, last_name, email")
+      .in("user_id", Array.from(collectedUserIds));
+
+    if (userError) {
+      console.error("Failed to load status snapshot users", userError);
+    } else {
+      (userRows || []).forEach((user) => {
+        const parts = [user.first_name, user.last_name].filter(Boolean);
+        const name = parts.join(" ").trim() || user.email || "Unknown user";
+        userNameById.set(user.user_id, name);
+      });
+    }
+  }
+
+  const resolveHistoryUserName = (value) => {
+    if (!value) return null;
+    const text = String(value).trim();
+    if (!text) return null;
+    const parsed = Number(text);
+    if (isValidUserId(parsed)) {
+      return userNameById.get(parsed) || "Unknown user";
+    }
+    return /^system/i.test(text) ? "System" : text;
+  };
 
   if (historyRes.error) {
     console.error("Failed to load job status history", historyRes.error);
@@ -346,7 +404,7 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
         statusLabel: statusPayload.label,
         timestamp: ensureIsoString(row.changed_at),
         userId: row.changed_by || null,
-        userName: resolveActorName(row.changed_by),
+        userName: resolveHistoryUserName(row.changed_by) || resolveActorName(row.changed_by),
         reason: row.reason || null,
         color: statusPayload.color,
         department: statusPayload.department,
@@ -385,7 +443,7 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
         jobRow.updated_at ||
         new Date().toISOString(),
       userId: jobRow.status_updated_by || null,
-      userName: resolveActorName(jobRow.status_updated_by),
+      userName: resolveHistoryUserName(jobRow.status_updated_by) || resolveActorName(jobRow.status_updated_by),
       reason: null,
       color: mainMeta?.color || null,
       department: mainMeta?.department || null,
@@ -394,6 +452,80 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
       label: mainMeta?.label || jobRow.status || "Status",
     });
   }
+
+  const bookingRequest = bookingRes?.data || null;
+  const bookingFallbackUserId =
+    bookingRequest?.approved_by ||
+    bookingRequest?.submitted_by ||
+    null;
+  const bookingFallbackUserName =
+    bookingRequest?.approved_by_name ||
+    bookingRequest?.submitted_by_name ||
+    resolveHistoryUserName(bookingFallbackUserId) ||
+    null;
+  const washChecklistUserName = jobRow?.maintenance_info?.valetChecklist?.updatedBy || null;
+
+  const inferMissingActor = (entry) => {
+    if (!entry || entry.userName || entry.userId) return entry;
+
+    const statusId = entry.status || null;
+
+    if (statusId === "booked") {
+      return {
+        ...entry,
+        userId: bookingFallbackUserId,
+        userName: bookingFallbackUserName,
+      };
+    }
+
+    if (statusId === "checked_in") {
+      const trackingMatch =
+        findMatchingEntryByTimestamp(vehicleRes?.data || [], entry.timestamp, (row) => row?.occurred_at) ||
+        findMatchingEntryByTimestamp(keyRes?.data || [], entry.timestamp, (row) => row?.occurred_at);
+      const trackingUserName =
+        getUserName(trackingMatch?.user) ||
+        null;
+      const trackingUserId =
+        trackingMatch?.created_by || trackingMatch?.performed_by || null;
+      if (trackingUserName || trackingUserId) {
+        return {
+          ...entry,
+          userId: trackingUserId,
+          userName: trackingUserName || resolveHistoryUserName(trackingUserId) || null,
+        };
+      }
+    }
+
+    if (statusId === "technician_started") {
+      const matchingClocking = findMatchingEntryByTimestamp(
+        clockingRes?.data || [],
+        entry.timestamp,
+        (row) => row?.clock_in
+      );
+      if (matchingClocking) {
+        return {
+          ...entry,
+          userId: matchingClocking.user_id || null,
+          userName:
+            getUserName(matchingClocking.user) ||
+            resolveHistoryUserName(matchingClocking.user_id) ||
+            null,
+        };
+      }
+    }
+
+    if (statusId === "wash_complete" && washChecklistUserName) {
+      return {
+        ...entry,
+        userName: washChecklistUserName,
+      };
+    }
+
+    return entry;
+  };
+
+  const normalizedStatusEntries = statusEntries.map(inferMissingActor);
+  const normalizedSubStatusEntries = subStatusEntries.map(inferMissingActor);
 
   const actionEntries = [];
   if (keyRes.error) {
@@ -490,7 +622,7 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
     });
   }
 
-  const timelineEntries = [...statusEntries, ...subStatusEntries, ...actionEntries]
+  const timelineEntries = [...normalizedStatusEntries, ...normalizedSubStatusEntries, ...actionEntries]
     .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
     .map((entry) => ({
       id: entry.id,
@@ -534,7 +666,7 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
     (clockingRes.data || []).filter((row) => !row.clock_out).slice(-1)[0] || null;
 
   const latestMainStatusEntry =
-    statusEntries.length > 0 ? statusEntries[statusEntries.length - 1] : null;
+    normalizedStatusEntries.length > 0 ? normalizedStatusEntries[normalizedStatusEntries.length - 1] : null;
   const resolvedMainStatusLabel =
     latestMainStatusEntry?.statusLabel || jobRow.status || null;
   const overallStatus =

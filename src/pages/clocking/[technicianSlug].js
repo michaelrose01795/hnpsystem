@@ -12,6 +12,8 @@ import ClockingHistorySection from "@/components/JobCards/ClockingHistorySection
 import { DropdownField } from "@/components/dropdownAPI";
 import { CalendarField } from "@/components/calendarAPI";
 import { TimePickerField } from "@/components/timePickerAPI";
+import { resolveMainStatusId } from "@/lib/status/statusFlow";
+import { STATUSES as JOB_STATUSES } from "@/lib/status/catalog/job";
 
 const STATUS_STATES = ["In Progress", "Tea Break", "Waiting for Job"];
 
@@ -80,6 +82,15 @@ const buildDateFromTime = (timeValue, baseDate = new Date()) => {
   return date;
 };
 
+const isClockingLockedStatus = (statusValue) => {
+  const statusId = resolveMainStatusId(statusValue);
+  return (
+    statusId === JOB_STATUSES.INVOICED ||
+    statusId === JOB_STATUSES.RELEASED ||
+    String(statusValue || "").trim().toLowerCase() === "archived"
+  );
+};
+
 export default function UserClockingHistory() {
   const router = useRouter();
   const slugParamRaw = router.query.technicianSlug;
@@ -127,6 +138,7 @@ export default function UserClockingHistory() {
   const [lastClockedJobRequests, setLastClockedJobRequests] = useState([]);
   const [lastClockedJobAllocatedHours, setLastClockedJobAllocatedHours] = useState(null);
   const [historyRefreshSignal, setHistoryRefreshSignal] = useState(0);
+  const [selectedJobLockedMessage, setSelectedJobLockedMessage] = useState("");
 
   useEffect(() => {
     if (resolvedUserId) {
@@ -321,6 +333,7 @@ export default function UserClockingHistory() {
 
   const handleJobNumberChange = async (value) => {
     setFormJobNumber(value);
+    setSelectedJobLockedMessage("");
     const match =
       activeJobs.find(
         (job) => job.job_number?.toLowerCase() === (value || "").trim().toLowerCase()
@@ -330,6 +343,22 @@ export default function UserClockingHistory() {
     // Fetch requests for the selected job
     if (match?.job_id) {
       try {
+        const { data: jobRecord, error: jobRecordError } = await supabase
+          .from("jobs")
+          .select("status")
+          .eq("id", match.job_id)
+          .maybeSingle();
+
+        if (jobRecordError) {
+          throw jobRecordError;
+        }
+
+        if (isClockingLockedStatus(jobRecord?.status)) {
+          setSelectedJobLockedMessage(
+            `Job ${match.job_number} is ${jobRecord?.status || "locked"} and can no longer be clocked onto.`
+          );
+        }
+
         const { data, error } = await supabase
           .from("job_requests")
           .select("request_id, description, hours, job_type, sort_order")
@@ -364,12 +393,18 @@ export default function UserClockingHistory() {
 
       const { data, error } = await supabase
         .from("jobs")
-        .select("id")
+        .select("id, status, job_number")
         .ilike("job_number", normalized)
         .maybeSingle();
 
       if (error) {
         throw error;
+      }
+
+      if (isClockingLockedStatus(data?.status)) {
+        throw new Error(
+          `Job ${data?.job_number || normalized} is ${data?.status || "locked"} and can no longer be clocked onto.`
+        );
       }
 
       return data?.id ?? null;
@@ -447,13 +482,18 @@ export default function UserClockingHistory() {
         try {
           jobIdForEntry = await resolveJobIdByNumber(jobNumberTrimmed);
         } catch (err) {
-          setFormError("Unable to resolve job number.");
+          setFormError(err?.message || "Unable to resolve job number.");
           return;
         }
         if (!jobIdForEntry) {
           setFormError("Job number not found in the system.");
           return;
         }
+      }
+
+      if (selectedJobLockedMessage) {
+        setFormError(selectedJobLockedMessage);
+        return;
       }
 
       const dateString = clockInDate;
@@ -820,6 +860,20 @@ export default function UserClockingHistory() {
                   {formError}
                 </div>
               )}
+              {selectedJobLockedMessage && !formError && (
+                <div
+                  style={{
+                    borderRadius: "var(--radius-md)",
+                    border: "1px solid var(--warning)",
+                    background: "var(--layer-section-level-1)",
+                    padding: "12px 14px",
+                    color: "var(--warning-dark)",
+                    fontSize: "0.9rem",
+                  }}
+                >
+                  {selectedJobLockedMessage}
+                </div>
+              )}
               {formSuccess && (
                 <div
                   style={{
@@ -901,7 +955,7 @@ export default function UserClockingHistory() {
                       options={requestOptions}
                       value={selectedRequest}
                       onChange={(event) => setSelectedRequest(event.target.value)}
-                      disabled={!formJobNumber}
+                      disabled={!formJobNumber || Boolean(selectedJobLockedMessage)}
                       required
                       style={{ width: "100%" }}
                     />
@@ -909,7 +963,7 @@ export default function UserClockingHistory() {
                 </div>
 
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
-                  <button type="submit" disabled={formSubmitting} style={{ ...buttonPrimaryStyle, opacity: formSubmitting ? 0.7 : 1, cursor: formSubmitting ? "not-allowed" : "pointer" }}>
+                  <button type="submit" disabled={formSubmitting || Boolean(selectedJobLockedMessage)} style={{ ...buttonPrimaryStyle, opacity: formSubmitting || selectedJobLockedMessage ? 0.7 : 1, cursor: formSubmitting || selectedJobLockedMessage ? "not-allowed" : "pointer" }}>
                     {formSubmitting ? "Saving entry…" : "Save clocking entry"}
                   </button>
                   <button
@@ -917,6 +971,7 @@ export default function UserClockingHistory() {
                     onClick={() => {
                       setFormJobNumber("");
                       setSelectedJobId(null);
+                      setSelectedJobLockedMessage("");
                       setSelectedRequest("job");
                       setJobRequests([]);
                       setClockInDate(new Date().toISOString().split("T")[0]);

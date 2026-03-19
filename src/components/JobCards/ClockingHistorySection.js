@@ -47,6 +47,7 @@ export default function ClockingHistorySection({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [requestsAllocatedTotal, setRequestsAllocatedTotal] = useState(null);
+  const [liveNow, setLiveNow] = useState(() => Date.now());
 
   const fetchEntries = useCallback(async () => {
     if (!jobId) {
@@ -184,6 +185,17 @@ export default function ClockingHistorySection({
     };
   }, [jobId, fetchEntries]);
 
+  useEffect(() => {
+    const hasActiveEntries = entries.some((entry) => entry && !entry.clockOut);
+    if (!hasActiveEntries) return undefined;
+
+    const interval = setInterval(() => {
+      setLiveNow(Date.now());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [entries]);
+
   const fallbackJobHours = useMemo(() => {
     if (typeof jobAllocatedHours === "number" && !Number.isNaN(jobAllocatedHours)) {
       return jobAllocatedHours;
@@ -221,8 +233,9 @@ export default function ClockingHistorySection({
           : hasRequest
           ? null
           : fallbackJobHours;
-      const durationHours =
-        calculateDurationHours(entry.clockIn, entry.clockOut);
+      const liveClockOutValue = entry.clockOut || new Date(liveNow).toISOString();
+      const durationHours = calculateDurationHours(entry.clockIn, liveClockOutValue);
+      const isActive = !entry.clockOut;
 
       return {
         id: entry.id,
@@ -233,13 +246,14 @@ export default function ClockingHistorySection({
         requestKey: hasRequest ? String(entry.requestId) : "job",
         dateOn: formatDate(entry.clockIn),
         timeOn: formatTime(entry.clockIn),
-        dateOff: formatDate(entry.clockOut),
-        timeOff: formatTime(entry.clockOut),
+        dateOff: formatDate(liveClockOutValue),
+        timeOff: formatTime(liveClockOutValue),
         timeTaken: durationHours !== null && !Number.isNaN(durationHours) ? Number(durationHours.toFixed(2)) : null,
+        isActive,
         rawEntry: entry
       };
     });
-  }, [entries, fallbackJobHours, jobNumber]);
+  }, [entries, fallbackJobHours, jobNumber, liveNow]);
 
   const shouldScroll = derivedRows.length > 5;
   const rowHeight = 48;
@@ -347,7 +361,25 @@ export default function ClockingHistorySection({
                   derivedRows.map((row) => (
                     <tr key={row.id}>
                       <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--surface-light)", fontWeight: 600 }}>
-                        {row.technicianName}
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                          <span>{row.technicianName}</span>
+                          {row.isActive ? (
+                            <span
+                              style={{
+                                fontSize: "0.72rem",
+                                fontWeight: 700,
+                                textTransform: "uppercase",
+                                letterSpacing: "0.08em",
+                                color: "var(--success-dark)",
+                                backgroundColor: "var(--success-surface)",
+                                borderRadius: "var(--radius-pill)",
+                                padding: "3px 8px",
+                              }}
+                            >
+                              Live
+                            </span>
+                          ) : null}
+                        </div>
                       </td>
                       <td
                         style={{

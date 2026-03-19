@@ -54,11 +54,18 @@ export default function ArchivedJobsPage() {
             event.preventDefault();
             runSearch(query);
           }}
-          className="app-section-card"
+          className="app-toolbar-row"
           style={{
             display: "flex",
+            width: "100%",
             flexWrap: "wrap",
-            gap: "12px",
+            alignItems: "center",
+            gap: "8px",
+            padding: 0,
+            background: "transparent",
+            border: "none",
+            boxShadow: "none",
+            borderRadius: 0,
             color: "var(--search-text)",
           }}
         >
@@ -75,14 +82,20 @@ export default function ArchivedJobsPage() {
             type="submit"
             disabled={isSearching}
             style={{
-              padding: "12px 20px",
+              minHeight: "var(--control-height)",
+              height: "var(--control-height)",
+              padding: "0 16px",
               borderRadius: "var(--radius-sm)",
               border: "none",
               background: "var(--primary)",
               color: "white",
               fontWeight: 600,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
               cursor: "pointer",
-              minWidth: "140px",
+              minWidth: "120px",
+              flexShrink: 0,
               opacity: isSearching ? 0.6 : 1,
             }}
           >

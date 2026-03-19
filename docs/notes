@@ -5,6 +5,10 @@ TO DO:
 
 Continue flow with job number 56.
 
+Create a prompt for the "Job Progress Tracker" section so everything which it does, what it shows, for each page create a full prompt for this so i can give it to chatgpt and it will know exactly everythign this section shows everything and how its displayed. 
+
+Check
+Create a ai like feature for this following section so the "ai" does more of the work, have the ai build in to the code like made wiht the code so this seciton is improved. 
 
 
 
@@ -13,23 +17,44 @@ PAGE ACCESS
 Service Manager
 /dashboard/service
 
+
+
 Accounts Manager
+
+
 /accounts
+
 /accounts/create
+
 /accounts/edit/[accountId]
+
 /accounts/invoices
+
 /accounts/invoices/[invoiceId]
+
 /accounts/reports
+
 /accounts/settings
+
 /accounts/transactions/[accountId]
+
 /accounts/view/[accountId]
+
 /company-accounts
+
 /company-accounts/[accountNumber]
+
 /dashboard/accounts
 
+
+
 Admin Manager
+
+
 /admin/profiles/[user]
+
 /admin/users
+
 /dashboard/admin
 
 
@@ -38,11 +63,12 @@ Workshop Manager
 CHECK
 /job-cards/archive winthin thsi page reduce the size of the /job-cards/archive :: 2 (job-cards-archive-auto-content-card-2) seciton 
 
-CHECK
-/job-cards/create have it so wihtin this page, if its not an accent colour (except remove button) make sure its surface level colour backgroudn for example the text fields, and /job-cards/create :: 2.2.2.1 (job-cards-create-job-request-1) section for example. make sure the text colour uses light or dark theme so it doesnt clash with the background colour, but if its text in a field before a users input have it lighter grey so it doesnt seem like a text input already 
-
-
 /job-cards/view
+CHECK
+have it so newest appointment day at the top within Today's workload Carry over tabs
+
+CHECK
+within clocking tab inside the job-cards/[jobnumber] page have it so the user who has access to the clocking tab can clock a tech onto the job from there, this will show an alert if they are already clcoked onto a job number, if yes is pressed then it clocks the user off the current job number and clocks them onto the new jobnumber, if no is pressed then they stay on current clocking, this can be done by selecting the user straight from the "Technician" dropdown, if no other fields have been started a button will show saying "Just clock" this is then when it the user selected will be clcoked onto the job. when a user clocks onto the job it will show wihtin the "Job Progress Tracker" section as well as within the clocking tab table, if the user is currently clcoked onto the job number then it will show date on and time on as when they did and then date off and time off as as currnt which indicates the user is still clcoked, and have hte other information within that table auto be ented and calucuated etc like normal. 
 
 /job-cards/waiting/nextjobs
 
@@ -58,7 +84,7 @@ CHECK
 
 /workshop/consumables-tracker
 
-
+ 
 
 Customer
 
