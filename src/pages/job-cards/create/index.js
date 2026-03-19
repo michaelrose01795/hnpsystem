@@ -1679,7 +1679,7 @@ export default function CreateJobCardPage() {
                     flexWrap: "wrap",
                     padding: "6px",
                     borderRadius: "var(--control-radius)",
-                    backgroundColor: "var(--surface-light)",
+                    backgroundColor: "var(--surface)",
                     border: "none",
                     width: "fit-content",
                   }}
@@ -1733,7 +1733,7 @@ export default function CreateJobCardPage() {
                     gap: "8px",
                     padding: "6px",
                     borderRadius: "var(--control-radius)",
-                    backgroundColor: "var(--surface-light)",
+                    backgroundColor: "var(--surface)",
                     border: "none",
                     width: "fit-content",
                   }}
@@ -1787,7 +1787,7 @@ export default function CreateJobCardPage() {
                     gap: "8px",
                     padding: "6px",
                     borderRadius: "var(--control-radius)",
-                    backgroundColor: "var(--surface-light)",
+                    backgroundColor: "var(--surface)",
                     border: "none",
                     width: "fit-content",
                   }}
@@ -2054,7 +2054,7 @@ export default function CreateJobCardPage() {
                       <div
                         style={{
                           padding: "10px 12px",
-                          backgroundColor: "var(--surface-light)",
+                          backgroundColor: "var(--surface)",
                           borderRadius: "var(--radius-xs)",
                           fontSize: "14px",
                           color: vehicle[key] ? "var(--text-primary)" : "var(--grey-accent-light)",
@@ -2514,7 +2514,7 @@ export default function CreateJobCardPage() {
                     borderRadius: "var(--radius-sm)",
                     marginBottom: "12px",
                     padding: "16px",
-                    backgroundColor: "var(--surface-light)",
+                    backgroundColor: "var(--surface)",
                   }}
                 >
                   <div
@@ -2690,7 +2690,7 @@ export default function CreateJobCardPage() {
                     gap: "8px",
                     padding: "6px",
                     borderRadius: "var(--control-radius)",
-                    backgroundColor: "var(--surface-light)",
+                    backgroundColor: "var(--surface)",
                     border: "none",
                     width: "fit-content",
                   }}
@@ -2777,7 +2777,7 @@ export default function CreateJobCardPage() {
                     gap: "8px",
                     padding: "6px",
                     borderRadius: "var(--control-radius)",
-                    backgroundColor: "var(--surface-light)",
+                    backgroundColor: "var(--surface)",
                     border: "none",
                     width: "fit-content",
                   }}

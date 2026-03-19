@@ -103,7 +103,7 @@ export default function ArchivedJobsPage() {
             border: "1px solid var(--info-surface)",
           }}
         >
-          <div style={{ padding: "16px 24px", borderBottom: "1px solid var(--info-surface)" }}>
+          <div style={{ padding: "12px 18px", borderBottom: "1px solid var(--info-surface)" }}>
             <p style={{ margin: 0, fontWeight: 600, color: "var(--accent-purple)" }}>
               {results.length} archived {results.length === 1 ? "job" : "jobs"} found
             </p>
@@ -112,12 +112,12 @@ export default function ArchivedJobsPage() {
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ textAlign: "left", color: "var(--info)", fontSize: "0.85rem" }}>
-                  <th style={{ padding: "12px 24px" }}>Job #</th>
-                  <th style={{ padding: "12px 24px" }}>Customer</th>
-                  <th style={{ padding: "12px 24px" }}>Vehicle</th>
-                  <th style={{ padding: "12px 24px" }}>Status</th>
-                  <th style={{ padding: "12px 24px" }}>Completed</th>
-                  <th style={{ padding: "12px 24px" }} />
+                  <th style={{ padding: "10px 18px" }}>Job #</th>
+                  <th style={{ padding: "10px 18px" }}>Customer</th>
+                  <th style={{ padding: "10px 18px" }}>Vehicle</th>
+                  <th style={{ padding: "10px 18px" }}>Status</th>
+                  <th style={{ padding: "10px 18px" }}>Completed</th>
+                  <th style={{ padding: "10px 18px" }} />
                 </tr>
               </thead>
               <tbody>
@@ -125,15 +125,15 @@ export default function ArchivedJobsPage() {
                   const badge = STATUS_BADGES[job.status] || defaultStatusBadge;
                   return (
                     <tr key={job.id} style={{ borderTop: "1px solid var(--info-surface)" }}>
-                      <td style={{ padding: "16px 24px", fontWeight: 600, color: "var(--accent-purple)" }}>{job.jobNumber}</td>
-                      <td style={{ padding: "16px 24px", color: "var(--info-dark)" }}>{job.customer || "—"}</td>
-                      <td style={{ padding: "16px 24px" }}>
+                      <td style={{ padding: "12px 18px", fontWeight: 600, color: "var(--accent-purple)" }}>{job.jobNumber}</td>
+                      <td style={{ padding: "12px 18px", color: "var(--info-dark)" }}>{job.customer || "—"}</td>
+                      <td style={{ padding: "12px 18px" }}>
                         <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                           <span style={{ fontWeight: 600 }}>{job.vehicleMakeModel || "—"}</span>
                           <span style={{ color: "var(--info)" }}>{job.vehicleReg || "—"}</span>
                         </div>
                       </td>
-                      <td style={{ padding: "16px 24px" }}>
+                      <td style={{ padding: "12px 18px" }}>
                         <span
                           style={{
                             display: "inline-flex",
@@ -149,10 +149,10 @@ export default function ArchivedJobsPage() {
                           {job.status}
                         </span>
                       </td>
-                      <td style={{ padding: "16px 24px", color: "var(--info-dark)" }}>
+                      <td style={{ padding: "12px 18px", color: "var(--info-dark)" }}>
                         {job.updatedAt ? new Date(job.updatedAt).toLocaleDateString() : "—"}
                       </td>
-                      <td style={{ padding: "16px 24px" }}>
+                      <td style={{ padding: "12px 18px" }}>
                         <Link
                           href={`/job-cards/${encodeURIComponent(job.jobNumber)}?archive=1`}
                           onMouseEnter={() => prefetchJob(job.jobNumber)} // warm SWR cache on hover
@@ -173,7 +173,7 @@ export default function ArchivedJobsPage() {
                 })}
                 {results.length === 0 && (
                   <tr>
-                    <td colSpan={6} style={{ padding: "24px", textAlign: "center", color: "var(--info)" }}>
+                    <td colSpan={6} style={{ padding: "18px", textAlign: "center", color: "var(--info)" }}>
                       No archived jobs matched your search.
                     </td>
                   </tr>

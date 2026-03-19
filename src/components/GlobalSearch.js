@@ -441,6 +441,7 @@ const GlobalSearch = ({
   return (
     <div
       ref={containerRef}
+      data-draft-ignore="true"
       style={{ position: "relative", width: "100%", maxWidth: "100%", zIndex: dropdownZIndex }}
     >
       <div

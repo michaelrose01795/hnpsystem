@@ -1294,7 +1294,7 @@ export default function ViewJobCards() {
                 </button>
 
                 <button
-                  onClick={() => router.push(`/job-cards/${popupJob.jobNumber}/write-up`)}
+                  onClick={() => router.push(`/job-cards/${popupJob.jobNumber}?tab=write-up`)}
                   style={popupSecondaryActionButtonStyle}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.backgroundColor = "var(--surface-light)";

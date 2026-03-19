@@ -64,11 +64,18 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
   const inputRef = useRef(null); // Ref for auto-focus on input
   const lastJobNumberRef = useRef(""); // Track last job number to avoid resetting selection
 
-  // ✅ Prefill job number when modal opens with a job selected
+  // ✅ Prefill job number when modal opens with a job selected, or reset state for a clean slate
   useEffect(() => {
     if (isOpen && prefilledJobNumber) {
       setJobNumber(prefilledJobNumber); // Prefill the job number input
       inputRef.current?.focus(); // Focus the input for immediate action
+    } else if (isOpen && !prefilledJobNumber) {
+      setJobNumber(""); // Clear job number for fresh open
+      setError(""); // Clear any prior error
+      setSelectedRequestValue("job"); // Reset request dropdown to default
+      setSelectedRequestId(null); // Clear selected request
+      setRequestOptions([]); // Clear request options
+      lastJobNumberRef.current = ""; // Reset last job number tracker
     }
   }, [isOpen, prefilledJobNumber]); // Run when modal opens or prefilled job changes
 
@@ -342,6 +349,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
     <div className="popup-backdrop" onClick={onClose}>
       <div
         className="popup-card"
+        data-draft-ignore="true"
         style={{
           borderRadius: "var(--radius-xl)",
           width: "100%",

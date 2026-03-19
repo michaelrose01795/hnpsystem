@@ -35,118 +35,202 @@ Admin Manager
 
 
 Workshop Manager
+CHECK
+/job-cards/archive winthin thsi page reduce the size of the /job-cards/archive :: 2 (job-cards-archive-auto-content-card-2) seciton 
+
+CHECK
+/job-cards/create have it so wihtin this page, if its not an accent colour (except remove button) make sure its surface level colour backgroudn for example the text fields, and /job-cards/create :: 2.2.2.1 (job-cards-create-job-request-1) section for example. make sure the text colour uses light or dark theme so it doesnt clash with the background colour, but if its text in a field before a users input have it lighter grey so it doesnt seem like a text input already 
 
 
-/job-cards/[jobNumber]
-
-check Assign selected
-
-remove the "BRAKES & HUBS" section titles from "VHC REQUESTS
-BRAKES & HUBS" bits so it only shows "VHC REQUESTS" and "CUSTOMER REQUESTS" as seperating titles. 
-
-have it so /job-cards/00056 :: 2.4.1.1.2.1 (jobcard-parts-on-order-table) uses accent colour background, and the rows use surface colour background. 
-
-
-
-
-/job-cards/[jobNumber]/add-checksheet
-
-/job-cards/[jobNumber]/car-details
-
-/job-cards/[jobNumber]/check-box
-/job-cards/[jobNumber]/dealer-car-details
-/job-cards/[jobNumber]/upload-checksheet
-/job-cards/[jobNumber]/upload-dealer-file
-/job-cards/[jobNumber]/write-up
-/job-cards/appointments
-/job-cards/archive
-/job-cards/create
 /job-cards/view
+
 /job-cards/waiting/nextjobs
+
 /messages
+
 /newsfeed
+
 /profile
+
 /tracking
+
 /workshop
+
 /workshop/consumables-tracker
 
+
+
 Customer
+
+
 /customer
+
 /customer/messages
+
 /customer/parts
+
 /customer/payments
+
 /customer/vehicles
+
 /customer/vhc
+
 /vhc/customer-preview/[jobNumber]
+
 /vhc/customer-view/[jobNumber]
+
 /vhc/share/[jobNumber]/[linkCode]
 
+
 Service
+
+
 /customers
+
 /customers/[customerSlug]
 
+
+
 After Sales Manager
+
+
 /dashboard/after-sales
 
+
+
 General Manager
+
+
 /dashboard/managers
 
+
+
+
 MOT Tester
+
+
 /dashboard/mot
 
+
+
 Painters
+
+
 /dashboard/painting
 
+
+
+
 Parts Manager
+
+
 /dashboard/parts
+
+
 /parts
+
+
 /parts/create-order
+
 /parts/create-order/[orderNumber]
+
 /parts/deliveries
+
 /parts/deliveries/[deliveryId]
+
 /parts/delivery-planner
+
 /parts/goods-in
+
 /parts/goods-in/[goodsInNumber]
+
 /parts/manager
 
+
+
 Valet Service
+
+
 /dashboard/valeting
+
 /valet
 
+
+
 Admin
+
+
 /dev/status-snapshot
+
 /dev/user-diagnostic
 
+
+
 HR Manager
+
+
 /hr
+
 /hr/attendance
+
 /hr/disciplinary
+
 /hr/employees
+
 /hr/leave
+
 /hr/payroll
+
 /hr/performance
+
 /hr/recruitment
+
 /hr/reports
+
 /hr/settings
+
 /hr/training
 
+
+
 Owner
+
+
 /hr/manager
 
+
+
 Techs
+
+
 /job-cards/myjobs
+
 /job-cards/myjobs/[jobNumber]
+
 /tech/consumables-request
+
 /tech/dashboard
+
 /tech/efficiency
+
 /vhc
 
+
+
 Public
+
+
 /login
+
 /password-reset/reverted
+
 /unauthorized
 
+
+
 Parts
+
+s
 /stock-catalogue
 
 

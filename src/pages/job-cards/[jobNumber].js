@@ -1083,7 +1083,6 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     const baseRoute = `/job-cards/${safeJobNumber}`;
     const deferredRoutes = [
       `${baseRoute}?tab=write-up`,
-      `${baseRoute}/write-up`,
     ];
 
     let cancelled = false;
@@ -6911,16 +6910,16 @@ function SchedulingTab({
     marginBottom: "16px",
   };
   const schedulingRowSubtitleStyle = {
-    fontSize: "11px",
-    color: "var(--grey-accent)",
+    fontSize: "10px",
+    color: "var(--accent-purple)",
     fontWeight: "700",
     letterSpacing: "0.12em",
     textTransform: "uppercase",
   };
   const reportedIssueRowStyle = {
-    padding: "14px",
-    backgroundColor: "var(--surface)",
-    borderLeft: "4px solid var(--primary)",
+    padding: "10px 12px",
+    backgroundColor: "var(--accent-purple-surface)",
+    borderLeft: "4px solid var(--accent-purple)",
     borderRadius: "var(--control-radius)",
   };
 
@@ -7019,14 +7018,15 @@ function SchedulingTab({
               ...subPanelStyle,
               flex: 1,
               minHeight: "120px",
+              maxHeight: bookingRequestLines.length >= 5 ? "292px" : "none",
               overflowY: "auto",
               color: "var(--text-secondary)",
               fontSize: "13px",
-              lineHeight: "22px",
+              lineHeight: "18px",
             }}
           >
             {bookingRequestLines.length > 0 ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 {bookingRequestLines.map((line, index) => (
                   <div
                     key={`${index}-${line}`}
@@ -7035,9 +7035,9 @@ function SchedulingTab({
                       marginBottom: 0,
                     }}
                   >
-                    <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "4px" }}>
                       <span style={schedulingRowSubtitleStyle}>Reported Issue {index + 1}</span>
-                      <span style={{ color: "var(--text-secondary)", fontSize: "14px" }}>{line}</span>
+                      <span style={{ color: "var(--text-secondary)", fontSize: "13px" }}>{line}</span>
                     </div>
                   </div>
                 ))}

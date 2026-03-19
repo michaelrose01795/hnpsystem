@@ -2626,18 +2626,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             parentKey="jobcard-parts-allocate-vhc-requests"
                             style={{ display: "flex", flexDirection: "column", gap: "8px" }}
                           >
-                            <div
-                              style={{
-                                fontSize: "var(--text-caption)",
-                                fontWeight: 700,
-                                color: "var(--accent-purple)",
-                                textTransform: "uppercase",
-                                letterSpacing: "0.05em",
-                                padding: "4px 2px 0",
-                              }}
-                            >
-                              {group.section}
-                            </div>
                             {group.rows.map((request) => {
                               const baseAllocated = partAllocations[request.id] || [];
                               const vhcAllocated =
@@ -2833,24 +2821,39 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             </div>
             {/* Fixed-size table container */}
             <div style={{ minHeight: "200px", display: "flex", flexDirection: "column" }}>
-              <div style={{ overflowX: "auto", overflowY: "auto", maxHeight: "600px", flex: 1 }}>
+              <div
+                style={{
+                  overflowX: "auto",
+                  overflowY: "auto",
+                  maxHeight: "600px",
+                  flex: 1,
+                  background: "var(--accent-purple-surface)",
+                  borderRadius: "var(--radius-xs)",
+                  padding: "8px",
+                }}
+              >
                 <table
                   className="on-order-table"
                   data-dev-section="1"
                   data-dev-section-key="jobcard-parts-on-order-table"
                   data-dev-section-type="data-table"
                   data-dev-section-parent="jobcard-parts-on-order-panel"
-                  style={{ width: "100%", borderCollapse: "collapse" }}
+                  style={{
+                    width: "100%",
+                    borderCollapse: "separate",
+                    borderSpacing: "0 8px",
+                    background: "var(--accent-purple-surface)",
+                  }}
                 >
                   <thead data-dev-section="1" data-dev-section-key="jobcard-parts-on-order-table-headings" data-dev-section-type="table-headings" data-dev-section-parent="jobcard-parts-on-order-table">
                     <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
-                      <th style={{ textAlign: "left", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>Part Name</th>
-                      <th style={{ textAlign: "left", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>Part Number</th>
-                      <th style={{ textAlign: "right", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>Qty</th>
-                      <th style={{ textAlign: "right", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>Price</th>
-                      <th style={{ textAlign: "left", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>ETA Date</th>
-                      <th style={{ textAlign: "left", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>ETA Time</th>
-                      <th style={{ textAlign: "center", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>Action</th>
+                      <th style={{ textAlign: "left", position: "sticky", top: 0, background: "var(--accent-purple-surface)", zIndex: 1 }}>Part Name</th>
+                      <th style={{ textAlign: "left", position: "sticky", top: 0, background: "var(--accent-purple-surface)", zIndex: 1 }}>Part Number</th>
+                      <th style={{ textAlign: "right", position: "sticky", top: 0, background: "var(--accent-purple-surface)", zIndex: 1 }}>Qty</th>
+                      <th style={{ textAlign: "right", position: "sticky", top: 0, background: "var(--accent-purple-surface)", zIndex: 1 }}>Price</th>
+                      <th style={{ textAlign: "left", position: "sticky", top: 0, background: "var(--accent-purple-surface)", zIndex: 1 }}>ETA Date</th>
+                      <th style={{ textAlign: "left", position: "sticky", top: 0, background: "var(--accent-purple-surface)", zIndex: 1 }}>ETA Time</th>
+                      <th style={{ textAlign: "center", position: "sticky", top: 0, background: "var(--accent-purple-surface)", zIndex: 1 }}>Action</th>
                     </tr>
                   </thead>
                   <tbody data-dev-section="1" data-dev-section-key="jobcard-parts-on-order-table-rows" data-dev-section-type="table-rows" data-dev-section-parent="jobcard-parts-on-order-table">
@@ -2871,12 +2874,11 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                           <tr
                             key={part.id}
                             style={{
-                              borderTop: "1px solid var(--surface-light)",
-                              background: isRemoved ? "var(--danger)" : "transparent",
+                              background: isRemoved ? "var(--danger)" : "var(--surface)",
                               opacity: isRemoved ? 0.8 : 1,
                             }}
                           >
-                            <td style={{ color: "var(--info-dark)" }}>
+                            <td style={{ color: "var(--info-dark)", borderTopLeftRadius: "8px", borderBottomLeftRadius: "8px" }}>
                               <span
                                 className="part-name-cell on-order-cell-scroll"
                                 onMouseDown={handlePartNameDragStart}
@@ -2918,7 +2920,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                 className="compact-input"
                               />
                             </td>
-                            <td style={{ textAlign: "center" }}>
+                            <td style={{ textAlign: "center", borderTopRightRadius: "8px", borderBottomRightRadius: "8px" }}>
                               <button
                                 type="button"
                                 onClick={() => {

@@ -87,7 +87,7 @@ const SearchBar = forwardRef(function SearchBar(
   };
 
   return (
-    <div className={["searchbar-api", className].filter(Boolean).join(" ")} style={wrapperStyle}>
+    <div className={["searchbar-api", className].filter(Boolean).join(" ")} style={wrapperStyle} data-draft-ignore="true">
       <input
         {...rest}
         ref={assignInputRef}
