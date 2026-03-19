@@ -1334,7 +1334,7 @@ export default function EfficiencyTab({
             <h3 style={{ margin: 0, fontSize: "1.15rem", color: "var(--primary-dark)" }}>
               {activeSummary.tech.first_name} - {activeFilterHeading}
             </h3>
-            <div className="efficiency-summary-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px" }}>
+            <div className="efficiency-summary-grid efficiency-tech-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px" }}>
               <div style={statCardStyle}>
                 <span style={statusLabelStyle(filteredSetStatusColor)}>
                   Logged Total
@@ -1359,7 +1359,8 @@ export default function EfficiencyTab({
                   {formatSignedHours(filteredSetDifference)}
                 </strong>
               </div>
-              <div style={{ ...statCardStyle, gridColumn: "span 2", minWidth: "320px" }}>
+              {/* Combined Current Target + Full Month card — hidden on mobile, replaced by separate cards */}
+              <div className="efficiency-target-combined" style={{ ...statCardStyle, gridColumn: "span 2", minWidth: "320px" }}>
                 <div
                   style={{
                     display: "grid",
@@ -1390,6 +1391,20 @@ export default function EfficiencyTab({
                     </strong>
                   </div>
                 </div>
+              </div>
+              {/* Separate Current Target card — visible only on mobile */}
+              <div className="efficiency-target-mobile" style={{ ...statCardStyle, display: "none" }}>
+                <span style={statusLabelStyle(filteredSetStatusColor)}>Current Target</span>
+                <strong style={summaryValueStyle(filteredSetStatusColor)}>
+                  {formatHours(currentMonthTargetHours)}h
+                </strong>
+              </div>
+              {/* Separate Full Month card — visible only on mobile */}
+              <div className="efficiency-target-mobile" style={{ ...statCardStyle, display: "none" }}>
+                <span style={statusLabelStyle(filteredSetStatusColor)}>Full Month</span>
+                <strong style={summaryValueStyle(filteredSetStatusColor)}>
+                  {formatHours(fullMonthTargetHours)}h
+                </strong>
               </div>
               <div style={statusCardStyle(filteredSetStatusColor)}>
                 <span style={statusLabelStyle(filteredSetStatusColor)}>
@@ -2274,10 +2289,20 @@ export default function EfficiencyTab({
                 grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
                 gap: 10px !important;
               }
+              :global(.efficiency-summary-grid.efficiency-tech-grid) {
+                grid-template-columns: 1fr !important;
+                gap: 8px !important;
+              }
               :global(.efficiency-summary-grid > div) {
                 padding: 12px !important;
                 border-radius: 12px !important;
                 min-width: 0 !important;
+              }
+              :global(.efficiency-summary-grid.efficiency-tech-grid > div) {
+                flex-direction: row !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                padding: 12px 16px !important;
               }
               :global(.efficiency-summary-grid span) {
                 font-size: 0.62rem !important;
@@ -2288,6 +2313,15 @@ export default function EfficiencyTab({
               :global(.efficiency-summary-grid > div[style*="grid-column: span 2"]) {
                 grid-column: 1 / -1 !important;
                 min-width: 0 !important;
+              }
+              :global(.efficiency-summary-grid.efficiency-tech-grid > div[style*="grid-column: span 2"]) {
+                grid-column: 1 / -1 !important;
+              }
+              :global(.efficiency-summary-grid.efficiency-tech-grid .efficiency-target-combined) {
+                display: none !important;
+              }
+              :global(.efficiency-summary-grid.efficiency-tech-grid .efficiency-target-mobile) {
+                display: flex !important;
               }
               :global(.efficiency-table-wrap) {
                 overflow-x: auto !important;

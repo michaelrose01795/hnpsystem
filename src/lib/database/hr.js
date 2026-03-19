@@ -266,7 +266,34 @@ export async function getAbsenceRecords({ limit = 50 } = {}) {
   });
 }
 
-// Retrieve the current active overtime period, auto-creating one for the current month if none exists
+// Calculate the 26th-to-25th overtime period that contains the given date
+// If date is on or after the 26th, period is 26th of that month to 25th of next month
+// If date is before the 26th, period is 26th of previous month to 25th of this month
+export function getOvertimePeriodBounds(date = new Date()) {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = d.getMonth(); // 0-indexed
+  const day = d.getDate();
+
+  let periodStart, periodEnd;
+
+  if (day >= 26) {
+    // 26th of current month to 25th of next month
+    periodStart = new Date(year, month, 26);
+    periodEnd = new Date(year, month + 1, 25);
+  } else {
+    // 26th of previous month to 25th of current month
+    periodStart = new Date(year, month - 1, 26);
+    periodEnd = new Date(year, month, 25);
+  }
+
+  return {
+    periodStart: periodStart.toISOString().split("T")[0],
+    periodEnd: periodEnd.toISOString().split("T")[0],
+  };
+}
+
+// Retrieve the current active overtime period, auto-creating one for the 26th-to-25th cycle if none exists
 export async function getCurrentOvertimePeriod() {
   const { data, error } = await supabase
     .from("overtime_periods")
@@ -280,12 +307,18 @@ export async function getCurrentOvertimePeriod() {
     throw error;
   }
 
-  if (data) return data;
+  // Check if the most recent period covers today
+  if (data) {
+    const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+    if (today >= data.period_start && today <= data.period_end) {
+      return data; // existing period covers today
+    }
+    // Otherwise fall through to create a new period for the current 26-25 cycle
+  }
 
-  // Auto-create a period for the current month
+  // Auto-create a period for the current 26th-to-25th cycle
   const now = new Date();
-  const periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
-  const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
+  const { periodStart, periodEnd } = getOvertimePeriodBounds(now);
 
   const { data: created, error: createError } = await supabase
     .from("overtime_periods")

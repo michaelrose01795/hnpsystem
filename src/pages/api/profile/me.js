@@ -10,6 +10,7 @@ import { getDisplayName } from "@/lib/users/displayName";
 import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver";
 import dayjs from "dayjs";
 import { parseLeaveRequestNotes } from "@/lib/hr/leaveRequests";
+import { getOvertimePeriodBounds } from "@/lib/database/hr";
 
 const adminDb = getDatabaseClient();
 
@@ -125,7 +126,7 @@ async function getUserAttendanceLogs(userId, limit = 50) {
 
 // Get user's overtime summary + individual sessions for the active period
 async function getUserOvertimeSnapshot(userId) {
-  // Find the most recent overtime period, or auto-create one for the current month
+  // Find the most recent overtime period, or auto-create one for the 26th-to-25th cycle
   let period = null;
   const { data: existingPeriod, error: periodError } = await supabase
     .from("overtime_periods")
@@ -139,13 +140,14 @@ async function getUserOvertimeSnapshot(userId) {
     throw periodError;
   }
 
-  if (existingPeriod) {
-    period = existingPeriod;
+  // Check if the most recent period covers today
+  const todayStr = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+  if (existingPeriod && todayStr >= existingPeriod.period_start && todayStr <= existingPeriod.period_end) {
+    period = existingPeriod; // existing period covers today
   } else {
-    // Auto-create a period for the current month
+    // Auto-create a period for the current 26th-to-25th cycle
     const now = new Date();
-    const periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
-    const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
+    const { periodStart, periodEnd } = getOvertimePeriodBounds(now);
 
     const { data: created, error: createError } = await supabase
       .from("overtime_periods")

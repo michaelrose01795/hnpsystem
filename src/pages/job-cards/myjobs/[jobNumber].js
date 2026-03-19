@@ -3490,6 +3490,7 @@ export default function TechJobDetailPage() {
                   </div>
                 </DevLayoutSection>
               )}
+                </>
               ))}
 
               {/* VHC Modals */}

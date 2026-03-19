@@ -5,12 +5,9 @@ TO DO:
 
 Continue flow with job number 56.
 
+DO CHATGPT OVERTIME POPUP PROMPT
 
-have it so each row is the same heigth within the /valet page. 
 
-And remove UPDATED AT Column
-
-How does the estimated time be calculated?
 
 
 PAGE ACCESS
@@ -61,15 +58,10 @@ Admin Manager
 
 
 Workshop Manager
-CHECK
-/job-cards/archive winthin thsi page reduce the size of the /job-cards/archive :: 2 (job-cards-archive-auto-content-card-2) seciton 
+
+
 
 /job-cards/view
-CHECK
-have it so newest appointment day at the top within Today's workload Carry over tabs
-
-CHECK
-within clocking tab inside the job-cards/[jobnumber] page have it so the user who has access to the clocking tab can clock a tech onto the job from there, this will show an alert if they are already clcoked onto a job number, if yes is pressed then it clocks the user off the current job number and clocks them onto the new jobnumber, if no is pressed then they stay on current clocking, this can be done by selecting the user straight from the "Technician" dropdown, if no other fields have been started a button will show saying "Just clock" this is then when it the user selected will be clcoked onto the job. when a user clocks onto the job it will show wihtin the "Job Progress Tracker" section as well as within the clocking tab table, if the user is currently clcoked onto the job number then it will show date on and time on as when they did and then date off and time off as as currnt which indicates the user is still clcoked, and have hte other information within that table auto be ented and calucuated etc like normal. 
 
 /job-cards/waiting/nextjobs
 

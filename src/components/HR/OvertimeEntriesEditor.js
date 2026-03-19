@@ -186,7 +186,7 @@ export default function OvertimeEntriesEditor({
                   </td>
                   <td>{formatTime(entry.start)}</td>
                   <td>{formatTime(entry.end)}</td>
-                  <td>{Number(entry.totalHours).toFixed(2)}</td>
+                  <td>{Number(entry.totalHours).toFixed(2)}h</td>
                 </tr>
               ))
             )}
@@ -196,7 +196,7 @@ export default function OvertimeEntriesEditor({
 
       <div style={{ marginTop: "16px", display: "flex", gap: "16px", alignItems: "center" }}>
         <StatusTag label={`Sessions: ${totals.sessions}`} tone="default" />
-        <StatusTag label={`Total Hours: ${totals.totalHours}`} tone="success" />
+        <StatusTag label={`Total Hours: ${totals.totalHours}h`} tone="success" />
         {overtimeSummary && (
           <StatusTag label={`Status: ${overtimeSummary.status}`} tone="warning" />
         )}

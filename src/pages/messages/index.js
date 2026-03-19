@@ -851,12 +851,45 @@ function MessagesPage() {
     return () => mediaQuery.removeEventListener("change", handler);
   }, []);
 
-  // Helper: go back to thread list on mobile
-  const handleMobileBack = useCallback(() => {
+  // Helper: go back to thread list on mobile (calledFromPopState flag prevents history.back loop)
+  const mobileHistoryPushedRef = useRef(false); // tracks whether we pushed a history entry
+  const handleMobileBack = useCallback((calledFromPopState = false) => {
     setActiveThreadId(null); // deselect thread to show list
     setActiveSystemView(false); // exit system view too
     setMessages([]); // clear messages panel
+    if (mobileHistoryPushedRef.current && !calledFromPopState) {
+      mobileHistoryPushedRef.current = false; // reset flag before popping
+      window.history.back(); // pop the chat history entry we pushed
+    } else {
+      mobileHistoryPushedRef.current = false; // reset flag
+    }
   }, []);
+
+  // Push browser history state when entering a chat on mobile so the phone back button works
+  useEffect(() => {
+    if (!isMobileView) return; // only on mobile
+    if (activeThreadId || activeSystemView) {
+      // Entering chat view — push a history entry so back button returns to thread list
+      if (!mobileHistoryPushedRef.current) {
+        window.history.pushState({ mobileChat: true }, ""); // push state for chat view
+        mobileHistoryPushedRef.current = true; // mark that we pushed
+      }
+    } else {
+      mobileHistoryPushedRef.current = false; // reset when back on thread list
+    }
+  }, [isMobileView, activeThreadId, activeSystemView]);
+
+  // Listen for browser back button (popstate) to return to thread list on mobile
+  useEffect(() => {
+    if (!isMobileView) return; // only on mobile
+    const onPopState = () => {
+      if (mobileHistoryPushedRef.current) {
+        handleMobileBack(true); // pass true so we don't call history.back again
+      }
+    };
+    window.addEventListener("popstate", onPopState); // listen for back button
+    return () => window.removeEventListener("popstate", onPopState); // cleanup
+  }, [isMobileView, handleMobileBack]);
 
   const scrollerRef = useRef(null);
   const unreadMarkerTimersRef = useRef(new Map());
@@ -2423,7 +2456,7 @@ function MessagesPage() {
             {isMobileView && (activeThreadId || activeSystemView) && (
               <button
                 type="button"
-                onClick={handleMobileBack}
+                onClick={() => handleMobileBack(false)} // false = not from popstate, will call history.back
                 style={{
                   display: "flex",
                   alignItems: "center",

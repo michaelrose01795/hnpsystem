@@ -540,9 +540,9 @@ function AccentOptionContent({ label, light, dark }) {
   );
 }
 
-// Simple overtime log form - just date, start, end, and add button
+// Simple overtime log form - date, start time, total hours (end auto-calculated)
 function OvertimeLogForm({ onSessionSaved = () => {}, userId = null }) {
-  const [form, setForm] = useState({ date: "", start: "", end: "" });
+  const [form, setForm] = useState({ date: "", start: "", hours: "" }); // hours instead of end
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -556,20 +556,32 @@ function OvertimeLogForm({ onSessionSaved = () => {}, userId = null }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.date || !form.start || !form.end) return;
+    if (!form.date || !form.start || !form.hours) return; // validate all three fields
 
-    const startDate = new Date(`${form.date}T${form.start}`);
-    const endDate = new Date(`${form.date}T${form.end}`);
-    if (endDate <= startDate) {
-      setError("End time must be after start time.");
+    const hoursNum = parseFloat(form.hours); // parse total hours as decimal
+    if (isNaN(hoursNum) || hoursNum <= 0) {
+      setError("Hours must be greater than 0.");
       return;
     }
+    if (hoursNum > 16) {
+      setError("Maximum 16 hours per session.");
+      return;
+    }
+
+    // Auto-calculate end time from start + hours
+    const startDate = new Date(`${form.date}T${form.start}`);
+    if (isNaN(startDate.getTime())) {
+      setError("Invalid start time.");
+      return;
+    }
+    const endDate = new Date(startDate.getTime() + hoursNum * 60 * 60 * 1000); // add hours in ms
+    const endTimeStr = endDate.toTimeString().slice(0, 5); // "HH:MM" format
 
     setIsSaving(true);
     setError(null);
     setSuccess(null);
 
-    const payload = { ...form, userId };
+    const payload = { date: form.date, start: form.start, end: endTimeStr, userId }; // send calculated end
 
     try {
       const response = await fetch("/api/profile/overtime-sessions", {
@@ -585,7 +597,7 @@ function OvertimeLogForm({ onSessionSaved = () => {}, userId = null }) {
       }
 
       const result = await response.json();
-      setForm({ date: "", start: "", end: "" });
+      setForm({ date: "", start: "", hours: "" }); // reset form
       setSuccess("Overtime session logged.");
       onSessionSaved(result?.data || null);
     } catch (err) {
@@ -612,7 +624,28 @@ function OvertimeLogForm({ onSessionSaved = () => {}, userId = null }) {
         <TimePickerField label="Start time" name="start" value={form.start} onChange={handleChange} />
       </div>
       <div style={{ flex: "1 1 160px", minWidth: "160px" }}>
-        <TimePickerField label="End time" name="end" value={form.end} onChange={handleChange} />
+        <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "0.8rem", fontWeight: 600, color: "var(--info-dark)" }}>
+          Total hours
+          <input
+            type="number"
+            name="hours"
+            value={form.hours}
+            onChange={handleChange}
+            step="0.25"
+            min="0.25"
+            max="16"
+            placeholder="e.g. 1.50"
+            style={{
+              padding: "var(--control-padding)",
+              borderRadius: "var(--radius-xs)",
+              border: "1px solid var(--accent-purple-surface)",
+              fontWeight: 500,
+              height: "var(--control-height)",
+              width: "100%",
+              boxSizing: "border-box",
+            }}
+          />
+        </label>
       </div>
       <div style={{ flex: "0 0 150px", minWidth: "150px" }}>
         <button
@@ -642,6 +675,457 @@ function OvertimeLogForm({ onSessionSaved = () => {}, userId = null }) {
       )}
     </form>
   );
+}
+
+// Day labels for recurring overtime rules — Mon-Sat only (no Sundays)
+const RECURRING_DAY_MAP = { 1: "Monday", 2: "Tuesday", 3: "Wednesday", 4: "Thursday", 5: "Friday", 6: "Saturday" };
+const RECURRING_DAY_SHORT = { 1: "Mon", 2: "Tue", 3: "Wed", 4: "Thu", 5: "Fri", 6: "Sat" }; // short labels for grouped row display
+const RECURRING_DAY_OPTIONS = [1, 2, 3, 4, 5, 6]; // JS day-of-week values: Mon=1 … Sat=6
+
+// Group active rules by hours so e.g. Mon 0.50h + Tue 0.50h + Wed 0.50h → "Mon, Tue, Wed  0.50h"
+function groupRulesByHours(rules) {
+  const groups = {}; // key = hours string, value = { hours, days: [rule, ...] }
+  rules.forEach((r) => {
+    const key = Number(r.hours).toFixed(2); // normalise to 2dp string as group key
+    if (!groups[key]) groups[key] = { hours: Number(r.hours), rules: [] };
+    groups[key].rules.push(r);
+  });
+  // Sort days within each group by day_of_week, then sort groups by lowest day
+  return Object.values(groups).map((g) => {
+    g.rules.sort((a, b) => a.day_of_week - b.day_of_week);
+    return g;
+  }).sort((a, b) => a.rules[0].day_of_week - b.rules[0].day_of_week);
+}
+
+// Modal for managing recurring overtime rules — grouped list with add/edit form
+function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
+  const [rules, setRules] = useState([]); // saved rules list from DB
+  const [isLoading, setIsLoading] = useState(false); // loading state for fetch
+  const [isSaving, setIsSaving] = useState(false); // saving state
+  const [isDeletingGroup, setIsDeletingGroup] = useState(null); // hours key of group being deleted
+  const [error, setError] = useState(null); // error message
+  const [formMode, setFormMode] = useState(null); // null = hidden, "add" = new rule, "edit" = editing group
+  const [editingGroupKey, setEditingGroupKey] = useState(null); // hours key of group being edited
+  const [formData, setFormData] = useState({ days: {}, hours: "" }); // form state — days is { 1: true, 2: true, ... }
+
+  // Fetch existing rules when modal opens
+  useEffect(() => {
+    if (!isOpen) return;
+    setError(null);
+    setFormMode(null);
+    setFormData({ days: {}, hours: "" });
+    setEditingGroupKey(null);
+    setIsLoading(true);
+    const url = userId ? `/api/profile/overtime-recurring-rules?userId=${userId}` : "/api/profile/overtime-recurring-rules";
+    fetch(url, { credentials: "include" })
+      .then((r) => r.json())
+      .then((result) => {
+        if (result.success && Array.isArray(result.data)) {
+          setRules(result.data.filter((r) => r.day_of_week !== 0)); // exclude Sundays
+        }
+      })
+      .catch(() => setError("Failed to load rules."))
+      .finally(() => setIsLoading(false));
+  }, [isOpen, userId]);
+
+  // Toggle a day in the form
+  const toggleFormDay = (dow) => {
+    setFormData((prev) => ({ ...prev, days: { ...prev.days, [dow]: !prev.days[dow] } }));
+    setError(null);
+  };
+
+  // Open add form
+  const openAddForm = () => {
+    setFormMode("add");
+    setEditingGroupKey(null);
+    setFormData({ days: {}, hours: "" });
+    setError(null);
+  };
+
+  // Open edit form — pre-fill with the group's days and hours
+  const openEditForm = (group) => {
+    const daysMap = {};
+    group.rules.forEach((r) => { daysMap[r.day_of_week] = true; }); // pre-select group's days
+    setFormMode("edit");
+    setEditingGroupKey(Number(group.hours).toFixed(2)); // track which group is being edited
+    setFormData({ days: daysMap, hours: String(group.hours) });
+    setError(null);
+  };
+
+  // Close the form
+  const closeForm = () => {
+    setFormMode(null);
+    setEditingGroupKey(null);
+    setFormData({ days: {}, hours: "" });
+    setError(null);
+  };
+
+  // Save form — handles both add and edit
+  const handleSaveForm = async () => {
+    const selectedDays = RECURRING_DAY_OPTIONS.filter((d) => formData.days[d]); // get checked days
+    const hoursNum = parseFloat(formData.hours);
+    if (selectedDays.length === 0) { setError("Select at least one day."); return; }
+    if (isNaN(hoursNum) || hoursNum <= 0) { setError("Enter valid hours."); return; }
+
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      // When editing, deactivate days that were in the original group but are now unchecked
+      const deactivateRules = [];
+      if (formMode === "edit" && editingGroupKey) {
+        const activeRules = rules.filter((r) => r.active);
+        const originalGroup = groupRulesByHours(activeRules).find((g) => Number(g.hours).toFixed(2) === editingGroupKey);
+        if (originalGroup) {
+          originalGroup.rules.forEach((r) => {
+            if (!formData.days[r.day_of_week]) {
+              deactivateRules.push({ dayOfWeek: r.day_of_week, hours: Number(r.hours), active: false }); // deactivate removed days
+            }
+          });
+        }
+      }
+
+      const upsertRules = selectedDays.map((dow) => ({ dayOfWeek: dow, hours: hoursNum, active: true })); // activate selected days
+      const allRules = [...upsertRules, ...deactivateRules];
+
+      const payload = { rules: allRules, userId };
+
+      const response = await fetch("/api/profile/overtime-recurring-rules", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => null);
+        throw new Error(errData?.message || "Failed to save rule.");
+      }
+
+      const result = await response.json();
+      if (result.success && Array.isArray(result.data)) {
+        // Merge saved rules into local state
+        setRules((prev) => {
+          const merged = [...prev];
+          result.data.forEach((saved) => {
+            const idx = merged.findIndex((r) => r.day_of_week === saved.day_of_week);
+            if (idx >= 0) merged[idx] = saved; // update existing
+            else merged.push(saved); // add new
+          });
+          return merged.filter((r) => r.day_of_week !== 0).sort((a, b) => a.day_of_week - b.day_of_week);
+        });
+      }
+      closeForm(); // collapse form on success
+    } catch (err) {
+      setError(err.message || "Failed to save rule.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Delete an entire group — deactivate all rules in the group
+  const handleDeleteGroup = async (group) => {
+    const groupKey = Number(group.hours).toFixed(2);
+    setIsDeletingGroup(groupKey);
+    setError(null);
+
+    try {
+      const payload = {
+        rules: group.rules.map((r) => ({ dayOfWeek: r.day_of_week, hours: Number(r.hours), active: false })),
+        userId,
+      };
+
+      const response = await fetch("/api/profile/overtime-recurring-rules", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) throw new Error("Failed to remove rule.");
+
+      // Remove deactivated rules from local list
+      const removedDays = new Set(group.rules.map((r) => r.day_of_week));
+      setRules((prev) => prev.filter((r) => !removedDays.has(r.day_of_week) || !r.active).map((r) =>
+        removedDays.has(r.day_of_week) ? { ...r, active: false } : r
+      ));
+    } catch (err) {
+      setError(err.message || "Failed to remove rule.");
+    } finally {
+      setIsDeletingGroup(null);
+    }
+  };
+
+  if (!isOpen) return null; // do not render when closed
+
+  const activeRules = rules.filter((r) => r.active); // only show active rules
+  const grouped = groupRulesByHours(activeRules); // group by hours for display
+
+  // Day toggle + hours input form — shared between add and edit
+  const ruleForm = (
+    <div
+      style={{
+        padding: "14px",
+        borderRadius: "var(--radius-sm)",
+        border: "1px solid rgba(var(--accent-purple-rgb), 0.2)",
+        background: "rgba(var(--accent-purple-rgb), 0.04)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "12px",
+      }}
+    >
+      {/* Day selection — Mon to Sat as toggle buttons */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+        {RECURRING_DAY_OPTIONS.map((dow) => (
+          <button
+            key={dow}
+            type="button"
+            onClick={() => toggleFormDay(dow)}
+            style={{
+              padding: "6px 12px",
+              borderRadius: "var(--radius-sm)",
+              border: formData.days[dow]
+                ? "1px solid var(--accent-purple)"
+                : "1px solid var(--border, rgba(0,0,0,0.12))",
+              background: formData.days[dow] ? "var(--accent-purple)" : "var(--surface)",
+              color: formData.days[dow] ? "white" : "var(--text-primary)",
+              fontWeight: 600,
+              fontSize: "0.82rem",
+              cursor: "pointer",
+            }}
+          >
+            {RECURRING_DAY_MAP[dow]}
+          </button>
+        ))}
+      </div>
+
+      {/* Hours input + save/cancel */}
+      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <input
+          type="number"
+          value={formData.hours}
+          onChange={(e) => { setFormData((prev) => ({ ...prev, hours: e.target.value })); setError(null); }}
+          step="0.25"
+          min="0.25"
+          max="16"
+          placeholder="e.g. 0.50"
+          style={{
+            flex: 1,
+            padding: "var(--control-padding)",
+            borderRadius: "var(--radius-xs)",
+            border: "1px solid var(--accent-purple-surface)",
+            fontWeight: 500,
+            height: "var(--control-height)",
+            boxSizing: "border-box",
+          }}
+        />
+        <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>h</span>
+        <button
+          type="button"
+          onClick={closeForm}
+          style={{
+            padding: "8px 14px",
+            borderRadius: "var(--radius-sm)",
+            border: "1px solid var(--border, rgba(0,0,0,0.12))",
+            background: "var(--surface)",
+            color: "var(--text-primary)",
+            fontWeight: 600,
+            cursor: "pointer",
+            fontSize: "0.85rem",
+          }}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={handleSaveForm}
+          disabled={isSaving}
+          style={{
+            padding: "8px 14px",
+            borderRadius: "var(--radius-sm)",
+            border: "1px solid var(--accent-purple)",
+            background: "var(--accent-purple)",
+            color: "white",
+            fontWeight: 600,
+            cursor: "pointer",
+            fontSize: "0.85rem",
+            opacity: isSaving ? 0.7 : 1,
+          }}
+        >
+          {isSaving ? "Saving…" : "Save"}
+        </button>
+      </div>
+    </div>
+  );
+
+  const modal = (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        backgroundColor: "rgba(0, 0, 0, 0.6)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "20px",
+        zIndex: 9999,
+        backdropFilter: "blur(8px)",
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          width: "min(520px, 100%)",
+          maxHeight: "90vh",
+          overflowY: "auto",
+          borderRadius: "var(--radius-lg)",
+          background: "var(--surface)",
+          padding: "28px 32px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "16px",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Modal header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700 }}>Recurring Overtime Rules</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{ background: "none", border: "none", fontSize: "1.2rem", cursor: "pointer", color: "var(--text-secondary)", padding: "4px" }}
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Grouped rules list */}
+        {isLoading ? (
+          <div style={{ padding: "20px 0", textAlign: "center", color: "var(--text-secondary)" }}>Loading rules…</div>
+        ) : grouped.length === 0 && !formMode ? (
+          <div style={{ padding: "16px 0", textAlign: "center", color: "var(--text-secondary)", fontSize: "0.85rem" }}>
+            No recurring rules set up yet.
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {grouped.map((group) => {
+              const groupKey = Number(group.hours).toFixed(2);
+              const dayLabel = group.rules.map((r) => RECURRING_DAY_SHORT[r.day_of_week]).join(", "); // "Mon, Tue, Wed, Thu"
+              const isBeingEdited = formMode === "edit" && editingGroupKey === groupKey; // highlight if editing
+              if (isBeingEdited) return null; // hide row while editing — form replaces it
+              return (
+                <div
+                  key={groupKey}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "10px 14px",
+                    borderRadius: "var(--radius-sm)",
+                    background: "rgba(var(--accent-purple-rgb), 0.06)",
+                    border: "1px solid rgba(var(--accent-purple-rgb), 0.2)",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1, minWidth: 0 }}>
+                    <span style={{ fontWeight: 600, fontSize: "0.88rem", color: "var(--text-primary)" }}>
+                      {dayLabel}
+                    </span>
+                    <span style={{ fontSize: "0.92rem", fontWeight: 700, color: "var(--accent-purple)" }}>
+                      {groupKey}h
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
+                    <button
+                      type="button"
+                      onClick={() => openEditForm(group)}
+                      style={{
+                        padding: "4px 10px",
+                        borderRadius: "var(--radius-xs)",
+                        border: "1px solid var(--accent-purple)",
+                        background: "transparent",
+                        color: "var(--accent-purple)",
+                        fontWeight: 600,
+                        fontSize: "0.78rem",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteGroup(group)}
+                      disabled={isDeletingGroup === groupKey}
+                      style={{
+                        padding: "4px 10px",
+                        borderRadius: "var(--radius-xs)",
+                        border: "1px solid var(--danger, #e53935)",
+                        background: "transparent",
+                        color: "var(--danger, #e53935)",
+                        fontWeight: 600,
+                        fontSize: "0.78rem",
+                        cursor: "pointer",
+                        opacity: isDeletingGroup === groupKey ? 0.5 : 1,
+                      }}
+                    >
+                      {isDeletingGroup === groupKey ? "Removing…" : "Remove"}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Add/Edit rule form — only visible when formMode is set */}
+        {formMode && ruleForm}
+
+        {/* Error message */}
+        {error && <div style={{ color: "var(--danger)", fontSize: "0.85rem" }}>{error}</div>}
+
+        {/* Footer buttons */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "4px" }}>
+          {!formMode ? (
+            <button
+              type="button"
+              onClick={openAddForm}
+              style={{
+                padding: "8px 14px",
+                borderRadius: "var(--radius-sm)",
+                border: "1px solid var(--accent-purple)",
+                background: "var(--accent-purple)",
+                color: "white",
+                fontWeight: 600,
+                cursor: "pointer",
+                fontSize: "0.85rem",
+              }}
+            >
+              Add Rule
+            </button>
+          ) : (
+            <div /> /* spacer when form is open — cancel/save are inside the form */
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              padding: "8px 14px",
+              borderRadius: "var(--radius-sm)",
+              border: "1px solid var(--border, rgba(0,0,0,0.12))",
+              background: "var(--surface)",
+              color: "var(--text-primary)",
+              fontWeight: 600,
+              cursor: "pointer",
+              fontSize: "0.85rem",
+            }}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  return typeof document === "undefined" ? modal : createPortal(modal, document.body); // portal to body
 }
 
 export function ProfilePage({
@@ -855,10 +1339,19 @@ export function ProfilePage({
     const overtimeRate = overtimeSource?.overtimeRate ?? 0;
     const overtimeBonus = overtimeSource?.bonus ?? 0;
 
-    // Monthly breakdowns: weekday work hours, overtime hours, weekend hours
+    // Period breakdowns (26th-to-25th cycle): weekday work hours, overtime hours, weekend hours
     const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+    const nowDay = now.getDate();
+    const nowYear = now.getFullYear();
+    const nowMonth = now.getMonth();
+    let periodStartDate, periodEndDate; // 26th-to-25th bounds for filtering attendance
+    if (nowDay >= 26) {
+      periodStartDate = new Date(nowYear, nowMonth, 26);
+      periodEndDate = new Date(nowYear, nowMonth + 1, 25);
+    } else {
+      periodStartDate = new Date(nowYear, nowMonth - 1, 26);
+      periodEndDate = new Date(nowYear, nowMonth, 25);
+    }
 
     let monthlyWeekdayHours = 0;
     let monthlyOvertimeHours = 0;
@@ -867,7 +1360,7 @@ export function ProfilePage({
     attendanceSource.forEach((entry) => {
       if (!entry.date) return;
       const entryDate = new Date(entry.date);
-      if (entryDate.getMonth() !== currentMonth || entryDate.getFullYear() !== currentYear) return;
+      if (entryDate < periodStartDate || entryDate > periodEndDate) return; // filter to 26th-to-25th cycle
       const hours = Number(entry.totalHours ?? 0);
       const entryType = entry.type || entry.status || "";
       if (entryType === "Overtime") {
@@ -935,6 +1428,7 @@ export function ProfilePage({
 
   // Leave request modal state
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
+  const [recurringModalOpen, setRecurringModalOpen] = useState(false); // recurring overtime rules modal
   const [leaveSubmitting, setLeaveSubmitting] = useState(false);
   const [leaveRemoving, setLeaveRemoving] = useState(false);
   const [editingLeaveRequest, setEditingLeaveRequest] = useState(null);
@@ -1229,19 +1723,19 @@ export function ProfilePage({
                   <div style={{ padding: "6px 8px", textAlign: "center", borderRight: "1px solid rgba(var(--accent-purple-rgb), 0.12)" }}>
                     <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Work</div>
                     <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--accent-purple)" }}>
-                      {aggregatedStats?.monthlyWeekdayHours?.toFixed(1) ?? "0.0"}
+                      {aggregatedStats?.monthlyWeekdayHours?.toFixed(2) ?? "0.00"}h
                     </div>
                   </div>
                   <div style={{ padding: "6px 8px", textAlign: "center", borderRight: "1px solid rgba(var(--accent-purple-rgb), 0.12)" }}>
                     <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Overtime</div>
                     <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--danger, #e53935)" }}>
-                      {aggregatedStats?.monthlyOvertimeHours?.toFixed(1) ?? "0.0"}
+                      {aggregatedStats?.monthlyOvertimeHours?.toFixed(2) ?? "0.00"}h
                     </div>
                   </div>
                   <div style={{ padding: "6px 8px", textAlign: "center" }}>
                     <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Weekend</div>
                     <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--info, #1e88e5)" }}>
-                      {aggregatedStats?.monthlyWeekendHours?.toFixed(1) ?? "0.0"}
+                      {aggregatedStats?.monthlyWeekendHours?.toFixed(2) ?? "0.00"}h
                     </div>
                   </div>
                 </div>
@@ -1256,7 +1750,7 @@ export function ProfilePage({
                 }}>
                   <span style={{ fontSize: "0.72rem", fontWeight: 600, color: "var(--text-secondary)" }}>Total</span>
                   <span style={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--text-primary)" }}>
-                    {aggregatedStats?.monthlyTotalHours?.toFixed(1) ?? "0.0"} hrs
+                    {aggregatedStats?.monthlyTotalHours?.toFixed(2) ?? "0.00"}h
                   </span>
                 </div>
               </div>
@@ -1552,20 +2046,27 @@ export function ProfilePage({
                 background: "var(--surface)",
               }}
               action={
-                <span
-                  style={{
-                    fontSize: "0.72rem",
-                    fontWeight: 700,
-                    letterSpacing: "0.04em",
-                    textTransform: "uppercase",
-                    color: "var(--accent-purple)",
-                    background: "rgba(var(--accent-purple-rgb), 0.12)",
-                    padding: "6px 10px",
-                    borderRadius: "var(--radius-pill)",
-                  }}
-                >
-                  Log Overtime
-                </span>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button
+                    type="button"
+                    onClick={() => setRecurringModalOpen(true)}
+                    style={{
+                      padding: "8px 14px",
+                      borderRadius: "var(--radius-sm)",
+                      border: "1px solid var(--accent-purple)",
+                      background: "var(--surface)",
+                      color: "var(--accent-purple)",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      fontSize: "0.85rem",
+                    }}
+                  >
+                    Recurring Rules
+                  </button>
+                  <span style={buttonStyleLeaveRequest}>
+                    Log Overtime
+                  </span>
+                </div>
               }
             >
               <div
@@ -1626,7 +2127,7 @@ export function ProfilePage({
                             {nextDay ? (
                               <span style={{ color: "var(--warning)", fontWeight: 600 }}>Next Day</span>
                             ) : (
-                              `${Number(entry.totalHours ?? 0).toFixed(2)} hrs`
+                              `${Number(entry.totalHours ?? 0).toFixed(2)}h`
                             )}
                           </td>
                           <td style={{ textAlign: "center", padding: "12px 0" }}>
@@ -1684,10 +2185,18 @@ export function ProfilePage({
     />
   );
 
+  const recurringOvertimeModalEl = (
+    <RecurringOvertimeModal
+      isOpen={recurringModalOpen}
+      onClose={() => setRecurringModalOpen(false)}
+      userId={dbUserId}
+    />
+  );
+
   return isEmbedded ? (
-    <>{content}{confirmDialogEl}</>
+    <>{content}{confirmDialogEl}{recurringOvertimeModalEl}</>
   ) : (
-    <Layout>{content}{confirmDialogEl}</Layout>
+    <Layout>{content}{confirmDialogEl}{recurringOvertimeModalEl}</Layout>
   );
 }
 

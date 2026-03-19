@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import { supabase } from "@/lib/supabaseClient";
 import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver";
+import { getOvertimePeriodBounds } from "@/lib/database/hr";
 
 async function resolveUserId(req, res) {
   const devBypassEnv = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === "true";
@@ -77,7 +78,7 @@ export default async function handler(req, res) {
     }
 
     // Also insert into overtime_sessions for HR payroll tracking
-    // Auto-create an overtime period for the current month if none exists
+    // Auto-create an overtime period for the 26th-to-25th cycle if none exists
     let period = null;
     const { data: existingPeriod } = await supabase
       .from("overtime_periods")
@@ -86,12 +87,12 @@ export default async function handler(req, res) {
       .limit(1)
       .maybeSingle();
 
-    if (existingPeriod) {
-      period = existingPeriod;
+    // Check if the most recent period covers the session date
+    if (existingPeriod && date >= existingPeriod.period_start && date <= existingPeriod.period_end) {
+      period = existingPeriod; // existing period covers the session date
     } else {
-      const now = new Date();
-      const pStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
-      const pEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
+      const sessionDate = new Date(date); // use the session date for period bounds
+      const { periodStart: pStart, periodEnd: pEnd } = getOvertimePeriodBounds(sessionDate);
       const { data: created } = await supabase
         .from("overtime_periods")
         .insert({ period_start: pStart, period_end: pEnd, status: "open" })
