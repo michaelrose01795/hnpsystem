@@ -3,7 +3,11 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import JobProgressTracker from '@/components/StatusTracking/JobProgressTracker';
+import SmartSummaryBlock from '@/components/StatusTracking/SmartSummaryBlock'; // Smart Summary panel
 import { SearchBar } from '@/components/searchBarAPI';
+import { buildSmartSummary } from '@/lib/status/smartSummaryBuilder'; // Summary generation from snapshot
+import { enhanceTimeline } from '@/lib/status/timelineEnhancer'; // Timeline enhancement pipeline
+import { getAllTrackerFlags } from '@/config/trackerFlags'; // Feature flags for tracker enhancements
 // ⚠️ Mock data found — replacing with Supabase query
 // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
 
@@ -193,6 +197,20 @@ export default function StatusSidebar({
       })
       .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
   }, [statusHistory]);
+
+  // Resolve feature flags for tracker enhancements.
+  const trackerFlags = useMemo(() => getAllTrackerFlags(), []); // Stable reference for flags
+
+  // Build Smart Summary from the full snapshot data when available.
+  const smartSummary = useMemo(() => {
+    if (!snapshot) return null; // No snapshot yet
+    return buildSmartSummary(snapshot); // Generate summary from snapshot
+  }, [snapshot]);
+
+  // Run the enhancement pipeline on raw timeline statuses.
+  const enhancedTimeline = useMemo(() => {
+    return enhanceTimeline(timelineStatuses, trackerFlags); // Apply display titles, dedup, grouping, highlights
+  }, [timelineStatuses, trackerFlags]);
 
   // Format seconds to hours + minutes (e.g., 1h 50min(s))
   const formatTime = (seconds) => {
@@ -506,14 +524,23 @@ export default function StatusSidebar({
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: compactMode ? 'var(--page-stack-gap-mobile, 16px)' : '20px' }}>
+              {/* Smart Summary panel — rendered above the timeline when enabled */}
+              {trackerFlags.smart_summary_enabled && smartSummary && (
+                <SmartSummaryBlock
+                  summary={smartSummary}
+                  isCompact={compactMode}
+                  isWide={isWideLayout}
+                />
+              )}
               <div style={{ minHeight: 0 }}>
                 <JobProgressTracker
-                  statuses={timelineStatuses}
+                  statuses={enhancedTimeline}
                   currentStatus={currentStatusForDisplay}
                   currentStatusId={currentStatusId}
                   currentStatusMeta={currentStatusMeta}
                   isWide={isWideLayout}
                   isCompact={compactMode}
+                  flags={trackerFlags}
                 />
               </div>
             </div>
