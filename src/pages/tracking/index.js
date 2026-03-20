@@ -2605,7 +2605,7 @@ export default function TrackingDashboard() {
   };
 
   return (
-    <Layout>
+    <Layout disableContentCard>
       <div
         className="app-page-stack"
         style={{

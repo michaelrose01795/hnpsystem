@@ -17,6 +17,7 @@ import { appShellTheme } from "@/styles/appTheme";
 import useMessagesApi from "@/hooks/api/useMessagesApi";
 import { useTheme } from "@/styles/themeProvider";
 import ModalPortal from "@/components/popups/ModalPortal";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { SearchBar } from "@/components/searchBarAPI";
 
 const palette = appShellTheme.palette;
@@ -328,6 +329,11 @@ const MessageBubble = ({
 
   return (
     <div
+      data-dev-section="1"
+      data-dev-section-key={`messages-bubble-${message.id}`}
+      data-dev-section-type="content-card"
+      data-dev-section-parent="messages-thread-feed"
+      data-dev-background-token={isMine ? "messages-bubble-mine" : "messages-bubble-peer"}
       style={{
         display: "flex",
         justifyContent: isMine ? "flex-end" : "flex-start",
@@ -840,19 +846,25 @@ function MessagesPage() {
   const [leaveDeclineModal, setLeaveDeclineModal] = useState({ open: false, message: null });
   const [leaveDeclineReason, setLeaveDeclineReason] = useState("");
 
-  const [isMobileView, setIsMobileView] = useState(false); // iPhone-style single-panel toggle
+  const [isMobileView, setIsMobileView] = useState(false); // portrait phone single-panel toggle
 
-  // Detect mobile viewport (≤480px) for iPhone-style message navigation
+  // Detect portrait phone viewport for iPhone-style message navigation
   useEffect(() => {
-    const mediaQuery = window.matchMedia("(max-width: 480px)");
+    const mediaQuery = window.matchMedia("(max-width: 480px) and (orientation: portrait)");
     setIsMobileView(mediaQuery.matches);
     const handler = (event) => setIsMobileView(event.matches);
     mediaQuery.addEventListener("change", handler);
     return () => mediaQuery.removeEventListener("change", handler);
   }, []);
 
-  // Helper: go back to thread list on mobile (calledFromPopState flag prevents history.back loop)
   const mobileHistoryPushedRef = useRef(false); // tracks whether we pushed a history entry
+  const ensureMobileConversationHistory = useCallback(() => {
+    if (!isMobileView || mobileHistoryPushedRef.current) return;
+    window.history.pushState({ mobileChat: true }, "");
+    mobileHistoryPushedRef.current = true;
+  }, [isMobileView]);
+
+  // Helper: go back to thread list on mobile (calledFromPopState flag prevents history.back loop)
   const handleMobileBack = useCallback((calledFromPopState = false) => {
     setActiveThreadId(null); // deselect thread to show list
     setActiveSystemView(false); // exit system view too
@@ -865,31 +877,22 @@ function MessagesPage() {
     }
   }, []);
 
-  // Push browser history state when entering a chat on mobile so the phone back button works
   useEffect(() => {
-    if (!isMobileView) return; // only on mobile
-    if (activeThreadId || activeSystemView) {
-      // Entering chat view — push a history entry so back button returns to thread list
-      if (!mobileHistoryPushedRef.current) {
-        window.history.pushState({ mobileChat: true }, ""); // push state for chat view
-        mobileHistoryPushedRef.current = true; // mark that we pushed
-      }
-    } else {
-      mobileHistoryPushedRef.current = false; // reset when back on thread list
-    }
-  }, [isMobileView, activeThreadId, activeSystemView]);
+    if (isMobileView) return;
+    mobileHistoryPushedRef.current = false;
+  }, [isMobileView]);
 
   // Listen for browser back button (popstate) to return to thread list on mobile
   useEffect(() => {
     if (!isMobileView) return; // only on mobile
     const onPopState = () => {
-      if (mobileHistoryPushedRef.current) {
+      if (mobileHistoryPushedRef.current || activeThreadId || activeSystemView) {
         handleMobileBack(true); // pass true so we don't call history.back again
       }
     };
     window.addEventListener("popstate", onPopState); // listen for back button
     return () => window.removeEventListener("popstate", onPopState); // cleanup
-  }, [isMobileView, handleMobileBack]);
+  }, [activeSystemView, activeThreadId, isMobileView, handleMobileBack]);
 
   const scrollerRef = useRef(null);
   const unreadMarkerTimersRef = useRef(new Map());
@@ -1110,6 +1113,7 @@ function MessagesPage() {
   const openThread = useCallback(
     async (threadId, threadSnapshot = null) => {
       if (!threadId || !dbUserId) return;
+      ensureMobileConversationHistory();
       const referenceThread =
         threadSnapshot || threads.find((thread) => thread.id === threadId) || null;
       const currentMember = (referenceThread?.members || []).find(
@@ -1140,10 +1144,11 @@ function MessagesPage() {
         setLoadingMessages(false);
       }
     },
-    [dbUserId, listThreadMessages, setThreads, threads]
+    [dbUserId, ensureMobileConversationHistory, listThreadMessages, setThreads, threads]
   );
 
   const openSystemNotificationsThread = useCallback(() => {
+    ensureMobileConversationHistory();
     setSystemUnreadCutoff(lastSystemViewedAt || null);
     setActiveSystemView(true);
     setActiveThreadId(null);
@@ -1151,7 +1156,7 @@ function MessagesPage() {
     setLoadingMessages(false);
     setConversationError("");
     setLastSystemViewedAt(new Date().toISOString());
-  }, [lastSystemViewedAt]);
+  }, [ensureMobileConversationHistory, lastSystemViewedAt]);
 
   const submitLeaveDecision = useCallback(
     async (message, decision, reason = "") => {
@@ -2059,8 +2064,19 @@ function MessagesPage() {
 
   return (
     <Layout>
-      <div className="app-page-stack" style={{ minHeight: "100%" }}>
-        <div
+      <DevLayoutSection
+        sectionKey="messages-page-shell"
+        sectionType="page-shell"
+        shell
+        widthMode="page"
+        className="app-page-stack"
+        style={{ minHeight: "100%" }}
+      >
+        <DevLayoutSection
+          sectionKey="messages-main-layout"
+          parentKey="messages-page-shell"
+          sectionType="section-shell"
+          shell
           style={{
             flex: 1,
             display: isMobileView ? "flex" : "grid", // flex on mobile for single-panel view
@@ -2070,23 +2086,24 @@ function MessagesPage() {
             minHeight: isMobileView ? "100%" : "520px",
           }}
         >
-          <div style={{
+          <DevLayoutSection sectionKey="messages-threads-panel" parentKey="messages-main-layout" sectionType="section-shell" shell backgroundToken="messages-threads-panel" style={{
             display: isMobileView && (activeThreadId || activeSystemView) ? "none" : "flex", // hide thread list on mobile when viewing a conversation
             flexDirection: "column",
             gap: "18px",
             ...(isMobileView ? { flex: 1, minHeight: 0 } : {}),
           }}>
-            <div style={{ ...cardStyle, flex: 1, minHeight: 0 }}>
-              <SectionTitle
-                title={threadSelectionMode ? "Selected" : ""}
-                subtitle={
-                  threadSelectionMode && selectedThreadIds.length
-                    ? `${selectedThreadIds.length} thread(s) selected`
-                    : undefined
-                }
-                action={
-                  threadSelectionMode ? (
-                    <div style={{ display: "flex", gap: "8px" }}>
+            <DevLayoutSection sectionKey="messages-threads-card" parentKey="messages-threads-panel" sectionType="content-card" backgroundToken="messages-thread-card-shell" style={{ ...cardStyle, flex: 1, minHeight: 0 }}>
+              <DevLayoutSection sectionKey="messages-thread-actions" parentKey="messages-threads-card" sectionType="toolbar" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                <SectionTitle
+                  title={threadSelectionMode ? "Selected" : ""}
+                  subtitle={
+                    threadSelectionMode && selectedThreadIds.length
+                      ? `${selectedThreadIds.length} thread(s) selected`
+                      : undefined
+                  }
+                  action={
+                    threadSelectionMode ? (
+                      <div style={{ display: "flex", gap: "8px" }}>
                       <button
                         type="button"
                         onClick={handleDeleteSelectedThreads}
@@ -2125,20 +2142,20 @@ function MessagesPage() {
                       >
                         Close
                       </button>
-                    </div>
-                  ) : (
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        paddingTop: "4px",
-                        paddingBottom: "2px",
-                        position: "relative",
-                        overflow: "visible",
-                        zIndex: 2,
-                      }}
-                    >
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          paddingTop: "4px",
+                          paddingBottom: "2px",
+                          position: "relative",
+                          overflow: "visible",
+                          zIndex: 2,
+                        }}
+                      >
                       <button
                         type="button"
                         onClick={openSystemNotificationsThread}
@@ -2268,10 +2285,11 @@ function MessagesPage() {
                       >
                         +
                       </button>
-                    </div>
-                  )
-                }
-              />
+                      </div>
+                    )
+                  }
+                />
+              </DevLayoutSection>
 
               {threadDeleteError && (
                 <p style={{ color: "var(--danger)", margin: "4px 0 0", fontSize: "var(--text-label)" }}>
@@ -2279,19 +2297,26 @@ function MessagesPage() {
                 </p>
               )}
 
-              <SearchBar
-                placeholder="Search threads..."
-                value={threadSearchTerm}
-                onChange={(event) => setThreadSearchTerm(event.target.value)}
-                onClear={() => setThreadSearchTerm("")}
-                style={{
-                  width: "100%",
-                  marginTop: "10px",
-                  marginBottom: "10px",
-                }}
-              />
+              <DevLayoutSection sectionKey="messages-thread-search" parentKey="messages-threads-card" sectionType="filter-row">
+                <SearchBar
+                  placeholder="Search threads..."
+                  value={threadSearchTerm}
+                  onChange={(event) => setThreadSearchTerm(event.target.value)}
+                  onClear={() => setThreadSearchTerm("")}
+                  style={{
+                    width: "100%",
+                    marginTop: "10px",
+                    marginBottom: "10px",
+                  }}
+                />
+              </DevLayoutSection>
 
-              <div
+              <DevLayoutSection
+                sectionKey="messages-thread-list"
+                parentKey="messages-threads-card"
+                sectionType="section-shell"
+                shell
+                backgroundToken="messages-thread-list"
                 className="custom-scrollbar"
                 style={{
                   flex: 1,
@@ -2316,6 +2341,11 @@ function MessagesPage() {
                         {filteredThreads.map((thread) => (
                           <div
                             key={thread.id}
+                            data-dev-section="1"
+                            data-dev-section-key={`messages-thread-row-${thread.id}`}
+                            data-dev-section-type="section-shell"
+                            data-dev-section-parent="messages-thread-list"
+                            data-dev-background-token="messages-thread-row"
                             style={{
                               display: "flex",
                               alignItems: "flex-start",
@@ -2341,6 +2371,17 @@ function MessagesPage() {
                                 threadSelectionMode ? null : openThread(thread.id, thread)
                               }
                               disabled={threadSelectionMode}
+                              data-dev-section="1"
+                              data-dev-section-key={`messages-thread-card-${thread.id}`}
+                              data-dev-section-type="content-card"
+                              data-dev-section-parent={`messages-thread-row-${thread.id}`}
+                              data-dev-background-token={
+                                activeThreadId === thread.id
+                                  ? "messages-thread-card-active"
+                                  : thread.hasUnread
+                                  ? "messages-thread-card-unread"
+                                  : "messages-thread-card"
+                              }
                               style={{
                                 flex: 1,
                                 borderRadius: "var(--radius-md)",
@@ -2442,11 +2483,11 @@ function MessagesPage() {
                     )}
                   </>
                 )}
-              </div>
-            </div>
-          </div>
+              </DevLayoutSection>
+            </DevLayoutSection>
+          </DevLayoutSection>
 
-          <div style={{
+          <DevLayoutSection sectionKey="messages-conversation-panel" parentKey="messages-main-layout" sectionType="section-shell" shell backgroundToken="messages-conversation-panel" style={{
             ...cardStyle,
             flex: 1,
             minHeight: 0,
@@ -2476,7 +2517,10 @@ function MessagesPage() {
             )}
             {activeSystemView ? (
               <>
-                <div
+                <DevLayoutSection
+                  sectionKey="messages-system-header"
+                  parentKey="messages-conversation-panel"
+                  sectionType="section-header-row"
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
@@ -2501,11 +2545,16 @@ function MessagesPage() {
                       fontSize: "var(--text-caption)",
                       fontWeight: 600,
                     }}
-                  >
-                    Read only
-                  </span>
-                </div>
-                <div
+                    >
+                      Read only
+                    </span>
+                </DevLayoutSection>
+                <DevLayoutSection
+                  sectionKey="messages-system-feed"
+                  parentKey="messages-conversation-panel"
+                  sectionType="section-shell"
+                  shell
+                  backgroundToken="messages-system-feed"
                   style={{
                     marginTop: "16px",
                     flex: 1,
@@ -2548,6 +2597,11 @@ function MessagesPage() {
                             </div>
                           )}
                           <article
+                            data-dev-section="1"
+                            data-dev-section-key={`messages-system-note-${note.notification_id}`}
+                            data-dev-section-type="content-card"
+                            data-dev-section-parent="messages-system-feed"
+                            data-dev-background-token="messages-system-note"
                             style={{
                               borderRadius: "var(--radius-md)",
                               border: `1px solid ${palette.border}`,
@@ -2565,11 +2619,14 @@ function MessagesPage() {
                       ))}
                     </div>
                   )}
-                </div>
+                </DevLayoutSection>
               </>
             ) : activeThread ? (
               <>
-                <div
+                <DevLayoutSection
+                  sectionKey="messages-thread-header"
+                  parentKey="messages-conversation-panel"
+                  sectionType="section-header-row"
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
@@ -2626,9 +2683,14 @@ function MessagesPage() {
                       </button>
                     </div>
                   )}
-                </div>
+                </DevLayoutSection>
 
-                <div
+                <DevLayoutSection
+                  sectionKey="messages-thread-feed"
+                  parentKey="messages-conversation-panel"
+                  sectionType="section-shell"
+                  shell
+                  backgroundToken="messages-thread-feed"
                   ref={scrollerRef}
                   style={{
                     marginTop: isMobileView ? "8px" : "16px",
@@ -2679,9 +2741,13 @@ function MessagesPage() {
                       />
                     </React.Fragment>
                   ))}
-                </div>
+                </DevLayoutSection>
 
-                <form
+                <DevLayoutSection
+                  as="form"
+                  sectionKey="messages-thread-composer"
+                  parentKey="messages-conversation-panel"
+                  sectionType="toolbar"
                   onSubmit={handleSendMessage}
                   style={{
                     marginTop: "16px",
@@ -2696,6 +2762,11 @@ function MessagesPage() {
                   {/* Command suggestions dropdown */}
                   {showCommandSuggestions && commandSuggestions.length > 0 && (
                     <div
+                      data-dev-section="1"
+                      data-dev-section-key="messages-command-suggestions"
+                      data-dev-section-type="floating-action"
+                      data-dev-section-parent="messages-thread-composer"
+                      data-dev-background-token="messages-command-suggestions"
                       style={{
                         position: "absolute",
                         bottom: "100%",
@@ -2804,10 +2875,14 @@ function MessagesPage() {
                       {conversationError}
                     </p>
                   )}
-                </form>
+                </DevLayoutSection>
               </>
             ) : (
-              <div
+              <DevLayoutSection
+                sectionKey="messages-empty-state"
+                parentKey="messages-conversation-panel"
+                sectionType="content-card"
+                backgroundToken="messages-empty-state"
                 style={{
                   flex: 1,
                   display: "flex",
@@ -2818,11 +2893,11 @@ function MessagesPage() {
                 }}
               >
                 Select or start a conversation to begin messaging.
-              </div>
+              </DevLayoutSection>
             )}
-          </div>
-        </div>
-      </div>
+          </DevLayoutSection>
+        </DevLayoutSection>
+      </DevLayoutSection>
 
       {leaveDeclineModal.open && (
         <ModalPortal>
