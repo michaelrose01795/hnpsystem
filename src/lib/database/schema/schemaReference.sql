@@ -1590,3 +1590,26 @@ CREATE TABLE public.workshop_consumables (
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT workshop_consumables_pkey PRIMARY KEY (id)
 );
+
+-- Recurring overtime rules — supports weekly and alternating patterns within 26th-to-25th cycles
+CREATE TABLE public.overtime_recurring_rules (
+  rule_id bigint NOT NULL DEFAULT nextval('overtime_recurring_rules_rule_id_seq'::regclass),
+  user_id integer NOT NULL,
+  day_of_week integer NOT NULL,
+  hours numeric NOT NULL,
+  active boolean NOT NULL DEFAULT true,
+  pattern_type text NOT NULL DEFAULT 'weekly',
+  week_parity text DEFAULT NULL,
+  label text DEFAULT NULL,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT overtime_recurring_rules_pkey PRIMARY KEY (rule_id),
+  CONSTRAINT overtime_recurring_rules_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id),
+  CONSTRAINT chk_pattern_type CHECK (pattern_type IN ('weekly', 'alternate')),
+  CONSTRAINT chk_week_parity CHECK (week_parity IS NULL OR week_parity IN ('odd', 'even')),
+  CONSTRAINT chk_parity_consistency CHECK (
+    (pattern_type = 'weekly' AND week_parity IS NULL)
+    OR (pattern_type = 'alternate' AND week_parity IS NOT NULL)
+  )
+);
+CREATE UNIQUE INDEX uq_recurring_rules_user_day_pattern_parity
+  ON overtime_recurring_rules (user_id, day_of_week, pattern_type, COALESCE(week_parity, ''));

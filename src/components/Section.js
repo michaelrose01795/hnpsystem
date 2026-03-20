@@ -15,11 +15,11 @@ import React from "react"; // React runtime for JSX
 
 // Section — titled section card for department dashboard pages.
 // Replaces the identical inline `const Section = ...` that was duplicated across 9 dashboard pages.
-export default function Section({ title, subtitle, children }) {
+export default function Section({ title, subtitle, children, style }) {
   return (
     <section
       className="app-section-card" // base section card styling from globals.css
-      style={{ gap: "12px" }} // standard internal spacing between header and content
+      style={{ gap: "12px", ...style }} // standard internal spacing between header and content
     >
       <div>
         <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-dark)" }}>{title}</h2> {/* section heading */}

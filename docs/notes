@@ -4,16 +4,13 @@ TO DO:
     Make sure pages are all correct and flowing
     Continue flow with job number 57.
 
+CHECK
 DO CHATGPT OVERTIME POPUP PROMPT    
 
 
 
-CHECK
-Have it so /tracking page has a day filter when the user clicks the calendar opening it opens the jobs for that day. add a cross thught the row if the job has been marked as canceled and add a cycle check box for the "WASH" column, defaul its blank, then when user presses once it turns to a tick, if pressed again then it turns it to a red cross indicating that the wash is not being done (No Wash to be done (have this updte with Job Progress Tracker section))
 
 
-TODO CODEX
-Have it so the section “ /dashboard/valeting :: 7 (dashboard-valeting-auto-content-card-7)” follows accent colour background, and the table uses surface level background with details accent colour. Have it so “ /dashboard/valeting :: 7 (dashboard-valeting-auto-content-card-7)” section shows 4 rows and then a scroll. 
 
 
 
@@ -31,7 +28,7 @@ Service Manager
 
 
 Accounts Manager
-
+=
 
 /accounts
 

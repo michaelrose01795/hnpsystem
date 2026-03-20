@@ -181,6 +181,13 @@ export const JOB_SUB_STATUS_FLOW = {
     department: "Valet",
     category: "Valet",
   },
+  NO_WASH: {
+    id: TIMELINE_STATUSES.NO_WASH,
+    label: TIMELINE_DISPLAY[TIMELINE_STATUSES.NO_WASH],
+    color: "var(--warning)",
+    department: "Valet",
+    category: "Valet",
+  },
 };
 
 export const normalizeStatusId = (status) => normalizeCatalogStatusId(status);

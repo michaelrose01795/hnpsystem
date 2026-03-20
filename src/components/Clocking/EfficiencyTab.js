@@ -4,7 +4,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   getEfficiencyTechnicians,
-  getEfficiencyEntries,
   getAllEfficiencyEntries,
   getJobClockingAsEfficiency,
   getOvertimeAsEfficiency,
@@ -16,7 +15,6 @@ import {
   upsertTechTarget,
   calculateTechTotals,
   calculateOverallTotals,
-  TECH_NAMES,
 } from "@/lib/database/efficiency";
 import ModalPortal from "@/components/popups/ModalPortal";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
@@ -187,7 +185,6 @@ export default function EfficiencyTab({
 
   // Job request lookup state (matches Start Job popup pattern)
   const [selectedRequestValue, setSelectedRequestValue] = useState("job");
-  const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [requestOptions, setRequestOptions] = useState([]);
   const lastJobNumberRef = useRef("");
 
@@ -566,7 +563,6 @@ export default function EfficiencyTab({
   // Reset request-related state
   const resetRequestState = () => {
     setSelectedRequestValue("job");
-    setSelectedRequestId(null);
     setRequestOptions([]);
     lastJobNumberRef.current = "";
   };
@@ -623,7 +619,6 @@ export default function EfficiencyTab({
     if (!trimmed) {
       setRequestOptions([]);
       setSelectedRequestValue("job");
-      setSelectedRequestId(null);
       setJobLookupState("idle");
       lastJobNumberRef.current = "";
       return;
@@ -631,7 +626,6 @@ export default function EfficiencyTab({
 
     if (trimmed !== lastJobNumberRef.current) {
       setSelectedRequestValue("job");
-      setSelectedRequestId(null);
       lastJobNumberRef.current = trimmed;
     }
 
@@ -684,7 +678,7 @@ export default function EfficiencyTab({
     return () => {
       isMounted = false;
     };
-  }, [formJobNumber, modalOpen]);
+  }, [formDescription, formJobNumber, modalOpen]);
 
   useEffect(() => {
     if (!modalOpen) return;
@@ -882,7 +876,7 @@ export default function EfficiencyTab({
     if (pct >= 80) return "var(--success)";
     return "var(--danger)";
   };
-  const statusCardStyle = (color) => ({
+  const statusCardStyle = () => ({
     ...statCardStyle,
   });
   const statusLabelStyle = (color) => ({
@@ -918,7 +912,6 @@ export default function EfficiencyTab({
   });
   const popupErrorAccent = accent === "red" ? "var(--warning)" : "var(--danger)";
   const popupErrorSurface = accent === "red" ? "var(--warning-surface)" : "var(--danger-surface)";
-  const popupErrorText = accent === "red" ? "var(--warning-dark)" : "var(--danger-dark)";
   const popupFieldErrorStyle = {
     border: `1px solid ${popupErrorAccent}`,
     background: popupErrorSurface,
@@ -2011,12 +2004,6 @@ export default function EfficiencyTab({
                     onChange={(e) => {
                       const val = e.target.value;
                       setSelectedRequestValue(val);
-                      if (val.startsWith("request:")) {
-                        const idValue = Number(val.replace("request:", ""));
-                        setSelectedRequestId(Number.isFinite(idValue) ? idValue : null);
-                      } else {
-                        setSelectedRequestId(null);
-                      }
                     }}
                     label="Job Clocking On"
                     options={requestOptions}

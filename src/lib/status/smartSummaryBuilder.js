@@ -55,6 +55,9 @@ function resolveWashStatus(snapshot) {
   // The timeline may contain an old wash_complete entry that was later unchecked.
   const washChecklist = snapshot?.workflows?.wash; // Wash checklist data from snapshot
   if (washChecklist) {
+    if (washChecklist.state === "no_wash" || washChecklist.notRequired) {
+      return "Not required";
+    }
     if (washChecklist.complete) return "Complete"; // Wash checkbox is currently ticked
     // Checklist exists but wash is false — it was unchecked or not yet done.
     const stage = snapshot.job?.overallStatus; // Current overall status
@@ -68,6 +71,11 @@ function resolveWashStatus(snapshot) {
     (entry) => entry.status === "wash_complete" || entry.label === "Wash Complete"
   );
   if (washComplete) return "Complete"; // Wash event found in timeline
+
+  const noWashEntry = snapshot.timeline.find(
+    (entry) => entry.status === "no_wash" || entry.label === "No Wash"
+  );
+  if (noWashEntry) return "Not required"; // Explicit no-wash event found in timeline
 
   const stage = snapshot.job?.overallStatus; // Current overall status
   if (stage === "invoiced" || stage === "released") return "Complete"; // Assume done if job is past workshop

@@ -14,7 +14,7 @@ const HIGHLIGHTED_KINDS = new Set(["status"]); // Main status changes are always
 const HIGHLIGHTED_STATUSES = new Set([ // Specific sub-statuses worth highlighting
   "technician_started", "technician_work_completed",
   "vhc_completed", "customer_authorised", "customer_declined",
-  "wash_complete", "mot_completed", "ready_for_invoice",
+  "wash_complete", "no_wash", "mot_completed", "ready_for_invoice",
 ]);
 const NOISE_EVENT_TYPES = new Set([ // Event types considered low-value noise
   "vehicle_tracking", "key_tracking", "tracking_registered",

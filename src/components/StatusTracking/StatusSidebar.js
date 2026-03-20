@@ -15,7 +15,6 @@ import { getAllTrackerFlags } from '@/config/trackerFlags'; // Feature flags for
 // It displays the complete process flow with current status highlighted
 export default function StatusSidebar({
   jobId,
-  currentStatus,
   isOpen,
   onToggle,
   onJobSearch,
@@ -35,6 +34,8 @@ export default function StatusSidebar({
   const [liveClockingSeconds, setLiveClockingSeconds] = useState(0); // Running clocked total
   const [searchInput, setSearchInput] = useState(''); // Search input state
   const [searchError, setSearchError] = useState(''); // Error message state
+  const [searchResults, setSearchResults] = useState([]); // Live job search matches
+  const [isSearchLoading, setIsSearchLoading] = useState(false); // Live search loading state
   const safeViewportWidth = typeof viewportWidth === 'number' ? viewportWidth : 1440;
   const isDocked = variant === "docked";
   const compactMode = !isDocked && (isCompact || safeViewportWidth <= 1100);
@@ -69,6 +70,48 @@ export default function StatusSidebar({
 
     loadSnapshot();
   }, [jobId, refreshKey]);
+
+  useEffect(() => {
+    const trimmed = searchInput.trim();
+
+    if (jobId || hasUrlJobId || !trimmed) {
+      setSearchResults([]);
+      setIsSearchLoading(false);
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    const debounce = setTimeout(async () => {
+      setIsSearchLoading(true);
+
+      try {
+        const response = await fetch(`/api/status/search?q=${encodeURIComponent(trimmed)}&limit=8`, {
+          signal: controller.signal,
+        });
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(data?.error || 'Search failed');
+        }
+
+        setSearchResults(Array.isArray(data.jobs) ? data.jobs : []);
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('Tracker search failed:', error);
+          setSearchResults([]);
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsSearchLoading(false);
+        }
+      }
+    }, 220);
+
+    return () => {
+      clearTimeout(debounce);
+      controller.abort();
+    };
+  }, [searchInput, jobId, hasUrlJobId]);
 
   // Fetch the complete status snapshot for this job
   const fetchStatusSnapshot = async (targetJobId) => {
@@ -119,9 +162,19 @@ export default function StatusSidebar({
       } else {
         setSearchError('Job not found');
       }
-    } catch (error) {
+    } catch {
       setSearchError('Failed to search for job');
     }
+  };
+
+  const handleSelectSearchResult = (result) => {
+    const nextJobId = result?.job_number || result?.id;
+    if (!nextJobId) return;
+
+    onJobSearch?.(String(nextJobId));
+    setSearchInput('');
+    setSearchResults([]);
+    setSearchError('');
   };
 
   // Clear current job
@@ -170,6 +223,10 @@ export default function StatusSidebar({
 
   const timelineStatuses = useMemo(() => {
     if (!Array.isArray(statusHistory)) return [];
+    const suppressWashComplete =
+      snapshot?.workflows?.wash?.state === "no_wash" ||
+      snapshot?.workflows?.wash?.notRequired;
+    const suppressNoWash = snapshot?.workflows?.wash?.complete;
 
     return statusHistory
       .map((entry, index) => {
@@ -195,8 +252,17 @@ export default function StatusSidebar({
           userName: entry.actorName || entry.userName || metadata.meta?.userName || null,
         };
       })
+      .filter((entry) => {
+        if (suppressWashComplete && (entry.status === "wash_complete" || entry.label === "Wash Complete")) {
+          return false;
+        }
+        if (suppressNoWash && (entry.status === "no_wash" || entry.label === "No Wash")) {
+          return false;
+        }
+        return true;
+      })
       .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-  }, [statusHistory]);
+  }, [statusHistory, snapshot]);
 
   // Resolve feature flags for tracker enhancements.
   const trackerFlags = useMemo(() => getAllTrackerFlags(), []); // Stable reference for flags
@@ -393,9 +459,18 @@ export default function StatusSidebar({
               <div style={{ display: 'flex', gap: '8px' }}>
                 <SearchBar
                   value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  onClear={() => setSearchInput('')}
+                  onChange={(e) => {
+                    setSearchInput(e.target.value);
+                    setSearchError('');
+                  }}
+                  onClear={() => {
+                    setSearchInput('');
+                    setSearchResults([]);
+                    setSearchError('');
+                  }}
                   placeholder="Enter job number..."
+                  className="status-sidebar__searchbar"
+                  inputClassName="status-sidebar__searchbar-input"
                   style={{ flex: 1 }}
                 />
                 <button
@@ -427,6 +502,81 @@ export default function StatusSidebar({
                   Search
                 </button>
               </div>
+              {searchInput.trim() && (
+                <div
+                  style={{
+                    marginTop: '10px',
+                    borderRadius: 'var(--radius-sm)',
+                    backgroundColor: 'rgba(var(--surface-rgb), 0.14)',
+                    border: '1px solid rgba(var(--surface-rgb), 0.24)',
+                    overflow: 'hidden',
+                    backdropFilter: 'blur(8px)',
+                  }}
+                >
+                  {isSearchLoading ? (
+                    <div
+                      style={{
+                        padding: '10px 12px',
+                        fontSize: '12px',
+                        color: 'rgba(var(--surface-rgb), 0.92)',
+                      }}
+                    >
+                      Searching jobs...
+                    </div>
+                  ) : searchResults.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      {searchResults.map((result) => (
+                        <button
+                          key={result.id || result.job_number}
+                          type="button"
+                          onClick={() => handleSelectSearchResult(result)}
+                          style={{
+                            padding: '11px 12px',
+                            background: 'transparent',
+                            border: 'none',
+                            borderTop: '1px solid rgba(var(--surface-rgb), 0.12)',
+                            color: 'var(--text-inverse)',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '4px',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'rgba(var(--surface-rgb), 0.12)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }}
+                        >
+                          <span style={{ fontWeight: '700', fontSize: '13px' }}>
+                            Job {result.job_number}
+                            {result.vehicle_reg ? ` · ${String(result.vehicle_reg).toUpperCase()}` : ''}
+                          </span>
+                          <span style={{ fontSize: '12px', opacity: 0.9 }}>
+                            {result.customer || result.vehicle_make_model || 'Open job'}
+                          </span>
+                          {result.description && (
+                            <span style={{ fontSize: '11px', opacity: 0.75 }}>
+                              {result.description}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        padding: '10px 12px',
+                        fontSize: '12px',
+                        color: 'rgba(var(--surface-rgb), 0.92)',
+                      }}
+                    >
+                      No jobs match that search yet.
+                    </div>
+                  )}
+                </div>
+              )}
               {searchError && (
                 <div style={{
                   marginTop: '8px',

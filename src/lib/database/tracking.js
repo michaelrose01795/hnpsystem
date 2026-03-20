@@ -246,10 +246,16 @@ const mergeEntry = (entryMap, baseKey, incoming) => {
       makeModel: incoming.makeModel,
       colour: incoming.colour || "",
       status: incoming.status,
+      jobStatus: incoming.jobStatus || null,
       vehicleLocation: incoming.vehicleLocation || null,
       keyLocation: incoming.keyLocation || null,
       keyNotes: incoming.keyNotes || null,
       notes: incoming.notes || null,
+      maintenanceInfo: incoming.maintenanceInfo || {},
+      checkedInAt: incoming.checkedInAt || null,
+      appointmentAt: incoming.appointmentAt || null,
+      washState: incoming.washState || null,
+      washUpdatedAt: incoming.washUpdatedAt || null,
       updatedAt: incoming.updatedAt,
     });
     return;
@@ -266,10 +272,22 @@ const mergeEntry = (entryMap, baseKey, incoming) => {
     makeModel: existing.makeModel || incoming.makeModel,
     colour: existing.colour || incoming.colour || "",
     status: incoming.status || existing.status,
+    jobStatus: incoming.jobStatus || existing.jobStatus,
     vehicleLocation: incoming.vehicleLocation || existing.vehicleLocation,
     keyLocation: incoming.keyLocation || existing.keyLocation,
     keyNotes: incoming.keyNotes || existing.keyNotes,
     notes: incoming.notes || existing.notes,
+    maintenanceInfo:
+      (incoming.maintenanceInfo && Object.keys(incoming.maintenanceInfo).length > 0)
+        ? incoming.maintenanceInfo
+        : existing.maintenanceInfo || {},
+    checkedInAt: existing.checkedInAt || incoming.checkedInAt || null,
+    appointmentAt: existing.appointmentAt || incoming.appointmentAt || null,
+    washState: incoming.washState || existing.washState || null,
+    washUpdatedAt:
+      incoming.washUpdatedAt ||
+      existing.washUpdatedAt ||
+      null,
     updatedAt: new Date(Math.max(new Date(existing.updatedAt || 0).getTime(), new Date(incoming.updatedAt || 0).getTime())).toISOString(),
   });
 };
@@ -279,14 +297,14 @@ export const fetchTrackingSnapshot = async () => {
     supabase
       .from("key_tracking_events")
       .select(
-        "key_event_id, job_id, vehicle_id, action, notes, occurred_at, jobs:job_id(job_number, vehicle_reg, customer, type, vehicle_make_model, customer_ref:customer_id(name, firstname, lastname), vehicle_ref:vehicle_id(make_model, make, model, colour)), vehicle:vehicle_id(make_model, make, model, colour)"
+        "key_event_id, job_id, vehicle_id, action, notes, occurred_at, jobs:job_id(job_number, vehicle_reg, customer, type, status, vehicle_make_model, maintenance_info, checked_in_at, customer_ref:customer_id(name, firstname, lastname), vehicle_ref:vehicle_id(make_model, make, model, colour), appointments(scheduled_time)), vehicle:vehicle_id(make_model, make, model, colour)"
       )
       .order("occurred_at", { ascending: false })
       .limit(50),
     supabase
       .from("vehicle_tracking_events")
       .select(
-        "event_id, job_id, vehicle_id, status, location, notes, occurred_at, jobs:job_id(job_number, vehicle_reg, customer, type, vehicle_make_model, customer_ref:customer_id(name, firstname, lastname), vehicle_ref:vehicle_id(make_model, make, model, colour)), vehicle:vehicle_id(make_model, make, model, colour)"
+        "event_id, job_id, vehicle_id, status, location, notes, occurred_at, jobs:job_id(job_number, vehicle_reg, customer, type, status, vehicle_make_model, maintenance_info, checked_in_at, customer_ref:customer_id(name, firstname, lastname), vehicle_ref:vehicle_id(make_model, make, model, colour), appointments(scheduled_time)), vehicle:vehicle_id(make_model, make, model, colour)"
       )
       .order("occurred_at", { ascending: false })
       .limit(50),
@@ -314,10 +332,18 @@ export const fetchTrackingSnapshot = async () => {
       makeModel: join.makeModel || fallbackMakeModel,
       colour: join.colour || event.vehicle?.colour || "",
       status: event.status || join.serviceType || "In Progress",
+      jobStatus: event.jobs?.status || null,
       vehicleLocation: event.location || null,
       keyLocation: null,
       keyNotes: null,
       notes: event.notes || null,
+      maintenanceInfo: event.jobs?.maintenance_info || {},
+      checkedInAt: event.jobs?.checked_in_at || null,
+      appointmentAt: event.jobs?.appointments?.[0]?.scheduled_time || null,
+      washState:
+        event.jobs?.maintenance_info?.valetChecklist?.washState ||
+        (event.jobs?.maintenance_info?.valetChecklist?.wash ? "complete" : null),
+      washUpdatedAt: event.jobs?.maintenance_info?.valetChecklist?.updatedAt || null,
       updatedAt: event.occurred_at,
     });
   });
@@ -337,10 +363,18 @@ export const fetchTrackingSnapshot = async () => {
       makeModel: join.makeModel || fallbackMakeModel,
       colour: join.colour || event.vehicle?.colour || "",
       status: statusLabelForAction("job_complete"),
+      jobStatus: event.jobs?.status || null,
       vehicleLocation: null,
       keyLocation: event.action || null,
       keyNotes: event.notes || null,
       notes: event.notes || null,
+      maintenanceInfo: event.jobs?.maintenance_info || {},
+      checkedInAt: event.jobs?.checked_in_at || null,
+      appointmentAt: event.jobs?.appointments?.[0]?.scheduled_time || null,
+      washState:
+        event.jobs?.maintenance_info?.valetChecklist?.washState ||
+        (event.jobs?.maintenance_info?.valetChecklist?.wash ? "complete" : null),
+      washUpdatedAt: event.jobs?.maintenance_info?.valetChecklist?.updatedAt || null,
       updatedAt: event.occurred_at,
     });
   });

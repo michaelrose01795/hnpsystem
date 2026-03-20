@@ -5383,25 +5383,20 @@ export default function VhcDetailsPanel({
   const renderCustomerSection = (title, items, severity) => {
     const theme = SEVERITY_THEME[severity] || { border: "var(--info-surface)", background: "var(--surface)" };
 
-    // Calculate authorized and declined totals for this section
-    const sectionTotals = useMemo(() => {
-      let authorized = 0;
-      let declined = 0;
-
-      items.forEach((item) => {
-        const rowTotal = resolveCustomerRowTotal(item.id);
-        if (!rowTotal) return;
-        const entry = getEntryForItem(item.id);
-        const decisionKey = normaliseDecisionStatus(entry.status);
-        if (decisionKey === "authorized") {
-          authorized += rowTotal;
-        } else if (decisionKey === "declined") {
-          declined += rowTotal;
-        }
-      });
-
-      return { authorized, declined };
-    }, [items]);
+    let authorized = 0;
+    let declined = 0;
+    items.forEach((item) => {
+      const rowTotal = resolveCustomerRowTotal(item.id);
+      if (!rowTotal) return;
+      const entry = getEntryForItem(item.id);
+      const decisionKey = normaliseDecisionStatus(entry.status);
+      if (decisionKey === "authorized") {
+        authorized += rowTotal;
+      } else if (decisionKey === "declined") {
+        declined += rowTotal;
+      }
+    });
+    const sectionTotals = { authorized, declined };
 
     // Ensure authorized/declined sections show red items first
     let displayItems = items;

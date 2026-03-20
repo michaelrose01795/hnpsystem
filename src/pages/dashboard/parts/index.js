@@ -72,16 +72,6 @@ export default function PartsDashboard() {
   const { user } = useUser();
   const roleLabels = (user?.roles || []).map((role) => String(role).toLowerCase());
   const hasAccess = roleLabels.includes("parts") || roleLabels.includes("parts manager");
-
-  if (!hasAccess) {
-    return (
-      <Layout>
-        <div style={{ padding: "48px", textAlign: "center", color: "var(--primary-dark)" }}>
-          You do not have access to the Parts dashboard.
-        </div>
-      </Layout>
-    );
-  }
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -93,6 +83,10 @@ export default function PartsDashboard() {
   const trendData = data?.trend || [];
 
   useEffect(() => {
+    if (!hasAccess) {
+      return;
+    }
+
     const loadData = async () => {
       setLoading(true);
       setError(null);
@@ -109,7 +103,17 @@ export default function PartsDashboard() {
     };
 
     loadData();
-  }, []);
+  }, [hasAccess]);
+
+  if (!hasAccess) {
+    return (
+      <Layout>
+        <div style={{ padding: "48px", textAlign: "center", color: "var(--primary-dark)" }}>
+          You do not have access to the Parts dashboard.
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

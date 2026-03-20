@@ -48,7 +48,7 @@ export function assignPhase(entry) {
   if (eventType === "parts_on_order") return "parts"; // Parts event type
 
   // Wash and final prep phase.
-  if (status === "wash_complete") return "wash_prep"; // Wash completion
+  if (status === "wash_complete" || status === "no_wash") return "wash_prep"; // Wash completion or intentional skip
 
   // Invoice and collection phase.
   if (status === "invoiced" || status === "released" || status === "ready_for_invoice") return "invoice_collection"; // Post-workshop

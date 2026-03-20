@@ -232,18 +232,12 @@ function StockCataloguePage() {
   const [deliveryForm, setDeliveryForm] = useState(DEFAULT_DELIVERY_FORM);
   const [deliveryFormError, setDeliveryFormError] = useState("");
   const [deliveryPartSearch, setDeliveryPartSearch] = useState("");
-  const [deliveryLocationSearch, setDeliveryLocationSearch] = useState("");
   const [deliveryStorageLocation, setDeliveryStorageLocation] = useState("");
   const [showNewPartForm, setShowNewPartForm] = useState(false);
   const [newPartForm, setNewPartForm] = useState(DEFAULT_NEW_PART_FORM);
   const [newPartLocationSearch, setNewPartLocationSearch] = useState("");
   const [newPartFormError, setNewPartFormError] = useState("");
   const [newPartSaving, setNewPartSaving] = useState(false);
-  const [showBulkImport, setShowBulkImport] = useState(false);
-  const [bulkImportData, setBulkImportData] = useState("");
-  const [bulkImportResults, setBulkImportResults] = useState([]);
-  const [bulkImportFeedback, setBulkImportFeedback] = useState(null);
-  const [bulkImportLoading, setBulkImportLoading] = useState(false);
   const [categories, setCategories] = useState([]);
   const [categorySearch, setCategorySearch] = useState("");
   const [confirmDialog, setConfirmDialog] = useState(null);
@@ -294,11 +288,6 @@ function StockCataloguePage() {
       .slice(0, 3);
   }, [deliveryPartSearch, inventory]);
 
-  const filteredDeliveryLocations = useMemo(() => {
-    if (!deliveryLocationSearch.trim()) return [];
-    return filterStorageLocations(deliveryLocationSearch).slice(0, 3);
-  }, [deliveryLocationSearch]);
-
   const filteredNewPartLocations = useMemo(() => {
     if (!newPartLocationSearch.trim()) return [];
     return filterStorageLocations(newPartLocationSearch).slice(0, 3);
@@ -348,36 +337,6 @@ function StockCataloguePage() {
 
   const formatDateTime = (value) =>
     value ? new Date(value).toLocaleString(undefined, { hour12: false }) : "—";
-
-  const renderLinkedJobs = (part) => {
-    const links = (part.linked_jobs || []).filter((link) => matchesLinkedJobStatus(link.status));
-    if (links.length === 0) return null;
-    return (
-      <div style={{ marginTop: "8px", fontSize: "var(--text-label)", color: "var(--info-dark)" }}>
-        <div style={{ fontWeight: 600, color: "var(--primary-dark)", marginBottom: "4px" }}>Linked Jobs</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          {links.slice(0, 3).map((link) => {
-            const sourceMeta = resolveSourceMeta(link.source);
-            const statusMeta = resolveStatusStyles(link.status);
-            return (
-              <div key={`${link.type}-${link.job_id}-${link.request_id || ""}-${link.status}`}>
-                <div>
-                  <strong>{link.job_number}</strong> · Qty {link.quantity || 1}
-                </div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "2px" }}>
-                  <RequirementBadge label={sourceMeta.label} background={sourceMeta.background} color={sourceMeta.color} />
-                  <RequirementBadge label={formatStatusLabel(link.status)} background={statusMeta.background} color={statusMeta.color} />
-                </div>
-              </div>
-            );
-          })}
-          {links.length > 3 && (
-            <div style={{ fontSize: "var(--text-caption)", color: "var(--info)" }}>+{links.length - 3} more jobs…</div>
-          )}
-        </div>
-      </div>
-    );
-  };
 
   const fetchInventory = useCallback(async (term = "") => {
     setInventoryLoading(true);
@@ -683,7 +642,6 @@ useEffect(() => {
     setDeliveryForm(DEFAULT_DELIVERY_FORM);
     setDeliveryFormError("");
     setDeliveryPartSearch("");
-    setDeliveryLocationSearch("");
     setDeliveryStorageLocation("");
     setShowNewPartForm(false);
     setNewPartForm(DEFAULT_NEW_PART_FORM);
@@ -698,7 +656,6 @@ useEffect(() => {
     if (!part) {
       setDeliveryForm((prev) => ({ ...prev, partId: "" }));
       setDeliveryPartSearch("");
-      setDeliveryLocationSearch("");
       setDeliveryStorageLocation("");
       return;
     }
@@ -714,18 +671,10 @@ useEffect(() => {
     const normalisedLocation = normaliseLocationInput(part.storage_location || "");
     if (normalisedLocation) {
       setDeliveryStorageLocation(normalisedLocation);
-      setDeliveryLocationSearch(normalisedLocation);
     } else {
       setDeliveryStorageLocation("");
-      setDeliveryLocationSearch("");
     }
     setDeliveryFormError("");
-  }, []);
-
-  const handleDeliveryLocationSelect = useCallback((location) => {
-    const normalised = normaliseLocationInput(location || "");
-    setDeliveryStorageLocation(normalised);
-    setDeliveryLocationSearch(normalised);
   }, []);
 
   const handleNewPartLocationSelect = useCallback((location) => {
@@ -821,7 +770,6 @@ useEffect(() => {
       if (resolvedLocation || createdPart.storage_location) {
         const locationToUse = createdPart.storage_location || resolvedLocation || "";
         setDeliveryStorageLocation(locationToUse);
-        setDeliveryLocationSearch(locationToUse);
       }
       setShowNewPartForm(false);
       setNewPartForm(DEFAULT_NEW_PART_FORM);
@@ -843,187 +791,6 @@ useEffect(() => {
     newPartForm,
     newPartLocationSearch,
   ]);
-
-  const parseBulkImportData = useCallback((text) => {
-    const lines = text.trim().split("\n").filter(line => line.trim());
-    const rows = [];
-    let currentRow = [];
-
-    for (const line of lines) {
-      const trimmedLine = line.trim();
-      if (!trimmedLine) continue;
-
-      // Check if this might be a new row (starts with order ref pattern like ORD001)
-      if (currentRow.length >= 8 && /^[A-Z]{3}\d{3}/.test(trimmedLine)) {
-        rows.push(currentRow);
-        currentRow = [trimmedLine];
-      } else {
-        currentRow.push(trimmedLine);
-      }
-    }
-
-    // Add the last row
-    if (currentRow.length >= 8) {
-      rows.push(currentRow);
-    }
-
-    // Parse each row into structured data
-    return rows.map((row, idx) => ({
-      index: idx,
-      orderRef: row[0] || "",
-      partNumber: row[1] || "",
-      name: row[2] || "",
-      supplier: row[3] || "",
-      location: row[4] || "",
-      costPrice: row[5]?.replace(/[£$]/g, "") || "0",
-      sellPrice: row[6]?.replace(/[£$]/g, "") || "0",
-      quantity: parseInt(row[7]) || 1,
-    }));
-  }, []);
-
-  const handleBulkImport = useCallback(async () => {
-    if (!bulkImportData.trim()) {
-      setBulkImportFeedback({
-        type: "warning",
-        text: "Please paste bulk data to import",
-      });
-      return;
-    }
-
-    setBulkImportLoading(true);
-    setBulkImportFeedback({ type: "info", text: "Processing bulk import..." });
-
-    try {
-      const parsedRows = parseBulkImportData(bulkImportData);
-
-      if (parsedRows.length === 0) {
-        setBulkImportFeedback({
-          type: "warning",
-          text: "No valid data found. Please ensure data is in the correct format.",
-        });
-        setBulkImportLoading(false);
-        return;
-      }
-
-      const results = [];
-
-      for (const row of parsedRows) {
-        try {
-          // Check if part exists in catalog
-          const { data: existingPart } = await supabase
-            .from("parts_catalog")
-            .select("*")
-            .eq("part_number", row.partNumber)
-            .maybeSingle();
-
-          let partId;
-          let partData;
-
-          if (existingPart) {
-            partId = existingPart.id;
-            partData = existingPart;
-            results.push({
-              ...row,
-              status: "found",
-              message: `Part ${row.partNumber} found in catalog`,
-              partId,
-            });
-          } else {
-            // Create new part in catalog
-            const { data: newPart, error: createError } = await supabase
-              .from("parts_catalog")
-              .insert({
-                part_number: row.partNumber,
-                name: row.name,
-                supplier: row.supplier,
-                storage_location: normaliseLocationInput(row.location),
-                unit_cost: parseFloat(row.costPrice) || 0,
-                unit_price: parseFloat(row.sellPrice) || 0,
-                qty_in_stock: 0,
-                is_active: true,
-              })
-              .select()
-              .single();
-
-            if (createError) {
-              results.push({
-                ...row,
-                status: "error",
-                message: `Failed to create part: ${createError.message}`,
-              });
-              continue;
-            }
-
-            partId = newPart.id;
-            partData = newPart;
-            results.push({
-              ...row,
-              status: "created",
-              message: `Part ${row.partNumber} created in catalog`,
-              partId,
-            });
-          }
-
-          // Log delivery for this part
-          const response = await fetch("/api/parts/deliveries", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              supplier: row.supplier || null,
-              orderReference: row.orderRef || null,
-              notes: `Bulk import - ${row.orderRef}`,
-              status: "received",
-              userId: actingUserId,
-              userNumericId: actingUserNumericId,
-              items: [
-                {
-                  partId: partId,
-                  quantityOrdered: row.quantity,
-                  quantityReceived: row.quantity,
-                  unitCost: parseFloat(row.costPrice) || null,
-                  storageLocation: normaliseLocationInput(row.location),
-                  notes: `Bulk import - ${row.orderRef}`,
-                },
-              ],
-            }),
-          });
-
-          const data = await response.json();
-          if (!response.ok || !data.success) {
-            results[results.length - 1].message += ` (Warning: Delivery log failed)`;
-          }
-        } catch (err) {
-          results.push({
-            ...row,
-            status: "error",
-            message: `Unexpected error: ${err.message}`,
-          });
-        }
-      }
-
-      setBulkImportResults(results);
-
-      const successCount = results.filter(r => r.status === "found" || r.status === "created").length;
-      const errorCount = results.filter(r => r.status === "error").length;
-
-      setBulkImportFeedback({
-        type: successCount > 0 ? "success" : "error",
-        text: `Import complete: ${successCount} parts processed, ${errorCount} errors`,
-      });
-
-      // Refresh inventory
-      await fetchInventory(inventorySearch);
-    } catch (err) {
-      console.error("Unexpected error during bulk import:", err);
-      setBulkImportFeedback({
-        type: "error",
-        text: `Unexpected error: ${err.message}`,
-      });
-    } finally {
-      setBulkImportLoading(false);
-    }
-  }, [bulkImportData, parseBulkImportData, actingUserId, actingUserNumericId, fetchInventory, inventorySearch]);
-
 
   const handleJobPartUpdate = async (jobPartId, updates) => {
     try {

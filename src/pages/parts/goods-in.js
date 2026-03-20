@@ -4,7 +4,6 @@ import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { popupCardStyles, popupOverlayStyles } from "@/styles/appTheme";
 import { sanitizeNumericId } from "@/lib/utils/ids";
-import { format, formatDistanceToNow } from "date-fns";
 import { DropdownField } from "@/components/dropdownAPI";
 import { CalendarField } from "@/components/calendarAPI";
 import { ScrollArea } from "@/components/scrollAPI";
@@ -102,13 +101,6 @@ const addPartFieldStyle = {
 const textareaStyle = {
   ...inputStyle,
   minHeight: "96px",
-};
-
-const autoExpandTextareaStyle = {
-  ...inputStyle,
-  minHeight: "40px",
-  resize: "vertical",
-  overflow: "auto",
 };
 
 const notesTextareaStyle = {
@@ -255,15 +247,6 @@ const createDefaultPartForm = () => ({
   notes: "",
 });
 
-const formatInvoiceDate = (value) => {
-  if (!value) return "--";
-  try {
-    return format(new Date(value), "dd/MM/yy");
-  } catch (error) {
-    return value;
-  }
-};
-
 const parseDocumentFields = (text = "") => {
   if (!text) return {};
   const invoiceMatch = text.match(/invoice\s*(?:no\.|number)?[:#]?\s*([A-Za-z0-9-]+)/i);
@@ -281,15 +264,6 @@ const currencyFormatter = new Intl.NumberFormat("en-GB", {
   currency: "GBP",
 });
 
-const formatRelativeTime = (value) => {
-  if (!value) return "recently";
-  try {
-    return formatDistanceToNow(new Date(value), { addSuffix: true });
-  } catch (error) {
-    return "recently";
-  }
-};
-
 function GoodsInPage() {
   const router = useRouter();
   const { user, dbUserId, authUserId } = useUser();
@@ -299,7 +273,6 @@ function GoodsInPage() {
   const [goodsInRecord, setGoodsInRecord] = useState(null);
   const [goodsInItems, setGoodsInItems] = useState([]);
   const [showBinSuggestions, setShowBinSuggestions] = useState(false);
-  const [loadingGoodsIn, setLoadingGoodsIn] = useState(false);
   const [savingPart, setSavingPart] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [partForm, setPartForm] = useState(() => createDefaultPartForm());
@@ -368,16 +341,9 @@ function GoodsInPage() {
     return () => clearTimeout(timer);
   }, [toast]);
 
-  const preselectedGoodsIn = router.query?.goodsIn;
-  useEffect(() => {
-    if (!router.isReady || !preselectedGoodsIn) return;
-    fetchGoodsIn(preselectedGoodsIn);
-  }, [router.isReady, preselectedGoodsIn]);
-
   const fetchGoodsIn = useCallback(
     async (lookupValue) => {
       try {
-        setLoadingGoodsIn(true);
         const params = new URLSearchParams({ includeItems: "true" });
         if (lookupValue && lookupValue.toString().startsWith("GIN-")) {
           params.set("goodsInNumber", lookupValue);
@@ -406,12 +372,16 @@ function GoodsInPage() {
       } catch (error) {
         console.error(error);
         setToast({ type: "error", message: error.message });
-      } finally {
-        setLoadingGoodsIn(false);
       }
     },
     [todayIso]
   );
+
+  const preselectedGoodsIn = router.query?.goodsIn;
+  useEffect(() => {
+    if (!router.isReady || !preselectedGoodsIn) return;
+    fetchGoodsIn(preselectedGoodsIn);
+  }, [fetchGoodsIn, preselectedGoodsIn, router.isReady]);
 
   const handleInvoiceChange = (field, value) => {
     if (partError) setPartError("");
@@ -473,7 +443,7 @@ function GoodsInPage() {
     });
   };
 
-  const ensureInvoiceReady = () => {
+  const ensureInvoiceReady = useCallback(() => {
     if (!invoiceForm.supplierName.trim()) {
       const message = "Supplier name is required before adding parts";
       setToast({ type: "error", message });
@@ -495,14 +465,13 @@ function GoodsInPage() {
       return false;
     }
     return true;
-  };
+  }, [invoiceForm]);
 
   const ensureGoodsInRecord = useCallback(async () => {
     if (goodsInRecord?.id) return goodsInRecord;
     if (!ensureInvoiceReady()) return null;
 
     try {
-      setLoadingGoodsIn(true);
       const response = await fetch("/api/parts/goods-in", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -533,10 +502,8 @@ function GoodsInPage() {
       setToast({ type: "error", message: error.message });
       setPartError(error.message);
       return null;
-    } finally {
-      setLoadingGoodsIn(false);
     }
-  }, [actingUserNumeric, actingUserUuid, goodsInRecord?.id, invoiceForm, invoiceScanPayload]);
+  }, [actingUserNumeric, actingUserUuid, ensureInvoiceReady, goodsInRecord, invoiceForm, invoiceScanPayload]);
 
   const buildPartPayload = () => ({
     partId: partForm.partId,
@@ -788,7 +755,6 @@ function GoodsInPage() {
 
   const handleJobItemsAssigned = (updatedItems) => {
     if (!updatedItems?.length) return;
-    const updatedMap = new Map(updatedItems.map((item) => [item.id, item]));
     setGoodsInItems((prev) => {
       const merged = new Map(prev.map((item) => [item.id, item]));
       updatedItems.forEach((item) => {
@@ -2355,16 +2321,6 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
       next.set(item.id, clamped);
       return next;
     });
-  };
-
-  const infoCalloutStyle = {
-    background: "var(--layer-section-level-2)",
-    border: "none",
-    borderRadius: "var(--radius-sm)",
-    padding: "10px 12px",
-    color: "var(--text-secondary)",
-    fontSize: "0.9rem",
-    lineHeight: 1.4,
   };
 
   const modalSectionStyle = {

@@ -19,6 +19,7 @@ export const STATUSES = {
   READY_FOR_INVOICE: "ready_for_invoice",
   MOT_COMPLETED: "mot_completed",
   WASH_COMPLETE: "wash_complete",
+  NO_WASH: "no_wash",
 };
 
 export const DISPLAY = {
@@ -37,6 +38,7 @@ export const DISPLAY = {
   [STATUSES.READY_FOR_INVOICE]: "Ready for Invoice",
   [STATUSES.MOT_COMPLETED]: "MOT Completed",
   [STATUSES.WASH_COMPLETE]: "Wash Complete",
+  [STATUSES.NO_WASH]: "No Wash",
 };
 
 const LEGACY_TO_SUB = {
@@ -63,6 +65,8 @@ const LEGACY_TO_SUB = {
   mot_complete: STATUSES.MOT_COMPLETED,
   wash_complete: STATUSES.WASH_COMPLETE,
   valet_complete: STATUSES.WASH_COMPLETE,
+  wash_not_required: STATUSES.NO_WASH,
+  no_wash: STATUSES.NO_WASH,
 };
 
 export const NORMALIZE = (value) => {

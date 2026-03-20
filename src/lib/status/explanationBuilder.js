@@ -55,6 +55,7 @@ export function buildExplanation(entry) {
   // Other sub-statuses.
   if (status === "mot_completed") return "MOT test was completed"; // MOT done
   if (status === "wash_complete") return `Final wash or valet was completed by ${actor(entry, "the valet team")}`; // Wash done
+  if (status === "no_wash") return `Wash was marked as not required by ${actor(entry, "the valet team")}`; // Wash skipped intentionally
 
   // Clocking events.
   if (eventType === "clocking") {

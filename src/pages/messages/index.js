@@ -847,6 +847,7 @@ function MessagesPage() {
   const [leaveDeclineReason, setLeaveDeclineReason] = useState("");
 
   const [isMobileView, setIsMobileView] = useState(false); // portrait phone single-panel toggle
+  const [mobilePanelView, setMobilePanelView] = useState("threads");
 
   // Detect portrait phone viewport for iPhone-style message navigation
   useEffect(() => {
@@ -866,6 +867,7 @@ function MessagesPage() {
 
   // Helper: go back to thread list on mobile (calledFromPopState flag prevents history.back loop)
   const handleMobileBack = useCallback((calledFromPopState = false) => {
+    setMobilePanelView("threads");
     setActiveThreadId(null); // deselect thread to show list
     setActiveSystemView(false); // exit system view too
     setMessages([]); // clear messages panel
@@ -880,6 +882,7 @@ function MessagesPage() {
   useEffect(() => {
     if (isMobileView) return;
     mobileHistoryPushedRef.current = false;
+    setMobilePanelView("threads");
   }, [isMobileView]);
 
   // Listen for browser back button (popstate) to return to thread list on mobile
@@ -1114,6 +1117,9 @@ function MessagesPage() {
     async (threadId, threadSnapshot = null) => {
       if (!threadId || !dbUserId) return;
       ensureMobileConversationHistory();
+      if (isMobileView) {
+        setMobilePanelView("conversation");
+      }
       const referenceThread =
         threadSnapshot || threads.find((thread) => thread.id === threadId) || null;
       const currentMember = (referenceThread?.members || []).find(
@@ -1144,11 +1150,14 @@ function MessagesPage() {
         setLoadingMessages(false);
       }
     },
-    [dbUserId, ensureMobileConversationHistory, listThreadMessages, setThreads, threads]
+    [dbUserId, ensureMobileConversationHistory, isMobileView, listThreadMessages, setThreads, threads]
   );
 
   const openSystemNotificationsThread = useCallback(() => {
     ensureMobileConversationHistory();
+    if (isMobileView) {
+      setMobilePanelView("conversation");
+    }
     setSystemUnreadCutoff(lastSystemViewedAt || null);
     setActiveSystemView(true);
     setActiveThreadId(null);
@@ -1156,7 +1165,7 @@ function MessagesPage() {
     setLoadingMessages(false);
     setConversationError("");
     setLastSystemViewedAt(new Date().toISOString());
-  }, [ensureMobileConversationHistory, lastSystemViewedAt]);
+  }, [ensureMobileConversationHistory, isMobileView, lastSystemViewedAt]);
 
   const submitLeaveDecision = useCallback(
     async (message, decision, reason = "") => {
@@ -1534,7 +1543,7 @@ function MessagesPage() {
       });
     });
 
-    if (customerThread) {
+    if (customerThread && !isMobileView) {
       openThread(customerThread.id, customerThread); // Open the matching thread
       setMessageDraft(`/job${jobNumber} `); // Pre-fill draft with job reference
     } else {
@@ -1544,7 +1553,7 @@ function MessagesPage() {
 
     // Clean query params from URL without navigation
     router.replace("/messages", undefined, { shallow: true });
-  }, [router.isReady, router.query, threads, loadingThreads, openThread]);
+  }, [isMobileView, router.isReady, router.query, threads, loadingThreads, openThread]);
 
   useEffect(() => {
     if (!dbUserId) return;
@@ -1706,13 +1715,16 @@ function MessagesPage() {
       setMessages([]);
       return;
     }
+    if (isMobileView) {
+      return;
+    }
     if (activeSystemView) {
       return;
     }
     if (!activeThreadId) {
       openThread(visibleThreads[0].id, visibleThreads[0]);
     }
-  }, [visibleThreads, activeThreadId, activeSystemView, openThread]);
+  }, [visibleThreads, activeThreadId, activeSystemView, isMobileView, openThread]);
 
   useEffect(() => {
     if (scrollerRef.current) {
@@ -2087,7 +2099,7 @@ function MessagesPage() {
           }}
         >
           <DevLayoutSection sectionKey="messages-threads-panel" parentKey="messages-main-layout" sectionType="section-shell" shell backgroundToken="messages-threads-panel" style={{
-            display: isMobileView && (activeThreadId || activeSystemView) ? "none" : "flex", // hide thread list on mobile when viewing a conversation
+            display: isMobileView && mobilePanelView === "conversation" ? "none" : "flex", // hide thread list on mobile when viewing a conversation
             flexDirection: "column",
             gap: "18px",
             ...(isMobileView ? { flex: 1, minHeight: 0 } : {}),
@@ -2491,10 +2503,10 @@ function MessagesPage() {
             ...cardStyle,
             flex: 1,
             minHeight: 0,
-            display: isMobileView && !activeThreadId && !activeSystemView ? "none" : "flex", // hide conversation panel on mobile when no thread selected
+            display: isMobileView && mobilePanelView !== "conversation" ? "none" : "flex", // hide conversation panel when thread list is active in portrait phone view
           }}>
             {/* Mobile back button — iPhone-style navigation */}
-            {isMobileView && (activeThreadId || activeSystemView) && (
+            {isMobileView && mobilePanelView === "conversation" && (
               <button
                 type="button"
                 onClick={() => handleMobileBack(false)} // false = not from popstate, will call history.back

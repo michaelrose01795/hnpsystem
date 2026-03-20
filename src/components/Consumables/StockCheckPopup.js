@@ -252,10 +252,6 @@ function StockCheckPopup({
     };
   }, [open, closePopup]);
 
-  if (!open) {
-    return null;
-  }
-
   const toggleItem = (itemId) => {
     setSelectedItems((previous) => {
       const next = new Set(previous);
@@ -293,6 +289,10 @@ function StockCheckPopup({
       applyStockSearch();
     }
   }, [applyStockSearch]);
+
+  if (!open) {
+    return null;
+  }
 
   const handleNewConsumableSubmit = async (event) => {
     event.preventDefault();

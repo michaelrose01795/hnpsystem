@@ -69,13 +69,6 @@ const getJobDate = (job) => {
 
 const deriveJobType = (job) => deriveJobTypeDisplay(job, { includeExtraCount: true });
 
-const getRequestsCount = (requests) => {
-  if (!requests) return 0;
-  if (Array.isArray(requests)) return requests.length;
-  if (typeof requests === "object") return Object.keys(requests).length;
-  return 0;
-};
-
 const getStatusCounts = (jobs = []) => {
   return jobs.reduce((acc, job) => {
     const key = job.status || "Unknown";
@@ -579,11 +572,7 @@ export default function ViewJobCards() {
       union.add(popupStatusLabel);
     }
     return Array.from(union);
-  }, [popupJob, popupStatusLabel]);
-
-  const handleQuickView = (job) => {
-    setPopupJob(job);
-  };
+  }, [popupStatusLabel]);
 
   const handleCardNavigation = (jobNumber) => {
     goToJobCard(jobNumber);
@@ -1340,25 +1329,17 @@ export default function ViewJobCards() {
   );
 }
 
-const JobListCard = ({ job, onNavigate, onQuickView, onMouseEnter, index = 0, sectionKey, parentKey }) => {
+const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) => {
   // top-layer
   const rowBackground = "var(--surface)";
   const jobType = deriveJobType(job);
   const appointmentLabel = getAppointmentDisplay(job);
-  const jobDate = getJobDate(job);
-  const requestsCount = getRequestsCount(job.requests);
   const waitingLabel = formatCustomerStatusLabel(job.waitingStatus);
   const assignedTechName =
     job.assignedTech?.fullName ||
     job.assignedTech?.name ||
     job.technician ||
     "Unassigned";
-  const createdStamp = job.createdAt
-    ? new Date(job.createdAt).toLocaleString([], {
-        dateStyle: "medium",
-        timeStyle: "short",
-      })
-    : "Unknown";
   const jobStatus = job.status || "Status pending";
   const jobDivisionLabel = job.jobDivision || "Retail";
   const isSalesDivision = jobDivisionLabel.toLowerCase() === "sales";
@@ -1533,7 +1514,7 @@ const JobListCard = ({ job, onNavigate, onQuickView, onMouseEnter, index = 0, se
   );
 };
 
-const OrderListCard = ({ order, onNavigate, index = 0, sectionKey, parentKey }) => {
+const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
   // top-layer
   const rowBackground = "var(--surface)";
   const items = order.requests || order.items || [];

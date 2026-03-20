@@ -21,7 +21,6 @@ import { appShellTheme } from "@/styles/appTheme";
 import { sidebarSections } from "@/config/navigation";
 import { useRoster } from "@/context/RosterContext";
 import HrTabsBar from "@/components/HR/HrTabsBar";
-import { departmentDashboardShortcuts } from "@/config/departmentDashboards";
 import { useMessagesBadge } from "@/hooks/useMessagesBadge";
 import { roleCategories } from "@/config/users";
 import { getUserActiveJobs, clockOutFromJob } from "@/lib/database/jobClocking";
@@ -78,7 +77,7 @@ export default function Layout({
     router.pathname.startsWith("/admin/users");
 
   const [viewportWidth, setViewportWidth] = useState(1440);
-  const { unreadCount: messagesUnread } = useMessagesBadge(dbUserId);
+  useMessagesBadge(dbUserId);
 
   const isTablet = viewportWidth <= 1024;
   const isMobile = viewportWidth <= 640; // phone view cutoff
@@ -101,7 +100,7 @@ export default function Layout({
   const timelineJobNumber = jobNumber || activeJobId || currentJob?.jobNumber || null;
   const [currentJobStatus, setCurrentJobStatus] = useState("booked");
   const [statusSidebarRefreshKey, setStatusSidebarRefreshKey] = useState(0);
-  const [welcomeQuote, setWelcomeQuote] = useState(DEFAULT_WELCOME_QUOTE);
+  const [, setWelcomeQuote] = useState(DEFAULT_WELCOME_QUOTE);
   const welcomeQuoteSlotKeyRef = useRef(null);
 
   const statusSidebarRoles = [
@@ -153,7 +152,7 @@ export default function Layout({
       }
     }
     setSelectedMode(availableModes[0]);
-  }, [availableModesKey, selectedMode]);
+  }, [availableModes, availableModesKey, selectedMode]);
 
   useEffect(() => {
     if (!selectedMode) return;
@@ -169,18 +168,7 @@ export default function Layout({
   const userRoles = scopedRoles.length > 0 ? scopedRoles : rawUserRoles;
   const activeModeLabel = selectedMode || availableModes[0] || null;
 
-  const matchesDepartment = (rolesToMatch = []) => {
-    if (!rolesToMatch || rolesToMatch.length === 0) return true;
-    return rolesToMatch.some((roleName) => userRoles.includes(roleName));
-  };
-  const dashboardShortcuts = departmentDashboardShortcuts.filter((shortcut) =>
-    matchesDepartment(shortcut.roles || [])
-  );
   const canUseServiceActions = userRoles.some((role) => SERVICE_ACTION_ROLES.has(role));
-  const retailManagerDashboardRoles = ["service manager", "workshop manager", "after sales director"];
-  const hasRetailDashboardAccess = userRoles.some((role) =>
-    retailManagerDashboardRoles.includes(role)
-  );
   const techsList = usersByRole?.["Techs"] || [];
   const motTestersList = usersByRole?.["MOT Tester"] || [];
   const allowedTechNames = new Set([...techsList, ...motTestersList]);
@@ -267,7 +255,7 @@ export default function Layout({
           setWelcomeQuote(payload.quote);
         }
         welcomeQuoteSlotKeyRef.current = payload?.slotKey || nextSlotKey;
-      } catch (_error) {
+      } catch {
         // Keep existing quote if fetch fails.
       }
     };
@@ -451,26 +439,9 @@ export default function Layout({
 
     syncStatus();
     // Re-sync when currentJob changes
-  }, [isTech, dbUserId, currentJob]);
-
-  const role = userRoles[0] || "guest";
-  const roleDisplay = role
-    .split(" ")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
+  }, [currentJob, dbUserId, isTech, setStatus, status]);
 
   const viewRoles = ["manager", "service", "sales"];
-  const vhcAccessRoles = new Set([
-    "admin",
-    "service",
-    "service manager",
-    "workshop manager",
-    "after sales director",
-    "general manager",
-    "parts",
-    "parts manager",
-  ]);
-  const isActive = (path) => router.pathname.startsWith(path);
 
   const colors = appShellTheme.light;
   const [contentKey, setContentKey] = useState(() => router.asPath || "initial");

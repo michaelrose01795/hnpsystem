@@ -464,6 +464,9 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
     resolveHistoryUserName(bookingFallbackUserId) ||
     null;
   const washChecklistUserName = jobRow?.maintenance_info?.valetChecklist?.updatedBy || null;
+  const washChecklistState =
+    jobRow?.maintenance_info?.valetChecklist?.washState ||
+    (jobRow?.maintenance_info?.valetChecklist?.wash ? "complete" : null);
 
   const inferMissingActor = (entry) => {
     if (!entry || entry.userName || entry.userId) return entry;
@@ -521,8 +524,41 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
       };
     }
 
+    if (statusId === "no_wash" && washChecklistUserName) {
+      return {
+        ...entry,
+        userName: washChecklistUserName,
+      };
+    }
+
     return entry;
   };
+
+  const hasLoggedNoWash = subStatusEntries.some((entry) => entry.status === "no_wash");
+  if (!hasLoggedNoWash && washChecklistState === "no_wash") {
+    const washUpdatedAt =
+      jobRow?.maintenance_info?.valetChecklist?.updatedAt ||
+      jobRow?.updated_at ||
+      new Date().toISOString();
+    const noWashMeta = getSubStatusMetadata("No Wash") || {};
+
+    subStatusEntries.push({
+      id: "synthetic-no-wash",
+      status: noWashMeta.id || "no_wash",
+      statusLabel: noWashMeta.label || "No Wash",
+      timestamp: ensureIsoString(washUpdatedAt),
+      userId: null,
+      userName: washChecklistUserName || null,
+      reason: "Wash marked as not required from Valet.",
+      color: noWashMeta.color || "var(--warning)",
+      department: noWashMeta.department || "Valet",
+      pausesTime: true,
+      kind: "event",
+      eventType: noWashMeta.category || "Valet",
+      label: noWashMeta.label || "No Wash",
+      description: "Set from: Valet",
+    });
+  }
 
   const normalizedStatusEntries = statusEntries.map(inferMissingActor);
   const normalizedSubStatusEntries = subStatusEntries.map(inferMissingActor);
@@ -755,7 +791,9 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
         startedAt: activeClocking?.clock_in || null,
       },
       wash: {
-        complete: Boolean(jobRow?.maintenance_info?.valetChecklist?.wash), // Source of truth for wash status
+        state: washChecklistState,
+        complete: washChecklistState === "complete", // Source of truth for wash status
+        notRequired: washChecklistState === "no_wash",
         completedBy: washChecklistUserName, // Who last toggled the wash checkbox
         updatedAt: jobRow?.maintenance_info?.valetChecklist?.updatedAt || null, // When checklist was last updated
       },

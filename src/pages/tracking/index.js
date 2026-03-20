@@ -120,21 +120,6 @@ const getAutoMovementRule = (status) => {
   return AUTO_MOVEMENT_RULES[status.trim().toLowerCase()] || null;
 };
 
-const STATUS_COLORS = {
-  "Awaiting Authorisation": "var(--danger)",
-  "Waiting For Collection": "var(--info)",
-  "Ready For Collection": "var(--info)",
-  "Complete": "var(--info)",
-  "Valet Hold": "var(--accent-orange)",
-  "In Transit": "var(--accent-purple)",
-};
-
-const STATUS_OPTIONS = Object.keys(STATUS_COLORS).map((status) => ({
-  key: `status-${status.toLowerCase().replace(/\s+/g, "-")}`,
-  value: status,
-  label: status,
-}));
-
 const NEXT_ACTION_ENDPOINT = "/api/tracking/next-action";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -282,18 +267,6 @@ const getDurationDisplay = (item) => {
   return "—";
 };
 
-const formatDateLabel = (value) => {
-  if (!value) return "Pending";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "Pending";
-  return parsed.toLocaleString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
-
 const formatDateOnlyLabel = (value) => {
   if (!value) return "Pending";
   const parsed = new Date(value);
@@ -334,6 +307,19 @@ const SECTION_STYLE = {
   gap: "18px",
 };
 
+const getSectionStyle = (isMobileView) => ({
+  padding: isMobileView
+    ? "var(--section-card-padding-sm, 16px)"
+    : "var(--page-card-padding)",
+  borderRadius: "var(--radius-xl)",
+  background: "var(--section-card-bg)",
+  border: "var(--section-card-border)",
+  display: "flex",
+  flexDirection: "column",
+  gap: isMobileView ? "16px" : "18px",
+  minWidth: 0,
+});
+
 const emptyForm = {
   id: null,
   jobNumber: "",
@@ -358,7 +344,7 @@ const formatRelativeTime = (timestamp) => {
   return `${days}d ago`;
 };
 
-const CombinedTrackerCard = ({ entry, isHighlighted, onClick }) => {
+const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = false }) => {
   const vehicleMeta = [entry.makeModel, entry.colour].filter(Boolean).join(" • ");
 
   return (
@@ -413,7 +399,7 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick }) => {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
+          gridTemplateColumns: isMobileView ? "1fr" : "1fr 1fr",
           gap: "8px",
           marginTop: "8px",
         }}
@@ -1572,7 +1558,6 @@ export default function TrackingDashboard() {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [lastUpdated, setLastUpdated] = useState(null);
   const [searchModal, setSearchModal] = useState({ open: false, type: null });
   const [entryModal, setEntryModal] = useState({ open: false, type: null, entry: null });
   const [simplifiedModal, setSimplifiedModal] = useState({ open: false, initialData: null });
@@ -1596,11 +1581,11 @@ export default function TrackingDashboard() {
   const [oilLoading, setOilLoading] = useState(false);
   const [activeTopUpId, setActiveTopUpId] = useState(null);
   const [topUpValue, setTopUpValue] = useState("");
-  const [isMobileView, setIsMobileView] = useState(false); // iPhone-style single-column toggle
+  const [isMobileView, setIsMobileView] = useState(false); // portrait phone layout toggle
 
-  // Detect mobile viewport (≤480px) for iPhone-style single-column layout
+  // Match the portrait-phone behaviour used across the app shell.
   useEffect(() => {
-    const mediaQuery = window.matchMedia("(max-width: 480px)");
+    const mediaQuery = window.matchMedia("(max-width: 640px) and (orientation: portrait)");
     setIsMobileView(mediaQuery.matches);
     const handler = (event) => setIsMobileView(event.matches);
     mediaQuery.addEventListener("change", handler);
@@ -1617,7 +1602,6 @@ export default function TrackingDashboard() {
       }
       const normalized = Array.isArray(snapshot.data) ? snapshot.data : [];
       setEntries(normalized);
-      setLastUpdated(new Date().toISOString());
     } catch (fetchError) {
       console.error("Failed to fetch tracking snapshot", fetchError);
       setEntries([]);
@@ -2016,7 +2000,6 @@ export default function TrackingDashboard() {
     [entries]
   );
 
-  const openSearchModal = (type) => setSearchModal({ open: true, type });
   const closeSearchModal = () => setSearchModal({ open: false, type: null });
 
   const openEntryModal = (type, entry = null) => setEntryModal({ open: true, type, entry });
@@ -2149,44 +2132,42 @@ export default function TrackingDashboard() {
           </button>
         </div>
       </div>
+      {entries.length === 0 && (
+        <div
+          style={{
+            padding: "12px",
+            borderRadius: "var(--radius-sm)",
+            border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
+            textAlign: "center",
+            color: "var(--info-dark)",
+          }}
+        >
+          No active job tracking data yet.
+        </div>
+      )}
+      {activeEntries.length === 0 && entries.length > 0 && (
+        <div
+          style={{
+            padding: "12px",
+            borderRadius: "var(--radius-sm)",
+            border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
+            textAlign: "center",
+            color: "var(--info-dark)",
+          }}
+        >
+          Waiting for job-mapped tracking entries.
+        </div>
+      )}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: isMobileView ? "1fr" : "repeat(2, 1fr)", // single column on iPhone
+          gridTemplateColumns: isMobileView ? "1fr" : "repeat(2, 1fr)",
           gap: "12px",
-          maxHeight: isMobileView ? "none" : "calc(4 * 180px + 3 * 12px)", // no max height on mobile
+          maxHeight: isMobileView ? "none" : "calc(4 * 180px + 3 * 12px)",
           overflowY: "auto",
           paddingRight: "4px",
         }}
       >
-        {entries.length === 0 && (
-          <div
-            style={{
-              gridColumn: "1 / -1",
-              padding: "12px",
-              borderRadius: "var(--radius-sm)",
-              border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
-              textAlign: "center",
-              color: "var(--info-dark)",
-            }}
-          >
-            No active job tracking data yet.
-          </div>
-        )}
-        {activeEntries.length === 0 && entries.length > 0 && (
-          <div
-            style={{
-              gridColumn: "1 / -1",
-              padding: "12px",
-              borderRadius: "var(--radius-sm)",
-              border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
-              textAlign: "center",
-              color: "var(--info-dark)",
-            }}
-          >
-            Waiting for job-mapped tracking entries.
-          </div>
-        )}
         {activeEntries.map((entry) => {
           const isHighlighted = highlightedJobNumber && entry.jobNumber?.toLowerCase() === highlightedJobNumber.toLowerCase();
           return (
@@ -2216,7 +2197,7 @@ export default function TrackingDashboard() {
   );
 
   const renderEquipmentContent = () => (
-    <section style={{ ...SECTION_STYLE, gap: "20px" }}>
+    <section style={{ ...getSectionStyle(isMobileView), gap: "20px" }}>
       <div
         style={{
           display: "flex",
@@ -2253,8 +2234,9 @@ export default function TrackingDashboard() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+          gridTemplateColumns: isMobileView ? "minmax(0, 1fr)" : "repeat(auto-fit, minmax(260px, 1fr))",
           gap: "16px",
+          minWidth: 0,
         }}
       >
         {equipmentChecks.length === 0 && (
@@ -2379,7 +2361,7 @@ export default function TrackingDashboard() {
   );
 
   const renderOilContent = () => (
-    <section style={{ ...SECTION_STYLE, gap: "20px" }}>
+    <section style={{ ...getSectionStyle(isMobileView), gap: "20px" }}>
       <div
         style={{
           display: "flex",
@@ -2416,8 +2398,9 @@ export default function TrackingDashboard() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+          gridTemplateColumns: isMobileView ? "minmax(0, 1fr)" : "repeat(auto-fit, minmax(260px, 1fr))",
           gap: "16px",
+          minWidth: 0,
         }}
       >
         {oilChecks.length === 0 && (
@@ -2605,13 +2588,14 @@ export default function TrackingDashboard() {
   };
 
   return (
-    <Layout disableContentCard>
+    <Layout>
       <div
         className="app-page-stack"
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
-          gap: "24px",
+          gridTemplateColumns: isMobileView ? "minmax(0, 1fr)" : "repeat(auto-fit, minmax(360px, 1fr))",
+          gap: isMobileView ? "var(--page-stack-gap-mobile, 16px)" : "24px",
+          minWidth: 0,
         }}
       >
         <div
@@ -2619,7 +2603,8 @@ export default function TrackingDashboard() {
             gridColumn: "1 / -1",
             display: "flex",
             flexDirection: "column",
-            gap: "18px",
+            gap: isMobileView ? "16px" : "18px",
+            minWidth: 0,
           }}
         >
           {tabs.length > 1 && (

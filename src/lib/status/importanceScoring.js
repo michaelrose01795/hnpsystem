@@ -20,7 +20,7 @@ const MILESTONE_STATUSES = new Set([
 const MAJOR_STATUSES = new Set([
   "technician_started", "vhc_completed", // Workshop/VHC milestones
   "customer_authorised", "customer_declined", // Customer decisions
-  "parts_ready", "mot_completed", // Parts and MOT milestones
+  "parts_ready", "mot_completed", "no_wash", // Parts, MOT, and intentional wash skip
 ]);
 
 // Statuses that represent normal workflow events.

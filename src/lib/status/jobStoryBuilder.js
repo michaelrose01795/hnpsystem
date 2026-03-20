@@ -132,6 +132,8 @@ export function buildJobStory(snapshot, enhancedTimeline = []) {
     const summary = workflows.parts.summary || {}; // Parts count
     const count = (summary.waiting || 0) + (summary.onOrder || 0); // Total waiting
     sentences.push(`Parts are currently on order (${count} item${count === 1 ? "" : "s"}).`); // Parts blocking
+  } else if (workflows.wash?.state === "no_wash" || workflows.wash?.notRequired) {
+    sentences.push("No wash is required for this job.");
   } else if (workflows.wash?.complete) {
     // Use the checklist flag (source of truth) for wash status, with actor attribution.
     const washActor = workflows.wash.completedBy; // Who completed the wash

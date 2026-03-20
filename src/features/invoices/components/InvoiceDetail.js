@@ -274,15 +274,18 @@ export default function InvoiceDetail({
   onPaymentCompleted = null,
   onReleaseRequested = null,
 }) {
-  if (!data) {
-    return null;
-  }
-  const { company, invoice, requests = [], payment, payments = [] } = data;
+  const detailData = data ?? {};
+  const { company, invoice, requests = [], payment, payments = [] } = detailData;
   const [editingRequest, setEditingRequest] = useState(null);
   const [overrideForm, setOverrideForm] = useState(null);
   const [overrideSaving, setOverrideSaving] = useState(false);
   const [billingDropdownSeed, setBillingDropdownSeed] = useState(0);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+
+  if (!data) {
+    return null;
+  }
+
   const requestRowsSource = Array.isArray(jobData?.jobRequests)
     ? jobData.jobRequests
     : Array.isArray(jobData?.job_requests)

@@ -11,6 +11,7 @@ import { getValetEtaSignals } from "@/lib/database/valetEtaSignals";
 import { resolveMainStatusId } from "@/lib/status/statusFlow";
 import { logJobSubStatus } from "@/lib/services/jobStatusService";
 import { SearchBar } from "@/components/searchBarAPI";
+import { CalendarField } from "@/components/calendarAPI";
 import { revalidateAllJobs } from "@/lib/swr/mutations";
 import { calculateSmartTechEta } from "@/utils/jobs/calculateSmartTechEta";
 
@@ -18,6 +19,88 @@ const WASH_KEYWORDS = ["wash", "valet", "clean"];
 const VALET_TABLE_COLUMNS =
   "minmax(0, 0.8fr) minmax(0, 0.72fr) minmax(0, 1.45fr) repeat(4, minmax(84px, 0.62fr)) minmax(0, 1fr)";
 const VALET_ROW_HEIGHT = "84px";
+
+const formatDateOnly = (date) => {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const getTodayDateValue = () => formatDateOnly(new Date());
+
+const formatDateOnlyLabel = (value) => {
+  if (!value) return "Pending";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "Pending";
+  return parsed.toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const getJobDayValue = (job) => {
+  const source = job?.appointment?.date
+    ? `${job.appointment.date}T00:00:00`
+    : job?.checkedInAt || null;
+  if (!source) return "";
+  const parsed = new Date(source);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return formatDateOnly(parsed);
+};
+
+const isCancelledJob = (job) => {
+  const normalized = normalizeStatusValue(job?.status);
+  return normalized === "cancelled" || normalized === "canceled";
+};
+
+const resolveWashState = (checklist = {}, job = null) => {
+  const rawState = String(
+    checklist?.washState ||
+    job?.maintenanceInfo?.valetChecklist?.washState ||
+    ""
+  ).trim().toLowerCase();
+  if (rawState === "complete") return "complete";
+  if (rawState === "no_wash") return "no_wash";
+  if (checklist?.wash || job?.maintenanceInfo?.valetChecklist?.wash) return "complete";
+  return "blank";
+};
+
+const getNextWashState = (currentState) => {
+  if (currentState === "blank") return "complete";
+  if (currentState === "complete") return "no_wash";
+  return "blank";
+};
+
+const getWashIndicatorMeta = (state) => {
+  if (state === "complete") {
+    return {
+      symbol: "✓",
+      color: "var(--success)",
+      borderColor: "rgba(var(--success-rgb), 0.35)",
+      background: "rgba(var(--success-rgb), 0.1)",
+      label: "Wash complete",
+    };
+  }
+  if (state === "no_wash") {
+    return {
+      symbol: "✕",
+      color: "var(--danger)",
+      borderColor: "rgba(var(--danger-rgb), 0.35)",
+      background: "rgba(var(--danger-rgb), 0.08)",
+      label: "No wash to be done",
+    };
+  }
+  return {
+    symbol: "",
+    color: "var(--text-secondary)",
+    borderColor: "rgba(var(--grey-accent-rgb), 0.35)",
+    background: "var(--surface)",
+    label: "Wash not set",
+  };
+};
 
 const normalizeTextArray = (values) => {
   if (!Array.isArray(values)) return [];
@@ -183,11 +266,18 @@ const inferMot = (job) => {
 
 const buildChecklist = (job) => {
   const stored = job.maintenanceInfo?.valetChecklist || {};
+  const washState =
+    stored.washState === "complete" || stored.washState === "no_wash"
+      ? stored.washState
+      : stored.wash
+        ? "complete"
+        : "blank";
   const result = {
     vehicleHere: inferVehicleHere(job),
     workshop: inferWorkshop(job),
     mot: inferMot(job),
-    wash: typeof stored.wash === "boolean" ? stored.wash : false,
+    wash: washState === "complete",
+    washState,
     updatedAt: stored.updatedAt || null,
     updatedBy: stored.updatedBy || null,
   };
@@ -195,7 +285,8 @@ const buildChecklist = (job) => {
 };
 
 const resolveValetRowStatusLabel = (job, checklist) => {
-  if (checklist?.wash) return "Wash Complete";
+  if (resolveWashState(checklist, job) === "complete") return "Wash Complete";
+  if (resolveWashState(checklist, job) === "no_wash") return "No Wash";
   return job?.status || "N/A";
 };
 
@@ -206,6 +297,8 @@ const logChecklistCompletionTransitions = async ({
   actor,
 }) => {
   const tasks = [];
+  const beforeWashState = resolveWashState(beforeChecklist);
+  const afterWashState = resolveWashState(afterChecklist);
 
   if (!beforeChecklist?.workshop && afterChecklist?.workshop) {
     tasks.push(
@@ -240,6 +333,17 @@ const logChecklistCompletionTransitions = async ({
     );
   }
 
+  if (beforeWashState !== "no_wash" && afterWashState === "no_wash") {
+    tasks.push(
+      logJobSubStatus(
+        jobId,
+        "No Wash",
+        actor,
+        "Wash marked as not required from Valet."
+      )
+    );
+  }
+
   if (tasks.length > 0) {
     await Promise.allSettled(tasks);
   }
@@ -253,6 +357,10 @@ const formatConfidenceLabel = (value) => {
 };
 
 const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals, now }) => {
+  const washState = useMemo(() => resolveWashState(checklist, job), [checklist, job]);
+  const washMeta = useMemo(() => getWashIndicatorMeta(washState), [washState]);
+  const cancelled = useMemo(() => isCancelledJob(job), [job]);
+  const rowStatusLabel = useMemo(() => resolveValetRowStatusLabel(job, checklist), [job, checklist]);
   const smartEta = useMemo(
     () => calculateSmartTechEta(job, { etaSignals, now }),
     [job, etaSignals, now]
@@ -287,17 +395,13 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
     return lines.join("\n");
   }, [smartEta]);
 
-  const handleChange = (field) => (event) => {
-    onToggle(job.id, field, event.target.checked);
+  const handleWashCycle = (event) => {
+    event.stopPropagation();
+    onToggle(job.id, "wash", getNextWashState(washState));
   };
 
   return (
     <div
-      onClick={() => {
-        if (typeof onOpenJob === "function") {
-          onOpenJob(job);
-        }
-      }}
       style={{
         border: "none",
         padding: "12px 16px",
@@ -311,10 +415,19 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
         width: "100%",
         minHeight: VALET_ROW_HEIGHT,
         boxSizing: "border-box",
-        cursor: "pointer",
+        color: cancelled ? "var(--text-secondary)" : "inherit",
+        textDecoration: cancelled ? "line-through" : "none",
+        opacity: cancelled ? 0.72 : 1,
       }}
     >
-      <span
+      <button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          if (typeof onOpenJob === "function") {
+            onOpenJob(job);
+          }
+        }}
         style={{
           fontSize: "14px",
           fontWeight: 700,
@@ -323,10 +436,16 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
           whiteSpace: "nowrap",
           overflow: "hidden",
           textOverflow: "ellipsis",
+          background: "transparent",
+          border: "none",
+          padding: 0,
+          textAlign: "left",
+          cursor: "pointer",
+          textDecoration: cancelled ? "line-through" : "none",
         }}
       >
         {job.jobNumber || "No Job Number"}
-      </span>
+      </button>
       <span
         style={{
           fontSize: "16px",
@@ -357,7 +476,6 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
         { field: "vehicleHere", label: "Vehicle Here", manual: false },
         { field: "workshop", label: "Workshop", manual: false },
         { field: "mot", label: "MOT", manual: false },
-        { field: "wash", label: "Wash", manual: true },
       ].map(({ field, label, manual }) => (
         <div
           key={field}
@@ -372,7 +490,7 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
           <input
             type="checkbox"
             checked={Boolean(checklist[field])}
-            onChange={handleChange(field)}
+            readOnly
             onClick={(event) => event.stopPropagation()}
             disabled={isSaving || !manual}
             aria-label={`${label} for ${job.jobNumber || job.reg || "job"}`}
@@ -387,6 +505,81 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
         </div>
       ))}
 
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minWidth: 0,
+          width: "100%",
+        }}
+      >
+        <div
+          style={{
+            width: "20px",
+            height: "20px",
+            position: "relative",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={washState === "complete"}
+            readOnly
+            onClick={handleWashCycle}
+            disabled={isSaving}
+            aria-label={`${washMeta.label} for ${job.jobNumber || job.reg || "job"}`}
+            title={washMeta.label}
+            style={{
+              width: "20px",
+              height: "20px",
+              cursor: isSaving ? "not-allowed" : "pointer",
+              opacity: 1,
+              margin: 0,
+            }}
+          />
+          {washState === "no_wash" && !isSaving ? (
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: washMeta.color,
+                fontSize: "0.9rem",
+                fontWeight: 800,
+                lineHeight: 1,
+                pointerEvents: "none",
+              }}
+            >
+              ×
+            </span>
+          ) : null}
+          {isSaving ? (
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "var(--text-secondary)",
+                fontSize: "0.8rem",
+                lineHeight: 1,
+                pointerEvents: "none",
+              }}
+            >
+              …
+            </span>
+          ) : null}
+        </div>
+      </div>
+
       <span
         style={{
           fontSize: "13px",
@@ -399,6 +592,7 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
           minWidth: 0,
           height: "100%",
         }}
+        title={rowStatusLabel}
       >
         {smartEta ? (
           <span
@@ -437,6 +631,7 @@ export default function ValetDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedDay, setSelectedDay] = useState(() => getTodayDateValue());
   const [etaNow, setEtaNow] = useState(() => Date.now());
   const isMountedRef = useRef(true);
   const fetchInFlightRef = useRef(false);
@@ -506,6 +701,12 @@ export default function ValetDashboard() {
               workshop: derivedChecklist.workshop,
               mot: derivedChecklist.mot,
               wash: typeof storedChecklist?.wash === "boolean" ? storedChecklist.wash : false,
+              washState:
+                storedChecklist?.washState === "complete" || storedChecklist?.washState === "no_wash"
+                  ? storedChecklist.washState
+                  : storedChecklist?.wash
+                    ? "complete"
+                    : "blank",
             };
 
             const maintenanceInfo = {
@@ -619,9 +820,12 @@ export default function ValetDashboard() {
   }, [user, hasAccess, fetchJobs]);
 
   const filteredJobs = useMemo(() => {
-    if (!searchTerm.trim()) return jobs;
+    const jobsForDay = selectedDay
+      ? jobs.filter((job) => getJobDayValue(job) === selectedDay)
+      : jobs;
+    if (!searchTerm.trim()) return jobsForDay;
     const lower = searchTerm.toLowerCase();
-    return jobs.filter((job) => {
+    return jobsForDay.filter((job) => {
       const reg = job.reg?.toLowerCase() || "";
       const jobNumber = job.jobNumber?.toLowerCase() || "";
       const customer = (job.customer || "")
@@ -635,7 +839,7 @@ export default function ValetDashboard() {
         makeModel.includes(lower)
       );
     });
-  }, [jobs, searchTerm]);
+  }, [jobs, searchTerm, selectedDay]);
 
   const handleToggle = useCallback(
     async (jobId, field, value) => {
@@ -644,7 +848,17 @@ export default function ValetDashboard() {
       if (!targetJob) return;
 
       const previousState = valetState[jobId] || buildChecklist(targetJob);
-      const nextState = { ...previousState, [field]: value };
+      const nextWashState =
+        value === "complete" || value === "no_wash" || value === "blank"
+          ? value
+          : value
+            ? "complete"
+            : "blank";
+      const nextState = {
+        ...previousState,
+        [field]: nextWashState === "complete",
+        washState: nextWashState,
+      };
 
       setValetState((prev) => ({
         ...prev,
@@ -658,6 +872,8 @@ export default function ValetDashboard() {
           ...(targetJob.maintenanceInfo || {}),
           valetChecklist: {
             ...nextState,
+            wash: nextWashState === "complete",
+            washState: nextWashState === "blank" ? null : nextWashState,
             updatedAt: new Date().toISOString(),
             updatedBy: user?.username || "Valet",
           },
@@ -817,6 +1033,44 @@ export default function ValetDashboard() {
                 minWidth: "240px",
               }}
             />
+            <div style={{ minWidth: "220px", flex: "0 0 220px" }}>
+              <CalendarField
+                value={selectedDay}
+                onChange={(event) => setSelectedDay(event.target.value)}
+                placeholder="Filter by day"
+                size="md"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedDay(getTodayDateValue())}
+              style={{
+                padding: "10px 14px",
+                borderRadius: "var(--radius-sm)",
+                border: "1px solid rgba(var(--grey-accent-rgb), 0.3)",
+                background: "var(--surface)",
+                color: "var(--text-primary)",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Today
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedDay("")}
+              style={{
+                padding: "10px 14px",
+                borderRadius: "var(--radius-sm)",
+                border: "1px solid rgba(var(--grey-accent-rgb), 0.3)",
+                background: "var(--surface)",
+                color: "var(--text-primary)",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              All days
+            </button>
             <span style={{ fontSize: "14px", color: "var(--grey-accent)" }}>
               Showing {filteredJobs.length} job
               {filteredJobs.length === 1 ? "" : "s"}
@@ -898,7 +1152,9 @@ export default function ValetDashboard() {
               fontSize: "16px",
             }}
           >
-            No jobs requiring wash were found.
+            {selectedDay
+              ? `No valet jobs found for ${formatDateOnlyLabel(selectedDay)}.`
+              : "No jobs requiring wash were found."}
           </DevLayoutSection>
         ) : (
           <DevLayoutSection

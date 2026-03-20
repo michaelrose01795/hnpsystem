@@ -2664,6 +2664,40 @@ input[type="search"]::-webkit-search-results-decoration {
   outline: none;
 }
 
+.status-sidebar__searchbar {
+  background: var(--accent-purple);
+  color: var(--text-inverse);
+  box-shadow: inset 0 0 0 1px rgba(var(--surface-rgb), 0.16);
+}
+
+.status-sidebar__searchbar:hover,
+.status-sidebar__searchbar:focus-within {
+  background: var(--accent-purple);
+  box-shadow:
+    inset 0 0 0 1px rgba(var(--surface-rgb), 0.26),
+    0 0 0 3px rgba(var(--surface-rgb), 0.08);
+}
+
+.status-sidebar__searchbar .searchbar-api__input,
+.status-sidebar__searchbar-input {
+  color: var(--text-inverse);
+}
+
+.status-sidebar__searchbar .searchbar-api__input::placeholder,
+.status-sidebar__searchbar-input::placeholder {
+  color: rgba(var(--surface-rgb), 0.78);
+}
+
+.status-sidebar__searchbar .searchbar-api__clear {
+  background: rgba(var(--surface-rgb), 0.18);
+  color: var(--text-inverse);
+}
+
+.status-sidebar__searchbar .searchbar-api__clear:hover,
+.status-sidebar__searchbar .searchbar-api__clear:focus-visible {
+  background: rgba(var(--surface-rgb), 0.3);
+}
+
 /* ========================================================= */
 /* === Tab API === */
 /* ========================================================= */

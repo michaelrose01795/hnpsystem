@@ -1,10 +1,11 @@
 // Cron endpoint to auto-log overtime from recurring rules for today
-// Queries overtime_recurring_rules for today's day-of-week, skips if already logged
-// Inserts into time_records + overtime_sessions for each active rule
+// Queries overtime_recurring_rules for today's day-of-week, filters by pattern/parity,
+// sums hours across all matching rules per user, creates one overtime entry per user
 // Can be called by Vercel Cron, external scheduler, or manually
 // file location: src/pages/api/cron/overtime-recurring.js
 import { supabase } from "@/lib/supabaseClient";
 import { getOvertimePeriodBounds } from "@/lib/database/hr";
+import { doesRuleMatchDate } from "@/lib/overtime/recurringUtils";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -28,10 +29,10 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, message: "Sundays are excluded from recurring overtime.", created: 0 });
     }
 
-    // Fetch all active rules for today's day of week
+    // Fetch all active rules for today's day of week (multiple rules per user possible)
     const { data: rules, error: rulesError } = await supabase
       .from("overtime_recurring_rules")
-      .select("rule_id, user_id, day_of_week, hours")
+      .select("rule_id, user_id, day_of_week, hours, pattern_type, week_parity") // include pattern fields
       .eq("day_of_week", dayOfWeek)
       .eq("active", true);
 
@@ -67,43 +68,58 @@ export default async function handler(req, res) {
       period = created; // newly created period
     }
 
+    // Group rules by user_id so we can sum matching hours per user
+    const rulesByUser = {};
+    for (const rule of rules) {
+      if (!rulesByUser[rule.user_id]) rulesByUser[rule.user_id] = [];
+      rulesByUser[rule.user_id].push(rule);
+    }
+
     let created = 0;
     const errors = [];
 
-    for (const rule of rules) {
-      // Check if overtime already exists for this user on today's date
+    for (const [userIdStr, userRules] of Object.entries(rulesByUser)) {
+      const uid = Number(userIdStr);
+
+      // Filter rules that match today's date (weekly always matches, alternate checks parity)
+      const matchingRules = userRules.filter((r) => doesRuleMatchDate(r, now));
+      if (matchingRules.length === 0) continue; // no pattern matches today for this user
+
+      // Sum hours across all matching rules (additive logic)
+      const totalHours = matchingRules.reduce((sum, r) => sum + Number(r.hours), 0);
+      if (totalHours <= 0) continue; // safety: skip zero-hour entries
+
+      // Idempotency check — skip if recurring overtime already logged for this user+date
       const { data: existing } = await supabase
         .from("overtime_sessions")
         .select("session_id")
-        .eq("user_id", rule.user_id)
+        .eq("user_id", uid)
         .eq("date", today)
+        .eq("notes", "Overtime - Recurring") // only check recurring entries, not manual ones
         .limit(1)
         .maybeSingle();
 
-      if (existing) {
-        continue; // skip — already logged for today
-      }
+      if (existing) continue; // already processed today
 
-      // Calculate start and end times — default start 17:00, end calculated from hours
-      const startTime = "17:00"; // default overtime start
-      const hoursNum = Number(rule.hours);
+      // Calculate start and end times — default start 17:00, end calculated from total hours
+      const startTime = "17:00";
       const startMs = new Date(`${today}T${startTime}:00`).getTime();
-      const endMs = startMs + hoursNum * 60 * 60 * 1000; // add hours in ms
+      const endMs = startMs + totalHours * 60 * 60 * 1000; // add summed hours in ms
       const endDate = new Date(endMs);
       const endTime = endDate.toTimeString().slice(0, 5); // "HH:MM" format
 
       const clockIn = `${today}T${startTime}:00`; // full timestamp for time_records
       const clockOut = `${today}T${endTime}:00`; // full timestamp for time_records
 
-      // Insert into time_records (general attendance table, tagged as Overtime)
+      // Insert single time_records entry with summed hours
       const { data: inserted, error: insertError } = await supabase
         .from("time_records")
         .insert({
-          user_id: rule.user_id,
+          user_id: uid,
           date: today,
           clock_in: clockIn,
           clock_out: clockOut,
-          hours_worked: hoursNum,
+          hours_worked: totalHours,
           break_minutes: 0,
           notes: "Overtime - Recurring",
         })
@@ -111,40 +127,40 @@ export default async function handler(req, res) {
         .single();
 
       if (insertError) {
-        console.error(`Failed to insert time_record for user ${rule.user_id}:`, insertError);
-        errors.push({ userId: rule.user_id, error: insertError.message });
+        console.error(`Failed to insert time_record for user ${uid}:`, insertError);
+        errors.push({ userId: uid, error: insertError.message });
         continue;
       }
 
-      // Insert into overtime_sessions for HR payroll tracking
+      // Insert single overtime_sessions entry for HR payroll tracking
       if (period) {
         const { error: overtimeError } = await supabase
           .from("overtime_sessions")
           .insert({
             period_id: period.period_id,
-            user_id: rule.user_id,
+            user_id: uid,
             date: today,
             start_time: startTime,
             end_time: endTime,
-            total_hours: hoursNum,
-            approved_by: rule.user_id, // auto-approved
+            total_hours: totalHours,
+            approved_by: uid, // auto-approved
             notes: "Overtime - Recurring",
           });
 
         if (overtimeError) {
-          console.warn(`Failed to insert overtime_session for user ${rule.user_id} (non-critical):`, overtimeError);
+          console.warn(`Failed to insert overtime_session for user ${uid} (non-critical):`, overtimeError);
         }
       }
 
       created++;
-      console.log(`Auto-logged ${hoursNum}h recurring overtime for user ${rule.user_id} on ${today}`);
+      console.log(`Auto-logged ${totalHours}h recurring overtime for user ${uid} on ${today} (${matchingRules.length} rule${matchingRules.length > 1 ? "s" : ""} matched)`);
     }
 
     return res.status(200).json({
       success: true,
       message: `Created ${created} recurring overtime sessions for ${today} (day ${dayOfWeek}).`,
       created,
-      total: rules.length,
+      total: Object.keys(rulesByUser).length, // total unique users with rules
       errors: errors.length > 0 ? errors : undefined,
     });
   } catch (error) {
