@@ -1,0 +1,2557 @@
+//  Imports converted to use absolute alias "@/"
+// file location: src/pages/profile/index.js
+import React, { useMemo, useState, useEffect, useCallback, useRef } from "react"; // React for UI and memoization
+import { usePolling } from "@/hooks/usePolling"; // visibility-gated polling
+import { createPortal } from "react-dom";
+import { useRouter } from "next/router"; // Next.js router for query params
+import { useSession } from "next-auth/react"; // NextAuth session for authentication
+import Layout from "@/components/Layout"; // shared layout wrapper
+import { useUser } from "@/context/UserContext"; // Keycloak user context
+import useBodyModalLock from "@/hooks/useBodyModalLock";
+import { useHrOperationsData } from "@/hooks/useHrData"; // Supabase-backed HR aggregation hook (admin only)
+import { StatusTag } from "@/components/HR/MetricCard"; // HR UI components
+import { CalendarField } from "@/components/calendarAPI";
+import { TimePickerField } from "@/components/timePickerAPI";
+import { DropdownField } from "@/components/dropdownAPI";
+import StaffVehiclesCard from "@/components/HR/StaffVehiclesCard";
+import { ACCENT_PALETTES, useTheme } from "@/styles/themeProvider";
+import { isHrCoreRole, isManagerScopedRole } from "@/lib/auth/roles"; // Role checking utilities
+import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
+
+const SAFE_ACCENT_PALETTES =
+  ACCENT_PALETTES && typeof ACCENT_PALETTES === "object"
+    ? ACCENT_PALETTES
+    : {
+        red: { label: "Red", light: "#dc2626", dark: "#f87171" },
+      };
+
+function formatDate(value) {
+  if (!value) return "-"; // guard empty values
+  const parsed = new Date(value); // parse raw string
+  if (Number.isNaN(parsed.getTime())) return value; // return raw if parsing fails
+  return parsed.toLocaleDateString(); // formatted string
+}
+
+function formatTime(value) {
+  if (!value) return "-";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function formatCurrency(value) {
+  return `£${Number(value ?? 0).toFixed(2)}`; // currency helper used across metrics
+}
+
+function splitEmergencyContact(value) {
+  if (!value || typeof value !== "string") {
+    return { name: "Not provided", phone: "Not provided", relationship: "Not provided" };
+  }
+  const parts = value
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  return {
+    name: parts[0] || value,
+    phone: parts[1] || "Not provided",
+    relationship: parts[2] || "Not provided",
+  };
+}
+
+// Check if clock-out is on a different day than clock-in
+function isNextDayClocking(clockIn, clockOut) {
+  if (!clockIn || !clockOut) return false;
+  const inDate = new Date(clockIn);
+  const outDate = new Date(clockOut);
+  if (Number.isNaN(inDate.getTime()) || Number.isNaN(outDate.getTime())) return false;
+  return (
+    inDate.getFullYear() !== outDate.getFullYear() ||
+    inDate.getMonth() !== outDate.getMonth() ||
+    inDate.getDate() !== outDate.getDate()
+  );
+}
+
+// Skeleton loading placeholder component
+function SkeletonBlock({ width = "100%", height = "20px", borderRadius = "8px" }) {
+  return (
+    <div
+      style={{
+        width,
+        height,
+        borderRadius,
+        background:
+          "linear-gradient(90deg, var(--surface-light, #e0e0e0) 25%, var(--surface, #f0f0f0) 50%, var(--surface-light, #e0e0e0) 75%)",
+        backgroundSize: "200% 100%",
+        animation: "shimmer 1.5s ease-in-out infinite",
+      }}
+    />
+  );
+}
+
+function SkeletonMetricCard() {
+  return (
+    <div
+      style={{
+        background: "var(--surface)",
+        borderRadius: "var(--radius-md)",
+        padding: "16px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "10px",
+        minWidth: "200px",
+        flex: 1,
+        border: "1px solid var(--accent-purple-surface)",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <SkeletonBlock width="28px" height="28px" borderRadius="8px" />
+        <SkeletonBlock width="120px" height="14px" />
+      </div>
+      <SkeletonBlock width="80px" height="30px" borderRadius="6px" />
+      <SkeletonBlock width="140px" height="12px" />
+    </div>
+  );
+}
+
+function SkeletonTableRow({ cols = 5 }) {
+  return (
+    <tr>
+      {Array.from({ length: cols }).map((_, i) => (
+        <td key={i} style={{ padding: "10px 0" }}>
+          <SkeletonBlock width={i === 0 ? "100px" : "70px"} height="14px" />
+        </td>
+      ))}
+    </tr>
+  );
+}
+
+function ProfileCard({ title, action, children, style, headerStyle }) {
+  return (
+    <div
+      style={{
+        background: "var(--surface)",
+        borderRadius: "var(--radius-md)",
+        border: "1px solid rgba(var(--accent-purple-rgb), 0.28)",
+        padding: "16px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "12px",
+        boxShadow: "var(--shadow-lg)",
+        ...style,
+      }}
+    >
+      {(title || action) && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "12px",
+            ...headerStyle,
+          }}
+        >
+          <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--text-primary)" }}>
+            {title}
+          </div>
+          {action ? <div>{action}</div> : null}
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+function KpiCard({ label, primary, secondary, accentColor }) {
+  return (
+    <div
+      style={{
+        background: "var(--surface)",
+        borderRadius: "var(--radius-md)",
+        border: "1px solid rgba(var(--accent-purple-rgb), 0.28)",
+        padding: "14px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "6px",
+        minHeight: "112px",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <span style={{ fontSize: "0.76rem", fontWeight: 600, color: "var(--text-secondary)" }}>
+          {label}
+        </span>
+      </div>
+      <div style={{ fontSize: "1.55rem", fontWeight: 700, color: accentColor || "var(--text-primary)" }}>
+        {primary}
+      </div>
+      {secondary ? (
+        <div style={{ fontSize: "0.74rem", color: "var(--text-secondary)" }}>{secondary}</div>
+      ) : null}
+    </div>
+  );
+}
+
+// Leave Request Modal
+function LeaveRequestModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  isSubmitting,
+  initialValues = null,
+  mode = "create",
+  onRemove = null,
+  isRemoving = false,
+}) {
+  const [form, setForm] = useState({
+    type: "Holiday",
+    startDate: "",
+    totalDays: 1,
+    halfDay: "None",
+    notes: "",
+  });
+  const [error, setError] = useState(null);
+  useBodyModalLock(isOpen);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setForm({
+      type: initialValues?.type || "Holiday",
+      startDate: initialValues?.startDate || "",
+      totalDays: initialValues?.totalDays || 1,
+      halfDay: initialValues?.halfDay || "None",
+      notes: initialValues?.notes || "",
+    });
+    setError(null);
+  }, [initialValues, isOpen]);
+
+  if (!isOpen) return null;
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+    setError(null);
+  };
+
+  // Auto-calculate end date from start date + total working days (excludes weekends)
+  const computedEndDate = (() => {
+    if (!form.startDate || !form.totalDays || form.totalDays < 1) return "";
+    const start = new Date(form.startDate + "T00:00:00");
+    if (isNaN(start.getTime())) return "";
+    const result = new Date(start);
+    // If start date falls on a weekend, advance to Monday
+    while (result.getDay() === 0 || result.getDay() === 6) {
+      result.setDate(result.getDate() + 1);
+    }
+    let daysToAdd = Math.max(1, Math.floor(Number(form.totalDays))) - 1;
+    while (daysToAdd > 0) {
+      result.setDate(result.getDate() + 1);
+      const day = result.getDay();
+      if (day !== 0 && day !== 6) daysToAdd--;
+    }
+    return result.toISOString().split("T")[0];
+  })();
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!form.startDate) {
+      setError("Start date is required.");
+      return;
+    }
+    if (!form.totalDays || form.totalDays < 1) {
+      setError("Total days off must be at least 1.");
+      return;
+    }
+    if (!computedEndDate) {
+      setError("Could not calculate end date. Check your inputs.");
+      return;
+    }
+    onSubmit({
+      type: form.type,
+      startDate: form.startDate,
+      endDate: computedEndDate,
+      halfDay: form.halfDay,
+      totalDays: form.totalDays,
+      notes: form.notes,
+    });
+  };
+
+  const modal = (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 9999,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(0,0,0,0.5)",
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        style={{
+          background: "var(--surface)",
+          borderRadius: "var(--radius-md)",
+          padding: "28px",
+          width: "100%",
+          maxWidth: "460px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "18px",
+          boxShadow: "var(--shadow-lg)",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <h2 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 700, color: "var(--text-primary)" }}>
+            {mode === "edit" ? "Edit Leave Request" : "Request Leave"}
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              background: "none",
+              border: "none",
+              fontSize: "1.4rem",
+              cursor: "pointer",
+              color: "var(--text-secondary)",
+              padding: "4px 8px",
+            }}
+          >
+            &times;
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+          <div style={{ display: "flex", gap: "12px" }}>
+            <div style={{ flex: 1 }}>
+              <DropdownField
+                label="Leave Type"
+                name="type"
+                value={form.type}
+                onChange={handleChange}
+                className="leave-modal-field"
+                options={[
+                  { label: "Holiday", value: "Holiday" },
+                  { label: "Sickness", value: "Sickness" },
+                  { label: "Unpaid Leave", value: "Unpaid Leave" },
+                ]}
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <CalendarField
+                label="Start Date"
+                name="startDate"
+                id="leave-start-date"
+                value={form.startDate}
+                onChange={handleChange}
+                className="leave-modal-field"
+                required
+              />
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: "12px" }}>
+            <label style={{ ...modalLabelStyle, flex: 1 }}>
+              Total Working Days Off
+              <input
+                type="number"
+                name="totalDays"
+                min="1"
+                value={form.totalDays}
+                onChange={handleChange}
+                style={modalInputStyle}
+              />
+              <span style={{ fontSize: "0.72rem", color: "var(--text-secondary)", fontWeight: 400, marginTop: "2px" }}>
+                Weekends (Sat &amp; Sun) excluded
+              </span>
+            </label>
+            <div style={{ flex: 1 }}>
+              <DropdownField
+                label="Half Day"
+                name="halfDay"
+                value={form.halfDay}
+                onChange={handleChange}
+                className="leave-modal-field"
+                options={[
+                  { label: "None", value: "None" },
+                  { label: "Half Day (AM)", value: "AM" },
+                  { label: "Half Day (PM)", value: "PM" },
+                ]}
+              />
+            </div>
+          </div>
+
+          {computedEndDate && form.startDate && (
+            <div style={{
+              padding: "10px 12px",
+              borderRadius: "var(--radius-sm)",
+              background: "rgba(var(--accent-purple-rgb), 0.08)",
+              fontSize: "0.85rem",
+              color: "var(--text-secondary)",
+              fontWeight: 500,
+              display: "flex",
+              flexDirection: "column",
+              gap: "4px",
+            }}>
+              <div>
+                End Date: <span style={{ fontWeight: 700, color: "var(--text-primary)" }}>
+                  {new Date(computedEndDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
+                </span>
+                {form.halfDay !== "None" && (
+                  <span style={{ marginLeft: "8px", fontSize: "0.8rem", color: "var(--accent-purple)" }}>
+                    ({form.halfDay === "AM" ? "Morning half day" : "Afternoon half day"})
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize: "0.78rem" }}>
+                {Math.floor(Number(form.totalDays))}{form.halfDay !== "None" ? ".5" : ""} working day{(Number(form.totalDays) !== 1 || form.halfDay !== "None") ? "s" : ""} (weekends excluded)
+              </div>
+            </div>
+          )}
+
+          <label style={modalLabelStyle}>
+            Notes (optional)
+            <textarea
+              name="notes"
+              value={form.notes}
+              onChange={handleChange}
+              rows={3}
+              placeholder="Reason for leave request..."
+              style={{ ...modalInputStyle, resize: "vertical" }}
+            />
+          </label>
+
+          {error && <div style={{ color: "var(--danger)", fontSize: "0.85rem" }}>{error}</div>}
+
+          <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "4px" }}>
+            {mode === "edit" && onRemove ? (
+              <button
+                type="button"
+                onClick={onRemove}
+                disabled={isRemoving || isSubmitting}
+                style={{
+                  ...modalCancelBtnStyle,
+                  background: "var(--danger-surface)",
+                  color: "var(--danger)",
+                }}
+              >
+                {isRemoving ? "Removing..." : "Remove request"}
+              </button>
+            ) : null}
+            <button type="button" onClick={onClose} style={modalCancelBtnStyle}>
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              style={{ ...modalSubmitBtnStyle, opacity: isSubmitting ? 0.7 : 1 }}
+            >
+              {isSubmitting
+                ? mode === "edit"
+                  ? "Saving..."
+                  : "Submitting..."
+                : mode === "edit"
+                ? "Save changes"
+                : "Submit Request"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+
+  return typeof document === "undefined" ? modal : createPortal(modal, document.body);
+}
+
+const modalLabelStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "6px",
+  fontSize: "0.85rem",
+  fontWeight: 600,
+  color: "var(--text-secondary)",
+};
+
+const modalInputStyle = {
+  padding: "10px 12px",
+  borderRadius: "var(--radius-sm)",
+  border: "1px solid var(--border, #ccc)",
+  background: "var(--background)",
+  color: "var(--text-primary)",
+  fontSize: "0.9rem",
+  fontWeight: 500,
+};
+
+const modalCancelBtnStyle = {
+  padding: "10px 18px",
+  borderRadius: "var(--radius-sm)",
+  border: "1px solid var(--border, #ccc)",
+  background: "transparent",
+  color: "var(--text-secondary)",
+  fontWeight: 600,
+  cursor: "pointer",
+};
+
+const modalSubmitBtnStyle = {
+  padding: "10px 18px",
+  borderRadius: "var(--radius-sm)",
+  border: "none",
+  background: "var(--accent-purple)",
+  color: "white",
+  fontWeight: 600,
+  cursor: "pointer",
+};
+
+function AccentOptionContent({ label, light, dark }) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "8px",
+        minWidth: 0,
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          width: "12px",
+          height: "12px",
+          borderRadius: "var(--radius-pill)",
+          border: "1px solid rgba(var(--text-primary-rgb), 0.2)",
+          background: `linear-gradient(90deg, ${light} 0 50%, ${dark} 50% 100%)`,
+          flexShrink: 0,
+        }}
+      />
+      <span
+        style={{
+          fontWeight: 700,
+          background: `linear-gradient(90deg, ${light} 0 50%, ${dark} 50% 100%)`,
+          WebkitBackgroundClip: "text",
+          backgroundClip: "text",
+          color: "transparent",
+          lineHeight: 1.1,
+        }}
+      >
+        {label}
+      </span>
+    </span>
+  );
+}
+
+// Simple overtime log form - date, start time, total hours (end auto-calculated)
+function OvertimeLogForm({ onSessionSaved = () => {}, userId = null }) {
+  const [form, setForm] = useState({ date: "", start: "", hours: "" }); // hours instead of end
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+    setError(null);
+    setSuccess(null);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.date || !form.start || !form.hours) return; // validate all three fields
+
+    const hoursNum = parseFloat(form.hours); // parse total hours as decimal
+    if (isNaN(hoursNum) || hoursNum <= 0) {
+      setError("Hours must be greater than 0.");
+      return;
+    }
+    if (hoursNum > 16) {
+      setError("Maximum 16 hours per session.");
+      return;
+    }
+
+    // Auto-calculate end time from start + hours
+    const startDate = new Date(`${form.date}T${form.start}`);
+    if (isNaN(startDate.getTime())) {
+      setError("Invalid start time.");
+      return;
+    }
+    const endDate = new Date(startDate.getTime() + hoursNum * 60 * 60 * 1000); // add hours in ms
+    const endTimeStr = endDate.toTimeString().slice(0, 5); // "HH:MM" format
+
+    setIsSaving(true);
+    setError(null);
+    setSuccess(null);
+
+    const payload = { date: form.date, start: form.start, end: endTimeStr, userId }; // send calculated end
+
+    try {
+      const response = await fetch("/api/profile/overtime-sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => null);
+        throw new Error(errData?.message || "Failed to save overtime session.");
+      }
+
+      const result = await response.json();
+      setForm({ date: "", start: "", hours: "" }); // reset form
+      setSuccess("Overtime session logged.");
+      onSessionSaved(result?.data || null);
+    } catch (err) {
+      setError(err.message || "Failed to save overtime session.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: "12px",
+        alignItems: "end",
+      }}
+    >
+      <div style={{ flex: "1 1 180px", minWidth: "180px" }}>
+        <CalendarField label="Date" name="date" id="ot-date" value={form.date} onChange={handleChange} />
+      </div>
+      <div style={{ flex: "1 1 160px", minWidth: "160px" }}>
+        <TimePickerField label="Start time" name="start" value={form.start} onChange={handleChange} />
+      </div>
+      <div style={{ flex: "1 1 160px", minWidth: "160px" }}>
+        <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "0.8rem", fontWeight: 600, color: "var(--info-dark)" }}>
+          Total hours
+          <input
+            type="number"
+            name="hours"
+            value={form.hours}
+            onChange={handleChange}
+            step="0.25"
+            min="0.25"
+            max="16"
+            placeholder="e.g. 1.50"
+            style={{
+              padding: "var(--control-padding)",
+              borderRadius: "var(--radius-xs)",
+              border: "1px solid var(--accent-purple-surface)",
+              fontWeight: 500,
+              height: "var(--control-height)",
+              width: "100%",
+              boxSizing: "border-box",
+            }}
+          />
+        </label>
+      </div>
+      <div style={{ flex: "0 0 150px", minWidth: "150px" }}>
+        <button
+          type="submit"
+          disabled={isSaving}
+          style={{
+            padding: "10px 12px",
+            borderRadius: "var(--radius-sm)",
+            border: "none",
+            background: "var(--accent-purple)",
+            color: "white",
+            fontWeight: 600,
+            cursor: "pointer",
+            height: "var(--control-height)",
+            width: "100%",
+            opacity: isSaving ? 0.7 : 1,
+          }}
+        >
+          {isSaving ? "Saving..." : "Add session"}
+        </button>
+      </div>
+      {error && (
+        <div style={{ flex: "1 1 100%", color: "var(--danger)", fontSize: "0.85rem" }}>{error}</div>
+      )}
+      {success && (
+        <div style={{ flex: "1 1 100%", color: "var(--success)", fontSize: "0.85rem" }}>{success}</div>
+      )}
+    </form>
+  );
+}
+
+// Day labels for recurring overtime rules — Mon-Sat only (no Sundays)
+const RECURRING_DAY_MAP = { 1: "Monday", 2: "Tuesday", 3: "Wednesday", 4: "Thursday", 5: "Friday", 6: "Saturday" };
+const RECURRING_DAY_SHORT = { 1: "Mon", 2: "Tue", 3: "Wed", 4: "Thu", 5: "Fri", 6: "Sat" }; // short labels for grouped row display
+const RECURRING_DAY_OPTIONS = [1, 2, 3, 4, 5, 6]; // JS day-of-week values: Mon=1 … Sat=6
+const PARITY_LABELS = { odd: "Odd weeks", even: "Even weeks" }; // human-readable parity labels
+
+// Quick preset chips for the add form — prefill days/hours/pattern when clicked
+const PRESET_CHIPS = [
+  { label: "Weekdays 0.50h", days: { 1: true, 2: true, 3: true, 4: true, 5: true }, hours: "0.50", patternType: "weekly" },
+  { label: "Mon–Thu 0.50h", days: { 1: true, 2: true, 3: true, 4: true }, hours: "0.50", patternType: "weekly" },
+  { label: "Sat 4.25h", days: { 6: true }, hours: "4.25", patternType: "weekly" },
+  { label: "Alt. Sat 4.25h", days: { 6: true }, hours: "4.25", patternType: "alternate" },
+];
+
+// Import shared recurring overtime utilities (cycle math, matching, grouping, summaries)
+import { groupRulesSmartly, getGroupKey, generateSmartSummary, getUpcomingEntries, detectOverlaps } from "@/lib/overtime/recurringUtils";
+
+// Modal for managing recurring overtime rules — grouped list with smart summaries and add/edit form
+function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
+  const [rules, setRules] = useState([]); // saved rules list from DB
+  const [isLoading, setIsLoading] = useState(false); // loading state for fetch
+  const [isSaving, setIsSaving] = useState(false); // saving state
+  const [isDeletingGroup, setIsDeletingGroup] = useState(null); // composite group key being deleted
+  const [error, setError] = useState(null); // error message
+  const [formMode, setFormMode] = useState(null); // null = hidden, "add" = new rule, "edit" = editing group
+  const [editingGroupKey, setEditingGroupKey] = useState(null); // composite key of group being edited
+  const [hoveredRow, setHoveredRow] = useState(null); // track hovered group key for visual feedback
+  const [formData, setFormData] = useState({ days: {}, hours: "", patternType: "weekly", weekParity: null }); // form state
+
+  // Fetch existing rules when modal opens
+  useEffect(() => {
+    if (!isOpen) return;
+    setError(null);
+    setFormMode(null);
+    setFormData({ days: {}, hours: "", patternType: "weekly", weekParity: null });
+    setEditingGroupKey(null);
+    setIsLoading(true);
+    const url = userId ? `/api/profile/overtime-recurring-rules?userId=${userId}` : "/api/profile/overtime-recurring-rules";
+    fetch(url, { credentials: "include" })
+      .then((r) => r.json())
+      .then((result) => {
+        if (result.success && Array.isArray(result.data)) {
+          setRules(result.data.filter((r) => r.day_of_week !== 0)); // exclude Sundays
+        }
+      })
+      .catch(() => setError("Failed to load rules."))
+      .finally(() => setIsLoading(false));
+  }, [isOpen, userId]);
+
+  // Toggle a day in the form
+  const toggleFormDay = (dow) => {
+    setFormData((prev) => ({ ...prev, days: { ...prev.days, [dow]: !prev.days[dow] } }));
+    setError(null);
+  };
+
+  // Open add form — empty state
+  const openAddForm = () => {
+    setFormMode("add");
+    setEditingGroupKey(null);
+    setFormData({ days: {}, hours: "", patternType: "weekly", weekParity: null });
+    setError(null);
+  };
+
+  // Open edit form — pre-fill with the group's days, hours, pattern, and parity
+  const openEditForm = (group) => {
+    const daysMap = {};
+    group.rules.forEach((r) => { daysMap[r.day_of_week] = true; }); // pre-select group's days
+    const key = getGroupKey(group); // composite key for tracking
+    setFormMode("edit");
+    setEditingGroupKey(key);
+    setFormData({
+      days: daysMap,
+      hours: String(group.hours),
+      patternType: group.patternType || "weekly",
+      weekParity: group.weekParity || null,
+    });
+    setError(null);
+  };
+
+  // Close the form
+  const closeForm = () => {
+    setFormMode(null);
+    setEditingGroupKey(null);
+    setFormData({ days: {}, hours: "", patternType: "weekly", weekParity: null });
+    setError(null);
+  };
+
+  // Save form — handles both add and edit modes
+  const handleSaveForm = async () => {
+    const selectedDays = RECURRING_DAY_OPTIONS.filter((d) => formData.days[d]); // get checked days
+    const hoursNum = parseFloat(formData.hours);
+    if (selectedDays.length === 0) { setError("Select at least one day."); return; }
+    if (isNaN(hoursNum) || hoursNum <= 0) { setError("Enter valid hours."); return; }
+    if (formData.patternType === "alternate" && !formData.weekParity) { setError("Select week parity for alternate rules."); return; }
+
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      // When editing, delete days that were in the original group but are now unchecked
+      const deleteRuleIds = [];
+      if (formMode === "edit" && editingGroupKey) {
+        const originalGroup = groupRulesSmartly(rules).find((g) => getGroupKey(g) === editingGroupKey);
+        if (originalGroup) {
+          originalGroup.rules.forEach((r) => {
+            if (!formData.days[r.day_of_week]) {
+              deleteRuleIds.push(r.rule_id); // mark for deletion
+            }
+          });
+        }
+      }
+
+      // Delete removed days first (if editing)
+      if (deleteRuleIds.length > 0) {
+        await fetch("/api/profile/overtime-recurring-rules", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ ruleIds: deleteRuleIds, userId }),
+        });
+      }
+
+      // Upsert selected days with current form values
+      const upsertRules = selectedDays.map((dow) => ({
+        dayOfWeek: dow,
+        hours: hoursNum,
+        active: true,
+        patternType: formData.patternType,
+        weekParity: formData.patternType === "alternate" ? formData.weekParity : null,
+      }));
+
+      const response = await fetch("/api/profile/overtime-recurring-rules", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ rules: upsertRules, userId }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => null);
+        throw new Error(errData?.message || "Failed to save rule.");
+      }
+
+      const result = await response.json();
+      if (result.success && Array.isArray(result.data)) {
+        // Merge saved rules into local state — match by composite key (day + pattern + parity)
+        setRules((prev) => {
+          let merged = prev.filter((r) => !deleteRuleIds.includes(r.rule_id)); // remove deleted
+          result.data.forEach((saved) => {
+            const idx = merged.findIndex((r) =>
+              r.day_of_week === saved.day_of_week &&
+              (r.pattern_type || "weekly") === (saved.pattern_type || "weekly") &&
+              (r.week_parity || null) === (saved.week_parity || null)
+            );
+            if (idx >= 0) merged[idx] = saved; // update existing
+            else merged.push(saved); // add new
+          });
+          return merged.filter((r) => r.day_of_week !== 0).sort((a, b) => a.day_of_week - b.day_of_week);
+        });
+      }
+      closeForm(); // collapse form on success
+    } catch (err) {
+      setError(err.message || "Failed to save rule.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Delete an entire group — physically remove all rules in the group
+  const handleDeleteGroup = async (group) => {
+    const key = getGroupKey(group);
+    setIsDeletingGroup(key);
+    setError(null);
+
+    try {
+      const ruleIds = group.rules.map((r) => r.rule_id); // collect all rule_ids in the group
+      const response = await fetch("/api/profile/overtime-recurring-rules", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ ruleIds, userId }),
+      });
+
+      if (!response.ok) throw new Error("Failed to remove rule.");
+
+      // Remove deleted rules from local state
+      const deletedIds = new Set(ruleIds);
+      setRules((prev) => prev.filter((r) => !deletedIds.has(r.rule_id)));
+    } catch (err) {
+      setError(err.message || "Failed to remove rule.");
+    } finally {
+      setIsDeletingGroup(null);
+    }
+  };
+
+  if (!isOpen) return null; // do not render when closed
+
+  const activeRules = rules.filter((r) => r.active); // active rules for display and summaries
+  const grouped = groupRulesSmartly(rules); // group all rules (active first, inactive muted)
+  const summary = generateSmartSummary(rules); // smart summary stats
+  const upcoming = getUpcomingEntries(activeRules, 3); // next 3 auto-log dates
+
+  // Build overlap warnings for current form state
+  const overlapWarnings = formMode ? detectOverlaps(rules, formData, editingGroupKey) : [];
+
+  // Build live preview from current form state
+  const previewEntries = (() => {
+    if (!formMode) return [];
+    const selectedDays = RECURRING_DAY_OPTIONS.filter((d) => formData.days[d]);
+    const hrs = parseFloat(formData.hours);
+    if (selectedDays.length === 0 || isNaN(hrs) || hrs <= 0) return [];
+    const tempRules = selectedDays.map((d) => ({
+      day_of_week: d,
+      hours: hrs,
+      pattern_type: formData.patternType || "weekly",
+      week_parity: formData.patternType === "alternate" ? formData.weekParity : null,
+      active: true,
+    }));
+    return getUpcomingEntries(tempRules, 3);
+  })();
+
+  // Day toggle + hours input + recurrence selector form — shared between add and edit
+  const ruleForm = (
+    <div
+      style={{
+        padding: "14px",
+        borderRadius: "var(--radius-sm)",
+        border: "1px solid rgba(var(--accent-purple-rgb), 0.2)",
+        background: "rgba(var(--accent-purple-rgb), 0.04)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "12px",
+      }}
+    >
+      {/* Quick preset chips — only shown in add mode */}
+      {formMode === "add" && (
+        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+          {PRESET_CHIPS.map((preset) => (
+            <button
+              key={preset.label}
+              type="button"
+              onClick={() => setFormData({ days: { ...preset.days }, hours: preset.hours, patternType: preset.patternType, weekParity: preset.patternType === "alternate" ? "odd" : null })}
+              style={{
+                padding: "4px 10px",
+                borderRadius: "var(--radius-xs)",
+                fontSize: "0.75rem",
+                fontWeight: 600,
+                cursor: "pointer",
+                border: "1px dashed var(--border, rgba(0,0,0,0.12))",
+                background: "var(--surface)",
+                color: "var(--text-secondary)",
+              }}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Day selection — Mon to Sat as toggle buttons */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+        {RECURRING_DAY_OPTIONS.map((dow) => (
+          <button
+            key={dow}
+            type="button"
+            onClick={() => toggleFormDay(dow)}
+            style={{
+              padding: "6px 12px",
+              borderRadius: "var(--radius-sm)",
+              border: formData.days[dow]
+                ? "1px solid var(--accent-purple)"
+                : "1px solid var(--border, rgba(0,0,0,0.12))",
+              background: formData.days[dow] ? "var(--accent-purple)" : "var(--surface)",
+              color: formData.days[dow] ? "white" : "var(--text-primary)",
+              fontWeight: 600,
+              fontSize: "0.82rem",
+              cursor: "pointer",
+            }}
+          >
+            {RECURRING_DAY_MAP[dow]}
+          </button>
+        ))}
+      </div>
+
+      {/* Recurrence selector — Every week / Every other week */}
+      <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>
+        <button
+          type="button"
+          onClick={() => setFormData((prev) => ({ ...prev, patternType: "weekly", weekParity: null }))}
+          style={{
+            padding: "6px 14px",
+            borderRadius: "var(--radius-sm)",
+            fontWeight: 600,
+            fontSize: "0.82rem",
+            cursor: "pointer",
+            border: formData.patternType === "weekly" ? "1px solid var(--accent-purple)" : "1px solid var(--border, rgba(0,0,0,0.12))",
+            background: formData.patternType === "weekly" ? "var(--accent-purple)" : "var(--surface)",
+            color: formData.patternType === "weekly" ? "white" : "var(--text-primary)",
+          }}
+        >
+          Every week
+        </button>
+        <button
+          type="button"
+          onClick={() => setFormData((prev) => ({ ...prev, patternType: "alternate", weekParity: prev.weekParity || "odd" }))}
+          style={{
+            padding: "6px 14px",
+            borderRadius: "var(--radius-sm)",
+            fontWeight: 600,
+            fontSize: "0.82rem",
+            cursor: "pointer",
+            border: formData.patternType === "alternate" ? "1px solid var(--accent-purple)" : "1px solid var(--border, rgba(0,0,0,0.12))",
+            background: formData.patternType === "alternate" ? "var(--accent-purple)" : "var(--surface)",
+            color: formData.patternType === "alternate" ? "white" : "var(--text-primary)",
+          }}
+        >
+          Every other week
+        </button>
+
+        {/* Week parity selector — only shown when alternate is selected */}
+        {formData.patternType === "alternate" && (
+          <>
+            {["odd", "even"].map((parity) => (
+              <button
+                key={parity}
+                type="button"
+                onClick={() => setFormData((prev) => ({ ...prev, weekParity: parity }))}
+                style={{
+                  padding: "5px 12px",
+                  borderRadius: "var(--radius-xs)",
+                  fontSize: "0.80rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  border: formData.weekParity === parity ? "1px solid var(--accent-purple)" : "1px solid var(--border, rgba(0,0,0,0.12))",
+                  background: formData.weekParity === parity ? "var(--accent-purple)" : "var(--surface)",
+                  color: formData.weekParity === parity ? "white" : "var(--text-primary)",
+                }}
+              >
+                {PARITY_LABELS[parity]}
+              </button>
+            ))}
+            <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>(within 26th–25th cycle)</span>
+          </>
+        )}
+      </div>
+
+      {/* Hours input */}
+      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <input
+          type="number"
+          value={formData.hours}
+          onChange={(e) => { setFormData((prev) => ({ ...prev, hours: e.target.value })); setError(null); }}
+          step="0.25"
+          min="0.25"
+          max="16"
+          placeholder="e.g. 0.50"
+          style={{
+            flex: 1,
+            padding: "var(--control-padding)",
+            borderRadius: "var(--radius-xs)",
+            border: "1px solid var(--accent-purple-surface)",
+            fontWeight: 500,
+            height: "var(--control-height)",
+            boxSizing: "border-box",
+          }}
+        />
+        <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>hours</span>
+      </div>
+
+      {/* Overlap detection warning — soft, non-blocking */}
+      {overlapWarnings.length > 0 && (
+        <div style={{
+          padding: "8px 12px",
+          borderRadius: "var(--radius-xs)",
+          background: "rgba(249, 115, 22, 0.08)",
+          border: "1px solid rgba(249, 115, 22, 0.25)",
+          fontSize: "0.78rem",
+          color: "var(--text-secondary)",
+        }}>
+          <strong style={{ color: "rgb(249, 115, 22)" }}>Overlap notice</strong>
+          {overlapWarnings.map((w, i) => (
+            <div key={i} style={{ marginTop: "2px" }}>{w}</div>
+          ))}
+          <div style={{ marginTop: "3px", fontStyle: "italic" }}>Hours will be combined on matching days.</div>
+        </div>
+      )}
+
+      {/* Live preview — next 3 upcoming entries based on form state */}
+      {previewEntries.length > 0 && (
+        <div style={{
+          padding: "8px 12px",
+          borderRadius: "var(--radius-xs)",
+          background: "rgba(var(--accent-purple-rgb), 0.03)",
+          fontSize: "0.78rem",
+          color: "var(--text-secondary)",
+        }}>
+          <strong style={{ color: "var(--text-primary)" }}>Preview</strong>
+          {previewEntries.map((entry, i) => (
+            <div key={i} style={{ marginTop: "2px" }}>
+              {entry.date.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })} — {entry.totalHours.toFixed(2)}h
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Form actions — Save / Cancel / Delete (when editing) */}
+      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <button
+          type="button"
+          onClick={handleSaveForm}
+          disabled={isSaving}
+          style={{
+            padding: "8px 14px",
+            borderRadius: "var(--radius-sm)",
+            border: "1px solid var(--accent-purple)",
+            background: "var(--accent-purple)",
+            color: "white",
+            fontWeight: 600,
+            cursor: "pointer",
+            fontSize: "0.85rem",
+            opacity: isSaving ? 0.7 : 1,
+          }}
+        >
+          {isSaving ? "Saving…" : "Save Rule"}
+        </button>
+        <button
+          type="button"
+          onClick={closeForm}
+          style={{
+            padding: "8px 14px",
+            borderRadius: "var(--radius-sm)",
+            border: "1px solid var(--border, rgba(0,0,0,0.12))",
+            background: "var(--surface)",
+            color: "var(--text-primary)",
+            fontWeight: 600,
+            cursor: "pointer",
+            fontSize: "0.85rem",
+          }}
+        >
+          Cancel
+        </button>
+        {/* Delete button — only when editing an existing group */}
+        {formMode === "edit" && editingGroupKey && (
+          <button
+            type="button"
+            onClick={() => {
+              const group = grouped.find((g) => getGroupKey(g) === editingGroupKey);
+              if (group) { handleDeleteGroup(group); closeForm(); }
+            }}
+            style={{
+              padding: "8px 14px",
+              borderRadius: "var(--radius-sm)",
+              border: "1px solid var(--danger, #e53935)",
+              background: "transparent",
+              color: "var(--danger, #e53935)",
+              fontWeight: 600,
+              cursor: "pointer",
+              fontSize: "0.85rem",
+              marginLeft: "auto",
+            }}
+          >
+            Delete
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  const modal = (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        backgroundColor: "rgba(0, 0, 0, 0.6)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "20px",
+        zIndex: 9999,
+        backdropFilter: "blur(8px)",
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          width: "min(560px, 100%)",
+          maxHeight: "90vh",
+          overflowY: "auto",
+          borderRadius: "var(--radius-lg)",
+          background: "var(--surface)",
+          padding: "28px 32px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "16px",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Modal header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700 }}>Recurring Overtime Rules</h3>
+            <p style={{ margin: "4px 0 0", fontSize: "0.78rem", color: "var(--text-secondary)", lineHeight: 1.4 }}>
+              Set overtime rules that auto-log hours on matching days. Period runs from the 26th to the 25th.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{ background: "none", border: "none", fontSize: "1.2rem", cursor: "pointer", color: "var(--text-secondary)", padding: "4px", flexShrink: 0 }}
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Smart summary strip — only shown when active rules exist */}
+        {activeRules.length > 0 && !isLoading && (
+          <div style={{
+            display: "flex",
+            gap: "16px",
+            padding: "10px 14px",
+            borderRadius: "var(--radius-sm)",
+            background: "rgba(var(--accent-purple-rgb), 0.04)",
+            border: "1px solid rgba(var(--accent-purple-rgb), 0.12)",
+            fontSize: "0.80rem",
+            color: "var(--text-secondary)",
+            flexWrap: "wrap",
+            alignItems: "center",
+          }}>
+            <span><strong style={{ color: "var(--text-primary)" }}>{summary.totalWeeklyHours.toFixed(2)}h</strong> avg/week</span>
+            <span>{summary.activePatterns} pattern{summary.activePatterns !== 1 ? "s" : ""}</span>
+            {upcoming.length > 0 && (
+              <span>
+                Next: <strong style={{ color: "var(--accent-purple)" }}>
+                  {upcoming[0].date.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
+                </strong> ({upcoming[0].totalHours.toFixed(2)}h)
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Grouped rules list — click-to-edit, no Edit button */}
+        {isLoading ? (
+          <div style={{ padding: "20px 0", textAlign: "center", color: "var(--text-secondary)" }}>Loading rules…</div>
+        ) : grouped.length === 0 && !formMode ? (
+          <div style={{ padding: "20px 0", textAlign: "center", color: "var(--text-secondary)", fontSize: "0.85rem" }}>
+            <div style={{ marginBottom: "4px" }}>No recurring overtime rules set yet.</div>
+            <div style={{ fontSize: "0.78rem" }}>Add a rule to auto-log regular overtime.</div>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            {grouped.map((group) => {
+              const key = getGroupKey(group);
+              const dayLabel = group.rules.map((r) => RECURRING_DAY_SHORT[r.day_of_week]).join(", "); // "Mon, Tue, Wed, Thu"
+              const isBeingEdited = formMode === "edit" && editingGroupKey === key; // hide row while editing
+              if (isBeingEdited) return null; // form replaces this row
+              const isHovered = hoveredRow === key;
+              const isInactive = !group.active;
+
+              return (
+                <div
+                  key={key}
+                  onClick={() => { if (!isInactive) openEditForm(group); }} // click-to-edit (active rows only)
+                  onMouseEnter={() => setHoveredRow(key)}
+                  onMouseLeave={() => setHoveredRow(null)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "10px 14px",
+                    borderRadius: "var(--radius-sm)",
+                    background: isHovered && !isInactive
+                      ? "rgba(var(--accent-purple-rgb), 0.12)" // hover highlight
+                      : "rgba(var(--accent-purple-rgb), 0.06)",
+                    border: "1px solid rgba(var(--accent-purple-rgb), 0.2)",
+                    cursor: isInactive ? "default" : "pointer",
+                    transition: "background 0.15s ease",
+                    opacity: isInactive ? 0.5 : 1,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1, minWidth: 0, flexWrap: "wrap" }}>
+                    <span style={{ fontWeight: 600, fontSize: "0.88rem", color: "var(--text-primary)" }}>
+                      {dayLabel}
+                    </span>
+                    <span style={{ fontSize: "0.92rem", fontWeight: 700, color: "var(--accent-purple)" }}>
+                      {Number(group.hours).toFixed(2)}h
+                    </span>
+                    {/* Pattern label */}
+                    <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)", fontStyle: "italic" }}>
+                      {group.patternType === "alternate"
+                        ? `${PARITY_LABELS[group.weekParity] || "alternate"} only`
+                        : "every week"}
+                    </span>
+                    {/* Active/Inactive badge */}
+                    {isInactive && (
+                      <span style={{
+                        fontSize: "0.70rem",
+                        padding: "1px 7px",
+                        borderRadius: "var(--radius-pill)",
+                        background: "rgba(0,0,0,0.08)",
+                        color: "var(--text-secondary)",
+                        fontWeight: 600,
+                      }}>
+                        Inactive
+                      </span>
+                    )}
+                  </div>
+                  {/* Remove button — stop propagation to prevent click-to-edit */}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); handleDeleteGroup(group); }}
+                    disabled={isDeletingGroup === key}
+                    style={{
+                      padding: "4px 10px",
+                      borderRadius: "var(--radius-xs)",
+                      border: "1px solid transparent",
+                      background: "transparent",
+                      color: "var(--text-secondary)",
+                      fontWeight: 600,
+                      fontSize: "0.75rem",
+                      cursor: "pointer",
+                      opacity: isDeletingGroup === key ? 0.5 : (isHovered ? 1 : 0.4),
+                      transition: "opacity 0.15s ease",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {isDeletingGroup === key ? "Removing…" : "Remove"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Add/Edit rule form — only visible when formMode is set */}
+        {formMode && ruleForm}
+
+        {/* Error message */}
+        {error && <div style={{ color: "var(--danger)", fontSize: "0.85rem" }}>{error}</div>}
+
+        {/* Upcoming entries preview — shown when rules exist and form is closed */}
+        {!formMode && upcoming.length > 0 && (
+          <div style={{
+            padding: "8px 12px",
+            borderRadius: "var(--radius-xs)",
+            background: "rgba(var(--accent-purple-rgb), 0.03)",
+            fontSize: "0.78rem",
+            color: "var(--text-secondary)",
+          }}>
+            <strong style={{ color: "var(--text-primary)", fontSize: "0.80rem" }}>Next 3 auto-log entries</strong>
+            {upcoming.map((entry, i) => (
+              <div key={i} style={{ marginTop: "3px", display: "flex", gap: "6px" }}>
+                <span style={{ fontWeight: 600, color: "var(--text-primary)", minWidth: "100px" }}>
+                  {entry.date.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
+                </span>
+                <span>{entry.totalHours.toFixed(2)}h</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Footer buttons */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "4px" }}>
+          {!formMode ? (
+            <button
+              type="button"
+              onClick={openAddForm}
+              style={{
+                padding: "8px 14px",
+                borderRadius: "var(--radius-sm)",
+                border: "1px solid var(--accent-purple)",
+                background: "var(--accent-purple)",
+                color: "white",
+                fontWeight: 600,
+                cursor: "pointer",
+                fontSize: "0.85rem",
+              }}
+            >
+              Add Rule
+            </button>
+          ) : (
+            <div /> /* spacer when form is open — actions are inside the form */
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              padding: "8px 14px",
+              borderRadius: "var(--radius-sm)",
+              border: "1px solid var(--border, rgba(0,0,0,0.12))",
+              background: "var(--surface)",
+              color: "var(--text-primary)",
+              fontWeight: 600,
+              cursor: "pointer",
+              fontSize: "0.85rem",
+            }}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  return typeof document === "undefined" ? modal : createPortal(modal, document.body); // portal to body
+}
+
+export function ProfileWorkTab({
+  forcedUserName = null,
+  embeddedOverride = null,
+  adminPreviewOverride = null,
+} = {}) {
+  const router = useRouter(); // access query params
+  const { user, dbUserId } = useUser(); // Keycloak session details + Supabase id for dev mode
+  const { data: session } = useSession(); // NextAuth session for role checking
+  const { mode: themeMode, resolvedMode, isDark, toggleTheme, accent, setAccent } = useTheme();
+
+  // State for user's own profile data (non-admin users)
+  const [userProfileData, setUserProfileData] = useState(null);
+  const [userProfileLoading, setUserProfileLoading] = useState(true);
+  const [userProfileError, setUserProfileError] = useState(null);
+  const [profileReloadKey, setProfileReloadKey] = useState(0);
+  const hasProfileDataRef = useRef(false); // Track whether initial data has loaded (avoids stale closure)
+
+  // Determine if user has HR/Manager roles for admin preview
+  const userRoles = session?.user?.roles || user?.roles || [];
+  const isAdminOrManager = isHrCoreRole(userRoles) || isManagerScopedRole(userRoles);
+
+  // Only fetch HR operations data if user is admin/manager AND viewing another user's profile
+  const shouldUseHrData = isAdminOrManager && (forcedUserName || adminPreviewOverride);
+  const { data: hrData, isLoading: hrLoading, error: hrError } = useHrOperationsData(profileReloadKey);
+
+  const previewUserParam =
+    forcedUserName || (typeof router.query.user === "string" ? router.query.user : null); // preview override
+  const isEmbeddedQuery = router.query.embedded === "1"; // check embed flag
+  const isEmbedded = embeddedOverride ?? isEmbeddedQuery; // final embed state
+  const isAdminPreviewQuery = router.query.adminPreview === "1"; // admin preview flag
+  const isAdminPreview = adminPreviewOverride ?? isAdminPreviewQuery; // final admin preview state
+
+  const reloadUserProfile = useCallback(() => {
+    // Skip if viewing another user's profile as admin
+    if (shouldUseHrData) {
+      setUserProfileLoading(false);
+      return;
+    }
+
+    // Skip if no user session
+    if (!user && !session?.user) {
+      setUserProfileLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+    const controller = new AbortController();
+
+    const fetchProfile = async () => {
+      try {
+        // Only show loading skeleton on initial fetch — background reloads keep existing UI
+        if (!hasProfileDataRef.current) {
+          setUserProfileLoading(true);
+        }
+        setUserProfileError(null);
+
+        const shouldUseDevQuery = !session?.user && dbUserId;
+        const profileUrl = shouldUseDevQuery ? `/api/profile/me?userId=${dbUserId}` : "/api/profile/me";
+
+        const response = await fetch(profileUrl, {
+          signal: controller.signal,
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          const errPayload = await response.json().catch(() => null);
+          if (response.status === 404) {
+            throw new Error(
+              errPayload?.message || "Profile not found. Please contact HR to create your employee profile."
+            );
+          }
+          throw new Error(
+            errPayload?.message || `Failed to load profile data (status ${response.status})`
+          );
+        }
+
+        const payload = await response.json();
+
+        if (!payload?.success || !payload?.data) {
+          throw new Error(payload?.message || "Profile data payload malformed");
+        }
+
+        if (!isMounted) return;
+
+        console.log("Profile data loaded:", payload.data);
+        console.log("Attendance logs count:", payload.data?.attendanceLogs?.length || 0);
+        console.log("Sample attendance log:", payload.data?.attendanceLogs?.[0]);
+
+        setUserProfileData(payload.data);
+        hasProfileDataRef.current = true; // Mark that initial data has loaded
+        setUserProfileLoading(false);
+      } catch (error) {
+        if (error.name === "AbortError") return;
+        if (!isMounted) return;
+
+        console.error("Failed to fetch user profile:", error);
+        setUserProfileError(error);
+        setUserProfileLoading(false);
+      }
+    };
+
+    fetchProfile();
+
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, [dbUserId, session?.user, shouldUseHrData, user]);
+
+  useEffect(() => {
+    const cleanup = reloadUserProfile();
+    return () => {
+      if (typeof cleanup === "function") cleanup();
+    };
+  }, [reloadUserProfile, profileReloadKey]);
+
+  usePolling(() => setProfileReloadKey((prev) => prev + 1), 30000);
+
+  // Choose data source based on whether viewing as admin or own profile
+  const data = shouldUseHrData ? hrData : null;
+  const employeeDirectory = useMemo(() => data?.employeeDirectory ?? [], [data?.employeeDirectory]); // employees with job data (admin only)
+  const attendanceLogs = useMemo(
+    () => (shouldUseHrData ? (data?.attendanceLogs ?? []) : (userProfileData?.attendanceLogs ?? [])),
+    [data?.attendanceLogs, shouldUseHrData, userProfileData?.attendanceLogs]
+  ); // clocking records
+  const overtimeSummaries = useMemo(
+    () => (shouldUseHrData ? (data?.overtimeSummaries ?? []) : (userProfileData?.overtimeSummary ? [userProfileData.overtimeSummary] : [])),
+    [data?.overtimeSummaries, shouldUseHrData, userProfileData?.overtimeSummary]
+  ); // overtime totals
+  const leaveBalances = useMemo(() => data?.leaveBalances ?? [], [data?.leaveBalances]); // leave usage (admin only)
+  const leaveRequests = useMemo(
+    () => (shouldUseHrData ? [] : userProfileData?.leaveRequests ?? []),
+    [shouldUseHrData, userProfileData?.leaveRequests]
+  );
+  const staffVehicles = useMemo(
+    () => (shouldUseHrData ? (data?.staffVehicles ?? []) : (userProfileData?.staffVehicles ?? [])),
+    [data?.staffVehicles, shouldUseHrData, userProfileData?.staffVehicles]
+  );
+  const activeUserName = previewUserParam || user?.username || session?.user?.name || null; // active username resolution
+
+  const hrProfile = useMemo(() => {
+    // For admin viewing another user's profile
+    if (!activeUserName || employeeDirectory.length === 0) return null; // ensure data loaded
+    const username = activeUserName.toLowerCase(); // normalise for comparisons
+
+    return (
+      employeeDirectory.find(
+        (employee) =>
+          employee.keycloakId?.toLowerCase() === username ||
+          employee.email?.toLowerCase() === username ||
+          employee.name?.toLowerCase() === username
+      ) ?? null
+    ); // locate HR profile by keycloak/email/name
+  }, [activeUserName, employeeDirectory]);
+
+  // Use appropriate data source based on user role and context
+  const profile = shouldUseHrData ? hrProfile : userProfileData?.profile;
+  const emergencyParts = useMemo(() => splitEmergencyContact(profile?.emergencyContact), [profile?.emergencyContact]);
+
+  const themeLabel = useMemo(() => {
+    if (themeMode === "system") {
+      return `System (${resolvedMode === "dark" ? "dark" : "light"})`;
+    }
+    return themeMode === "dark" ? "Dark mode" : "Light mode";
+  }, [resolvedMode, themeMode]);
+
+  const accentOptions = useMemo(
+    () =>
+      Object.entries(SAFE_ACCENT_PALETTES).map(([value, palette]) => ({
+        value,
+        label: <AccentOptionContent label={palette.label} light={palette.light} dark={palette.dark} />,
+      })),
+    []
+  );
+
+  const themeButtonStyle = useMemo(
+    () => ({
+      padding: "8px 16px",
+      borderRadius: "var(--radius-pill)",
+      border: `1px solid ${isDark ? "var(--border)" : "var(--primary)"}`,
+      background: isDark ? "var(--surface-light)" : "var(--primary)",
+      color: isDark ? "var(--text-primary)" : "var(--text-inverse)",
+      fontWeight: 600,
+      fontSize: "0.82rem",
+      transition: "background 0.2s ease, color 0.2s ease",
+      height: "var(--control-height-sm)",
+      display: "inline-flex",
+      alignItems: "center",
+      lineHeight: 1,
+    }),
+    [isDark]
+  );
+
+  const aggregatedStats = useMemo(() => {
+    if (!profile) return null; // bail if profile missing
+
+    // Handle both admin HR data and user's own profile data
+    let attendanceSource, overtimeSource, leaveSource;
+
+    if (shouldUseHrData) {
+      attendanceSource = attendanceLogs.filter((entry) => entry.employeeId === profile.id || entry.employeeId === profile.name);
+      overtimeSource = overtimeSummaries.find((entry) => entry.employee === profile.name || entry.id === profile.userId) ?? null;
+      leaveSource = leaveBalances.find((entry) => entry.employee === profile.name) ?? null;
+    } else {
+      attendanceSource = attendanceLogs;
+      overtimeSource = userProfileData?.overtimeSummary ?? null;
+      leaveSource = userProfileData?.leaveBalance ?? null;
+    }
+
+    const today = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD format
+    const todayRecords = attendanceSource.filter((entry) => {
+      if (!entry.date) return false;
+      const entryDate = new Date(entry.date).toLocaleDateString("en-CA");
+      return entryDate === today;
+    });
+    const todayHours = todayRecords.reduce((sum, entry) => sum + Number(entry.totalHours ?? 0), 0);
+
+    const overtimeRecords = attendanceSource.filter((entry) => entry.type === "Overtime" || entry.status === "Overtime");
+    const overtimeTotal = overtimeRecords.reduce((sum, entry) => sum + Number(entry.totalHours ?? 0), 0);
+
+    const overtimeRate = overtimeSource?.overtimeRate ?? 0;
+    const overtimeBonus = overtimeSource?.bonus ?? 0;
+
+    // Period breakdowns (26th-to-25th cycle): weekday work hours, overtime hours, weekend hours
+    const now = new Date();
+    const nowDay = now.getDate();
+    const nowYear = now.getFullYear();
+    const nowMonth = now.getMonth();
+    let periodStartDate, periodEndDate; // 26th-to-25th bounds for filtering attendance
+    if (nowDay >= 26) {
+      periodStartDate = new Date(nowYear, nowMonth, 26);
+      periodEndDate = new Date(nowYear, nowMonth + 1, 25);
+    } else {
+      periodStartDate = new Date(nowYear, nowMonth - 1, 26);
+      periodEndDate = new Date(nowYear, nowMonth, 25);
+    }
+
+    let monthlyWeekdayHours = 0;
+    let monthlyOvertimeHours = 0;
+    let monthlyWeekendHours = 0;
+
+    attendanceSource.forEach((entry) => {
+      if (!entry.date) return;
+      const entryDate = new Date(entry.date);
+      if (entryDate < periodStartDate || entryDate > periodEndDate) return; // filter to 26th-to-25th cycle
+      const hours = Number(entry.totalHours ?? 0);
+      const entryType = entry.type || entry.status || "";
+      if (entryType === "Overtime") {
+        monthlyOvertimeHours += hours;
+      } else if (entryType === "Weekend") {
+        monthlyWeekendHours += hours;
+      } else {
+        monthlyWeekdayHours += hours;
+      }
+    });
+
+    const monthlyTotalHours = monthlyWeekdayHours + monthlyOvertimeHours + monthlyWeekendHours;
+    const estimatedPay =
+      monthlyWeekdayHours * Number(profile?.hourlyRate ?? 0) +
+      monthlyOvertimeHours * Number(profile?.overtimeRate ?? 0);
+
+    return {
+      totalHours: todayHours,
+      overtimeHours: Number(overtimeTotal.toFixed(2)),
+      overtimeBalance: overtimeTotal && overtimeRate ? overtimeTotal * overtimeRate + overtimeBonus : 0,
+      leaveRemaining: leaveSource?.remaining ?? null,
+      leaveEntitlement: leaveSource?.entitlement ?? null,
+      leaveTaken: leaveSource?.taken ?? null,
+      attendanceRecords: attendanceSource,
+      overtimeSummary: overtimeSource,
+      monthlyWeekdayHours: Number(monthlyWeekdayHours.toFixed(2)),
+      monthlyOvertimeHours: Number(monthlyOvertimeHours.toFixed(2)),
+      monthlyWeekendHours: Number(monthlyWeekendHours.toFixed(2)),
+      monthlyTotalHours: Number(monthlyTotalHours.toFixed(2)),
+      estimatedPay: Number(estimatedPay.toFixed(2)),
+    };
+  }, [attendanceLogs, leaveBalances, overtimeSummaries, profile, shouldUseHrData, userProfileData]);
+
+  const handleOvertimeSessionSaved = useCallback(
+    (savedEntry) => {
+      if (!savedEntry) {
+        setProfileReloadKey((prev) => prev + 1);
+        return;
+      }
+
+      if (!shouldUseHrData) {
+        setUserProfileData((prev) => {
+          if (!prev) return prev;
+
+          const clockInTime = savedEntry.start ? `${savedEntry.date}T${savedEntry.start}:00` : `${savedEntry.date}T00:00:00`;
+          const clockOutTime = savedEntry.end ? `${savedEntry.date}T${savedEntry.end}:00` : `${savedEntry.date}T23:59:00`;
+
+          const newLog = {
+            id: savedEntry.id,
+            employeeId: savedEntry.userId,
+            date: savedEntry.date,
+            clockIn: clockInTime,
+            clockOut: clockOutTime,
+            totalHours: Number(savedEntry.totalHours || 0),
+            status: "Overtime",
+            type: "Overtime",
+          };
+
+          return {
+            ...prev,
+            attendanceLogs: [newLog, ...(prev.attendanceLogs || [])],
+          };
+        });
+      }
+      setProfileReloadKey((prev) => prev + 1);
+    },
+    [shouldUseHrData]
+  );
+
+  // Leave request modal state
+  const [leaveModalOpen, setLeaveModalOpen] = useState(false);
+  const [recurringModalOpen, setRecurringModalOpen] = useState(false); // recurring overtime rules modal
+  const [leaveSubmitting, setLeaveSubmitting] = useState(false);
+  const [leaveRemoving, setLeaveRemoving] = useState(false);
+  const [editingLeaveRequest, setEditingLeaveRequest] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
+
+  // Emergency contact edit state
+  const [ecEditing, setEcEditing] = useState(false);
+  const [ecName, setEcName] = useState("");
+  const [ecPhone, setEcPhone] = useState("");
+  const [ecRelationship, setEcRelationship] = useState("");
+  const [ecAddress, setEcAddress] = useState("");
+  const [ecSaving, setEcSaving] = useState(false);
+  const [ecError, setEcError] = useState(null);
+
+  const handleLeaveSubmit = useCallback(async (formData) => {
+    setLeaveSubmitting(true);
+    try {
+      const isEditMode = Boolean(editingLeaveRequest?.id);
+      const response = await fetch(
+        isEditMode
+          ? `/api/profile/leave-request/${editingLeaveRequest.id}`
+          : "/api/profile/leave-request",
+        {
+          method: isEditMode ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(formData),
+        }
+      );
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.message || `Failed to ${isEditMode ? "update" : "submit"} leave request.`);
+      }
+      setEditingLeaveRequest(null);
+      setLeaveModalOpen(false);
+      setProfileReloadKey((prev) => prev + 1);
+      alert(`Leave request ${isEditMode ? "updated" : "submitted"} successfully.`);
+    } catch (err) {
+      console.error("Leave request error:", err);
+      alert(`Failed to ${editingLeaveRequest?.id ? "update" : "submit"} leave request. ` + (err.message || ""));
+    } finally {
+      setLeaveSubmitting(false);
+    }
+  }, [editingLeaveRequest?.id]);
+
+  const handleEditLeaveRequest = useCallback((request) => {
+    if (!request?.id) return;
+    setEditingLeaveRequest({
+      id: request.id,
+      type: request.type,
+      startDate: request.startDate,
+      totalDays: request.totalDays || 1,
+      halfDay: request.halfDay || "None",
+      notes: request.requestNotes || "",
+    });
+    setLeaveModalOpen(true);
+  }, []);
+
+  const doRemoveLeaveRequest = useCallback(async () => {
+    if (!editingLeaveRequest?.id) return;
+    setLeaveRemoving(true);
+    try {
+      const response = await fetch(`/api/profile/leave-request/${editingLeaveRequest.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.message || "Failed to remove leave request.");
+      }
+      setEditingLeaveRequest(null);
+      setLeaveModalOpen(false);
+      setProfileReloadKey((prev) => prev + 1);
+      alert("Leave request removed successfully.");
+    } catch (error) {
+      console.error("Failed to remove leave request:", error);
+      alert(`Failed to remove leave request. ${error.message || ""}`);
+    } finally {
+      setLeaveRemoving(false);
+    }
+  }, [editingLeaveRequest?.id]);
+
+  const handleRemoveLeaveRequest = useCallback(() => {
+    if (!editingLeaveRequest?.id) return;
+    setConfirmDialog({
+      message: "Remove this leave request?",
+      onConfirm: () => {
+        setConfirmDialog(null);
+        doRemoveLeaveRequest();
+      },
+    });
+  }, [editingLeaveRequest?.id, doRemoveLeaveRequest]);
+
+  const handleStartEcEdit = useCallback(() => {
+    setEcName(emergencyParts.name === "Not provided" ? "" : emergencyParts.name);
+    setEcPhone(emergencyParts.phone === "Not provided" ? "" : emergencyParts.phone);
+    setEcRelationship(emergencyParts.relationship === "Not provided" ? "" : emergencyParts.relationship);
+    setEcAddress(profile?.address === "Not provided" ? "" : (profile?.address || ""));
+    setEcError(null);
+    setEcEditing(true);
+  }, [emergencyParts, profile?.address]);
+
+  const handleSaveEc = useCallback(async () => {
+    setEcSaving(true);
+    setEcError(null);
+    try {
+      const response = await fetch("/api/profile/emergency-contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          name: ecName.trim(),
+          phone: ecPhone.trim(),
+          relationship: ecRelationship.trim(),
+          address: ecAddress.trim(),
+        }),
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.message || "Failed to update emergency contact.");
+      }
+      const ecParts = [ecName.trim(), ecPhone.trim(), ecRelationship.trim()].filter(Boolean);
+      setUserProfileData((prev) => {
+        if (!prev?.profile) return prev;
+        return {
+          ...prev,
+          profile: {
+            ...prev.profile,
+            emergencyContact: ecParts.length > 0 ? ecParts.join(", ") : "Not provided",
+            address: ecAddress.trim() || "No address on file",
+          },
+        };
+      });
+      setEcEditing(false);
+    } catch (err) {
+      setEcError(err.message || "Failed to update.");
+    } finally {
+      setEcSaving(false);
+    }
+  }, [ecName, ecPhone, ecRelationship, ecAddress]);
+
+  const profileStaffVehicles = useMemo(() => {
+    if (!profile?.userId) return [];
+    return staffVehicles.filter((vehicle) => vehicle.userId === profile.userId);
+  }, [profile?.userId, staffVehicles]);
+
+  const isLoading = shouldUseHrData ? hrLoading : userProfileLoading;
+  const error = shouldUseHrData ? hrError : userProfileError;
+  const attendanceRecords = aggregatedStats?.attendanceRecords ?? [];
+  const shouldScrollAttendanceHistory = attendanceRecords.length >= 5;
+
+  if (!user && !session?.user && !previewUserParam) {
+    const fallback = (
+      <div style={{ padding: "24px", color: "var(--text-secondary)" }}>
+        You need to be signed in to view your profile.
+      </div>
+    );
+    return isEmbedded ? fallback : <Layout>{fallback}</Layout>;
+  }
+
+  const content = (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "20px",
+        padding: isEmbedded ? "0" : "24px",
+        background: "transparent",
+        color: "var(--text-primary)",
+        minHeight: "100%",
+      }}
+    >
+      <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "18px" }}>
+        <header style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              flexWrap: "wrap",
+              justifyContent: "space-between",
+            }}
+          >
+            <h1 style={{ fontSize: "2rem", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
+              Work Profile
+            </h1>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+              <div style={{ minWidth: "170px", maxWidth: "170px", width: "170px", order: 1 }}>
+                <DropdownField
+                  value={accent}
+                  onValueChange={setAccent}
+                  options={accentOptions}
+                  className="profile-accent-dropdown"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={toggleTheme}
+                style={{ ...themeButtonStyle, order: 2 }}
+                aria-label="Cycle theme"
+              >
+                {themeLabel}
+              </button>
+            </div>
+          </div>
+          {isAdminPreview && profile && (
+            <div
+              style={{
+                background: "rgba(var(--info-rgb), 0.08)",
+                color: "var(--text-primary)",
+                padding: "10px 14px",
+                borderRadius: "var(--radius-sm)",
+                fontWeight: 600,
+              }}
+            >
+              Admin previewing {profile.name}'s profile
+            </div>
+          )}
+        </header>
+
+        {isLoading && (
+          <>
+            <style>{`@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
+            <section
+              style={{
+                display: "grid",
+                gap: "12px",
+                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+              }}
+            >
+              <SkeletonMetricCard />
+              <SkeletonMetricCard />
+              <SkeletonMetricCard />
+              <SkeletonMetricCard />
+            </section>
+
+            <ProfileCard title="Attendance History">
+              <SkeletonBlock width="100%" height="48px" borderRadius="10px" />
+              <table style={{ width: "100%", marginTop: "12px" }}>
+                <tbody>
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <SkeletonTableRow key={i} cols={5} />
+                  ))}
+                </tbody>
+              </table>
+            </ProfileCard>
+          </>
+        )}
+
+        {error && (
+          <ProfileCard title="Failed to load profile data">
+            <span style={{ color: "var(--danger)" }}>{error.message}</span>
+            {!shouldUseHrData && (
+              <div style={{ marginTop: "12px", color: "var(--text-secondary)" }}>
+                If you continue to see this error, please contact HR to ensure your employee profile has been created.
+              </div>
+            )}
+          </ProfileCard>
+        )}
+
+        {!isLoading && !error && profile ? (
+          <>
+            {/* KPI Row: Total Hours | Hourly Rate (admin) | Leave Remaining — side by side */}
+            <section style={{
+              display: "grid",
+              gap: "12px",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            }}>
+              {/* Total Hours (logged) card with 3 sub-columns + grand total */}
+              <div style={{
+                background: "var(--surface)",
+                borderRadius: "var(--radius-md)",
+                border: "1px solid rgba(var(--accent-purple-rgb), 0.28)",
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+                minHeight: "112px",
+              }}>
+                <div style={{
+                  padding: "10px 14px 6px",
+                  fontSize: "0.76rem",
+                  fontWeight: 600,
+                  color: "var(--text-secondary)",
+                }}>
+                  Total Hours &mdash; {new Date().toLocaleDateString("en-GB", { month: "short", year: "numeric" })}
+                </div>
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr 1fr",
+                  flex: 1,
+                }}>
+                  <div style={{ padding: "6px 8px", textAlign: "center", borderRight: "1px solid rgba(var(--accent-purple-rgb), 0.12)" }}>
+                    <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Work</div>
+                    <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--accent-purple)" }}>
+                      {aggregatedStats?.monthlyWeekdayHours?.toFixed(2) ?? "0.00"}h
+                    </div>
+                  </div>
+                  <div style={{ padding: "6px 8px", textAlign: "center", borderRight: "1px solid rgba(var(--accent-purple-rgb), 0.12)" }}>
+                    <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Overtime</div>
+                    <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--danger, #e53935)" }}>
+                      {aggregatedStats?.monthlyOvertimeHours?.toFixed(2) ?? "0.00"}h
+                    </div>
+                  </div>
+                  <div style={{ padding: "6px 8px", textAlign: "center" }}>
+                    <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Weekend</div>
+                    <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--info, #1e88e5)" }}>
+                      {aggregatedStats?.monthlyWeekendHours?.toFixed(2) ?? "0.00"}h
+                    </div>
+                  </div>
+                </div>
+                <div style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "8px 10px",
+                  borderTop: "1px solid rgba(var(--accent-purple-rgb), 0.15)",
+                  background: "rgba(var(--accent-purple-rgb), 0.06)",
+                }}>
+                  <span style={{ fontSize: "0.72rem", fontWeight: 600, color: "var(--text-secondary)" }}>Total</span>
+                  <span style={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--text-primary)" }}>
+                    {aggregatedStats?.monthlyTotalHours?.toFixed(2) ?? "0.00"}h
+                  </span>
+                </div>
+              </div>
+
+              {/* Pay Rates card — 50/50 split matching Total Hours style */}
+              {isAdminOrManager && (
+                <div style={{
+                  background: "var(--surface)",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid rgba(var(--accent-purple-rgb), 0.28)",
+                  overflow: "hidden",
+                  display: "flex",
+                  flexDirection: "column",
+                  minHeight: "112px",
+                }}>
+                  <div style={{
+                    padding: "10px 14px 6px",
+                    fontSize: "0.76rem",
+                    fontWeight: 600,
+                    color: "var(--text-secondary)",
+                  }}>
+                    Pay Rates
+                  </div>
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    flex: 1,
+                  }}>
+                    <div style={{ padding: "6px 8px", textAlign: "center", borderRight: "1px solid rgba(var(--accent-purple-rgb), 0.12)" }}>
+                      <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Hourly Rate</div>
+                      <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--success, #43a047)" }}>
+                        {formatCurrency(profile.hourlyRate ?? 0)}
+                      </div>
+                    </div>
+                    <div style={{ padding: "6px 8px", textAlign: "center" }}>
+                      <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Overtime Rate</div>
+                      <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--danger, #e53935)" }}>
+                        {formatCurrency(profile.overtimeRate ?? 0)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <KpiCard
+                label="Estimated Pay"
+                primary={
+                  Number(profile?.hourlyRate ?? 0) > 0 || Number(profile?.overtimeRate ?? 0) > 0
+                    ? formatCurrency(aggregatedStats?.estimatedPay ?? 0)
+                    : "No rate data"
+                }
+                secondary="Based on logged weekday and overtime hours"
+                accentColor="var(--success)"
+              />
+              <KpiCard
+                label="Leave Remaining"
+                primary={
+                  aggregatedStats?.leaveRemaining !== null
+                    ? `${aggregatedStats.leaveRemaining} days`
+                    : "No data"
+                }
+                secondary={
+                  aggregatedStats?.leaveEntitlement
+                    ? `${aggregatedStats.leaveTaken ?? 0} taken of ${aggregatedStats.leaveEntitlement}`
+                    : null
+                }
+                accentColor="var(--danger)"
+              />
+            </section>
+
+            <section
+              style={{
+                display: "grid",
+                gap: "16px",
+                gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 480px), 1fr))",
+              }}
+            >
+              <ProfileCard
+                title="Leave Summary"
+                action={
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingLeaveRequest(null);
+                      setLeaveModalOpen(true);
+                    }}
+                    style={buttonStyleLeaveRequest}
+                  >
+                    Request leave
+                  </button>
+                }
+                style={{
+                  background: "var(--surface)",
+                }}
+              >
+                <div style={{ display: "grid", gap: "12px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
+                    <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: 600 }}>
+                      Entitlement
+                    </span>
+                    <span style={{ fontWeight: 700 }}>{aggregatedStats?.leaveEntitlement ?? "-"} days</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
+                    <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: 600 }}>Taken</span>
+                    <span style={{ fontWeight: 600 }}>{aggregatedStats?.leaveTaken ?? "-"} days</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
+                    <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: 600 }}>
+                      Remaining
+                    </span>
+                    <span style={{ fontWeight: 700, color: "var(--success)" }}>
+                      {aggregatedStats?.leaveRemaining ?? "-"} days
+                    </span>
+                  </div>
+                  {leaveRequests.length > 0 && (
+                    <div style={{ display: "grid", gap: "10px", paddingTop: "8px", borderTop: "1px solid rgba(var(--accent-purple-rgb), 0.12)" }}>
+                      <span style={{ fontSize: "0.78rem", color: "var(--text-secondary)", fontWeight: 700 }}>
+                        Recent requests
+                      </span>
+                      {leaveRequests.slice(0, 4).map((request) => {
+                        const status = String(request.status || "Pending");
+                        const isApproved = status.toLowerCase() === "approved";
+                        const isDeclined = status.toLowerCase() === "declined" || status.toLowerCase() === "rejected";
+                        const isEditable = true;
+                        return (
+                          <button
+                            type="button"
+                            key={request.id}
+                            onClick={() => {
+                              if (isEditable) {
+                                handleEditLeaveRequest(request);
+                              }
+                            }}
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "6px",
+                              padding: "10px 12px",
+                              borderRadius: "var(--radius-sm)",
+                              background: "rgba(var(--accent-purple-rgb), 0.06)",
+                              border: "1px solid rgba(var(--accent-purple-rgb), 0.12)",
+                              textAlign: "left",
+                              cursor: isEditable ? "pointer" : "default",
+                            }}
+                          >
+                            <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center" }}>
+                              <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>
+                                {request.type} · {new Date(`${request.startDate}T00:00:00`).toLocaleDateString("en-GB")}
+                              </span>
+                              <span
+                                style={{
+                                  padding: "4px 8px",
+                                  borderRadius: "var(--radius-pill)",
+                                  fontSize: "0.72rem",
+                                  fontWeight: 700,
+                                  background: isApproved
+                                    ? "var(--success-surface)"
+                                    : isDeclined
+                                    ? "var(--danger-surface)"
+                                    : "var(--info-surface)",
+                                  color: isApproved
+                                    ? "var(--success)"
+                                    : isDeclined
+                                    ? "var(--danger)"
+                                    : "var(--info-dark)",
+                                }}
+                              >
+                                {status}
+                              </span>
+                            </div>
+                            {request.requestNotes ? (
+                              <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+                                {request.requestNotes}
+                              </span>
+                            ) : null}
+                            {request.declineReason ? (
+                              <span style={{ fontSize: "0.78rem", color: "var(--danger)", fontWeight: 600 }}>
+                                Decline reason: {request.declineReason}
+                              </span>
+                            ) : null}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </ProfileCard>
+              <LeaveRequestModal
+                isOpen={leaveModalOpen}
+                onClose={() => {
+                  setLeaveModalOpen(false);
+                  setEditingLeaveRequest(null);
+                }}
+                onSubmit={handleLeaveSubmit}
+                isSubmitting={leaveSubmitting}
+                initialValues={editingLeaveRequest}
+                mode={editingLeaveRequest ? "edit" : "create"}
+                onRemove={editingLeaveRequest ? handleRemoveLeaveRequest : null}
+                isRemoving={leaveRemoving}
+              />
+
+              <ProfileCard
+                title="Emergency Contact"
+                action={
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    {!ecEditing && (
+                      <button
+                        type="button"
+                        onClick={handleStartEcEdit}
+                        style={secondaryButtonStyle}
+                      >
+                        Edit
+                      </button>
+                    )}
+                  </div>
+                }
+                style={{
+                  background: "var(--surface)",
+                }}
+              >
+                {ecEditing ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <div style={{ display: "grid", gap: "10px" }}>
+                      <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>Name</span>
+                        <input
+                          type="text"
+                          value={ecName}
+                          onChange={(e) => { setEcName(e.target.value); setEcError(null); }}
+                          placeholder="Full name"
+                          style={inputStyle}
+                        />
+                      </label>
+                      <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>Phone</span>
+                        <input
+                          type="tel"
+                          value={ecPhone}
+                          onChange={(e) => { setEcPhone(e.target.value); setEcError(null); }}
+                          placeholder="Phone number"
+                          style={inputStyle}
+                        />
+                      </label>
+                      <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>Relationship</span>
+                        <input
+                          type="text"
+                          value={ecRelationship}
+                          onChange={(e) => { setEcRelationship(e.target.value); setEcError(null); }}
+                          placeholder="e.g. Partner, Parent, Sibling"
+                          style={inputStyle}
+                        />
+                      </label>
+                      <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>Address</span>
+                        <input
+                          type="text"
+                          value={ecAddress}
+                          onChange={(e) => {
+                            setEcAddress(e.target.value);
+                            setEcError(null);
+                          }}
+                          placeholder="Home address"
+                          style={inputStyle}
+                        />
+                      </label>
+                    </div>
+                    {ecError && <div style={{ color: "var(--danger)", fontSize: "0.82rem" }}>{ecError}</div>}
+                    <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+                      <button type="button" onClick={() => setEcEditing(false)} style={ghostButtonStyle}>
+                        Cancel
+                      </button>
+                      <button type="button" onClick={handleSaveEc} disabled={ecSaving} style={primaryButtonStyle}>
+                        {ecSaving ? "Saving..." : "Save"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: "grid", gap: "10px" }}>
+                    <div style={labelValueRowStyle}>
+                      <span style={labelStyle}>Name</span>
+                      <span style={valueStyle}>{emergencyParts.name}</span>
+                    </div>
+                    <div style={labelValueRowStyle}>
+                      <span style={labelStyle}>Phone</span>
+                      <span style={valueStyle}>{emergencyParts.phone}</span>
+                    </div>
+                    <div style={labelValueRowStyle}>
+                      <span style={labelStyle}>Relationship</span>
+                      <span style={valueStyle}>{emergencyParts.relationship}</span>
+                    </div>
+                    <div style={labelValueRowStyle}>
+                      <span style={labelStyle}>Address</span>
+                      <span style={valueStyle}>{profile?.address || "No address on file"}</span>
+                    </div>
+                  </div>
+                )}
+              </ProfileCard>
+            </section>
+
+            <ProfileCard
+              title="Attendance History"
+              style={{
+                background: "var(--surface)",
+              }}
+              action={
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button
+                    type="button"
+                    onClick={() => setRecurringModalOpen(true)}
+                    style={{
+                      padding: "8px 14px",
+                      borderRadius: "var(--radius-sm)",
+                      border: "1px solid var(--accent-purple)",
+                      background: "var(--surface)",
+                      color: "var(--accent-purple)",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      fontSize: "0.85rem",
+                    }}
+                  >
+                    Recurring Rules
+                  </button>
+                  <span style={buttonStyleLeaveRequest}>
+                    Log Overtime
+                  </span>
+                </div>
+              }
+            >
+              <div
+                style={{
+                  background: "rgba(var(--accent-purple-rgb), 0.08)",
+                  borderRadius: "var(--radius-md)",
+                  padding: "14px",
+                  border: "1px solid rgba(var(--accent-purple-rgb), 0.2)",
+                }}
+              >
+                <OvertimeLogForm onSessionSaved={handleOvertimeSessionSaved} userId={dbUserId} />
+              </div>
+
+              <div
+                style={{
+                  maxHeight: shouldScrollAttendanceHistory ? "290px" : "none",
+                  overflowY: shouldScrollAttendanceHistory ? "auto" : "visible",
+                  marginTop: "10px",
+                }}
+              >
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr
+                      style={{
+                        color: "var(--text-secondary)",
+                        fontSize: "0.72rem",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.04em",
+                        position: "sticky",
+                        top: 0,
+                        background: "var(--surface)",
+                        zIndex: 1,
+                      }}
+                    >
+                      <th style={{ textAlign: "left", padding: "10px 0" }}>Date</th>
+                      <th style={{ textAlign: "center", padding: "10px 0" }}>Login</th>
+                      <th style={{ textAlign: "center", padding: "10px 0" }}>Logout</th>
+                      <th style={{ textAlign: "center", padding: "10px 0" }}>Total Hours</th>
+                      <th style={{ textAlign: "center", padding: "10px 0" }}>Type</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {attendanceRecords.map((entry) => {
+                      const nextDay = isNextDayClocking(entry.clockIn, entry.clockOut);
+                      return (
+                        <tr key={entry.id} style={{ borderTop: "1px solid rgba(var(--accent-purple-rgb), 0.18)" }}>
+                          <td style={{ padding: "12px 0", fontWeight: 600 }}>{formatDate(entry.date)}</td>
+                          <td style={{ textAlign: "center", padding: "12px 0" }}>{formatTime(entry.clockIn)}</td>
+                          <td style={{ textAlign: "center", padding: "12px 0" }}>
+                            {entry.clockOut ? formatTime(entry.clockOut) : (
+                              <span style={{ fontSize: "0.72rem", fontWeight: 600, color: "var(--success)", background: "rgba(var(--success-rgb, 67,160,71), 0.12)", padding: "2px 8px", borderRadius: "var(--radius-pill)" }}>Active</span>
+                            )}
+                            {nextDay && (
+                              <span style={{ fontSize: "0.7rem", color: "var(--warning)", marginLeft: "4px" }}>+1d</span>
+                            )}
+                          </td>
+                          <td style={{ textAlign: "center", padding: "12px 0" }}>
+                            {nextDay ? (
+                              <span style={{ color: "var(--warning)", fontWeight: 600 }}>Next Day</span>
+                            ) : (
+                              `${Number(entry.totalHours ?? 0).toFixed(2)}h`
+                            )}
+                          </td>
+                          <td style={{ textAlign: "center", padding: "12px 0" }}>
+                            <StatusTag
+                              label={entry.type || entry.status}
+                              tone={
+                                (entry.type || entry.status) === "Overtime"
+                                  ? "warning"
+                                  : (entry.type || entry.status) === "Weekend"
+                                  ? "info"
+                                  : (entry.type || entry.status) === "Weekday"
+                                  ? "success"
+                                  : "default"
+                              }
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {attendanceRecords.length === 0 && (
+                      <tr>
+                        <td colSpan={5} style={{ padding: "16px 0", color: "var(--text-secondary)", textAlign: "center" }}>
+                          No records found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </ProfileCard>
+
+            {profile && <StaffVehiclesCard userId={profile.userId} vehicles={profileStaffVehicles} />}
+          </>
+        ) : null}
+
+        {!isLoading && !error && !profile && (
+          <ProfileCard title="Profile not found">
+            <span style={{ color: "var(--info)" }}>
+              Ask HR to create an employee profile or verify your email address is correct.
+            </span>
+          </ProfileCard>
+        )}
+      </div>
+    </div>
+  );
+
+  const confirmDialogEl = (
+    <ConfirmationDialog
+      isOpen={!!confirmDialog}
+      message={confirmDialog?.message}
+      cancelLabel="Cancel"
+      confirmLabel="Remove"
+      onCancel={() => setConfirmDialog(null)}
+      onConfirm={confirmDialog?.onConfirm}
+    />
+  );
+
+  const recurringOvertimeModalEl = (
+    <RecurringOvertimeModal
+      isOpen={recurringModalOpen}
+      onClose={() => setRecurringModalOpen(false)}
+      userId={dbUserId}
+    />
+  );
+
+  return isEmbedded ? (
+    <>{content}{confirmDialogEl}{recurringOvertimeModalEl}</>
+  ) : (
+    <Layout>{content}{confirmDialogEl}{recurringOvertimeModalEl}</Layout>
+  );
+}
+
+export default function ProfileWorkTabWrapper(props) {
+  return <ProfileWorkTab {...props} />;
+}
+
+const buttonStyleLeaveRequest = {
+  padding: "8px 14px",
+  borderRadius: "var(--radius-sm)",
+  border: "1px solid var(--accent-purple)",
+  background: "var(--accent-purple)",
+  color: "white",
+  fontWeight: 600,
+  cursor: "pointer",
+  fontSize: "0.85rem",
+};
+
+const secondaryButtonStyle = {
+  padding: "6px 14px",
+  borderRadius: "var(--radius-sm)",
+  border: "1px solid var(--accent-purple)",
+  background: "transparent",
+  color: "var(--accent-purple)",
+  fontWeight: 600,
+  fontSize: "0.82rem",
+  cursor: "pointer",
+};
+
+const primaryButtonStyle = {
+  padding: "8px 16px",
+  borderRadius: "var(--radius-sm)",
+  border: "none",
+  background: "var(--accent-purple)",
+  color: "white",
+  fontWeight: 600,
+  fontSize: "0.82rem",
+  cursor: "pointer",
+};
+
+const ghostButtonStyle = {
+  padding: "8px 16px",
+  borderRadius: "var(--radius-sm)",
+  border: "1px solid var(--border, #ccc)",
+  background: "transparent",
+  color: "var(--text-secondary)",
+  fontWeight: 600,
+  fontSize: "0.82rem",
+  cursor: "pointer",
+};
+
+const inputStyle = {
+  padding: "10px 12px",
+  borderRadius: "var(--radius-sm)",
+  border: "1px solid var(--border, #ccc)",
+  background: "var(--background)",
+  color: "var(--text-primary)",
+  fontSize: "0.9rem",
+};
+
+const labelValueRowStyle = {
+  display: "flex",
+  justifyContent: "space-between",
+  gap: "16px",
+  fontSize: "0.9rem",
+  alignItems: "center",
+};
+
+const labelStyle = {
+  color: "var(--text-secondary)",
+  fontWeight: 600,
+};
+
+const valueStyle = {
+  color: "var(--text-primary)",
+  fontWeight: 600,
+};

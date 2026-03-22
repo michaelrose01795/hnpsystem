@@ -27,7 +27,7 @@
     "jspdf": "^4.1.0",
     "jspdf-autotable": "^5.0.7",
     "jwt-decode": "^4.0.0",
-    "next": "^16.1.6",
+    "next": "^16.2.1",
     "next-auth": "^4.24.13",
     "nodemailer": "^7.0.13",
     "pdfjs-dist": "^5.4.394",
@@ -40,7 +40,7 @@
     "react-select": "^5.10.2",
     "swr": "^2.4.1",
     "tailwindcss": "^4.1.17",
-    "vercel": "^50.32.5"
+    "vercel": "^32.3.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
