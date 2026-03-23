@@ -1,63 +1,40 @@
 import React from "react";
 import BaseWidget from "@/components/profile/personal/widgets/BaseWidget";
-import { MetricPill, formatCurrency } from "@/components/profile/personal/widgets/shared";
-import {
-  calculateAfterTaxTotal,
-  calculateBasePay,
-  calculateNationalInsuranceEstimate,
-  calculateOvertimePay,
-  calculateTaxEstimate,
-  expectedMonthlyContractHours,
-} from "@/lib/profile/calculations";
-import { formatMonthLabel } from "@/lib/profile/monthPlanning";
+import { MetricPill, SectionLabel, widgetGhostButtonStyle, widgetInputStyle } from "@/components/profile/personal/widgets/shared";
 
-export default function WorkSummaryWidget({
-  widget,
-  widgetMonthKey,
-  datasets,
-  onOpenSettings,
-  compact = false,
-}) {
-  const workData = datasets.workData || {};
-  const hoursWorked = Number(workData.hoursWorked || 0);
-  const overtimeHours = Number(workData.overtimeHours || 0);
-  const contractedWeeklyHours = Number(workData.contractedWeeklyHours || 0);
-  const expectedHours = expectedMonthlyContractHours(contractedWeeklyHours, widgetMonthKey);
-  const baseRate = Number(workData.hourlyRate || 0);
-  const overtimeRate = Number(workData.overtimeRate || baseRate);
-  const basePay = calculateBasePay(expectedHours, baseRate);
-  const overtimePay = calculateOvertimePay(overtimeHours, overtimeRate);
-  const grossPay = Number((basePay + overtimePay).toFixed(2));
-  const tax = calculateTaxEstimate(grossPay);
-  const nationalInsurance = calculateNationalInsuranceEstimate(grossPay);
-  const afterTax = calculateAfterTaxTotal(grossPay, tax, nationalInsurance);
+function numberValue(value) {
+  return Number(value || 0);
+}
+
+export default function WorkSummaryWidget({ widget, onOpenSettings, finance }) {
+  const month = finance.model.currentMonth;
 
   return (
     <BaseWidget
-      title={widget.config?.title || "Work Summary"}
-      subtitle="Attendance and leave source of truth"
-      accent="var(--accent-purple)"
-      monthLabel={formatMonthLabel(widgetMonthKey)}
+      title={widget.config?.title || "Overtime"}
+      subtitle="Attendance overtime + manual daily overtime entries"
+      accent="var(--warning, #ef6c00)"
       summary={
-        <div style={{ display: "grid", gap: "10px", gridTemplateColumns: compact ? "1fr" : "repeat(2, minmax(0, 1fr))" }}>
-          <MetricPill label="Hours worked" value={`${hoursWorked.toFixed(2)}h`} />
-          <MetricPill label="Overtime (logged)" value={`${overtimeHours.toFixed(2)}h`} accent="var(--warning, #ef6c00)" />
+        <div style={{ display: "grid", gap: "10px", gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
+          <MetricPill label="Attendance overtime" value={`${month.pay.attendanceOvertimeHours.toFixed(2)}h`} accent="var(--info, #1565c0)" />
+          <MetricPill label="Manual overtime" value={`${month.pay.manualOvertimeHours.toFixed(2)}h`} accent="var(--warning, #ef6c00)" />
+          <MetricPill label="Total overtime" value={`${month.pay.overtimeHours.toFixed(2)}h`} accent="var(--warning, #ef6c00)" />
         </div>
       }
       onOpenSettings={onOpenSettings}
-      compact={compact}
     >
-      <div style={{ display: "grid", gap: "10px", gridTemplateColumns: compact ? "1fr" : "repeat(3, minmax(0, 1fr))" }}>
-        <MetricPill label="Overtime value" value={formatCurrency(workData.overtimeValue || 0)} accent="var(--success, #2e7d32)" />
-        <MetricPill label="Expected hours (month)" value={`${expectedHours.toFixed(2)}h`} accent="var(--info, #1565c0)" />
-        <MetricPill label="Leave remaining" value={workData.leaveRemaining ?? "No data"} accent="var(--info, #1565c0)" />
-        <MetricPill label="Tax estimate" value={formatCurrency(tax)} accent="var(--danger, #c62828)" />
-        <MetricPill label="NI estimate" value={formatCurrency(nationalInsurance)} accent="var(--danger, #c62828)" />
-        <MetricPill label="After-tax estimate" value={formatCurrency(afterTax)} accent="var(--accent-purple)" />
+      <SectionLabel>Manual overtime entries (day-by-day)</SectionLabel>
+      <div style={{ display: "grid", gap: "8px" }}>
+        {month.monthState.overtimeEntries.map((entry) => (
+          <div key={entry.id} style={{ display: "grid", gap: "8px", gridTemplateColumns: "1.3fr 0.9fr 1.4fr auto" }}>
+            <input type="date" style={widgetInputStyle} value={entry.date || ""} onChange={(event) => finance.updateOvertimeEntry(entry.id, { date: event.target.value })} />
+            <input type="number" style={widgetInputStyle} value={entry.hours || 0} onChange={(event) => finance.updateOvertimeEntry(entry.id, { hours: numberValue(event.target.value) })} />
+            <input style={widgetInputStyle} value={entry.note || ""} placeholder="Note" onChange={(event) => finance.updateOvertimeEntry(entry.id, { note: event.target.value })} />
+            <button type="button" style={widgetGhostButtonStyle} onClick={() => finance.removeOvertimeEntry(entry.id)}>Remove</button>
+          </div>
+        ))}
       </div>
-      <div style={{ fontSize: "0.84rem", color: "var(--text-secondary)" }}>
-        Values come from attendance history, overtime sessions/rules, and leave balances used by the Work tab.
-      </div>
+      <button type="button" style={widgetGhostButtonStyle} onClick={finance.addOvertimeEntry}>Add overtime row</button>
     </BaseWidget>
   );
 }

@@ -35,14 +35,14 @@ export const PERSONAL_WIDGET_DEFINITIONS = {
   }),
   "work-summary": createDefinition({
     type: "work-summary",
-    label: "Work Summary",
-    description: "Summarises hours worked, overtime, leave, and estimated pay.",
+    label: "Overtime",
+    description: "Tracks overtime entries and attendance-linked overtime totals.",
     category: "work",
     accent: "var(--accent-purple)",
   }),
   spending: createDefinition({
     type: "spending",
-    label: "Spending",
+    label: "Outgoings",
     description: "Shows expenses, category splits, and monthly burn rate.",
     category: "money",
     accent: "var(--danger, #c62828)",
@@ -56,14 +56,14 @@ export const PERSONAL_WIDGET_DEFINITIONS = {
   }),
   bills: createDefinition({
     type: "bills",
-    label: "Bills",
+    label: "Payments",
     description: "Lists recurring bills and the total due each month.",
     category: "money",
     accent: "var(--warning, #ef6c00)",
   }),
   fuel: createDefinition({
     type: "fuel",
-    label: "Fuel",
+    label: "Credit Cards",
     description: "Highlights fuel spending and recent cost changes.",
     category: "money",
     accent: "var(--warning, #ff8f00)",
@@ -125,7 +125,7 @@ export const PERSONAL_WIDGET_DEFINITIONS = {
 
 export const PERSONAL_WIDGET_TYPE_OPTIONS = Object.values(PERSONAL_WIDGET_DEFINITIONS);
 
-export const DEFAULT_PERSONAL_WIDGET_TYPES = ["income", "spending", "savings", "net-position", "notes"];
+export const DEFAULT_PERSONAL_WIDGET_TYPES = ["net-position", "income", "spending", "work-summary", "bills", "fuel", "savings"];
 
 export function getWidgetDefinition(widgetType) {
   return PERSONAL_WIDGET_DEFINITIONS[widgetType] || PERSONAL_WIDGET_DEFINITIONS.custom;

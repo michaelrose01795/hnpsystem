@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from "react";
 import AddWidgetModal from "@/components/profile/personal/AddWidgetModal";
+import MonthPicker from "@/components/profile/personal/MonthPicker";
 import WidgetGrid from "@/components/profile/personal/WidgetGrid";
 import WidgetSettingsModal from "@/components/profile/personal/WidgetSettingsModal";
 import AttachmentsWidget from "@/components/profile/personal/widgets/AttachmentsWidget";
@@ -15,10 +16,9 @@ import NotesWidget from "@/components/profile/personal/widgets/NotesWidget";
 import SavingsWidget from "@/components/profile/personal/widgets/SavingsWidget";
 import SpendingWidget from "@/components/profile/personal/widgets/SpendingWidget";
 import WorkSummaryWidget from "@/components/profile/personal/widgets/WorkSummaryWidget";
+import usePersonalFinance from "@/hooks/usePersonalFinance";
 import usePersonalWidgets from "@/hooks/usePersonalWidgets";
 import { StatusBadge } from "@/components/profile/personal/widgets/shared";
-import { buildPersonalInsights } from "@/lib/profile/insights";
-import { getCurrentMonthKey, normaliseMonthKey } from "@/lib/profile/monthPlanning";
 import { PERSONAL_WIDGET_DEFINITIONS } from "@/lib/profile/personalWidgets";
 
 const WIDGET_COMPONENTS = {
@@ -56,21 +56,6 @@ function insightToneStyle(type) {
   };
 }
 
-function resolveWidgetMonthKey(widgetData, fallbackMonthKey) {
-  const settings = widgetData?.settings || {};
-  const dateMode = settings.dateDisplayMode || "month";
-  const selectedDate = settings.dateValue || "";
-
-  if (settings.useGlobalMonth === false) {
-    if (dateMode === "day" && selectedDate) {
-      return normaliseMonthKey(String(selectedDate).slice(0, 7), fallbackMonthKey);
-    }
-    return normaliseMonthKey(settings.monthKey || selectedDate || fallbackMonthKey, fallbackMonthKey);
-  }
-
-  return normaliseMonthKey(fallbackMonthKey, fallbackMonthKey);
-}
-
 export default function PersonalDashboard({ dashboard }) {
   const widgetManager = usePersonalWidgets({
     widgets: dashboard.widgets,
@@ -80,7 +65,12 @@ export default function PersonalDashboard({ dashboard }) {
     onAddWidget: dashboard.addWidget,
   });
   const [settingsWidgetId, setSettingsWidgetId] = useState(null);
-  const dashboardMonthKey = getCurrentMonthKey();
+
+  const finance = usePersonalFinance({
+    widgetDataMap: dashboard.widgetDataMap,
+    workData: dashboard.workData,
+    onSaveFinanceState: (data) => dashboard.saveWidgetData("net-position", data),
+  });
 
   const visibleWidgets = widgetManager.widgets.filter((widget) => widget.isVisible !== false);
   const visibleWidgetsByType = visibleWidgets.reduce((accumulator, widget) => {
@@ -119,29 +109,6 @@ export default function PersonalDashboard({ dashboard }) {
     deleteAttachment: dashboard.deleteAttachment,
   };
 
-  const insights = useMemo(
-    () =>
-      buildPersonalInsights({
-        transactions: dashboard.transactions,
-        bills: dashboard.bills,
-        savings: dashboard.savings,
-        goals: dashboard.goals,
-        workData: dashboard.workData,
-        widgetData: dashboard.widgetDataMap,
-        monthKey: dashboardMonthKey,
-      }),
-    [
-      dashboard.bills,
-      dashboard.goals,
-      dashboard.savings,
-      dashboard.transactions,
-      dashboard.widgetDataMap,
-      dashboard.workData,
-      dashboardMonthKey,
-    ]
-  );
-
-
   const handleReorderFromModal = useCallback(
     async (sourceId, targetId) => {
       if (!sourceId || !targetId || sourceId === targetId) return;
@@ -161,6 +128,7 @@ export default function PersonalDashboard({ dashboard }) {
     },
     [widgetManager]
   );
+
   const activeSettingsWidgetRecord = settingsWidgetId
     ? widgetManager.widgets.find((widget) => widget.id === settingsWidgetId) || null
     : null;
@@ -168,10 +136,35 @@ export default function PersonalDashboard({ dashboard }) {
     ? PERSONAL_WIDGET_DEFINITIONS[activeSettingsWidgetRecord.widgetType] || null
     : null;
 
+  const financeHeader = useMemo(() => (
+    <div
+      style={{
+        borderRadius: "16px",
+        border: "1px solid rgba(var(--accent-purple-rgb), 0.16)",
+        background: "var(--surface)",
+        padding: "12px",
+        display: "flex",
+        justifyContent: "space-between",
+        flexWrap: "wrap",
+        gap: "12px",
+      }}
+    >
+      <div style={{ display: "grid", gap: "6px" }}>
+        <div style={{ fontWeight: 800, fontSize: "0.86rem" }}>Personal Finance Dashboard</div>
+        <div style={{ color: "var(--text-secondary)", fontSize: "0.8rem" }}>
+          Finance year: <strong>{finance.model.selectedFinanceYear}</strong>
+        </div>
+      </div>
+      <MonthPicker value={finance.model.selectedMonthKey} onChange={finance.setSelectedMonth} align="right" />
+    </div>
+  ), [finance.model.selectedFinanceYear, finance.model.selectedMonthKey, finance.setSelectedMonth]);
+
   return (
     <div style={{ display: "grid", gap: "18px" }}>
+      {financeHeader}
+
       <div style={{ display: "grid", gap: "10px", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
-        {(insights || []).map((insight, index) => (
+        {(finance.model.insights || []).map((insight, index) => (
           <div
             key={`${insight.type}-${index}`}
             style={{
@@ -184,7 +177,7 @@ export default function PersonalDashboard({ dashboard }) {
               <div style={{ fontSize: "0.74rem", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase" }}>
                 {insight.type}
               </div>
-              {insight.monthLabel ? <StatusBadge tone="neutral">{insight.monthLabel}</StatusBadge> : null}
+              <StatusBadge tone="neutral">{finance.model.selectedFinanceYear}</StatusBadge>
             </div>
             <div style={{ marginTop: "6px", fontWeight: 600, lineHeight: 1.45 }}>{insight.message}</div>
           </div>
@@ -206,52 +199,27 @@ export default function PersonalDashboard({ dashboard }) {
       ) : (
         <WidgetGrid
           widgets={widgetManager.widgets}
+          onReorder={handleReorderFromModal}
           renderWidget={(widget) => {
             const WidgetComponent = WIDGET_COMPONENTS[widget.widgetType] || CustomWidget;
             const widgetData = dashboard.widgetDataMap[widget.widgetType]?.data || {};
-            const widgetMonthKey = resolveWidgetMonthKey(widgetData, dashboardMonthKey);
 
             return (
               <WidgetComponent
                 widget={widget}
                 widgetData={widgetData}
-                widgetMonthKey={widgetMonthKey}
-                dashboardMonthKey={dashboardMonthKey}
+                widgetMonthKey={finance.model.selectedMonthKey}
+                dashboardMonthKey={finance.model.selectedMonthKey}
                 widgetDataMap={dashboard.widgetDataMap}
                 datasets={datasets}
                 actions={actions}
                 onOpenSettings={() => setSettingsWidgetId(widget.id)}
-
+                finance={finance}
               />
             );
           }}
         />
       )}
-
-      {process.env.NODE_ENV !== "production" ? (
-        <div
-          style={{
-            borderRadius: "16px",
-            border: "1px dashed rgba(var(--accent-purple-rgb), 0.2)",
-            background: "rgba(var(--primary-rgb), 0.04)",
-            padding: "10px 12px",
-            fontSize: "0.76rem",
-            color: "var(--text-secondary)",
-            display: "grid",
-            gap: "4px",
-          }}
-        >
-          <div>
-            <strong>Dev overlay:</strong> {visibleWidgets.length} visible / {widgetManager.widgets.length} total widgets.
-          </div>
-          <div>
-            Dashboard month: <strong>{dashboardMonthKey}</strong>.
-          </div>
-          <div>
-            Settings target: <strong>{activeSettingsWidgetRecord?.widgetType || "none"}</strong>.
-          </div>
-        </div>
-      ) : null}
 
       <AddWidgetModal
         isOpen={dashboard.isAddWidgetOpen}
@@ -276,7 +244,7 @@ export default function PersonalDashboard({ dashboard }) {
         widgetId={activeSettingsWidgetRecord?.id || null}
         widgetType={activeSettingsWidgetRecord?.widgetType || null}
         widgetLabel={activeSettingsWidget?.label}
-        activeMonthKey={dashboardMonthKey}
+        activeMonthKey={finance.model.selectedMonthKey}
         widgetIsVisible={activeSettingsWidgetRecord?.isVisible !== false}
         data={activeSettingsWidgetRecord ? dashboard.widgetDataMap[activeSettingsWidgetRecord.widgetType]?.data || {} : {}}
         onClose={() => setSettingsWidgetId(null)}
