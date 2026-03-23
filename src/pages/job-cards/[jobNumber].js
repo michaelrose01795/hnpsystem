@@ -952,17 +952,21 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       return decision === "completed";
     });
   }, [jobData?.vhcChecks]);
-  const vhcSummaryRowsCompleted = useMemo(() => {
+  const vhcResolutionSnapshot = useMemo(() => {
     const checks = Array.isArray(jobData?.vhcChecks) ? jobData.vhcChecks : [];
     const summaryRows = checks.filter((check) => {
       const section = (check?.section || "").toString().trim();
       return section !== "VHC_CHECKSHEET" && section !== "VHC Checksheet";
     });
-    if (summaryRows.length === 0) return false;
+    if (summaryRows.length === 0) {
+      return { total: 0, resolved: 0, unresolved: 0, unresolvedRedAmberOrAuthorised: 0 };
+    }
 
-    // Mirror vhc_checks truth more robustly: some rows may keep authorization_state as
-    // "authorized" while display_status or Complete flag indicates final completion/decline.
-    return summaryRows.every((check) => {
+    let resolved = 0;
+    let unresolved = 0;
+    let unresolvedRedAmberOrAuthorised = 0;
+
+    summaryRows.forEach((check) => {
       const decisions = [
         check?.display_status,
         check?.approval_status,
@@ -985,21 +989,35 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       const hasCompleted = decisions.includes("completed") || isCompletedByFlag;
       const hasDeclined = decisions.includes("declined");
       const hasNotApplicable = decisions.includes("n/a");
-      return hasCompleted || hasDeclined || hasNotApplicable;
-    });
-  }, [jobData?.vhcChecks]);
-  const hasRedAmberRepairRows = useMemo(() => {
-    const checks = Array.isArray(jobData?.vhcChecks) ? jobData.vhcChecks : [];
-    return checks.some((check) => {
-      const section = (check?.section || "").toString().trim();
-      if (section === "VHC_CHECKSHEET" || section === "VHC Checksheet") return false;
       const severity = resolveVhcSeverity(check);
-      return severity === "red" || severity === "amber";
+      const isAuthorised = decisions.includes("authorized");
+      const isResolved = hasDeclined || hasNotApplicable || (isAuthorised && hasCompleted);
+
+      if (isResolved) {
+        resolved += 1;
+      } else {
+        unresolved += 1;
+      }
+
+      if (severity === "red" || severity === "amber" || (isAuthorised && !hasCompleted)) {
+        if (!isResolved) {
+          unresolvedRedAmberOrAuthorised += 1;
+        }
+      }
     });
+    return {
+      total: summaryRows.length,
+      resolved,
+      unresolved,
+      unresolvedRedAmberOrAuthorised,
+    };
   }, [jobData?.vhcChecks]);
+  const hasRedAmberRepairRows = vhcResolutionSnapshot.unresolvedRedAmberOrAuthorised > 0;
   const vhcAuthorizedWorkCompleted = vhcRowsMarkedCompleted;
-  const vhcTabComplete = vhcSummaryRowsCompleted;
-  const vhcTabAmberReady = hasRedAmberRepairRows && !vhcTabComplete;
+  const vhcTabComplete =
+    vhcResolutionSnapshot.total > 0 &&
+    vhcResolutionSnapshot.unresolvedRedAmberOrAuthorised === 0;
+  const vhcTabAmberReady = hasRedAmberRepairRows;
 
   // Invoice tab is visible for anyone who can open this page to make review easier
   const canViewInvoice = true;
@@ -8587,6 +8605,19 @@ function VHCTab({
   const [allCheckboxesComplete, setAllCheckboxesComplete] = useState(false);
   const [checkboxesLockReason, setCheckboxesLockReason] = useState("");
   const actionsEnabled = canEdit && allCheckboxesComplete;
+  const hasAwaitingCustomerDecision = useMemo(() => {
+    const checks = Array.isArray(jobData?.vhcChecks) ? jobData.vhcChecks : [];
+    return checks.some((check) => {
+      const decision = normaliseDecisionStatus(
+        check?.approval_status ??
+          check?.approvalStatus ??
+          check?.authorization_state ??
+          check?.authorizationState ??
+          check?.display_status
+      );
+      return decision === "awaiting_customer_decision" || decision === "awaiting customer decision";
+    });
+  }, [jobData?.vhcChecks]);
 
   const customerViewUrl = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -8673,7 +8704,7 @@ function VHCTab({
 
   const customActions = (
     <>
-      {canShowCustomerActions ? (
+      {canShowCustomerActions && hasAwaitingCustomerDecision ? (
         <>
           <button
             type="button"
@@ -8692,7 +8723,7 @@ function VHCTab({
             }}
             title={!actionsEnabled ? (checkboxesLockReason || "Summary checks are incomplete.") : "Open customer preview"}
           >
-            Customer Preview
+            View VHC
           </button>
           <button
             type="button"
@@ -8722,7 +8753,7 @@ function VHCTab({
           </button>
         </>
       ) : null}
-      {canShowCustomerActions && previewOpened ? (
+      {canShowCustomerActions && hasAwaitingCustomerDecision && previewOpened ? (
         <button
           type="button"
           onClick={handleSendVhc}
@@ -8741,7 +8772,7 @@ function VHCTab({
           }}
           title={!actionsEnabled ? (checkboxesLockReason || "Summary checks are incomplete.") : "Send interactive VHC to customer"}
         >
-          {sendingVhc ? "Sending..." : "Send VHC"}
+          {sendingVhc ? "Sending..." : "Send to Customer"}
         </button>
       ) : null}
       {sendVhcMessage ? (

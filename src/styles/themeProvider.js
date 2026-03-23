@@ -175,6 +175,7 @@ const ThemeContext = createContext({
   toggleTheme: () => {},
   accent: DEFAULT_ACCENT,
   setAccent: () => {},
+  setTemporaryOverride: () => {},
   loading: true,
 });
 
@@ -208,6 +209,7 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
   });
   const [accent, setAccent] = useState(() => readStoredAccent());
   const [loading, setLoading] = useState(true);
+  const [temporaryOverride, setTemporaryOverride] = useState(null);
 
   const applyAccent = useCallback((nextAccent, modeOverride = null) => {
     const normalizedAccent = normalizeAccent(nextAccent);
@@ -347,6 +349,27 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
   useEffect(() => {
     applyAccent(accent, resolvedMode);
   }, [accent, applyAccent, resolvedMode]);
+
+  useEffect(() => {
+    if (!temporaryOverride) {
+      const targetMode = mode === "system" ? getSystemPreferredMode() : mode;
+      if (typeof document !== "undefined") {
+        document.documentElement.setAttribute("data-theme", targetMode);
+      }
+      setResolvedMode(targetMode);
+      applyAccent(accent, targetMode);
+      return;
+    }
+
+    const overrideMode = normalizeMode(temporaryOverride.mode || mode);
+    const overrideResolved = overrideMode === "system" ? getSystemPreferredMode() : overrideMode;
+    const overrideAccent = normalizeAccent(temporaryOverride.accent || accent);
+    if (typeof document !== "undefined") {
+      document.documentElement.setAttribute("data-theme", overrideResolved);
+    }
+    setResolvedMode(overrideResolved);
+    applyAccent(overrideAccent, overrideResolved);
+  }, [temporaryOverride, mode, accent, applyAccent]);
 
   useEffect(() => {
     if (mode !== "system") return;
@@ -520,9 +543,10 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
       toggleTheme,
       accent,
       setAccent: setAccentPreference,
+      setTemporaryOverride,
       loading,
     }),
-    [mode, resolvedMode, toggleTheme, accent, setAccentPreference, loading]
+    [mode, resolvedMode, toggleTheme, accent, setAccentPreference, loading, setTemporaryOverride]
   );
 
   return <ThemeContext.Provider value={contextValue}>{children}</ThemeContext.Provider>;
