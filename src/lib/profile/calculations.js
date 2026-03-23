@@ -18,9 +18,22 @@ function toNumber(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-export function expectedMonthlyContractHours(contractedWeeklyHours = 0) {
+export function expectedMonthlyContractHours(contractedWeeklyHours = 0, monthKey = "") {
   const weekly = toNumber(contractedWeeklyHours, 0);
-  return Number((weekly * 52 / 12).toFixed(2));
+  if (!monthKey || !/^\d{4}-\d{2}$/.test(String(monthKey))) {
+    return Number((weekly * 52 / 12).toFixed(2));
+  }
+  const [yearStr, monthStr] = String(monthKey).split("-");
+  const year = Number(yearStr);
+  const month = Number(monthStr) - 1;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  let weekdays = 0;
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const dow = new Date(year, month, day).getDay();
+    if (dow !== 0 && dow !== 6) weekdays += 1;
+  }
+  const dailyContractHours = weekly / 5;
+  return Number((dailyContractHours * weekdays).toFixed(2));
 }
 
 export function calculateOvertimeHours(actualHours = 0, expectedHours = 0) {
@@ -35,12 +48,27 @@ export function calculateOvertimePay(overtimeHours = 0, overtimeRate = 0) {
   return Number((toNumber(overtimeHours, 0) * toNumber(overtimeRate, 0)).toFixed(2));
 }
 
-export function calculateTaxEstimate(grossPay = 0, taxRate = 0) {
-  return Number((toNumber(grossPay, 0) * (toNumber(taxRate, 0) / 100)).toFixed(2));
+export function calculateTaxEstimate(grossPay = 0) {
+  const monthly = toNumber(grossPay, 0);
+  const annual = monthly * 12;
+  const personalAllowance = 12570;
+  const taxableAnnual = Math.max(annual - personalAllowance, 0);
+  const basicBand = Math.min(taxableAnnual, 37700);
+  const higherBand = Math.min(Math.max(taxableAnnual - 37700, 0), 74870);
+  const additionalBand = Math.max(taxableAnnual - 112570, 0);
+  const annualTax = (basicBand * 0.2) + (higherBand * 0.4) + (additionalBand * 0.45);
+  return Number((annualTax / 12).toFixed(2));
 }
 
-export function calculateNationalInsuranceEstimate(grossPay = 0, niRate = 0) {
-  return Number((toNumber(grossPay, 0) * (toNumber(niRate, 0) / 100)).toFixed(2));
+export function calculateNationalInsuranceEstimate(grossPay = 0) {
+  const monthly = toNumber(grossPay, 0);
+  const primaryThreshold = 1048;
+  const upperEarningsLimit = 4189;
+  if (monthly <= primaryThreshold) return 0;
+  const basicBand = Math.min(monthly, upperEarningsLimit) - primaryThreshold;
+  const upperBand = Math.max(monthly - upperEarningsLimit, 0);
+  const ni = (Math.max(basicBand, 0) * 0.08) + (upperBand * 0.02);
+  return Number(ni.toFixed(2));
 }
 
 export function calculateAfterTaxTotal(grossPay = 0, taxAmount = 0, niAmount = 0) {

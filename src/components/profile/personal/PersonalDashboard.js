@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import AddWidgetModal from "@/components/profile/personal/AddWidgetModal";
 import WidgetGrid from "@/components/profile/personal/WidgetGrid";
 import WidgetSettingsModal from "@/components/profile/personal/WidgetSettingsModal";
@@ -141,6 +141,26 @@ export default function PersonalDashboard({ dashboard }) {
     ]
   );
 
+
+  const handleReorderFromModal = useCallback(
+    async (sourceId, targetId) => {
+      if (!sourceId || !targetId || sourceId === targetId) return;
+      const ordered = [...widgetManager.widgets].sort((a, b) => (a.positionY - b.positionY) || (a.positionX - b.positionX));
+      const sourceIndex = ordered.findIndex((entry) => entry.id === sourceId);
+      const targetIndex = ordered.findIndex((entry) => entry.id === targetId);
+      if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) return;
+      const next = [...ordered];
+      const [moved] = next.splice(sourceIndex, 1);
+      next.splice(targetIndex, 0, moved);
+      const withSlots = next.map((entry, index) => ({
+        ...entry,
+        positionX: (index % 2) + 1,
+        positionY: Math.floor(index / 2) + 1,
+      }));
+      await widgetManager.persistLayout(withSlots);
+    },
+    [widgetManager]
+  );
   const activeSettingsWidgetRecord = settingsWidgetId
     ? widgetManager.widgets.find((widget) => widget.id === settingsWidgetId) || null
     : null;
@@ -186,9 +206,7 @@ export default function PersonalDashboard({ dashboard }) {
       ) : (
         <WidgetGrid
           widgets={widgetManager.widgets}
-          onWidgetsChange={widgetManager.setWidgets}
-          onWidgetsCommit={widgetManager.persistLayout}
-          renderWidget={(widget, controls) => {
+          renderWidget={(widget) => {
             const WidgetComponent = WIDGET_COMPONENTS[widget.widgetType] || CustomWidget;
             const widgetData = dashboard.widgetDataMap[widget.widgetType]?.data || {};
             const widgetMonthKey = resolveWidgetMonthKey(widgetData, dashboardMonthKey);
@@ -203,11 +221,7 @@ export default function PersonalDashboard({ dashboard }) {
                 datasets={datasets}
                 actions={actions}
                 onOpenSettings={() => setSettingsWidgetId(widget.id)}
-                compact={controls.compact}
-                isMoveMode={controls.isMoveMode}
-                canDrag={controls.canDrag}
-                isDraggingWidget={controls.isDraggingWidget}
-                moveButtonProps={controls.moveButtonProps}
+
               />
             );
           }}
@@ -241,8 +255,10 @@ export default function PersonalDashboard({ dashboard }) {
 
       <AddWidgetModal
         isOpen={dashboard.isAddWidgetOpen}
+        widgets={widgetManager.widgets}
         visibleWidgetsByType={visibleWidgetsByType}
         onClose={dashboard.onCloseAddWidget}
+        onReorder={handleReorderFromModal}
         onToggle={async (widgetType, isVisible) => {
           if (isVisible) {
             const visibleWidget = visibleWidgetsByType[widgetType];

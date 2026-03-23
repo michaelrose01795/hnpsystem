@@ -8,33 +8,32 @@ import {
   widgetInputStyle,
 } from "@/components/profile/personal/widgets/shared";
 
+const PRESETS = {
+  "goal-tracker": { title: "Goal Tracker", amount: 0, target: 1000, note: "Track progress toward a personal goal." },
+  "bill-reminder": { title: "Bill Reminder", amount: 0, target: 0, note: "Due date and bill reminder notes." },
+  "event-countdown": { title: "Event Countdown", amount: 0, target: 0, note: "Countdown details for your next event." },
+  "birthday-tracker": { title: "Birthday Tracker", amount: 0, target: 0, note: "Birthday reminders and gift planning." },
+};
+
 export default function CustomWidget({
   widget,
-  widgetData,
   actions,
-  onRemove,
   compact = false,
-  isMoveMode = false,
-  canDrag = false,
-  isDraggingWidget = false,
-  moveButtonProps = null,
 }) {
+  const config = widget?.config || {};
   const [form, setForm] = useState({
-    title: widget.config?.title || widgetData?.title || "Custom widget",
-    amount: widgetData?.amount || 0,
-    target: widgetData?.target || 0,
-    note: widgetData?.note || "",
+    title: config.title || "Custom widget",
+    amount: config.amount || 0,
+    target: config.target || 0,
+    note: config.note || "",
+    preset: config.preset || "goal-tracker",
   });
 
   const saveCustomWidget = async () => {
-    await actions.saveWidgetData("custom", {
-      ...widgetData,
-      ...form,
-    });
     await actions.updateWidget(widget.id, {
       config: {
         ...widget.config,
-        title: form.title,
+        ...form,
       },
     });
   };
@@ -42,7 +41,7 @@ export default function CustomWidget({
   return (
     <BaseWidget
       title={form.title}
-      subtitle="A flexible personal metric card"
+      subtitle="Flexible preset-based personal card"
       accent="var(--accent-purple)"
       summary={
         <div style={{ display: "grid", gap: "10px", gridTemplateColumns: compact ? "1fr" : "repeat(2, minmax(0, 1fr))" }}>
@@ -50,13 +49,22 @@ export default function CustomWidget({
           <MetricPill label="Target" value={formatCurrency(form.target)} accent="var(--info, #1565c0)" />
         </div>
       }
-      onRemove={onRemove}
       compact={compact}
-      isMoveMode={isMoveMode}
-      canDrag={canDrag}
-      isDraggingWidget={isDraggingWidget}
-      moveButtonProps={moveButtonProps}
     >
+      <SectionLabel>Preset</SectionLabel>
+      <select
+        value={form.preset}
+        onChange={(event) => {
+          const presetKey = event.target.value;
+          const preset = PRESETS[presetKey] || PRESETS["goal-tracker"];
+          setForm((current) => ({ ...current, ...preset, preset: presetKey }));
+        }}
+        style={widgetInputStyle}
+      >
+        {Object.entries(PRESETS).map(([value, preset]) => (
+          <option key={value} value={value}>{preset.title}</option>
+        ))}
+      </select>
       <SectionLabel>Custom settings</SectionLabel>
       <div style={{ display: "grid", gap: "10px" }}>
         <input

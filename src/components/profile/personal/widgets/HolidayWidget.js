@@ -1,116 +1,79 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import BaseWidget from "@/components/profile/personal/widgets/BaseWidget";
 import {
+  EmptyState,
   MetricPill,
   SectionLabel,
-  formatCurrency,
   formatDate,
-  widgetButtonStyle,
-  widgetInputStyle,
 } from "@/components/profile/personal/widgets/shared";
-import { calculateGoalContributionForMonth } from "@/lib/profile/calculations";
 
 export default function HolidayWidget({
   widget,
-  widgetData,
-  widgetMonthKey,
   datasets,
-  actions,
-  onRemove,
   onOpenSettings,
   compact = false,
-  isMoveMode = false,
-  canDrag = false,
-  isDraggingWidget = false,
-  moveButtonProps = null,
 }) {
-  const existingGoal = useMemo(
-    () => (datasets.goals || []).find((goal) => goal.type === "holiday") || null,
-    [datasets.goals]
-  );
-  const [form, setForm] = useState({
-    target: existingGoal?.target || 0,
-    current: existingGoal?.current || 0,
-    deadline: existingGoal?.deadline || "",
-  });
-  const monthView = useMemo(
-    () =>
-      calculateGoalContributionForMonth({
-        monthKey: widgetMonthKey,
-        widgetData,
-        defaultCategory: "Holiday",
-      }),
-    [widgetData, widgetMonthKey]
-  );
+  const approvedRequests = useMemo(() => {
+    const leaveRequests = Array.isArray(datasets?.workData?.leaveRequests) ? datasets.workData.leaveRequests : [];
+    return leaveRequests
+      .filter((request) => String(request.status || "").toLowerCase() === "approved")
+      .slice(0, 6);
+  }, [datasets?.workData?.leaveRequests]);
 
-  const saveHoliday = async () => {
-    if (existingGoal?.id) {
-      await actions.updateGoal({
-        id: existingGoal.id,
-        type: "holiday",
-        target: Number(form.target || 0),
-        current: Number(form.current || 0),
-        deadline: form.deadline || null,
-      });
-    } else {
-      await actions.createGoal({
-        type: "holiday",
-        target: Number(form.target || 0),
-        current: Number(form.current || 0),
-        deadline: form.deadline || null,
-      });
-    }
-  };
+  const workDaysTaken = approvedRequests.reduce((sum, request) => sum + Number(request.totalDays || 0), 0);
+  const calendarDaysTaken = approvedRequests.reduce((sum, request) => {
+    if (!request.startDate || !request.endDate) return sum;
+    const start = new Date(request.startDate);
+    const end = new Date(request.endDate);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return sum;
+    const days = Math.max(Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1, 0);
+    return sum + days;
+  }, 0);
 
   return (
     <BaseWidget
-      title={widget.config?.title || "Holiday"}
-      subtitle="Trip fund tracking"
+      title={widget.config?.title || "Holiday Tracking"}
+      subtitle="Linked to Work tab leave records"
       accent="var(--info, #00838f)"
-      monthLabel={monthView.label}
-      statusLabel={monthView.status}
       summary={
         <div style={{ display: "grid", gap: "10px", gridTemplateColumns: compact ? "1fr" : "repeat(3, minmax(0, 1fr))" }}>
-          <MetricPill label="Saved" value={formatCurrency(form.current)} accent="var(--success, #2e7d32)" />
-          <MetricPill label="Target" value={formatCurrency(form.target)} accent="var(--accent-purple)" />
-          <MetricPill label={monthView.status} value={formatCurrency(monthView.total)} accent="var(--info, #00838f)" />
+          <MetricPill label="Work days taken" value={`${workDaysTaken.toFixed(1)}d`} accent="var(--warning, #ef6c00)" />
+          <MetricPill label="Calendar days" value={`${calendarDaysTaken.toFixed(0)}d`} accent="var(--info, #00838f)" />
+          <MetricPill label="Days left" value={datasets.workData?.leaveRemaining ?? "—"} accent="var(--success, #2e7d32)" />
         </div>
       }
-      onRemove={onRemove}
       onOpenSettings={onOpenSettings}
       compact={compact}
-      isMoveMode={isMoveMode}
-      canDrag={canDrag}
-      isDraggingWidget={isDraggingWidget}
-      moveButtonProps={moveButtonProps}
     >
-      <SectionLabel>Holiday goal</SectionLabel>
-      <div style={{ display: "grid", gap: "10px", gridTemplateColumns: compact ? "1fr" : "repeat(3, minmax(0, 1fr))" }}>
-        <input
-          type="number"
-          value={form.target}
-          onChange={(event) => setForm((current) => ({ ...current, target: event.target.value }))}
-          style={widgetInputStyle}
-          placeholder="Target"
-        />
-        <input
-          type="number"
-          value={form.current}
-          onChange={(event) => setForm((current) => ({ ...current, current: event.target.value }))}
-          style={widgetInputStyle}
-          placeholder="Current"
-        />
-        <input
-          type="date"
-          value={form.deadline}
-          onChange={(event) => setForm((current) => ({ ...current, deadline: event.target.value }))}
-          style={widgetInputStyle}
-        />
-      </div>
-      <button type="button" onClick={saveHoliday} style={{ ...widgetButtonStyle, alignSelf: "flex-start" }}>
-        Save holiday goal
-      </button>
-      <MetricPill label="Deadline" value={form.deadline ? formatDate(form.deadline) : "No deadline"} accent="var(--info, #1565c0)" />
+      <SectionLabel>Recent approved leave</SectionLabel>
+      {approvedRequests.length === 0 ? (
+        <EmptyState>No approved leave records yet in the Work tab.</EmptyState>
+      ) : (
+        <div style={{ display: "grid", gap: "8px" }}>
+          {approvedRequests.map((request) => (
+            <div
+              key={request.id}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: "12px",
+                alignItems: "center",
+                padding: "10px 12px",
+                borderRadius: "14px",
+                background: "rgba(var(--accent-purple-rgb), 0.04)",
+              }}
+            >
+              <div>
+                <div style={{ fontWeight: 700 }}>{request.type || "Leave"}</div>
+                <div style={{ fontSize: "0.78rem", color: "var(--text-secondary)" }}>
+                  {formatDate(request.startDate)} → {formatDate(request.endDate)}
+                </div>
+              </div>
+              <div style={{ fontWeight: 700 }}>{Number(request.totalDays || 0).toFixed(1)}d</div>
+            </div>
+          ))}
+        </div>
+      )}
     </BaseWidget>
   );
 }
