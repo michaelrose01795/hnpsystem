@@ -55,9 +55,11 @@ export default function ChartWidget({
   actions,
   onRemove,
   onOpenSettings,
-  dragHandleProps,
-  resizeHandleProps,
   compact = false,
+  isMoveMode = false,
+  canDrag = false,
+  isDraggingWidget = false,
+  moveButtonProps = null,
 }) {
   const source = widgetData?.source || "spendingByCategory";
 
@@ -135,9 +137,11 @@ export default function ChartWidget({
       statusLabel="Planned"
       onRemove={onRemove}
       onOpenSettings={onOpenSettings}
-      dragHandleProps={dragHandleProps}
-      resizeHandleProps={resizeHandleProps}
       compact={compact}
+      isMoveMode={isMoveMode}
+      canDrag={canDrag}
+      isDraggingWidget={isDraggingWidget}
+      moveButtonProps={moveButtonProps}
     >
       <SectionLabel>Chart source</SectionLabel>
       <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>

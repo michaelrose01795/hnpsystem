@@ -18,9 +18,11 @@ export default function MortgageWidget({
   actions,
   onRemove,
   onOpenSettings,
-  dragHandleProps,
-  resizeHandleProps,
   compact = false,
+  isMoveMode = false,
+  canDrag = false,
+  isDraggingWidget = false,
+  moveButtonProps = null,
 }) {
   const existingGoal = useMemo(
     () => (datasets.goals || []).find((goal) => goal.type === "house") || null,
@@ -87,9 +89,11 @@ export default function MortgageWidget({
       }
       onRemove={onRemove}
       onOpenSettings={onOpenSettings}
-      dragHandleProps={dragHandleProps}
-      resizeHandleProps={resizeHandleProps}
       compact={compact}
+      isMoveMode={isMoveMode}
+      canDrag={canDrag}
+      isDraggingWidget={isDraggingWidget}
+      moveButtonProps={moveButtonProps}
     >
       <SectionLabel>House goal</SectionLabel>
       <div style={{ display: "grid", gap: "10px", gridTemplateColumns: compact ? "1fr" : "repeat(2, minmax(0, 1fr))" }}>

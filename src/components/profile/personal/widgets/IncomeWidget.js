@@ -29,12 +29,11 @@ export default function IncomeWidget({
   datasets,
   actions,
   onOpenSettings,
-  dragHandleProps,
-  resizeHandleProps,
   compact = false,
-  isInteracting = false,
-  isActiveInteractionWidget = false,
-  interactionMode = null,
+  isMoveMode = false,
+  canDrag = false,
+  isDraggingWidget = false,
+  moveButtonProps = null,
 }) {
   const [manualMonthlyIncome, setManualMonthlyIncome] = useState(widgetData?.manualMonthlyIncome || 0);
   const [draftAmount, setDraftAmount] = useState("");
@@ -107,12 +106,11 @@ export default function IncomeWidget({
         </div>
       }
       onOpenSettings={onOpenSettings}
-      dragHandleProps={dragHandleProps}
-      resizeHandleProps={resizeHandleProps}
       compact={compact}
-      isInteracting={isInteracting}
-      isActiveInteractionWidget={isActiveInteractionWidget}
-      interactionMode={interactionMode}
+      isMoveMode={isMoveMode}
+      canDrag={canDrag}
+      isDraggingWidget={isDraggingWidget}
+      moveButtonProps={moveButtonProps}
     >
       <SectionLabel>{monthView.label} breakdown</SectionLabel>
       <div style={{ display: "grid", gap: "8px" }}>

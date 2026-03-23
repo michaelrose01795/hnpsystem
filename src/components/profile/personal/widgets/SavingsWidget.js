@@ -25,12 +25,11 @@ export default function SavingsWidget({
   datasets,
   actions,
   onOpenSettings,
-  dragHandleProps,
-  resizeHandleProps,
   compact = false,
-  isInteracting = false,
-  isActiveInteractionWidget = false,
-  interactionMode = null,
+  isMoveMode = false,
+  canDrag = false,
+  isDraggingWidget = false,
+  moveButtonProps = null,
 }) {
   const [form, setForm] = useState({
     targetAmount: datasets.savings?.targetAmount || 0,
@@ -91,12 +90,11 @@ export default function SavingsWidget({
         </div>
       }
       onOpenSettings={onOpenSettings}
-      dragHandleProps={dragHandleProps}
-      resizeHandleProps={resizeHandleProps}
       compact={compact}
-      isInteracting={isInteracting}
-      isActiveInteractionWidget={isActiveInteractionWidget}
-      interactionMode={interactionMode}
+      isMoveMode={isMoveMode}
+      canDrag={canDrag}
+      isDraggingWidget={isDraggingWidget}
+      moveButtonProps={moveButtonProps}
     >
       <SectionLabel>{monthView.label} categories</SectionLabel>
       <div style={{ display: "grid", gap: "8px" }}>

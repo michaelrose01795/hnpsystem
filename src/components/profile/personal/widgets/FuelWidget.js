@@ -19,12 +19,11 @@ export default function FuelWidget({
   datasets,
   actions,
   onOpenSettings,
-  dragHandleProps,
-  resizeHandleProps,
   compact = false,
-  isInteracting = false,
-  isActiveInteractionWidget = false,
-  interactionMode = null,
+  isMoveMode = false,
+  canDrag = false,
+  isDraggingWidget = false,
+  moveButtonProps = null,
 }) {
   const [draft, setDraft] = useState({ totalCost: "", litres: "", pricePerLitre: "" });
   const [draftAmount, setDraftAmount] = useState("");
@@ -102,12 +101,11 @@ export default function FuelWidget({
         </div>
       }
       onOpenSettings={onOpenSettings}
-      dragHandleProps={dragHandleProps}
-      resizeHandleProps={resizeHandleProps}
       compact={compact}
-      isInteracting={isInteracting}
-      isActiveInteractionWidget={isActiveInteractionWidget}
-      interactionMode={interactionMode}
+      isMoveMode={isMoveMode}
+      canDrag={canDrag}
+      isDraggingWidget={isDraggingWidget}
+      moveButtonProps={moveButtonProps}
     >
       <SectionLabel>{monthView.label} fuel plan</SectionLabel>
       {monthView.rows.length === 0 ? (

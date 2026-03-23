@@ -18,12 +18,11 @@ export default function WorkSummaryWidget({
   widgetMonthKey,
   datasets,
   onOpenSettings,
-  dragHandleProps,
-  resizeHandleProps,
   compact = false,
-  isInteracting = false,
-  isActiveInteractionWidget = false,
-  interactionMode = null,
+  isMoveMode = false,
+  canDrag = false,
+  isDraggingWidget = false,
+  moveButtonProps = null,
 }) {
   const workData = datasets.workData || {};
   const settings = widgetData?.settings || {};
@@ -59,12 +58,11 @@ export default function WorkSummaryWidget({
         </div>
       }
       onOpenSettings={onOpenSettings}
-      dragHandleProps={dragHandleProps}
-      resizeHandleProps={resizeHandleProps}
       compact={compact}
-      isInteracting={isInteracting}
-      isActiveInteractionWidget={isActiveInteractionWidget}
-      interactionMode={interactionMode}
+      isMoveMode={isMoveMode}
+      canDrag={canDrag}
+      isDraggingWidget={isDraggingWidget}
+      moveButtonProps={moveButtonProps}
     >
       <div style={{ display: "grid", gap: "10px", gridTemplateColumns: compact ? "1fr" : "repeat(3, minmax(0, 1fr))" }}>
         <MetricPill label="Overtime value" value={formatCurrency(workData.overtimeValue || 0)} accent="var(--success, #2e7d32)" />

@@ -85,10 +85,14 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   pointer-events: auto;
 }
 
-body.personal-grid--interacting,
-body.personal-grid--interacting * {
-  user-select: none !important;
-  -webkit-user-select: none !important;
+.personal-widget-board {
+  border-radius: 20px;
+}
+
+.personal-widget-board--move {
+  border: 1px dashed rgba(var(--accent-purple-rgb), 0.3);
+  background: rgba(var(--accent-purple-rgb), 0.03);
+  padding: 10px;
 }
 
 .personal-widget-grid.personal-widget-grid--active {

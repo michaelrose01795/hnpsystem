@@ -20,9 +20,11 @@ export default function SpendingWidget({
   actions,
   onRemove,
   onOpenSettings,
-  dragHandleProps,
-  resizeHandleProps,
   compact = false,
+  isMoveMode = false,
+  canDrag = false,
+  isDraggingWidget = false,
+  moveButtonProps = null,
 }) {
   const [draftAmount, setDraftAmount] = useState("");
   const [draftCategory, setDraftCategory] = useState("General");
@@ -73,9 +75,11 @@ export default function SpendingWidget({
       }
       onRemove={onRemove}
       onOpenSettings={onOpenSettings}
-      dragHandleProps={dragHandleProps}
-      resizeHandleProps={resizeHandleProps}
       compact={compact}
+      isMoveMode={isMoveMode}
+      canDrag={canDrag}
+      isDraggingWidget={isDraggingWidget}
+      moveButtonProps={moveButtonProps}
     >
       <SectionLabel>{monthView.label} plan</SectionLabel>
       {monthView.rows.length === 0 ? (

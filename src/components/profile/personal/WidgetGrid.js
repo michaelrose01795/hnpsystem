@@ -1,13 +1,19 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getWidgetDefinition, sanitiseWidgetLayout, sortWidgetsForDisplay } from "@/lib/profile/personalWidgets";
+import { sanitiseWidgetLayout, sortWidgetsForDisplay } from "@/lib/profile/personalWidgets";
 
-const GRID_COLUMNS = 12;
-const GRID_GAP = 16;
-const GRID_ROW_HEIGHT = 104;
-const COMPACT_BREAKPOINT = 900;
+const GRID_COLUMNS = 2;
+const SWAP_DELAY_MS = 1700;
+const COMPACT_BREAKPOINT = 1024;
 
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
+function reorderVisibleWidgets(visibleWidgets, sourceIndex, targetIndex) {
+  if (sourceIndex === targetIndex) {
+    return visibleWidgets;
+  }
+
+  const next = [...visibleWidgets];
+  const [moved] = next.splice(sourceIndex, 1);
+  next.splice(targetIndex, 0, moved);
+  return next;
 }
 
 export default function WidgetGrid({
@@ -16,15 +22,12 @@ export default function WidgetGrid({
   onWidgetsCommit,
   renderWidget,
 }) {
-  const containerRef = useRef(null);
-  const widgetsRef = useRef(widgets);
-  const interactionRef = useRef(null);
   const [isCompact, setIsCompact] = useState(false);
-  const [interactionState, setInteractionState] = useState(null);
-
-  useEffect(() => {
-    widgetsRef.current = widgets;
-  }, [widgets]);
+  const [moveModeWidgetId, setMoveModeWidgetId] = useState(null);
+  const [draggedWidgetId, setDraggedWidgetId] = useState(null);
+  const [hoveredWidgetId, setHoveredWidgetId] = useState(null);
+  const [pendingSwapWidgetId, setPendingSwapWidgetId] = useState(null);
+  const pendingSwapTimerRef = useRef(null);
 
   useEffect(() => {
     const updateCompactState = () => {
@@ -36,208 +39,194 @@ export default function WidgetGrid({
     return () => window.removeEventListener("resize", updateCompactState);
   }, []);
 
+  useEffect(() => {
+    if (isCompact && moveModeWidgetId) {
+      setMoveModeWidgetId(null);
+      setDraggedWidgetId(null);
+      setHoveredWidgetId(null);
+      setPendingSwapWidgetId(null);
+    }
+  }, [isCompact, moveModeWidgetId]);
+
+  const cancelPendingSwap = useCallback(() => {
+    if (pendingSwapTimerRef.current) {
+      window.clearTimeout(pendingSwapTimerRef.current);
+      pendingSwapTimerRef.current = null;
+    }
+    setPendingSwapWidgetId(null);
+  }, []);
+
+  useEffect(() => () => cancelPendingSwap(), [cancelPendingSwap]);
+
   const visibleWidgets = useMemo(
     () => sortWidgetsForDisplay((widgets || []).filter((widget) => widget.isVisible !== false)),
     [widgets]
   );
 
-  const updateWidgets = useCallback(
-    (nextWidgets) => {
-      const sanitised = sanitiseWidgetLayout(nextWidgets);
-      onWidgetsChange?.(sanitised);
-      return sanitised;
-    },
-    [onWidgetsChange]
-  );
+  const visibleWidgetIds = useMemo(() => visibleWidgets.map((widget) => widget.id), [visibleWidgets]);
 
-  const getGridMetrics = useCallback(() => {
-    const width = containerRef.current?.clientWidth || 0;
-    const usableWidth = Math.max(width - GRID_GAP * (GRID_COLUMNS - 1), GRID_COLUMNS * 60);
-    return {
-      cellWidth: usableWidth / GRID_COLUMNS,
-      rowHeight: GRID_ROW_HEIGHT,
-    };
-  }, []);
-
-  const endInteraction = useCallback(
-    async (shouldCommit = true) => {
-      const currentInteraction = interactionRef.current;
-      if (!currentInteraction) return;
-
-      window.removeEventListener("pointermove", currentInteraction.handleMove);
-      window.removeEventListener("pointerup", currentInteraction.handleUp);
-      interactionRef.current = null;
-      setInteractionState(null);
-      document.body.classList.remove("personal-grid--interacting");
-
-      if (shouldCommit && currentInteraction.nextWidgets) {
-        await onWidgetsCommit?.(currentInteraction.nextWidgets);
-      }
-    },
-    [onWidgetsCommit]
-  );
-
-  useEffect(() => () => {
-    endInteraction(false);
-  }, [endInteraction]);
-
-  const startInteraction = useCallback(
-    (event, widget, mode) => {
-      if (isCompact) return;
-      event.preventDefault();
-      event.stopPropagation();
-      event.currentTarget?.setPointerCapture?.(event.pointerId);
-      document.body.classList.add("personal-grid--interacting");
-
-      const definition = getWidgetDefinition(widget.widgetType);
-
-      const handleMove = (moveEvent) => {
-        const interaction = interactionRef.current;
-        if (!interaction) return;
-
-        const metrics = getGridMetrics();
-        const deltaX = moveEvent.clientX - interaction.startX;
-        const deltaY = moveEvent.clientY - interaction.startY;
-        const deltaCols = Math.round(deltaX / (metrics.cellWidth + GRID_GAP));
-        const deltaRows = Math.round(deltaY / (metrics.rowHeight + GRID_GAP));
-
-        const nextWidgets = widgetsRef.current.map((currentWidget) => {
-          if (currentWidget.id !== interaction.widgetId) {
-            return currentWidget;
-          }
-
-          if (interaction.mode === "drag") {
-            return {
-              ...currentWidget,
-              positionX: clamp(interaction.snapshot.positionX + deltaCols, 1, GRID_COLUMNS - interaction.snapshot.width + 1),
-              positionY: Math.max(1, interaction.snapshot.positionY + deltaRows),
-            };
-          }
-
-          return {
-            ...currentWidget,
-            width: clamp(interaction.snapshot.width + deltaCols, definition.minWidth, GRID_COLUMNS - interaction.snapshot.positionX + 1),
-            height: clamp(interaction.snapshot.height + deltaRows, definition.minHeight, 10),
-          };
-        });
-
-        interaction.nextWidgets = updateWidgets(nextWidgets);
-        const previewWidget = interaction.nextWidgets.find((entry) => entry.id === interaction.widgetId) || null;
-        setInteractionState({
-          mode: interaction.mode,
-          widgetId: interaction.widgetId,
-          previewWidget,
-          nextWidgets: interaction.nextWidgets,
-        });
-      };
-
-      const handleUp = async () => {
-        await endInteraction(true);
-      };
-
-      interactionRef.current = {
-        widgetId: widget.id,
-        mode,
-        snapshot: widget,
-        startX: event.clientX,
-        startY: event.clientY,
-        nextWidgets: widgetsRef.current,
-        handleMove,
-        handleUp,
-      };
-      setInteractionState({
-        mode,
-        widgetId: widget.id,
-        previewWidget: widget,
-        nextWidgets: widgetsRef.current,
-      });
-
-      window.addEventListener("pointermove", handleMove);
-      window.addEventListener("pointerup", handleUp, { once: true });
-    },
-    [endInteraction, getGridMetrics, isCompact, updateWidgets]
-  );
-
-  const displayWidgets = useMemo(() => {
-    if (interactionState?.nextWidgets?.length) {
-      return sortWidgetsForDisplay(
-        interactionState.nextWidgets.filter((widget) => widget.isVisible !== false)
-      );
+  useEffect(() => {
+    if (moveModeWidgetId && !visibleWidgetIds.includes(moveModeWidgetId)) {
+      setMoveModeWidgetId(null);
+      setDraggedWidgetId(null);
+      setHoveredWidgetId(null);
+      cancelPendingSwap();
     }
-    return visibleWidgets;
-  }, [interactionState?.nextWidgets, visibleWidgets]);
+  }, [cancelPendingSwap, moveModeWidgetId, visibleWidgetIds]);
 
-  const placeholderStyle = !isCompact && interactionState?.previewWidget
-    ? {
-        gridColumn: `${interactionState.previewWidget.positionX} / span ${interactionState.previewWidget.width}`,
-        gridRow: `${interactionState.previewWidget.positionY} / span ${interactionState.previewWidget.height}`,
+  const mergeVisibleWithAllWidgets = useCallback(
+    (nextVisibleWidgets) => {
+      const visibleMap = new Map(nextVisibleWidgets.map((widget) => [widget.id, widget]));
+      const merged = widgets.map((widget) => {
+        if (widget.isVisible === false) {
+          return widget;
+        }
+        return visibleMap.get(widget.id) || widget;
+      });
+      return sanitiseWidgetLayout(merged);
+    },
+    [widgets]
+  );
+
+  const applySwap = useCallback(
+    async (sourceWidgetId, targetWidgetId) => {
+      if (!sourceWidgetId || !targetWidgetId || sourceWidgetId === targetWidgetId) {
+        return;
       }
-    : null;
+
+      const sourceIndex = visibleWidgets.findIndex((widget) => widget.id === sourceWidgetId);
+      const targetIndex = visibleWidgets.findIndex((widget) => widget.id === targetWidgetId);
+      if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) {
+        return;
+      }
+
+      const reorderedVisibleWidgets = reorderVisibleWidgets(visibleWidgets, sourceIndex, targetIndex);
+      const mergedWidgets = mergeVisibleWithAllWidgets(reorderedVisibleWidgets);
+      onWidgetsChange?.(mergedWidgets);
+      await onWidgetsCommit?.(mergedWidgets);
+    },
+    [mergeVisibleWithAllWidgets, onWidgetsChange, onWidgetsCommit, visibleWidgets]
+  );
+
+  const startPendingSwap = useCallback(
+    (sourceWidgetId, targetWidgetId) => {
+      cancelPendingSwap();
+      setPendingSwapWidgetId(targetWidgetId);
+      pendingSwapTimerRef.current = window.setTimeout(async () => {
+        pendingSwapTimerRef.current = null;
+        setPendingSwapWidgetId(null);
+        await applySwap(sourceWidgetId, targetWidgetId);
+      }, SWAP_DELAY_MS);
+    },
+    [applySwap, cancelPendingSwap]
+  );
+
+  const isMoveMode = Boolean(moveModeWidgetId);
 
   return (
     <div
-      ref={containerRef}
-      className={interactionState ? "personal-widget-grid personal-widget-grid--active" : "personal-widget-grid"}
+      className={isMoveMode ? "personal-widget-board personal-widget-board--move" : "personal-widget-board"}
       style={{
-        display: "grid",
-        gap: `${GRID_GAP}px`,
-        gridTemplateColumns: isCompact ? "1fr" : `repeat(${GRID_COLUMNS}, minmax(0, 1fr))`,
-        gridAutoRows: `${GRID_ROW_HEIGHT}px`,
-        alignItems: "stretch",
+        maxHeight: "min(72vh, 980px)",
+        overflowY: "auto",
+        paddingRight: "6px",
       }}
     >
-      {!isCompact && placeholderStyle ? (
-        <div
-          aria-hidden="true"
-          style={{
-            ...placeholderStyle,
-            borderRadius: "20px",
-            border: "2px dashed rgba(var(--accent-purple-rgb), 0.6)",
-            background: "rgba(var(--accent-purple-rgb), 0.08)",
-            boxShadow: "0 0 0 1px rgba(var(--accent-purple-rgb), 0.2) inset",
-            pointerEvents: "none",
-            zIndex: 1,
-          }}
-        />
-      ) : null}
-      {displayWidgets.map((widget) => {
-        const definition = getWidgetDefinition(widget.widgetType);
-        const dragHandleProps = isCompact
-          ? null
-          : {
-              onPointerDown: (event) => startInteraction(event, widget, "drag"),
-            };
-        const resizeHandleProps = isCompact
-          ? null
-          : {
-              onPointerDown: (event) => startInteraction(event, widget, "resize"),
-            };
+      <div
+        className={isMoveMode ? "personal-widget-grid personal-widget-grid--active" : "personal-widget-grid"}
+        style={{
+          display: "grid",
+          gap: "16px",
+          gridTemplateColumns: isCompact ? "1fr" : `repeat(${GRID_COLUMNS}, minmax(0, 1fr))`,
+          alignItems: "stretch",
+        }}
+      >
+        {visibleWidgets.map((widget, index) => {
+          const isSlotHovered = hoveredWidgetId === widget.id;
+          const isSwapPending = pendingSwapWidgetId === widget.id;
+          const isDraggingWidget = draggedWidgetId === widget.id;
+          const canDrag = !isCompact && moveModeWidgetId === widget.id;
 
-        return (
-          <div
-            key={widget.id}
-            style={
-              isCompact
-                ? { minHeight: "260px" }
-                : {
-                    minHeight: 0,
-                    gridColumn: `${widget.positionX} / span ${widget.width}`,
-                    gridRow: `${widget.positionY} / span ${widget.height}`,
-                  }
-            }
-          >
-            {renderWidget?.(widget, {
-              compact: isCompact,
-              definition,
-              dragHandleProps,
-              resizeHandleProps,
-              isInteracting: Boolean(interactionState),
-              isActiveInteractionWidget: interactionState?.widgetId === widget.id,
-              interactionMode: interactionState?.mode || null,
-            })}
-          </div>
-        );
-      })}
+          return (
+            <div
+              key={widget.id}
+              draggable={canDrag}
+              onDragStart={(event) => {
+                if (!canDrag) {
+                  event.preventDefault();
+                  return;
+                }
+                setDraggedWidgetId(widget.id);
+                event.dataTransfer.effectAllowed = "move";
+                event.dataTransfer.setData("text/plain", widget.id);
+              }}
+              onDragEnd={() => {
+                setDraggedWidgetId(null);
+                setHoveredWidgetId(null);
+                cancelPendingSwap();
+              }}
+              onDragOver={(event) => {
+                if (!draggedWidgetId || draggedWidgetId === widget.id) return;
+                event.preventDefault();
+                event.dataTransfer.dropEffect = "move";
+              }}
+              onDragEnter={() => {
+                if (!draggedWidgetId || draggedWidgetId === widget.id) return;
+                setHoveredWidgetId(widget.id);
+                startPendingSwap(draggedWidgetId, widget.id);
+              }}
+              onDragLeave={(event) => {
+                if (!draggedWidgetId || draggedWidgetId === widget.id) return;
+                const relatedTarget = event.relatedTarget;
+                if (event.currentTarget.contains(relatedTarget)) {
+                  return;
+                }
+                setHoveredWidgetId((current) => (current === widget.id ? null : current));
+                cancelPendingSwap();
+              }}
+              style={{
+                minHeight: "280px",
+                borderRadius: "20px",
+                border: isMoveMode
+                  ? isSwapPending
+                    ? "2px solid rgba(var(--warning-rgb, 239,108,0), 0.82)"
+                    : isSlotHovered
+                      ? "2px dashed rgba(var(--accent-purple-rgb), 0.8)"
+                      : "1px dashed rgba(var(--accent-purple-rgb), 0.35)"
+                  : "1px solid transparent",
+                background: isMoveMode
+                  ? isDraggingWidget
+                    ? "rgba(var(--accent-purple-rgb), 0.14)"
+                    : "rgba(var(--accent-purple-rgb), 0.05)"
+                  : "transparent",
+                padding: isMoveMode ? "6px" : 0,
+                transition: "border-color 140ms ease, background 140ms ease",
+              }}
+            >
+              {renderWidget?.(widget, {
+                compact: isCompact,
+                isMoveMode,
+                canDrag,
+                isDraggingWidget,
+                hoveredWidgetId,
+                pendingSwapWidgetId,
+                moveButtonProps: {
+                  onClick: () => {
+                    if (isCompact) return;
+                    setMoveModeWidgetId((current) => (current === widget.id ? null : widget.id));
+                    setDraggedWidgetId(null);
+                    setHoveredWidgetId(null);
+                    cancelPendingSwap();
+                  },
+                  disabled: isCompact,
+                },
+                moveSlotIndex: index,
+                swapDelayMs: SWAP_DELAY_MS,
+              })}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

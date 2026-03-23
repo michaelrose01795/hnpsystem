@@ -8,10 +8,7 @@ import {
   widgetSelectStyle,
   widgetTextAreaStyle,
 } from "@/components/profile/personal/widgets/shared";
-import {
-  createPlanningOverride,
-  createPlanningRule,
-} from "@/lib/profile/calculations";
+import { createPlanningOverride, createPlanningRule } from "@/lib/profile/calculations";
 import { getCurrentMonthKey, normaliseMonthKey } from "@/lib/profile/monthPlanning";
 
 const WIDGET_SETTINGS_PRESETS = {
@@ -21,6 +18,8 @@ const WIDGET_SETTINGS_PRESETS = {
       useWorkEstimate: true,
       useGlobalMonth: true,
       monthKey: getCurrentMonthKey(),
+      dateDisplayMode: "month",
+      dateValue: getCurrentMonthKey(),
     },
     ruleTemplates: [
       { category: "Base income", amount: 0 },
@@ -32,6 +31,8 @@ const WIDGET_SETTINGS_PRESETS = {
     settings: {
       useGlobalMonth: true,
       monthKey: getCurrentMonthKey(),
+      dateDisplayMode: "month",
+      dateValue: getCurrentMonthKey(),
     },
     ruleTemplates: [
       { category: "Fuel", amount: 0 },
@@ -47,6 +48,8 @@ const WIDGET_SETTINGS_PRESETS = {
       useGlobalMonth: true,
       monthKey: getCurrentMonthKey(),
       includeInNetPosition: true,
+      dateDisplayMode: "month",
+      dateValue: getCurrentMonthKey(),
     },
     ruleTemplates: [
       { category: "House", amount: 0 },
@@ -59,6 +62,8 @@ const WIDGET_SETTINGS_PRESETS = {
     settings: {
       useGlobalMonth: true,
       monthKey: getCurrentMonthKey(),
+      dateDisplayMode: "month",
+      dateValue: getCurrentMonthKey(),
     },
     ruleTemplates: [
       { category: "Rent", amount: 0 },
@@ -73,6 +78,8 @@ const WIDGET_SETTINGS_PRESETS = {
       monthKey: getCurrentMonthKey(),
       expectedMileage: "",
       trendPct: "",
+      dateDisplayMode: "month",
+      dateValue: getCurrentMonthKey(),
     },
     ruleTemplates: [{ category: "Fuel", amount: 0 }],
   },
@@ -82,6 +89,8 @@ const WIDGET_SETTINGS_PRESETS = {
       monthKey: getCurrentMonthKey(),
       targetAmount: 0,
       goalDate: "",
+      dateDisplayMode: "month",
+      dateValue: getCurrentMonthKey(),
     },
     ruleTemplates: [{ category: "Holiday", amount: 0 }],
   },
@@ -91,6 +100,8 @@ const WIDGET_SETTINGS_PRESETS = {
       monthKey: getCurrentMonthKey(),
       depositTarget: 0,
       housePriceTarget: 0,
+      dateDisplayMode: "month",
+      dateValue: getCurrentMonthKey(),
     },
     ruleTemplates: [{ category: "House", amount: 0 }],
   },
@@ -101,6 +112,8 @@ const WIDGET_SETTINGS_PRESETS = {
       includeSavings: true,
       includeBills: true,
       includeFuel: true,
+      dateDisplayMode: "month",
+      dateValue: getCurrentMonthKey(),
     },
     ruleTemplates: [],
   },
@@ -108,6 +121,8 @@ const WIDGET_SETTINGS_PRESETS = {
     settings: {
       useGlobalMonth: true,
       monthKey: getCurrentMonthKey(),
+      dateDisplayMode: "month",
+      dateValue: getCurrentMonthKey(),
     },
     ruleTemplates: [],
   },
@@ -118,6 +133,8 @@ const WIDGET_SETTINGS_PRESETS = {
       plannedHours: 0,
       plannedOvertimeHours: 0,
       useWorkEstimate: true,
+      dateDisplayMode: "month",
+      dateValue: getCurrentMonthKey(),
     },
     ruleTemplates: [],
   },
@@ -125,6 +142,8 @@ const WIDGET_SETTINGS_PRESETS = {
     settings: {
       useGlobalMonth: true,
       monthKey: getCurrentMonthKey(),
+      dateDisplayMode: "month",
+      dateValue: getCurrentMonthKey(),
     },
     ruleTemplates: [],
   },
@@ -132,6 +151,8 @@ const WIDGET_SETTINGS_PRESETS = {
     settings: {
       useGlobalMonth: true,
       monthKey: getCurrentMonthKey(),
+      dateDisplayMode: "month",
+      dateValue: getCurrentMonthKey(),
     },
     ruleTemplates: [],
   },
@@ -139,6 +160,8 @@ const WIDGET_SETTINGS_PRESETS = {
     settings: {
       useGlobalMonth: true,
       monthKey: getCurrentMonthKey(),
+      dateDisplayMode: "month",
+      dateValue: getCurrentMonthKey(),
     },
     ruleTemplates: [],
   },
@@ -146,10 +169,17 @@ const WIDGET_SETTINGS_PRESETS = {
 
 function buildInitialState(widgetType, data = {}, activeMonthKey = getCurrentMonthKey()) {
   const preset = WIDGET_SETTINGS_PRESETS[widgetType] || WIDGET_SETTINGS_PRESETS.spending;
+  const savedSettings = data?.settings || {};
+  const savedMode = savedSettings.dateDisplayMode || "month";
+  const savedDateValue = savedSettings.dateValue || savedSettings.monthKey || activeMonthKey;
+  const normalisedMonth = normaliseMonthKey(savedSettings.monthKey || activeMonthKey, activeMonthKey);
+
   const settings = {
     ...preset.settings,
-    ...(data?.settings || {}),
-    monthKey: normaliseMonthKey(data?.settings?.monthKey || activeMonthKey),
+    ...savedSettings,
+    monthKey: normalisedMonth,
+    dateDisplayMode: savedMode,
+    dateValue: savedMode === "day" ? String(savedDateValue).slice(0, 10) : String(savedDateValue).slice(0, 7),
   };
 
   return {
@@ -193,14 +223,34 @@ function CheckboxRow({ label, checked, onChange }) {
   );
 }
 
-function Section({ title, children }) {
+function Section({ title, description = "", children }) {
   return (
-    <div style={{ display: "grid", gap: "10px" }}>
-      <div style={{ fontSize: "0.76rem", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-secondary)" }}>
-        {title}
+    <section
+      style={{
+        display: "grid",
+        gap: "10px",
+        borderRadius: "16px",
+        border: "1px solid rgba(var(--accent-purple-rgb), 0.14)",
+        background: "rgba(var(--primary-rgb), 0.03)",
+        padding: "14px",
+      }}
+    >
+      <div style={{ display: "grid", gap: "6px" }}>
+        <div
+          style={{
+            fontSize: "0.76rem",
+            fontWeight: 800,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            color: "var(--text-secondary)",
+          }}
+        >
+          {title}
+        </div>
+        {description ? <div style={{ fontSize: "0.78rem", color: "var(--text-secondary)" }}>{description}</div> : null}
       </div>
       {children}
-    </div>
+    </section>
   );
 }
 
@@ -225,21 +275,43 @@ export default function WidgetSettingsModal({
     }
   }, [activeMonthKey, data, isOpen, widgetType]);
 
-  const previewMonthKey = useMemo(
-    () => normaliseMonthKey(draft.settings?.monthKey || activeMonthKey),
-    [activeMonthKey, draft.settings]
-  );
+  const previewMonthKey = useMemo(() => {
+    const mode = draft.settings?.dateDisplayMode || "month";
+    const value = draft.settings?.dateValue || activeMonthKey;
+    const monthFromValue = mode === "day" ? String(value).slice(0, 7) : String(value).slice(0, 7);
+    return normaliseMonthKey(draft.settings?.monthKey || monthFromValue || activeMonthKey, activeMonthKey);
+  }, [activeMonthKey, draft.settings]);
 
   if (!isOpen) return null;
 
   const updateSetting = (key, value) => {
-    setDraft((current) => ({
-      ...current,
-      settings: {
+    setDraft((current) => {
+      const nextSettings = {
         ...current.settings,
         [key]: value,
-      },
-    }));
+      };
+
+      if (key === "dateDisplayMode") {
+        if (value === "day") {
+          nextSettings.dateValue = `${String(nextSettings.monthKey || activeMonthKey).slice(0, 7)}-01`;
+        } else {
+          nextSettings.dateValue = String(nextSettings.monthKey || activeMonthKey).slice(0, 7);
+        }
+      }
+
+      if (key === "dateValue") {
+        nextSettings.monthKey = value ? String(value).slice(0, 7) : activeMonthKey;
+      }
+
+      if (key === "monthKey") {
+        nextSettings.dateValue = nextSettings.dateDisplayMode === "day" ? `${String(value).slice(0, 7)}-01` : String(value).slice(0, 7);
+      }
+
+      return {
+        ...current,
+        settings: nextSettings,
+      };
+    });
   };
 
   const updateRule = (id, key, value) => {
@@ -269,11 +341,16 @@ export default function WidgetSettingsModal({
   };
 
   const handleSave = async () => {
+    const mode = draft.settings.dateDisplayMode || "month";
+    const dateValue = draft.settings.dateValue || activeMonthKey;
+    const resolvedMonthKey = mode === "day" ? String(dateValue).slice(0, 7) : String(dateValue).slice(0, 7);
+
     await onSave?.({
       ...data,
       settings: {
         ...data?.settings,
         ...draft.settings,
+        monthKey: normaliseMonthKey(resolvedMonthKey, activeMonthKey),
       },
       rules: draft.rules.map((rule) => ({
         ...rule,
@@ -307,7 +384,7 @@ export default function WidgetSettingsModal({
       <div
         style={{
           width: "100%",
-          maxWidth: "920px",
+          maxWidth: "980px",
           maxHeight: "84vh",
           overflowY: "auto",
           background: "var(--surface)",
@@ -323,24 +400,24 @@ export default function WidgetSettingsModal({
           <div style={{ display: "grid", gap: "6px" }}>
             <div style={{ fontSize: "1.1rem", fontWeight: 800 }}>{widgetLabel || "Widget"} settings</div>
             <div style={{ color: "var(--text-secondary)", lineHeight: 1.5, fontSize: "0.86rem" }}>
-              Configure recurring rules, month overrides, and whether this widget follows the shared dashboard month.
+              Choose date display mode, layout visibility, and data rules for this widget.
             </div>
+            <div style={{ fontSize: "0.76rem", color: "var(--text-secondary)" }}>Widget ID: {widgetId || "—"}</div>
           </div>
           <button type="button" onClick={onClose} style={widgetGhostButtonStyle}>
             Close
           </button>
         </div>
 
-        <div style={{ display: "grid", gap: "18px", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
-          <Section title="General">
-            <div style={{ fontSize: "0.76rem", color: "var(--text-secondary)" }}>
-              Widget ID: {widgetId || "—"}
+        <div style={{ display: "grid", gap: "14px", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
+          <Section title="Layout" description="Control visibility and how this card appears on the board.">
+            <div style={{ paddingBottom: "6px", borderBottom: "1px dashed rgba(var(--accent-purple-rgb), 0.22)" }}>
+              <CheckboxRow
+                label="Widget visible"
+                checked={widgetIsVisible !== false}
+                onChange={(checked) => onToggleVisibility?.(checked)}
+              />
             </div>
-            <CheckboxRow
-              label="Use dashboard month"
-              checked={draft.settings.useGlobalMonth !== false}
-              onChange={(checked) => updateSetting("useGlobalMonth", checked)}
-            />
             {"detailRows" in draft.settings ? null : (
               <CheckboxRow
                 label="Show detail rows in widget"
@@ -348,16 +425,42 @@ export default function WidgetSettingsModal({
                 onChange={(checked) => updateSetting("showDetailRows", checked)}
               />
             )}
+          </Section>
+
+          <Section title="Date view" description="Set whether the widget displays month-based or day-based context.">
+            <CheckboxRow
+              label="Use current dashboard month"
+              checked={draft.settings.useGlobalMonth !== false}
+              onChange={(checked) => updateSetting("useGlobalMonth", checked)}
+            />
             <div style={{ display: "grid", gap: "8px" }}>
-              <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: 600 }}>Widget month</div>
+              <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: 600 }}>Display mode</div>
+              <select
+                value={draft.settings.dateDisplayMode || "month"}
+                onChange={(event) => updateSetting("dateDisplayMode", event.target.value)}
+                style={widgetSelectStyle}
+              >
+                <option value="month">By month</option>
+                <option value="day">By day</option>
+              </select>
+            </div>
+            <div style={{ display: "grid", gap: "8px" }}>
+              <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: 600 }}>
+                {draft.settings.dateDisplayMode === "day" ? "Selected day" : "Selected month"}
+              </div>
               <input
-                type="month"
+                type={draft.settings.dateDisplayMode === "day" ? "date" : "month"}
                 disabled={draft.settings.useGlobalMonth !== false}
-                value={previewMonthKey}
-                onChange={(event) => updateSetting("monthKey", event.target.value)}
+                value={draft.settings.dateValue || ""}
+                onChange={(event) => updateSetting("dateValue", event.target.value)}
                 style={widgetInputStyle}
               />
             </div>
+          </Section>
+        </div>
+
+        <Section title="Widget content" description="Widget-specific content settings.">
+          <div style={{ display: "grid", gap: "10px", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
             {"baseMonthlyIncome" in draft.settings ? (
               <input
                 type="number"
@@ -438,161 +541,156 @@ export default function WidgetSettingsModal({
                 placeholder="Planned overtime hours"
               />
             ) : null}
-            {"useWorkEstimate" in draft.settings ? (
-              <CheckboxRow
-                label="Use work-linked estimate when available"
-                checked={draft.settings.useWorkEstimate !== false}
-                onChange={(checked) => updateSetting("useWorkEstimate", checked)}
-              />
-            ) : null}
-            {widgetType === "work-summary" || widgetType === "income" ? (
-              <>
-                <input
-                  type="number"
-                  value={draft.settings.contractedWeeklyHours || ""}
-                  onChange={(event) => updateSetting("contractedWeeklyHours", event.target.value)}
-                  style={widgetInputStyle}
-                  placeholder="Contracted weekly hours (fallback)"
-                />
-                <input
-                  type="number"
-                  value={draft.settings.hourlyRate || ""}
-                  onChange={(event) => updateSetting("hourlyRate", event.target.value)}
-                  style={widgetInputStyle}
-                  placeholder="Hourly rate override"
-                />
-                <input
-                  type="number"
-                  value={draft.settings.overtimeRate || ""}
-                  onChange={(event) => updateSetting("overtimeRate", event.target.value)}
-                  style={widgetInputStyle}
-                  placeholder="Overtime rate override"
-                />
-                <input
-                  type="number"
-                  value={draft.settings.taxRate || ""}
-                  onChange={(event) => updateSetting("taxRate", event.target.value)}
-                  style={widgetInputStyle}
-                  placeholder="Tax % estimate"
-                />
-                <input
-                  type="number"
-                  value={draft.settings.niRate || ""}
-                  onChange={(event) => updateSetting("niRate", event.target.value)}
-                  style={widgetInputStyle}
-                  placeholder="National insurance % estimate"
-                />
-              </>
-            ) : null}
-            {"includeSavings" in draft.settings ? (
-              <CheckboxRow
-                label="Include savings in net position"
-                checked={draft.settings.includeSavings !== false}
-                onChange={(checked) => updateSetting("includeSavings", checked)}
-              />
-            ) : null}
-            {"includeBills" in draft.settings ? (
-              <CheckboxRow
-                label="Include bills in net position"
-                checked={draft.settings.includeBills !== false}
-                onChange={(checked) => updateSetting("includeBills", checked)}
-              />
-            ) : null}
-            {"includeFuel" in draft.settings ? (
-              <CheckboxRow
-                label="Include fuel in net position"
-                checked={draft.settings.includeFuel !== false}
-                onChange={(checked) => updateSetting("includeFuel", checked)}
-              />
-            ) : null}
-            <div style={{ paddingTop: "6px", borderTop: "1px dashed rgba(var(--accent-purple-rgb), 0.24)" }}>
-              <CheckboxRow
-                label="Widget visible"
-                checked={widgetIsVisible !== false}
-                onChange={(checked) => onToggleVisibility?.(checked)}
-              />
-              <div style={{ fontSize: "0.76rem", color: "var(--text-secondary)", marginTop: "6px" }}>
-                Hide is managed here so widget cards stay uncluttered.
-              </div>
-            </div>
-          </Section>
+          </div>
 
-          <Section title="Recurring rules">
-            {draft.rules.length === 0 ? (
-              <div style={{ fontSize: "0.84rem", color: "var(--text-secondary)" }}>This widget currently uses only direct data and month overrides.</div>
-            ) : (
-              <div style={{ display: "grid", gap: "10px" }}>
-                {draft.rules.map((rule) => (
-                  <div key={rule.id} style={{ display: "grid", gap: "8px", borderRadius: "16px", padding: "12px", background: "rgba(var(--accent-purple-rgb), 0.05)" }}>
-                    <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "1.4fr 1fr" }}>
-                      <input
-                        value={rule.category}
-                        onChange={(event) => updateRule(rule.id, "category", event.target.value)}
-                        style={widgetInputStyle}
-                        placeholder="Category"
-                      />
-                      <input
-                        type="number"
-                        value={rule.amount}
-                        onChange={(event) => updateRule(rule.id, "amount", event.target.value)}
-                        style={widgetInputStyle}
-                        placeholder="Monthly amount"
-                      />
-                    </div>
-                    <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "repeat(3, minmax(0, 1fr)) auto" }}>
-                      <input
-                        type="month"
-                        value={rule.startMonth}
-                        onChange={(event) => updateRule(rule.id, "startMonth", event.target.value)}
-                        style={widgetInputStyle}
-                      />
-                      <input
-                        type="month"
-                        value={rule.endMonth || ""}
-                        onChange={(event) => updateRule(rule.id, "endMonth", event.target.value)}
-                        style={widgetInputStyle}
-                      />
-                      <select
-                        value={rule.recurrenceType || "monthly"}
-                        onChange={(event) => updateRule(rule.id, "recurrenceType", event.target.value)}
-                        style={widgetSelectStyle}
-                      >
-                        <option value="monthly">Monthly</option>
-                      </select>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setDraft((current) => ({
-                            ...current,
-                            rules: current.rules.filter((entry) => entry.id !== rule.id),
-                          }))
-                        }
-                        style={widgetGhostButtonStyle}
-                      >
-                        Remove
-                      </button>
-                    </div>
+          {"useWorkEstimate" in draft.settings ? (
+            <CheckboxRow
+              label="Use work-linked estimate when available"
+              checked={draft.settings.useWorkEstimate !== false}
+              onChange={(checked) => updateSetting("useWorkEstimate", checked)}
+            />
+          ) : null}
+
+          {widgetType === "work-summary" || widgetType === "income" ? (
+            <div style={{ display: "grid", gap: "10px", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+              <input
+                type="number"
+                value={draft.settings.contractedWeeklyHours || ""}
+                onChange={(event) => updateSetting("contractedWeeklyHours", event.target.value)}
+                style={widgetInputStyle}
+                placeholder="Contracted weekly hours (fallback)"
+              />
+              <input
+                type="number"
+                value={draft.settings.hourlyRate || ""}
+                onChange={(event) => updateSetting("hourlyRate", event.target.value)}
+                style={widgetInputStyle}
+                placeholder="Hourly rate override"
+              />
+              <input
+                type="number"
+                value={draft.settings.overtimeRate || ""}
+                onChange={(event) => updateSetting("overtimeRate", event.target.value)}
+                style={widgetInputStyle}
+                placeholder="Overtime rate override"
+              />
+              <input
+                type="number"
+                value={draft.settings.taxRate || ""}
+                onChange={(event) => updateSetting("taxRate", event.target.value)}
+                style={widgetInputStyle}
+                placeholder="Tax % estimate"
+              />
+              <input
+                type="number"
+                value={draft.settings.niRate || ""}
+                onChange={(event) => updateSetting("niRate", event.target.value)}
+                style={widgetInputStyle}
+                placeholder="National insurance % estimate"
+              />
+            </div>
+          ) : null}
+
+          {"includeSavings" in draft.settings ? (
+            <CheckboxRow
+              label="Include savings in net position"
+              checked={draft.settings.includeSavings !== false}
+              onChange={(checked) => updateSetting("includeSavings", checked)}
+            />
+          ) : null}
+          {"includeBills" in draft.settings ? (
+            <CheckboxRow
+              label="Include bills in net position"
+              checked={draft.settings.includeBills !== false}
+              onChange={(checked) => updateSetting("includeBills", checked)}
+            />
+          ) : null}
+          {"includeFuel" in draft.settings ? (
+            <CheckboxRow
+              label="Include fuel in net position"
+              checked={draft.settings.includeFuel !== false}
+              onChange={(checked) => updateSetting("includeFuel", checked)}
+            />
+          ) : null}
+        </Section>
+
+        <Section title="Recurring rules" description="Create monthly recurring categories used by the widget.">
+          {draft.rules.length === 0 ? (
+            <div style={{ fontSize: "0.84rem", color: "var(--text-secondary)" }}>
+              This widget currently uses only direct data and month overrides.
+            </div>
+          ) : (
+            <div style={{ display: "grid", gap: "10px" }}>
+              {draft.rules.map((rule) => (
+                <div key={rule.id} style={{ display: "grid", gap: "8px", borderRadius: "16px", padding: "12px", background: "rgba(var(--accent-purple-rgb), 0.05)" }}>
+                  <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "1.4fr 1fr" }}>
+                    <input
+                      value={rule.category}
+                      onChange={(event) => updateRule(rule.id, "category", event.target.value)}
+                      style={widgetInputStyle}
+                      placeholder="Category"
+                    />
+                    <input
+                      type="number"
+                      value={rule.amount}
+                      onChange={(event) => updateRule(rule.id, "amount", event.target.value)}
+                      style={widgetInputStyle}
+                      placeholder="Monthly amount"
+                    />
                   </div>
-                ))}
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={() =>
-                setDraft((current) => ({
-                  ...current,
-                  rules: [...current.rules, createPlanningRule({ startMonth: previewMonthKey })],
-                }))
-              }
-              style={{ ...widgetGhostButtonStyle, alignSelf: "flex-start" }}
-            >
-              Add recurring rule
-            </button>
-          </Section>
-        </div>
+                  <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "repeat(3, minmax(0, 1fr)) auto" }}>
+                    <input
+                      type="month"
+                      value={rule.startMonth}
+                      onChange={(event) => updateRule(rule.id, "startMonth", event.target.value)}
+                      style={widgetInputStyle}
+                    />
+                    <input
+                      type="month"
+                      value={rule.endMonth || ""}
+                      onChange={(event) => updateRule(rule.id, "endMonth", event.target.value)}
+                      style={widgetInputStyle}
+                    />
+                    <select
+                      value={rule.recurrenceType || "monthly"}
+                      onChange={(event) => updateRule(rule.id, "recurrenceType", event.target.value)}
+                      style={widgetSelectStyle}
+                    >
+                      <option value="monthly">Monthly</option>
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setDraft((current) => ({
+                          ...current,
+                          rules: current.rules.filter((entry) => entry.id !== rule.id),
+                        }))
+                      }
+                      style={widgetGhostButtonStyle}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() =>
+              setDraft((current) => ({
+                ...current,
+                rules: [...current.rules, createPlanningRule({ startMonth: previewMonthKey })],
+              }))
+            }
+            style={{ ...widgetGhostButtonStyle, alignSelf: "flex-start" }}
+          >
+            Add recurring rule
+          </button>
+        </Section>
 
         {widgetType === "savings" ? (
-          <Section title="Savings accounts">
+          <Section title="Savings accounts" description="Manage named account groupings for the savings widget.">
             <div style={{ display: "grid", gap: "10px" }}>
               {(draft.settings.savingsAccounts || []).map((account, index) => (
                 <div key={`${account?.name || "account"}-${index}`} style={{ display: "grid", gap: "8px", gridTemplateColumns: "1fr auto" }}>
@@ -640,7 +738,7 @@ export default function WidgetSettingsModal({
         ) : null}
 
         {widgetType === "fuel" ? (
-          <Section title="Fuel defaults">
+          <Section title="Fuel defaults" description="Optional default values for new fuel entries.">
             <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
               <input
                 type="number"
@@ -659,7 +757,7 @@ export default function WidgetSettingsModal({
           </Section>
         ) : null}
 
-        <Section title="Month overrides">
+        <Section title="Month overrides" description="Set one-off values for specific months.">
           <div style={{ display: "grid", gap: "10px" }}>
             {draft.overrides.length === 0 ? (
               <div style={{ fontSize: "0.84rem", color: "var(--text-secondary)" }}>

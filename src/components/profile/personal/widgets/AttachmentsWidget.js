@@ -19,9 +19,11 @@ export default function AttachmentsWidget({
   datasets,
   actions,
   onRemove,
-  dragHandleProps,
-  resizeHandleProps,
   compact = false,
+  isMoveMode = false,
+  canDrag = false,
+  isDraggingWidget = false,
+  moveButtonProps = null,
 }) {
   const fileInputRef = useRef(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -46,9 +48,11 @@ export default function AttachmentsWidget({
       subtitle="Private files held behind your personal unlock"
       accent="var(--accent-purple)"
       onRemove={onRemove}
-      dragHandleProps={dragHandleProps}
-      resizeHandleProps={resizeHandleProps}
       compact={compact}
+      isMoveMode={isMoveMode}
+      canDrag={canDrag}
+      isDraggingWidget={isDraggingWidget}
+      moveButtonProps={moveButtonProps}
     >
       <SectionLabel>Upload</SectionLabel>
       <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>

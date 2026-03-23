@@ -10,12 +10,11 @@ export default function BaseWidget({
   summary = null,
   children,
   onOpenSettings,
-  dragHandleProps = null,
-  resizeHandleProps = null,
   compact = false,
-  interactionMode = null,
-  isInteracting = false,
-  isActiveInteractionWidget = false,
+  isMoveMode = false,
+  canDrag = false,
+  isDraggingWidget = false,
+  moveButtonProps = null,
 }) {
   return (
     <div
@@ -34,36 +33,28 @@ export default function BaseWidget({
         position: "relative",
         overflow: "hidden",
         transition: "transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease",
-        transform: isActiveInteractionWidget ? "scale(1.01)" : "scale(1)",
-        opacity: isInteracting && !isActiveInteractionWidget ? 0.92 : 1,
-        zIndex: isActiveInteractionWidget ? 3 : 2,
+        transform: isDraggingWidget ? "scale(0.985)" : "scale(1)",
+        opacity: isDraggingWidget ? 0.78 : 1,
       }}
     >
-      {!compact && dragHandleProps ? (
+      {isMoveMode ? (
         <div
-          {...dragHandleProps}
           style={{
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            height: "24px",
-            background: "rgba(var(--primary-rgb), 0.09)",
-            borderTopLeftRadius: "14px",
-            borderTopRightRadius: "14px",
-            cursor: "move",
-            userSelect: "none",
-            touchAction: "none",
+            justifyContent: "space-between",
+            gap: "10px",
+            borderRadius: "12px",
+            border: "1px dashed rgba(var(--accent-purple-rgb), 0.35)",
+            background: "rgba(var(--primary-rgb), 0.06)",
+            padding: "6px 10px",
+            fontSize: "0.74rem",
+            color: "var(--text-secondary)",
+            fontWeight: 700,
           }}
         >
-          <span
-            aria-hidden="true"
-            style={{
-              width: "42px",
-              height: "5px",
-              borderRadius: "999px",
-              background: "rgba(var(--primary-rgb), 0.35)",
-            }}
-          />
+          <span>{canDrag ? "Drag this card to a new slot" : "Move mode active"}</span>
+          <span style={{ letterSpacing: "0.08em", textTransform: "uppercase" }}>2-column grid</span>
         </div>
       ) : null}
 
@@ -92,11 +83,7 @@ export default function BaseWidget({
             >
               {title}
             </div>
-            {subtitle ? (
-              <div style={{ fontSize: "0.76rem", color: "var(--text-secondary)" }}>
-                {subtitle}
-              </div>
-            ) : null}
+            {subtitle ? <div style={{ fontSize: "0.76rem", color: "var(--text-secondary)" }}>{subtitle}</div> : null}
           </div>
           {monthLabel || statusLabel ? (
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
@@ -119,6 +106,26 @@ export default function BaseWidget({
         </div>
 
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+          {moveButtonProps ? (
+            <button
+              type="button"
+              onClick={moveButtonProps.onClick}
+              disabled={moveButtonProps.disabled}
+              style={{
+                border: "1px solid rgba(var(--accent-purple-rgb), 0.18)",
+                borderRadius: "999px",
+                padding: "7px 10px",
+                background: isMoveMode && canDrag ? "var(--accent-purple)" : "rgba(var(--surface-rgb, 255, 255, 255), 0.82)",
+                color: isMoveMode && canDrag ? "#ffffff" : "var(--text-primary)",
+                cursor: moveButtonProps.disabled ? "not-allowed" : "pointer",
+                fontWeight: 700,
+                fontSize: "0.76rem",
+                opacity: moveButtonProps.disabled ? 0.6 : 1,
+              }}
+            >
+              {isMoveMode && canDrag ? "Done" : "Move"}
+            </button>
+          ) : null}
           {onOpenSettings ? (
             <button
               type="button"
@@ -134,7 +141,7 @@ export default function BaseWidget({
                 fontSize: "0.76rem",
               }}
             >
-              {interactionMode === "resize" && isActiveInteractionWidget ? "Resizing…" : "Settings"}
+              Settings
             </button>
           ) : null}
         </div>
@@ -149,42 +156,11 @@ export default function BaseWidget({
           gap: "8px",
           minHeight: 0,
           flex: 1,
-          overflow: "auto",
+          overflow: compact ? "visible" : "auto",
         }}
       >
         {children}
       </SurfacePanel>
-
-      {!compact && resizeHandleProps ? (
-        <div
-          aria-hidden="true"
-          {...resizeHandleProps}
-          style={{
-            position: "absolute",
-            right: "10px",
-            bottom: "10px",
-            width: "26px",
-            height: "26px",
-            borderRadius: "999px",
-            border: "1px solid rgba(var(--accent-purple-rgb), 0.28)",
-            cursor: "nwse-resize",
-            background: "rgba(var(--surface-rgb, 255, 255, 255), 0.92)",
-            touchAction: "none",
-            display: "grid",
-            placeItems: "center",
-          }}
-        >
-          <span
-            style={{
-              width: "12px",
-              height: "12px",
-              borderRight: "2px solid rgba(var(--primary-rgb), 0.55)",
-              borderBottom: "2px solid rgba(var(--primary-rgb), 0.55)",
-              transform: "translate(-1px, -1px)",
-            }}
-          />
-        </div>
-      ) : null}
     </div>
   );
 }
