@@ -54,6 +54,10 @@ import {
 } from "@/lib/prePickLocations";
 import { revalidateJob, revalidateAllJobs } from "@/lib/swr/mutations"; // SWR cache invalidation after mutations
 import { useJob } from "@/hooks/useJob"; // SWR-powered job card data with caching and revalidation
+import { resolveJobCardPermissions } from "@/features/jobCards/workflow/permissions";
+import { getWriteUpCompletionState, getInvoiceWorkflowState, getNextBestAction } from "@/features/jobCards/workflow/selectors";
+import JobWorkflowAssistantCard from "@/features/jobCards/components/JobWorkflowAssistantCard";
+import JobWorkflowDiagnostics from "@/features/jobCards/components/JobWorkflowDiagnostics";
 
 const WriteUpForm = dynamic(() => import("@/components/JobCards/WriteUpForm"), {
   ssr: false,
@@ -794,73 +798,40 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     };
   }, [jobData, activeTab]);
 
-  // ✅ Permission Check
+  // ✅ Permission Check (centralized shared model)
   const userRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
-  const isWorkshopManager = userRoles.includes("workshop manager");
-  const canEditBase = [
-    "service",
-    "service manager",
-    "workshop manager",
-    "admin",
-    "admin manager",
-    "parts",
-    "parts manager"
-  ].some((role) => userRoles.includes(role));
-  const canManageDocumentsBase = [
-    "service manager",
-    "workshop manager",
-    "after-sales manager",
-    "admin",
-    "admin manager"
-  ].some((role) => userRoles.includes(role));
-  const mainStatusForEditLock = resolveMainStatusId(jobData?.status);
-  const isInvoiceOrBeyondReadOnly =
-    mainStatusForEditLock === JOB_STATUSES.INVOICED ||
-    mainStatusForEditLock === JOB_STATUSES.RELEASED ||
-    String(jobData?.status || "").trim().toLowerCase() === "archived";
-  const canEdit = !isArchiveMode && !isInvoiceOrBeyondReadOnly && canEditBase;
-  const canManageDocuments =
-    !isArchiveMode && !isInvoiceOrBeyondReadOnly && canManageDocumentsBase;
+  const permissions = useMemo(
+    () =>
+      resolveJobCardPermissions({
+        userRoles,
+        jobStatus: jobData?.status,
+        isArchiveMode,
+        isValetMode,
+        vhcRequired: jobData?.vhcRequired,
+      }),
+    [userRoles, jobData?.status, jobData?.vhcRequired, isArchiveMode, isValetMode]
+  );
+  const {
+    isWorkshopManager,
+    canEditBase,
+    mainStatusForEditLock,
+    isInvoiceOrBeyondReadOnly,
+    canEdit,
+    canManageDocuments,
+    canUseReleaseAction,
+    canViewPartsTab,
+    canViewVhcTab,
+    isPartsWriteUpVhcLockedByStatus,
+    canEditPartsWriteUpVhc,
+    isClockingLockedByStatus,
+    clockingLockDescription,
+    generalReadOnlyLockDescription,
+    partsWriteUpVhcLockDescription,
+    lockedTabIds,
+  } = permissions;
   const canEditTrackingLocations =
     !isArchiveMode &&
     String(jobData?.status || "").trim().toLowerCase() !== "archived";
-  const canUseReleaseAction =
-    !isArchiveMode &&
-    canEditBase &&
-    mainStatusForEditLock === JOB_STATUSES.INVOICED;
-  const canViewPartsTab = [
-    "workshop manager",
-    "service manager",
-    "parts",
-    "parts manager",
-    "after-sales manager"
-  ].some((role) => userRoles.includes(role));
-  const canViewVhcTab = Boolean(jobData?.vhcRequired || isWorkshopManager);
-  const isPartsWriteUpVhcLockedByStatus =
-    mainStatusForEditLock === JOB_STATUSES.BOOKED ||
-    mainStatusForEditLock === JOB_STATUSES.INVOICED ||
-    mainStatusForEditLock === JOB_STATUSES.RELEASED;
-  const canEditPartsWriteUpVhc = canEdit && !isPartsWriteUpVhcLockedByStatus;
-  const isClockingLockedByStatus =
-    mainStatusForEditLock === JOB_STATUSES.INVOICED ||
-    mainStatusForEditLock === JOB_STATUSES.RELEASED;
-  const clockingLockDescription =
-    mainStatusForEditLock === JOB_STATUSES.INVOICED
-      ? "Clocking is locked because this job has been invoiced."
-      : mainStatusForEditLock === JOB_STATUSES.RELEASED
-      ? "Clocking is locked because this job has been released."
-      : "Clocking is locked for the current job status.";
-  const generalReadOnlyLockDescription = isInvoiceOrBeyondReadOnly
-    ? `This tab is locked because the job is ${jobData?.status || "read-only"}.`
-    : "";
-  const partsWriteUpVhcLockDescription =
-    mainStatusForEditLock === JOB_STATUSES.BOOKED
-      ? "This section unlocks when the job is moved to Checked In or In Progress."
-      : mainStatusForEditLock === JOB_STATUSES.INVOICED
-      ? "This section unlocks if the job status is moved back to In Progress by a manager."
-      : mainStatusForEditLock === JOB_STATUSES.RELEASED
-      ? "This section unlocks if the job is moved back from Released to In Progress by a manager."
-      : "This section is locked for the current job status.";
   const lockAlertStyle = {
     padding: "12px 14px",
     borderRadius: "var(--radius-sm)",
@@ -1017,6 +988,8 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
   const vhcTabComplete =
     vhcResolutionSnapshot.total > 0 &&
     vhcResolutionSnapshot.unresolvedRedAmberOrAuthorised === 0;
+  // Keep a dedicated summary-row completion flag for invoice gating compatibility.
+  const vhcSummaryRowsCompleted = vhcTabComplete;
   const vhcTabAmberReady = hasRedAmberRepairRows;
 
   // Invoice tab is visible for anyone who can open this page to make review easier
@@ -3170,19 +3143,12 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       writeUpChecklistTasks = [];
     }
   }
-  const writeUpRowsAllChecked =
-    writeUpChecklistTasks.length > 0 &&
-    writeUpChecklistTasks.every((task) => {
-      if (!task || typeof task !== "object") return false;
-      if (typeof task.checked === "boolean") return task.checked;
-      const normalizedTaskStatus = String(task.status || "").trim().toLowerCase();
-      return normalizedTaskStatus === "complete" || normalizedTaskStatus === "completed";
-    });
-  const writeUpComplete =
-    writeUpCompletionStatus === "complete" ||
-    writeUpCompletionStatus === "waiting_additional_work" ||
-    writeUpCompletionStatus === "completed" ||
-    writeUpCompletionStatus === "done";
+  const writeUpState = getWriteUpCompletionState({
+    completionStatus: writeUpCompletionStatus,
+    checklistTasks: writeUpChecklistTasks,
+  });
+  const writeUpRowsAllChecked = writeUpState.allRowsChecked;
+  const writeUpComplete = writeUpState.statusMarkedComplete;
   const vhcQualified = !jobData.vhcRequired || Boolean(jobData.vhcCompletedAt);
   const mileageRecorded = pickMileageValue(jobData.mileage, jobData.milage) !== null;
   const partsReadyBase = arePartsPricedAndAssigned(jobData.partsAllocations);
@@ -3200,50 +3166,28 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       jobData.partsAllocations.length > 0 &&
       partsAllocatedBase &&
       partsReadyBase);
-  const writeUpCompleteInstant =
-    writeUpChecklistTasks.length > 0 ? writeUpRowsAllChecked : writeUpComplete;
+  const writeUpCompleteInstant = writeUpState.isCompleteInstant;
   const vhcTabCompleteInstant = vhcTabComplete || Boolean(jobData.vhcCompletedAt);
   const vhcTabAmberReadyInstant = hasRedAmberRepairRows && !vhcTabCompleteInstant;
   const statusReadyForInvoicing = isStatusReadyForInvoicing(
     jobData.status,
     overallStatusId
   );
-  const invoicePrerequisitesMet =
-    writeUpComplete &&
-    vhcQualified &&
-    (!jobData.vhcRequired || vhcSummaryRowsCompleted) &&
-    mileageRecorded &&
-    partsReady &&
-    partsAllocated;
-  const invoiceBlockingReasons = [];
-  if (!writeUpComplete) {
-    invoiceBlockingReasons.push("Complete and mark the write up as finished.");
-  }
-  if (!vhcQualified) {
-    invoiceBlockingReasons.push("Complete the Vehicle Health Check or mark it as not required.");
-  }
-  if (jobData.vhcRequired && !vhcSummaryRowsCompleted) {
-    invoiceBlockingReasons.push("Set every VHC Summary row status to Complete or Declined.");
-  }
-  if (!mileageRecorded) {
-    invoiceBlockingReasons.push("Enter current mileage in the Vehicle section.");
-  }
-  if (!partsAllocated) {
-    invoiceBlockingReasons.push("Allocate every booked part to a request or additional request.");
-  }
-  if (!partsReady) {
-    const partsIssues = getPartsValidationIssues(jobData.partsAllocations);
-    if (partsIssues.length > 0) {
-      invoiceBlockingReasons.push(
-        `Parts tab – review each allocated part in 'Parts Added to Job' (ignore removed rows), then make sure Quantity Allocated meets Quantity Requested and Unit Price is entered before invoicing. Items needing updates: ${partsIssues.join("; ")}.`
-      );
-    } else {
-      invoiceBlockingReasons.push(
-        "Parts tab – in 'Parts Added to Job' (excluding removed rows), allocate every part to a request, confirm Quantity Allocated is set correctly, and enter a Unit Price for each allocated part."
-      );
-    }
-  }
-  const showProformaCompleteSection = invoicePrerequisitesMet && statusReadyForInvoicing;
+  const partsIssues = getPartsValidationIssues(jobData.partsAllocations);
+  const invoiceWorkflow = getInvoiceWorkflowState({
+    writeUpComplete,
+    vhcRequired: Boolean(jobData.vhcRequired),
+    vhcQualified,
+    vhcSummaryRowsCompleted,
+    mileageRecorded,
+    partsAllocated,
+    partsReady,
+    partsIssues,
+    statusReadyForInvoicing,
+  });
+  const invoicePrerequisitesMet = invoiceWorkflow.invoicePrerequisitesMet;
+  const invoiceBlockingReasons = invoiceWorkflow.invoiceBlockingReasons;
+  const showProformaCompleteSection = invoiceWorkflow.showProformaCompleteSection;
   const statusSnapshotInvoice = statusSnapshot?.workflows?.invoice || null;
   const invoiceExists =
     Boolean(statusSnapshotInvoice?.invoiceId) || Boolean(invoiceViewState?.exists);
@@ -3267,6 +3211,47 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     invoiceExists &&
     invoicePaymentComplete &&
     !jobReleased;
+
+  const workflowSummary = {
+    writeUpComplete,
+    vhcLabel: !jobData.vhcRequired ? "Not required" : vhcSummaryRowsCompleted ? "Complete" : "Pending",
+    partsLabel: partsReady && partsAllocated ? "Ready" : "Action needed",
+    mileageRecorded,
+    invoiceReady: invoicePrerequisitesMet,
+  };
+
+  const assistantGuidance = getNextBestAction({
+    canEdit,
+    canViewPartsTab,
+    canViewVhcTab,
+    isInvoiceOrBeyondReadOnly,
+    overallStatusId,
+    writeUpComplete,
+    vhcRequired: Boolean(jobData.vhcRequired),
+    vhcSummaryRowsCompleted,
+    partsAllocated,
+    partsReady,
+    mileageRecorded,
+    invoicePrerequisitesMet,
+    invoiceBlockingReasons,
+  });
+
+  const workflowDiagnostics = {
+    overallStatusId,
+    overallStatusLabel,
+    ...workflowSummary,
+    invoiceBlockingReasons,
+    permissions: {
+      canEdit,
+      canEditPartsWriteUpVhc,
+      canManageDocuments,
+      canViewPartsTab,
+      canViewVhcTab,
+      isInvoiceOrBeyondReadOnly,
+      isClockingLockedByStatus,
+      isPartsWriteUpVhcLockedByStatus,
+    },
+  };
 
   const jobVhcChecks = Array.isArray(jobData.vhcChecks) ? jobData.vhcChecks : [];
   const redIssues = jobVhcChecks.filter((check) => resolveVhcSeverity(check) === "red");
@@ -3292,46 +3277,16 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       : "";
   const jobDivisionLower = jobDivisionLabel.toLowerCase();
 
-  // ✅ Tab Configuration
-  const tabs = isValetMode
-    ? [
-        { id: "customer-requests", label: "Customer Requests" },
-        { id: "documents", label: "Documents" },
-      ]
-    : [
-        { id: "customer-requests", label: "Customer Requests"},
-        { id: "contact", label: "Contact"},
-        { id: "scheduling", label: "Scheduling"},
-        { id: "service-history", label: "Service History"},
-        { id: "notes", label: "Notes", badge: notesTabBadge},
-        ...(canViewPartsTab ? [{ id: "parts", label: "Parts"}] : []),
-        { id: "write-up", label: "Write Up"},
-        ...(canViewVhcTab ? [{ id: "vhc", label: "VHC" }] : []),
-        { id: "warranty", label: "Warranty"},
-        { id: "clocking", label: "Clocking"},
-        { id: "messages", label: "Messages"},
-        { id: "documents", label: "Documents"},
-        { id: "invoice", label: "Invoice"}
-      ];
-  const lockedTabIds = new Set(
-    isInvoiceOrBeyondReadOnly
-      ? [
-          "customer-requests",
-          "contact",
-          "scheduling",
-          "parts",
-          "notes",
-          "write-up",
-          "vhc",
-          "warranty",
-          "clocking",
-          "documents",
-        ]
-      : [
-          ...(isPartsWriteUpVhcLockedByStatus ? ["parts", "write-up", "vhc"] : []),
-          ...(isClockingLockedByStatus ? ["clocking"] : []),
-        ]
-  );
+  // ✅ Tab Configuration (from shared permission model)
+  const tabs = (permissions?.tabs || []).map((tab) => {
+    if (tab.id === "notes") {
+      return { ...tab, badge: notesTabBadge };
+    }
+    if (tab.id === "vhc") {
+      return { ...tab, badge: vhcTabBadge };
+    }
+    return tab;
+  });
 
   const pageStackStyle = {
     display: "flex",
@@ -3640,6 +3595,13 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
             )}
           </div>
         </section>
+
+        <JobWorkflowAssistantCard
+          guidance={assistantGuidance}
+          workflowSummary={workflowSummary}
+        />
+
+        <JobWorkflowDiagnostics diagnostics={workflowDiagnostics} />
 
         {/* ✅ Related Jobs Panel */}
         {(relatedJobs.length > 0 || jobData.isPrimeJob) && (
