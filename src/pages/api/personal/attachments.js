@@ -4,13 +4,14 @@ import fs from "fs";
 import path from "path";
 import {
   buildPersonalApiError,
+  getPersonalState,
   mapAttachmentRow,
-  PERSONAL_TABLES,
   requirePersonalAccess,
+  savePersonalState,
 } from "@/lib/profile/personalServer";
 import { resolvePersonalAttachmentPath } from "@/lib/profile/personalAttachments";
 
-function withDownloadUrl(req, attachment) {
+function withDownloadUrl(attachment) {
   return {
     ...attachment,
     downloadUrl: `/api/personal/attachments?downloadId=${encodeURIComponent(attachment.id)}`,
@@ -20,90 +21,49 @@ function withDownloadUrl(req, attachment) {
 export default async function handler(req, res) {
   try {
     const { userId, db } = await requirePersonalAccess(req, res);
+    const state = await getPersonalState(userId, db);
+    const attachments = Array.isArray(state.collections?.attachments) ? state.collections.attachments : [];
 
     if (req.method === "GET") {
       const downloadId = String(req.query.downloadId || "");
 
       if (downloadId) {
-        const { data, error } = await db
-          .from(PERSONAL_TABLES.attachments)
-          .select("id, user_id, file_url, file_name, mime_type, file_size, created_at")
-          .eq("user_id", userId)
-          .eq("id", downloadId)
-          .maybeSingle();
+        const data = attachments.find((entry) => String(entry.id) === downloadId) || null;
+        if (!data?.id) return res.status(404).json({ success: false, message: "Attachment not found." });
 
-        if (error) {
-          throw error;
-        }
-        if (!data?.id) {
-          return res.status(404).json({ success: false, message: "Attachment not found." });
-        }
-
-        const filePath = resolvePersonalAttachmentPath(data.file_url);
+        const filePath = resolvePersonalAttachmentPath(data.fileUrl || data.file_url);
         if (!fs.existsSync(filePath)) {
           return res.status(404).json({ success: false, message: "Attachment file is missing." });
         }
 
-        res.setHeader("Content-Type", data.mime_type || "application/octet-stream");
-        res.setHeader(
-          "Content-Disposition",
-          `inline; filename=\"${path.basename(String(data.file_name || "attachment"))}\"`
-        );
-        res.setHeader("Content-Length", String(data.file_size || fs.statSync(filePath).size));
+        res.setHeader("Content-Type", data.mimeType || "application/octet-stream");
+        res.setHeader("Content-Disposition", `inline; filename=\"${path.basename(String(data.fileName || "attachment"))}\"`);
+        res.setHeader("Content-Length", String(data.fileSize || fs.statSync(filePath).size));
         return fs.createReadStream(filePath).pipe(res);
-      }
-
-      const { data, error } = await db
-        .from(PERSONAL_TABLES.attachments)
-        .select("id, user_id, file_url, file_name, mime_type, file_size, created_at")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        throw error;
       }
 
       return res.status(200).json({
         success: true,
-        data: (data || []).map((row) => withDownloadUrl(req, mapAttachmentRow(row))),
+        data: [...attachments]
+          .map(mapAttachmentRow)
+          .map(withDownloadUrl)
+          .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || ""))),
       });
     }
 
     if (req.method === "DELETE") {
       const id = String(req.body?.id || req.query.id || "");
-      if (!id) {
-        return res.status(400).json({ success: false, message: "Attachment id is required." });
-      }
+      if (!id) return res.status(400).json({ success: false, message: "Attachment id is required." });
 
-      const { data: existing, error: existingError } = await db
-        .from(PERSONAL_TABLES.attachments)
-        .select("id, user_id, file_url")
-        .eq("user_id", userId)
-        .eq("id", id)
-        .maybeSingle();
+      const existing = attachments.find((entry) => String(entry.id) === id) || null;
+      if (!existing?.id) return res.status(404).json({ success: false, message: "Attachment not found." });
 
-      if (existingError) {
-        throw existingError;
-      }
-      if (!existing?.id) {
-        return res.status(404).json({ success: false, message: "Attachment not found." });
-      }
-
-      const { error } = await db
-        .from(PERSONAL_TABLES.attachments)
-        .delete()
-        .eq("user_id", userId)
-        .eq("id", id);
-
-      if (error) {
-        throw error;
-      }
+      const nextAttachments = attachments.filter((entry) => String(entry.id) !== id);
+      await savePersonalState(userId, { ...state, collections: { ...state.collections, attachments: nextAttachments } }, db);
 
       try {
-        const filePath = resolvePersonalAttachmentPath(existing.file_url);
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
+        const filePath = resolvePersonalAttachmentPath(existing.fileUrl);
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
       } catch (fileError) {
         console.warn("Failed to delete personal attachment file:", fileError?.message || fileError);
       }

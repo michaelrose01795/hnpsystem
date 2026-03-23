@@ -20,11 +20,11 @@ export default function BaseWidget({
         gap: "10px",
         height: "100%",
         minHeight: 0,
-        background:
-          `linear-gradient(180deg, color-mix(in srgb, ${accent || "var(--accent-purple)"} 18%, var(--surface) 82%) 0%, color-mix(in srgb, ${accent || "var(--accent-purple)"} 10%, var(--surface) 90%) 100%)`,
-        borderRadius: "20px",
-        border: "1px solid rgba(var(--accent-purple-rgb), 0.18)",
-        boxShadow: "var(--shadow-lg)",
+        background: "var(--surface)",
+        borderTop: `2px solid ${accent || "rgba(var(--accent-purple-rgb), 0.2)"}`,
+        borderRadius: "18px",
+        border: "1px solid rgba(var(--accent-purple-rgb), 0.14)",
+        boxShadow: "var(--shadow-md)",
         padding: "10px",
         position: "relative",
         overflow: "hidden",
@@ -36,18 +36,18 @@ export default function BaseWidget({
           justifyContent: "space-between",
           gap: "12px",
           alignItems: "flex-start",
-          background: "rgba(var(--primary-rgb), 0.08)",
-          borderRadius: "14px",
+          borderRadius: "12px",
           padding: "10px 12px",
+          background: "rgba(var(--primary-rgb), 0.04)",
         }}
       >
         <div style={{ display: "grid", gap: "6px", minWidth: 0 }}>
           <div style={{ minWidth: 0 }}>
             <div
               style={{
-                fontSize: "0.96rem",
+                fontSize: "0.94rem",
                 fontWeight: 700,
-                color: accent || "var(--text-primary)",
+                color: "var(--text-primary)",
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
@@ -55,21 +55,13 @@ export default function BaseWidget({
             >
               {title}
             </div>
-            {subtitle ? <div style={{ fontSize: "0.76rem", color: "var(--text-secondary)" }}>{subtitle}</div> : null}
+            {subtitle ? <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>{subtitle}</div> : null}
           </div>
           {monthLabel || statusLabel ? (
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
               {monthLabel ? <StatusBadge tone="neutral">{monthLabel}</StatusBadge> : null}
               {statusLabel ? (
-                <StatusBadge
-                  tone={
-                    statusLabel === "Actual"
-                      ? "positive"
-                      : statusLabel === "Projected"
-                        ? "warning"
-                        : "info"
-                  }
-                >
+                <StatusBadge tone={statusLabel === "Actual" ? "positive" : statusLabel === "Projected" ? "warning" : "info"}>
                   {statusLabel}
                 </StatusBadge>
               ) : null}
@@ -99,7 +91,7 @@ export default function BaseWidget({
         </div>
       </div>
 
-      {summary ? <SurfacePanel style={{ padding: "8px" }}>{summary}</SurfacePanel> : null}
+      {summary ? <SurfacePanel style={{ padding: "8px", borderColor: "rgba(var(--accent-purple-rgb), 0.08)" }}>{summary}</SurfacePanel> : null}
 
       <SurfacePanel
         style={{
@@ -109,6 +101,7 @@ export default function BaseWidget({
           minHeight: 0,
           flex: 1,
           overflow: compact ? "visible" : "auto",
+          borderColor: "rgba(var(--accent-purple-rgb), 0.08)",
         }}
       >
         {children}

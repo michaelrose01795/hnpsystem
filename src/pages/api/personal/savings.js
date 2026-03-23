@@ -1,68 +1,39 @@
 import {
   buildPersonalApiError,
+  getPersonalState,
   mapSavingsRow,
-  PERSONAL_TABLES,
   requirePersonalAccess,
+  savePersonalState,
 } from "@/lib/profile/personalServer";
 
 function buildSavingsPayload(body = {}, userId) {
   return {
-    user_id: userId,
-    target_amount: Number(body.targetAmount || 0),
-    current_amount: Number(body.currentAmount || 0),
-    monthly_contribution: Number(body.monthlyContribution || 0),
-    updated_at: new Date().toISOString(),
+    id: body.id || null,
+    userId,
+    targetAmount: Number(body.targetAmount || 0),
+    currentAmount: Number(body.currentAmount || 0),
+    monthlyContribution: Number(body.monthlyContribution || 0),
   };
 }
 
 export default async function handler(req, res) {
   try {
     const { userId, db } = await requirePersonalAccess(req, res);
+    const state = await getPersonalState(userId, db);
 
     if (req.method === "GET") {
-      const { data, error } = await db
-        .from(PERSONAL_TABLES.savings)
-        .select("id, user_id, target_amount, current_amount, monthly_contribution, created_at, updated_at")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      if (error) {
-        throw error;
-      }
-
-      return res.status(200).json({ success: true, data: data ? mapSavingsRow(data) : null });
+      const savings = state.collections?.savings ? mapSavingsRow(state.collections.savings) : null;
+      return res.status(200).json({ success: true, data: savings });
     }
 
     if (req.method === "POST" || req.method === "PUT") {
-      const { data, error } = await db
-        .from(PERSONAL_TABLES.savings)
-        .upsert(
-          {
-            ...buildSavingsPayload(req.body, userId),
-            created_at: new Date().toISOString(),
-          },
-          { onConflict: "user_id" }
-        )
-        .select("id, user_id, target_amount, current_amount, monthly_contribution, created_at, updated_at")
-        .maybeSingle();
-
-      if (error) {
-        throw error;
-      }
-
-      return res.status(200).json({ success: true, data: mapSavingsRow(data) });
+      const savings = buildSavingsPayload(req.body, userId);
+      await savePersonalState(userId, { ...state, collections: { ...state.collections, savings } }, db);
+      return res.status(200).json({ success: true, data: savings });
     }
 
     if (req.method === "DELETE") {
-      const { error } = await db
-        .from(PERSONAL_TABLES.savings)
-        .delete()
-        .eq("user_id", userId);
-
-      if (error) {
-        throw error;
-      }
-
+      await savePersonalState(userId, { ...state, collections: { ...state.collections, savings: null } }, db);
       return res.status(200).json({ success: true, data: null });
     }
 
