@@ -121,6 +121,27 @@ const WIDGET_SETTINGS_PRESETS = {
     },
     ruleTemplates: [],
   },
+  notes: {
+    settings: {
+      useGlobalMonth: true,
+      monthKey: getCurrentMonthKey(),
+    },
+    ruleTemplates: [],
+  },
+  attachments: {
+    settings: {
+      useGlobalMonth: true,
+      monthKey: getCurrentMonthKey(),
+    },
+    ruleTemplates: [],
+  },
+  custom: {
+    settings: {
+      useGlobalMonth: true,
+      monthKey: getCurrentMonthKey(),
+    },
+    ruleTemplates: [],
+  },
 };
 
 function buildInitialState(widgetType, data = {}, activeMonthKey = getCurrentMonthKey()) {
@@ -185,12 +206,15 @@ function Section({ title, children }) {
 
 export default function WidgetSettingsModal({
   isOpen,
+  widgetId,
   widgetType,
   widgetLabel,
   activeMonthKey = getCurrentMonthKey(),
+  widgetIsVisible = true,
   data = {},
   onClose,
   onSave,
+  onToggleVisibility,
 }) {
   useBodyModalLock(isOpen);
   const [draft, setDraft] = useState(buildInitialState(widgetType, data, activeMonthKey));
@@ -309,11 +333,21 @@ export default function WidgetSettingsModal({
 
         <div style={{ display: "grid", gap: "18px", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
           <Section title="General">
+            <div style={{ fontSize: "0.76rem", color: "var(--text-secondary)" }}>
+              Widget ID: {widgetId || "—"}
+            </div>
             <CheckboxRow
               label="Use dashboard month"
               checked={draft.settings.useGlobalMonth !== false}
               onChange={(checked) => updateSetting("useGlobalMonth", checked)}
             />
+            {"detailRows" in draft.settings ? null : (
+              <CheckboxRow
+                label="Show detail rows in widget"
+                checked={draft.settings.showDetailRows !== false}
+                onChange={(checked) => updateSetting("showDetailRows", checked)}
+              />
+            )}
             <div style={{ display: "grid", gap: "8px" }}>
               <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: 600 }}>Widget month</div>
               <input
@@ -411,6 +445,45 @@ export default function WidgetSettingsModal({
                 onChange={(checked) => updateSetting("useWorkEstimate", checked)}
               />
             ) : null}
+            {widgetType === "work-summary" || widgetType === "income" ? (
+              <>
+                <input
+                  type="number"
+                  value={draft.settings.contractedWeeklyHours || ""}
+                  onChange={(event) => updateSetting("contractedWeeklyHours", event.target.value)}
+                  style={widgetInputStyle}
+                  placeholder="Contracted weekly hours (fallback)"
+                />
+                <input
+                  type="number"
+                  value={draft.settings.hourlyRate || ""}
+                  onChange={(event) => updateSetting("hourlyRate", event.target.value)}
+                  style={widgetInputStyle}
+                  placeholder="Hourly rate override"
+                />
+                <input
+                  type="number"
+                  value={draft.settings.overtimeRate || ""}
+                  onChange={(event) => updateSetting("overtimeRate", event.target.value)}
+                  style={widgetInputStyle}
+                  placeholder="Overtime rate override"
+                />
+                <input
+                  type="number"
+                  value={draft.settings.taxRate || ""}
+                  onChange={(event) => updateSetting("taxRate", event.target.value)}
+                  style={widgetInputStyle}
+                  placeholder="Tax % estimate"
+                />
+                <input
+                  type="number"
+                  value={draft.settings.niRate || ""}
+                  onChange={(event) => updateSetting("niRate", event.target.value)}
+                  style={widgetInputStyle}
+                  placeholder="National insurance % estimate"
+                />
+              </>
+            ) : null}
             {"includeSavings" in draft.settings ? (
               <CheckboxRow
                 label="Include savings in net position"
@@ -432,6 +505,16 @@ export default function WidgetSettingsModal({
                 onChange={(checked) => updateSetting("includeFuel", checked)}
               />
             ) : null}
+            <div style={{ paddingTop: "6px", borderTop: "1px dashed rgba(var(--accent-purple-rgb), 0.24)" }}>
+              <CheckboxRow
+                label="Widget visible"
+                checked={widgetIsVisible !== false}
+                onChange={(checked) => onToggleVisibility?.(checked)}
+              />
+              <div style={{ fontSize: "0.76rem", color: "var(--text-secondary)", marginTop: "6px" }}>
+                Hide is managed here so widget cards stay uncluttered.
+              </div>
+            </div>
           </Section>
 
           <Section title="Recurring rules">
@@ -507,6 +590,74 @@ export default function WidgetSettingsModal({
             </button>
           </Section>
         </div>
+
+        {widgetType === "savings" ? (
+          <Section title="Savings accounts">
+            <div style={{ display: "grid", gap: "10px" }}>
+              {(draft.settings.savingsAccounts || []).map((account, index) => (
+                <div key={`${account?.name || "account"}-${index}`} style={{ display: "grid", gap: "8px", gridTemplateColumns: "1fr auto" }}>
+                  <input
+                    value={account?.name || ""}
+                    onChange={(event) =>
+                      updateSetting(
+                        "savingsAccounts",
+                        (draft.settings.savingsAccounts || []).map((entry, entryIndex) =>
+                          entryIndex === index ? { ...entry, name: event.target.value } : entry
+                        )
+                      )
+                    }
+                    style={widgetInputStyle}
+                    placeholder="Account name"
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      updateSetting(
+                        "savingsAccounts",
+                        (draft.settings.savingsAccounts || []).filter((_, entryIndex) => entryIndex !== index)
+                      )
+                    }
+                    style={widgetGhostButtonStyle}
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() =>
+                  updateSetting("savingsAccounts", [
+                    ...(draft.settings.savingsAccounts || []),
+                    { name: "New account", type: "savings", hidden: false },
+                  ])
+                }
+                style={{ ...widgetGhostButtonStyle, alignSelf: "flex-start" }}
+              >
+                Add account
+              </button>
+            </div>
+          </Section>
+        ) : null}
+
+        {widgetType === "fuel" ? (
+          <Section title="Fuel defaults">
+            <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+              <input
+                type="number"
+                value={draft.settings.defaultFuelBudget || ""}
+                onChange={(event) => updateSetting("defaultFuelBudget", event.target.value)}
+                style={widgetInputStyle}
+                placeholder="Default fuel budget"
+              />
+              <input
+                value={draft.settings.defaultFuelStation || ""}
+                onChange={(event) => updateSetting("defaultFuelStation", event.target.value)}
+                style={widgetInputStyle}
+                placeholder="Default station label"
+              />
+            </div>
+          </Section>
+        ) : null}
 
         <Section title="Month overrides">
           <div style={{ display: "grid", gap: "10px" }}>

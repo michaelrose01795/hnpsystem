@@ -11,7 +11,16 @@ import {
   widgetGhostButtonStyle,
   widgetInputStyle,
 } from "@/components/profile/personal/widgets/shared";
-import { calculateIncomeForMonth } from "@/lib/profile/calculations";
+import {
+  calculateAfterTaxTotal,
+  calculateBasePay,
+  calculateIncomeForMonth,
+  calculateNationalInsuranceEstimate,
+  calculateOvertimeHours,
+  calculateOvertimePay,
+  calculateTaxEstimate,
+  expectedMonthlyContractHours,
+} from "@/lib/profile/calculations";
 
 export default function IncomeWidget({
   widget,
@@ -19,11 +28,13 @@ export default function IncomeWidget({
   widgetMonthKey,
   datasets,
   actions,
-  onRemove,
   onOpenSettings,
   dragHandleProps,
   resizeHandleProps,
   compact = false,
+  isInteracting = false,
+  isActiveInteractionWidget = false,
+  interactionMode = null,
 }) {
   const [manualMonthlyIncome, setManualMonthlyIncome] = useState(widgetData?.manualMonthlyIncome || 0);
   const [draftAmount, setDraftAmount] = useState("");
@@ -63,6 +74,21 @@ export default function IncomeWidget({
     setDraftAmount("");
   };
 
+  const settings = widgetData?.settings || {};
+  const contractedWeeklyHours = Number(settings.contractedWeeklyHours || datasets.workData?.contractedWeeklyHours || 0);
+  const expectedHours = expectedMonthlyContractHours(contractedWeeklyHours);
+  const actualHours = Number(datasets.workData?.hoursWorked || 0);
+  const overtimeHours = calculateOvertimeHours(actualHours, expectedHours);
+  const hourlyRate = Number(settings.hourlyRate || datasets.workData?.hourlyRate || 0);
+  const overtimeRate = Number(settings.overtimeRate || datasets.workData?.overtimeRate || hourlyRate);
+  const standardHours = Math.min(actualHours, expectedHours);
+  const basePay = calculateBasePay(standardHours, hourlyRate);
+  const overtimePay = calculateOvertimePay(overtimeHours, overtimeRate);
+  const grossPay = Number((basePay + overtimePay).toFixed(2));
+  const taxAmount = calculateTaxEstimate(grossPay, Number(settings.taxRate || 0));
+  const niAmount = calculateNationalInsuranceEstimate(grossPay, Number(settings.niRate || 0));
+  const afterTaxTotal = calculateAfterTaxTotal(grossPay, taxAmount, niAmount);
+
   return (
     <BaseWidget
       title={widget.config?.title || "Income"}
@@ -80,11 +106,13 @@ export default function IncomeWidget({
           />
         </div>
       }
-      onRemove={onRemove}
       onOpenSettings={onOpenSettings}
       dragHandleProps={dragHandleProps}
       resizeHandleProps={resizeHandleProps}
       compact={compact}
+      isInteracting={isInteracting}
+      isActiveInteractionWidget={isActiveInteractionWidget}
+      interactionMode={interactionMode}
     >
       <SectionLabel>{monthView.label} breakdown</SectionLabel>
       <div style={{ display: "grid", gap: "8px" }}>
@@ -105,6 +133,22 @@ export default function IncomeWidget({
             </div>
           ))
         )}
+      </div>
+
+      <SectionLabel>Detailed pay breakdown</SectionLabel>
+      <div style={{ display: "grid", gap: "8px", gridTemplateColumns: compact ? "1fr" : "repeat(2, minmax(0, 1fr))" }}>
+        <MetricPill label="Expected monthly hours" value={`${expectedHours.toFixed(2)}h`} accent="var(--info, #1565c0)" />
+        <MetricPill label="Overtime (auto)" value={`${overtimeHours.toFixed(2)}h`} accent="var(--warning, #ef6c00)" />
+        <MetricPill label="Base pay" value={formatCurrency(basePay)} accent="var(--success, #2e7d32)" />
+        <MetricPill label="Overtime pay" value={formatCurrency(overtimePay)} accent="var(--success, #2e7d32)" />
+        <MetricPill label="Tax estimate" value={formatCurrency(taxAmount)} accent="var(--danger, #c62828)" />
+        <MetricPill label="NI estimate" value={formatCurrency(niAmount)} accent="var(--danger, #c62828)" />
+        <MetricPill label="After tax" value={formatCurrency(afterTaxTotal)} accent="var(--accent-purple)" />
+        <MetricPill
+          label="After-tax / hr"
+          value={actualHours > 0 ? formatCurrency(afterTaxTotal / actualHours) : "—"}
+          accent="var(--info, #1565c0)"
+        />
       </div>
 
       <SectionLabel>Manual top-up</SectionLabel>

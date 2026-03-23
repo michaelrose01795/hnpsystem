@@ -20,6 +20,7 @@ export default function WidgetGrid({
   const widgetsRef = useRef(widgets);
   const interactionRef = useRef(null);
   const [isCompact, setIsCompact] = useState(false);
+  const [interactionState, setInteractionState] = useState(null);
 
   useEffect(() => {
     widgetsRef.current = widgets;
@@ -66,6 +67,8 @@ export default function WidgetGrid({
       window.removeEventListener("pointermove", currentInteraction.handleMove);
       window.removeEventListener("pointerup", currentInteraction.handleUp);
       interactionRef.current = null;
+      setInteractionState(null);
+      document.body.classList.remove("personal-grid--interacting");
 
       if (shouldCommit && currentInteraction.nextWidgets) {
         await onWidgetsCommit?.(currentInteraction.nextWidgets);
@@ -84,6 +87,7 @@ export default function WidgetGrid({
       event.preventDefault();
       event.stopPropagation();
       event.currentTarget?.setPointerCapture?.(event.pointerId);
+      document.body.classList.add("personal-grid--interacting");
 
       const definition = getWidgetDefinition(widget.widgetType);
 
@@ -118,6 +122,13 @@ export default function WidgetGrid({
         });
 
         interaction.nextWidgets = updateWidgets(nextWidgets);
+        const previewWidget = interaction.nextWidgets.find((entry) => entry.id === interaction.widgetId) || null;
+        setInteractionState({
+          mode: interaction.mode,
+          widgetId: interaction.widgetId,
+          previewWidget,
+          nextWidgets: interaction.nextWidgets,
+        });
       };
 
       const handleUp = async () => {
@@ -134,6 +145,12 @@ export default function WidgetGrid({
         handleMove,
         handleUp,
       };
+      setInteractionState({
+        mode,
+        widgetId: widget.id,
+        previewWidget: widget,
+        nextWidgets: widgetsRef.current,
+      });
 
       window.addEventListener("pointermove", handleMove);
       window.addEventListener("pointerup", handleUp, { once: true });
@@ -141,9 +158,26 @@ export default function WidgetGrid({
     [endInteraction, getGridMetrics, isCompact, updateWidgets]
   );
 
+  const displayWidgets = useMemo(() => {
+    if (interactionState?.nextWidgets?.length) {
+      return sortWidgetsForDisplay(
+        interactionState.nextWidgets.filter((widget) => widget.isVisible !== false)
+      );
+    }
+    return visibleWidgets;
+  }, [interactionState?.nextWidgets, visibleWidgets]);
+
+  const placeholderStyle = !isCompact && interactionState?.previewWidget
+    ? {
+        gridColumn: `${interactionState.previewWidget.positionX} / span ${interactionState.previewWidget.width}`,
+        gridRow: `${interactionState.previewWidget.positionY} / span ${interactionState.previewWidget.height}`,
+      }
+    : null;
+
   return (
     <div
       ref={containerRef}
+      className={interactionState ? "personal-widget-grid personal-widget-grid--active" : "personal-widget-grid"}
       style={{
         display: "grid",
         gap: `${GRID_GAP}px`,
@@ -152,7 +186,21 @@ export default function WidgetGrid({
         alignItems: "stretch",
       }}
     >
-      {visibleWidgets.map((widget) => {
+      {!isCompact && placeholderStyle ? (
+        <div
+          aria-hidden="true"
+          style={{
+            ...placeholderStyle,
+            borderRadius: "20px",
+            border: "2px dashed rgba(var(--accent-purple-rgb), 0.6)",
+            background: "rgba(var(--accent-purple-rgb), 0.08)",
+            boxShadow: "0 0 0 1px rgba(var(--accent-purple-rgb), 0.2) inset",
+            pointerEvents: "none",
+            zIndex: 1,
+          }}
+        />
+      ) : null}
+      {displayWidgets.map((widget) => {
         const definition = getWidgetDefinition(widget.widgetType);
         const dragHandleProps = isCompact
           ? null
@@ -183,6 +231,9 @@ export default function WidgetGrid({
               definition,
               dragHandleProps,
               resizeHandleProps,
+              isInteracting: Boolean(interactionState),
+              isActiveInteractionWidget: interactionState?.widgetId === widget.id,
+              interactionMode: interactionState?.mode || null,
             })}
           </div>
         );

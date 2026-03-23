@@ -38,19 +38,6 @@ const WIDGET_COMPONENTS = {
   attachments: AttachmentsWidget,
 };
 
-const CONFIGURABLE_WIDGET_TYPES = new Set([
-  "income",
-  "work-summary",
-  "spending",
-  "savings",
-  "bills",
-  "fuel",
-  "mortgage",
-  "holiday",
-  "net-position",
-  "chart",
-]);
-
 function insightToneStyle(type) {
   if (type === "warning") {
     return {
@@ -87,7 +74,7 @@ export default function PersonalDashboard({ dashboard }) {
     onAddWidget: dashboard.addWidget,
   });
   const [selectedMonthKey, setSelectedMonthKey] = useState(getCurrentMonthKey());
-  const [settingsWidgetType, setSettingsWidgetType] = useState(null);
+  const [settingsWidgetId, setSettingsWidgetId] = useState(null);
 
   const visibleWidgets = widgetManager.widgets.filter((widget) => widget.isVisible !== false);
   const visibleWidgetsByType = visibleWidgets.reduce((accumulator, widget) => {
@@ -148,8 +135,11 @@ export default function PersonalDashboard({ dashboard }) {
     ]
   );
 
-  const activeSettingsWidget = settingsWidgetType
-    ? PERSONAL_WIDGET_DEFINITIONS[settingsWidgetType] || null
+  const activeSettingsWidgetRecord = settingsWidgetId
+    ? widgetManager.widgets.find((widget) => widget.id === settingsWidgetId) || null
+    : null;
+  const activeSettingsWidget = activeSettingsWidgetRecord
+    ? PERSONAL_WIDGET_DEFINITIONS[activeSettingsWidgetRecord.widgetType] || null
     : null;
 
   return (
@@ -229,19 +219,38 @@ export default function PersonalDashboard({ dashboard }) {
                 datasets={datasets}
                 actions={actions}
                 onOpenSettings={
-                  CONFIGURABLE_WIDGET_TYPES.has(widget.widgetType)
-                    ? () => setSettingsWidgetType(widget.widgetType)
-                    : null
+                  () => setSettingsWidgetId(widget.id)
                 }
-                onRemove={() => widgetManager.removeWidget?.(widget.id)}
                 dragHandleProps={controls.dragHandleProps}
                 resizeHandleProps={controls.resizeHandleProps}
                 compact={controls.compact}
+                isInteracting={controls.isInteracting}
+                isActiveInteractionWidget={controls.isActiveInteractionWidget}
+                interactionMode={controls.interactionMode}
               />
             );
           }}
         />
       )}
+
+      {process.env.NODE_ENV !== "production" ? (
+        <div
+          style={{
+            borderRadius: "16px",
+            border: "1px dashed rgba(var(--accent-purple-rgb), 0.2)",
+            background: "rgba(var(--primary-rgb), 0.04)",
+            padding: "10px 12px",
+            fontSize: "0.76rem",
+            color: "var(--text-secondary)",
+            display: "grid",
+            gap: "4px",
+          }}
+        >
+          <div><strong>Dev overlay:</strong> {visibleWidgets.length} visible / {widgetManager.widgets.length} total widgets.</div>
+          <div>Selected month: <strong>{selectedMonthKey}</strong>.</div>
+          <div>Settings target: <strong>{activeSettingsWidgetRecord?.widgetType || "none"}</strong>.</div>
+        </div>
+      ) : null}
 
       <AddWidgetModal
         isOpen={dashboard.isAddWidgetOpen}
@@ -261,14 +270,23 @@ export default function PersonalDashboard({ dashboard }) {
 
       <WidgetSettingsModal
         isOpen={Boolean(activeSettingsWidget)}
-        widgetType={settingsWidgetType}
+        widgetId={activeSettingsWidgetRecord?.id || null}
+        widgetType={activeSettingsWidgetRecord?.widgetType || null}
         widgetLabel={activeSettingsWidget?.label}
         activeMonthKey={selectedMonthKey}
-        data={settingsWidgetType ? dashboard.widgetDataMap[settingsWidgetType]?.data || {} : {}}
-        onClose={() => setSettingsWidgetType(null)}
+        widgetIsVisible={activeSettingsWidgetRecord?.isVisible !== false}
+        data={activeSettingsWidgetRecord ? dashboard.widgetDataMap[activeSettingsWidgetRecord.widgetType]?.data || {} : {}}
+        onClose={() => setSettingsWidgetId(null)}
+        onToggleVisibility={async (nextVisible) => {
+          if (!activeSettingsWidgetRecord?.id) return;
+          await dashboard.updateWidget(activeSettingsWidgetRecord.id, { isVisible: nextVisible });
+          if (!nextVisible) {
+            setSettingsWidgetId(null);
+          }
+        }}
         onSave={async (nextData) => {
-          if (!settingsWidgetType) return;
-          await dashboard.saveWidgetData(settingsWidgetType, nextData);
+          if (!activeSettingsWidgetRecord?.widgetType) return;
+          await dashboard.saveWidgetData(activeSettingsWidgetRecord.widgetType, nextData);
         }}
       />
     </div>
