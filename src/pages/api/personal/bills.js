@@ -1,8 +1,10 @@
+import crypto from "crypto";
 import {
   buildPersonalApiError,
+  getPersonalState,
   mapBillRow,
-  PERSONAL_TABLES,
   requirePersonalAccess,
+  savePersonalState,
 } from "@/lib/profile/personalServer";
 
 function buildBillPayload(body = {}, userId) {
@@ -14,88 +16,49 @@ function buildBillPayload(body = {}, userId) {
   }
 
   return {
-    user_id: userId,
+    id: body.id || crypto.randomUUID(),
+    userId,
     name: String(body.name || "Bill").trim() || "Bill",
     amount: Number(body.amount || 0),
-    due_day: dueDay,
-    is_recurring: body.isRecurring !== false,
-    updated_at: new Date().toISOString(),
+    dueDay,
+    isRecurring: body.isRecurring !== false,
   };
 }
 
 export default async function handler(req, res) {
   try {
     const { userId, db } = await requirePersonalAccess(req, res);
+    const state = await getPersonalState(userId, db);
+    const bills = Array.isArray(state.collections?.bills) ? state.collections.bills : [];
 
     if (req.method === "GET") {
-      const { data, error } = await db
-        .from(PERSONAL_TABLES.bills)
-        .select("id, user_id, name, amount, due_day, is_recurring, created_at, updated_at")
-        .eq("user_id", userId)
-        .order("due_day", { ascending: true })
-        .order("name", { ascending: true });
-
-      if (error) {
-        throw error;
-      }
-
-      return res.status(200).json({ success: true, data: (data || []).map(mapBillRow) });
+      const ordered = [...bills]
+        .map(mapBillRow)
+        .sort((a, b) => Number(a.dueDay || 0) - Number(b.dueDay || 0) || String(a.name || "").localeCompare(String(b.name || "")));
+      return res.status(200).json({ success: true, data: ordered });
     }
 
     if (req.method === "POST") {
-      const { data, error } = await db
-        .from(PERSONAL_TABLES.bills)
-        .insert({
-          ...buildBillPayload(req.body, userId),
-          created_at: new Date().toISOString(),
-        })
-        .select("id, user_id, name, amount, due_day, is_recurring, created_at, updated_at")
-        .maybeSingle();
-
-      if (error) {
-        throw error;
-      }
-
-      return res.status(200).json({ success: true, data: mapBillRow(data) });
+      const nextItem = buildBillPayload(req.body, userId);
+      const nextBills = [...bills, nextItem];
+      await savePersonalState(userId, { ...state, collections: { ...state.collections, bills: nextBills } }, db);
+      return res.status(200).json({ success: true, data: nextItem });
     }
 
     if (req.method === "PUT") {
       const id = String(req.body?.id || "");
-      if (!id) {
-        return res.status(400).json({ success: false, message: "Bill id is required." });
-      }
-
-      const { data, error } = await db
-        .from(PERSONAL_TABLES.bills)
-        .update(buildBillPayload(req.body, userId))
-        .eq("user_id", userId)
-        .eq("id", id)
-        .select("id, user_id, name, amount, due_day, is_recurring, created_at, updated_at")
-        .maybeSingle();
-
-      if (error) {
-        throw error;
-      }
-
-      return res.status(200).json({ success: true, data: mapBillRow(data) });
+      if (!id) return res.status(400).json({ success: false, message: "Bill id is required." });
+      const nextItem = buildBillPayload({ ...req.body, id }, userId);
+      const nextBills = bills.map((entry) => (String(entry.id) === id ? { ...entry, ...nextItem } : entry));
+      await savePersonalState(userId, { ...state, collections: { ...state.collections, bills: nextBills } }, db);
+      return res.status(200).json({ success: true, data: nextItem });
     }
 
     if (req.method === "DELETE") {
       const id = String(req.body?.id || req.query.id || "");
-      if (!id) {
-        return res.status(400).json({ success: false, message: "Bill id is required." });
-      }
-
-      const { error } = await db
-        .from(PERSONAL_TABLES.bills)
-        .delete()
-        .eq("user_id", userId)
-        .eq("id", id);
-
-      if (error) {
-        throw error;
-      }
-
+      if (!id) return res.status(400).json({ success: false, message: "Bill id is required." });
+      const nextBills = bills.filter((entry) => String(entry.id) !== id);
+      await savePersonalState(userId, { ...state, collections: { ...state.collections, bills: nextBills } }, db);
       return res.status(200).json({ success: true, data: { id } });
     }
 

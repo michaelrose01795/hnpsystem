@@ -1,12 +1,13 @@
 export const runtime = "nodejs";
 
+import crypto from "crypto";
 import fs from "fs";
 import path from "path";
 import {
   buildPersonalApiError,
-  mapAttachmentRow,
-  PERSONAL_TABLES,
+  getPersonalState,
   requirePersonalAccess,
+  savePersonalState,
 } from "@/lib/profile/personalServer";
 import {
   buildPersonalAttachmentRelativePath,
@@ -38,24 +39,20 @@ async function parseMultipartForm(req) {
   });
 
   const formData = await response.formData();
-  const fields = {};
   let file = null;
 
-  for (const [key, value] of formData.entries()) {
+  for (const [, value] of formData.entries()) {
     if (value instanceof File) {
       const arrayBuffer = await value.arrayBuffer();
       file = {
-        fieldName: key,
         fileName: value.name,
         mimeType: value.type || "application/octet-stream",
         buffer: Buffer.from(arrayBuffer),
       };
-    } else {
-      fields[key] = value;
     }
   }
 
-  return { fields, file };
+  return { file };
 }
 
 function withDownloadUrl(attachment) {
@@ -73,12 +70,10 @@ export default async function handler(req, res) {
     }
 
     const { userId, db } = await requirePersonalAccess(req, res);
+    const state = await getPersonalState(userId, db);
     const { file } = await parseMultipartForm(req);
 
-    if (!file) {
-      return res.status(400).json({ success: false, message: "No attachment file provided." });
-    }
-
+    if (!file) return res.status(400).json({ success: false, message: "No attachment file provided." });
     if (file.buffer.length > 10 * 1024 * 1024) {
       return res.status(400).json({ success: false, message: "Attachments must be 10MB or smaller." });
     }
@@ -90,29 +85,32 @@ export default async function handler(req, res) {
     fs.mkdirSync(path.dirname(absolutePath), { recursive: true });
     fs.writeFileSync(absolutePath, file.buffer);
 
-    const { data, error } = await db
-      .from(PERSONAL_TABLES.attachments)
-      .insert({
-        user_id: userId,
-        file_url: relativePath,
-        file_name: safeFileName,
-        mime_type: file.mimeType,
-        file_size: file.buffer.length,
-        created_at: new Date().toISOString(),
-      })
-      .select("id, user_id, file_url, file_name, mime_type, file_size, created_at")
-      .maybeSingle();
+    const attachment = {
+      id: crypto.randomUUID(),
+      userId,
+      fileName: safeFileName,
+      fileUrl: relativePath,
+      mimeType: file.mimeType,
+      fileSize: file.buffer.length,
+      createdAt: new Date().toISOString(),
+    };
 
-    if (error) {
-      if (fs.existsSync(absolutePath)) {
-        fs.unlinkSync(absolutePath);
-      }
-      throw error;
-    }
+    const existing = Array.isArray(state.collections?.attachments) ? state.collections.attachments : [];
+    await savePersonalState(
+      userId,
+      {
+        ...state,
+        collections: {
+          ...state.collections,
+          attachments: [attachment, ...existing],
+        },
+      },
+      db
+    );
 
     return res.status(200).json({
       success: true,
-      data: withDownloadUrl(mapAttachmentRow(data)),
+      data: withDownloadUrl(attachment),
     });
   } catch (error) {
     return buildPersonalApiError(res, error, "Failed to upload personal attachment.");

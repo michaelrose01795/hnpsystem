@@ -1,9 +1,6 @@
 import { startTransition, useCallback, useEffect, useMemo, useState } from "react";
 import { adaptWorkProfileData } from "@/lib/profile/workDataAdapter";
-import {
-  buildWidgetDataMap,
-  ensureWidgetDataDefaults,
-} from "@/lib/profile/personalWidgets";
+import { ensureWidgetDataDefaults } from "@/lib/profile/personalWidgets";
 
 const UNLOCK_STORAGE_KEY = "hnp-personal-unlocked";
 
@@ -16,6 +13,26 @@ async function parseJsonResponse(response) {
     throw error;
   }
   return payload?.data;
+}
+
+function mapDashboardState(personalState = {}) {
+  const widgets = Array.isArray(personalState.widgets) ? personalState.widgets : [];
+  const widgetDataRows = Object.values(personalState.widgetData || {}).map((entry) => ({
+    id: entry?.id || null,
+    widgetType: entry?.widgetType,
+    data: entry?.data || {},
+    updatedAt: entry?.updatedAt || null,
+  }));
+  return {
+    widgets,
+    widgetDataRows,
+    transactions: Array.isArray(personalState.collections?.transactions) ? personalState.collections.transactions : [],
+    bills: Array.isArray(personalState.collections?.bills) ? personalState.collections.bills : [],
+    savings: personalState.collections?.savings || null,
+    goals: Array.isArray(personalState.collections?.goals) ? personalState.collections.goals : [],
+    notes: Array.isArray(personalState.collections?.notes) ? personalState.collections.notes : [],
+    attachments: Array.isArray(personalState.collections?.attachments) ? personalState.collections.attachments : [],
+  };
 }
 
 export default function usePersonalDashboard({ enabled = true } = {}) {
@@ -60,24 +77,14 @@ export default function usePersonalDashboard({ enabled = true } = {}) {
 
   const refreshDashboard = useCallback(async () => {
     if (!enabled) {
-      setState((current) => ({
-        ...current,
-        isInitialising: false,
-        isLoading: false,
-      }));
+      setState((current) => ({ ...current, isInitialising: false, isLoading: false }));
       return;
     }
 
-    setState((current) => ({
-      ...current,
-      isLoading: true,
-      error: null,
-    }));
+    setState((current) => ({ ...current, isLoading: true, error: null }));
 
     try {
-      const security = await requestJson("/api/personal/security", {
-        method: "GET",
-      });
+      const security = await requestJson("/api/personal/security", { method: "GET" });
 
       if (!security?.isSetup || !security?.isUnlocked) {
         startTransition(() => {
@@ -102,27 +109,12 @@ export default function usePersonalDashboard({ enabled = true } = {}) {
         return;
       }
 
-      const [
-        widgets,
-        widgetDataRows,
-        transactions,
-        bills,
-        savings,
-        goals,
-        notes,
-        attachments,
-        workProfile,
-      ] = await Promise.all([
-        requestJson("/api/personal/widgets", { method: "GET" }),
-        requestJson("/api/personal/widget-data", { method: "GET" }),
-        requestJson("/api/personal/transactions", { method: "GET" }),
-        requestJson("/api/personal/bills", { method: "GET" }),
-        requestJson("/api/personal/savings", { method: "GET" }),
-        requestJson("/api/personal/goals", { method: "GET" }),
-        requestJson("/api/personal/notes", { method: "GET" }),
-        requestJson("/api/personal/attachments", { method: "GET" }),
+      const [personalState, workProfile] = await Promise.all([
+        requestJson("/api/personal/state", { method: "GET" }),
         requestJson("/api/profile/me", { method: "GET" }).catch(() => null),
       ]);
+
+      const mapped = mapDashboardState(personalState);
 
       startTransition(() => {
         setState({
@@ -130,14 +122,7 @@ export default function usePersonalDashboard({ enabled = true } = {}) {
           isLoading: false,
           isSetup: true,
           isUnlocked: true,
-          widgets: Array.isArray(widgets) ? widgets : [],
-          widgetDataRows: Array.isArray(widgetDataRows) ? widgetDataRows : [],
-          transactions: Array.isArray(transactions) ? transactions : [],
-          bills: Array.isArray(bills) ? bills : [],
-          savings: savings || null,
-          goals: Array.isArray(goals) ? goals : [],
-          notes: Array.isArray(notes) ? notes : [],
-          attachments: Array.isArray(attachments) ? attachments : [],
+          ...mapped,
           workProfile: workProfile || null,
           error: null,
         });
@@ -149,10 +134,7 @@ export default function usePersonalDashboard({ enabled = true } = {}) {
           isInitialising: false,
           isLoading: false,
           error,
-          isUnlocked:
-            error?.statusCode === 423 || error?.statusCode === 428
-              ? false
-              : current.isUnlocked,
+          isUnlocked: error?.statusCode === 423 || error?.statusCode === 428 ? false : current.isUnlocked,
         }));
       });
     }
@@ -163,7 +145,16 @@ export default function usePersonalDashboard({ enabled = true } = {}) {
   }, [refreshDashboard]);
 
   const widgetDataMap = useMemo(() => {
-    const existingMap = buildWidgetDataMap(state.widgetDataRows);
+    const existingMap = state.widgetDataRows.reduce((accumulator, row) => {
+      if (!row?.widgetType) return accumulator;
+      accumulator[row.widgetType] = {
+        id: row.id,
+        widgetType: row.widgetType,
+        data: row.data || {},
+        updatedAt: row.updatedAt || null,
+      };
+      return accumulator;
+    }, {});
     return ensureWidgetDataDefaults(
       state.widgets.map((widget) => widget.widgetType),
       existingMap
@@ -176,15 +167,9 @@ export default function usePersonalDashboard({ enabled = true } = {}) {
     async ({ passcode, confirmPasscode }) => {
       await requestJson("/api/personal/security", {
         method: "POST",
-        body: JSON.stringify({
-          action: "setup",
-          passcode,
-          confirmPasscode,
-        }),
+        body: JSON.stringify({ action: "setup", passcode, confirmPasscode }),
       });
-      if (typeof window !== "undefined") {
-        window.sessionStorage.setItem(UNLOCK_STORAGE_KEY, "1");
-      }
+      if (typeof window !== "undefined") window.sessionStorage.setItem(UNLOCK_STORAGE_KEY, "1");
       await refreshDashboard();
     },
     [refreshDashboard, requestJson]
@@ -194,47 +179,29 @@ export default function usePersonalDashboard({ enabled = true } = {}) {
     async ({ passcode }) => {
       await requestJson("/api/personal/security", {
         method: "POST",
-        body: JSON.stringify({
-          action: "unlock",
-          passcode,
-        }),
+        body: JSON.stringify({ action: "unlock", passcode }),
       });
-      if (typeof window !== "undefined") {
-        window.sessionStorage.setItem(UNLOCK_STORAGE_KEY, "1");
-      }
+      if (typeof window !== "undefined") window.sessionStorage.setItem(UNLOCK_STORAGE_KEY, "1");
       await refreshDashboard();
     },
     [refreshDashboard, requestJson]
   );
 
   const lock = useCallback(async () => {
-    await requestJson("/api/personal/security", {
-      method: "POST",
-      body: JSON.stringify({ action: "lock" }),
-    });
-    if (typeof window !== "undefined") {
-      window.sessionStorage.removeItem(UNLOCK_STORAGE_KEY);
-    }
+    await requestJson("/api/personal/security", { method: "POST", body: JSON.stringify({ action: "lock" }) });
+    if (typeof window !== "undefined") window.sessionStorage.removeItem(UNLOCK_STORAGE_KEY);
     await refreshDashboard();
   }, [refreshDashboard, requestJson]);
 
   const resetPasscode = useCallback(async () => {
-    await requestJson("/api/personal/security", {
-      method: "POST",
-      body: JSON.stringify({ action: "reset" }),
-    });
-    if (typeof window !== "undefined") {
-      window.sessionStorage.removeItem(UNLOCK_STORAGE_KEY);
-    }
+    await requestJson("/api/personal/security", { method: "POST", body: JSON.stringify({ action: "reset" }) });
+    if (typeof window !== "undefined") window.sessionStorage.removeItem(UNLOCK_STORAGE_KEY);
     await refreshDashboard();
   }, [refreshDashboard, requestJson]);
 
   const addWidget = useCallback(
     async (widgetType) => {
-      const widget = await requestJson("/api/personal/widgets", {
-        method: "POST",
-        body: JSON.stringify({ widgetType }),
-      });
+      const widget = await requestJson("/api/personal/widgets", { method: "POST", body: JSON.stringify({ widgetType }) });
       await refreshDashboard();
       return widget;
     },
@@ -243,13 +210,7 @@ export default function usePersonalDashboard({ enabled = true } = {}) {
 
   const updateWidget = useCallback(
     async (id, changes) => {
-      const widget = await requestJson("/api/personal/widgets", {
-        method: "PATCH",
-        body: JSON.stringify({
-          id,
-          ...changes,
-        }),
-      });
+      const widget = await requestJson("/api/personal/widgets", { method: "PATCH", body: JSON.stringify({ id, ...changes }) });
       await refreshDashboard();
       return widget;
     },
@@ -258,10 +219,7 @@ export default function usePersonalDashboard({ enabled = true } = {}) {
 
   const saveWidgets = useCallback(
     async (widgets) => {
-      const savedWidgets = await requestJson("/api/personal/widgets", {
-        method: "PUT",
-        body: JSON.stringify({ widgets }),
-      });
+      const savedWidgets = await requestJson("/api/personal/widgets", { method: "PUT", body: JSON.stringify({ widgets }) });
       await refreshDashboard();
       return savedWidgets;
     },
@@ -270,10 +228,7 @@ export default function usePersonalDashboard({ enabled = true } = {}) {
 
   const removeWidget = useCallback(
     async (id) => {
-      await requestJson("/api/personal/widgets", {
-        method: "DELETE",
-        body: JSON.stringify({ id }),
-      });
+      await requestJson("/api/personal/widgets", { method: "DELETE", body: JSON.stringify({ id }) });
       await refreshDashboard();
     },
     [refreshDashboard, requestJson]
@@ -281,10 +236,7 @@ export default function usePersonalDashboard({ enabled = true } = {}) {
 
   const saveWidgetData = useCallback(
     async (widgetType, data) => {
-      const savedRow = await requestJson("/api/personal/widget-data", {
-        method: "PUT",
-        body: JSON.stringify({ widgetType, data }),
-      });
+      const savedRow = await requestJson("/api/personal/widget-data", { method: "PUT", body: JSON.stringify({ widgetType, data }) });
       await refreshDashboard();
       return savedRow;
     },
@@ -293,10 +245,7 @@ export default function usePersonalDashboard({ enabled = true } = {}) {
 
   const mutateCollection = useCallback(
     async ({ url, method, payload }) => {
-      const data = await requestJson(url, {
-        method,
-        body: method === "GET" ? undefined : JSON.stringify(payload || {}),
-      });
+      const data = await requestJson(url, { method, body: method === "GET" ? undefined : JSON.stringify(payload || {}) });
       await refreshDashboard();
       return data;
     },
@@ -329,35 +278,20 @@ export default function usePersonalDashboard({ enabled = true } = {}) {
     removeWidget,
     saveWidgetData,
     uploadAttachment,
-    createTransaction: (payload) =>
-      mutateCollection({ url: "/api/personal/transactions", method: "POST", payload }),
-    updateTransaction: (payload) =>
-      mutateCollection({ url: "/api/personal/transactions", method: "PUT", payload }),
-    deleteTransaction: (id) =>
-      mutateCollection({ url: "/api/personal/transactions", method: "DELETE", payload: { id } }),
-    createBill: (payload) =>
-      mutateCollection({ url: "/api/personal/bills", method: "POST", payload }),
-    updateBill: (payload) =>
-      mutateCollection({ url: "/api/personal/bills", method: "PUT", payload }),
-    deleteBill: (id) =>
-      mutateCollection({ url: "/api/personal/bills", method: "DELETE", payload: { id } }),
-    saveSavings: (payload) =>
-      mutateCollection({ url: "/api/personal/savings", method: "PUT", payload }),
-    clearSavings: () =>
-      mutateCollection({ url: "/api/personal/savings", method: "DELETE", payload: {} }),
-    createGoal: (payload) =>
-      mutateCollection({ url: "/api/personal/goals", method: "POST", payload }),
-    updateGoal: (payload) =>
-      mutateCollection({ url: "/api/personal/goals", method: "PUT", payload }),
-    deleteGoal: (id) =>
-      mutateCollection({ url: "/api/personal/goals", method: "DELETE", payload: { id } }),
-    createNote: (payload) =>
-      mutateCollection({ url: "/api/personal/notes", method: "POST", payload }),
-    updateNote: (payload) =>
-      mutateCollection({ url: "/api/personal/notes", method: "PUT", payload }),
-    deleteNote: (id) =>
-      mutateCollection({ url: "/api/personal/notes", method: "DELETE", payload: { id } }),
-    deleteAttachment: (id) =>
-      mutateCollection({ url: "/api/personal/attachments", method: "DELETE", payload: { id } }),
+    createTransaction: (payload) => mutateCollection({ url: "/api/personal/transactions", method: "POST", payload }),
+    updateTransaction: (payload) => mutateCollection({ url: "/api/personal/transactions", method: "PUT", payload }),
+    deleteTransaction: (id) => mutateCollection({ url: "/api/personal/transactions", method: "DELETE", payload: { id } }),
+    createBill: (payload) => mutateCollection({ url: "/api/personal/bills", method: "POST", payload }),
+    updateBill: (payload) => mutateCollection({ url: "/api/personal/bills", method: "PUT", payload }),
+    deleteBill: (id) => mutateCollection({ url: "/api/personal/bills", method: "DELETE", payload: { id } }),
+    saveSavings: (payload) => mutateCollection({ url: "/api/personal/savings", method: "PUT", payload }),
+    clearSavings: () => mutateCollection({ url: "/api/personal/savings", method: "DELETE", payload: {} }),
+    createGoal: (payload) => mutateCollection({ url: "/api/personal/goals", method: "POST", payload }),
+    updateGoal: (payload) => mutateCollection({ url: "/api/personal/goals", method: "PUT", payload }),
+    deleteGoal: (id) => mutateCollection({ url: "/api/personal/goals", method: "DELETE", payload: { id } }),
+    createNote: (payload) => mutateCollection({ url: "/api/personal/notes", method: "POST", payload }),
+    updateNote: (payload) => mutateCollection({ url: "/api/personal/notes", method: "PUT", payload }),
+    deleteNote: (id) => mutateCollection({ url: "/api/personal/notes", method: "DELETE", payload: { id } }),
+    deleteAttachment: (id) => mutateCollection({ url: "/api/personal/attachments", method: "DELETE", payload: { id } }),
   };
 }

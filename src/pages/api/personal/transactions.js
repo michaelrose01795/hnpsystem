@@ -1,15 +1,15 @@
+import crypto from "crypto";
 import {
   buildPersonalApiError,
+  getPersonalState,
   mapTransactionRow,
-  PERSONAL_TABLES,
   requirePersonalAccess,
+  savePersonalState,
 } from "@/lib/profile/personalServer";
 
 function toAmount(value) {
   const parsed = Number(value);
-  if (!Number.isFinite(parsed)) {
-    return 0;
-  }
+  if (!Number.isFinite(parsed)) return 0;
   return Number(parsed.toFixed(2));
 }
 
@@ -22,93 +22,54 @@ function buildTransactionPayload(body = {}, userId) {
   }
 
   return {
-    user_id: userId,
+    id: body.id || crypto.randomUUID(),
+    userId,
     type,
     category: String(body.category || "General").trim() || "General",
     amount: toAmount(body.amount),
     date: body.date || new Date().toISOString().split("T")[0],
-    is_recurring: body.isRecurring === true,
+    isRecurring: body.isRecurring === true,
     notes: String(body.notes || ""),
-    updated_at: new Date().toISOString(),
   };
 }
 
 export default async function handler(req, res) {
   try {
     const { userId, db } = await requirePersonalAccess(req, res);
+    const state = await getPersonalState(userId, db);
+    const transactions = Array.isArray(state.collections?.transactions) ? state.collections.transactions : [];
 
     if (req.method === "GET") {
-      const { data, error } = await db
-        .from(PERSONAL_TABLES.transactions)
-        .select("id, user_id, type, category, amount, date, is_recurring, notes, created_at, updated_at")
-        .eq("user_id", userId)
-        .order("date", { ascending: false })
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        throw error;
-      }
-
       return res.status(200).json({
         success: true,
-        data: (data || []).map(mapTransactionRow),
+        data: [...transactions]
+          .map(mapTransactionRow)
+          .sort((a, b) => String(b.date || "").localeCompare(String(a.date || ""))),
       });
     }
 
     if (req.method === "POST") {
-      const { data, error } = await db
-        .from(PERSONAL_TABLES.transactions)
-        .insert({
-          ...buildTransactionPayload(req.body, userId),
-          created_at: new Date().toISOString(),
-        })
-        .select("id, user_id, type, category, amount, date, is_recurring, notes, created_at, updated_at")
-        .maybeSingle();
-
-      if (error) {
-        throw error;
-      }
-
-      return res.status(200).json({ success: true, data: mapTransactionRow(data) });
+      const nextItem = buildTransactionPayload(req.body, userId);
+      const nextTransactions = [nextItem, ...transactions];
+      await savePersonalState(userId, { ...state, collections: { ...state.collections, transactions: nextTransactions } }, db);
+      return res.status(200).json({ success: true, data: nextItem });
     }
 
     if (req.method === "PUT") {
       const id = String(req.body?.id || "");
-      if (!id) {
-        return res.status(400).json({ success: false, message: "Transaction id is required." });
-      }
+      if (!id) return res.status(400).json({ success: false, message: "Transaction id is required." });
 
-      const { data, error } = await db
-        .from(PERSONAL_TABLES.transactions)
-        .update(buildTransactionPayload(req.body, userId))
-        .eq("user_id", userId)
-        .eq("id", id)
-        .select("id, user_id, type, category, amount, date, is_recurring, notes, created_at, updated_at")
-        .maybeSingle();
-
-      if (error) {
-        throw error;
-      }
-
-      return res.status(200).json({ success: true, data: mapTransactionRow(data) });
+      const nextItem = buildTransactionPayload({ ...req.body, id }, userId);
+      const nextTransactions = transactions.map((entry) => (String(entry.id) === id ? { ...entry, ...nextItem } : entry));
+      await savePersonalState(userId, { ...state, collections: { ...state.collections, transactions: nextTransactions } }, db);
+      return res.status(200).json({ success: true, data: nextItem });
     }
 
     if (req.method === "DELETE") {
       const id = String(req.body?.id || req.query.id || "");
-      if (!id) {
-        return res.status(400).json({ success: false, message: "Transaction id is required." });
-      }
-
-      const { error } = await db
-        .from(PERSONAL_TABLES.transactions)
-        .delete()
-        .eq("user_id", userId)
-        .eq("id", id);
-
-      if (error) {
-        throw error;
-      }
-
+      if (!id) return res.status(400).json({ success: false, message: "Transaction id is required." });
+      const nextTransactions = transactions.filter((entry) => String(entry.id) !== id);
+      await savePersonalState(userId, { ...state, collections: { ...state.collections, transactions: nextTransactions } }, db);
       return res.status(200).json({ success: true, data: { id } });
     }
 
