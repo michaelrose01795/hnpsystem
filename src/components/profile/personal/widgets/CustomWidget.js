@@ -13,9 +13,11 @@ export default function CustomWidget({
   widgetData,
   actions,
   onRemove,
-  dragHandleProps,
-  resizeHandleProps,
   compact = false,
+  isMoveMode = false,
+  canDrag = false,
+  isDraggingWidget = false,
+  moveButtonProps = null,
 }) {
   const [form, setForm] = useState({
     title: widget.config?.title || widgetData?.title || "Custom widget",
@@ -49,9 +51,11 @@ export default function CustomWidget({
         </div>
       }
       onRemove={onRemove}
-      dragHandleProps={dragHandleProps}
-      resizeHandleProps={resizeHandleProps}
       compact={compact}
+      isMoveMode={isMoveMode}
+      canDrag={canDrag}
+      isDraggingWidget={isDraggingWidget}
+      moveButtonProps={moveButtonProps}
     >
       <SectionLabel>Custom settings</SectionLabel>
       <div style={{ display: "grid", gap: "10px" }}>

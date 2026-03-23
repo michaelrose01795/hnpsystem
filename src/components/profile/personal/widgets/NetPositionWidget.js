@@ -11,9 +11,11 @@ export default function NetPositionWidget({
   datasets,
   onRemove,
   onOpenSettings,
-  dragHandleProps,
-  resizeHandleProps,
   compact = false,
+  isMoveMode = false,
+  canDrag = false,
+  isDraggingWidget = false,
+  moveButtonProps = null,
 }) {
   const monthView = calculateNetPositionForMonth({
     monthKey: widgetMonthKey,
@@ -46,9 +48,11 @@ export default function NetPositionWidget({
       }
       onRemove={onRemove}
       onOpenSettings={onOpenSettings}
-      dragHandleProps={dragHandleProps}
-      resizeHandleProps={resizeHandleProps}
       compact={compact}
+      isMoveMode={isMoveMode}
+      canDrag={canDrag}
+      isDraggingWidget={isDraggingWidget}
+      moveButtonProps={moveButtonProps}
     >
       <div style={{ fontSize: "0.84rem", color: "var(--text-secondary)" }}>
         Net position combines the selected month's income, planned outgoings, and optional savings contributions so you can spot thin months before they arrive.

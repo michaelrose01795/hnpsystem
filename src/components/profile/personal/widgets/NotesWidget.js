@@ -14,9 +14,11 @@ export default function NotesWidget({
   datasets,
   actions,
   onRemove,
-  dragHandleProps,
-  resizeHandleProps,
   compact = false,
+  isMoveMode = false,
+  canDrag = false,
+  isDraggingWidget = false,
+  moveButtonProps = null,
 }) {
   const [draft, setDraft] = useState("");
 
@@ -32,9 +34,11 @@ export default function NotesWidget({
       subtitle="Private reminders and references"
       accent="var(--text-primary)"
       onRemove={onRemove}
-      dragHandleProps={dragHandleProps}
-      resizeHandleProps={resizeHandleProps}
       compact={compact}
+      isMoveMode={isMoveMode}
+      canDrag={canDrag}
+      isDraggingWidget={isDraggingWidget}
+      moveButtonProps={moveButtonProps}
     >
       <SectionLabel>New note</SectionLabel>
       <textarea

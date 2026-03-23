@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from "react";
 import AddWidgetModal from "@/components/profile/personal/AddWidgetModal";
-import MonthPicker from "@/components/profile/personal/MonthPicker";
 import WidgetGrid from "@/components/profile/personal/WidgetGrid";
 import WidgetSettingsModal from "@/components/profile/personal/WidgetSettingsModal";
 import AttachmentsWidget from "@/components/profile/personal/widgets/AttachmentsWidget";
@@ -57,12 +56,19 @@ function insightToneStyle(type) {
   };
 }
 
-function getWidgetMonthKey(widgetType, widgetData, globalMonthKey) {
+function resolveWidgetMonthKey(widgetData, fallbackMonthKey) {
   const settings = widgetData?.settings || {};
+  const dateMode = settings.dateDisplayMode || "month";
+  const selectedDate = settings.dateValue || "";
+
   if (settings.useGlobalMonth === false) {
-    return normaliseMonthKey(settings.monthKey || globalMonthKey);
+    if (dateMode === "day" && selectedDate) {
+      return normaliseMonthKey(String(selectedDate).slice(0, 7), fallbackMonthKey);
+    }
+    return normaliseMonthKey(settings.monthKey || selectedDate || fallbackMonthKey, fallbackMonthKey);
   }
-  return normaliseMonthKey(globalMonthKey);
+
+  return normaliseMonthKey(fallbackMonthKey, fallbackMonthKey);
 }
 
 export default function PersonalDashboard({ dashboard }) {
@@ -73,8 +79,8 @@ export default function PersonalDashboard({ dashboard }) {
     onRemoveWidget: dashboard.removeWidget,
     onAddWidget: dashboard.addWidget,
   });
-  const [selectedMonthKey, setSelectedMonthKey] = useState(getCurrentMonthKey());
   const [settingsWidgetId, setSettingsWidgetId] = useState(null);
+  const dashboardMonthKey = getCurrentMonthKey();
 
   const visibleWidgets = widgetManager.widgets.filter((widget) => widget.isVisible !== false);
   const visibleWidgetsByType = visibleWidgets.reduce((accumulator, widget) => {
@@ -122,7 +128,7 @@ export default function PersonalDashboard({ dashboard }) {
         goals: dashboard.goals,
         workData: dashboard.workData,
         widgetData: dashboard.widgetDataMap,
-        monthKey: selectedMonthKey,
+        monthKey: dashboardMonthKey,
       }),
     [
       dashboard.bills,
@@ -131,7 +137,7 @@ export default function PersonalDashboard({ dashboard }) {
       dashboard.transactions,
       dashboard.widgetDataMap,
       dashboard.workData,
-      selectedMonthKey,
+      dashboardMonthKey,
     ]
   );
 
@@ -144,28 +150,6 @@ export default function PersonalDashboard({ dashboard }) {
 
   return (
     <div style={{ display: "grid", gap: "18px" }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: "12px",
-          alignItems: "center",
-          flexWrap: "wrap",
-          padding: "14px 16px",
-          borderRadius: "18px",
-          background: "var(--surface)",
-          border: "1px solid rgba(var(--accent-purple-rgb), 0.14)",
-        }}
-      >
-        <div style={{ display: "grid", gap: "6px" }}>
-          <div style={{ fontWeight: 800, fontSize: "1rem" }}>Plan by month</div>
-          <div style={{ color: "var(--text-secondary)", fontSize: "0.84rem" }}>
-            Switch months to compare actual activity with planned and projected values.
-          </div>
-        </div>
-        <MonthPicker value={selectedMonthKey} onChange={setSelectedMonthKey} align="right" />
-      </div>
-
       <div style={{ display: "grid", gap: "10px", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
         {(insights || []).map((insight, index) => (
           <div
@@ -207,26 +191,23 @@ export default function PersonalDashboard({ dashboard }) {
           renderWidget={(widget, controls) => {
             const WidgetComponent = WIDGET_COMPONENTS[widget.widgetType] || CustomWidget;
             const widgetData = dashboard.widgetDataMap[widget.widgetType]?.data || {};
-            const widgetMonthKey = getWidgetMonthKey(widget.widgetType, widgetData, selectedMonthKey);
+            const widgetMonthKey = resolveWidgetMonthKey(widgetData, dashboardMonthKey);
 
             return (
               <WidgetComponent
                 widget={widget}
                 widgetData={widgetData}
                 widgetMonthKey={widgetMonthKey}
-                dashboardMonthKey={selectedMonthKey}
+                dashboardMonthKey={dashboardMonthKey}
                 widgetDataMap={dashboard.widgetDataMap}
                 datasets={datasets}
                 actions={actions}
-                onOpenSettings={
-                  () => setSettingsWidgetId(widget.id)
-                }
-                dragHandleProps={controls.dragHandleProps}
-                resizeHandleProps={controls.resizeHandleProps}
+                onOpenSettings={() => setSettingsWidgetId(widget.id)}
                 compact={controls.compact}
-                isInteracting={controls.isInteracting}
-                isActiveInteractionWidget={controls.isActiveInteractionWidget}
-                interactionMode={controls.interactionMode}
+                isMoveMode={controls.isMoveMode}
+                canDrag={controls.canDrag}
+                isDraggingWidget={controls.isDraggingWidget}
+                moveButtonProps={controls.moveButtonProps}
               />
             );
           }}
@@ -246,9 +227,15 @@ export default function PersonalDashboard({ dashboard }) {
             gap: "4px",
           }}
         >
-          <div><strong>Dev overlay:</strong> {visibleWidgets.length} visible / {widgetManager.widgets.length} total widgets.</div>
-          <div>Selected month: <strong>{selectedMonthKey}</strong>.</div>
-          <div>Settings target: <strong>{activeSettingsWidgetRecord?.widgetType || "none"}</strong>.</div>
+          <div>
+            <strong>Dev overlay:</strong> {visibleWidgets.length} visible / {widgetManager.widgets.length} total widgets.
+          </div>
+          <div>
+            Dashboard month: <strong>{dashboardMonthKey}</strong>.
+          </div>
+          <div>
+            Settings target: <strong>{activeSettingsWidgetRecord?.widgetType || "none"}</strong>.
+          </div>
         </div>
       ) : null}
 
@@ -273,7 +260,7 @@ export default function PersonalDashboard({ dashboard }) {
         widgetId={activeSettingsWidgetRecord?.id || null}
         widgetType={activeSettingsWidgetRecord?.widgetType || null}
         widgetLabel={activeSettingsWidget?.label}
-        activeMonthKey={selectedMonthKey}
+        activeMonthKey={dashboardMonthKey}
         widgetIsVisible={activeSettingsWidgetRecord?.isVisible !== false}
         data={activeSettingsWidgetRecord ? dashboard.widgetDataMap[activeSettingsWidgetRecord.widgetType]?.data || {} : {}}
         onClose={() => setSettingsWidgetId(null)}
