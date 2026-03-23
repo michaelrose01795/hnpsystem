@@ -62,10 +62,9 @@ export function SectionLabel({ children }) {
   return (
     <div
       style={{
-        fontSize: "0.68rem",
-        fontWeight: 700,
-        letterSpacing: "0.08em",
-        textTransform: "uppercase",
+        fontSize: "0.78rem",
+        fontWeight: 600,
+        letterSpacing: "0.01em",
         color: "var(--text-secondary)",
       }}
     >

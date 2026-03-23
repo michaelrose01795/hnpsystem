@@ -1,39 +1,28 @@
 import {
   buildPersonalApiError,
-  ensureDefaultPersonalSetup,
-  mapWidgetDataRow,
-  PERSONAL_TABLES,
+  getPersonalState,
+  mapWidgetDataRowsFromPersonalState,
   requirePersonalAccess,
+  savePersonalState,
   validateWidgetType,
 } from "@/lib/profile/personalServer";
+import { buildDefaultWidgetData } from "@/lib/profile/personalWidgets";
 
 export default async function handler(req, res) {
   try {
     const { userId, db } = await requirePersonalAccess(req, res);
-    await ensureDefaultPersonalSetup(userId, db);
+    const state = await getPersonalState(userId, db);
 
     if (req.method === "GET") {
       const widgetType = req.query.widgetType ? String(req.query.widgetType) : null;
-
-      let query = db
-        .from(PERSONAL_TABLES.widgetData)
-        .select("id, user_id, widget_type, data_json, updated_at")
-        .eq("user_id", userId);
-
-      if (widgetType) {
-        validateWidgetType(widgetType);
-        query = query.eq("widget_type", widgetType);
+      const rows = mapWidgetDataRowsFromPersonalState(state);
+      if (!widgetType) {
+        return res.status(200).json({ success: true, data: rows });
       }
-
-      const { data, error } = await query.order("widget_type", { ascending: true });
-      if (error) {
-        throw error;
-      }
-
-      const rows = (data || []).map(mapWidgetDataRow);
+      validateWidgetType(widgetType);
       return res.status(200).json({
         success: true,
-        data: widgetType ? rows[0] || null : rows,
+        data: rows.find((entry) => entry.widgetType === widgetType) || null,
       });
     }
 
@@ -42,28 +31,18 @@ export default async function handler(req, res) {
       const dataJson = req.body?.data;
       validateWidgetType(widgetType);
 
-      const { data, error } = await db
-        .from(PERSONAL_TABLES.widgetData)
-        .upsert(
-          {
-            user_id: userId,
-            widget_type: widgetType,
-            data_json: dataJson && typeof dataJson === "object" ? dataJson : {},
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "user_id,widget_type" }
-        )
-        .select("id, user_id, widget_type, data_json, updated_at")
-        .maybeSingle();
+      const nextWidgetData = {
+        ...(state.widgetData || {}),
+        [widgetType]: {
+          id: state.widgetData?.[widgetType]?.id || null,
+          widgetType,
+          data: dataJson && typeof dataJson === "object" ? dataJson : buildDefaultWidgetData(widgetType),
+          updatedAt: new Date().toISOString(),
+        },
+      };
 
-      if (error) {
-        throw error;
-      }
-
-      return res.status(200).json({
-        success: true,
-        data: mapWidgetDataRow(data),
-      });
+      await savePersonalState(userId, { ...state, widgetData: nextWidgetData }, db);
+      return res.status(200).json({ success: true, data: nextWidgetData[widgetType] });
     }
 
     res.setHeader("Allow", ["GET", "POST", "PUT"]);

@@ -4,16 +4,17 @@ import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver";
 import { supabase, supabaseService } from "@/lib/supabaseClient";
 import {
-  buildDefaultWidgetConfig,
   buildDefaultWidgetData,
   buildDefaultWidgets,
   getWidgetDefinition,
   normaliseWidgetRecord,
   sanitiseWidgetLayout,
+  sortWidgetsForDisplay,
 } from "@/lib/profile/personalWidgets";
 
 export const PERSONAL_TABLES = {
   security: "user_personal_security",
+  state: "user_personal_state",
   widgets: "user_personal_widgets",
   widgetData: "user_personal_widget_data",
   layout: "user_personal_layout",
@@ -50,9 +51,7 @@ function createSignedToken(payload) {
 }
 
 function verifySignedToken(token) {
-  if (!token || !token.includes(".")) {
-    return null;
-  }
+  if (!token || !token.includes(".")) return null;
 
   const [encoded, providedSignature] = token.split(".");
   const expectedSignature = crypto
@@ -62,18 +61,11 @@ function verifySignedToken(token) {
 
   const providedBuffer = Buffer.from(providedSignature || "");
   const expectedBuffer = Buffer.from(expectedSignature || "");
-  if (providedBuffer.length !== expectedBuffer.length) {
-    return null;
-  }
-
-  if (!crypto.timingSafeEqual(providedBuffer, expectedBuffer)) {
-    return null;
-  }
+  if (providedBuffer.length !== expectedBuffer.length) return null;
+  if (!crypto.timingSafeEqual(providedBuffer, expectedBuffer)) return null;
 
   const payload = JSON.parse(fromBase64Url(encoded));
-  if (!payload?.exp || Date.now() > Number(payload.exp)) {
-    return null;
-  }
+  if (!payload?.exp || Date.now() > Number(payload.exp)) return null;
 
   return payload;
 }
@@ -83,18 +75,10 @@ function serialiseCookie(name, value, options = {}) {
   segments.push(`Path=${options.path || "/"}`);
   segments.push(`SameSite=${options.sameSite || "Lax"}`);
 
-  if (options.httpOnly !== false) {
-    segments.push("HttpOnly");
-  }
-  if (options.secure || process.env.NODE_ENV === "production") {
-    segments.push("Secure");
-  }
-  if (Number.isFinite(options.maxAge)) {
-    segments.push(`Max-Age=${Math.max(0, Math.floor(options.maxAge))}`);
-  }
-  if (options.expires instanceof Date) {
-    segments.push(`Expires=${options.expires.toUTCString()}`);
-  }
+  if (options.httpOnly !== false) segments.push("HttpOnly");
+  if (options.secure || process.env.NODE_ENV === "production") segments.push("Secure");
+  if (Number.isFinite(options.maxAge)) segments.push(`Max-Age=${Math.max(0, Math.floor(options.maxAge))}`);
+  if (options.expires instanceof Date) segments.push(`Expires=${options.expires.toUTCString()}`);
 
   return segments.join("; ");
 }
@@ -111,11 +95,7 @@ export function getPersonalDb() {
 
 export function setPersonalUnlockCookie(res, userId) {
   const now = Date.now();
-  const token = createSignedToken({
-    userId,
-    iat: now,
-    exp: now + PERSONAL_UNLOCK_TTL_MS,
-  });
+  const token = createSignedToken({ userId, iat: now, exp: now + PERSONAL_UNLOCK_TTL_MS });
 
   appendSetCookie(
     res,
@@ -144,9 +124,7 @@ function allowDevBypass(req) {
 export async function resolvePersonalUserId(req, res) {
   if (allowDevBypass(req)) {
     const queryUserId = Number.parseInt(String(req.query.userId || req.body?.userId || ""), 10);
-    if (Number.isInteger(queryUserId) && queryUserId > 0) {
-      return queryUserId;
-    }
+    if (Number.isInteger(queryUserId) && queryUserId > 0) return queryUserId;
 
     const { data: firstUser, error } = await getPersonalDb()
       .from("users")
@@ -186,10 +164,7 @@ export async function getPersonalSecurityRow(userId, db = getPersonalDb()) {
     .eq("user_id", userId)
     .maybeSingle();
 
-  if (error) {
-    throw error;
-  }
-
+  if (error) throw error;
   return data || null;
 }
 
@@ -227,106 +202,160 @@ export async function requirePersonalAccess(req, res, { requireUnlock = true } =
   };
 }
 
-async function ensureWidgetDataRows(userId, widgetTypes = [], db = getPersonalDb()) {
-  if (!widgetTypes.length) {
-    return [];
-  }
-
-  const { data: existingRows, error: existingError } = await db
-    .from(PERSONAL_TABLES.widgetData)
-    .select("id, user_id, widget_type, data_json, updated_at")
-    .eq("user_id", userId)
-    .in("widget_type", widgetTypes);
-
-  if (existingError) {
-    throw existingError;
-  }
-
-  const existingTypes = new Set((existingRows || []).map((row) => row.widget_type));
-  const missingRows = widgetTypes
-    .filter((widgetType) => !existingTypes.has(widgetType))
-    .map((widgetType) => ({
-      user_id: userId,
-      widget_type: widgetType,
-      data_json: buildDefaultWidgetData(widgetType),
-      updated_at: new Date().toISOString(),
-    }));
-
-  if (missingRows.length > 0) {
-    const { error: insertError } = await db.from(PERSONAL_TABLES.widgetData).insert(missingRows);
-    if (insertError) {
-      throw insertError;
-    }
-  }
-
-  return existingRows || [];
+function buildDefaultWidgetState(userId) {
+  const baseWidgets = buildDefaultWidgets(userId).map((row) => normaliseWidgetRecord(row));
+  const widgets = sortWidgetsForDisplay(sanitiseWidgetLayout(baseWidgets));
+  const widgetData = {};
+  widgets.forEach((widget) => {
+    widgetData[widget.widgetType] = {
+      id: null,
+      widgetType: widget.widgetType,
+      data: buildDefaultWidgetData(widget.widgetType),
+      updatedAt: null,
+    };
+  });
+  return { widgets, widgetData };
 }
 
-export async function syncPersonalLayout(userId, widgets = [], db = getPersonalDb()) {
-  const layoutJson = widgets.map((widget) => ({
-    id: widget.id,
-    widgetType: widget.widgetType,
-    isVisible: widget.isVisible,
-    positionX: widget.positionX,
-    positionY: widget.positionY,
-    width: widget.width,
-    height: widget.height,
+function mapWidgetDataFromState(widgetDataMap = {}) {
+  return Object.values(widgetDataMap || {}).map((entry) => ({
+    id: entry?.id || null,
+    widgetType: entry?.widgetType,
+    data: entry?.data && typeof entry.data === "object" ? entry.data : {},
+    updatedAt: entry?.updatedAt || null,
   }));
+}
 
-  const { error } = await db
-    .from(PERSONAL_TABLES.layout)
+function normalisePersonalState(rawState = {}, userId) {
+  const defaults = buildDefaultWidgetState(userId);
+  const widgetsInput = Array.isArray(rawState.widgets) ? rawState.widgets : defaults.widgets;
+  const widgets = sortWidgetsForDisplay(sanitiseWidgetLayout(widgetsInput.map((widget, index) => normaliseWidgetRecord(widget, index))));
+
+  const nextWidgetData = { ...(rawState.widgetData || {}) };
+  widgets.forEach((widget) => {
+    const existing = nextWidgetData[widget.widgetType];
+    nextWidgetData[widget.widgetType] = {
+      id: existing?.id || null,
+      widgetType: widget.widgetType,
+      data: existing?.data && typeof existing.data === "object" ? existing.data : buildDefaultWidgetData(widget.widgetType),
+      updatedAt: existing?.updatedAt || null,
+    };
+  });
+
+  return {
+    version: 2,
+    widgets,
+    widgetData: nextWidgetData,
+    collections: {
+      transactions: Array.isArray(rawState.collections?.transactions) ? rawState.collections.transactions : [],
+      bills: Array.isArray(rawState.collections?.bills) ? rawState.collections.bills : [],
+      goals: Array.isArray(rawState.collections?.goals) ? rawState.collections.goals : [],
+      notes: Array.isArray(rawState.collections?.notes) ? rawState.collections.notes : [],
+      attachments: Array.isArray(rawState.collections?.attachments) ? rawState.collections.attachments : [],
+      savings: rawState.collections?.savings || null,
+    },
+    preferences: {
+      selectedMonthKey: rawState.preferences?.selectedMonthKey || null,
+    },
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+async function buildLegacyFallbackState(userId, db = getPersonalDb()) {
+  const [
+    widgetsResponse,
+    widgetDataResponse,
+    transactionsResponse,
+    billsResponse,
+    goalsResponse,
+    notesResponse,
+    attachmentsResponse,
+    savingsResponse,
+  ] = await Promise.all([
+    db.from(PERSONAL_TABLES.widgets).select("id, user_id, widget_type, is_visible, position_x, position_y, width, height, config_json, created_at, updated_at").eq("user_id", userId),
+    db.from(PERSONAL_TABLES.widgetData).select("id, user_id, widget_type, data_json, updated_at").eq("user_id", userId),
+    db.from(PERSONAL_TABLES.transactions).select("id, user_id, type, category, amount, date, is_recurring, notes, created_at, updated_at").eq("user_id", userId),
+    db.from(PERSONAL_TABLES.bills).select("id, user_id, name, amount, due_day, is_recurring, created_at, updated_at").eq("user_id", userId),
+    db.from(PERSONAL_TABLES.goals).select("id, user_id, type, target, current, deadline, created_at, updated_at").eq("user_id", userId),
+    db.from(PERSONAL_TABLES.notes).select("id, user_id, content, created_at, updated_at").eq("user_id", userId),
+    db.from(PERSONAL_TABLES.attachments).select("id, user_id, file_url, file_name, mime_type, file_size, created_at").eq("user_id", userId),
+    db.from(PERSONAL_TABLES.savings).select("id, user_id, target_amount, current_amount, monthly_contribution, created_at, updated_at").eq("user_id", userId).maybeSingle(),
+  ]);
+
+  const widgets = widgetsResponse.error
+    ? []
+    : sortWidgetsForDisplay(sanitiseWidgetLayout((widgetsResponse.data || []).map((row) => normaliseWidgetRecord(row))));
+
+  const widgetDataMap = {};
+  (widgetDataResponse.error ? [] : widgetDataResponse.data || []).forEach((row) => {
+    const widgetType = row.widget_type;
+    widgetDataMap[widgetType] = {
+      id: row.id,
+      widgetType,
+      data: row.data_json || buildDefaultWidgetData(widgetType),
+      updatedAt: row.updated_at || null,
+    };
+  });
+
+  return normalisePersonalState(
+    {
+      widgets,
+      widgetData: widgetDataMap,
+      collections: {
+        transactions: transactionsResponse.error ? [] : (transactionsResponse.data || []).map(mapTransactionRow),
+        bills: billsResponse.error ? [] : (billsResponse.data || []).map(mapBillRow),
+        goals: goalsResponse.error ? [] : (goalsResponse.data || []).map(mapGoalRow),
+        notes: notesResponse.error ? [] : (notesResponse.data || []).map(mapNoteRow),
+        attachments: attachmentsResponse.error ? [] : (attachmentsResponse.data || []).map(mapAttachmentRow),
+        savings: savingsResponse.error || !savingsResponse.data ? null : mapSavingsRow(savingsResponse.data),
+      },
+    },
+    userId
+  );
+}
+
+export async function getPersonalStateRow(userId, db = getPersonalDb()) {
+  const { data, error } = await db
+    .from(PERSONAL_TABLES.state)
+    .select("id, user_id, state_json, created_at, updated_at")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  return data || null;
+}
+
+export async function savePersonalState(userId, nextState, db = getPersonalDb()) {
+  const normalised = normalisePersonalState(nextState, userId);
+  const now = new Date().toISOString();
+  const { data, error } = await db
+    .from(PERSONAL_TABLES.state)
     .upsert(
       {
         user_id: userId,
-        layout_json: layoutJson,
-        updated_at: new Date().toISOString(),
+        state_json: normalised,
+        updated_at: now,
       },
       { onConflict: "user_id" }
-    );
+    )
+    .select("id, user_id, state_json, created_at, updated_at")
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
 
-  if (error) {
-    throw error;
+export async function getPersonalState(userId, db = getPersonalDb()) {
+  const existing = await getPersonalStateRow(userId, db);
+  if (existing?.state_json && typeof existing.state_json === "object") {
+    return normalisePersonalState(existing.state_json, userId);
   }
+
+  const fallback = await buildLegacyFallbackState(userId, db);
+  await savePersonalState(userId, fallback, db);
+  return fallback;
 }
 
 export async function ensureDefaultPersonalSetup(userId, db = getPersonalDb()) {
-  const { data: existingRows, error: existingError } = await db
-    .from(PERSONAL_TABLES.widgets)
-    .select("id, user_id, widget_type, is_visible, position_x, position_y, width, height, config_json, created_at, updated_at")
-    .eq("user_id", userId);
-
-  if (existingError) {
-    throw existingError;
-  }
-
-  let widgetRows = existingRows || [];
-
-  if (widgetRows.length === 0) {
-    const { data: insertedRows, error: insertError } = await db
-      .from(PERSONAL_TABLES.widgets)
-      .insert(buildDefaultWidgets(userId))
-      .select("id, user_id, widget_type, is_visible, position_x, position_y, width, height, config_json, created_at, updated_at");
-
-    if (insertError) {
-      throw insertError;
-    }
-
-    widgetRows = insertedRows || [];
-  }
-
-  const sanitised = sanitiseWidgetLayout(widgetRows).map((widget) => ({
-    ...widget,
-    config: widget.config || buildDefaultWidgetConfig(widget.widgetType),
-  }));
-
-  await ensureWidgetDataRows(
-    userId,
-    sanitised.map((widget) => widget.widgetType),
-    db
-  );
-  await syncPersonalLayout(userId, sanitised, db);
-
-  return sanitised;
+  return getPersonalState(userId, db);
 }
 
 export function mapWidgetRow(row = {}) {
@@ -344,15 +373,19 @@ export function mapWidgetDataRow(row = {}) {
   };
 }
 
+export function mapWidgetDataRowsFromPersonalState(state = {}) {
+  return mapWidgetDataFromState(state.widgetData || {});
+}
+
 export function mapTransactionRow(row = {}) {
   return {
     id: row.id,
-    userId: row.user_id,
+    userId: row.user_id ?? row.userId ?? null,
     type: row.type || "expense",
     category: row.category || "General",
     amount: Number(row.amount || 0),
     date: row.date || null,
-    isRecurring: row.is_recurring === true,
+    isRecurring: row.is_recurring === true || row.isRecurring === true,
     notes: row.notes || "",
   };
 }
@@ -360,28 +393,28 @@ export function mapTransactionRow(row = {}) {
 export function mapSavingsRow(row = {}) {
   return {
     id: row.id || null,
-    userId: row.user_id || null,
-    targetAmount: Number(row.target_amount || 0),
-    currentAmount: Number(row.current_amount || 0),
-    monthlyContribution: Number(row.monthly_contribution || 0),
+    userId: row.user_id || row.userId || null,
+    targetAmount: Number(row.target_amount ?? row.targetAmount ?? 0),
+    currentAmount: Number(row.current_amount ?? row.currentAmount ?? 0),
+    monthlyContribution: Number(row.monthly_contribution ?? row.monthlyContribution ?? 0),
   };
 }
 
 export function mapBillRow(row = {}) {
   return {
     id: row.id,
-    userId: row.user_id,
+    userId: row.user_id ?? row.userId ?? null,
     name: row.name || "Bill",
     amount: Number(row.amount || 0),
-    dueDay: Number(row.due_day || 1),
-    isRecurring: row.is_recurring !== false,
+    dueDay: Number(row.due_day ?? row.dueDay ?? 1),
+    isRecurring: row.is_recurring !== false && row.isRecurring !== false,
   };
 }
 
 export function mapGoalRow(row = {}) {
   return {
     id: row.id,
-    userId: row.user_id,
+    userId: row.user_id ?? row.userId ?? null,
     type: row.type || "custom",
     target: Number(row.target || 0),
     current: Number(row.current || 0),
@@ -392,22 +425,22 @@ export function mapGoalRow(row = {}) {
 export function mapNoteRow(row = {}) {
   return {
     id: row.id,
-    userId: row.user_id,
+    userId: row.user_id ?? row.userId ?? null,
     content: row.content || "",
-    createdAt: row.created_at || null,
-    updatedAt: row.updated_at || null,
+    createdAt: row.created_at || row.createdAt || null,
+    updatedAt: row.updated_at || row.updatedAt || null,
   };
 }
 
 export function mapAttachmentRow(row = {}) {
   return {
     id: row.id,
-    userId: row.user_id,
-    fileName: row.file_name || "",
-    fileUrl: row.file_url || "",
-    createdAt: row.created_at || null,
-    mimeType: row.mime_type || "application/octet-stream",
-    fileSize: Number(row.file_size || 0),
+    userId: row.user_id ?? row.userId ?? null,
+    fileName: row.file_name || row.fileName || "",
+    fileUrl: row.file_url || row.fileUrl || "",
+    createdAt: row.created_at || row.createdAt || null,
+    mimeType: row.mime_type || row.mimeType || "application/octet-stream",
+    fileSize: Number(row.file_size ?? row.fileSize ?? 0),
   };
 }
 
