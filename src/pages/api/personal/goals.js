@@ -1,8 +1,10 @@
+import crypto from "crypto";
 import {
   buildPersonalApiError,
+  getPersonalState,
   mapGoalRow,
-  PERSONAL_TABLES,
   requirePersonalAccess,
+  savePersonalState,
 } from "@/lib/profile/personalServer";
 
 function buildGoalPayload(body = {}, userId) {
@@ -14,88 +16,51 @@ function buildGoalPayload(body = {}, userId) {
   }
 
   return {
-    user_id: userId,
+    id: body.id || crypto.randomUUID(),
+    userId,
     type,
     target: Number(body.target || 0),
     current: Number(body.current || 0),
     deadline: body.deadline || null,
-    updated_at: new Date().toISOString(),
   };
 }
 
 export default async function handler(req, res) {
   try {
     const { userId, db } = await requirePersonalAccess(req, res);
+    const state = await getPersonalState(userId, db);
+    const goals = Array.isArray(state.collections?.goals) ? state.collections.goals : [];
 
     if (req.method === "GET") {
-      const { data, error } = await db
-        .from(PERSONAL_TABLES.goals)
-        .select("id, user_id, type, target, current, deadline, created_at, updated_at")
-        .eq("user_id", userId)
-        .order("deadline", { ascending: true, nullsFirst: false })
-        .order("created_at", { ascending: true });
-
-      if (error) {
-        throw error;
-      }
-
-      return res.status(200).json({ success: true, data: (data || []).map(mapGoalRow) });
+      return res.status(200).json({
+        success: true,
+        data: [...goals]
+          .map(mapGoalRow)
+          .sort((a, b) => String(a.deadline || "9999-12-31").localeCompare(String(b.deadline || "9999-12-31"))),
+      });
     }
 
     if (req.method === "POST") {
-      const { data, error } = await db
-        .from(PERSONAL_TABLES.goals)
-        .insert({
-          ...buildGoalPayload(req.body, userId),
-          created_at: new Date().toISOString(),
-        })
-        .select("id, user_id, type, target, current, deadline, created_at, updated_at")
-        .maybeSingle();
-
-      if (error) {
-        throw error;
-      }
-
-      return res.status(200).json({ success: true, data: mapGoalRow(data) });
+      const nextItem = buildGoalPayload(req.body, userId);
+      const nextGoals = [...goals, nextItem];
+      await savePersonalState(userId, { ...state, collections: { ...state.collections, goals: nextGoals } }, db);
+      return res.status(200).json({ success: true, data: nextItem });
     }
 
     if (req.method === "PUT") {
       const id = String(req.body?.id || "");
-      if (!id) {
-        return res.status(400).json({ success: false, message: "Goal id is required." });
-      }
-
-      const { data, error } = await db
-        .from(PERSONAL_TABLES.goals)
-        .update(buildGoalPayload(req.body, userId))
-        .eq("user_id", userId)
-        .eq("id", id)
-        .select("id, user_id, type, target, current, deadline, created_at, updated_at")
-        .maybeSingle();
-
-      if (error) {
-        throw error;
-      }
-
-      return res.status(200).json({ success: true, data: mapGoalRow(data) });
+      if (!id) return res.status(400).json({ success: false, message: "Goal id is required." });
+      const nextItem = buildGoalPayload({ ...req.body, id }, userId);
+      const nextGoals = goals.map((entry) => (String(entry.id) === id ? { ...entry, ...nextItem } : entry));
+      await savePersonalState(userId, { ...state, collections: { ...state.collections, goals: nextGoals } }, db);
+      return res.status(200).json({ success: true, data: nextItem });
     }
 
     if (req.method === "DELETE") {
       const id = String(req.body?.id || req.query.id || "");
-      if (!id) {
-        return res.status(400).json({ success: false, message: "Goal id is required." });
-      }
-
-      const { error } = await db
-        .from(PERSONAL_TABLES.goals)
-        .delete()
-        .eq("user_id", userId)
-        .eq("id", id);
-
-      if (error) {
-        throw error;
-      }
-
+      if (!id) return res.status(400).json({ success: false, message: "Goal id is required." });
+      const nextGoals = goals.filter((entry) => String(entry.id) !== id);
+      await savePersonalState(userId, { ...state, collections: { ...state.collections, goals: nextGoals } }, db);
       return res.status(200).json({ success: true, data: { id } });
     }
 

@@ -52,21 +52,21 @@ export default function AddWidgetModal({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: "24px",
+        padding: "clamp(14px, 3vw, 24px)",
         zIndex: 2000,
       }}
     >
       <div
         style={{
           width: "100%",
-          maxWidth: "880px",
+          maxWidth: "920px",
           maxHeight: "84vh",
           overflowY: "auto",
           background: "var(--surface)",
           borderRadius: "24px",
           border: "1px solid rgba(var(--accent-purple-rgb), 0.18)",
           boxShadow: "var(--shadow-lg)",
-          padding: "24px",
+          padding: "clamp(14px, 3vw, 24px)",
           display: "grid",
           gap: "16px",
         }}
@@ -109,7 +109,7 @@ export default function AddWidgetModal({
           </div>
         </div>
 
-        <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+        <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
           {PERSONAL_WIDGET_TYPE_OPTIONS.map((definition) => {
             const isVisible = Boolean(visibleWidgetsByType[definition.type]);
             return (
@@ -196,7 +196,7 @@ export default function AddWidgetModal({
                     borderRadius: "12px",
                     border: draggedWidgetId === widget.id ? "2px solid var(--primary)" : "1px dashed rgba(var(--accent-purple-rgb), 0.35)",
                     background: isVisible ? "rgba(var(--surface-rgb, 255, 255, 255), 0.9)" : "rgba(var(--primary-rgb), 0.06)",
-                    minHeight: "64px",
+                    minHeight: "72px",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
