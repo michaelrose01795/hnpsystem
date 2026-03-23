@@ -58,6 +58,8 @@ import { resolveJobCardPermissions } from "@/features/jobCards/workflow/permissi
 import { getWriteUpCompletionState, getInvoiceWorkflowState, getNextBestAction } from "@/features/jobCards/workflow/selectors";
 import JobWorkflowAssistantCard from "@/features/jobCards/components/JobWorkflowAssistantCard";
 import JobWorkflowDiagnostics from "@/features/jobCards/components/JobWorkflowDiagnostics";
+import { buildVhcAssistantState } from "@/features/vhc-assistant/buildVhcAssistantState";
+import VhcAssistantPanel from "@/features/vhc-assistant/components/VhcAssistantPanel";
 
 const WriteUpForm = dynamic(() => import("@/components/JobCards/WriteUpForm"), {
   ssr: false,
@@ -8580,6 +8582,20 @@ function VHCTab({
       return decision === "awaiting_customer_decision" || decision === "awaiting customer decision";
     });
   }, [jobData?.vhcChecks]);
+  const vhcAssistantState = useMemo(
+    () =>
+      buildVhcAssistantState({
+        checks: Array.isArray(jobData?.vhcChecks) ? jobData.vhcChecks : [],
+        partsRows: Array.isArray(jobData?.parts_job_items) ? jobData.parts_job_items : [],
+        sectionStatus: {},
+        vhcRequired: Boolean(jobData?.vhcRequired),
+        vhcCompletedAt: jobData?.vhcCompletedAt || null,
+        sentToCustomer: Boolean(jobData?.vhcSentAt || jobData?.vhc_sent_at),
+        canEdit,
+        context: "service",
+      }),
+    [jobData?.vhcChecks, jobData?.parts_job_items, jobData?.vhcRequired, jobData?.vhcCompletedAt, jobData?.vhcSentAt, jobData?.vhc_sent_at, canEdit]
+  );
 
   const customerViewUrl = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -8759,6 +8775,11 @@ function VHCTab({
       backgroundToken="surface"
       shell
     >
+      <VhcAssistantPanel
+        state={vhcAssistantState}
+        title="VHC Decision Assistant"
+        compact
+      />
       <VhcDetailsPanel
         jobNumber={jobNumber}
         readOnly={!canEdit}

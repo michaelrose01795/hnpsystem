@@ -29,8 +29,8 @@ import {
 } from "@/lib/status/statusFlow";
 import { DISPLAY as TECH_DISPLAY } from "@/lib/status/catalog/tech";
 import { revalidateAllJobs } from "@/lib/swr/mutations"; // SWR cache invalidation after mutations
-import { buildVhcTechnicianAssistantSummary } from "@/lib/vhc/assistant";
-import { VHC_TAB_SYSTEM_PROMPT } from "@/lib/ai/prompts/vhcTabPrompt";
+import { buildVhcAssistantState } from "@/features/vhc-assistant/buildVhcAssistantState";
+import VhcAssistantPanel from "@/features/vhc-assistant/components/VhcAssistantPanel";
 
 // VHC Section Modals
 import WheelsTyresDetailsModal from "@/components/VHC/WheelsTyresDetailsModal";
@@ -1481,15 +1481,20 @@ export default function TechJobDetailPage() {
       ? writeUpChecklistRowsComplete
       : writeUpCompletion === "complete" || writeUpCompletion === "waiting_additional_work";
   const rectificationsComplete = writeUpComplete;
-  const vhcAssistantSummary = useMemo(
+  const vhcAssistantState = useMemo(
     () =>
-      buildVhcTechnicianAssistantSummary({
+      buildVhcAssistantState({
         checks: vhcChecks,
+        partsRows: jobData?.jobCard?.parts_job_items || [],
         sectionStatus,
+        vhcRequired: jobRequiresVhc,
+        vhcCompletedAt: jobData?.jobCard?.vhcCompletedAt || null,
+        sentToCustomer: false,
+        canEdit: true,
+        context: "internal",
         writeUpComplete,
-        partsAuthorisedCount: authorizedParts.length,
       }),
-    [vhcChecks, sectionStatus, writeUpComplete, authorizedParts.length]
+    [vhcChecks, jobData?.jobCard?.parts_job_items, jobData?.jobCard?.vhcCompletedAt, sectionStatus, jobRequiresVhc, writeUpComplete]
   );
 
   const handleCompleteVhcClick = useCallback(async () => {
@@ -3078,51 +3083,11 @@ export default function TechJobDetailPage() {
                     sectionKey="myjob-vhc-assistant"
                     sectionType="content-card"
                     parentKey="myjob-tab-vhc"
-                    style={{
-                      border: "1px solid var(--border)",
-                      borderRadius: "var(--radius-sm)",
-                      backgroundColor: "var(--surface)",
-                      padding: "14px 16px",
-                      display: "grid",
-                      gap: "10px",
-                    }}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "center" }}>
-                      <h3 style={{ margin: 0, fontSize: "14px", fontWeight: 700, color: "var(--primary)" }}>
-                        VHC Assistant
-                      </h3>
-                      <span style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
-                        {vhcAssistantSummary.totals.resolved}/{vhcAssistantSummary.totals.totalRows} resolved
-                      </span>
-                    </div>
-                    {vhcAssistantSummary.blockers.length > 0 ? (
-                      <ul style={{ margin: 0, paddingLeft: "18px", display: "grid", gap: "4px" }}>
-                        {vhcAssistantSummary.blockers.map((blocker) => (
-                          <li key={blocker} style={{ fontSize: "12px", color: "var(--warning-dark)" }}>
-                            {blocker}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p style={{ margin: 0, fontSize: "12px", color: "var(--success-dark)" }}>
-                        No blocking issues detected for technician workflow.
-                      </p>
-                    )}
-                    <div style={{ display: "grid", gap: "4px" }}>
-                      {vhcAssistantSummary.recommendations.slice(0, 2).map((recommendation) => (
-                        <p key={recommendation} style={{ margin: 0, fontSize: "12px", color: "var(--text-secondary)" }}>
-                          • {recommendation}
-                        </p>
-                      ))}
-                    </div>
-                    <details>
-                      <summary style={{ cursor: "pointer", fontSize: "12px", color: "var(--text-secondary)" }}>
-                        AI helper context prompt
-                      </summary>
-                      <pre style={{ whiteSpace: "pre-wrap", margin: "8px 0 0 0", fontSize: "11px", color: "var(--text-secondary)" }}>
-                        {VHC_TAB_SYSTEM_PROMPT}
-                      </pre>
-                    </details>
+                    <VhcAssistantPanel
+                      state={vhcAssistantState}
+                      title="VHC Assistant (Technician)"
+                    />
                   </DevLayoutSection>
 
                   {!showVhcSummary && (
