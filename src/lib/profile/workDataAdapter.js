@@ -3,6 +3,15 @@ function toNumber(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function firstDefined(...values) {
+  for (const value of values) {
+    if (value !== undefined && value !== null && value !== "") {
+      return value;
+    }
+  }
+  return null;
+}
+
 function getCurrentCycleBounds(referenceDate = new Date()) {
   const day = referenceDate.getDate();
   const month = referenceDate.getMonth();
@@ -47,6 +56,15 @@ export function adaptWorkProfileData(profilePayload = {}) {
 
   const hourlyRate = toNumber(profile?.hourlyRate, 0);
   const overtimeRate = toNumber(profile?.overtimeRate, 0);
+  const contractedWeeklyHours = toNumber(
+    firstDefined(
+      profile?.contractedWeeklyHours,
+      profile?.contracted_hours_per_week,
+      profile?.weeklyHours,
+      profile?.hoursPerWeek
+    ),
+    0
+  );
   const overtimeValue = overtimeHours * overtimeRate;
   const estimatedIncome = hoursWorked * hourlyRate + overtimeValue;
 
@@ -55,6 +73,9 @@ export function adaptWorkProfileData(profilePayload = {}) {
     overtimeHours: Number(overtimeHours.toFixed(2)),
     overtimeValue: Number(overtimeValue.toFixed(2)),
     estimatedIncome: Number(estimatedIncome.toFixed(2)),
+    contractedWeeklyHours: Number(contractedWeeklyHours.toFixed(2)),
+    hourlyRate: Number(hourlyRate.toFixed(2)),
+    overtimeRate: Number(overtimeRate.toFixed(2)),
     leaveRemaining: leaveBalance?.remaining ?? null,
   };
 }

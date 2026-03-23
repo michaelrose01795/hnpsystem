@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import BaseWidget from "@/components/profile/personal/widgets/BaseWidget";
 import {
+  EmptyState,
   MetricPill,
   SectionLabel,
   formatCurrency,
@@ -9,8 +10,10 @@ import {
   widgetInputStyle,
 } from "@/components/profile/personal/widgets/shared";
 import {
+  calculateAllSavingsTotal,
   calculateProjectedSavingsDateForPlan,
   calculateProjectedSavingsDate,
+  calculateSavingsAccountTotal,
   calculateSavingsProgress,
   calculateSavingsForMonth,
 } from "@/lib/profile/calculations";
@@ -21,17 +24,26 @@ export default function SavingsWidget({
   widgetMonthKey,
   datasets,
   actions,
-  onRemove,
   onOpenSettings,
   dragHandleProps,
   resizeHandleProps,
   compact = false,
+  isInteracting = false,
+  isActiveInteractionWidget = false,
+  interactionMode = null,
 }) {
   const [form, setForm] = useState({
     targetAmount: datasets.savings?.targetAmount || 0,
     currentAmount: datasets.savings?.currentAmount || 0,
     monthlyContribution: datasets.savings?.monthlyContribution || 0,
   });
+  const [selectedAccount, setSelectedAccount] = useState("");
+  const [accountAmount, setAccountAmount] = useState("");
+  const accounts = widgetData?.settings?.savingsAccounts || [];
+  const accountEntries = Array.isArray(widgetData?.accountEntries) ? widgetData.accountEntries : [];
+  const selectedAccountName = selectedAccount || accounts[0]?.name || "";
+  const accountTotal = calculateSavingsAccountTotal(accountEntries, selectedAccountName);
+  const allSavingsTotal = calculateAllSavingsTotal(accountEntries);
 
   const progress = useMemo(() => calculateSavingsProgress(form), [form]);
   const projectedDate = calculateProjectedSavingsDate(form);
@@ -78,11 +90,13 @@ export default function SavingsWidget({
           <MetricPill label={monthView.status} value={formatCurrency(monthView.total)} accent="var(--info, #1565c0)" />
         </div>
       }
-      onRemove={onRemove}
       onOpenSettings={onOpenSettings}
       dragHandleProps={dragHandleProps}
       resizeHandleProps={resizeHandleProps}
       compact={compact}
+      isInteracting={isInteracting}
+      isActiveInteractionWidget={isActiveInteractionWidget}
+      interactionMode={interactionMode}
     >
       <SectionLabel>{monthView.label} categories</SectionLabel>
       <div style={{ display: "grid", gap: "8px" }}>
@@ -127,6 +141,57 @@ export default function SavingsWidget({
       <button type="button" onClick={saveSavings} style={{ ...widgetButtonStyle, alignSelf: "flex-start" }}>
         Save savings
       </button>
+
+      <SectionLabel>Account contributions</SectionLabel>
+      {accounts.length === 0 ? (
+        <EmptyState>Add savings accounts in widget settings (for example: Lloyds, Tembo ISA, Club Saver).</EmptyState>
+      ) : (
+        <>
+          <div style={{ display: "grid", gap: "10px", gridTemplateColumns: compact ? "1fr" : "1fr 1fr auto" }}>
+            <select value={selectedAccountName} onChange={(event) => setSelectedAccount(event.target.value)} style={widgetInputStyle}>
+              {accounts.map((account) => (
+                <option key={account.name} value={account.name}>
+                  {account.name}
+                </option>
+              ))}
+            </select>
+            <input
+              type="number"
+              value={accountAmount}
+              onChange={(event) => setAccountAmount(event.target.value)}
+              style={widgetInputStyle}
+              placeholder="Contribution amount"
+            />
+            <button
+              type="button"
+              onClick={async () => {
+                if (!selectedAccountName || !accountAmount) return;
+                const nextEntries = [
+                  ...accountEntries,
+                  {
+                    id: `${Date.now()}`,
+                    monthKey: widgetMonthKey,
+                    accountName: selectedAccountName,
+                    amount: Number(accountAmount || 0),
+                  },
+                ];
+                await actions.saveWidgetData("savings", {
+                  ...widgetData,
+                  accountEntries: nextEntries,
+                });
+                setAccountAmount("");
+              }}
+              style={widgetButtonStyle}
+            >
+              Add
+            </button>
+          </div>
+          <div style={{ display: "grid", gap: "10px", gridTemplateColumns: compact ? "1fr" : "repeat(2, minmax(0, 1fr))" }}>
+            <MetricPill label={`${selectedAccountName || "Account"} total`} value={formatCurrency(accountTotal)} accent="var(--info, #1565c0)" />
+            <MetricPill label="All accounts total" value={formatCurrency(allSavingsTotal)} accent="var(--success, #2e7d32)" />
+          </div>
+        </>
+      )}
 
       <div style={{ display: "grid", gap: "10px", gridTemplateColumns: compact ? "1fr" : "repeat(2, minmax(0, 1fr))" }}>
         <MetricPill label="Remaining" value={formatCurrency(progress.remainingAmount)} accent="var(--warning, #ef6c00)" />

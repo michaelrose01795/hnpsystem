@@ -18,6 +18,89 @@ function toNumber(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+export function expectedMonthlyContractHours(contractedWeeklyHours = 0) {
+  const weekly = toNumber(contractedWeeklyHours, 0);
+  return Number((weekly * 52 / 12).toFixed(2));
+}
+
+export function calculateOvertimeHours(actualHours = 0, expectedHours = 0) {
+  return Number(Math.max(toNumber(actualHours, 0) - toNumber(expectedHours, 0), 0).toFixed(2));
+}
+
+export function calculateBasePay(standardHours = 0, hourlyRate = 0) {
+  return Number((toNumber(standardHours, 0) * toNumber(hourlyRate, 0)).toFixed(2));
+}
+
+export function calculateOvertimePay(overtimeHours = 0, overtimeRate = 0) {
+  return Number((toNumber(overtimeHours, 0) * toNumber(overtimeRate, 0)).toFixed(2));
+}
+
+export function calculateTaxEstimate(grossPay = 0, taxRate = 0) {
+  return Number((toNumber(grossPay, 0) * (toNumber(taxRate, 0) / 100)).toFixed(2));
+}
+
+export function calculateNationalInsuranceEstimate(grossPay = 0, niRate = 0) {
+  return Number((toNumber(grossPay, 0) * (toNumber(niRate, 0) / 100)).toFixed(2));
+}
+
+export function calculateAfterTaxTotal(grossPay = 0, taxAmount = 0, niAmount = 0) {
+  return Number((toNumber(grossPay, 0) - toNumber(taxAmount, 0) - toNumber(niAmount, 0)).toFixed(2));
+}
+
+export function calculateSavingsAccountTotal(entries = [], accountName = "") {
+  return Number(
+    (entries || [])
+      .filter((entry) => String(entry?.accountName || "") === String(accountName || ""))
+      .reduce((sum, entry) => sum + toNumber(entry?.amount, 0), 0)
+      .toFixed(2)
+  );
+}
+
+export function calculateAllSavingsTotal(entries = []) {
+  return Number(
+    (entries || [])
+      .reduce((sum, entry) => sum + toNumber(entry?.amount, 0), 0)
+      .toFixed(2)
+  );
+}
+
+export function calculateFuelEntryValues(entry = {}) {
+  const totalCost = toNumber(entry.totalCost, 0);
+  const litres = toNumber(entry.litres, 0);
+  const pricePerLitre = toNumber(entry.pricePerLitre, 0);
+  const hasTotal = totalCost > 0;
+  const hasLitres = litres > 0;
+  const hasPpl = pricePerLitre > 0;
+
+  if (hasLitres && hasPpl && !hasTotal) {
+    return {
+      totalCost: Number((litres * pricePerLitre).toFixed(2)),
+      litres: Number(litres.toFixed(2)),
+      pricePerLitre: Number(pricePerLitre.toFixed(3)),
+    };
+  }
+  if (hasTotal && hasLitres && !hasPpl) {
+    return {
+      totalCost: Number(totalCost.toFixed(2)),
+      litres: Number(litres.toFixed(2)),
+      pricePerLitre: Number((totalCost / litres).toFixed(3)),
+    };
+  }
+  if (hasTotal && hasPpl && !hasLitres) {
+    return {
+      totalCost: Number(totalCost.toFixed(2)),
+      litres: Number((totalCost / pricePerLitre).toFixed(2)),
+      pricePerLitre: Number(pricePerLitre.toFixed(3)),
+    };
+  }
+
+  return {
+    totalCost: Number(totalCost.toFixed(2)),
+    litres: Number(litres.toFixed(2)),
+    pricePerLitre: Number(pricePerLitre.toFixed(3)),
+  };
+}
+
 function normaliseTransactionMonth(dateValue) {
   if (!dateValue) return null;
   const date = new Date(dateValue);
@@ -293,6 +376,10 @@ export function calculateFuelForMonth({
   referenceMonthKey = getCurrentMonthKey(),
 } = {}) {
   const planning = normalisePlanning(widgetData);
+  const fuelEntries = Array.isArray(widgetData?.fuelEntries) ? widgetData.fuelEntries : [];
+  const entryTotal = fuelEntries
+    .filter((entry) => normaliseMonthKey(entry?.monthKey || monthKey) === normaliseMonthKey(monthKey))
+    .reduce((sum, entry) => sum + toNumber(calculateFuelEntryValues(entry).totalCost, 0), 0);
   const actualFuel = totalsFromTransactions(
     filterTransactionsForMonth(transactions, monthKey, "expense").filter(
       (transaction) => String(transaction?.category || "").toLowerCase() === "fuel"
@@ -302,7 +389,7 @@ export function calculateFuelForMonth({
     rules: planning.rules,
     overrides: planning.overrides,
     monthKey,
-    actualMap: Object.keys(actualFuel).length > 0 ? { Fuel: actualFuel.Fuel || 0 } : {},
+    actualMap: Object.keys(actualFuel).length > 0 ? { Fuel: actualFuel.Fuel || 0 } : entryTotal > 0 ? { Fuel: entryTotal } : {},
     defaultCategories: ["Fuel"],
   }).filter((row) => toNumber(row.amount) !== 0);
   return {
@@ -334,18 +421,28 @@ export function calculateSavingsForMonth({
   referenceMonthKey = getCurrentMonthKey(),
 } = {}) {
   const planning = normalisePlanning(widgetData);
+  const accountEntries = Array.isArray(widgetData?.accountEntries) ? widgetData.accountEntries : [];
+  const accountRows = accountEntries
+    .filter((entry) => normaliseMonthKey(entry?.monthKey || monthKey) === normaliseMonthKey(monthKey))
+    .map((entry) => ({
+      category: entry?.accountName || "Savings account",
+      amount: Number(toNumber(entry?.amount, 0).toFixed(2)),
+      source: "actual",
+      isActual: true,
+      isProjected: false,
+    }));
   const goalCategories = (goals || []).map((goal) => {
     const type = String(goal?.type || "custom").toLowerCase();
     if (type === "house") return "House";
     if (type === "holiday") return "Holiday";
     return goal?.type || "Custom";
   });
-  const rows = buildRuleRowsForMonth({
+  const rows = mergeRows(accountRows, buildRuleRowsForMonth({
     rules: planning.rules,
     overrides: planning.overrides,
     monthKey,
     defaultCategories: ["House", "Emergency", "Holiday", "Car", ...goalCategories],
-  }).filter((row) => toNumber(row.amount) !== 0);
+  })).filter((row) => toNumber(row.amount) !== 0);
   const totalContribution = sumRows(rows);
   const progress = calculateSavingsProgress(savings);
 

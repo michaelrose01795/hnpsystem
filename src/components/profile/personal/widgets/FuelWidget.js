@@ -10,7 +10,7 @@ import {
   widgetButtonStyle,
   widgetInputStyle,
 } from "@/components/profile/personal/widgets/shared";
-import { calculateFuelForMonth } from "@/lib/profile/calculations";
+import { calculateFuelEntryValues, calculateFuelForMonth } from "@/lib/profile/calculations";
 
 export default function FuelWidget({
   widget,
@@ -18,12 +18,15 @@ export default function FuelWidget({
   widgetMonthKey,
   datasets,
   actions,
-  onRemove,
   onOpenSettings,
   dragHandleProps,
   resizeHandleProps,
   compact = false,
+  isInteracting = false,
+  isActiveInteractionWidget = false,
+  interactionMode = null,
 }) {
+  const [draft, setDraft] = useState({ totalCost: "", litres: "", pricePerLitre: "" });
   const [draftAmount, setDraftAmount] = useState("");
   const fuelTransactions = useMemo(
     () => (datasets.transactions || []).filter((transaction) => transaction.category === "Fuel").slice(0, 5),
@@ -64,6 +67,23 @@ export default function FuelWidget({
     setDraftAmount("");
   };
 
+  const addFuelEntry = async () => {
+    const computed = calculateFuelEntryValues(draft);
+    if (!computed.totalCost || !computed.litres || !computed.pricePerLitre) return;
+    await actions.saveWidgetData("fuel", {
+      ...widgetData,
+      fuelEntries: [
+        ...(Array.isArray(widgetData?.fuelEntries) ? widgetData.fuelEntries : []),
+        {
+          id: `${Date.now()}`,
+          monthKey: widgetMonthKey,
+          ...computed,
+        },
+      ],
+    });
+    setDraft({ totalCost: "", litres: "", pricePerLitre: "" });
+  };
+
   return (
     <BaseWidget
       title={widget.config?.title || "Fuel"}
@@ -81,11 +101,13 @@ export default function FuelWidget({
           />
         </div>
       }
-      onRemove={onRemove}
       onOpenSettings={onOpenSettings}
       dragHandleProps={dragHandleProps}
       resizeHandleProps={resizeHandleProps}
       compact={compact}
+      isInteracting={isInteracting}
+      isActiveInteractionWidget={isActiveInteractionWidget}
+      interactionMode={interactionMode}
     >
       <SectionLabel>{monthView.label} fuel plan</SectionLabel>
       {monthView.rows.length === 0 ? (
@@ -115,6 +137,34 @@ export default function FuelWidget({
         />
         <button type="button" onClick={addFuelExpense} style={widgetButtonStyle}>
           Add
+        </button>
+      </div>
+
+      <SectionLabel>Fuel entry calculator</SectionLabel>
+      <div style={{ display: "grid", gap: "10px", gridTemplateColumns: compact ? "1fr" : "repeat(3, minmax(0, 1fr)) auto" }}>
+        <input
+          type="number"
+          value={draft.totalCost}
+          onChange={(event) => setDraft((current) => ({ ...current, totalCost: event.target.value }))}
+          style={widgetInputStyle}
+          placeholder="Total cost"
+        />
+        <input
+          type="number"
+          value={draft.litres}
+          onChange={(event) => setDraft((current) => ({ ...current, litres: event.target.value }))}
+          style={widgetInputStyle}
+          placeholder="Litres"
+        />
+        <input
+          type="number"
+          value={draft.pricePerLitre}
+          onChange={(event) => setDraft((current) => ({ ...current, pricePerLitre: event.target.value }))}
+          style={widgetInputStyle}
+          placeholder="Price / litre"
+        />
+        <button type="button" onClick={addFuelEntry} style={widgetButtonStyle}>
+          Save
         </button>
       </div>
 

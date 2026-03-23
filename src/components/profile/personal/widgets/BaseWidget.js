@@ -9,11 +9,13 @@ export default function BaseWidget({
   statusLabel = "",
   summary = null,
   children,
-  onRemove,
   onOpenSettings,
   dragHandleProps = null,
   resizeHandleProps = null,
   compact = false,
+  interactionMode = null,
+  isInteracting = false,
+  isActiveInteractionWidget = false,
 }) {
   return (
     <div
@@ -31,6 +33,10 @@ export default function BaseWidget({
         padding: "10px",
         position: "relative",
         overflow: "hidden",
+        transition: "transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease",
+        transform: isActiveInteractionWidget ? "scale(1.01)" : "scale(1)",
+        opacity: isInteracting && !isActiveInteractionWidget ? 0.92 : 1,
+        zIndex: isActiveInteractionWidget ? 3 : 2,
       }}
     >
       {!compact && dragHandleProps ? (
@@ -128,25 +134,7 @@ export default function BaseWidget({
                 fontSize: "0.76rem",
               }}
             >
-              Settings
-            </button>
-          ) : null}
-          {onRemove ? (
-            <button
-              type="button"
-              onClick={onRemove}
-              style={{
-                border: "none",
-                borderRadius: "999px",
-                padding: "7px 10px",
-                background: "rgba(198, 40, 40, 0.1)",
-                color: "var(--danger, #c62828)",
-                cursor: "pointer",
-                fontWeight: 700,
-                fontSize: "0.76rem",
-              }}
-            >
-              Hide
+              {interactionMode === "resize" && isActiveInteractionWidget ? "Resizing…" : "Settings"}
             </button>
           ) : null}
         </div>
@@ -175,16 +163,27 @@ export default function BaseWidget({
             position: "absolute",
             right: "10px",
             bottom: "10px",
-            width: "22px",
-            height: "22px",
-            borderRight: "2px solid rgba(var(--primary-rgb), 0.45)",
-            borderBottom: "2px solid rgba(var(--primary-rgb), 0.45)",
+            width: "26px",
+            height: "26px",
+            borderRadius: "999px",
+            border: "1px solid rgba(var(--accent-purple-rgb), 0.28)",
             cursor: "nwse-resize",
-            background: "rgba(var(--primary-rgb), 0.08)",
-            borderBottomRightRadius: "10px",
+            background: "rgba(var(--surface-rgb, 255, 255, 255), 0.92)",
             touchAction: "none",
+            display: "grid",
+            placeItems: "center",
           }}
-        />
+        >
+          <span
+            style={{
+              width: "12px",
+              height: "12px",
+              borderRight: "2px solid rgba(var(--primary-rgb), 0.55)",
+              borderBottom: "2px solid rgba(var(--primary-rgb), 0.55)",
+              transform: "translate(-1px, -1px)",
+            }}
+          />
+        </div>
       ) : null}
     </div>
   );

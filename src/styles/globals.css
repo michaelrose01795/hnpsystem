@@ -85,6 +85,16 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   pointer-events: auto;
 }
 
+body.personal-grid--interacting,
+body.personal-grid--interacting * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+.personal-widget-grid.personal-widget-grid--active {
+  position: relative;
+}
+
 .app-layout-main-column {
   flex: 1;
   width: 100%;
