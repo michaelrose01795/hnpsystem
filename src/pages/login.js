@@ -10,6 +10,7 @@ import Layout from "@/components/Layout";
 import LoginDropdown from "@/components/LoginDropdown";
 import BrandLogo from "@/components/BrandLogo";
 import { roleCategories } from "@/config/users"; // Dev users config
+import { useTheme } from "@/styles/themeProvider";
 
 const FIELD_MAX_WIDTH = 380;
 const LOGOUT_BARRIER_STORAGE_KEY = "hnp-logout-barrier-until";
@@ -102,6 +103,7 @@ export default function LoginPage() {
   const logout = userContext?.logout;
   const logoutInProgress = userContext?.logoutInProgress;
   const { usersByRole, usersByRoleDetailed, isLoading: rosterLoading, refreshRoster } = useRoster();
+  const { setTemporaryOverride } = useTheme();
 
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -124,6 +126,13 @@ export default function LoginPage() {
   const [revertResultType, setRevertResultType] = useState("success");
   const [revertResultMessage, setRevertResultMessage] = useState("");
   const finalizedPendingLogoutRef = useRef(false);
+
+  useEffect(() => {
+    setTemporaryOverride({ mode: "system", accent: "red" });
+    return () => {
+      setTemporaryOverride(null);
+    };
+  }, [setTemporaryOverride]);
 
   const loginRoleCategories = React.useMemo(() => {
     const rosterRoles = Object.keys(usersByRoleDetailed || usersByRole || {}).filter(Boolean);

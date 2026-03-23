@@ -44,7 +44,7 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, inval
     critical: { fill: "var(--danger)", text: "var(--text-inverse)", label: "var(--danger)" },
     advisory: { fill: "var(--warning)", text: "var(--text-inverse)", label: "var(--warning)" },
     good: { fill: "var(--success)", text: "var(--text-inverse)", label: "var(--success)" },
-    unknown: { fill: "#9ca3af", text: "var(--text-inverse)", label: unknownFill },
+    unknown: { fill: "rgba(var(--primary-rgb), 0.24)", text: "var(--text-inverse)", label: unknownFill },
   };
   const selectedAxleFill = "rgba(var(--accent-purple-rgb), 0.16)";
   const selectedAxleStroke = "rgba(var(--accent-purple-rgb), 0.65)";

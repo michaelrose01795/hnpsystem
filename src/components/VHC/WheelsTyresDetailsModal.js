@@ -9,7 +9,6 @@ import themeConfig, {
   popupCardStyles,
 } from "@/styles/appTheme";
 import TyreDiagram, { getReadingStatus } from "@/components/VHC/TyreDiagram";
-import TyresSection from "@/components/VHC/TyresSection"; // Import shared tyre search component
 import { DropdownField } from "@/components/dropdownAPI";
 import IssueAutocomplete from "@/components/vhc/IssueAutocomplete";
 import { learnIssueSuggestion } from "@/lib/vhc/issueSuggestions";
@@ -76,6 +75,23 @@ const tyreBrands = [
   "Toyo",
   "Nexen",
   "Firestone",
+];
+
+const tyreSizes = [
+  "175/65 R14",
+  "185/65 R15",
+  "195/65 R15",
+  "205/55 R16",
+  "205/60 R16",
+  "215/55 R17",
+  "215/60 R17",
+  "225/45 R17",
+  "225/40 R18",
+  "225/50 R17",
+  "235/45 R18",
+  "235/40 R19",
+  "245/40 R18",
+  "255/35 R19",
 ];
 
 const months = Array.from({ length: 12 }, (_, i) => `${i + 1}`);
@@ -360,40 +376,6 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
     return totals;
   }, [tyres]);
 
-  const selectedLookupTyre = useMemo(() => {
-    if (activeWheel === "Spare") {
-      const details = tyres.Spare.details;
-      if (!details.manufacturer && !details.size && !details.load && !details.speed) {
-        return null; // Avoid returning lookup data when spare fields are empty
-      }
-      return {
-        make: details.manufacturer,
-        size: details.size,
-        load: details.load,
-        speed: details.speed,
-        cost_company: details.costCompany ?? null,
-        cost_customer: details.costCustomer ?? null,
-        availability: details.availability || "",
-      }; // Map spare tyre details into lookup format
-    }
-    const tyre = tyres[activeWheel];
-    if (!tyre) {
-      return null; // No lookup data when the tyre is undefined
-    }
-    if (!tyre.manufacturer && !tyre.size && !tyre.load && !tyre.speed) {
-      return null; // Skip lookup preview until the tyre has data
-    }
-    return {
-      make: tyre.manufacturer,
-      size: tyre.size,
-      load: tyre.load,
-      speed: tyre.speed,
-      cost_company: tyre.costCompany ?? null,
-      cost_customer: tyre.costCustomer ?? null,
-      availability: tyre.availability || "",
-    }; // Map main tyre details into lookup format
-  }, [activeWheel, tyres]);
-
   const hasValue = (value) => {
     if (value === null || value === undefined) return false;
     return String(value).trim() !== "";
@@ -476,41 +458,6 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
         [activeWheel]: {
           ...prev[activeWheel],
           [field]: value,
-        },
-      }));
-    }
-  };
-
-  const handleTyreLookupSelect = (tyre) => {
-    if (!tyre) {
-      return; // No action when no tyre is provided
-    }
-    const nextValues = {
-      manufacturer: tyre.make,
-      size: tyre.size,
-      load: tyre.load,
-      speed: tyre.speed,
-      costCompany: tyre.cost_company ?? tyre.costCompany ?? null,
-      costCustomer: tyre.cost_customer ?? tyre.costCustomer ?? null,
-      availability: tyre.availability ?? "",
-    }; // Normalise placeholder tyre data into modal state
-    if (activeWheel === "Spare") {
-      setTyres((prev) => ({
-        ...prev,
-        Spare: {
-          ...prev.Spare,
-          details: {
-            ...prev.Spare.details,
-            ...nextValues,
-          },
-        },
-      }));
-    } else {
-      setTyres((prev) => ({
-        ...prev,
-        [activeWheel]: {
-          ...prev[activeWheel],
-          ...nextValues,
         },
       }));
     }
@@ -874,13 +821,6 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                 minHeight: 0,
               }}
             >
-              {activeWheel !== "Spare" && (
-                <TyresSection
-                  contextLabel={`${activeWheel} Tyre Lookup`}
-                  selectedTyre={selectedLookupTyre}
-                  onTyreSelected={handleTyreLookupSelect}
-                />
-              )}
               {activeWheel !== "Spare" ? (
                 <>
                   <div style={sectionCardStyle}>
@@ -910,11 +850,11 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                       <div style={{ display: "flex", flexWrap: "nowrap", gap: "12px", alignItems: "flex-end" }}>
                         <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>
                           Size
-                          <input
+                          <AutoCompleteInput
                             value={currentTyre.size}
-                            onChange={(event) => updateTyre("size", event.target.value)}
+                            onChange={(value) => updateTyre("size", value)}
+                            options={tyreSizes}
                             placeholder="e.g. 205/55 R16"
-                            style={{ ...baseInputStyle, width: "150px", minWidth: "150px" }}
                           />
                         </label>
                         <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>
@@ -990,11 +930,11 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                           <div style={{ display: "flex", flexWrap: "nowrap", gap: "12px", alignItems: "flex-end" }}>
                             <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>
                               Size
-                              <input
+                              <AutoCompleteInput
                                 value={tyres.Spare.details.size}
-                                onChange={(event) => updateTyre("size", event.target.value)}
+                                onChange={(value) => updateTyre("size", value)}
+                                options={tyreSizes}
                                 placeholder="e.g. 205/55 R16"
-                                style={{ ...baseInputStyle, width: "150px", minWidth: "150px" }}
                               />
                             </label>
                             <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>

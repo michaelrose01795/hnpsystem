@@ -13,6 +13,7 @@ const DETECTED_JOB_TYPE_LABELS = {
   TRIM_EXTERIOR: "Exterior Trim",
   WHEELS_TYRES: "Wheels / Tyres",
   BRAKES: "Brakes",
+  MOT: "MOT",
   DIAGNOSIS: "Diagnosis",
   OTHER: "Other",
 };
@@ -101,4 +102,3 @@ export const deriveJobTypeDisplay = (job = {}, options = {}) => {
 
   return fallback;
 };
-

@@ -19,28 +19,28 @@ const TYRE_KEYS = [
 
 const statusPalette = {
   unknown: {
-    fill: "#9ca3af",
+    fill: "rgba(var(--primary-rgb), 0.22)",
     text: "var(--text-primary)",
-    label: "var(--text-secondary)",
-    border: "#7f8894",
+    label: "var(--primary)",
+    border: "rgba(var(--primary-rgb), 0.52)",
   },
   danger: {
-    fill: "#b85252",
-    text: "#ffffff",
+    fill: "var(--danger)",
+    text: "var(--text-inverse)",
     label: "var(--danger-dark)",
-    border: "#944242",
+    border: "var(--danger-dark)",
   },
   advisory: {
-    fill: "#b88a42",
-    text: "#ffffff",
+    fill: "var(--warning)",
+    text: "var(--text-inverse)",
     label: "var(--warning-dark)",
-    border: "#967038",
+    border: "var(--warning-dark)",
   },
   good: {
-    fill: "#4f8a62",
-    text: "#ffffff",
+    fill: "var(--success)",
+    text: "var(--text-inverse)",
     label: "var(--success-dark)",
-    border: "#417150",
+    border: "var(--success-dark)",
   },
 };
 

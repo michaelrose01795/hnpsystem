@@ -29,6 +29,8 @@ import {
 } from "@/lib/status/statusFlow";
 import { DISPLAY as TECH_DISPLAY } from "@/lib/status/catalog/tech";
 import { revalidateAllJobs } from "@/lib/swr/mutations"; // SWR cache invalidation after mutations
+import { buildVhcTechnicianAssistantSummary } from "@/lib/vhc/assistant";
+import { VHC_TAB_SYSTEM_PROMPT } from "@/lib/ai/prompts/vhcTabPrompt";
 
 // VHC Section Modals
 import WheelsTyresDetailsModal from "@/components/VHC/WheelsTyresDetailsModal";
@@ -38,6 +40,7 @@ import ExternalDetailsModal from "@/components/VHC/ExternalDetailsModal";
 import InternalElectricsDetailsModal from "@/components/VHC/InternalElectricsDetailsModal";
 import UndersideDetailsModal from "@/components/VHC/UndersideDetailsModal";
 import VhcCameraButton from "@/components/VHC/VhcCameraButton";
+import CustomerVideoButton from "@/components/VHC/CustomerVideoButton";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import themeConfig, {
   createVhcButtonStyle, // VHC button style factory — still comes from appTheme
@@ -453,10 +456,10 @@ export default function TechJobDetailPage() {
     const tabs = ["overview"];
     if (jobRequiresVhc) {
       tabs.push("vhc");
-    } else {
-      tabs.push("parts");
     }
-    tabs.push("notes", "write-up", "documents");
+    tabs.push("write-up");
+    tabs.push("parts");
+    tabs.push("notes", "documents");
     return tabs;
   }, [jobRequiresVhc]);
 
@@ -1478,6 +1481,16 @@ export default function TechJobDetailPage() {
       ? writeUpChecklistRowsComplete
       : writeUpCompletion === "complete" || writeUpCompletion === "waiting_additional_work";
   const rectificationsComplete = writeUpComplete;
+  const vhcAssistantSummary = useMemo(
+    () =>
+      buildVhcTechnicianAssistantSummary({
+        checks: vhcChecks,
+        sectionStatus,
+        writeUpComplete,
+        partsAuthorisedCount: authorizedParts.length,
+      }),
+    [vhcChecks, sectionStatus, writeUpComplete, authorizedParts.length]
+  );
 
   const handleCompleteVhcClick = useCallback(async () => {
     if (!jobCardId) return;
@@ -2947,23 +2960,34 @@ export default function TechJobDetailPage() {
                       Vehicle Health Check completed.
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleCompleteVhcClick}
-                    style={{
-                      padding: "10px 18px",
-                      borderRadius: "var(--control-radius)",
-                      border: "1px solid var(--accent-purple)",
-                      backgroundColor: "transparent",
-                      color: "var(--accent-purple)",
-                      fontWeight: 600,
-                      fontSize: "13px",
-                      cursor: "pointer",
-                      transition: "all 0.2s ease",
-                    }}
-                  >
-                    Reopen VHC
-                  </button>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <CustomerVideoButton
+                      jobNumber={jobNumber}
+                      userId={dbUserId || user?.id}
+                      vhcContextLabel={activeSection || "vhc-summary"}
+                      buttonStyle={getVhcActionButtonStyle({ active: false })}
+                      onUploadComplete={() => {
+                        loadJobData();
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleCompleteVhcClick}
+                      style={{
+                        padding: "10px 18px",
+                        borderRadius: "var(--control-radius)",
+                        border: "1px solid var(--accent-purple)",
+                        backgroundColor: "transparent",
+                        color: "var(--accent-purple)",
+                        fontWeight: 600,
+                        fontSize: "13px",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
+                      }}
+                    >
+                      Reopen VHC
+                    </button>
+                  </div>
                 </DevLayoutSection>
               ) : (
                 <>
@@ -3047,6 +3071,58 @@ export default function TechJobDetailPage() {
                         />
                       )}
                     </div>
+                  </DevLayoutSection>
+
+                  <DevLayoutSection
+                    as="div"
+                    sectionKey="myjob-vhc-assistant"
+                    sectionType="content-card"
+                    parentKey="myjob-tab-vhc"
+                    style={{
+                      border: "1px solid var(--border)",
+                      borderRadius: "var(--radius-sm)",
+                      backgroundColor: "var(--surface)",
+                      padding: "14px 16px",
+                      display: "grid",
+                      gap: "10px",
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "center" }}>
+                      <h3 style={{ margin: 0, fontSize: "14px", fontWeight: 700, color: "var(--primary)" }}>
+                        VHC Assistant
+                      </h3>
+                      <span style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
+                        {vhcAssistantSummary.totals.resolved}/{vhcAssistantSummary.totals.totalRows} resolved
+                      </span>
+                    </div>
+                    {vhcAssistantSummary.blockers.length > 0 ? (
+                      <ul style={{ margin: 0, paddingLeft: "18px", display: "grid", gap: "4px" }}>
+                        {vhcAssistantSummary.blockers.map((blocker) => (
+                          <li key={blocker} style={{ fontSize: "12px", color: "var(--warning-dark)" }}>
+                            {blocker}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p style={{ margin: 0, fontSize: "12px", color: "var(--success-dark)" }}>
+                        No blocking issues detected for technician workflow.
+                      </p>
+                    )}
+                    <div style={{ display: "grid", gap: "4px" }}>
+                      {vhcAssistantSummary.recommendations.slice(0, 2).map((recommendation) => (
+                        <p key={recommendation} style={{ margin: 0, fontSize: "12px", color: "var(--text-secondary)" }}>
+                          • {recommendation}
+                        </p>
+                      ))}
+                    </div>
+                    <details>
+                      <summary style={{ cursor: "pointer", fontSize: "12px", color: "var(--text-secondary)" }}>
+                        AI helper context prompt
+                      </summary>
+                      <pre style={{ whiteSpace: "pre-wrap", margin: "8px 0 0 0", fontSize: "11px", color: "var(--text-secondary)" }}>
+                        {VHC_TAB_SYSTEM_PROMPT}
+                      </pre>
+                    </details>
                   </DevLayoutSection>
 
                   {!showVhcSummary && (
@@ -4218,10 +4294,6 @@ export default function TechJobDetailPage() {
                     ×
                   </button>
                 </div>
-
-                <p style={{ margin: "0 0 14px 0", fontSize: "13px", color: "var(--info)" }}>
-                  Detected and linked job type categories for this job card.
-                </p>
 
                 <div style={{ display: "grid", gap: "10px" }}>
                   {detectedJobTypes.map((jobType, index) => (
