@@ -57,7 +57,8 @@ export default async function handler(req, res) {
       }
 
       const existing = Array.isArray(existingRows) ? existingRows[0] : null;
-      if (existing?.id && existing.is_visible === true) {
+      const allowMultipleInstances = widgetType === "custom";
+      if (!allowMultipleInstances && existing?.id && existing.is_visible === true) {
         return res.status(200).json({ success: true, data: mapWidgetRow(existing) });
       }
 
@@ -66,7 +67,7 @@ export default async function handler(req, res) {
 
       let savedRow = null;
 
-      if (existing?.id) {
+      if (!allowMultipleInstances && existing?.id) {
         const { data, error } = await db
           .from(PERSONAL_TABLES.widgets)
           .update({
@@ -95,7 +96,7 @@ export default async function handler(req, res) {
             position_y: placement.positionY,
             width: placement.width,
             height: placement.height,
-            config_json: buildDefaultWidgetConfig(widgetType),
+            config_json: widgetType === "custom" ? { ...buildDefaultWidgetConfig(widgetType), title: `Custom widget ${(allWidgets.filter((entry) => entry.widgetType === "custom").length || 0) + 1}` } : buildDefaultWidgetConfig(widgetType),
             updated_at: new Date().toISOString(),
           })
           .select("id, user_id, widget_type, is_visible, position_x, position_y, width, height, config_json, created_at, updated_at")

@@ -311,7 +311,9 @@ async function getUserProfile(userId) {
         emergency_contact,
         home_address,
         hourly_rate,
-        overtime_rate
+        overtime_rate,
+        contracted_hours_per_week,
+        annual_salary
       `
     )
     .eq("user_id", userId)
@@ -351,6 +353,8 @@ async function getUserProfile(userId) {
     startDate: data.start_date,
     hourlyRate: Number(data.hourly_rate ?? 0),
     overtimeRate: Number(data.overtime_rate ?? 0),
+    contractedWeeklyHours: Number(data.contracted_hours_per_week ?? 0),
+    annualSalary: Number(data.annual_salary ?? 0),
     keycloakId: data.email ? `kc-${data.email.split("@")[0]}` : `kc-${userId}`,
     email: data.email,
     phone: data.phone || "N/A",

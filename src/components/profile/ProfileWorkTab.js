@@ -11,7 +11,6 @@ import useBodyModalLock from "@/hooks/useBodyModalLock";
 import { useHrOperationsData } from "@/hooks/useHrData"; // Supabase-backed HR aggregation hook (admin only)
 import { StatusTag } from "@/components/HR/MetricCard"; // HR UI components
 import { CalendarField } from "@/components/calendarAPI";
-import { TimePickerField } from "@/components/timePickerAPI";
 import { DropdownField } from "@/components/dropdownAPI";
 import StaffVehiclesCard from "@/components/HR/StaffVehiclesCard";
 import { ACCENT_PALETTES, useTheme } from "@/styles/themeProvider";
@@ -537,143 +536,6 @@ function AccentOptionContent({ label, light, dark }) {
         {label}
       </span>
     </span>
-  );
-}
-
-// Simple overtime log form - date, start time, total hours (end auto-calculated)
-function OvertimeLogForm({ onSessionSaved = () => {}, userId = null }) {
-  const [form, setForm] = useState({ date: "", start: "", hours: "" }); // hours instead of end
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-    setError(null);
-    setSuccess(null);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!form.date || !form.start || !form.hours) return; // validate all three fields
-
-    const hoursNum = parseFloat(form.hours); // parse total hours as decimal
-    if (isNaN(hoursNum) || hoursNum <= 0) {
-      setError("Hours must be greater than 0.");
-      return;
-    }
-    if (hoursNum > 16) {
-      setError("Maximum 16 hours per session.");
-      return;
-    }
-
-    // Auto-calculate end time from start + hours
-    const startDate = new Date(`${form.date}T${form.start}`);
-    if (isNaN(startDate.getTime())) {
-      setError("Invalid start time.");
-      return;
-    }
-    const endDate = new Date(startDate.getTime() + hoursNum * 60 * 60 * 1000); // add hours in ms
-    const endTimeStr = endDate.toTimeString().slice(0, 5); // "HH:MM" format
-
-    setIsSaving(true);
-    setError(null);
-    setSuccess(null);
-
-    const payload = { date: form.date, start: form.start, end: endTimeStr, userId }; // send calculated end
-
-    try {
-      const response = await fetch("/api/profile/overtime-sessions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errData = await response.json().catch(() => null);
-        throw new Error(errData?.message || "Failed to save overtime session.");
-      }
-
-      const result = await response.json();
-      setForm({ date: "", start: "", hours: "" }); // reset form
-      setSuccess("Overtime session logged.");
-      onSessionSaved(result?.data || null);
-    } catch (err) {
-      setError(err.message || "Failed to save overtime session.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  return (
-    <form
-      onSubmit={handleSubmit}
-      style={{
-        display: "flex",
-        flexWrap: "wrap",
-        gap: "12px",
-        alignItems: "end",
-      }}
-    >
-      <div style={{ flex: "1 1 180px", minWidth: "180px" }}>
-        <CalendarField label="Date" name="date" id="ot-date" value={form.date} onChange={handleChange} />
-      </div>
-      <div style={{ flex: "1 1 160px", minWidth: "160px" }}>
-        <TimePickerField label="Start time" name="start" value={form.start} onChange={handleChange} />
-      </div>
-      <div style={{ flex: "1 1 160px", minWidth: "160px" }}>
-        <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "0.8rem", fontWeight: 600, color: "var(--info-dark)" }}>
-          Total hours
-          <input
-            type="number"
-            name="hours"
-            value={form.hours}
-            onChange={handleChange}
-            step="0.25"
-            min="0.25"
-            max="16"
-            placeholder="e.g. 1.50"
-            style={{
-              padding: "var(--control-padding)",
-              borderRadius: "var(--radius-xs)",
-              border: "1px solid var(--accent-purple-surface)",
-              fontWeight: 500,
-              height: "var(--control-height)",
-              width: "100%",
-              boxSizing: "border-box",
-            }}
-          />
-        </label>
-      </div>
-      <div style={{ flex: "0 0 150px", minWidth: "150px" }}>
-        <button
-          type="submit"
-          disabled={isSaving}
-          style={{
-            padding: "10px 12px",
-            borderRadius: "var(--radius-sm)",
-            border: "none",
-            background: "var(--accent-purple)",
-            color: "white",
-            fontWeight: 600,
-            cursor: "pointer",
-            height: "var(--control-height)",
-            width: "100%",
-            opacity: isSaving ? 0.7 : 1,
-          }}
-        >
-          {isSaving ? "Saving..." : "Add session"}
-        </button>
-      </div>
-      {error && (
-        <div style={{ flex: "1 1 100%", color: "var(--danger)", fontSize: "0.85rem" }}>{error}</div>
-      )}
-      {success && (
-        <div style={{ flex: "1 1 100%", color: "var(--success)", fontSize: "0.85rem" }}>{success}</div>
-      )}
-    </form>
   );
 }
 
@@ -1660,43 +1522,6 @@ export function ProfileWorkTab({
       estimatedPay: Number(estimatedPay.toFixed(2)),
     };
   }, [attendanceLogs, leaveBalances, overtimeSummaries, profile, shouldUseHrData, userProfileData]);
-
-  const handleOvertimeSessionSaved = useCallback(
-    (savedEntry) => {
-      if (!savedEntry) {
-        setProfileReloadKey((prev) => prev + 1);
-        return;
-      }
-
-      if (!shouldUseHrData) {
-        setUserProfileData((prev) => {
-          if (!prev) return prev;
-
-          const clockInTime = savedEntry.start ? `${savedEntry.date}T${savedEntry.start}:00` : `${savedEntry.date}T00:00:00`;
-          const clockOutTime = savedEntry.end ? `${savedEntry.date}T${savedEntry.end}:00` : `${savedEntry.date}T23:59:00`;
-
-          const newLog = {
-            id: savedEntry.id,
-            employeeId: savedEntry.userId,
-            date: savedEntry.date,
-            clockIn: clockInTime,
-            clockOut: clockOutTime,
-            totalHours: Number(savedEntry.totalHours || 0),
-            status: "Overtime",
-            type: "Overtime",
-          };
-
-          return {
-            ...prev,
-            attendanceLogs: [newLog, ...(prev.attendanceLogs || [])],
-          };
-        });
-      }
-      setProfileReloadKey((prev) => prev + 1);
-    },
-    [shouldUseHrData]
-  );
-
   // Leave request modal state
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
   const [recurringModalOpen, setRecurringModalOpen] = useState(false); // recurring overtime rules modal
@@ -2344,22 +2169,9 @@ export function ProfileWorkTab({
                   >
                     Recurring Rules
                   </button>
-                  <span style={buttonStyleLeaveRequest}>
-                    Log Overtime
-                  </span>
                 </div>
               }
             >
-              <div
-                style={{
-                  background: "rgba(var(--accent-purple-rgb), 0.08)",
-                  borderRadius: "var(--radius-md)",
-                  padding: "14px",
-                  border: "1px solid rgba(var(--accent-purple-rgb), 0.2)",
-                }}
-              >
-                <OvertimeLogForm onSessionSaved={handleOvertimeSessionSaved} userId={dbUserId} />
-              </div>
 
               <div
                 style={{

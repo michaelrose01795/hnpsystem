@@ -30,14 +30,22 @@ function getCurrentCycleBounds(referenceDate = new Date()) {
   };
 }
 
+function countLeaveDays(leaveRequests = []) {
+  return (leaveRequests || []).reduce(
+    (sum, request) => sum + toNumber(request?.totalDays, 0),
+    0
+  );
+}
+
 export function adaptWorkProfileData(profilePayload = {}) {
   const profile = profilePayload?.profile || null;
   const attendanceLogs = Array.isArray(profilePayload?.attendanceLogs) ? profilePayload.attendanceLogs : [];
+  const overtimeSessions = Array.isArray(profilePayload?.overtimeSessions) ? profilePayload.overtimeSessions : [];
   const leaveBalance = profilePayload?.leaveBalance || null;
+  const leaveRequests = Array.isArray(profilePayload?.leaveRequests) ? profilePayload.leaveRequests : [];
   const { start, end } = getCurrentCycleBounds();
 
   let hoursWorked = 0;
-  let overtimeHours = 0;
 
   attendanceLogs.forEach((entry) => {
     if (!entry?.date) return;
@@ -46,16 +54,13 @@ export function adaptWorkProfileData(profilePayload = {}) {
       return;
     }
 
-    const hours = toNumber(entry.totalHours, 0);
-    const type = String(entry.type || entry.status || "").toLowerCase();
-    hoursWorked += hours;
-    if (type === "overtime") {
-      overtimeHours += hours;
-    }
+    hoursWorked += toNumber(entry.totalHours, 0);
   });
 
+  const overtimeHours = overtimeSessions.reduce((sum, session) => sum + toNumber(session?.totalHours, 0), 0);
   const hourlyRate = toNumber(profile?.hourlyRate, 0);
   const overtimeRate = toNumber(profile?.overtimeRate, 0);
+  const annualSalary = toNumber(firstDefined(profile?.annualSalary, profile?.annual_salary), 0);
   const contractedWeeklyHours = toNumber(
     firstDefined(
       profile?.contractedWeeklyHours,
@@ -65,8 +70,11 @@ export function adaptWorkProfileData(profilePayload = {}) {
     ),
     0
   );
-  const overtimeValue = overtimeHours * overtimeRate;
-  const estimatedIncome = hoursWorked * hourlyRate + overtimeValue;
+  const baseMonthlyFromSalary = annualSalary > 0 ? annualSalary / 12 : 0;
+  const overtimeValue = overtimeHours * (overtimeRate || hourlyRate);
+  const estimatedIncome = baseMonthlyFromSalary > 0
+    ? baseMonthlyFromSalary + overtimeValue
+    : (hoursWorked * hourlyRate) + overtimeValue;
 
   return {
     hoursWorked: Number(hoursWorked.toFixed(2)),
@@ -76,7 +84,12 @@ export function adaptWorkProfileData(profilePayload = {}) {
     contractedWeeklyHours: Number(contractedWeeklyHours.toFixed(2)),
     hourlyRate: Number(hourlyRate.toFixed(2)),
     overtimeRate: Number(overtimeRate.toFixed(2)),
+    annualSalary: Number(annualSalary.toFixed(2)),
     leaveRemaining: leaveBalance?.remaining ?? null,
+    leaveTaken: leaveBalance?.taken ?? countLeaveDays(leaveRequests),
+    leaveAllowance: leaveBalance?.entitlement ?? null,
+    leaveRequests,
+    overtimeSessions,
   };
 }
 

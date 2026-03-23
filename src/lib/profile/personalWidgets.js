@@ -78,8 +78,8 @@ export const PERSONAL_WIDGET_DEFINITIONS = {
   }),
   holiday: createDefinition({
     type: "holiday",
-    label: "Holiday",
-    description: "Tracks holiday savings goals and deadlines.",
+    label: "Holiday Tracking",
+    description: "Tracks leave dates, days taken, and remaining allowance from Work tab records.",
     category: "goals",
     accent: "var(--info, #00838f)",
   }),
@@ -89,7 +89,7 @@ export const PERSONAL_WIDGET_DEFINITIONS = {
     description: "A free-form widget for bespoke amounts, targets, and notes.",
     category: "custom",
     accent: "var(--accent-purple)",
-    defaultConfig: { title: "Custom widget" },
+    defaultConfig: { title: "Custom widget", preset: "goal-tracker" },
     defaultData: { amount: 0, target: 0, note: "" },
   }),
   "net-position": createDefinition({

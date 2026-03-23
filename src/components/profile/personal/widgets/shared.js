@@ -1,7 +1,7 @@
 import React from "react";
 
 export function formatCurrency(value) {
-  return `GBP ${Number(value || 0).toFixed(2)}`;
+  return `£${Number(value || 0).toFixed(2)}`;
 }
 
 export function formatDate(value) {

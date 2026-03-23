@@ -693,7 +693,7 @@ export default function WidgetSettingsModal({
           <Section title="Savings accounts" description="Manage named account groupings for the savings widget.">
             <div style={{ display: "grid", gap: "10px" }}>
               {(draft.settings.savingsAccounts || []).map((account, index) => (
-                <div key={`${account?.name || "account"}-${index}`} style={{ display: "grid", gap: "8px", gridTemplateColumns: "1fr auto" }}>
+                <div key={`account-${index}`} style={{ display: "grid", gap: "8px", gridTemplateColumns: "1fr auto" }}>
                   <input
                     value={account?.name || ""}
                     onChange={(event) =>

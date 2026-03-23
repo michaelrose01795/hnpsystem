@@ -11,10 +11,6 @@ export default function BaseWidget({
   children,
   onOpenSettings,
   compact = false,
-  isMoveMode = false,
-  canDrag = false,
-  isDraggingWidget = false,
-  moveButtonProps = null,
 }) {
   return (
     <div
@@ -32,32 +28,8 @@ export default function BaseWidget({
         padding: "10px",
         position: "relative",
         overflow: "hidden",
-        transition: "transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease",
-        transform: isDraggingWidget ? "scale(0.985)" : "scale(1)",
-        opacity: isDraggingWidget ? 0.78 : 1,
       }}
     >
-      {isMoveMode ? (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "10px",
-            borderRadius: "12px",
-            border: "1px dashed rgba(var(--accent-purple-rgb), 0.35)",
-            background: "rgba(var(--primary-rgb), 0.06)",
-            padding: "6px 10px",
-            fontSize: "0.74rem",
-            color: "var(--text-secondary)",
-            fontWeight: 700,
-          }}
-        >
-          <span>{canDrag ? "Drag this card to a new slot" : "Move mode active"}</span>
-          <span style={{ letterSpacing: "0.08em", textTransform: "uppercase" }}>2-column grid</span>
-        </div>
-      ) : null}
-
       <div
         style={{
           display: "flex",
@@ -106,26 +78,6 @@ export default function BaseWidget({
         </div>
 
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
-          {moveButtonProps ? (
-            <button
-              type="button"
-              onClick={moveButtonProps.onClick}
-              disabled={moveButtonProps.disabled}
-              style={{
-                border: "1px solid rgba(var(--accent-purple-rgb), 0.18)",
-                borderRadius: "999px",
-                padding: "7px 10px",
-                background: isMoveMode && canDrag ? "var(--accent-purple)" : "rgba(var(--surface-rgb, 255, 255, 255), 0.82)",
-                color: isMoveMode && canDrag ? "#ffffff" : "var(--text-primary)",
-                cursor: moveButtonProps.disabled ? "not-allowed" : "pointer",
-                fontWeight: 700,
-                fontSize: "0.76rem",
-                opacity: moveButtonProps.disabled ? 0.6 : 1,
-              }}
-            >
-              {isMoveMode && canDrag ? "Done" : "Move"}
-            </button>
-          ) : null}
           {onOpenSettings ? (
             <button
               type="button"

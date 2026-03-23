@@ -6,7 +6,6 @@ import {
   SectionLabel,
   formatCurrency,
   formatDate,
-  widgetButtonStyle,
   widgetInputStyle,
 } from "@/components/profile/personal/widgets/shared";
 import {
@@ -26,16 +25,7 @@ export default function SavingsWidget({
   actions,
   onOpenSettings,
   compact = false,
-  isMoveMode = false,
-  canDrag = false,
-  isDraggingWidget = false,
-  moveButtonProps = null,
 }) {
-  const [form, setForm] = useState({
-    targetAmount: datasets.savings?.targetAmount || 0,
-    currentAmount: datasets.savings?.currentAmount || 0,
-    monthlyContribution: datasets.savings?.monthlyContribution || 0,
-  });
   const [selectedAccount, setSelectedAccount] = useState("");
   const [accountAmount, setAccountAmount] = useState("");
   const accounts = widgetData?.settings?.savingsAccounts || [];
@@ -44,8 +34,8 @@ export default function SavingsWidget({
   const accountTotal = calculateSavingsAccountTotal(accountEntries, selectedAccountName);
   const allSavingsTotal = calculateAllSavingsTotal(accountEntries);
 
-  const progress = useMemo(() => calculateSavingsProgress(form), [form]);
-  const projectedDate = calculateProjectedSavingsDate(form);
+  const progress = useMemo(() => calculateSavingsProgress(datasets.savings), [datasets.savings]);
+  const projectedDate = calculateProjectedSavingsDate(datasets.savings);
   const monthView = useMemo(
     () =>
       calculateSavingsForMonth({
@@ -67,13 +57,6 @@ export default function SavingsWidget({
     [datasets.goals, datasets.savings, widgetData, widgetMonthKey]
   );
 
-  const saveSavings = async () => {
-    await actions.saveSavings({
-      targetAmount: Number(form.targetAmount || 0),
-      currentAmount: Number(form.currentAmount || 0),
-      monthlyContribution: Number(form.monthlyContribution || 0),
-    });
-  };
 
   return (
     <BaseWidget
@@ -91,10 +74,6 @@ export default function SavingsWidget({
       }
       onOpenSettings={onOpenSettings}
       compact={compact}
-      isMoveMode={isMoveMode}
-      canDrag={canDrag}
-      isDraggingWidget={isDraggingWidget}
-      moveButtonProps={moveButtonProps}
     >
       <SectionLabel>{monthView.label} categories</SectionLabel>
       <div style={{ display: "grid", gap: "8px" }}>
@@ -111,34 +90,6 @@ export default function SavingsWidget({
           ))
         )}
       </div>
-
-      <SectionLabel>Update savings</SectionLabel>
-      <div style={{ display: "grid", gap: "10px", gridTemplateColumns: compact ? "1fr" : "repeat(3, minmax(0, 1fr))" }}>
-        <input
-          type="number"
-          value={form.targetAmount}
-          onChange={(event) => setForm((current) => ({ ...current, targetAmount: event.target.value }))}
-          style={widgetInputStyle}
-          placeholder="Target amount"
-        />
-        <input
-          type="number"
-          value={form.currentAmount}
-          onChange={(event) => setForm((current) => ({ ...current, currentAmount: event.target.value }))}
-          style={widgetInputStyle}
-          placeholder="Current amount"
-        />
-        <input
-          type="number"
-          value={form.monthlyContribution}
-          onChange={(event) => setForm((current) => ({ ...current, monthlyContribution: event.target.value }))}
-          style={widgetInputStyle}
-          placeholder="Monthly contribution"
-        />
-      </div>
-      <button type="button" onClick={saveSavings} style={{ ...widgetButtonStyle, alignSelf: "flex-start" }}>
-        Save savings
-      </button>
 
       <SectionLabel>Account contributions</SectionLabel>
       {accounts.length === 0 ? (
@@ -185,8 +136,8 @@ export default function SavingsWidget({
             </button>
           </div>
           <div style={{ display: "grid", gap: "10px", gridTemplateColumns: compact ? "1fr" : "repeat(2, minmax(0, 1fr))" }}>
-            <MetricPill label={`${selectedAccountName || "Account"} total`} value={formatCurrency(accountTotal)} accent="var(--info, #1565c0)" />
             <MetricPill label="All accounts total" value={formatCurrency(allSavingsTotal)} accent="var(--success, #2e7d32)" />
+            <MetricPill label={`${selectedAccountName || "Account"} total`} value={formatCurrency(accountTotal)} accent="var(--info, #1565c0)" />
           </div>
         </>
       )}

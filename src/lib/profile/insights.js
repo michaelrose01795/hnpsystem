@@ -10,7 +10,7 @@ import {
 import { formatMonthLabel, getCurrentMonthKey, shiftMonthKey } from "@/lib/profile/monthPlanning";
 
 function formatMoney(value) {
-  return `GBP ${Number(value || 0).toFixed(2)}`;
+  return `£${Number(value || 0).toFixed(2)}`;
 }
 
 export function buildPersonalInsights({
