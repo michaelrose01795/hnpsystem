@@ -1,6 +1,7 @@
 // file location: src/components/accounts/AccountSummary.js // identify module origin
 import React from "react"; // import React to render JSX
 import PropTypes from "prop-types";
+
 const currencyFormatter = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
 const summaryBlueprint = [
   { key: "openCount", label: "Open Accounts", emphasize: true },
@@ -15,74 +16,21 @@ const resolveValue = (key, value) => {
   }
   return currencyFormatter.format(Number(value || 0));
 };
-export default function AccountSummary({ summary, onRefresh, showRefreshButton = true }) {
+
+export default function AccountSummary({ summary }) {
   const safeSummary = summary || {};
+
   return (
-    <section
-      style={{
-        background: "var(--surface)",
-        border: "none",
-        borderRadius: "var(--radius-md)",
-        padding: "20px",
-        display: "flex",
-        flexWrap: "wrap",
-        gap: "16px",
-        alignItems: "stretch",
-      }}
-    >
-      <div
-        style={{
-          flexBasis: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: "4px",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "4px",
-          }}
-        >
-          <h2
-            style={{
-              margin: 0,
-              fontSize: "1.25rem",
-              color: "var(--text-primary)",
-            }}
-          >
-            Accounts Snapshot
-          </h2>
-          <p
-            style={{
-              margin: 0,
-              fontSize: "0.9rem",
-              color: "var(--text-secondary)",
-            }}
-          >
-            Live balance and status metrics
+    <section className="app-section-card" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+        <div>
+          <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+            Overview
           </p>
+          <h2 style={{ margin: "6px 0 0", fontSize: "1.2rem", color: "var(--text-primary)" }}>Account Snapshot</h2>
         </div>
-        {showRefreshButton && (
-          <button
-            type="button"
-            onClick={onRefresh}
-            style={{
-              padding: "10px 16px",
-              borderRadius: "var(--radius-pill)",
-              border: "1px solid var(--primary)",
-              background: "var(--primary)",
-              color: "white",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            Refresh
-          </button>
-        )}
       </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "14px" }}>
       {summaryBlueprint.map((card) => {
         const rawValue = safeSummary[card.key];
         const displayValue = card.isCurrency ? currencyFormatter.format(Number(rawValue || 0)) : resolveValue(card.key, rawValue);
@@ -90,11 +38,10 @@ export default function AccountSummary({ summary, onRefresh, showRefreshButton =
           <article
             key={card.key}
             style={{
-              flex: "1 1 180px",
               borderRadius: "var(--control-radius)",
-              border: "1px solid rgba(0,0,0,0.05)",
+              border: "1px solid rgba(var(--primary-rgb), 0.08)",
               padding: "16px",
-              background: "var(--surface-light)",
+              background: card.emphasize ? "rgba(var(--primary-rgb), 0.08)" : "var(--surface-2, var(--surface-light))",
             }}
           >
             <p
@@ -110,7 +57,7 @@ export default function AccountSummary({ summary, onRefresh, showRefreshButton =
             </p>
             <strong
               style={{
-                marginTop: "8px",
+                marginTop: "10px",
                 display: "block",
                 fontSize: card.emphasize ? "1.8rem" : "1.4rem",
                 color: card.emphasize ? "var(--primary)" : "var(--text-primary)",
@@ -122,16 +69,15 @@ export default function AccountSummary({ summary, onRefresh, showRefreshButton =
           </article>
         );
       })}
+      </div>
     </section>
   );
 }
+
 AccountSummary.propTypes = {
   summary: PropTypes.object,
-  onRefresh: PropTypes.func,
-  showRefreshButton: PropTypes.bool,
 };
+
 AccountSummary.defaultProps = {
   summary: {},
-  onRefresh: undefined,
-  showRefreshButton: true,
 };

@@ -46,8 +46,12 @@ CREATE TABLE public.appointments (
   notes text,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
+  created_by integer,
+  updated_by integer,
   CONSTRAINT appointments_pkey PRIMARY KEY (appointment_id),
+  CONSTRAINT appointments_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id),
   CONSTRAINT appointments_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
+  CONSTRAINT appointments_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(user_id),
   CONSTRAINT appointments_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id)
 );
 CREATE TABLE public.clocking (
@@ -603,6 +607,7 @@ CREATE TABLE public.job_request_presets (
   usage_count integer NOT NULL DEFAULT 0,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  category text NOT NULL DEFAULT 'general'::text,
   CONSTRAINT job_request_presets_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.job_requests (
@@ -724,7 +729,15 @@ CREATE TABLE public.jobs (
   vhc_authorized_total numeric DEFAULT 0,
   vhc_declined_total numeric DEFAULT 0,
   account_id text,
+  booked_by integer,
+  checked_in_by integer,
+  workshop_started_by integer,
+  wash_completed_by integer,
   CONSTRAINT jobs_pkey PRIMARY KEY (id),
+  CONSTRAINT jobs_booked_by_fkey FOREIGN KEY (booked_by) REFERENCES public.users(user_id),
+  CONSTRAINT jobs_checked_in_by_fkey FOREIGN KEY (checked_in_by) REFERENCES public.users(user_id),
+  CONSTRAINT jobs_workshop_started_by_fkey FOREIGN KEY (workshop_started_by) REFERENCES public.users(user_id),
+  CONSTRAINT jobs_wash_completed_by_fkey FOREIGN KEY (wash_completed_by) REFERENCES public.users(user_id),
   CONSTRAINT jobs_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES public.users(user_id),
   CONSTRAINT jobs_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.vehicles(vehicle_id),
   CONSTRAINT jobs_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
@@ -833,6 +846,20 @@ CREATE TABLE public.overtime_periods (
   period_end date NOT NULL,
   status text NOT NULL DEFAULT 'open'::text,
   CONSTRAINT overtime_periods_pkey PRIMARY KEY (period_id)
+);
+CREATE TABLE public.overtime_recurring_rules (
+  rule_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  user_id integer NOT NULL,
+  day_of_week smallint NOT NULL CHECK (day_of_week >= 0 AND day_of_week <= 6),
+  hours numeric NOT NULL CHECK (hours > 0::numeric),
+  active boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  pattern_type text NOT NULL DEFAULT 'weekly'::text CHECK (pattern_type = ANY (ARRAY['weekly'::text, 'alternate'::text])),
+  week_parity text CHECK (week_parity IS NULL OR (week_parity = ANY (ARRAY['odd'::text, 'even'::text]))),
+  label text,
+  CONSTRAINT overtime_recurring_rules_pkey PRIMARY KEY (rule_id),
+  CONSTRAINT overtime_recurring_rules_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
 );
 CREATE TABLE public.overtime_sessions (
   session_id bigint NOT NULL DEFAULT nextval('overtime_sessions_session_id_seq'::regclass),
@@ -1246,6 +1273,75 @@ CREATE TABLE public.payment_plans (
   CONSTRAINT payment_plans_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT payment_plans_invoice_id_fkey FOREIGN KEY (invoice_id) REFERENCES public.invoices(id)
 );
+CREATE TABLE public.personal_attachments (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id integer NOT NULL,
+  file_url text NOT NULL,
+  file_name text NOT NULL,
+  mime_type text,
+  file_size bigint NOT NULL DEFAULT 0,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT personal_attachments_pkey PRIMARY KEY (id),
+  CONSTRAINT personal_attachments_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.personal_bills (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id integer NOT NULL,
+  name text NOT NULL,
+  amount numeric NOT NULL DEFAULT 0,
+  due_day integer NOT NULL DEFAULT 1,
+  is_recurring boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT personal_bills_pkey PRIMARY KEY (id),
+  CONSTRAINT personal_bills_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.personal_goals (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id integer NOT NULL,
+  type text NOT NULL CHECK (type = ANY (ARRAY['house'::text, 'holiday'::text, 'custom'::text])),
+  target numeric NOT NULL DEFAULT 0,
+  current numeric NOT NULL DEFAULT 0,
+  deadline date,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT personal_goals_pkey PRIMARY KEY (id),
+  CONSTRAINT personal_goals_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.personal_notes (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id integer NOT NULL,
+  content text NOT NULL DEFAULT ''::text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT personal_notes_pkey PRIMARY KEY (id),
+  CONSTRAINT personal_notes_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.personal_savings (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id integer NOT NULL UNIQUE,
+  target_amount numeric NOT NULL DEFAULT 0,
+  current_amount numeric NOT NULL DEFAULT 0,
+  monthly_contribution numeric NOT NULL DEFAULT 0,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT personal_savings_pkey PRIMARY KEY (id),
+  CONSTRAINT personal_savings_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.personal_transactions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id integer NOT NULL,
+  type text NOT NULL CHECK (type = ANY (ARRAY['income'::text, 'expense'::text])),
+  category text NOT NULL DEFAULT 'General'::text,
+  amount numeric NOT NULL DEFAULT 0,
+  date date NOT NULL DEFAULT CURRENT_DATE,
+  is_recurring boolean NOT NULL DEFAULT false,
+  notes text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT personal_transactions_pkey PRIMARY KEY (id),
+  CONSTRAINT personal_transactions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
+);
 CREATE TABLE public.proforma_request_overrides (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   job_id integer NOT NULL,
@@ -1369,6 +1465,56 @@ CREATE TABLE public.tracking_oil_stock (
   CONSTRAINT tracking_oil_stock_consumable_id_fkey FOREIGN KEY (consumable_id) REFERENCES public.workshop_consumables(id),
   CONSTRAINT tracking_oil_stock_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id)
 );
+CREATE TABLE public.user_personal_layout (
+  user_id integer NOT NULL,
+  layout_json jsonb NOT NULL DEFAULT '[]'::jsonb,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT user_personal_layout_pkey PRIMARY KEY (user_id),
+  CONSTRAINT user_personal_layout_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.user_personal_security (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id integer NOT NULL UNIQUE,
+  passcode_hash text NOT NULL,
+  is_setup boolean NOT NULL DEFAULT false,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT user_personal_security_pkey PRIMARY KEY (id),
+  CONSTRAINT user_personal_security_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.user_personal_state (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id integer NOT NULL UNIQUE,
+  state_json jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT user_personal_state_pkey PRIMARY KEY (id),
+  CONSTRAINT user_personal_state_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.user_personal_widget_data (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id integer NOT NULL,
+  widget_type text NOT NULL,
+  data_json jsonb NOT NULL DEFAULT '{}'::jsonb,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT user_personal_widget_data_pkey PRIMARY KEY (id),
+  CONSTRAINT user_personal_widget_data_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.user_personal_widgets (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id integer NOT NULL,
+  widget_type text NOT NULL,
+  is_visible boolean NOT NULL DEFAULT true,
+  position_x integer NOT NULL DEFAULT 1,
+  position_y integer NOT NULL DEFAULT 1,
+  width integer NOT NULL DEFAULT 4,
+  height integer NOT NULL DEFAULT 3,
+  config_json jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT user_personal_widgets_pkey PRIMARY KEY (id),
+  CONSTRAINT user_personal_widgets_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
+);
 CREATE TABLE public.users (
   user_id integer NOT NULL DEFAULT nextval('users_user_id_seq'::regclass),
   first_name character varying NOT NULL,
@@ -1403,6 +1549,7 @@ CREATE TABLE public.users (
   accent_color text DEFAULT 'red'::text CHECK (accent_color = ANY (ARRAY['red'::text, 'beige'::text, 'grey'::text, 'blue'::text, 'green'::text, 'yellow'::text, 'pink'::text, 'orange'::text, 'purple'::text])),
   probation_end date,
   name text,
+  contracted_hours_per_week numeric,
   CONSTRAINT users_pkey PRIMARY KEY (user_id),
   CONSTRAINT users_manager_id_fkey FOREIGN KEY (manager_id) REFERENCES public.users(user_id)
 );
@@ -1494,6 +1641,22 @@ CREATE TABLE public.vhc_checks (
   Complete boolean NOT NULL DEFAULT false,
   CONSTRAINT vhc_checks_pkey PRIMARY KEY (vhc_id),
   CONSTRAINT vhc_checks_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
+);
+CREATE TABLE public.vhc_customer_media (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  job_number text NOT NULL,
+  media_type text NOT NULL CHECK (media_type = ANY (ARRAY['video'::text, 'image'::text])),
+  storage_bucket text NOT NULL,
+  storage_path text NOT NULL,
+  public_url text,
+  mime_type text,
+  file_size_bytes bigint,
+  overlays jsonb NOT NULL DEFAULT '[]'::jsonb,
+  context_label text,
+  uploaded_by text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT vhc_customer_media_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.vhc_declinations (
   id integer NOT NULL DEFAULT nextval('vhc_declinations_id_seq'::regclass),
@@ -1590,26 +1753,3 @@ CREATE TABLE public.workshop_consumables (
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT workshop_consumables_pkey PRIMARY KEY (id)
 );
-
--- Recurring overtime rules — supports weekly and alternating patterns within 26th-to-25th cycles
-CREATE TABLE public.overtime_recurring_rules (
-  rule_id bigint NOT NULL DEFAULT nextval('overtime_recurring_rules_rule_id_seq'::regclass),
-  user_id integer NOT NULL,
-  day_of_week integer NOT NULL,
-  hours numeric NOT NULL,
-  active boolean NOT NULL DEFAULT true,
-  pattern_type text NOT NULL DEFAULT 'weekly',
-  week_parity text DEFAULT NULL,
-  label text DEFAULT NULL,
-  updated_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT overtime_recurring_rules_pkey PRIMARY KEY (rule_id),
-  CONSTRAINT overtime_recurring_rules_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id),
-  CONSTRAINT chk_pattern_type CHECK (pattern_type IN ('weekly', 'alternate')),
-  CONSTRAINT chk_week_parity CHECK (week_parity IS NULL OR week_parity IN ('odd', 'even')),
-  CONSTRAINT chk_parity_consistency CHECK (
-    (pattern_type = 'weekly' AND week_parity IS NULL)
-    OR (pattern_type = 'alternate' AND week_parity IS NOT NULL)
-  )
-);
-CREATE UNIQUE INDEX uq_recurring_rules_user_day_pattern_parity
-  ON overtime_recurring_rules (user_id, day_of_week, pattern_type, COALESCE(week_parity, ''));

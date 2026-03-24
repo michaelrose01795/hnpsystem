@@ -70,7 +70,9 @@
       "Bash(find /f/hnpsystem/src/components -type f \\\\\\(-name *.js -o -name *.jsx -o -name *.ts -o -name *.tsx \\\\\\))",
       "Bash(echo \"exit: $?\")",
       "Bash(find /workspaces/hnpsystem/src -name \"*.js\" -type f -exec grep -l \"<Link\" {})",
-      "Bash(grep -n \"<Link\" /workspaces/hnpsystem/src/pages/customers/[customerSlug].js)"
+      "Bash(grep -n \"<Link\" /workspaces/hnpsystem/src/pages/customers/[customerSlug].js)",
+      "Bash(find /d/hnpsystem/src/hooks -type f \\\\\\(-name *personal* -o -name *Personal* \\\\\\))",
+      "Bash(find /d/hnpsystem/src/lib/profile -type f \\\\\\(-name *personal* -o -name *Personal* \\\\\\))"
     ],
     "deny": [],
     "ask": []

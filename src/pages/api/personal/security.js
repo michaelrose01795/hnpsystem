@@ -1,4 +1,3 @@
-import { hashPasscode, isValidPasscode, verifyPasscode } from "@/lib/profile/passcode";
 import {
   buildPersonalApiError,
   clearPersonalUnlockCookie,
@@ -6,8 +5,11 @@ import {
   getPersonalDb,
   getPersonalSecurityRow,
   getPersonalSecurityState,
+  hashPasscode,
+  isValidPasscode,
   PERSONAL_TABLES,
   setPersonalUnlockCookie,
+  verifyPasscode,
 } from "@/lib/profile/personalServer";
 
 export default async function handler(req, res) {

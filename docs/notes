@@ -9,9 +9,7 @@ DO CHATGPT OVERTIME POPUP PROMPT
 
 
 
-
-
-
+for "Mortgage" widget give estimate on how long to take to reach Deposit taget in months 
 
 
 
@@ -28,27 +26,10 @@ Service Manager
 
 
 Accounts Manager
-=
-
-/accounts
-
-/accounts/create
-
-/accounts/edit/[accountId]
-
-/accounts/invoices
-
-/accounts/invoices/[invoiceId]
-
-/accounts/reports
-
-/accounts/settings
 
 /accounts/transactions/[accountId]
 
-/accounts/view/[accountId]
-
-/company-accounts
+/company-accounts 
 
 /company-accounts/[accountNumber]
 

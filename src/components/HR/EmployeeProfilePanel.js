@@ -213,7 +213,7 @@ export default function EmployeeProfilePanel({ employee }) {
                 padding: "14px",
               }}
             >
-              <div style={labelStyle}>Annual Salary</div>
+              <div style={labelStyle}>Basic Salary</div>
               <div style={{ fontSize: "1.3rem", fontWeight: 700, color: "var(--text-primary)" }}>
                 {formatCurrencyValue(employee.annualSalary)}
               </div>

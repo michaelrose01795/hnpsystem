@@ -2,6 +2,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import PropTypes from "prop-types";
 import { fieldGroupStyles, inputStyles } from "@/styles/formStyles";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 const DEFAULT_VALUES = {
   account_number: "",
@@ -39,6 +40,8 @@ export default function CompanyAccountForm({
   onCancel,
   isSubmitting,
   autoGenerateAccountNumber = false,
+  sectionKey = "company-account-form",
+  parentSectionKey = "",
 }) {
   const normalizedInitialValues = useMemo(() => {
     if (!initialValues) return null;
@@ -189,55 +192,66 @@ export default function CompanyAccountForm({
   };
 
   return (
-    <form
+    <DevLayoutSection
+      as="form"
+      sectionKey={sectionKey}
+      sectionType="content-card"
+      parentKey={parentSectionKey}
       onSubmit={handleSubmit}
       style={{ ...fieldGroupStyles, flexDirection: "column", flexWrap: "nowrap" }}
     >
-      <label style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "0.9rem" }}>
-        <span style={{ fontWeight: 600 }}>Bulk data entry</span>
-        <textarea
-          value={bulkInput}
-          onChange={(event) => setBulkInput(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Tab") {
-              applyBulkInput();
-            }
-          }}
-          rows={8}
-          placeholder={[
-            "Paste values in this order then press Tab:",
-            "Account Number, Company Name, Trading Name, Primary Contact,",
-            "Contact Email, Contact Phone, Linked Ledger Account,",
-            "Address Line 1, Address Line 2, City, Postcode.",
-          ].join(" ")}
-          style={{
-            borderRadius: "var(--control-radius-xs)",
-            border: "none",
-            padding: "12px 14px",
-            resize: "vertical",
-          }}
-        />
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
-          <button
-            type="button"
-            onClick={applyBulkInput}
-            style={{
-              padding: "8px 14px",
-              borderRadius: "var(--radius-xs)",
-              border: "none",
-              background: "var(--surface)",
-              fontWeight: 600,
+      <DevLayoutSection sectionKey={`${sectionKey}-bulk-entry`} sectionType="content-card" parentKey={sectionKey}>
+        <label style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "0.9rem" }}>
+          <span style={{ fontWeight: 600 }}>Bulk data entry</span>
+          <textarea
+            value={bulkInput}
+            onChange={(event) => setBulkInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Tab") {
+                applyBulkInput();
+              }
             }}
-          >
-            Apply data
-          </button>
-          <span style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>Press Tab in the box or click Apply to fill the form.</span>
-        </div>
-        {bulkFeedback && (
-          <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--text-secondary)" }}>{bulkFeedback}</p>
-        )}
-      </label>
-      <div
+            rows={8}
+            placeholder={[
+              "Paste values in this order then press Tab:",
+              "Account Number, Company Name, Trading Name, Primary Contact,",
+              "Contact Email, Contact Phone, Linked Ledger Account,",
+              "Address Line 1, Address Line 2, City, Postcode.",
+            ].join(" ")}
+            style={{
+              borderRadius: "var(--control-radius-xs)",
+              border: "none",
+              padding: "12px 14px",
+              resize: "vertical",
+            }}
+          />
+          <DevLayoutSection sectionKey={`${sectionKey}-bulk-actions`} sectionType="toolbar" parentKey={`${sectionKey}-bulk-entry`}>
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+              <button
+                type="button"
+                onClick={applyBulkInput}
+                style={{
+                  padding: "8px 14px",
+                  borderRadius: "var(--radius-xs)",
+                  border: "none",
+                  background: "var(--surface)",
+                  fontWeight: 600,
+                }}
+              >
+                Apply data
+              </button>
+              <span style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>Press Tab in the box or click Apply to fill the form.</span>
+            </div>
+          </DevLayoutSection>
+          {bulkFeedback && (
+            <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--text-secondary)" }}>{bulkFeedback}</p>
+          )}
+        </label>
+      </DevLayoutSection>
+      <DevLayoutSection
+        sectionKey={`${sectionKey}-company-fields`}
+        sectionType="content-card"
+        parentKey={sectionKey}
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
@@ -251,8 +265,11 @@ export default function CompanyAccountForm({
         {textInput("contact_email", "Contact Email", { type: "email" })}
         {textInput("contact_phone", "Contact Phone")}
         {textInput("linked_account_label", "Linked Ledger Account")}
-      </div>
-      <div
+      </DevLayoutSection>
+      <DevLayoutSection
+        sectionKey={`${sectionKey}-billing-fields`}
+        sectionType="content-card"
+        parentKey={sectionKey}
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
@@ -264,56 +281,60 @@ export default function CompanyAccountForm({
         {textInput("billing_city", "City")}
         {textInput("billing_postcode", "Postcode")}
         {textInput("billing_country", "Country")}
-      </div>
-      <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "0.9rem" }}>
-        <span style={{ fontWeight: 600 }}>Notes</span>
-        <textarea
-          name="notes"
-          value={values.notes || ""}
-          onChange={handleChange}
-          rows={5}
-          style={{
-            borderRadius: "var(--control-radius-xs)",
-            border: "none",
-            padding: "10px 14px",
-            resize: "vertical",
-          }}
-        />
-      </label>
+      </DevLayoutSection>
+      <DevLayoutSection sectionKey={`${sectionKey}-notes`} sectionType="content-card" parentKey={sectionKey}>
+        <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "0.9rem" }}>
+          <span style={{ fontWeight: 600 }}>Notes</span>
+          <textarea
+            name="notes"
+            value={values.notes || ""}
+            onChange={handleChange}
+            rows={5}
+            style={{
+              borderRadius: "var(--control-radius-xs)",
+              border: "none",
+              padding: "10px 14px",
+              resize: "vertical",
+            }}
+          />
+        </label>
+      </DevLayoutSection>
       {formError && (
         <p style={{ margin: 0, color: "var(--danger-text)" }}>{formError}</p>
       )}
-      <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
-        <button
-          type="button"
-          onClick={onCancel}
-          style={{
-            padding: "10px 16px",
-            borderRadius: "var(--control-radius-xs)",
-            border: "1px solid var(--surface-border, var(--surface-light))",
-            background: "var(--surface-light)",
-            color: "var(--text-primary)",
-          }}
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={disabled}
-          style={{
-            padding: "10px 20px",
-            borderRadius: "var(--control-radius-xs)",
-            border: "none",
-            background: "var(--primary)",
-            color: "white",
-            fontWeight: 700,
-            opacity: disabled ? 0.7 : 1,
-          }}
-        >
-          {isSubmitting ? "Saving…" : "Save Company"}
-        </button>
-      </div>
-    </form>
+      <DevLayoutSection sectionKey={`${sectionKey}-actions`} sectionType="toolbar" parentKey={sectionKey}>
+        <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+          <button
+            type="button"
+            onClick={onCancel}
+            style={{
+              padding: "10px 16px",
+              borderRadius: "var(--control-radius-xs)",
+              border: "1px solid var(--surface-border, var(--surface-light))",
+              background: "var(--surface-light)",
+              color: "var(--text-primary)",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={disabled}
+            style={{
+              padding: "10px 20px",
+              borderRadius: "var(--control-radius-xs)",
+              border: "none",
+              background: "var(--primary)",
+              color: "white",
+              fontWeight: 700,
+              opacity: disabled ? 0.7 : 1,
+            }}
+          >
+            {isSubmitting ? "Saving…" : "Save Company"}
+          </button>
+        </div>
+      </DevLayoutSection>
+    </DevLayoutSection>
   );
 }
 
@@ -323,6 +344,8 @@ CompanyAccountForm.propTypes = {
   onCancel: PropTypes.func,
   isSubmitting: PropTypes.bool,
   autoGenerateAccountNumber: PropTypes.bool,
+  sectionKey: PropTypes.string,
+  parentSectionKey: PropTypes.string,
 };
 
 CompanyAccountForm.defaultProps = {
@@ -330,4 +353,6 @@ CompanyAccountForm.defaultProps = {
   onCancel: () => {},
   isSubmitting: false,
   autoGenerateAccountNumber: false,
+  sectionKey: "company-account-form",
+  parentSectionKey: "",
 };

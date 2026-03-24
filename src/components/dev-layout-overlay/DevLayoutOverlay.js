@@ -301,6 +301,13 @@ const copyText = async (text) => {
   }
 };
 
+const tagToneClass = (tag) => {
+  if (tag === "no-issues-detected") return styles.tagSuccess;
+  if (["rogue-wrapper", "extra-wrapper", "nested-shell", "duplicate-surface"].includes(tag)) return styles.tagDanger;
+  if (["misaligned-start", "over-padded", "inconsistent-gap", "off-grid", "accent-overuse", "nonstandard-radius"].includes(tag)) return styles.tagWarn;
+  return "";
+};
+
 const scanSections = ({ route, registry }) => {
   const sectionsByKey = new Map();
   const explicitNodes = Array.from(document.querySelectorAll("[data-dev-section-key]"));
@@ -513,6 +520,18 @@ export default function DevLayoutOverlay() {
     [sections, selectedKey]
   );
 
+  const stats = useMemo(() => {
+    const issueCount = sections.filter((section) => section.issueTags.length > 0).length;
+    const shellCount = sections.filter((section) => section.isShell).length;
+    const fallbackCount = sections.filter((section) => section.source === "fallback").length;
+    return {
+      total: sections.length,
+      issueCount,
+      shellCount,
+      fallbackCount,
+    };
+  }, [sections]);
+
   const guide = useMemo(() => buildGuide(selected, sections), [selected, sections]);
 
   useEffect(() => {
@@ -642,108 +661,140 @@ export default function DevLayoutOverlay() {
 
       {selected && (
         <aside className={styles.panel} role="dialog" aria-label="Dev layout inspector">
-          <div className={styles.panelHeader}>
-            <div>
-              <p className={styles.kicker}>DEV LAYOUT INSPECTOR</p>
-              <h3 className={styles.title}>
-                Section {selected.number} · {selected.key}
-              </h3>
-            </div>
-            <button type="button" className={styles.button} onClick={() => setSelectedKey("")}>Close</button>
-          </div>
-
-          <div className={styles.row}>
-            <button
-              type="button"
-              className={`${styles.button} ${mode === "labels" ? styles.buttonSelected : ""}`.trim()}
-              aria-pressed={mode === "labels"}
-              onClick={() => setMode("labels")}
-            >
-              Labels
-            </button>
-            <button
-              type="button"
-              className={`${styles.button} ${mode === "details" ? styles.buttonSelected : ""}`.trim()}
-              aria-pressed={mode === "details"}
-              onClick={() => setMode("details")}
-            >
-              Details
-            </button>
-            <button
-              type="button"
-              className={`${styles.button} ${styles.buttonPrimary} ${mode === "inspect" ? styles.buttonSelected : ""}`.trim()}
-              aria-pressed={mode === "inspect"}
-              onClick={cycleMode}
-            >
-              Cycle Mode
-            </button>
-          </div>
-
-          {(() => {
-            const prompts = buildPrompts(selected);
-            return (
-              <div className={styles.sectionBlock}>
-                <p className={styles.blockTitle}>Copy Tools</p>
-                <div className={styles.row}>
-                  <button type="button" className={styles.button} onClick={() => handleCopy("reference", prompts.reference)}>Copy section reference</button>
-                  <button type="button" className={styles.button} onClick={() => handleCopy("debug", prompts.debug)}>Copy debug summary</button>
-                  <button type="button" className={styles.button} onClick={() => handleCopy("codex", prompts.codex)}>Copy Codex prompt</button>
-                  <button type="button" className={styles.button} onClick={() => handleCopy("claude", prompts.claude)}>Copy Claude prompt</button>
-                </div>
-                <p className={styles.copyStatus}>{copiedAction ? `Copied ${copiedAction}` : " "}</p>
-                <p className={styles.copyStatus}>{copiedAction === "reference" ? copiedText : " "}</p>
+          <div className={styles.panelScroll}>
+            <div className={styles.panelHeader}>
+              <div className={styles.panelTitleBlock}>
+                <p className={styles.kicker}>Dev Layout Inspector</p>
+                <h3 className={styles.title}>
+                  Section {selected.number} · {selected.key}
+                </h3>
+                <p className={styles.subtitle}>
+                  {selected.route} · {selected.type} · {selected.source}
+                </p>
               </div>
-            );
-          })()}
-
-          <div className={styles.sectionBlock}>
-            <p className={styles.blockTitle}>Identity</p>
-            <div className={styles.grid}>
-              <span className={styles.labelKey}>Route</span><span className={styles.value}>{selected.route}</span>
-              <span className={styles.labelKey}>Section Number</span><span className={styles.value}>{selected.number}</span>
-              <span className={styles.labelKey}>Stable Key</span><span className={`${styles.value} ${styles.codeValue}`}>{selected.key}</span>
-              <span className={styles.labelKey}>Section Type</span><span className={styles.value}>{selected.type}</span>
-              <span className={styles.labelKey}>Wrapper Class</span><span className={styles.value}>{selected.wrapperClass}</span>
-              <span className={styles.labelKey}>Source</span><span className={styles.value}>{selected.source}</span>
+              <div className={styles.panelHeaderActions}>
+                <button
+                  type="button"
+                  className={`app-btn ${mode === "labels" ? "app-btn--primary" : "app-btn--secondary"} app-btn--xs app-btn--pill`}
+                  aria-pressed={mode === "labels"}
+                  onClick={() => setMode("labels")}
+                >
+                  Labels
+                </button>
+                <button
+                  type="button"
+                  className={`app-btn ${mode === "details" ? "app-btn--primary" : "app-btn--secondary"} app-btn--xs app-btn--pill`}
+                  aria-pressed={mode === "details"}
+                  onClick={() => setMode("details")}
+                >
+                  Details
+                </button>
+                <button
+                  type="button"
+                  className={`app-btn ${mode === "inspect" ? "app-btn--primary" : "app-btn--secondary"} app-btn--xs app-btn--pill`}
+                  aria-pressed={mode === "inspect"}
+                  onClick={cycleMode}
+                >
+                  Next Mode
+                </button>
+                <button type="button" className="app-btn app-btn--ghost app-btn--xs" onClick={() => setSelectedKey("")}>
+                  Close
+                </button>
+              </div>
             </div>
-          </div>
 
-          <div className={styles.sectionBlock}>
-            <p className={styles.blockTitle}>Hierarchy</p>
-            <div className={styles.grid}>
-              <span className={styles.labelKey}>Parent</span><span className={styles.value}>{selected.parentNumber || "none"} ({selected.parentKey || "none"})</span>
-              <span className={styles.labelKey}>Children</span><span className={styles.value}>{selected.childNumbers.join(", ") || "none"} {selected.childKeys.length ? `(${selected.childKeys.join(", ")})` : ""}</span>
+            <div className={styles.summaryRow}>
+              <div className={styles.summaryCard}>
+                <span className={styles.summaryLabel}>Sections</span>
+                <span className={styles.summaryValue}>{stats.total}</span>
+              </div>
+              <div className={styles.summaryCard}>
+                <span className={styles.summaryLabel}>Flagged</span>
+                <span className={styles.summaryValue}>{stats.issueCount}</span>
+              </div>
+              <div className={styles.summaryCard}>
+                <span className={styles.summaryLabel}>Shells</span>
+                <span className={styles.summaryValue}>{stats.shellCount}</span>
+              </div>
+              <div className={styles.summaryCard}>
+                <span className={styles.summaryLabel}>Fallback</span>
+                <span className={styles.summaryValue}>{stats.fallbackCount}</span>
+              </div>
             </div>
-          </div>
 
-          <div className={styles.sectionBlock}>
-            <p className={styles.blockTitle}>Layout</p>
-            <div className={styles.grid}>
-              <span className={styles.labelKey}>Padding</span><span className={styles.value}>{selected.padding}</span>
-              <span className={styles.labelKey}>Margin</span><span className={styles.value}>{selected.margin}</span>
-              <span className={styles.labelKey}>Radius</span><span className={styles.value}>{selected.radius}</span>
-              <span className={styles.labelKey}>Width/Bounds</span><span className={styles.value}>{selected.width}px × {selected.height}px at x {selected.left}, y {selected.top}</span>
-              <span className={styles.labelKey}>Gap from Prev</span><span className={styles.value}>{selected.computedGapFromPrevious ?? "n/a"} px</span>
-              <span className={styles.labelKey}>Left Offset</span><span className={styles.value}>{selected.computedLeftOffsetFromParent ?? "n/a"} px</span>
+            {(() => {
+              const prompts = buildPrompts(selected);
+              return (
+                <div className={styles.sectionBlock}>
+                  <p className={styles.blockTitle}>Copy Tools</p>
+                  <div className={styles.row}>
+                    <button type="button" className="app-btn app-btn--secondary app-btn--xs" onClick={() => handleCopy("reference", prompts.reference)}>Copy section reference</button>
+                    <button type="button" className="app-btn app-btn--secondary app-btn--xs" onClick={() => handleCopy("debug", prompts.debug)}>Copy debug summary</button>
+                    <button type="button" className="app-btn app-btn--secondary app-btn--xs" onClick={() => handleCopy("codex", prompts.codex)}>Copy Codex prompt</button>
+                    <button type="button" className="app-btn app-btn--secondary app-btn--xs" onClick={() => handleCopy("claude", prompts.claude)}>Copy Claude prompt</button>
+                  </div>
+                  <p className={styles.copyStatus}>{copiedAction ? `Copied ${copiedAction}` : "Select any copy action to export context."}</p>
+                  <p className={styles.copyStatus}>{copiedAction === "reference" ? copiedText : "Shortcuts: Ctrl+Shift+D toggles overlay, Ctrl+Shift+M cycles modes."}</p>
+                </div>
+              );
+            })()}
+
+            <div className={styles.sectionBlock}>
+              <p className={styles.blockTitle}>Identity</p>
+              <div className={styles.grid}>
+                <span className={styles.labelKey}>Route</span><span className={styles.value}>{selected.route}</span>
+                <span className={styles.labelKey}>Section Number</span><span className={styles.value}>{selected.number}</span>
+                <span className={styles.labelKey}>Stable Key</span><span className={`${styles.value} ${styles.codeValue}`}>{selected.key}</span>
+                <span className={styles.labelKey}>Section Type</span><span className={styles.value}>{selected.type}</span>
+                <span className={styles.labelKey}>Wrapper Class</span><span className={styles.value}>{selected.wrapperClass}</span>
+                <span className={styles.labelKey}>Source</span><span className={styles.value}>{selected.source}</span>
+              </div>
             </div>
-          </div>
 
-          <div className={styles.sectionBlock}>
-            <p className={styles.blockTitle}>Background</p>
-            <div className={styles.grid}>
-              <span className={styles.labelKey}>Background Token</span><span className={styles.value}>{selected.backgroundToken}</span>
-              <span className={styles.labelKey}>Background Class</span><span className={styles.value}>{selected.backgroundClass || "none"}</span>
-              <span className={styles.labelKey}>Computed Background</span><span className={styles.value}>{selected.backgroundColor}</span>
+            <div className={styles.sectionBlock}>
+              <p className={styles.blockTitle}>Hierarchy</p>
+              <div className={styles.grid}>
+                <span className={styles.labelKey}>Parent</span><span className={styles.value}>{selected.parentNumber || "none"} ({selected.parentKey || "none"})</span>
+                <span className={styles.labelKey}>Children</span><span className={styles.value}>{selected.childNumbers.join(", ") || "none"} {selected.childKeys.length ? `(${selected.childKeys.join(", ")})` : ""}</span>
+              </div>
             </div>
-          </div>
 
-          <div className={styles.sectionBlock}>
-            <p className={styles.blockTitle}>Likely Issues</p>
-            <div className={styles.row}>
-            {selected.issueTags.length === 0 && <span className={styles.tag}>no-issues-detected</span>}
-            {selected.issueTags.map((tag) => (
-              <span key={tag} className={styles.tag}>{tag}</span>
-            ))}
+            <div className={styles.sectionBlock}>
+              <p className={styles.blockTitle}>Layout</p>
+              <div className={styles.grid}>
+                <span className={styles.labelKey}>Padding</span><span className={styles.value}>{selected.padding}</span>
+                <span className={styles.labelKey}>Margin</span><span className={styles.value}>{selected.margin}</span>
+                <span className={styles.labelKey}>Radius</span><span className={styles.value}>{selected.radius}</span>
+                <span className={styles.labelKey}>Width/Bounds</span><span className={styles.value}>{selected.width}px × {selected.height}px at x {selected.left}, y {selected.top}</span>
+                <span className={styles.labelKey}>Gap from Prev</span><span className={styles.value}>{selected.computedGapFromPrevious ?? "n/a"} px</span>
+                <span className={styles.labelKey}>Left Offset</span><span className={styles.value}>{selected.computedLeftOffsetFromParent ?? "n/a"} px</span>
+              </div>
+            </div>
+
+            <div className={styles.sectionBlock}>
+              <p className={styles.blockTitle}>Background</p>
+              <div className={styles.grid}>
+                <span className={styles.labelKey}>Background Token</span><span className={styles.value}>{selected.backgroundToken}</span>
+                <span className={styles.labelKey}>Background Class</span><span className={styles.value}>{selected.backgroundClass || "none"}</span>
+                <span className={styles.labelKey}>Computed Background</span><span className={styles.value}>{selected.backgroundColor}</span>
+              </div>
+            </div>
+
+            <div className={styles.sectionBlock}>
+              <p className={styles.blockTitle}>Likely Issues</p>
+              <div className={styles.row}>
+                {selected.issueTags.length === 0 && <span className={`${styles.tag} ${styles.tagSuccess}`}>no-issues-detected</span>}
+                {selected.issueTags.map((tag) => (
+                  <span key={tag} className={`${styles.tag} ${tagToneClass(tag)}`.trim()}>{tag}</span>
+                ))}
+              </div>
+            </div>
+
+            <div className={styles.sectionBlock}>
+              <p className={styles.blockTitle}>Overlay Usage</p>
+              <p className={styles.emptyHint}>
+                Click any highlighted region to focus it. Use labels for quick numbering, details for richer overlays, and inspect when copying prompts or checking spacing diagnostics.
+              </p>
             </div>
           </div>
         </aside>

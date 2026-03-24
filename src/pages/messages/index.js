@@ -2104,7 +2104,7 @@ function MessagesPage() {
             gap: "18px",
             ...(isMobileView ? { flex: 1, minHeight: 0 } : {}),
           }}>
-            <DevLayoutSection sectionKey="messages-threads-card" parentKey="messages-threads-panel" sectionType="content-card" backgroundToken="messages-thread-card-shell" style={{ ...cardStyle, flex: 1, minHeight: 0 }}>
+            <DevLayoutSection sectionKey="messages-threads-card" parentKey="messages-threads-panel" sectionType="content-card" backgroundToken="messages-thread-card-shell" style={{ ...cardStyle, background: "var(--accent-purple-surface)", flex: 1, minHeight: 0 }}>
               <DevLayoutSection sectionKey="messages-thread-actions" parentKey="messages-threads-card" sectionType="toolbar" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                 <SectionTitle
                   title={threadSelectionMode ? "Selected" : ""}
@@ -2501,6 +2501,7 @@ function MessagesPage() {
 
           <DevLayoutSection sectionKey="messages-conversation-panel" parentKey="messages-main-layout" sectionType="section-shell" shell backgroundToken="messages-conversation-panel" style={{
             ...cardStyle,
+            background: "var(--accent-purple-surface)",
             flex: 1,
             minHeight: 0,
             display: isMobileView && mobilePanelView !== "conversation" ? "none" : "flex", // hide conversation panel when thread list is active in portrait phone view

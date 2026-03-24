@@ -24,7 +24,7 @@ async function handler(req, res, session) {
   const jobNumber = req.query.jobNumber || "";
   let query = supabase
     .from("invoices")
-    .select("*", { count: "exact" });
+    .select("*, customer:customer_id(id, firstname, lastname, name), account:account_id(account_id, billing_name, credit_terms)", { count: "exact" });
   if (status) { query = query.eq("payment_status", status); }
   if (accountId) { query = query.eq("account_id", accountId); }
   if (from) { query = query.gte("created_at", from); }
@@ -33,7 +33,7 @@ async function handler(req, res, session) {
   if (permissions.restrictInvoicesToJobs && !jobNumber) { query = query.eq("job_number", "__none__"); }
   if (search) {
     const pattern = `%${search}%`;
-    query = query.or(`invoice_id.ilike.${pattern},customer_id.ilike.${pattern},account_id.ilike.${pattern},job_number.ilike.${pattern}`);
+    query = query.or(`invoice_id.ilike.${pattern},invoice_number.ilike.${pattern},customer_id.ilike.${pattern},account_id.ilike.${pattern},job_number.ilike.${pattern}`);
   }
   query = query.order("created_at", { ascending: false });
   const fromIndex = (page - 1) * pageSize;

@@ -1,226 +1,242 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { CalendarField } from "@/components/calendarAPI";
+import DropdownField from "@/components/dropdownAPI/DropdownField";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
+import useIsMobile from "@/hooks/useIsMobile";
 import {
-  widgetButtonStyle,
-  widgetGhostButtonStyle,
-  widgetInputStyle,
-  widgetSelectStyle,
-  widgetTextAreaStyle,
+  EmptyState,
+  formatCurrency,
+  formatDate,
+  getWidgetModalCardStyle,
+  toNumber,
+  widgetAccentSurfaceStyle,
+  widgetInsetSurfaceStyle,
+  widgetModalBackdropStyle,
 } from "@/components/profile/personal/widgets/shared";
-import { createPlanningOverride, createPlanningRule } from "@/lib/profile/calculations";
-import { getCurrentMonthKey, normaliseMonthKey } from "@/lib/profile/monthPlanning";
+import Button from "@/components/ui/Button";
+import { formatMonthLabel, getCurrentMonthKey, normaliseMonthKey, shiftMonthKey } from "@/lib/profile/calculations";
+
+const RECURRING_DAY_OPTIONS = [
+  { value: 1, label: "Monday" },
+  { value: 2, label: "Tuesday" },
+  { value: 3, label: "Wednesday" },
+  { value: 4, label: "Thursday" },
+  { value: 5, label: "Friday" },
+  { value: 6, label: "Saturday" },
+];
+
+const RECURRING_PATTERN_OPTIONS = [
+  { value: "weekly", label: "Weekly" },
+  { value: "alternate", label: "Alternate weeks" },
+];
+
+const RECURRING_PARITY_OPTIONS = [
+  { value: "odd", label: "Odd weeks" },
+  { value: "even", label: "Even weeks" },
+];
+
+function makeRecurringRule() {
+  return {
+    rule_id: `local-${Math.random().toString(36).slice(2, 10)}`,
+    day_of_week: 1,
+    hours: "",
+    active: true,
+    pattern_type: "weekly",
+    week_parity: null,
+    label: "",
+    isLocal: true,
+  };
+}
+
+const WIDGET_SOURCE_MAP = {
+  income: [
+    { label: "Pay settings", source: "Database" },
+    { label: "Manual adjustments", source: "Database" },
+    { label: "Overtime entries", source: "Overtime widget" },
+  ],
+  spending: [
+    { label: "Fixed outgoings", source: "Database" },
+    { label: "Planned payments", source: "Payments widget" },
+    { label: "Credit card payments", source: "Credit Cards widget" },
+  ],
+  bills: [
+    { label: "Planned payments", source: "Database" },
+    { label: "Shared summary", source: "Outgoings widget" },
+  ],
+  fuel: [
+    { label: "Credit cards", source: "Database" },
+    { label: "Shared summary", source: "Outgoings widget" },
+  ],
+  savings: [
+    { label: "Savings pots", source: "Database" },
+    { label: "Shared summary", source: "Net Position widget" },
+  ],
+  mortgage: [
+    { label: "Mortgage targets", source: "Database" },
+  ],
+  holiday: [
+    { label: "Approved leave", source: "Database" },
+  ],
+  "work-summary": [
+    { label: "Manual overtime entries", source: "Database" },
+    { label: "Pay settings", source: "Income widget" },
+  ],
+  "net-position": [
+    { label: "Income totals", source: "Income widget" },
+    { label: "Outgoings totals", source: "Outgoings widget" },
+    { label: "Savings totals", source: "Savings widget" },
+  ],
+  chart: [
+    { label: "Chart source", source: "Selected in this popup" },
+  ],
+  custom: [
+    { label: "Custom values", source: "Database" },
+  ],
+};
 
 const WIDGET_SETTINGS_PRESETS = {
   income: {
-    settings: {
-      baseMonthlyIncome: 0,
-      useWorkEstimate: true,
-      useGlobalMonth: true,
-      monthKey: getCurrentMonthKey(),
-      dateDisplayMode: "month",
-      dateValue: getCurrentMonthKey(),
-    },
-    ruleTemplates: [
-      { category: "Base income", amount: 0 },
-      { category: "Overtime", amount: 0 },
-      { category: "Other income", amount: 0 },
-    ],
+    baseMonthlyIncome: 0,
+    useWorkEstimate: true,
+    useGlobalMonth: true,
+    monthKey: getCurrentMonthKey(),
+    dateDisplayMode: "month",
+    dateValue: getCurrentMonthKey(),
   },
   spending: {
-    settings: {
-      useGlobalMonth: true,
-      monthKey: getCurrentMonthKey(),
-      dateDisplayMode: "month",
-      dateValue: getCurrentMonthKey(),
-    },
-    ruleTemplates: [
-      { category: "Fuel", amount: 0 },
-      { category: "Food", amount: 0 },
-      { category: "Eating out", amount: 0 },
-      { category: "Car costs", amount: 0 },
-      { category: "Shopping", amount: 0 },
-      { category: "Subscriptions", amount: 0 },
-    ],
+    useGlobalMonth: true,
+    monthKey: getCurrentMonthKey(),
+    dateDisplayMode: "month",
+    dateValue: getCurrentMonthKey(),
   },
   savings: {
-    settings: {
-      useGlobalMonth: true,
-      monthKey: getCurrentMonthKey(),
-      includeInNetPosition: true,
-      dateDisplayMode: "month",
-      dateValue: getCurrentMonthKey(),
-    },
-    ruleTemplates: [
-      { category: "House", amount: 0 },
-      { category: "Emergency", amount: 0 },
-      { category: "Holiday", amount: 0 },
-      { category: "Car", amount: 0 },
-    ],
+    useGlobalMonth: true,
+    monthKey: getCurrentMonthKey(),
+    includeInNetPosition: true,
+    dateDisplayMode: "month",
+    dateValue: getCurrentMonthKey(),
   },
   bills: {
-    settings: {
-      useGlobalMonth: true,
-      monthKey: getCurrentMonthKey(),
-      dateDisplayMode: "month",
-      dateValue: getCurrentMonthKey(),
-    },
-    ruleTemplates: [
-      { category: "Rent", amount: 0 },
-      { category: "Phone", amount: 0 },
-      { category: "Insurance", amount: 0 },
-      { category: "Subscriptions", amount: 0 },
-    ],
+    useGlobalMonth: true,
+    monthKey: getCurrentMonthKey(),
+    dateDisplayMode: "month",
+    dateValue: getCurrentMonthKey(),
   },
   fuel: {
-    settings: {
-      useGlobalMonth: true,
-      monthKey: getCurrentMonthKey(),
-      expectedMileage: "",
-      trendPct: "",
-      dateDisplayMode: "month",
-      dateValue: getCurrentMonthKey(),
-    },
-    ruleTemplates: [{ category: "Fuel", amount: 0 }],
+    useGlobalMonth: true,
+    monthKey: getCurrentMonthKey(),
+    expectedMileage: "",
+    trendPct: "",
+    dateDisplayMode: "month",
+    dateValue: getCurrentMonthKey(),
   },
   holiday: {
-    settings: {
-      useGlobalMonth: true,
-      monthKey: getCurrentMonthKey(),
-      targetAmount: 0,
-      goalDate: "",
-      dateDisplayMode: "month",
-      dateValue: getCurrentMonthKey(),
-    },
-    ruleTemplates: [{ category: "Holiday", amount: 0 }],
+    useGlobalMonth: true,
+    monthKey: getCurrentMonthKey(),
+    targetAmount: 0,
+    goalDate: "",
+    dateDisplayMode: "month",
+    dateValue: getCurrentMonthKey(),
   },
   mortgage: {
-    settings: {
-      useGlobalMonth: true,
-      monthKey: getCurrentMonthKey(),
-      depositTarget: 0,
-      housePriceTarget: 0,
-      dateDisplayMode: "month",
-      dateValue: getCurrentMonthKey(),
-    },
-    ruleTemplates: [{ category: "House", amount: 0 }],
+    useGlobalMonth: true,
+    monthKey: getCurrentMonthKey(),
+    depositTarget: 0,
+    currentSaved: 0,
+    linkedSavingsAccountId: "",
+    monthlyPayment: 0,
+    mortgageDeadline: "",
+    dateDisplayMode: "month",
+    dateValue: getCurrentMonthKey(),
   },
   "net-position": {
-    settings: {
-      useGlobalMonth: true,
-      monthKey: getCurrentMonthKey(),
-      includeSavings: true,
-      includeBills: true,
-      includeFuel: true,
-      dateDisplayMode: "month",
-      dateValue: getCurrentMonthKey(),
-    },
-    ruleTemplates: [],
+    useGlobalMonth: true,
+    monthKey: getCurrentMonthKey(),
+    includeSavings: true,
+    includeBills: true,
+    includeFuel: true,
+    dateDisplayMode: "month",
+    dateValue: getCurrentMonthKey(),
   },
   chart: {
-    settings: {
-      useGlobalMonth: true,
-      monthKey: getCurrentMonthKey(),
-      dateDisplayMode: "month",
-      dateValue: getCurrentMonthKey(),
-    },
-    ruleTemplates: [],
+    useGlobalMonth: true,
+    monthKey: getCurrentMonthKey(),
+    chartSource: "spendingByCategory",
+    dateDisplayMode: "month",
+    dateValue: getCurrentMonthKey(),
   },
   "work-summary": {
-    settings: {
-      useGlobalMonth: true,
-      monthKey: getCurrentMonthKey(),
-      plannedHours: 0,
-      plannedOvertimeHours: 0,
-      useWorkEstimate: true,
-      dateDisplayMode: "month",
-      dateValue: getCurrentMonthKey(),
-    },
-    ruleTemplates: [],
+    useGlobalMonth: true,
+    monthKey: getCurrentMonthKey(),
+    plannedHours: 0,
+    plannedOvertimeHours: 0,
+    useWorkEstimate: true,
+    dateDisplayMode: "month",
+    dateValue: getCurrentMonthKey(),
   },
   notes: {
-    settings: {
-      useGlobalMonth: true,
-      monthKey: getCurrentMonthKey(),
-      dateDisplayMode: "month",
-      dateValue: getCurrentMonthKey(),
-    },
-    ruleTemplates: [],
+    useGlobalMonth: true,
+    monthKey: getCurrentMonthKey(),
+    dateDisplayMode: "month",
+    dateValue: getCurrentMonthKey(),
   },
   attachments: {
-    settings: {
-      useGlobalMonth: true,
-      monthKey: getCurrentMonthKey(),
-      dateDisplayMode: "month",
-      dateValue: getCurrentMonthKey(),
-    },
-    ruleTemplates: [],
+    useGlobalMonth: true,
+    monthKey: getCurrentMonthKey(),
+    dateDisplayMode: "month",
+    dateValue: getCurrentMonthKey(),
   },
   custom: {
-    settings: {
-      useGlobalMonth: true,
-      monthKey: getCurrentMonthKey(),
-      dateDisplayMode: "month",
-      dateValue: getCurrentMonthKey(),
-    },
-    ruleTemplates: [],
+    useGlobalMonth: true,
+    monthKey: getCurrentMonthKey(),
+    customTitle: "Custom widget",
+    customAmount: 0,
+    customTarget: 0,
+    customNote: "",
+    dateDisplayMode: "month",
+    dateValue: getCurrentMonthKey(),
   },
 };
 
-function buildInitialState(widgetType, data = {}, activeMonthKey = getCurrentMonthKey()) {
+function buildInitialSettings(widgetType, data = {}, activeMonthKey = getCurrentMonthKey()) {
   const preset = WIDGET_SETTINGS_PRESETS[widgetType] || WIDGET_SETTINGS_PRESETS.spending;
-  const savedSettings = data?.settings || {};
-  const savedMode = savedSettings.dateDisplayMode || "month";
-  const savedDateValue = savedSettings.dateValue || savedSettings.monthKey || activeMonthKey;
-  const normalisedMonth = normaliseMonthKey(savedSettings.monthKey || activeMonthKey, activeMonthKey);
+  const saved = data?.settings || {};
+  const savedMode = saved.dateDisplayMode || "month";
+  const savedDateValue = saved.dateValue || saved.monthKey || activeMonthKey;
+  const normalisedMonth = normaliseMonthKey(saved.monthKey || activeMonthKey, activeMonthKey);
 
-  const settings = {
-    ...preset.settings,
-    ...savedSettings,
+  return {
+    ...preset,
+    ...saved,
     monthKey: normalisedMonth,
     dateDisplayMode: savedMode,
     dateValue: savedMode === "day" ? String(savedDateValue).slice(0, 10) : String(savedDateValue).slice(0, 7),
   };
+}
 
-  return {
-    settings,
-    rules:
-      Array.isArray(data?.rules) && data.rules.length > 0
-        ? data.rules.map((rule) => ({
-            ...createPlanningRule(rule),
-            ...rule,
-            startMonth: normaliseMonthKey(rule.startMonth || activeMonthKey),
-            endMonth: rule.endMonth ? normaliseMonthKey(rule.endMonth, activeMonthKey) : "",
-          }))
-        : preset.ruleTemplates.map((rule) =>
-            createPlanningRule({
-              ...rule,
-              startMonth: activeMonthKey,
-            })
-          ),
-    overrides:
-      Array.isArray(data?.overrides) && data.overrides.length > 0
-        ? data.overrides.map((override) => ({
-            ...createPlanningOverride({
-              category: override.category,
-              monthKey: override.monthKey || activeMonthKey,
-              amount: override.overrideJson?.amount ?? override.amount ?? 0,
-              note: override.overrideJson?.note || "",
-            }),
-            ...override,
-            monthKey: normaliseMonthKey(override.monthKey || activeMonthKey),
-          }))
-        : [],
-  };
+function buildMonthOptions(centerMonthKey, radius = 12) {
+  return Array.from({ length: radius * 2 + 1 }, (_, index) => {
+    const offset = index - radius;
+    const monthKey = shiftMonthKey(centerMonthKey, offset);
+    return {
+      value: monthKey,
+      label: formatMonthLabel(monthKey),
+    };
+  });
 }
 
 function CheckboxRow({ label, checked, onChange }) {
   return (
-    <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "0.84rem", fontWeight: 600 }}>
+    <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "0.84rem", fontWeight: 600, cursor: "pointer" }}>
       <input type="checkbox" checked={Boolean(checked)} onChange={(event) => onChange(event.target.checked)} />
       <span>{label}</span>
     </label>
   );
+}
+
+function FieldLabel({ children }) {
+  return <div style={{ fontSize: "0.76rem", color: "var(--text-secondary)", fontWeight: 600, marginBottom: "4px" }}>{children}</div>;
 }
 
 function Section({ title, description = "", children }) {
@@ -229,612 +245,1403 @@ function Section({ title, description = "", children }) {
       style={{
         display: "grid",
         gap: "10px",
-        borderRadius: "16px",
-        border: "1px solid rgba(var(--accent-purple-rgb), 0.14)",
-        background: "rgba(var(--primary-rgb), 0.03)",
+        ...widgetAccentSurfaceStyle,
         padding: "14px",
       }}
     >
-      <div style={{ display: "grid", gap: "6px" }}>
+      <div style={{ display: "grid", gap: "4px" }}>
         <div
           style={{
-            fontSize: "0.76rem",
-            fontWeight: 800,
-            letterSpacing: "0.08em",
+            fontSize: "0.74rem",
+            fontWeight: 700,
+            letterSpacing: "0.06em",
             textTransform: "uppercase",
             color: "var(--text-secondary)",
           }}
         >
           {title}
         </div>
-        {description ? <div style={{ fontSize: "0.78rem", color: "var(--text-secondary)" }}>{description}</div> : null}
+        {description ? <div style={{ fontSize: "0.78rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>{description}</div> : null}
       </div>
       {children}
     </section>
   );
 }
 
+function SourceList({ widgetType }) {
+  const items = WIDGET_SOURCE_MAP[widgetType] || [];
+  if (items.length === 0) return null;
+
+  return (
+    <Section title="Data sources" description="Where this card pulls its visible values from.">
+      <div style={{ display: "grid", gap: "8px" }}>
+        {items.map((item) => (
+          <div
+            key={`${item.label}-${item.source}`}
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: "12px",
+              alignItems: "center",
+              padding: "8px 10px",
+              ...widgetInsetSurfaceStyle,
+            }}
+          >
+            <div style={{ fontSize: "0.84rem", color: "var(--text-primary)" }}>{item.label}</div>
+            <div style={{ fontSize: "0.76rem", color: "var(--text-secondary)", whiteSpace: "nowrap" }}>({item.source})</div>
+          </div>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+function FinanceCollectionEditor({ title, source, rows = [], isMobile, emptyLabel, namePlaceholder, amountPlaceholder, onAdd, onUpdate, onRemove, extraColumns = null }) {
+  return (
+    <Section
+      title={`${title} (${source})`}
+      description="Changes here save automatically and update every card using this dataset."
+    >
+      {rows.length === 0 ? (
+        <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+          {emptyLabel}
+        </div>
+      ) : (
+        <div style={{ display: "grid", gap: "8px" }}>
+          {rows.map((entry) => (
+            <div
+              key={entry.id}
+              style={{
+                display: "grid",
+                gap: "8px",
+                gridTemplateColumns: extraColumns || (isMobile ? "minmax(0, 1fr)" : "1.6fr 1fr auto"),
+                padding: "8px 10px",
+                ...widgetInsetSurfaceStyle,
+              }}
+            >
+              <input className="app-input" value={entry.name || ""} placeholder={namePlaceholder} onChange={(e) => onUpdate(entry.id, { name: e.target.value })} />
+              <input className="app-input" type="number" value={entry.amount || 0} placeholder={amountPlaceholder} onChange={(e) => onUpdate(entry.id, { amount: toNumber(e.target.value) })} />
+              <Button type="button" variant="secondary" size="sm" pill onClick={() => onRemove(entry.id)}>
+                Remove
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+      <Button type="button" variant="secondary" size="sm" pill onClick={onAdd} style={{ justifySelf: "start" }}>
+        Add row
+      </Button>
+    </Section>
+  );
+}
+
+function CreditCardEditor({ finance, isMobile }) {
+  const rows = finance?.model?.currentMonth?.monthState?.creditCards || [];
+
+  return (
+    <Section
+      title="Credit cards (Database)"
+      description="Balances and monthly payments used by the Credit Cards and Outgoings cards."
+    >
+      {rows.length === 0 ? (
+        <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+          No credit cards added yet.
+        </div>
+      ) : (
+        <div style={{ display: "grid", gap: "8px" }}>
+          {rows.map((entry) => (
+            <div
+              key={entry.id}
+              style={{
+                display: "grid",
+                gap: "8px",
+                gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "1.2fr 1fr 1fr auto",
+                padding: "8px 10px",
+                ...widgetInsetSurfaceStyle,
+              }}
+            >
+              <input className="app-input" value={entry.name || ""} placeholder="Card name" onChange={(e) => finance.updateCreditCard(entry.id, { name: e.target.value })} />
+              <input className="app-input" type="number" value={entry.balance || 0} placeholder="Balance" onChange={(e) => finance.updateCreditCard(entry.id, { balance: toNumber(e.target.value) })} />
+              <input className="app-input" type="number" value={entry.monthlyPayment || 0} placeholder="Monthly payment" onChange={(e) => finance.updateCreditCard(entry.id, { monthlyPayment: toNumber(e.target.value) })} />
+              <Button type="button" variant="secondary" size="sm" pill onClick={() => finance.removeCreditCard(entry.id)}>
+                Remove
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+      <Button type="button" variant="secondary" size="sm" pill onClick={finance?.addCreditCard} style={{ justifySelf: "start" }}>
+        Add credit card
+      </Button>
+    </Section>
+  );
+}
+
+function StatGrid({ children, isMobile }) {
+  return (
+    <div style={{ display: "grid", gap: "6px", gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "repeat(auto-fit, minmax(160px, 1fr))" }}>
+      {children}
+    </div>
+  );
+}
+
+function Stat({ label, children }) {
+  return (
+    <div style={{ fontSize: "0.82rem" }}>
+      <span style={{ color: "var(--text-secondary)" }}>{label}: </span>
+      <strong>{children}</strong>
+    </div>
+  );
+}
+
+function PayAndWorkEditor({ finance, isMobile }) {
+  const pay = finance.financeState.paySettings || {};
+  const month = finance.model.currentMonth;
+
+  return (
+    <Section
+      title="Pay and Work"
+      description="Your contracted hours, pay rates, and salary. These values are used across all income and work calculations."
+    >
+      <div style={{ display: "grid", gap: "10px", gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "repeat(auto-fit, minmax(160px, 1fr))" }}>
+        <label>
+          <FieldLabel>Contracted weekly hours</FieldLabel>
+          <input
+            className="app-input"
+            type="number"
+            value={pay.contractedWeeklyHours || 0}
+            onChange={(e) => finance.updatePaySetting("contractedWeeklyHours", toNumber(e.target.value))}
+          />
+        </label>
+        <label>
+          <FieldLabel>Hourly rate</FieldLabel>
+          <input
+            className="app-input"
+            type="number"
+            value={pay.hourlyRate || 0}
+            onChange={(e) => finance.updatePaySetting("hourlyRate", toNumber(e.target.value))}
+          />
+        </label>
+        <label>
+          <FieldLabel>Overtime rate</FieldLabel>
+          <input
+            className="app-input"
+            type="number"
+            value={pay.overtimeRate || 0}
+            onChange={(e) => finance.updatePaySetting("overtimeRate", toNumber(e.target.value))}
+          />
+        </label>
+        <label>
+          <FieldLabel>Annual salary</FieldLabel>
+          <input
+            className="app-input"
+            type="number"
+            value={pay.annualSalary || 0}
+            onChange={(e) => finance.updatePaySetting("annualSalary", toNumber(e.target.value))}
+          />
+        </label>
+        <label>
+          <FieldLabel>Other income (£)</FieldLabel>
+          <input
+            className="app-input"
+            type="number"
+            value={month.monthState.otherIncome || 0}
+            onChange={(e) => finance.updateMonthField("otherIncome", toNumber(e.target.value))}
+          />
+        </label>
+      </div>
+
+      <div style={{ fontSize: "0.74rem", fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.04em", textTransform: "uppercase", marginTop: "2px" }}>
+        Tax and NI overrides
+      </div>
+      <CheckboxRow
+        label="Override tax and NI with fixed £ amounts"
+        checked={Boolean(pay.useManualTax)}
+        onChange={(checked) => finance.updatePaySetting("useManualTax", checked)}
+      />
+      {pay.useManualTax ? (
+        <div style={{ display: "grid", gap: "10px", gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "1fr 1fr" }}>
+          <label>
+            <FieldLabel>Tax (£)</FieldLabel>
+            <input
+              className="app-input"
+              type="number"
+              value={pay.manualTax || 0}
+              onChange={(e) => finance.updatePaySetting("manualTax", toNumber(e.target.value))}
+            />
+          </label>
+          <label>
+            <FieldLabel>National Insurance (£)</FieldLabel>
+            <input
+              className="app-input"
+              type="number"
+              value={pay.manualNationalInsurance || 0}
+              onChange={(e) => finance.updatePaySetting("manualNationalInsurance", toNumber(e.target.value))}
+            />
+          </label>
+        </div>
+      ) : null}
+
+      <StatGrid isMobile={isMobile}>
+        <Stat label="Hours worked">{month.pay.expectedHours.toFixed(1)}h</Stat>
+        <Stat label="Base pay">{formatCurrency(month.pay.basePay)}</Stat>
+        <Stat label="Tax">{formatCurrency(month.pay.tax)}</Stat>
+        <Stat label="NI">{formatCurrency(month.pay.nationalInsurance)}</Stat>
+      </StatGrid>
+    </Section>
+  );
+}
+
+function IncomeAdjustmentsEditor({ finance, isMobile }) {
+  const month = finance.model.currentMonth;
+
+  return (
+    <Section
+      title="Income Adjustments"
+      description="One-off income adjustments for this month."
+    >
+      <div style={{ display: "grid", gap: "10px", gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "1fr 1fr" }}>
+        <label>
+          <FieldLabel>Income adjustment</FieldLabel>
+          <input
+            className="app-input"
+            type="number"
+            value={month.monthState.incomeAdjustments || 0}
+            onChange={(e) => finance.updateMonthField("incomeAdjustments", toNumber(e.target.value))}
+          />
+        </label>
+      </div>
+      <StatGrid isMobile={isMobile}>
+        <Stat label="Total in">{formatCurrency(month.totals.totalIn)}</Stat>
+        <Stat label="After tax">{formatCurrency(month.pay.afterTaxIncome)}</Stat>
+      </StatGrid>
+    </Section>
+  );
+}
+
+function OvertimeEditor({ finance, isMobile }) {
+  const month = finance.model.currentMonth;
+
+  return (
+    <Section
+      title="Overtime"
+      description="Log extra hours worked on specific days. Attendance overtime from the Work tab is included automatically."
+    >
+      <StatGrid isMobile={isMobile}>
+        <Stat label="Attendance history overtime">{month.pay.attendanceOvertimeHours.toFixed(2)}h</Stat>
+        <Stat label="Manual overtime">{month.pay.manualOvertimeHours.toFixed(2)}h</Stat>
+        <Stat label="Overtime pay">{formatCurrency(month.pay.overtimePay)}</Stat>
+      </StatGrid>
+
+      <div style={{ display: "grid", gap: "8px" }}>
+        {month.monthState.overtimeEntries.map((entry) => (
+          <div
+            key={entry.id}
+            style={{
+              display: "grid",
+              gap: "8px",
+              gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "1fr 0.7fr 1.4fr auto",
+              padding: "8px 10px",
+              ...widgetInsetSurfaceStyle,
+            }}
+          >
+            <CalendarField value={entry.date || ""} onChange={(e) => finance.updateOvertimeEntry(entry.id, { date: e.target.value })} placeholder="Date" />
+            <input className="app-input" type="number" value={entry.hours || 0} placeholder="Hours" onChange={(e) => finance.updateOvertimeEntry(entry.id, { hours: toNumber(e.target.value) })} />
+            <input className="app-input" value={entry.note || ""} placeholder="Note" onChange={(e) => finance.updateOvertimeEntry(entry.id, { note: e.target.value })} />
+            <Button type="button" variant="secondary" size="sm" pill onClick={() => finance.removeOvertimeEntry(entry.id)}>Remove</Button>
+          </div>
+        ))}
+      </div>
+      <Button type="button" variant="secondary" size="sm" pill style={{ justifySelf: "start" }} onClick={finance.addOvertimeEntry}>
+        Add overtime entry
+      </Button>
+    </Section>
+  );
+}
+
+function RecurringRulesEditor({ isMobile }) {
+  const [rules, setRules] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoading(true);
+    setMessage("");
+
+    fetch("/api/profile/overtime-recurring-rules", { credentials: "include" })
+      .then((response) => response.json())
+      .then((result) => {
+        if (!isMounted) return;
+        if (result.success && Array.isArray(result.data)) {
+          setRules(
+            result.data
+              .filter((rule) => Number(rule.day_of_week) >= 1 && Number(rule.day_of_week) <= 6)
+              .sort((a, b) => Number(a.day_of_week) - Number(b.day_of_week))
+          );
+        } else {
+          setRules([]);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setMessage("Unable to load recurring rules.");
+      })
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const updateRule = (ruleId, patch) => {
+    setRules((current) =>
+      current.map((rule) =>
+        String(rule.rule_id) === String(ruleId)
+          ? {
+              ...rule,
+              ...patch,
+              week_parity:
+                (patch.pattern_type || rule.pattern_type) === "alternate"
+                  ? patch.week_parity !== undefined
+                    ? patch.week_parity
+                    : rule.week_parity || "odd"
+                  : null,
+            }
+          : rule
+      )
+    );
+    setMessage("");
+  };
+
+  const addRule = () => {
+    setRules((current) => [...current, makeRecurringRule()]);
+    setMessage("");
+  };
+
+  const removeRule = async (ruleId) => {
+    const existingRule = rules.find((rule) => String(rule.rule_id) === String(ruleId));
+    if (!existingRule) return;
+
+    if (String(existingRule.rule_id).startsWith("local-")) {
+      setRules((current) => current.filter((rule) => String(rule.rule_id) !== String(ruleId)));
+      return;
+    }
+
+    setIsSaving(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/profile/overtime-recurring-rules", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ ruleIds: [existingRule.rule_id] }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || "Unable to remove recurring rule.");
+      }
+      setRules((current) => current.filter((rule) => String(rule.rule_id) !== String(ruleId)));
+    } catch (error) {
+      setMessage(error.message || "Unable to remove recurring rule.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const saveRules = async () => {
+    setIsSaving(true);
+    setMessage("");
+
+    try {
+      const payload = rules.map((rule) => ({
+        dayOfWeek: Number(rule.day_of_week),
+        hours: Number(rule.hours || 0),
+        active: rule.active !== false,
+        patternType: rule.pattern_type || "weekly",
+        weekParity: (rule.pattern_type || "weekly") === "alternate" ? rule.week_parity || "odd" : null,
+        label: rule.label || null,
+      }));
+
+      const response = await fetch("/api/profile/overtime-recurring-rules", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ rules: payload }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.message || "Unable to save recurring rules.");
+      }
+
+      const refreshed = await fetch("/api/profile/overtime-recurring-rules", { credentials: "include" });
+      const refreshedResult = await refreshed.json().catch(() => null);
+      if (refreshed.ok && refreshedResult?.success && Array.isArray(refreshedResult.data)) {
+        setRules(
+          refreshedResult.data
+            .filter((rule) => Number(rule.day_of_week) >= 1 && Number(rule.day_of_week) <= 6)
+            .sort((a, b) => Number(a.day_of_week) - Number(b.day_of_week))
+        );
+      }
+      setMessage("Recurring rules saved.");
+    } catch (error) {
+      setMessage(error.message || "Unable to save recurring rules.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <Section
+      title="Recurring Overtime Rules"
+      description="Add the days and hours that should auto-log overtime."
+    >
+      {isLoading ? (
+        <EmptyState>Loading recurring rules…</EmptyState>
+      ) : (
+        <>
+          {rules.length === 0 ? (
+            <EmptyState>No recurring overtime rules set yet.</EmptyState>
+          ) : (
+            <div style={{ display: "grid", gap: "8px" }}>
+              {rules.map((rule) => (
+                <div
+                  key={rule.rule_id}
+                  style={{
+                    display: "grid",
+                    gap: "8px",
+                    gridTemplateColumns: isMobile
+                      ? "minmax(0, 1fr)"
+                      : "minmax(0, 1.2fr) minmax(0, 0.8fr) minmax(0, 1fr) minmax(0, 1fr) auto",
+                    padding: "10px",
+                    ...widgetInsetSurfaceStyle,
+                  }}
+                >
+                  <DropdownField
+                    value={String(rule.day_of_week)}
+                    onChange={(event) => updateRule(rule.rule_id, { day_of_week: Number(event.target.value) })}
+                    options={RECURRING_DAY_OPTIONS.map((option) => ({ ...option, value: String(option.value) }))}
+                  />
+                  <input
+                    className="app-input"
+                    type="number"
+                    min="0"
+                    step="0.25"
+                    value={rule.hours}
+                    placeholder="Hours"
+                    onChange={(event) => updateRule(rule.rule_id, { hours: event.target.value })}
+                  />
+                  <DropdownField
+                    value={rule.pattern_type || "weekly"}
+                    onChange={(event) => updateRule(rule.rule_id, { pattern_type: event.target.value })}
+                    options={RECURRING_PATTERN_OPTIONS}
+                  />
+                  {(rule.pattern_type || "weekly") === "alternate" ? (
+                    <DropdownField
+                      value={rule.week_parity || "odd"}
+                      onChange={(event) => updateRule(rule.rule_id, { week_parity: event.target.value })}
+                      options={RECURRING_PARITY_OPTIONS}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "0 12px",
+                        color: "var(--text-secondary)",
+                        fontSize: "0.82rem",
+                      }}
+                    >
+                      Every week
+                    </div>
+                  )}
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    pill
+                    onClick={() => removeRule(rule.rule_id)}
+                    disabled={isSaving}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            <Button type="button" variant="secondary" size="sm" pill onClick={addRule} disabled={isSaving}>
+              Add rule
+            </Button>
+            <Button type="button" variant="primary" size="sm" pill onClick={saveRules} disabled={isSaving}>
+              {isSaving ? "Saving…" : "Save recurring rules"}
+            </Button>
+          </div>
+
+          {message ? (
+            <div style={{ fontSize: "0.8rem", color: message.includes("saved") ? "var(--text-secondary)" : "var(--danger, #c62828)" }}>
+              {message}
+            </div>
+          ) : null}
+        </>
+      )}
+    </Section>
+  );
+}
+
+function LeaveEditor({ finance, isMobile }) {
+  const leaveStats = finance.derived.leaveStats;
+
+  return (
+    <Section
+      title="Leave and Calendar"
+      description="Holiday and leave balances pulled from the Work tab. Approved leave requests are shown below."
+    >
+      <StatGrid isMobile={isMobile}>
+        <Stat label="Work days taken">{leaveStats.workDaysTaken.toFixed(1)}d</Stat>
+        <Stat label="Calendar days">{leaveStats.calendarDaysTaken.toFixed(0)}d</Stat>
+        <Stat label="Days remaining">{leaveStats.remaining ?? "\u2014"}</Stat>
+      </StatGrid>
+
+      {leaveStats.approvedRequests.length === 0 ? (
+        <EmptyState>No approved leave records yet in the Work tab.</EmptyState>
+      ) : (
+        <div style={{ display: "grid", gap: "6px", maxHeight: "200px", overflowY: "auto" }}>
+          {leaveStats.approvedRequests.map((request) => (
+            <div
+              key={request.id}
+              style={{
+                display: "flex",
+                flexDirection: isMobile ? "column" : "row",
+                justifyContent: "space-between",
+                gap: isMobile ? "4px" : "12px",
+                alignItems: isMobile ? "flex-start" : "center",
+                padding: "8px 12px",
+                ...widgetInsetSurfaceStyle,
+              }}
+            >
+              <div>
+                <div style={{ fontWeight: 700, fontSize: "0.84rem" }}>{request.type || "Leave"}</div>
+                <div style={{ fontSize: "0.76rem", color: "var(--text-secondary)" }}>
+                  {formatDate(request.startDate)} → {formatDate(request.endDate)}
+                </div>
+              </div>
+              <div style={{ fontWeight: 700, fontSize: "0.84rem" }}>{Number(request.totalDays || 0).toFixed(1)}d</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </Section>
+  );
+}
+
+function PlannedPaymentPlansEditor({ finance, isMobile }) {
+  const plans = finance.financeState.plannedPaymentPlans || [];
+  const planDetails = finance.model.plannedPaymentPlanDetails || [];
+  const [expandedId, setExpandedId] = useState(null);
+  const monthOptions = buildMonthOptions(finance.model.selectedMonthKey, 18);
+
+  return (
+    <Section
+      title="Payment Schedules"
+      description="Recurring payments with start and end months. Set a different amount for each month within the range."
+    >
+      {plans.length === 0 ? (
+        <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+          No payment schedules added yet.
+        </div>
+      ) : (
+        <div style={{ display: "grid", gap: "10px" }}>
+          {plans.map((plan) => {
+            const detail = planDetails.find((d) => d.id === plan.id);
+            const months = detail?.months || [];
+            const isExpanded = expandedId === plan.id;
+
+            return (
+              <div
+                key={plan.id}
+                style={{
+                  display: "grid",
+                  gap: "8px",
+                  padding: "10px",
+                  ...widgetInsetSurfaceStyle,
+                }}
+              >
+                <div style={{ display: "grid", gap: "8px", gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "1.4fr 1fr 1fr auto" }}>
+                  <input
+                    className="app-input"
+                    value={plan.name || ""}
+                    placeholder="Payment name"
+                    onChange={(e) => finance.updatePlannedPaymentPlan(plan.id, { name: e.target.value })}
+                  />
+                  <DropdownField
+                    value={plan.startMonth || ""}
+                    onChange={(e) => finance.updatePlannedPaymentPlan(plan.id, { startMonth: e.target.value })}
+                    options={monthOptions}
+                  />
+                  <DropdownField
+                    value={plan.endMonth || ""}
+                    onChange={(e) => finance.updatePlannedPaymentPlan(plan.id, { endMonth: e.target.value })}
+                    options={monthOptions}
+                  />
+                  <Button type="button" variant="secondary" size="sm" pill onClick={() => finance.removePlannedPaymentPlan(plan.id)}>
+                    Remove
+                  </Button>
+                </div>
+
+                {!isMobile && plans.length > 0 && (
+                  <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr auto", gap: "8px", fontSize: "0.68rem", color: "var(--text-secondary)", fontWeight: 600, padding: "0 2px" }}>
+                    <span>Name</span><span>Start month</span><span>End month</span><span />
+                  </div>
+                )}
+
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="xs"
+                  pill
+                  onClick={() => setExpandedId(isExpanded ? null : plan.id)}
+                  style={{ justifySelf: "start" }}
+                >
+                  {isExpanded ? "Hide months" : `Show months (${months.length})`}
+                </Button>
+
+                {isExpanded && months.length > 0 && (
+                  <div style={{ display: "grid", gap: "6px", maxHeight: "300px", overflowY: "auto" }}>
+                    {months.map((mk) => (
+                      <div
+                        key={mk}
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: "8px",
+                          alignItems: "center",
+                          padding: "6px 8px",
+                          borderRadius: "8px",
+                          background: mk === finance.model.selectedMonthKey ? "rgba(var(--primary-rgb), 0.08)" : "transparent",
+                        }}
+                      >
+                        <span style={{ fontSize: "0.8rem", fontWeight: mk === finance.model.selectedMonthKey ? 700 : 500, color: "var(--text-primary)" }}>
+                          {formatMonthLabel(mk)}
+                        </span>
+                        <input
+                          className="app-input"
+                          type="number"
+                          value={plan.monthlyAmounts?.[mk] || 0}
+                          placeholder="£0.00"
+                          onChange={(e) => finance.updatePlannedPaymentPlanMonth(plan.id, mk, toNumber(e.target.value))}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {detail && (
+                  <div style={{ fontSize: "0.76rem", color: "var(--text-secondary)" }}>
+                    Total across all months: <strong>{formatCurrency(detail.totalAcrossMonths)}</strong>
+                    {detail.isActiveThisMonth ? ` · This month: ${formatCurrency(detail.thisMonthAmount)}` : " · Not active this month"}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <Button type="button" variant="secondary" size="sm" pill onClick={() => finance.addPlannedPaymentPlan("", finance.model.selectedMonthKey, finance.model.selectedMonthKey)} style={{ justifySelf: "start" }}>
+        Add payment schedule
+      </Button>
+    </Section>
+  );
+}
+
+function OutgoingAdjustmentEditor({ finance, isMobile }) {
+  const month = finance.model.currentMonth;
+
+  return (
+    <Section
+      title="Outgoing Adjustments"
+      description="One-off outgoing adjustments for this month."
+    >
+      <div style={{ display: "grid", gap: "10px", gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "1fr 1fr" }}>
+        <label>
+          <FieldLabel>Outgoing adjustment</FieldLabel>
+          <input
+            className="app-input"
+            type="number"
+            value={month.monthState.outgoingAdjustments || 0}
+            onChange={(e) => finance.updateMonthField("outgoingAdjustments", toNumber(e.target.value))}
+          />
+        </label>
+      </div>
+      <StatGrid isMobile={isMobile}>
+        <Stat label="Fixed outgoings">{formatCurrency(month.totals.fixedOut)}</Stat>
+        <Stat label="Planned payments">{formatCurrency(month.totals.plannedOut)}</Stat>
+        <Stat label="Total out">{formatCurrency(month.totals.totalOut)}</Stat>
+      </StatGrid>
+    </Section>
+  );
+}
+
+function SavingsAccountsEditor({ finance, isMobile }) {
+  const accounts = finance.financeState.savingsAccounts || [];
+  const accountBalances = finance.model.savingsAccountBalances || [];
+
+  return (
+    <Section
+      title="Savings Accounts"
+      description="Your savings accounts with interest rates and opening balances. These persist across all months."
+    >
+      {accounts.length === 0 ? (
+        <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+          No savings accounts added yet.
+        </div>
+      ) : (
+        <div style={{ display: "grid", gap: "8px" }}>
+          {accounts.map((account) => {
+            const bal = accountBalances.find((b) => b.id === account.id);
+            return (
+              <div
+                key={account.id}
+                style={{
+                  display: "grid",
+                  gap: "8px",
+                  gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "1.4fr 0.8fr 1fr auto",
+                  padding: "8px 10px",
+                  ...widgetInsetSurfaceStyle,
+                }}
+              >
+                <input
+                  className="app-input"
+                  value={account.name || ""}
+                  placeholder="Account name"
+                  onChange={(e) => finance.updateSavingsAccount(account.id, { name: e.target.value })}
+                />
+                <input
+                  className="app-input"
+                  type="number"
+                  step="0.01"
+                  value={account.interestRate || 0}
+                  placeholder="AER %"
+                  onChange={(e) => finance.updateSavingsAccount(account.id, { interestRate: toNumber(e.target.value) })}
+                />
+                <input
+                  className="app-input"
+                  type="number"
+                  value={account.openingBalance || 0}
+                  placeholder="Opening balance"
+                  onChange={(e) => finance.updateSavingsAccount(account.id, { openingBalance: toNumber(e.target.value) })}
+                />
+                <Button type="button" variant="secondary" size="sm" pill onClick={() => finance.removeSavingsAccount(account.id)}>
+                  Remove
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <div style={{ display: "grid", gap: "4px", gridTemplateColumns: isMobile ? "1fr" : "auto auto auto", fontSize: "0.74rem", color: "var(--text-secondary)", fontWeight: 600 }}>
+        {accounts.length > 0 && !isMobile && <span>Name</span>}
+        {accounts.length > 0 && !isMobile && <span>AER %</span>}
+        {accounts.length > 0 && !isMobile && <span>Opening balance</span>}
+      </div>
+      <Button type="button" variant="secondary" size="sm" pill onClick={() => finance.addSavingsAccount("", 0, 0)} style={{ justifySelf: "start" }}>
+        Add account
+      </Button>
+
+      {accountBalances.length > 0 && (
+        <>
+          <div style={{ fontSize: "0.74rem", fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.04em", textTransform: "uppercase", marginTop: "2px" }}>
+            Current balances
+          </div>
+          <StatGrid isMobile={isMobile}>
+            {accountBalances.map((bal) => (
+              <Stat key={bal.id} label={bal.name || "Unnamed"}>{formatCurrency(bal.currentBalance)}</Stat>
+            ))}
+          </StatGrid>
+        </>
+      )}
+    </Section>
+  );
+}
+
+function SavingsTransactionsEditor({ finance, isMobile }) {
+  const month = finance.model.currentMonth;
+  const accounts = finance.financeState.savingsAccounts || [];
+  const transactions = month.monthState.savingsBuckets || [];
+
+  const accountOptions = accounts.map((a) => ({ value: a.id, label: a.name || "Unnamed" }));
+
+  return (
+    <Section
+      title="Monthly Savings Activity"
+      description="Add deposits, interest, or withdrawals for this month. Select the account and enter the amount."
+    >
+      <StatGrid isMobile={isMobile}>
+        <Stat label="Saved this month">{formatCurrency(month.totals.savingsTotal)}</Stat>
+        <Stat label="Year total">{formatCurrency(finance.model.yearTotals.savingsTotal)}</Stat>
+      </StatGrid>
+
+      {accounts.length === 0 ? (
+        <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+          Add a savings account first before logging transactions.
+        </div>
+      ) : (
+        <>
+          {transactions.length === 0 ? (
+            <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+              No savings transactions this month.
+            </div>
+          ) : (
+            <div style={{ display: "grid", gap: "8px" }}>
+              {transactions.map((txn) => (
+                <div
+                  key={txn.id}
+                  style={{
+                    display: "grid",
+                    gap: "8px",
+                    gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "1.2fr 0.8fr 1fr auto",
+                    padding: "8px 10px",
+                    ...widgetInsetSurfaceStyle,
+                  }}
+                >
+                  <DropdownField
+                    value={txn.accountId || ""}
+                    onChange={(e) => finance.updateSavingsBucket(txn.id, { accountId: e.target.value })}
+                    options={[{ value: "", label: "Select account" }, ...accountOptions]}
+                  />
+                  <DropdownField
+                    value={txn.type || "deposit"}
+                    onChange={(e) => finance.updateSavingsBucket(txn.id, { type: e.target.value })}
+                    options={[
+                      { value: "deposit", label: "Deposit" },
+                      { value: "interest", label: "Interest" },
+                      { value: "withdrawal", label: "Withdrawal" },
+                    ]}
+                  />
+                  <input
+                    className="app-input"
+                    type="number"
+                    value={txn.amount || 0}
+                    placeholder="Amount"
+                    onChange={(e) => finance.updateSavingsBucket(txn.id, { amount: toNumber(e.target.value) })}
+                  />
+                  <Button type="button" variant="secondary" size="sm" pill onClick={() => finance.removeSavingsBucket(txn.id)}>
+                    Remove
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            pill
+            onClick={() => finance.addSavingsBucket(accounts[0]?.id || "", 0, "deposit")}
+            style={{ justifySelf: "start" }}
+          >
+            Add transaction
+          </Button>
+        </>
+      )}
+    </Section>
+  );
+}
+
 export default function WidgetSettingsModal({
   isOpen,
-  widgetId,
   widgetType,
   widgetLabel,
   activeMonthKey = getCurrentMonthKey(),
   widgetIsVisible = true,
+  finance = null,
   data = {},
   onClose,
   onSave,
   onToggleVisibility,
 }) {
   useBodyModalLock(isOpen);
-  const [draft, setDraft] = useState(buildInitialState(widgetType, data, activeMonthKey));
+  const isMobile = useIsMobile();
+  const panelRef = useRef(null);
+  const [settings, setSettings] = useState(() => buildInitialSettings(widgetType, data, activeMonthKey));
 
   useEffect(() => {
     if (isOpen) {
-      setDraft(buildInitialState(widgetType, data, activeMonthKey));
+      setSettings(buildInitialSettings(widgetType, data, activeMonthKey));
     }
   }, [activeMonthKey, data, isOpen, widgetType]);
 
-  const previewMonthKey = useMemo(() => {
-    const mode = draft.settings?.dateDisplayMode || "month";
-    const value = draft.settings?.dateValue || activeMonthKey;
-    const monthFromValue = mode === "day" ? String(value).slice(0, 7) : String(value).slice(0, 7);
-    return normaliseMonthKey(draft.settings?.monthKey || monthFromValue || activeMonthKey, activeMonthKey);
-  }, [activeMonthKey, draft.settings]);
+  const handleBackdropClick = useCallback(
+    (event) => {
+      if (panelRef.current && !panelRef.current.contains(event.target)) {
+        // Don't close if clicking inside a dropdown portal or calendar portal
+        if (event.target.closest(".dropdown-api__menu, .calendar-portal, .react-datepicker-popper")) return;
+        onClose?.();
+      }
+    },
+    [onClose]
+  );
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") onClose?.();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
   const updateSetting = (key, value) => {
-    setDraft((current) => {
-      const nextSettings = {
-        ...current.settings,
-        [key]: value,
-      };
+    setSettings((current) => {
+      const next = { ...current, [key]: value };
 
       if (key === "dateDisplayMode") {
-        if (value === "day") {
-          nextSettings.dateValue = `${String(nextSettings.monthKey || activeMonthKey).slice(0, 7)}-01`;
-        } else {
-          nextSettings.dateValue = String(nextSettings.monthKey || activeMonthKey).slice(0, 7);
-        }
+        next.dateValue = value === "day"
+          ? `${String(next.monthKey || activeMonthKey).slice(0, 7)}-01`
+          : String(next.monthKey || activeMonthKey).slice(0, 7);
       }
-
       if (key === "dateValue") {
-        nextSettings.monthKey = value ? String(value).slice(0, 7) : activeMonthKey;
+        next.monthKey = value ? String(value).slice(0, 7) : activeMonthKey;
       }
-
       if (key === "monthKey") {
-        nextSettings.dateValue = nextSettings.dateDisplayMode === "day" ? `${String(value).slice(0, 7)}-01` : String(value).slice(0, 7);
+        next.dateValue = next.dateDisplayMode === "day"
+          ? `${String(value).slice(0, 7)}-01`
+          : String(value).slice(0, 7);
       }
 
-      return {
-        ...current,
-        settings: nextSettings,
-      };
+      return next;
     });
   };
 
-  const updateRule = (id, key, value) => {
-    setDraft((current) => ({
-      ...current,
-      rules: current.rules.map((rule) => (rule.id === id ? { ...rule, [key]: value } : rule)),
-    }));
-  };
-
-  const updateOverride = (id, key, value) => {
-    setDraft((current) => ({
-      ...current,
-      overrides: current.overrides.map((override) =>
-        override.id === id
-          ? key === "amount" || key === "note"
-            ? {
-                ...override,
-                overrideJson: {
-                  ...override.overrideJson,
-                  [key]: value,
-                },
-              }
-            : { ...override, [key]: value }
-          : override
-      ),
-    }));
-  };
-
   const handleSave = async () => {
-    const mode = draft.settings.dateDisplayMode || "month";
-    const dateValue = draft.settings.dateValue || activeMonthKey;
-    const resolvedMonthKey = mode === "day" ? String(dateValue).slice(0, 7) : String(dateValue).slice(0, 7);
+    const dateValue = settings.dateValue || activeMonthKey;
+    const resolvedMonthKey = String(dateValue).slice(0, 7);
 
     await onSave?.({
       ...data,
       settings: {
         ...data?.settings,
-        ...draft.settings,
+        ...settings,
         monthKey: normaliseMonthKey(resolvedMonthKey, activeMonthKey),
       },
-      rules: draft.rules.map((rule) => ({
-        ...rule,
-        amount: Number(rule.amount || 0),
-      })),
-      overrides: draft.overrides.map((override) => ({
-        ...override,
-        monthKey: normaliseMonthKey(override.monthKey || previewMonthKey),
-        overrideJson: {
-          ...override.overrideJson,
-          amount: Number(override.overrideJson?.amount || 0),
-        },
-      })),
     });
     onClose?.();
   };
 
+  const hasWidgetOptions =
+    "baseMonthlyIncome" in settings ||
+    "expectedMileage" in settings ||
+    "trendPct" in settings ||
+    "targetAmount" in settings ||
+    "goalDate" in settings ||
+    "depositTarget" in settings ||
+    "currentSaved" in settings ||
+    "monthlyPayment" in settings ||
+    "mortgageDeadline" in settings ||
+    "plannedHours" in settings ||
+    "plannedOvertimeHours" in settings ||
+    "chartSource" in settings ||
+    "customTitle" in settings ||
+    "customAmount" in settings ||
+    "customTarget" in settings ||
+    "customNote" in settings ||
+    "useWorkEstimate" in settings ||
+    "includeSavings" in settings ||
+    "includeBills" in settings ||
+    "includeFuel" in settings ||
+    widgetType === "work-summary" ||
+    widgetType === "income" ||
+    widgetType === "savings" ||
+    widgetType === "fuel";
+  const monthOptions = buildMonthOptions(settings.monthKey || activeMonthKey, 12);
+
   const modal = (
     <div
+      onClick={handleBackdropClick}
       style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(15, 23, 42, 0.58)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "24px",
+        ...widgetModalBackdropStyle,
+        padding: isMobile ? "8px" : "24px",
         zIndex: 2100,
       }}
     >
       <div
+        ref={panelRef}
         style={{
-          width: "100%",
-          maxWidth: "980px",
-          maxHeight: "84vh",
-          overflowY: "auto",
-          background: "var(--surface)",
-          borderRadius: "24px",
-          border: "1px solid rgba(var(--accent-purple-rgb), 0.18)",
-          boxShadow: "var(--shadow-lg)",
-          padding: "22px",
-          display: "grid",
-          gap: "18px",
+          ...getWidgetModalCardStyle(isMobile, {
+            maxWidth: "720px",
+          }),
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", gap: "16px", alignItems: "flex-start", flexWrap: "wrap" }}>
-          <div style={{ display: "grid", gap: "6px" }}>
-            <div style={{ fontSize: "1.1rem", fontWeight: 800 }}>{widgetLabel || "Widget"} settings</div>
-            <div style={{ color: "var(--text-secondary)", lineHeight: 1.5, fontSize: "0.86rem" }}>
-              Choose date display mode, layout visibility, and data rules for this widget.
-            </div>
-            <div style={{ fontSize: "0.76rem", color: "var(--text-secondary)" }}>Widget ID: {widgetId || "—"}</div>
-          </div>
-          <button type="button" onClick={onClose} style={widgetGhostButtonStyle}>
-            Close
-          </button>
+        {/* Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "flex-start", flexWrap: "wrap" }}>
+          <div style={{ fontSize: isMobile ? "1rem" : "1.05rem", fontWeight: 700 }}>{widgetLabel || "Widget"} settings</div>
         </div>
 
-        <div style={{ display: "grid", gap: "14px", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
-          <Section title="Layout" description="Control visibility and how this card appears on the board.">
-            <div style={{ paddingBottom: "6px", borderBottom: "1px dashed rgba(var(--accent-purple-rgb), 0.22)" }}>
-              <CheckboxRow
-                label="Widget visible"
-                checked={widgetIsVisible !== false}
-                onChange={(checked) => onToggleVisibility?.(checked)}
-              />
-            </div>
-            {"detailRows" in draft.settings ? null : (
-              <CheckboxRow
-                label="Show detail rows in widget"
-                checked={draft.settings.showDetailRows !== false}
-                onChange={(checked) => updateSetting("showDetailRows", checked)}
-              />
-            )}
+        <div
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: "auto",
+            display: "grid",
+            gap: isMobile ? "12px" : "14px",
+            paddingRight: isMobile ? "2px" : "4px",
+          }}
+        >
+          <SourceList widgetType={widgetType} />
+
+          {/* Visibility */}
+          <Section title="Visibility">
+            <CheckboxRow
+              label="Show this card on the dashboard"
+              checked={widgetIsVisible !== false}
+              onChange={(checked) => onToggleVisibility?.(checked)}
+            />
           </Section>
 
-          <Section title="Date view" description="Set whether the widget displays month-based or day-based context.">
+          {/* Date view */}
+          <Section title="Date view" description="Control which month or day this card uses.">
             <CheckboxRow
-              label="Use current dashboard month"
-              checked={draft.settings.useGlobalMonth !== false}
+              label="Follow the dashboard month"
+              checked={settings.useGlobalMonth !== false}
               onChange={(checked) => updateSetting("useGlobalMonth", checked)}
             />
-            <div style={{ display: "grid", gap: "8px" }}>
-              <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: 600 }}>Display mode</div>
-              <select
-                value={draft.settings.dateDisplayMode || "month"}
-                onChange={(event) => updateSetting("dateDisplayMode", event.target.value)}
-                style={widgetSelectStyle}
-              >
-                <option value="month">By month</option>
-                <option value="day">By day</option>
-              </select>
-            </div>
-            <div style={{ display: "grid", gap: "8px" }}>
-              <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: 600 }}>
-                {draft.settings.dateDisplayMode === "day" ? "Selected day" : "Selected month"}
+            {settings.useGlobalMonth === false ? (
+              <div style={{ display: "grid", gap: "8px", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
+                <div>
+                  <FieldLabel>Display mode</FieldLabel>
+                  <DropdownField
+                    value={settings.dateDisplayMode || "month"}
+                    onChange={(event) => updateSetting("dateDisplayMode", event.target.value)}
+                    options={[
+                      { value: "month", label: "By month" },
+                      { value: "day", label: "By day" },
+                    ]}
+                  />
+                </div>
+                <div>
+                  <FieldLabel>{settings.dateDisplayMode === "day" ? "Selected day" : "Selected month"}</FieldLabel>
+                  {settings.dateDisplayMode === "day" ? (
+                    <CalendarField
+                      value={settings.dateValue || ""}
+                      onChange={(event) => updateSetting("dateValue", event.target.value)}
+                      placeholder="Selected day"
+                    />
+                  ) : (
+                    <DropdownField
+                      value={settings.dateValue || ""}
+                      onChange={(event) => updateSetting("dateValue", event.target.value)}
+                      options={monthOptions}
+                    />
+                  )}
+                </div>
               </div>
-              <input
-                type={draft.settings.dateDisplayMode === "day" ? "date" : "month"}
-                disabled={draft.settings.useGlobalMonth !== false}
-                value={draft.settings.dateValue || ""}
-                onChange={(event) => updateSetting("dateValue", event.target.value)}
-                style={widgetInputStyle}
-              />
-            </div>
+            ) : null}
           </Section>
+
+          {/* Widget-specific options */}
+          {hasWidgetOptions ? (
+            <Section title="Widget options">
+              <div style={{ display: "grid", gap: "10px", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(200px, 1fr))" }}>
+              {"baseMonthlyIncome" in settings ? (
+                <label>
+                  <FieldLabel>Base monthly income</FieldLabel>
+                  <input className="app-input" type="number" value={settings.baseMonthlyIncome} onChange={(e) => updateSetting("baseMonthlyIncome", e.target.value)} />
+                </label>
+              ) : null}
+              {"expectedMileage" in settings ? (
+                <label>
+                  <FieldLabel>Expected mileage</FieldLabel>
+                  <input className="app-input" type="number" value={settings.expectedMileage} onChange={(e) => updateSetting("expectedMileage", e.target.value)} />
+                </label>
+              ) : null}
+              {"trendPct" in settings ? (
+                <label>
+                  <FieldLabel>Cost trend %</FieldLabel>
+                  <input className="app-input" type="number" value={settings.trendPct} onChange={(e) => updateSetting("trendPct", e.target.value)} />
+                </label>
+              ) : null}
+              {"targetAmount" in settings ? (
+                <label>
+                  <FieldLabel>Target amount</FieldLabel>
+                  <input className="app-input" type="number" value={settings.targetAmount} onChange={(e) => updateSetting("targetAmount", e.target.value)} />
+                </label>
+              ) : null}
+              {"goalDate" in settings ? (
+                <label>
+                  <FieldLabel>Goal date</FieldLabel>
+                  <CalendarField value={settings.goalDate} onChange={(e) => updateSetting("goalDate", e.target.value)} placeholder="Goal date" />
+                </label>
+              ) : null}
+              {"depositTarget" in settings ? (
+                <label>
+                  <FieldLabel>Deposit target</FieldLabel>
+                  <input className="app-input" type="number" value={settings.depositTarget} onChange={(e) => updateSetting("depositTarget", e.target.value)} />
+                </label>
+              ) : null}
+              {"currentSaved" in settings ? (
+                <div style={{ display: "grid", gap: "6px" }}>
+                  <FieldLabel>Current saved</FieldLabel>
+                  {(() => {
+                    const accounts = finance?.financeState?.savingsAccounts || [];
+                    const balances = finance?.model?.savingsAccountBalances || [];
+                    const linkedId = settings.linkedSavingsAccountId || "";
+                    const accountOptions = [
+                      { label: "Manual entry", value: "" },
+                      ...accounts.map((a) => {
+                        const bal = balances.find((b) => b.id === a.id);
+                        return { label: `${a.name || "Unnamed"} (${formatCurrency(bal?.currentBalance || 0)})`, value: a.id };
+                      }),
+                    ];
+                    return (
+                      <>
+                        <DropdownField
+                          value={linkedId}
+                          options={accountOptions}
+                          onChange={(event) => {
+                            const val = event.target.value;
+                            updateSetting("linkedSavingsAccountId", val);
+                            if (val) {
+                              const bal = balances.find((b) => b.id === val);
+                              if (bal) updateSetting("currentSaved", bal.currentBalance || 0);
+                            }
+                          }}
+                          placeholder="Link savings account..."
+                        />
+                        {!linkedId && (
+                          <input className="app-input" type="number" value={settings.currentSaved} onChange={(e) => updateSetting("currentSaved", e.target.value)} />
+                        )}
+                        {linkedId && (
+                          <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", padding: "2px 0" }}>
+                            Auto-updated from linked savings account
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              ) : null}
+              {"monthlyPayment" in settings ? (
+                <label>
+                  <FieldLabel>Monthly payment</FieldLabel>
+                  <input className="app-input" type="number" value={settings.monthlyPayment} onChange={(e) => updateSetting("monthlyPayment", e.target.value)} />
+                </label>
+              ) : null}
+              {"mortgageDeadline" in settings ? (
+                <label>
+                  <FieldLabel>Deadline</FieldLabel>
+                  <CalendarField value={settings.mortgageDeadline || ""} onChange={(e) => updateSetting("mortgageDeadline", e.target.value)} placeholder="Deadline" />
+                </label>
+              ) : null}
+              {"plannedHours" in settings ? (
+                <label>
+                  <FieldLabel>Planned hours</FieldLabel>
+                  <input className="app-input" type="number" value={settings.plannedHours} onChange={(e) => updateSetting("plannedHours", e.target.value)} />
+                </label>
+              ) : null}
+              {"plannedOvertimeHours" in settings ? (
+                <label>
+                  <FieldLabel>Planned overtime</FieldLabel>
+                  <input className="app-input" type="number" value={settings.plannedOvertimeHours} onChange={(e) => updateSetting("plannedOvertimeHours", e.target.value)} />
+                </label>
+              ) : null}
+              {"chartSource" in settings ? (
+                <label>
+                  <FieldLabel>Chart source</FieldLabel>
+                  <DropdownField
+                    value={settings.chartSource || "spendingByCategory"}
+                    onChange={(event) => updateSetting("chartSource", event.target.value)}
+                    options={[
+                      { value: "spendingByCategory", label: "Spending" },
+                      { value: "incomeVsSpending", label: "Income vs spending" },
+                      { value: "goalsProgress", label: "Goals" },
+                      { value: "timeline", label: "Timeline" },
+                    ]}
+                  />
+                </label>
+              ) : null}
+              {"customTitle" in settings ? (
+                <label>
+                  <FieldLabel>Card title</FieldLabel>
+                  <input className="app-input" value={settings.customTitle || ""} onChange={(e) => updateSetting("customTitle", e.target.value)} />
+                </label>
+              ) : null}
+              {"customAmount" in settings ? (
+                <label>
+                  <FieldLabel>Amount</FieldLabel>
+                  <input className="app-input" type="number" value={settings.customAmount} onChange={(e) => updateSetting("customAmount", e.target.value)} />
+                </label>
+              ) : null}
+              {"customTarget" in settings ? (
+                <label>
+                  <FieldLabel>Target</FieldLabel>
+                  <input className="app-input" type="number" value={settings.customTarget} onChange={(e) => updateSetting("customTarget", e.target.value)} />
+                </label>
+              ) : null}
+              </div>
+
+              {"customNote" in settings ? (
+                <label>
+                  <FieldLabel>Notes</FieldLabel>
+                  <textarea
+                    className="app-input"
+                    value={settings.customNote || ""}
+                    onChange={(e) => updateSetting("customNote", e.target.value)}
+                    style={{ minHeight: "96px", resize: "vertical" }}
+                    placeholder="Add a note or summary for this card"
+                  />
+                </label>
+              ) : null}
+
+              {"useWorkEstimate" in settings ? (
+                <CheckboxRow label="Use work-linked estimate when available" checked={settings.useWorkEstimate !== false} onChange={(checked) => updateSetting("useWorkEstimate", checked)} />
+              ) : null}
+
+              {widgetType === "work-summary" || widgetType === "income" ? (
+                <div style={{ display: "grid", gap: "10px", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(200px, 1fr))" }}>
+                <label>
+                  <FieldLabel>Weekly hours (fallback)</FieldLabel>
+                  <input className="app-input" type="number" value={settings.contractedWeeklyHours || ""} onChange={(e) => updateSetting("contractedWeeklyHours", e.target.value)} />
+                </label>
+                <label>
+                  <FieldLabel>Hourly rate override</FieldLabel>
+                  <input className="app-input" type="number" value={settings.hourlyRate || ""} onChange={(e) => updateSetting("hourlyRate", e.target.value)} />
+                </label>
+                <label>
+                  <FieldLabel>Overtime rate override</FieldLabel>
+                  <input className="app-input" type="number" value={settings.overtimeRate || ""} onChange={(e) => updateSetting("overtimeRate", e.target.value)} />
+                </label>
+                <label>
+                  <FieldLabel>Tax % estimate</FieldLabel>
+                  <input className="app-input" type="number" value={settings.taxRate || ""} onChange={(e) => updateSetting("taxRate", e.target.value)} />
+                </label>
+                <label>
+                  <FieldLabel>NI % estimate</FieldLabel>
+                  <input className="app-input" type="number" value={settings.niRate || ""} onChange={(e) => updateSetting("niRate", e.target.value)} />
+                </label>
+                </div>
+              ) : null}
+
+              {"includeSavings" in settings ? (
+                <CheckboxRow label="Include savings in net position" checked={settings.includeSavings !== false} onChange={(checked) => updateSetting("includeSavings", checked)} />
+              ) : null}
+              {"includeBills" in settings ? (
+                <CheckboxRow label="Include bills in net position" checked={settings.includeBills !== false} onChange={(checked) => updateSetting("includeBills", checked)} />
+              ) : null}
+              {"includeFuel" in settings ? (
+                <CheckboxRow label="Include fuel in net position" checked={settings.includeFuel !== false} onChange={(checked) => updateSetting("includeFuel", checked)} />
+              ) : null}
+            </Section>
+          ) : null}
+
+          {widgetType === "fuel" ? (
+            <Section title="Fuel defaults" description="Default values for fuel entries.">
+              <div style={{ display: "grid", gap: "10px", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
+                <label>
+                  <FieldLabel>Default budget</FieldLabel>
+                  <input className="app-input" type="number" value={settings.defaultFuelBudget || ""} onChange={(e) => updateSetting("defaultFuelBudget", e.target.value)} />
+                </label>
+                <label>
+                  <FieldLabel>Default station</FieldLabel>
+                  <input className="app-input" value={settings.defaultFuelStation || ""} onChange={(e) => updateSetting("defaultFuelStation", e.target.value)} />
+                </label>
+              </div>
+            </Section>
+          ) : null}
+
+          {widgetType === "spending" && finance ? (
+            <>
+              <FinanceCollectionEditor
+                title="Fixed outgoings"
+                source="Database"
+                rows={finance.model.currentMonth.monthState.fixedOutgoings || []}
+                isMobile={isMobile}
+                emptyLabel="No fixed outgoings added yet."
+                namePlaceholder="Category"
+                amountPlaceholder="Amount"
+                onAdd={finance.addFixedOutgoing}
+                onUpdate={finance.updateFixedOutgoing}
+                onRemove={finance.removeFixedOutgoing}
+              />
+              <PlannedPaymentPlansEditor finance={finance} isMobile={isMobile} />
+              <FinanceCollectionEditor
+                title="One-off payments"
+                source="This month only"
+                rows={finance.model.currentMonth.monthState.plannedPayments || []}
+                isMobile={isMobile}
+                emptyLabel="No one-off payments this month."
+                namePlaceholder="Payment name"
+                amountPlaceholder="Amount"
+                onAdd={finance.addPlannedPayment}
+                onUpdate={finance.updatePlannedPayment}
+                onRemove={finance.removePlannedPayment}
+              />
+              <CreditCardEditor finance={finance} isMobile={isMobile} />
+            </>
+          ) : null}
+
+          {widgetType === "bills" && finance ? (
+            <>
+              <PlannedPaymentPlansEditor finance={finance} isMobile={isMobile} />
+              <FinanceCollectionEditor
+                title="One-off payments"
+                source="This month only"
+                rows={finance.model.currentMonth.monthState.plannedPayments || []}
+                isMobile={isMobile}
+                emptyLabel="No one-off payments this month."
+                namePlaceholder="Payment name"
+                amountPlaceholder="Amount"
+                onAdd={finance.addPlannedPayment}
+                onUpdate={finance.updatePlannedPayment}
+                onRemove={finance.removePlannedPayment}
+              />
+            </>
+          ) : null}
+
+          {widgetType === "fuel" && finance ? <CreditCardEditor finance={finance} isMobile={isMobile} /> : null}
+
+          {widgetType === "savings" && finance ? (
+            <>
+              <SavingsAccountsEditor finance={finance} isMobile={isMobile} />
+              <SavingsTransactionsEditor finance={finance} isMobile={isMobile} />
+            </>
+          ) : null}
+
+          {widgetType === "income" && finance ? (
+            <>
+              <PayAndWorkEditor finance={finance} isMobile={isMobile} />
+              <IncomeAdjustmentsEditor finance={finance} isMobile={isMobile} />
+            </>
+          ) : null}
+
+          {widgetType === "work-summary" && finance ? (
+            <>
+              <OvertimeEditor finance={finance} isMobile={isMobile} />
+              <RecurringRulesEditor isMobile={isMobile} />
+            </>
+          ) : null}
+
+          {widgetType === "holiday" && finance ? (
+            <LeaveEditor finance={finance} isMobile={isMobile} />
+          ) : null}
+
+          {widgetType === "spending" && finance ? (
+            <OutgoingAdjustmentEditor finance={finance} isMobile={isMobile} />
+          ) : null}
         </div>
 
-        <Section title="Widget content" description="Widget-specific content settings.">
-          <div style={{ display: "grid", gap: "10px", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-            {"baseMonthlyIncome" in draft.settings ? (
-              <input
-                type="number"
-                value={draft.settings.baseMonthlyIncome}
-                onChange={(event) => updateSetting("baseMonthlyIncome", event.target.value)}
-                style={widgetInputStyle}
-                placeholder="Base monthly income"
-              />
-            ) : null}
-            {"expectedMileage" in draft.settings ? (
-              <input
-                type="number"
-                value={draft.settings.expectedMileage}
-                onChange={(event) => updateSetting("expectedMileage", event.target.value)}
-                style={widgetInputStyle}
-                placeholder="Expected monthly mileage"
-              />
-            ) : null}
-            {"trendPct" in draft.settings ? (
-              <input
-                type="number"
-                value={draft.settings.trendPct}
-                onChange={(event) => updateSetting("trendPct", event.target.value)}
-                style={widgetInputStyle}
-                placeholder="Expected cost trend %"
-              />
-            ) : null}
-            {"targetAmount" in draft.settings ? (
-              <input
-                type="number"
-                value={draft.settings.targetAmount}
-                onChange={(event) => updateSetting("targetAmount", event.target.value)}
-                style={widgetInputStyle}
-                placeholder="Target amount"
-              />
-            ) : null}
-            {"goalDate" in draft.settings ? (
-              <input
-                type="date"
-                value={draft.settings.goalDate}
-                onChange={(event) => updateSetting("goalDate", event.target.value)}
-                style={widgetInputStyle}
-              />
-            ) : null}
-            {"depositTarget" in draft.settings ? (
-              <input
-                type="number"
-                value={draft.settings.depositTarget}
-                onChange={(event) => updateSetting("depositTarget", event.target.value)}
-                style={widgetInputStyle}
-                placeholder="Deposit target"
-              />
-            ) : null}
-            {"housePriceTarget" in draft.settings ? (
-              <input
-                type="number"
-                value={draft.settings.housePriceTarget}
-                onChange={(event) => updateSetting("housePriceTarget", event.target.value)}
-                style={widgetInputStyle}
-                placeholder="House price target"
-              />
-            ) : null}
-            {"plannedHours" in draft.settings ? (
-              <input
-                type="number"
-                value={draft.settings.plannedHours}
-                onChange={(event) => updateSetting("plannedHours", event.target.value)}
-                style={widgetInputStyle}
-                placeholder="Planned hours"
-              />
-            ) : null}
-            {"plannedOvertimeHours" in draft.settings ? (
-              <input
-                type="number"
-                value={draft.settings.plannedOvertimeHours}
-                onChange={(event) => updateSetting("plannedOvertimeHours", event.target.value)}
-                style={widgetInputStyle}
-                placeholder="Planned overtime hours"
-              />
-            ) : null}
-          </div>
-
-          {"useWorkEstimate" in draft.settings ? (
-            <CheckboxRow
-              label="Use work-linked estimate when available"
-              checked={draft.settings.useWorkEstimate !== false}
-              onChange={(checked) => updateSetting("useWorkEstimate", checked)}
-            />
-          ) : null}
-
-          {widgetType === "work-summary" || widgetType === "income" ? (
-            <div style={{ display: "grid", gap: "10px", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-              <input
-                type="number"
-                value={draft.settings.contractedWeeklyHours || ""}
-                onChange={(event) => updateSetting("contractedWeeklyHours", event.target.value)}
-                style={widgetInputStyle}
-                placeholder="Contracted weekly hours (fallback)"
-              />
-              <input
-                type="number"
-                value={draft.settings.hourlyRate || ""}
-                onChange={(event) => updateSetting("hourlyRate", event.target.value)}
-                style={widgetInputStyle}
-                placeholder="Hourly rate override"
-              />
-              <input
-                type="number"
-                value={draft.settings.overtimeRate || ""}
-                onChange={(event) => updateSetting("overtimeRate", event.target.value)}
-                style={widgetInputStyle}
-                placeholder="Overtime rate override"
-              />
-              <input
-                type="number"
-                value={draft.settings.taxRate || ""}
-                onChange={(event) => updateSetting("taxRate", event.target.value)}
-                style={widgetInputStyle}
-                placeholder="Tax % estimate"
-              />
-              <input
-                type="number"
-                value={draft.settings.niRate || ""}
-                onChange={(event) => updateSetting("niRate", event.target.value)}
-                style={widgetInputStyle}
-                placeholder="National insurance % estimate"
-              />
-            </div>
-          ) : null}
-
-          {"includeSavings" in draft.settings ? (
-            <CheckboxRow
-              label="Include savings in net position"
-              checked={draft.settings.includeSavings !== false}
-              onChange={(checked) => updateSetting("includeSavings", checked)}
-            />
-          ) : null}
-          {"includeBills" in draft.settings ? (
-            <CheckboxRow
-              label="Include bills in net position"
-              checked={draft.settings.includeBills !== false}
-              onChange={(checked) => updateSetting("includeBills", checked)}
-            />
-          ) : null}
-          {"includeFuel" in draft.settings ? (
-            <CheckboxRow
-              label="Include fuel in net position"
-              checked={draft.settings.includeFuel !== false}
-              onChange={(checked) => updateSetting("includeFuel", checked)}
-            />
-          ) : null}
-        </Section>
-
-        <Section title="Recurring rules" description="Create monthly recurring categories used by the widget.">
-          {draft.rules.length === 0 ? (
-            <div style={{ fontSize: "0.84rem", color: "var(--text-secondary)" }}>
-              This widget currently uses only direct data and month overrides.
-            </div>
-          ) : (
-            <div style={{ display: "grid", gap: "10px" }}>
-              {draft.rules.map((rule) => (
-                <div key={rule.id} style={{ display: "grid", gap: "8px", borderRadius: "16px", padding: "12px", background: "rgba(var(--accent-purple-rgb), 0.05)" }}>
-                  <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "1.4fr 1fr" }}>
-                    <input
-                      value={rule.category}
-                      onChange={(event) => updateRule(rule.id, "category", event.target.value)}
-                      style={widgetInputStyle}
-                      placeholder="Category"
-                    />
-                    <input
-                      type="number"
-                      value={rule.amount}
-                      onChange={(event) => updateRule(rule.id, "amount", event.target.value)}
-                      style={widgetInputStyle}
-                      placeholder="Monthly amount"
-                    />
-                  </div>
-                  <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "repeat(3, minmax(0, 1fr)) auto" }}>
-                    <input
-                      type="month"
-                      value={rule.startMonth}
-                      onChange={(event) => updateRule(rule.id, "startMonth", event.target.value)}
-                      style={widgetInputStyle}
-                    />
-                    <input
-                      type="month"
-                      value={rule.endMonth || ""}
-                      onChange={(event) => updateRule(rule.id, "endMonth", event.target.value)}
-                      style={widgetInputStyle}
-                    />
-                    <select
-                      value={rule.recurrenceType || "monthly"}
-                      onChange={(event) => updateRule(rule.id, "recurrenceType", event.target.value)}
-                      style={widgetSelectStyle}
-                    >
-                      <option value="monthly">Monthly</option>
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setDraft((current) => ({
-                          ...current,
-                          rules: current.rules.filter((entry) => entry.id !== rule.id),
-                        }))
-                      }
-                      style={widgetGhostButtonStyle}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-          <button
-            type="button"
-            onClick={() =>
-              setDraft((current) => ({
-                ...current,
-                rules: [...current.rules, createPlanningRule({ startMonth: previewMonthKey })],
-              }))
-            }
-            style={{ ...widgetGhostButtonStyle, alignSelf: "flex-start" }}
-          >
-            Add recurring rule
-          </button>
-        </Section>
-
-        {widgetType === "savings" ? (
-          <Section title="Savings accounts" description="Manage named account groupings for the savings widget.">
-            <div style={{ display: "grid", gap: "10px" }}>
-              {(draft.settings.savingsAccounts || []).map((account, index) => (
-                <div key={`account-${index}`} style={{ display: "grid", gap: "8px", gridTemplateColumns: "1fr auto" }}>
-                  <input
-                    value={account?.name || ""}
-                    onChange={(event) =>
-                      updateSetting(
-                        "savingsAccounts",
-                        (draft.settings.savingsAccounts || []).map((entry, entryIndex) =>
-                          entryIndex === index ? { ...entry, name: event.target.value } : entry
-                        )
-                      )
-                    }
-                    style={widgetInputStyle}
-                    placeholder="Account name"
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      updateSetting(
-                        "savingsAccounts",
-                        (draft.settings.savingsAccounts || []).filter((_, entryIndex) => entryIndex !== index)
-                      )
-                    }
-                    style={widgetGhostButtonStyle}
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() =>
-                  updateSetting("savingsAccounts", [
-                    ...(draft.settings.savingsAccounts || []),
-                    { name: "New account", type: "savings", hidden: false },
-                  ])
-                }
-                style={{ ...widgetGhostButtonStyle, alignSelf: "flex-start" }}
-              >
-                Add account
-              </button>
-            </div>
-          </Section>
-        ) : null}
-
-        {widgetType === "fuel" ? (
-          <Section title="Fuel defaults" description="Optional default values for new fuel entries.">
-            <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-              <input
-                type="number"
-                value={draft.settings.defaultFuelBudget || ""}
-                onChange={(event) => updateSetting("defaultFuelBudget", event.target.value)}
-                style={widgetInputStyle}
-                placeholder="Default fuel budget"
-              />
-              <input
-                value={draft.settings.defaultFuelStation || ""}
-                onChange={(event) => updateSetting("defaultFuelStation", event.target.value)}
-                style={widgetInputStyle}
-                placeholder="Default station label"
-              />
-            </div>
-          </Section>
-        ) : null}
-
-        <Section title="Month overrides" description="Set one-off values for specific months.">
-          <div style={{ display: "grid", gap: "10px" }}>
-            {draft.overrides.length === 0 ? (
-              <div style={{ fontSize: "0.84rem", color: "var(--text-secondary)" }}>
-                No one-off overrides yet. Add one when a specific month should differ from the normal recurring plan.
-              </div>
-            ) : (
-              draft.overrides.map((override) => (
-                <div key={override.id} style={{ display: "grid", gap: "8px", borderRadius: "16px", padding: "12px", background: "rgba(var(--accent-purple-rgb), 0.05)" }}>
-                  <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "1.2fr 1fr 1fr auto" }}>
-                    <input
-                      value={override.category}
-                      onChange={(event) => updateOverride(override.id, "category", event.target.value)}
-                      style={widgetInputStyle}
-                      placeholder="Category"
-                    />
-                    <input
-                      type="month"
-                      value={override.monthKey}
-                      onChange={(event) => updateOverride(override.id, "monthKey", event.target.value)}
-                      style={widgetInputStyle}
-                    />
-                    <input
-                      type="number"
-                      value={override.overrideJson?.amount ?? 0}
-                      onChange={(event) => updateOverride(override.id, "amount", event.target.value)}
-                      style={widgetInputStyle}
-                      placeholder="Override amount"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setDraft((current) => ({
-                          ...current,
-                          overrides: current.overrides.filter((entry) => entry.id !== override.id),
-                        }))
-                      }
-                      style={widgetGhostButtonStyle}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                  <textarea
-                    value={override.overrideJson?.note || ""}
-                    onChange={(event) => updateOverride(override.id, "note", event.target.value)}
-                    style={widgetTextAreaStyle}
-                    placeholder="Optional note for this month"
-                  />
-                </div>
-              ))
-            )}
-            <button
-              type="button"
-              onClick={() =>
-                setDraft((current) => ({
-                  ...current,
-                  overrides: [
-                    ...current.overrides,
-                    createPlanningOverride({
-                      monthKey: previewMonthKey,
-                    }),
-                  ],
-                }))
-              }
-              style={{ ...widgetGhostButtonStyle, alignSelf: "flex-start" }}
-            >
-              Add month override
-            </button>
-          </div>
-        </Section>
-
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", flexWrap: "wrap" }}>
-          <button type="button" onClick={onClose} style={widgetGhostButtonStyle}>
+        {/* Actions */}
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", flexWrap: "wrap", paddingTop: "2px" }}>
+          <Button type="button" variant="secondary" size="sm" pill onClick={onClose}>
             Cancel
-          </button>
-          <button type="button" onClick={handleSave} style={widgetButtonStyle}>
-            Save settings
-          </button>
+          </Button>
+          <Button type="button" variant="primary" size="sm" pill onClick={handleSave}>
+            Save
+          </Button>
         </div>
       </div>
     </div>

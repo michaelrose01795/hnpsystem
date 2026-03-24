@@ -8,20 +8,31 @@ export default function TabSwitcher({ activeTab, onChange, personalDisabled = fa
         display: "flex",
         flexDirection: "column",
         gap: "8px",
-        alignSelf: "flex-start",
-        width: "fit-content",
+        alignSelf: "stretch",
+        width: "100%",
         maxWidth: "100%",
       }}
     >
-      <TabGroup
-        ariaLabel="Profile sections"
-        value={activeTab}
-        onChange={onChange}
-        items={[
-          { value: "work", label: "Work" },
-          { value: "personal", label: "Personal" },
-        ]}
-      />
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: "12px",
+          flexWrap: "wrap",
+          width: "100%",
+        }}
+      >
+        <TabGroup
+          ariaLabel="Profile sections"
+          value={activeTab}
+          onChange={onChange}
+          items={[
+            { value: "work", label: "Work" },
+            { value: "personal", label: "Personal" },
+          ]}
+        />
+      </div>
       {personalDisabled ? (
         <div
           style={{

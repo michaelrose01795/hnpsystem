@@ -7,8 +7,17 @@ import { useUser } from "@/context/UserContext";
 import { deriveAccountPermissions } from "@/lib/accounts/permissions";
 import InvoiceTable from "@/components/accounts/InvoiceTable";
 import TransactionTable from "@/components/accounts/TransactionTable";
+import Button from "@/components/ui/Button";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+
 const VIEW_ROLES = ["ADMIN", "OWNER", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER", "GENERAL MANAGER", "SERVICE MANAGER", "WORKSHOP MANAGER", "SALES"];
 const currencyFormatter = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
+const statusBadgeStyles = {
+  Active: { background: "rgba(var(--success-rgb), 0.16)", color: "var(--success-text)" },
+  Frozen: { background: "rgba(var(--warning-rgb), 0.18)", color: "var(--warning-text)" },
+  Closed: { background: "rgba(var(--danger-rgb), 0.16)", color: "var(--danger-dark)" },
+};
+
 export default function ViewAccountPage() {
   const router = useRouter();
   const { accountId } = router.query;
@@ -18,7 +27,7 @@ export default function ViewAccountPage() {
   const [transactions, setTransactions] = useState([]);
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({ type: "", payment_method: "", from: "", to: "" });
+  const [filters, setFilters] = useState({ search: "", type: "", payment_method: "", from: "", to: "" });
   const [invoiceFilters, setInvoiceFilters] = useState({ search: "", status: "", from: "", to: "" });
   useEffect(() => {
     if (!accountId) return;
@@ -69,62 +78,79 @@ export default function ViewAccountPage() {
   const handleInvoicesPage = () => {
     router.push(`/accounts/invoices?accountId=${account?.account_id || ""}`);
   };
+
   const detailCard = (label, value) => (
-    <div className="app-section-card" style={{ flex: "1 1 200px" }}>
-      <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</p>
-      <strong style={{ display: "block", marginTop: "8px", fontSize: "1.4rem", color: "var(--primary)" }}>{value}</strong>
+    <div style={{ background: "var(--surface)", borderRadius: "var(--control-radius)", border: "1px solid rgba(var(--primary-rgb), 0.08)", padding: "16px" }}>
+      <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</p>
+      <strong style={{ display: "block", marginTop: "10px", fontSize: "1.35rem", color: "var(--text-primary)" }}>{value}</strong>
     </div>
   );
+
   return (
     <ProtectedRoute allowedRoles={VIEW_ROLES}>
       <Layout>
+        <DevLayoutSection sectionKey="account-view-page-shell" sectionType="page-shell" shell>
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           {loading && <p style={{ color: "var(--text-secondary)" }}>Loading account…</p>}
           {!loading && account && (
             <>
-              <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", alignItems: "center" }}>
-                <div>
-                  <p style={{ margin: 0, color: "var(--text-secondary)", textTransform: "uppercase", fontSize: "0.8rem", letterSpacing: "0.05em" }}>Account</p>
-                  <h1 style={{ margin: "4px 0", fontSize: "2rem", color: "var(--primary)" }}>{account.billing_name || account.account_id}</h1>
-                  <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                    <span style={{ padding: "4px 12px", borderRadius: "var(--radius-pill)", background: "var(--surface-light)", fontWeight: 600 }}>ID: {account.account_id}</span>
-                    <span style={{ padding: "4px 12px", borderRadius: "var(--radius-pill)", background: "var(--surface-light)", fontWeight: 600 }}>Customer: {account.customer_id}</span>
-                    <span style={{ padding: "4px 12px", borderRadius: "var(--radius-pill)", background: "var(--surface-light)", fontWeight: 600 }}>Type: {account.account_type}</span>
-                    <span style={{ padding: "4px 12px", borderRadius: "var(--radius-pill)", background: account.status === "Frozen" ? "rgba(var(--warning-rgb), 0.18)" : "rgba(var(--success-rgb), 0.18)", color: account.status === "Frozen" ? "var(--warning-text)" : "var(--success-text)", fontWeight: 700 }}>{account.status}</span>
+              <DevLayoutSection as="section" sectionKey="account-view-header" sectionType="content-card" parentKey="account-view-page-shell" className="app-section-card" style={{ display: "flex", flexDirection: "column", gap: "16px", background: "rgba(var(--primary-rgb), 0.08)", border: "1px solid rgba(var(--primary-rgb), 0.16)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px", flexWrap: "wrap" }}>
+                  <div>
+                    <h1 style={{ margin: 0, fontSize: "2rem", color: "var(--text-primary)" }}>{account.billing_name || account.account_id}</h1>
+                  </div>
+                  <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+                    <Button type="button" variant="secondary" onClick={handleTransactionsPage}>Transactions</Button>
+                    <Button type="button" variant="secondary" onClick={handleInvoicesPage}>Invoices</Button>
+                    {permissions.canEditAccount && <Button type="button" variant="secondary" onClick={handleEdit}>Edit</Button>}
+                    {permissions.canFreezeAccount && <Button type="button" onClick={handleFreezeToggle}>{account.status === "Frozen" ? "Unfreeze" : "Freeze"}</Button>}
                   </div>
                 </div>
-                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                  <button type="button" onClick={handleTransactionsPage} style={{ padding: "10px 16px", borderRadius: "var(--radius-sm)", border: "none", background: "var(--surface-light)", fontWeight: 600 }}>Transactions</button>
-                  <button type="button" onClick={handleInvoicesPage} style={{ padding: "10px 16px", borderRadius: "var(--radius-sm)", border: "none", background: "var(--surface-light)", fontWeight: 600 }}>Invoices</button>
-                  {permissions.canEditAccount && <button type="button" onClick={handleEdit} style={{ padding: "10px 18px", borderRadius: "var(--radius-sm)", border: "1px solid var(--primary)", background: "transparent", color: "var(--primary)", fontWeight: 600 }}>Edit</button>}
-                  {permissions.canFreezeAccount && <button type="button" onClick={handleFreezeToggle} style={{ padding: "10px 18px", borderRadius: "var(--radius-sm)", border: "none", background: account.status === "Frozen" ? "var(--surface-light)" : "var(--primary)", color: account.status === "Frozen" ? "var(--text-secondary)" : "white", fontWeight: 700 }}>{account.status === "Frozen" ? "Unfreeze" : "Freeze"}</button>}
+                <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+                  <span className="app-btn app-btn--secondary app-btn--sm" style={{ cursor: "default" }}>ID: {account.account_id}</span>
+                  <span className="app-btn app-btn--secondary app-btn--sm" style={{ cursor: "default" }}>Customer: {account.customer_id || "—"}</span>
+                  <span className="app-btn app-btn--secondary app-btn--sm" style={{ cursor: "default" }}>Type: {account.account_type}</span>
+                  <span className="app-btn app-btn--sm" style={{ cursor: "default", ...(statusBadgeStyles[account.status] || { background: "var(--surface)", color: "var(--text-primary)" }) }}>{account.status}</span>
                 </div>
-              </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
-                {detailCard("Balance", currencyFormatter.format(Number(account.balance || 0)))}
-                {detailCard("Credit Limit", currencyFormatter.format(Number(account.credit_limit || 0)))}
-                {detailCard("Credit Terms", `${account.credit_terms || 0} days`)}
-                {detailCard("Created", account.created_at ? new Date(account.created_at).toLocaleDateString("en-GB") : "—")}
-              </div>
-              <section className="app-section-card">
-                <h2 style={{ margin: 0, color: "var(--primary)", fontSize: "1.25rem" }}>Billing Information</h2>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px", marginTop: "12px" }}>
-                  <div><p style={{ margin: 0, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", fontSize: "0.75rem" }}>Name</p><strong>{account.billing_name || "—"}</strong></div>
-                  <div><p style={{ margin: 0, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", fontSize: "0.75rem" }}>Email</p><strong>{account.billing_email || "—"}</strong></div>
-                  <div><p style={{ margin: 0, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", fontSize: "0.75rem" }}>Phone</p><strong>{account.billing_phone || "—"}</strong></div>
-                  <div><p style={{ margin: 0, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", fontSize: "0.75rem" }}>Address</p><strong>{[account.billing_address_line1, account.billing_address_line2, account.billing_city, account.billing_postcode, account.billing_country].filter(Boolean).join(", ") || "—"}</strong></div>
+              </DevLayoutSection>
+              <DevLayoutSection as="section" sectionKey="account-view-overview-card" sectionType="content-card" parentKey="account-view-page-shell" className="app-section-card" style={{ display: "flex", flexDirection: "column", gap: "18px", background: "rgba(var(--primary-rgb), 0.08)", border: "1px solid rgba(var(--primary-rgb), 0.16)" }}>
+                <DevLayoutSection sectionKey="account-view-metrics-grid" sectionType="content-card" parentKey="account-view-overview-card">
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
+                  {detailCard("Balance", currencyFormatter.format(Number(account.balance || 0)))}
+                  {detailCard("Credit Limit", currencyFormatter.format(Number(account.credit_limit || 0)))}
+                  {detailCard("Credit Terms", `${account.credit_terms || 0} days`)}
+                  {detailCard("Created", account.created_at ? new Date(account.created_at).toLocaleDateString("en-GB") : "—")}
                 </div>
-              </section>
-              <section className="app-section-card" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                <h2 style={{ margin: 0, color: "var(--primary)", fontSize: "1.25rem" }}>Internal Notes</h2>
-                <p style={{ margin: 0, color: "var(--text-secondary)", lineHeight: 1.6 }}>{account.notes || "No notes recorded."}</p>
-              </section>
-              <TransactionTable transactions={transactions} loading={loading} filters={filters} onFilterChange={setFilters} pagination={{ page: 1, pageSize: transactions.length || 1, total: transactions.length || 0 }} onPageChange={handleTransactionsPage} onExport={() => router.push(`/accounts/transactions/${account.account_id}`)} />
-              <InvoiceTable invoices={invoices} filters={invoiceFilters} onFilterChange={setInvoiceFilters} pagination={{ page: 1, pageSize: invoices.length || 1, total: invoices.length || 0 }} onPageChange={handleInvoicesPage} onExport={() => router.push(`/accounts/invoices?accountId=${account.account_id}`)} loading={loading} />
+                </DevLayoutSection>
+                <DevLayoutSection sectionKey="account-view-billing-section" sectionType="content-card" parentKey="account-view-overview-card">
+                <div style={{ display: "flex", flexDirection: "column", gap: "14px", background: "var(--surface)", borderRadius: "var(--control-radius)", border: "1px solid rgba(var(--primary-rgb), 0.08)", padding: "16px" }}>
+                  <h2 style={{ margin: 0, color: "var(--text-primary)", fontSize: "1.2rem" }}>Billing Information</h2>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
+                    <div><p style={{ margin: 0, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.75rem" }}>Name</p><strong style={{ display: "block", marginTop: "6px", color: "var(--text-primary)" }}>{account.billing_name || "—"}</strong></div>
+                    <div><p style={{ margin: 0, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.75rem" }}>Email</p><strong style={{ display: "block", marginTop: "6px", color: "var(--text-primary)" }}>{account.billing_email || "—"}</strong></div>
+                    <div><p style={{ margin: 0, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.75rem" }}>Phone</p><strong style={{ display: "block", marginTop: "6px", color: "var(--text-primary)" }}>{account.billing_phone || "—"}</strong></div>
+                    <div><p style={{ margin: 0, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.75rem" }}>Address</p><strong style={{ display: "block", marginTop: "6px", color: "var(--text-primary)" }}>{[account.billing_address_line1, account.billing_address_line2, account.billing_city, account.billing_postcode, account.billing_country].filter(Boolean).join(", ") || "—"}</strong></div>
+                  </div>
+                </div>
+                </DevLayoutSection>
+                <DevLayoutSection sectionKey="account-view-notes-section" sectionType="content-card" parentKey="account-view-overview-card">
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px", background: "var(--surface)", borderRadius: "var(--control-radius)", border: "1px solid rgba(var(--primary-rgb), 0.08)", padding: "16px" }}>
+                  <h2 style={{ margin: 0, color: "var(--text-primary)", fontSize: "1.2rem" }}>Internal Notes</h2>
+                  <p style={{ margin: 0, color: "var(--text-secondary)", lineHeight: 1.6 }}>{account.notes || "No notes recorded."}</p>
+                </div>
+                </DevLayoutSection>
+              </DevLayoutSection>
+              <DevLayoutSection sectionKey="account-view-transactions" sectionType="data-table" parentKey="account-view-page-shell">
+              <TransactionTable transactions={transactions} loading={loading} filters={filters} onFilterChange={setFilters} pagination={{ page: 1, pageSize: transactions.length || 1, total: transactions.length || 0 }} onPageChange={handleTransactionsPage} onExport={() => router.push(`/accounts/transactions/${account.account_id}`)} accentSurface />
+              </DevLayoutSection>
+              <DevLayoutSection sectionKey="account-view-invoices" sectionType="data-table" parentKey="account-view-page-shell">
+              <InvoiceTable invoices={invoices} filters={invoiceFilters} onFilterChange={setInvoiceFilters} pagination={{ page: 1, pageSize: invoices.length || 1, total: invoices.length || 0 }} onPageChange={handleInvoicesPage} onExport={() => router.push(`/accounts/invoices?accountId=${account.account_id}`)} loading={loading} accentSurface />
+              </DevLayoutSection>
             </>
           )}
           {!loading && !account && <p style={{ color: "var(--danger)" }}>Account not found.</p>}
         </div>
+        </DevLayoutSection>
       </Layout>
     </ProtectedRoute>
   );

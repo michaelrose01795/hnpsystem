@@ -38,10 +38,23 @@ const generateInvoiceNumber = async () => {
   return `${prefix}${String(nextSequence).padStart(5, "0")}`;
 };
 
+const toDateOnly = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toISOString().slice(0, 10);
+};
+
+const addDaysToDateOnly = (value, days = 0) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  date.setUTCDate(date.getUTCDate() + Number(days || 0));
+  return date.toISOString().slice(0, 10);
+};
+
 const fetchJobContext = async (jobId) => {
   const { data: job, error: jobError } = await dbClient
     .from("jobs")
-    .select("id, job_number, customer_id, vehicle_id, account_id, vehicle_reg, vehicle_make_model, milage")
+    .select("id, job_number, customer_id, vehicle_id, account_id, account_number, vehicle_reg, vehicle_make_model, milage, account:account_id(account_id, billing_name, credit_terms)")
     .eq("id", jobId)
     .maybeSingle();
   if (jobError) {
@@ -104,7 +117,10 @@ const fetchJobContext = async (jobId) => {
     mileage: job?.milage || vehicle?.mileage || ""
   });
   return {
-    accountNumber: job?.account_id || null,
+    accountId: job?.account_id || null,
+    accountNumber: job?.account_number || job?.account_id || null,
+    accountLabel: job?.account?.billing_name || job?.account_number || job?.account_id || null,
+    creditTerms: Number(job?.account?.credit_terms || 30) || 30,
     invoiceTo: buildAddress(customer),
     deliverTo: buildAddress(customer),
     vehicleDetails: buildVehicleSnapshot()
@@ -137,9 +153,12 @@ export default async function handler(req, res) {
     const jobContext = await fetchJobContext(jobId); // capture customer and vehicle snapshot
 
     const now = new Date().toISOString();
+    const invoiceDate = toDateOnly(now);
+    const dueDate = addDaysToDateOnly(invoiceDate, jobContext.creditTerms || 30);
     const invoicePayload = {
       job_id: jobId,
       customer_id: customerId || null,
+      account_id: jobContext.accountId || null,
       total_parts: Number(totals.partsTotal ?? 0),
       total_labour: Number(totals.labourTotal ?? 0),
       total_vat: Number(totals.vatTotal ?? 0),
@@ -154,7 +173,8 @@ export default async function handler(req, res) {
       job_number: jobNumber,
       order_number: orderNumber || null,
       account_number: jobContext.accountNumber || null,
-      invoice_date: now,
+      invoice_date: invoiceDate,
+      due_date: dueDate,
       invoice_to: jobContext.invoiceTo,
       deliver_to: jobContext.deliverTo,
       vehicle_details: jobContext.vehicleDetails,

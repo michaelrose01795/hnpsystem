@@ -37,25 +37,132 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { date, start, end } = req.body || {};
-
-    if (!date || !start || !end) {
-      return res.status(400).json({ success: false, message: "date, start, and end fields are required" });
-    }
-
+    const payload = req.body || {};
+    const isBulk = payload.bulk === true;
     const userId = await resolveUserId(req, res);
 
-    // Build full timestamps from date + time
-    const clockIn = `${date}T${start}:00`;
-    const clockOut = `${date}T${end}:00`;
+    // --- Bulk overtime: just total hours, no date/login/logout needed ---
+    if (isBulk) {
+      const totalHours = Number(payload.totalHours ?? 0);
+      if (!(totalHours > 0)) {
+        return res.status(400).json({ success: false, message: "Total hours must be greater than 0." });
+      }
 
-    const startMs = new Date(clockIn).getTime();
-    const endMs = new Date(clockOut).getTime();
-    if (Number.isNaN(startMs) || Number.isNaN(endMs) || endMs <= startMs) {
-      return res.status(400).json({ success: false, message: "End time must be after start time." });
+      const today = new Date().toISOString().slice(0, 10);
+      const bulkNote = payload.note ? `Bulk Overtime - ${payload.note}` : "Bulk Overtime";
+
+      const { data: inserted, error: insertError } = await supabase
+        .from("time_records")
+        .insert({
+          user_id: userId,
+          date: today,
+          clock_in: `${today}T00:00:00`,
+          clock_out: `${today}T00:00:00`,
+          hours_worked: totalHours,
+          break_minutes: 0,
+          notes: bulkNote,
+        })
+        .select("id, user_id, date, clock_in, clock_out, hours_worked, notes")
+        .single();
+
+      if (insertError) {
+        console.error("Failed to insert bulk overtime record:", insertError);
+        return res.status(500).json({ success: false, message: "Failed to save bulk overtime." });
+      }
+
+      // Also insert into overtime_sessions for payroll tracking
+      let period = null;
+      const { data: existingPeriod } = await supabase
+        .from("overtime_periods")
+        .select("*")
+        .order("period_end", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existingPeriod && today >= existingPeriod.period_start && today <= existingPeriod.period_end) {
+        period = existingPeriod;
+      } else {
+        const sessionDate = new Date(today);
+        const { periodStart: pStart, periodEnd: pEnd } = getOvertimePeriodBounds(sessionDate);
+        const { data: created } = await supabase
+          .from("overtime_periods")
+          .insert({ period_start: pStart, period_end: pEnd, status: "open" })
+          .select("*")
+          .single();
+        period = created;
+      }
+
+      if (period) {
+        await supabase.from("overtime_sessions").insert({
+          period_id: period.period_id,
+          user_id: userId,
+          date: today,
+          start_time: null,
+          end_time: null,
+          total_hours: totalHours,
+          approved_by: userId,
+          notes: bulkNote,
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          id: inserted.id,
+          userId: inserted.user_id,
+          date: inserted.date,
+          start: null,
+          end: null,
+          clockIn: null,
+          clockOut: null,
+          totalHours,
+          status: "Overtime",
+          type: "Overtime",
+          notes: bulkNote,
+        },
+      });
     }
 
-    const hoursWorked = Number(((endMs - startMs) / (1000 * 60 * 60)).toFixed(2));
+    // --- Single overtime entry (existing logic) ---
+    const date = payload.date;
+    const start = payload.start || payload.login || null;
+    let end = payload.end || payload.logout || null;
+    let totalHours = Number(payload.totalHours ?? payload.hours ?? 0);
+
+    if (!date || !start) {
+      return res.status(400).json({ success: false, message: "date and login time are required" });
+    }
+
+    if (!end && !(totalHours > 0)) {
+      return res.status(400).json({ success: false, message: "Provide either logout time or total hours." });
+    }
+
+    const clockIn = `${date}T${start}:00`;
+    const startMs = new Date(clockIn).getTime();
+
+    if (Number.isNaN(startMs)) {
+      return res.status(400).json({ success: false, message: "Invalid login time." });
+    }
+
+    let endMs = null;
+    if (end) {
+      endMs = new Date(`${date}T${end}:00`).getTime();
+      if (Number.isNaN(endMs) || endMs <= startMs) {
+        return res.status(400).json({ success: false, message: "Logout time must be after login time." });
+      }
+      totalHours = Number(((endMs - startMs) / (1000 * 60 * 60)).toFixed(2));
+    } else {
+      endMs = startMs + totalHours * 60 * 60 * 1000;
+      const computedEnd = new Date(endMs);
+      end = computedEnd.toTimeString().slice(0, 5);
+      totalHours = Number(totalHours.toFixed(2));
+    }
+
+    if (!(totalHours > 0)) {
+      return res.status(400).json({ success: false, message: "Total hours must be greater than 0." });
+    }
+
+    const clockOut = `${date}T${end}:00`;
 
     // Insert into time_records — same table as regular attendance, tagged as Overtime via notes
     const { data: inserted, error: insertError } = await supabase
@@ -65,7 +172,7 @@ export default async function handler(req, res) {
         date,
         clock_in: clockIn,
         clock_out: clockOut,
-        hours_worked: hoursWorked,
+        hours_worked: totalHours,
         break_minutes: 0,
         notes: "Overtime",
       })
@@ -112,7 +219,7 @@ export default async function handler(req, res) {
           date,
           start_time: start,
           end_time: end,
-          total_hours: hoursWorked,
+          total_hours: totalHours,
           approved_by: userId, // Auto-approved for payroll
           notes: "Overtime - Auto-approved",
         });
@@ -134,6 +241,7 @@ export default async function handler(req, res) {
         clockOut: inserted.clock_out,
         totalHours: Number(inserted.hours_worked || 0),
         status: "Overtime",
+        type: "Overtime",
       },
     });
   } catch (error) {

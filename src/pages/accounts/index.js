@@ -5,12 +5,19 @@ import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useUser } from "@/context/UserContext";
 import AccountTable from "@/components/accounts/AccountTable";
-import AccountSummary from "@/components/accounts/AccountSummary";
+import AccountUpsertModal from "@/components/accounts/AccountUpsertModal";
+import AccountsSettingsModal from "@/components/accounts/AccountsSettingsModal";
 import { ACCOUNT_STATUSES, ACCOUNT_TYPES } from "@/config/accounts";
 import { deriveAccountPermissions } from "@/lib/accounts/permissions";
 import { exportToCsv } from "@/utils/exportUtils";
 import { CalendarField } from "@/components/calendarAPI";
 import { SearchBar } from "@/components/searchBarAPI";
+import DropdownField from "@/components/dropdownAPI/DropdownField";
+import ToolbarRow from "@/components/ui/ToolbarRow";
+import ControlGroup from "@/components/ui/ControlGroup";
+import Button from "@/components/ui/Button";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+
 const ALLOWED_ROLES = [
   "ADMIN",
   "OWNER",
@@ -31,18 +38,37 @@ const defaultFilters = {
   minBalance: "",
   maxBalance: "",
 };
+
+const currencyFormatter = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
+
+const formatShortDate = (value) => {
+  if (!value) return "—";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "—";
+  return parsed.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+};
+
 export default function AccountsListPage() {
   const router = useRouter();
   const { user } = useUser();
   const [accounts, setAccounts] = useState([]);
-  const [summary, setSummary] = useState({});
+  const [linkedInvoices, setLinkedInvoices] = useState([]);
+  const [linkedGoodsIn, setLinkedGoodsIn] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [linkedLoading, setLinkedLoading] = useState(true);
   const [pagination, setPagination] = useState({ page: 1, pageSize: 20, total: 0 });
   const [sortState, setSortState] = useState({ field: "updated_at", direction: "desc" });
   const [filters, setFilters] = useState(defaultFilters);
   const permissions = useMemo(() => deriveAccountPermissions(user?.roles || []), [user]);
   const canCreateAccount = permissions.canCreateAccount;
   const canExport = permissions.canExport;
+
+  useEffect(() => {
+    if (permissions.restrictedAccountTypes?.length) {
+      setFilters((prev) => ({ ...prev, accountType: permissions.restrictedAccountTypes[0] }));
+    }
+  }, [permissions.restrictedAccountTypes]);
+
   const fetchAccounts = useCallback(async () => {
     setLoading(true);
     try {
@@ -65,7 +91,6 @@ export default function AccountsListPage() {
         throw new Error(payload?.message || "Failed to load accounts");
       }
       setAccounts(payload.data || []);
-      setSummary(payload.summary || {});
       setPagination((prev) => ({ ...prev, total: payload.pagination?.total || prev.total }));
     } catch (error) {
       console.error("Failed to load accounts", error);
@@ -73,13 +98,49 @@ export default function AccountsListPage() {
       setLoading(false);
     }
   }, [filters, pagination.page, pagination.pageSize, permissions.restrictedAccountTypes, sortState.direction, sortState.field]);
+
+  const fetchLinkedRecords = useCallback(async () => {
+    setLinkedLoading(true);
+    try {
+      const [invoiceResponse, goodsInResponse] = await Promise.allSettled([
+        fetch("/api/invoices?page=1&pageSize=6"),
+        fetch("/api/parts/goods-in?limit=6"),
+      ]);
+
+      if (invoiceResponse.status === "fulfilled") {
+        const payload = await invoiceResponse.value.json();
+        if (invoiceResponse.value.ok) {
+          setLinkedInvoices(payload.data || []);
+        }
+      }
+
+      if (goodsInResponse.status === "fulfilled") {
+        const payload = await goodsInResponse.value.json();
+        if (goodsInResponse.value.ok) {
+          setLinkedGoodsIn(payload.goodsIn || []);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load linked financial records", error);
+    } finally {
+      setLinkedLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchAccounts();
   }, [fetchAccounts]);
+
+  useEffect(() => {
+    fetchLinkedRecords();
+  }, [fetchLinkedRecords]);
+
   const handleAccountSelect = (account, action) => {
     if (!account) return;
     if (action === "edit") {
-      router.push(`/accounts/edit/${account.account_id}`);
+      const nextQuery = { ...router.query, edit: account.account_id };
+      delete nextQuery.create;
+      router.push({ pathname: "/accounts", query: nextQuery }, undefined, { shallow: true });
       return;
     }
     router.push(`/accounts/view/${account.account_id}`);
@@ -88,97 +149,271 @@ export default function AccountsListPage() {
     if (!canExport || !accounts.length) return;
     exportToCsv("accounts.csv", accounts, ["account_id", "customer_id", "account_type", "status", "balance", "credit_limit", "billing_name", "billing_email"]);
   };
+
+  const openCreateModal = () => {
+    const nextQuery = { ...router.query, create: "1" };
+    delete nextQuery.edit;
+    router.push({ pathname: "/accounts", query: nextQuery }, undefined, { shallow: true });
+  };
+
+  const closeAccountModal = () => {
+    const nextQuery = { ...router.query };
+    delete nextQuery.create;
+    delete nextQuery.edit;
+    router.push({ pathname: "/accounts", query: nextQuery }, undefined, { shallow: true });
+  };
+
+  const openSettingsModal = () => {
+    const nextQuery = { ...router.query, settings: "1" };
+    router.push({ pathname: "/accounts", query: nextQuery }, undefined, { shallow: true });
+  };
+
+  const closeSettingsModal = () => {
+    const nextQuery = { ...router.query };
+    delete nextQuery.settings;
+    router.push({ pathname: "/accounts", query: nextQuery }, undefined, { shallow: true });
+  };
+
+  const modalMode = router.query.edit ? "edit" : "create";
+  const modalAccountId = typeof router.query.edit === "string" ? router.query.edit : "";
+  const isAccountModalOpen = router.query.create === "1" || Boolean(modalAccountId);
+  const isSettingsModalOpen = router.query.settings === "1";
+
+  const handleFilterChange = (name, value) => {
+    setPagination((prev) => ({ ...prev, page: 1 }));
+    setFilters((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleResetFilters = () => {
+    setPagination((prev) => ({ ...prev, page: 1 }));
+    setFilters(defaultFilters);
+  };
+
+  const financeLinks = [
+    {
+      title: "Invoices",
+      description: "Open invoice balances and payment status",
+      value: linkedInvoices.length ? `${linkedInvoices.length} recent refs` : "Review ledger invoices",
+      actionLabel: "Open invoices",
+      onClick: () => router.push("/accounts/invoices"),
+    },
+    {
+      title: "Job Cards",
+      description: "Trace account spend back to workshop jobs",
+      value: linkedInvoices.find((invoice) => invoice.job_number)?.job_number || "Linked by job number",
+      actionLabel: "Open job cards",
+      onClick: () => router.push("/job-cards/view"),
+    },
+    {
+      title: "Parts Orders",
+      description: "Follow order numbers tied to invoiced work",
+      value: linkedInvoices.find((invoice) => invoice.order_number)?.order_number || "Linked by order number",
+      actionLabel: "Open orders",
+      onClick: () => router.push("/parts/create-order"),
+    },
+    {
+      title: "Goods In",
+      description: "Check supplier intake and stock-side value flow",
+      value: linkedGoodsIn[0]?.goods_in_number || "Linked by goods-in reference",
+      actionLabel: "Open goods in",
+      onClick: () => router.push("/parts/goods-in"),
+    },
+  ];
+
   const renderFilters = () => (
-    <div
-      className="app-section-card"
-      style={{
-        display: "flex",
-        flexWrap: "wrap",
-        gap: "12px",
-      }}
-    >
+    <DevLayoutSection as="section" sectionKey="accounts-filter-panel" sectionType="content-card" parentKey="accounts-page-shell" className="app-section-card" style={{ display: "flex", flexDirection: "column", gap: "16px", background: "rgba(var(--primary-rgb), 0.08)", border: "1px solid rgba(var(--primary-rgb), 0.16)" }}>
+      <DevLayoutSection sectionKey="accounts-filter-toolbar" sectionType="filter-row" parentKey="accounts-filter-panel">
+      <ToolbarRow>
       <SearchBar
         name="search"
         placeholder="Search account, customer, or billing"
         value={filters.search}
-        onChange={(event) => setFilters((prev) => ({ ...prev, search: event.target.value }))}
-        onClear={() => setFilters((prev) => ({ ...prev, search: "" }))}
+        onChange={(event) => handleFilterChange("search", event.target.value)}
+        onClear={() => handleFilterChange("search", "")}
         style={{
           flex: "1 1 240px",
+          background: "var(--surface)",
         }}
       />
-      <select
+      <DropdownField
         name="status"
         value={filters.status}
-        onChange={(event) => setFilters((prev) => ({ ...prev, status: event.target.value }))}
-        style={{
-          flex: "0 0 200px",
-          padding: "10px 12px",
-          borderRadius: "var(--radius-pill)",
-          border: "none",
-          background: "var(--surface-light)",
-        }}
-      >
-        <option value="">All Statuses</option>
-        {ACCOUNT_STATUSES.map((status) => (
-          <option key={status} value={status}>{status}</option>
-        ))}
-      </select>
-      <select
+        onChange={(event) => handleFilterChange("status", event.target.value)}
+        placeholder="All statuses"
+        options={[{ label: "All Statuses", value: "", placeholder: true }, ...ACCOUNT_STATUSES.map((status) => ({ label: status, value: status }))]}
+        style={{ flex: "0 0 200px", background: "var(--surface)" }}
+      />
+      <DropdownField
         name="accountType"
         value={filters.accountType}
-        onChange={(event) => setFilters((prev) => ({ ...prev, accountType: event.target.value }))}
-        style={{
-          flex: "0 0 200px",
-          padding: "10px 12px",
-          borderRadius: "var(--radius-pill)",
-          border: "none",
-          background: "var(--surface-light)",
-        }}
-      >
-        <option value="">All Account Types</option>
-        {ACCOUNT_TYPES.map((type) => (
-          <option key={type} value={type}>{type}</option>
-        ))}
-      </select>
+        onChange={(event) => handleFilterChange("accountType", event.target.value)}
+        placeholder="All account types"
+        options={[{ label: "All Account Types", value: "", placeholder: true }, ...ACCOUNT_TYPES.map((type) => ({ label: type, value: type }))]}
+        disabled={Boolean(permissions.restrictedAccountTypes?.length)}
+        style={{ flex: "0 0 220px", background: "var(--surface)" }}
+      />
       <div style={{ flex: "0 0 180px" }}>
-        <CalendarField name="dateFrom" placeholder="From date" value={filters.dateFrom} onChange={(event) => setFilters((prev) => ({ ...prev, dateFrom: event.target.value }))} />
+        <CalendarField name="dateFrom" placeholder="From date" value={filters.dateFrom} onChange={(event) => handleFilterChange("dateFrom", event.target.value)} style={{ background: "var(--surface)" }} />
       </div>
       <div style={{ flex: "0 0 180px" }}>
-        <CalendarField name="dateTo" placeholder="To date" value={filters.dateTo} onChange={(event) => setFilters((prev) => ({ ...prev, dateTo: event.target.value }))} />
+        <CalendarField name="dateTo" placeholder="To date" value={filters.dateTo} onChange={(event) => handleFilterChange("dateTo", event.target.value)} style={{ background: "var(--surface)" }} />
       </div>
-      <input type="number" name="minBalance" value={filters.minBalance} placeholder="Min Balance" onChange={(event) => setFilters((prev) => ({ ...prev, minBalance: event.target.value }))} style={{ flex: "0 0 140px", padding: "10px 12px", borderRadius: "var(--radius-sm)", border: "none", background: "var(--surface-light)" }} />
-      <input type="number" name="maxBalance" value={filters.maxBalance} placeholder="Max Balance" onChange={(event) => setFilters((prev) => ({ ...prev, maxBalance: event.target.value }))} style={{ flex: "0 0 140px", padding: "10px 12px", borderRadius: "var(--radius-sm)", border: "none", background: "var(--surface-light)" }} />
-    </div>
+      <input type="number" name="minBalance" value={filters.minBalance} placeholder="Min balance" onChange={(event) => handleFilterChange("minBalance", event.target.value)} style={{ flex: "0 0 124px", background: "var(--control-bg)" }} />
+      <input type="number" name="maxBalance" value={filters.maxBalance} placeholder="Max balance" onChange={(event) => handleFilterChange("maxBalance", event.target.value)} style={{ flex: "0 0 124px", background: "var(--control-bg)" }} />
+      <Button type="button" variant="secondary" size="sm" onClick={handleResetFilters} style={{ background: "var(--control-bg)", color: "var(--primary)" }}>
+        Clear filters
+      </Button>
+      </ToolbarRow>
+      </DevLayoutSection>
+    </DevLayoutSection>
   );
+
+  const renderLinkedFinance = () => (
+    <DevLayoutSection as="section" sectionKey="accounts-linked-finance" sectionType="content-card" parentKey="accounts-page-shell" widthMode="full" className="app-section-card" style={{ display: "flex", flexDirection: "column", gap: "18px", background: "rgba(var(--primary-rgb), 0.08)", border: "1px solid rgba(var(--primary-rgb), 0.16)" }}>
+      <DevLayoutSection sectionKey="accounts-linked-finance-jump-links" sectionType="toolbar" parentKey="accounts-linked-finance">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px" }}>
+        {financeLinks.map((link) => (
+          <DevLayoutSection
+            key={link.title}
+            sectionKey={`accounts-linked-finance-${link.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+            sectionType="content-card"
+            parentKey="accounts-linked-finance-jump-links"
+            as="article"
+            style={{
+              borderRadius: "var(--control-radius)",
+              border: "1px solid rgba(var(--primary-rgb), 0.08)",
+              background: "var(--surface)",
+              padding: "16px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px",
+            }}
+          >
+            <div>
+              <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.76rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                {link.title}
+              </p>
+              <strong style={{ display: "block", marginTop: "8px", color: "var(--text-primary)", fontSize: "1.05rem" }}>
+                {link.value}
+              </strong>
+            </div>
+            <p style={{ margin: 0, color: "var(--text-secondary)", lineHeight: 1.5, minHeight: "3em" }}>
+              {link.description}
+            </p>
+            <Button type="button" variant="secondary" size="sm" onClick={link.onClick}>
+              {link.actionLabel}
+            </Button>
+          </DevLayoutSection>
+        ))}
+      </div>
+      </DevLayoutSection>
+      <DevLayoutSection sectionKey="accounts-linked-finance-reference-grid" sectionType="content-card" parentKey="accounts-linked-finance">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px" }}>
+        <DevLayoutSection sectionKey="accounts-linked-finance-invoice-refs" sectionType="content-card" parentKey="accounts-linked-finance-reference-grid" as="article" style={{ borderRadius: "var(--control-radius)", border: "1px solid rgba(var(--primary-rgb), 0.08)", background: "var(--surface)", padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+            <h3 style={{ margin: 0, color: "var(--text-primary)", fontSize: "1rem" }}>Recent Invoice References</h3>
+            <Button type="button" variant="ghost" size="xs" onClick={() => router.push("/accounts/invoices")}>
+              All invoices
+            </Button>
+          </div>
+          {linkedLoading && linkedInvoices.length === 0 && <p style={{ margin: 0, color: "var(--text-secondary)" }}>Loading links…</p>}
+          {!linkedLoading && linkedInvoices.length === 0 && <p style={{ margin: 0, color: "var(--text-secondary)" }}>No invoice references available.</p>}
+          {linkedInvoices.map((invoice) => (
+            <div key={invoice.id || invoice.invoice_id} style={{ borderTop: "1px solid rgba(var(--primary-rgb), 0.08)", paddingTop: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "flex-start", flexWrap: "wrap" }}>
+                <div>
+                  <strong style={{ display: "block", color: "var(--text-primary)" }}>{invoice.invoice_number || invoice.invoice_id || "Invoice"}</strong>
+                  <span style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
+                    {invoice.account_id || "No account"} · {currencyFormatter.format(Number(invoice.grand_total || invoice.invoice_total || 0))}
+                  </span>
+                </div>
+                <span style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>{formatShortDate(invoice.due_date || invoice.created_at)}</span>
+              </div>
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                {invoice.job_number && (
+                  <Button type="button" variant="secondary" size="xs" onClick={() => router.push(`/job-cards/${encodeURIComponent(invoice.job_number)}`)}>
+                    Job {invoice.job_number}
+                  </Button>
+                )}
+                {invoice.order_number && (
+                  <Button type="button" variant="secondary" size="xs" onClick={() => router.push(`/parts/create-order/${encodeURIComponent(invoice.order_number)}`)}>
+                    Order {invoice.order_number}
+                  </Button>
+                )}
+                {invoice.invoice_id && (
+                  <Button type="button" variant="ghost" size="xs" onClick={() => router.push(`/accounts/invoices/${encodeURIComponent(invoice.invoice_id)}`)}>
+                    Invoice details
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))}
+        </DevLayoutSection>
+        <DevLayoutSection sectionKey="accounts-linked-finance-goodsin-refs" sectionType="content-card" parentKey="accounts-linked-finance-reference-grid" as="article" style={{ borderRadius: "var(--control-radius)", border: "1px solid rgba(var(--primary-rgb), 0.08)", background: "var(--surface)", padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+            <h3 style={{ margin: 0, color: "var(--text-primary)", fontSize: "1rem" }}>Recent Goods In References</h3>
+            <Button type="button" variant="ghost" size="xs" onClick={() => router.push("/parts/goods-in")}>
+              Goods in
+            </Button>
+          </div>
+          {linkedLoading && linkedGoodsIn.length === 0 && <p style={{ margin: 0, color: "var(--text-secondary)" }}>Loading links…</p>}
+          {!linkedLoading && linkedGoodsIn.length === 0 && <p style={{ margin: 0, color: "var(--text-secondary)" }}>No goods-in references available.</p>}
+          {linkedGoodsIn.map((record) => (
+            <div key={record.id || record.goods_in_number} style={{ borderTop: "1px solid rgba(var(--primary-rgb), 0.08)", paddingTop: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "flex-start", flexWrap: "wrap" }}>
+                <div>
+                  <strong style={{ display: "block", color: "var(--text-primary)" }}>{record.goods_in_number || "Goods in"}</strong>
+                  <span style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
+                    {record.supplier_name || "Unknown supplier"}{record.invoice_number ? ` · Inv ${record.invoice_number}` : ""}
+                  </span>
+                </div>
+                <span style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>{formatShortDate(record.invoice_date || record.created_at)}</span>
+              </div>
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                {record.goods_in_number && (
+                  <Button type="button" variant="secondary" size="xs" onClick={() => router.push(`/parts/goods-in/${encodeURIComponent(record.goods_in_number)}`)}>
+                    {record.goods_in_number}
+                  </Button>
+                )}
+                <Button type="button" variant="ghost" size="xs" onClick={() => router.push("/parts/goods-in")}>
+                  Goods in workspace
+                </Button>
+              </div>
+            </div>
+          ))}
+        </DevLayoutSection>
+      </div>
+      </DevLayoutSection>
+    </DevLayoutSection>
+  );
+
   const handlePageChange = (nextPage) => {
     setPagination((prev) => ({ ...prev, page: Math.max(1, nextPage) }));
   };
+
   const handleSortChange = (nextSort) => {
     setSortState(nextSort);
   };
+
   return (
     <ProtectedRoute allowedRoles={ALLOWED_ROLES}>
       <Layout>
+        <DevLayoutSection sectionKey="accounts-page-shell" sectionType="page-shell" shell>
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
-            <div>
-              <h1 style={{ margin: 0, fontSize: "2rem", color: "var(--primary)" }}></h1>
-              <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.95rem" }}>Full ledger of customer accounts, balances, and billing contacts.</p>
-            </div>
-            <div style={{ display: "flex", gap: "10px" }}>
-              {canExport && (
-                <button type="button" onClick={handleExport} style={{ padding: "10px 16px", borderRadius: "var(--radius-sm)", border: "1px solid var(--primary)", background: "transparent", color: "var(--primary)", fontWeight: 600 }}>Export</button>
-              )}
-              {canCreateAccount && (
-                <button type="button" onClick={() => router.push("/accounts/create")} style={{ padding: "10px 20px", borderRadius: "var(--radius-sm)", border: "none", background: "var(--primary)", color: "white", fontWeight: 700 }}>New Account</button>
-              )}
-            </div>
-          </div>
-          <AccountSummary summary={summary} onRefresh={fetchAccounts} showRefreshButton />
+          <ToolbarRow style={{ justifyContent: "flex-end" }}>
+            <Button type="button" variant="secondary" size="sm" onClick={openSettingsModal}>
+              Accounts Settings
+            </Button>
+          </ToolbarRow>
+          {renderLinkedFinance()}
           {renderFilters()}
-          <AccountTable accounts={accounts} loading={loading} pagination={pagination} onPageChange={handlePageChange} sortState={sortState} onSortChange={handleSortChange} onSelectAccount={handleAccountSelect} />
+          <DevLayoutSection sectionKey="accounts-ledger-table" sectionType="data-table" parentKey="accounts-page-shell">
+            <AccountTable accounts={accounts} loading={loading} pagination={pagination} onPageChange={handlePageChange} sortState={sortState} onSortChange={handleSortChange} onSelectAccount={handleAccountSelect} canExport={canExport} canCreateAccount={canCreateAccount} onExport={handleExport} onCreateAccount={openCreateModal} />
+          </DevLayoutSection>
         </div>
+        <AccountUpsertModal isOpen={isAccountModalOpen} mode={modalMode} accountId={modalAccountId} onClose={closeAccountModal} onSaved={fetchAccounts} />
+        <AccountsSettingsModal isOpen={isSettingsModalOpen} onClose={closeSettingsModal} />
+        </DevLayoutSection>
       </Layout>
     </ProtectedRoute>
   );

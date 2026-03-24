@@ -1,4 +1,6 @@
 import crypto from "crypto";
+import fs from "fs";
+import path from "path";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver";
@@ -242,8 +244,20 @@ function normalisePersonalState(rawState = {}, userId) {
     };
   });
 
+  // v2 → v3 migration: promote financeState from widgetData["net-position"].data
+  // to a top-level field so it has its own canonical location in the state blob
+  let financeState = rawState.financeState || null;
+  if (!financeState && nextWidgetData["net-position"]?.data?.financeState) {
+    financeState = nextWidgetData["net-position"].data.financeState;
+    const { financeState: _promoted, ...restNetPositionData } = nextWidgetData["net-position"].data;
+    nextWidgetData["net-position"] = {
+      ...nextWidgetData["net-position"],
+      data: restNetPositionData,
+    };
+  }
+
   return {
-    version: 2,
+    version: 3,
     widgets,
     widgetData: nextWidgetData,
     collections: {
@@ -254,6 +268,7 @@ function normalisePersonalState(rawState = {}, userId) {
       attachments: Array.isArray(rawState.collections?.attachments) ? rawState.collections.attachments : [],
       savings: rawState.collections?.savings || null,
     },
+    financeState,
     preferences: {
       selectedMonthKey: rawState.preferences?.selectedMonthKey || null,
     },
@@ -459,4 +474,77 @@ export function buildPersonalApiError(res, error, fallbackMessage) {
     success: false,
     message: error?.message || fallbackMessage,
   });
+}
+
+// === Passcode utilities (merged from passcode.js) ===
+
+const PASSCODE_PATTERN = /^\d{4}$/;
+const HASH_PREFIX = "scrypt";
+
+export function isValidPasscode(passcode) {
+  return PASSCODE_PATTERN.test(String(passcode || ""));
+}
+
+export function hashPasscode(passcode) {
+  if (!isValidPasscode(passcode)) {
+    throw new Error("Passcode must be exactly 4 digits.");
+  }
+
+  const salt = crypto.randomBytes(16).toString("hex");
+  const derived = crypto.scryptSync(String(passcode), salt, 64).toString("hex");
+  return `${HASH_PREFIX}$${salt}$${derived}`;
+}
+
+export function verifyPasscode(passcode, storedHash) {
+  if (!isValidPasscode(passcode) || typeof storedHash !== "string") {
+    return false;
+  }
+
+  const [prefix, salt, expectedHash] = storedHash.split("$");
+  if (prefix !== HASH_PREFIX || !salt || !expectedHash) {
+    return false;
+  }
+
+  const actualHash = crypto.scryptSync(String(passcode), salt, 64).toString("hex");
+  const actualBuffer = Buffer.from(actualHash, "hex");
+  const expectedBuffer = Buffer.from(expectedHash, "hex");
+
+  if (actualBuffer.length !== expectedBuffer.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(actualBuffer, expectedBuffer);
+}
+
+// === Personal attachments utilities (merged from personalAttachments.js) ===
+
+const ATTACHMENTS_ROOT = path.join(process.cwd(), "private_uploads", "personal-attachments");
+
+export function ensurePersonalAttachmentsRoot() {
+  fs.mkdirSync(ATTACHMENTS_ROOT, { recursive: true });
+  return ATTACHMENTS_ROOT;
+}
+
+export function sanitiseAttachmentFileName(fileName = "") {
+  return String(fileName || "attachment")
+    .replace(/[^a-zA-Z0-9._-]/g, "_")
+    .replace(/^_+/, "")
+    .slice(0, 180) || "attachment";
+}
+
+export function buildPersonalAttachmentRelativePath(userId, fileName) {
+  const safeName = sanitiseAttachmentFileName(fileName);
+  return path.posix.join(String(userId), `${Date.now()}-${safeName}`);
+}
+
+export function resolvePersonalAttachmentPath(relativePath) {
+  const root = ensurePersonalAttachmentsRoot();
+  const resolvedPath = path.resolve(root, relativePath);
+  const resolvedRoot = path.resolve(root);
+
+  if (!resolvedPath.startsWith(resolvedRoot)) {
+    throw new Error("Invalid personal attachment path.");
+  }
+
+  return resolvedPath;
 }

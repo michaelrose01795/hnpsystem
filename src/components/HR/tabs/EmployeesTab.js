@@ -54,6 +54,7 @@ const SAMPLE_PAYLOAD_FIELD_MAP = {
   "line manager": "lineManagerIds",
   "hourly rate (£)": "hourlyRate",
   "overtime rate (£)": "overtimeRate",
+  "basic salary (£)": "annualSalary",
   "annual salary (£)": "annualSalary",
   "payroll reference": "payrollNumber",
   "national insurance no.": "nationalInsurance",
@@ -120,6 +121,21 @@ const SECTION_LABELS = {
 
 const SECTION_ORDER = ["personal", "employment", "compensation", "system", "address", "emergency"];
 
+function calculateBasicSalary(contractedHours, hourlyRate) {
+  const hours = Number(contractedHours);
+  const rate = Number(hourlyRate);
+  if (!Number.isFinite(hours) || !Number.isFinite(rate)) return "";
+  if (hours < 0 || rate < 0) return "";
+  return (hours * rate).toFixed(2);
+}
+
+function syncDerivedSalary(values = {}) {
+  return {
+    ...values,
+    annualSalary: calculateBasicSalary(values.contractedHours, values.hourlyRate),
+  };
+}
+
 function DirectoryFilters({ filters, setFilters, departments, employmentTypes }) {
   const departmentOptions = departments.map((dept) => ({
     value: dept,
@@ -174,30 +190,31 @@ export default function EmployeesTab() {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
   const [isAddingEmployee, setIsAddingEmployee] = useState(false);
   const [localEmployees, setLocalEmployees] = useState([]);
-  const [newEmployee, setNewEmployee] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    department: "",
-    jobTitle: "",
-    role: "",
-    employmentType: "Full-time",
-    status: "Active",
-    startDate: "",
-    probationEnd: "",
-    contractedHours: 40,
-    lineManagerIds: [],
-    hourlyRate: "",
-    overtimeRate: "",
-    annualSalary: "",
-    overtimeRate: "",
-    keycloakId: "",
-    payrollNumber: "",
-    nationalInsurance: "",
-    emergencyContact: "",
-    address: "",
-  });
+  const [newEmployee, setNewEmployee] = useState(
+    syncDerivedSalary({
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      department: "",
+      jobTitle: "",
+      role: "",
+      employmentType: "Full-time",
+      status: "Active",
+      startDate: "",
+      probationEnd: "",
+      contractedHours: 40,
+      lineManagerIds: [],
+      hourlyRate: "",
+      overtimeRate: "",
+      annualSalary: "",
+      keycloakId: "",
+      payrollNumber: "",
+      nationalInsurance: "",
+      emergencyContact: "",
+      address: "",
+    })
+  );
   const [samplePayload, setSamplePayload] = useState("");
   const [isSavingEmployee, setIsSavingEmployee] = useState(false);
   const [saveError, setSaveError] = useState(null);
@@ -301,41 +318,54 @@ export default function EmployeesTab() {
   }, [employees]);
 
   const resetNewEmployeeForm = () => {
-    setNewEmployee({
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      department: "",
-      jobTitle: "",
-      role: "",
-      employmentType: "Full-time",
-      status: "Active",
-      startDate: "",
-      probationEnd: "",
-      contractedHours: 40,
-      lineManagerIds: [],
-      hourlyRate: "",
-      overtimeRate: "",
-      annualSalary: "",
-      keycloakId: "",
-      payrollNumber: "",
-      nationalInsurance: "",
-      emergencyContact: "",
-      address: "",
-    });
+    setNewEmployee(
+      syncDerivedSalary({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        department: "",
+        jobTitle: "",
+        role: "",
+        employmentType: "Full-time",
+        status: "Active",
+        startDate: "",
+        probationEnd: "",
+        contractedHours: 40,
+        lineManagerIds: [],
+        hourlyRate: "",
+        overtimeRate: "",
+        annualSalary: "",
+        keycloakId: "",
+        payrollNumber: "",
+        nationalInsurance: "",
+        emergencyContact: "",
+        address: "",
+      })
+    );
   };
 
   const updateNewEmployeeField = (field, value) => {
-    setNewEmployee((prev) => ({ ...prev, [field]: value }));
+    setNewEmployee((prev) => syncDerivedSalary({ ...prev, [field]: value }));
   };
 
   const updateEditEmployeeField = (field, value) => {
-    setEditEmployee((prev) => ({ ...prev, [field]: value }));
+    setEditEmployee((prev) => syncDerivedSalary({ ...prev, [field]: value }));
     setEditFieldErrors((prev) => {
-      if (!prev || !prev[field]) return prev;
+      if (!prev) return prev;
       const next = { ...prev };
-      delete next[field];
+      const fieldsToClear = [field];
+      if (field === "contractedHours" || field === "hourlyRate") {
+        fieldsToClear.push("annualSalary");
+      }
+      let changed = false;
+      fieldsToClear.forEach((fieldKey) => {
+        if (next[fieldKey]) {
+          delete next[fieldKey];
+          changed = true;
+        }
+      });
+      if (!changed) return prev;
       return next;
     });
   };
@@ -345,7 +375,7 @@ export default function EmployeesTab() {
     const nameParts = (employee.name || "").trim().split(/\s+/);
     const firstName = nameParts.shift() || "";
     const lastName = nameParts.join(" ");
-    return {
+    return syncDerivedSalary({
       userId: employee.userId || null,
       firstName,
       lastName,
@@ -371,7 +401,7 @@ export default function EmployeesTab() {
       keycloakId: employee.keycloakId || "",
       emergencyContact: employee.emergencyContact || "",
       address: employee.address || "",
-    };
+    });
   };
 
   const upsertLocalEmployee = (employeeRecord) => {
@@ -585,7 +615,7 @@ export default function EmployeesTab() {
       }
     });
     if (Object.keys(updates).length > 0) {
-      setNewEmployee((prev) => ({ ...prev, ...updates }));
+      setNewEmployee((prev) => syncDerivedSalary({ ...prev, ...updates }));
     }
   };
 
@@ -1518,8 +1548,16 @@ function EmployeeDetailsFields({
           <FormField label="Overtime Rate (£)" errorMessage={fieldErrors.overtimeRate}>
             <input type="number" min="0" step="0.01" value={values.overtimeRate} onChange={update("overtimeRate")} style={applyFieldErrorStyle("overtimeRate")} placeholder="23.25" />
           </FormField>
-          <FormField label="Annual Salary (£)" errorMessage={fieldErrors.annualSalary}>
-            <input type="number" min="0" step="100" value={values.annualSalary} onChange={update("annualSalary")} style={applyFieldErrorStyle("annualSalary")} placeholder="32000" />
+          <FormField label="Basic Salary (£)" errorMessage={fieldErrors.annualSalary}>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={values.annualSalary}
+              readOnly
+              style={{ ...applyFieldErrorStyle("annualSalary"), background: "rgba(var(--primary-rgb), 0.06)", cursor: "not-allowed" }}
+              placeholder="Auto-calculated"
+            />
           </FormField>
           <FormField label="Payroll Reference" errorMessage={fieldErrors.payrollNumber}>
             <input type="text" value={values.payrollNumber} onChange={update("payrollNumber")} style={applyFieldErrorStyle("payrollNumber")} placeholder="PAY-001" />
@@ -1956,7 +1994,7 @@ function humanizeFieldLabel(field) {
     contractedHours: "Contracted hours",
     hourlyRate: "Hourly rate",
     overtimeRate: "Overtime rate",
-    annualSalary: "Annual salary",
+    annualSalary: "Basic salary",
     payrollNumber: "Payroll reference",
     nationalInsurance: "National Insurance number",
     keycloakId: "Keycloak User ID",

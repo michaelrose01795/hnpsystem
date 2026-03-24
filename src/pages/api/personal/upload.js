@@ -5,16 +5,14 @@ import fs from "fs";
 import path from "path";
 import {
   buildPersonalApiError,
-  getPersonalState,
-  requirePersonalAccess,
-  savePersonalState,
-} from "@/lib/profile/personalServer";
-import {
   buildPersonalAttachmentRelativePath,
   ensurePersonalAttachmentsRoot,
+  getPersonalState,
+  requirePersonalAccess,
   resolvePersonalAttachmentPath,
   sanitiseAttachmentFileName,
-} from "@/lib/profile/personalAttachments";
+  savePersonalState,
+} from "@/lib/profile/personalServer";
 
 export const config = {
   api: {

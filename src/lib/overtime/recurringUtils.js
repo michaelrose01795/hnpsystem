@@ -6,6 +6,21 @@
 const DAY_SHORT = { 1: "Mon", 2: "Tue", 3: "Wed", 4: "Thu", 5: "Fri", 6: "Sat" }; // short labels
 const DAY_FULL = { 1: "Monday", 2: "Tuesday", 3: "Wednesday", 4: "Thursday", 5: "Friday", 6: "Saturday" }; // full labels
 
+function normalizeRuleGroupLabel(label) {
+  return typeof label === "string" && label.trim() ? label.trim() : null;
+}
+
+function getLegacyGroupKey(rule) {
+  const pt = rule.pattern_type || rule.patternType || "weekly";
+  const wp = rule.week_parity || rule.weekParity || "";
+  const active = rule.active !== false;
+  return `${Number(rule.hours).toFixed(2)}|${pt}|${wp}|${active}`;
+}
+
+export function getRuleGroupKey(rule) {
+  return normalizeRuleGroupLabel(rule?.label) || getLegacyGroupKey(rule);
+}
+
 // ─── Overtime Cycle Helpers ──────────────────────────────────────────────────
 
 // Get the start date (26th) of the overtime cycle containing `date`
@@ -76,9 +91,11 @@ export function groupRulesSmartly(rules) {
   rules.forEach((r) => {
     const pt = r.pattern_type || "weekly";
     const wp = r.week_parity || "";
-    const key = `${Number(r.hours).toFixed(2)}|${pt}|${wp}|${r.active}`; // composite group key
+    const key = getRuleGroupKey(r);
     if (!groups[key]) {
       groups[key] = {
+        key,
+        label: normalizeRuleGroupLabel(r.label),
         hours: Number(r.hours),
         patternType: pt,
         weekParity: r.week_parity || null,
@@ -102,9 +119,7 @@ export function groupRulesSmartly(rules) {
 
 // Build the composite key string for a group (used for editingGroupKey tracking)
 export function getGroupKey(group) {
-  const pt = group.patternType || "weekly";
-  const wp = group.weekParity || "";
-  return `${Number(group.hours).toFixed(2)}|${pt}|${wp}|${group.active}`;
+  return group?.key || normalizeRuleGroupLabel(group?.label) || getLegacyGroupKey(group || {});
 }
 
 // ─── Smart Summary ───────────────────────────────────────────────────────────
@@ -202,9 +217,7 @@ export function detectOverlaps(existingRules, newRule, editingGroupKey = null) {
       if (r.day_of_week !== dow) return false;
       // Exclude rules from the editing group so we don't warn about self-overlap
       if (editingGroupKey) {
-        const rPt = r.pattern_type || "weekly";
-        const rWp = r.week_parity || "";
-        const rKey = `${Number(r.hours).toFixed(2)}|${rPt}|${rWp}|${r.active}`;
+        const rKey = getRuleGroupKey(r);
         if (rKey === editingGroupKey) return false; // skip own group
       }
       return true;

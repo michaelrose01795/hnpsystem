@@ -52,12 +52,12 @@ async function autoCloseStaleRecords(userId) {
 }
 
 // Get user's attendance logs
-async function getUserAttendanceLogs(userId, limit = 50) {
+async function getUserAttendanceLogs(userId, limit = 500) {
   // Auto-close any stale records before fetching
   await autoCloseStaleRecords(userId);
 
   const effectiveEnd = dayjs().format("YYYY-MM-DD");
-  const effectiveStart = dayjs(effectiveEnd).subtract(30, "day").format("YYYY-MM-DD");
+  const effectiveStart = dayjs(effectiveEnd).subtract(365, "day").format("YYYY-MM-DD");
 
   let query = supabase
     .from("time_records")
@@ -91,6 +91,8 @@ async function getUserAttendanceLogs(userId, limit = 50) {
 
   return (data || []).map((record) => {
     const hours = Number(record.hours_worked || 0);
+    const isRecurringOvertime = record.notes === "Overtime - Recurring";
+    const isBulkOvertime = record.notes && record.notes.startsWith("Bulk Overtime");
 
     // Determine if this is a weekend (Saturday=6, Sunday=0)
     const recordDate = new Date(record.date);
@@ -99,7 +101,7 @@ async function getUserAttendanceLogs(userId, limit = 50) {
 
     // Determine type: Overtime (explicitly marked), Weekend, or Weekday
     let type = "Weekday";
-    if (record.notes === "Overtime" || record.notes === "Overtime - Auto-approved") {
+    if (record.notes === "Overtime" || record.notes === "Overtime - Auto-approved" || (record.notes && record.notes.startsWith("Bulk Overtime")) || isRecurringOvertime) {
       type = "Overtime";
     } else if (isWeekend) {
       type = "Weekend";
@@ -115,11 +117,12 @@ async function getUserAttendanceLogs(userId, limit = 50) {
       id: record.id,
       employeeId: userId,
       date: record.date,
-      clockIn: record.clock_in,
-      clockOut: record.clock_out,
+      clockIn: isBulkOvertime ? null : isRecurringOvertime ? "AUTO" : record.clock_in,
+      clockOut: isBulkOvertime ? null : isRecurringOvertime ? "AUTO" : record.clock_out,
       totalHours: hours,
       status, // Legacy field
       type,   // New field: "Weekday", "Weekend", or "Overtime"
+      bulk: isBulkOvertime || false, // Bulk overtime — year-level, not per-month
     };
   });
 }
@@ -162,6 +165,9 @@ async function getUserOvertimeSnapshot(userId) {
     period = created;
   }
 
+  // Fetch ALL overtime sessions for this user (across all periods) so the
+  // personal finance tab can break them down by month for historical views.
+  const cutoffDate = dayjs().subtract(365, "day").format("YYYY-MM-DD");
   const { data, error } = await supabase
     .from("overtime_sessions")
     .select(
@@ -178,8 +184,8 @@ async function getUserOvertimeSnapshot(userId) {
         updated_at
       `
     )
-    .eq("period_id", period.period_id)
     .eq("user_id", userId)
+    .gte("date", cutoffDate)
     .order("date", { ascending: false });
 
   if (error) {
@@ -200,7 +206,9 @@ async function getUserOvertimeSnapshot(userId) {
     updatedAt: session.updated_at,
   }));
 
-  const totalOvertimeHours = sessions.reduce((sum, session) => sum + Number(session.totalHours || 0), 0);
+  // Summary is scoped to the current period for backward compatibility
+  const currentPeriodSessions = sessions.filter((s) => s.periodId === period.period_id);
+  const totalOvertimeHours = currentPeriodSessions.reduce((sum, session) => sum + Number(session.totalHours || 0), 0);
 
   const summary = {
     id: userId,
@@ -261,7 +269,7 @@ async function getUserLeaveBalance(userId, employmentType) {
   };
 }
 
-async function getUserLeaveRequests(userId, limit = 20) {
+async function getUserLeaveRequests(userId, limit = 100) {
   const { data, error } = await supabase
     .from("hr_absences")
     .select("absence_id, type, start_date, end_date, approval_status, notes, created_at")
@@ -482,10 +490,10 @@ export default async function handler(req, res) {
     // Fetch all user-specific data in parallel
     const [profile, attendanceLogs, overtimeSnapshot, leaveBalance, leaveRequests, staffVehicles] = await Promise.all([
       getUserProfile(userId),
-      getUserAttendanceLogs(userId, 50),
+      getUserAttendanceLogs(userId, 500),
       getUserOvertimeSnapshot(userId),
       getUserLeaveBalance(userId, null),
-      getUserLeaveRequests(userId, 20),
+      getUserLeaveRequests(userId, 100),
       getUserStaffVehicles(userId),
     ]);
 

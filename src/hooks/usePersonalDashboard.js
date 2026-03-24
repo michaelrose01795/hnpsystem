@@ -1,8 +1,27 @@
-import { startTransition, useCallback, useEffect, useMemo, useState } from "react";
-import { adaptWorkProfileData } from "@/lib/profile/workDataAdapter";
-import { ensureWidgetDataDefaults } from "@/lib/profile/personalWidgets";
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { adaptWorkProfileData } from "@/lib/profile/personalFinance";
+import {
+  buildDefaultWidgetConfig,
+  ensureWidgetDataDefaults,
+  getNextWidgetPlacement,
+  normaliseWidgetRecord,
+  sanitiseWidgetLayout,
+  sortWidgetsForDisplay,
+} from "@/lib/profile/personalWidgets";
 
 const UNLOCK_STORAGE_KEY = "hnp-personal-unlocked";
+const DASHBOARD_CACHE_KEY = "hnp-personal-dashboard-cache-v3";
+const SAVE_DEBOUNCE_MS = 500;
+
+function generateId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
 
 async function parseJsonResponse(response) {
   const payload = await response.json().catch(() => null);
@@ -15,153 +34,319 @@ async function parseJsonResponse(response) {
   return payload?.data;
 }
 
-function mapDashboardState(personalState = {}) {
-  const widgets = Array.isArray(personalState.widgets) ? personalState.widgets : [];
-  const widgetDataRows = Object.values(personalState.widgetData || {}).map((entry) => ({
-    id: entry?.id || null,
-    widgetType: entry?.widgetType,
-    data: entry?.data || {},
-    updatedAt: entry?.updatedAt || null,
-  }));
-  return {
-    widgets,
-    widgetDataRows,
-    transactions: Array.isArray(personalState.collections?.transactions) ? personalState.collections.transactions : [],
-    bills: Array.isArray(personalState.collections?.bills) ? personalState.collections.bills : [],
-    savings: personalState.collections?.savings || null,
-    goals: Array.isArray(personalState.collections?.goals) ? personalState.collections.goals : [],
-    notes: Array.isArray(personalState.collections?.notes) ? personalState.collections.notes : [],
-    attachments: Array.isArray(personalState.collections?.attachments) ? personalState.collections.attachments : [],
-  };
+function sortWidgets(widgets = []) {
+  return [...widgets].sort(
+    (a, b) =>
+      Number(a?.positionY ?? 0) - Number(b?.positionY ?? 0) ||
+      Number(a?.positionX ?? 0) - Number(b?.positionX ?? 0)
+  );
 }
 
+// --- Session cache ---
+
+function readCachedState() {
+  if (typeof window === "undefined") return null;
+  try {
+    if (window.sessionStorage.getItem(UNLOCK_STORAGE_KEY) !== "1") return null;
+    const raw = window.sessionStorage.getItem(DASHBOARD_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || parsed.cacheVersion !== 1 || !parsed.personalState) return null;
+    return { personalState: parsed.personalState, workProfile: parsed.workProfile || null };
+  } catch (_error) {
+    return null;
+  }
+}
+
+function writeCachedState(personalState, workProfile) {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(
+      DASHBOARD_CACHE_KEY,
+      JSON.stringify({ cacheVersion: 1, savedAt: Date.now(), personalState, workProfile })
+    );
+  } catch (_error) {
+    // Ignore cache write failures.
+  }
+}
+
+function clearCachedState() {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.removeItem(DASHBOARD_CACHE_KEY);
+  } catch (_error) {
+    // Ignore cache clear failures.
+  }
+}
+
+function removeById(list = [], id) {
+  if (!id) return list;
+  return list.filter((entry) => String(entry?.id) !== String(id));
+}
+
+// ============================================================
+// Main hook
+// ============================================================
+
 export default function usePersonalDashboard({ enabled = true } = {}) {
-  const [state, setState] = useState({
-    isInitialising: true,
-    isLoading: false,
-    isSetup: false,
-    isUnlocked: false,
-    widgets: [],
-    widgetDataRows: [],
-    transactions: [],
-    bills: [],
-    savings: null,
-    goals: [],
-    notes: [],
-    attachments: [],
-    workProfile: null,
+  const cached = readCachedState();
+
+  // Core state: the full personal state blob from the server
+  const [personalState, setPersonalState] = useState(cached?.personalState || null);
+  const [workProfile, setWorkProfile] = useState(cached?.workProfile || null);
+  const [meta, setMeta] = useState(() => ({
+    isInitialising: enabled && !cached,
+    isLoading: enabled && Boolean(cached),
+    isSetup: Boolean(cached),
+    isUnlocked: Boolean(cached),
     error: null,
-  });
+  }));
+
+  // --- Save management ---
+  const personalStateRef = useRef(personalState);
+  const saveTimerRef = useRef(null);
+  const hasPendingRef = useRef(false);
+  const isSavingRef = useRef(false);
+  const skipNextSaveRef = useRef(true); // skip save on initial load
+
+  useEffect(() => {
+    personalStateRef.current = personalState;
+  }, [personalState]);
+
+  // --- Request helpers ---
 
   const requestJson = useCallback(async (url, options = {}) => {
     const response = await fetch(url, {
       credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        ...(options.headers || {}),
-      },
+      headers: { "Content-Type": "application/json", ...(options.headers || {}) },
       ...options,
     });
-
     return parseJsonResponse(response);
   }, []);
 
   const requestMultipart = useCallback(async (url, formData) => {
-    const response = await fetch(url, {
-      method: "POST",
-      credentials: "include",
-      body: formData,
-    });
+    const response = await fetch(url, { method: "POST", credentials: "include", body: formData });
     return parseJsonResponse(response);
   }, []);
 
-  const refreshDashboard = useCallback(async () => {
-    if (!enabled) {
-      setState((current) => ({ ...current, isInitialising: false, isLoading: false }));
+  // --- Save to server ---
+
+  const saveToServer = useCallback(async () => {
+    const state = personalStateRef.current;
+    if (!state || isSavingRef.current) return;
+    isSavingRef.current = true;
+    try {
+      await requestJson("/api/personal/state", {
+        method: "PUT",
+        body: JSON.stringify({ state }),
+      });
+      hasPendingRef.current = false;
+    } catch (_error) {
+      // Will retry on next state change.
+    } finally {
+      isSavingRef.current = false;
+    }
+  }, [requestJson]);
+
+  // Debounced save: every time personalState changes (and we're unlocked),
+  // schedule a save. Skip the very first update (which is the server load).
+  useEffect(() => {
+    if (!personalState || !meta.isUnlocked) return;
+    if (skipNextSaveRef.current) {
+      skipNextSaveRef.current = false;
       return;
     }
+    hasPendingRef.current = true;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      saveTimerRef.current = null;
+      void saveToServer();
+    }, SAVE_DEBOUNCE_MS);
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, [personalState, meta.isUnlocked, saveToServer]);
 
-    setState((current) => ({ ...current, isLoading: true, error: null }));
+  // beforeunload: warn user if there are unsaved changes
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handler = (e) => {
+      if (hasPendingRef.current) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
 
-    try {
-      const security = await requestJson("/api/personal/security", { method: "GET" });
+  // Unmount: best-effort save via sendBeacon (POST to /api/personal/state)
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      if (hasPendingRef.current && personalStateRef.current) {
+        try {
+          const blob = new Blob(
+            [JSON.stringify({ state: personalStateRef.current })],
+            { type: "application/json" }
+          );
+          navigator.sendBeacon("/api/personal/state", blob);
+        } catch (_error) {
+          // Best-effort only.
+        }
+      }
+    };
+  }, []);
 
-      if (!security?.isSetup || !security?.isUnlocked) {
+  // Flush: cancel timer and save immediately
+  const flush = useCallback(async () => {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    if (hasPendingRef.current) {
+      await saveToServer();
+    }
+  }, [saveToServer]);
+
+  // --- Refresh from server ---
+
+  const refreshDashboard = useCallback(
+    async ({ silent = false } = {}) => {
+      if (!enabled) {
+        setMeta((current) => ({ ...current, isInitialising: false, isLoading: false }));
+        return;
+      }
+      if (!silent) {
+        setMeta((current) => ({ ...current, isLoading: true, error: null }));
+      }
+      try {
+        const security = await requestJson("/api/personal/security", { method: "GET" });
+
+        if (!security?.isSetup || !security?.isUnlocked) {
+          clearCachedState();
+          startTransition(() => {
+            setPersonalState(null);
+            setMeta({
+              isInitialising: false,
+              isLoading: false,
+              isSetup: Boolean(security?.isSetup),
+              isUnlocked: Boolean(security?.isUnlocked),
+              error: null,
+            });
+          });
+          return;
+        }
+
+        const [serverState, serverWorkProfile] = await Promise.all([
+          requestJson("/api/personal/state", { method: "GET" }),
+          requestJson("/api/profile/me", { method: "GET" }).catch(() => null),
+        ]);
+
+        skipNextSaveRef.current = true;
         startTransition(() => {
-          setState((current) => ({
+          setPersonalState(serverState || null);
+          setWorkProfile(serverWorkProfile || null);
+          setMeta({
+            isInitialising: false,
+            isLoading: false,
+            isSetup: true,
+            isUnlocked: true,
+            error: null,
+          });
+        });
+      } catch (error) {
+        const isLocked = error?.statusCode === 423 || error?.statusCode === 428;
+        if (isLocked) clearCachedState();
+        startTransition(() => {
+          if (isLocked) setPersonalState(null);
+          setMeta((current) => ({
             ...current,
             isInitialising: false,
             isLoading: false,
-            isSetup: Boolean(security?.isSetup),
-            isUnlocked: Boolean(security?.isUnlocked),
-            widgets: [],
-            widgetDataRows: [],
-            transactions: [],
-            bills: [],
-            savings: null,
-            goals: [],
-            notes: [],
-            attachments: [],
-            workProfile: null,
-            error: null,
+            error,
+            isUnlocked: isLocked ? false : current.isUnlocked,
           }));
         });
-        return;
       }
+    },
+    [enabled, requestJson]
+  );
 
-      const [personalState, workProfile] = await Promise.all([
-        requestJson("/api/personal/state", { method: "GET" }),
-        requestJson("/api/profile/me", { method: "GET" }).catch(() => null),
-      ]);
-
-      const mapped = mapDashboardState(personalState);
-
-      startTransition(() => {
-        setState({
-          isInitialising: false,
-          isLoading: false,
-          isSetup: true,
-          isUnlocked: true,
-          ...mapped,
-          workProfile: workProfile || null,
-          error: null,
-        });
-      });
-    } catch (error) {
-      startTransition(() => {
-        setState((current) => ({
-          ...current,
-          isInitialising: false,
-          isLoading: false,
-          error,
-          isUnlocked: error?.statusCode === 423 || error?.statusCode === 428 ? false : current.isUnlocked,
-        }));
-      });
-    }
-  }, [enabled, requestJson]);
-
+  // Initial load
   useEffect(() => {
-    refreshDashboard();
+    void refreshDashboard({ silent: Boolean(cached) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshDashboard]);
 
-  const widgetDataMap = useMemo(() => {
-    const existingMap = state.widgetDataRows.reduce((accumulator, row) => {
-      if (!row?.widgetType) return accumulator;
-      accumulator[row.widgetType] = {
-        id: row.id,
-        widgetType: row.widgetType,
-        data: row.data || {},
-        updatedAt: row.updatedAt || null,
-      };
-      return accumulator;
-    }, {});
-    return ensureWidgetDataDefaults(
-      state.widgets.map((widget) => widget.widgetType),
-      existingMap
-    );
-  }, [state.widgetDataRows, state.widgets]);
+  // Focus / visibility: flush pending changes then refresh
+  useEffect(() => {
+    if (!enabled || typeof window === "undefined") return;
+    const onVisibilityOrFocus = async () => {
+      if (document.visibilityState === "visible") {
+        await flush();
+        void refreshDashboard({ silent: true });
+      }
+    };
+    window.addEventListener("focus", onVisibilityOrFocus);
+    document.addEventListener("visibilitychange", onVisibilityOrFocus);
+    return () => {
+      window.removeEventListener("focus", onVisibilityOrFocus);
+      document.removeEventListener("visibilitychange", onVisibilityOrFocus);
+    };
+  }, [enabled, flush, refreshDashboard]);
 
-  const workData = useMemo(() => adaptWorkProfileData(state.workProfile || {}), [state.workProfile]);
+  // Session cache: write whenever unlocked state changes
+  useEffect(() => {
+    if (!meta.isUnlocked || !personalState) return;
+    writeCachedState(personalState, workProfile);
+  }, [meta.isUnlocked, personalState, workProfile]);
+
+  // ============================================================
+  // Core state updater — every mutation flows through here
+  // ============================================================
+
+  const updateState = useCallback((updater) => {
+    setPersonalState((current) => {
+      if (!current) return current;
+      const next = typeof updater === "function" ? updater(current) : updater;
+      return { ...next, updatedAt: new Date().toISOString() };
+    });
+  }, []);
+
+  // ============================================================
+  // Derived views
+  // ============================================================
+
+  const widgets = useMemo(
+    () => sortWidgets(personalState?.widgets || []),
+    [personalState?.widgets]
+  );
+
+  const widgetDataMap = useMemo(() => {
+    const raw = personalState?.widgetData || {};
+    return ensureWidgetDataDefaults(
+      (personalState?.widgets || []).map((w) => w.widgetType),
+      raw
+    );
+  }, [personalState?.widgetData, personalState?.widgets]);
+
+  const workData = useMemo(
+    () => adaptWorkProfileData(workProfile || {}),
+    [workProfile]
+  );
+
+  const transactions = personalState?.collections?.transactions || [];
+  const bills = personalState?.collections?.bills || [];
+  const savings = personalState?.collections?.savings || null;
+  const goals = personalState?.collections?.goals || [];
+  const notes = personalState?.collections?.notes || [];
+  const attachments = personalState?.collections?.attachments || [];
+  const financeState = personalState?.financeState || null;
+
+  // ============================================================
+  // Auth (these still use the security API endpoint)
+  // ============================================================
 
   const setupPasscode = useCallback(
     async ({ passcode, confirmPasscode }) => {
@@ -170,7 +355,7 @@ export default function usePersonalDashboard({ enabled = true } = {}) {
         body: JSON.stringify({ action: "setup", passcode, confirmPasscode }),
       });
       if (typeof window !== "undefined") window.sessionStorage.setItem(UNLOCK_STORAGE_KEY, "1");
-      await refreshDashboard();
+      await refreshDashboard({ silent: true });
     },
     [refreshDashboard, requestJson]
   );
@@ -182,116 +367,402 @@ export default function usePersonalDashboard({ enabled = true } = {}) {
         body: JSON.stringify({ action: "unlock", passcode }),
       });
       if (typeof window !== "undefined") window.sessionStorage.setItem(UNLOCK_STORAGE_KEY, "1");
-      await refreshDashboard();
+      await refreshDashboard({ silent: true });
     },
     [refreshDashboard, requestJson]
   );
 
   const lock = useCallback(async () => {
-    await requestJson("/api/personal/security", { method: "POST", body: JSON.stringify({ action: "lock" }) });
+    await flush();
+    await requestJson("/api/personal/security", {
+      method: "POST",
+      body: JSON.stringify({ action: "lock" }),
+    });
     if (typeof window !== "undefined") window.sessionStorage.removeItem(UNLOCK_STORAGE_KEY);
-    await refreshDashboard();
-  }, [refreshDashboard, requestJson]);
+    clearCachedState();
+    skipNextSaveRef.current = true;
+    setPersonalState(null);
+    setMeta((current) => ({ ...current, isSetup: true, isUnlocked: false }));
+  }, [flush, requestJson]);
 
   const resetPasscode = useCallback(async () => {
-    await requestJson("/api/personal/security", { method: "POST", body: JSON.stringify({ action: "reset" }) });
+    await flush();
+    await requestJson("/api/personal/security", {
+      method: "POST",
+      body: JSON.stringify({ action: "reset" }),
+    });
     if (typeof window !== "undefined") window.sessionStorage.removeItem(UNLOCK_STORAGE_KEY);
-    await refreshDashboard();
-  }, [refreshDashboard, requestJson]);
+    clearCachedState();
+    skipNextSaveRef.current = true;
+    setPersonalState(null);
+    setMeta((current) => ({ ...current, isSetup: false, isUnlocked: false }));
+  }, [flush, requestJson]);
+
+  // ============================================================
+  // Widget mutations (all update local state only — debounce saves)
+  // ============================================================
 
   const addWidget = useCallback(
-    async (widgetType) => {
-      const widget = await requestJson("/api/personal/widgets", { method: "POST", body: JSON.stringify({ widgetType }) });
-      await refreshDashboard();
-      return widget;
-    },
-    [refreshDashboard, requestJson]
-  );
+    (widgetType) => {
+      updateState((current) => {
+        const currentWidgets = current.widgets || [];
+        const existing = currentWidgets.find((w) => w.widgetType === widgetType);
+        const allowMultiple = widgetType === "custom";
 
-  const updateWidget = useCallback(
-    async (id, changes) => {
-      const widget = await requestJson("/api/personal/widgets", { method: "PATCH", body: JSON.stringify({ id, ...changes }) });
-      await refreshDashboard();
-      return widget;
-    },
-    [refreshDashboard, requestJson]
-  );
+        if (!allowMultiple && existing?.id && existing.isVisible !== false) {
+          return current;
+        }
 
-  const saveWidgets = useCallback(
-    async (widgets) => {
-      const savedWidgets = await requestJson("/api/personal/widgets", { method: "PUT", body: JSON.stringify({ widgets }) });
-      await refreshDashboard();
-      return savedWidgets;
+        let nextWidgets;
+        if (!allowMultiple && existing?.id) {
+          const placement = getNextWidgetPlacement(currentWidgets);
+          nextWidgets = currentWidgets.map((w) =>
+            w.id === existing.id ? { ...w, isVisible: true, ...placement } : w
+          );
+        } else {
+          const placement = getNextWidgetPlacement(currentWidgets);
+          const customCount = currentWidgets.filter((w) => w.widgetType === "custom").length;
+          const newWidget = normaliseWidgetRecord({
+            id: generateId(),
+            widget_type: widgetType,
+            is_visible: true,
+            position_x: placement.positionX,
+            position_y: placement.positionY,
+            width: placement.width,
+            height: placement.height,
+            config_json:
+              widgetType === "custom"
+                ? { ...buildDefaultWidgetConfig(widgetType), title: `Custom widget ${customCount + 1}` }
+                : buildDefaultWidgetConfig(widgetType),
+            updated_at: new Date().toISOString(),
+          });
+          nextWidgets = [...currentWidgets, newWidget];
+        }
+
+        return { ...current, widgets: sortWidgetsForDisplay(sanitiseWidgetLayout(nextWidgets)) };
+      });
     },
-    [refreshDashboard, requestJson]
+    [updateState]
   );
 
   const removeWidget = useCallback(
-    async (id) => {
-      await requestJson("/api/personal/widgets", { method: "DELETE", body: JSON.stringify({ id }) });
-      await refreshDashboard();
+    (id) => {
+      updateState((current) => ({
+        ...current,
+        widgets: (current.widgets || []).map((w) =>
+          String(w.id) === String(id) ? { ...w, isVisible: false } : w
+        ),
+      }));
     },
-    [refreshDashboard, requestJson]
+    [updateState]
   );
+
+  const updateWidget = useCallback(
+    (id, changes) => {
+      updateState((current) => ({
+        ...current,
+        widgets: (current.widgets || []).map((w) =>
+          String(w.id) === String(id)
+            ? normaliseWidgetRecord({ ...w, ...changes, updatedAt: new Date().toISOString() })
+            : w
+        ),
+      }));
+    },
+    [updateState]
+  );
+
+  const saveWidgets = useCallback(
+    (nextWidgets) => {
+      updateState((current) => ({
+        ...current,
+        widgets: sortWidgetsForDisplay(
+          sanitiseWidgetLayout(nextWidgets.map((w, i) => normaliseWidgetRecord(w, i)))
+        ),
+      }));
+    },
+    [updateState]
+  );
+
+  // ============================================================
+  // Widget data mutations
+  // ============================================================
 
   const saveWidgetData = useCallback(
-    async (widgetType, data) => {
-      const savedRow = await requestJson("/api/personal/widget-data", { method: "PUT", body: JSON.stringify({ widgetType, data }) });
-      await refreshDashboard();
-      return savedRow;
+    (widgetType, data) => {
+      updateState((current) => ({
+        ...current,
+        widgetData: {
+          ...(current.widgetData || {}),
+          [widgetType]: {
+            ...(current.widgetData?.[widgetType] || {}),
+            widgetType,
+            data: data && typeof data === "object" ? data : {},
+            updatedAt: new Date().toISOString(),
+          },
+        },
+      }));
     },
-    [refreshDashboard, requestJson]
+    [updateState]
   );
 
-  const mutateCollection = useCallback(
-    async ({ url, method, payload }) => {
-      const data = await requestJson(url, { method, body: method === "GET" ? undefined : JSON.stringify(payload || {}) });
-      await refreshDashboard();
-      return data;
+  // ============================================================
+  // Finance state mutation
+  // ============================================================
+
+  const updateFinanceState = useCallback(
+    (updater) => {
+      updateState((current) => ({
+        ...current,
+        financeState: typeof updater === "function" ? updater(current.financeState) : updater,
+      }));
     },
-    [refreshDashboard, requestJson]
+    [updateState]
   );
+
+  // ============================================================
+  // Collection mutations
+  // ============================================================
+
+  const updateCollections = useCallback(
+    (updater) => {
+      updateState((current) => ({
+        ...current,
+        collections: typeof updater === "function" ? updater(current.collections || {}) : updater,
+      }));
+    },
+    [updateState]
+  );
+
+  const createTransaction = useCallback(
+    (payload) => {
+      const item = {
+        id: generateId(),
+        type: "expense",
+        category: "General",
+        amount: 0,
+        date: new Date().toISOString().split("T")[0],
+        isRecurring: false,
+        notes: "",
+        ...payload,
+      };
+      updateCollections((c) => ({ ...c, transactions: [item, ...(c.transactions || [])] }));
+      return item;
+    },
+    [updateCollections]
+  );
+
+  const updateTransaction = useCallback(
+    (payload) => {
+      if (!payload?.id) return;
+      updateCollections((c) => ({
+        ...c,
+        transactions: (c.transactions || []).map((t) =>
+          String(t.id) === String(payload.id) ? { ...t, ...payload } : t
+        ),
+      }));
+    },
+    [updateCollections]
+  );
+
+  const deleteTransaction = useCallback(
+    (id) => {
+      updateCollections((c) => ({ ...c, transactions: removeById(c.transactions, id) }));
+    },
+    [updateCollections]
+  );
+
+  const createBill = useCallback(
+    (payload) => {
+      const item = {
+        id: generateId(),
+        name: "Bill",
+        amount: 0,
+        dueDay: 1,
+        isRecurring: true,
+        ...payload,
+      };
+      updateCollections((c) => ({ ...c, bills: [...(c.bills || []), item] }));
+      return item;
+    },
+    [updateCollections]
+  );
+
+  const updateBill = useCallback(
+    (payload) => {
+      if (!payload?.id) return;
+      updateCollections((c) => ({
+        ...c,
+        bills: (c.bills || []).map((b) =>
+          String(b.id) === String(payload.id) ? { ...b, ...payload } : b
+        ),
+      }));
+    },
+    [updateCollections]
+  );
+
+  const deleteBill = useCallback(
+    (id) => {
+      updateCollections((c) => ({ ...c, bills: removeById(c.bills, id) }));
+    },
+    [updateCollections]
+  );
+
+  const saveSavings = useCallback(
+    (payload) => {
+      updateCollections((c) => ({ ...c, savings: { ...(c.savings || {}), ...payload } }));
+    },
+    [updateCollections]
+  );
+
+  const clearSavings = useCallback(() => {
+    updateCollections((c) => ({ ...c, savings: null }));
+  }, [updateCollections]);
+
+  const createGoal = useCallback(
+    (payload) => {
+      const item = { id: generateId(), type: "custom", target: 0, current: 0, deadline: null, ...payload };
+      updateCollections((c) => ({ ...c, goals: [...(c.goals || []), item] }));
+      return item;
+    },
+    [updateCollections]
+  );
+
+  const updateGoal = useCallback(
+    (payload) => {
+      if (!payload?.id) return;
+      updateCollections((c) => ({
+        ...c,
+        goals: (c.goals || []).map((g) =>
+          String(g.id) === String(payload.id) ? { ...g, ...payload } : g
+        ),
+      }));
+    },
+    [updateCollections]
+  );
+
+  const deleteGoal = useCallback(
+    (id) => {
+      updateCollections((c) => ({ ...c, goals: removeById(c.goals, id) }));
+    },
+    [updateCollections]
+  );
+
+  const createNote = useCallback(
+    (payload) => {
+      const item = { id: generateId(), content: "", createdAt: new Date().toISOString(), ...payload };
+      updateCollections((c) => ({ ...c, notes: [item, ...(c.notes || [])] }));
+      return item;
+    },
+    [updateCollections]
+  );
+
+  const updateNote = useCallback(
+    (payload) => {
+      if (!payload?.id) return;
+      updateCollections((c) => ({
+        ...c,
+        notes: (c.notes || []).map((n) =>
+          String(n.id) === String(payload.id)
+            ? { ...n, ...payload, updatedAt: new Date().toISOString() }
+            : n
+        ),
+      }));
+    },
+    [updateCollections]
+  );
+
+  const deleteNote = useCallback(
+    (id) => {
+      updateCollections((c) => ({ ...c, notes: removeById(c.notes, id) }));
+    },
+    [updateCollections]
+  );
+
+  // ============================================================
+  // File operations (still use server endpoints for file I/O)
+  // Flush pending state first to avoid race conditions, then
+  // let the endpoint update the state blob, then refresh.
+  // ============================================================
 
   const uploadAttachment = useCallback(
     async (file) => {
+      await flush();
       const formData = new FormData();
       formData.append("file", file);
       const data = await requestMultipart("/api/personal/upload", formData);
-      await refreshDashboard();
+      skipNextSaveRef.current = true;
+      await refreshDashboard({ silent: true });
       return data;
     },
-    [refreshDashboard, requestMultipart]
+    [flush, requestMultipart, refreshDashboard]
   );
 
+  const deleteAttachment = useCallback(
+    async (id) => {
+      await flush();
+      await requestJson("/api/personal/attachments", {
+        method: "DELETE",
+        body: JSON.stringify({ id }),
+      });
+      skipNextSaveRef.current = true;
+      await refreshDashboard({ silent: true });
+    },
+    [flush, requestJson, refreshDashboard]
+  );
+
+  // ============================================================
+  // Return
+  // ============================================================
+
   return {
-    ...state,
+    isInitialising: meta.isInitialising,
+    isLoading: meta.isLoading,
+    isSetup: meta.isSetup,
+    isUnlocked: meta.isUnlocked,
+    error: meta.error,
+
+    widgets,
     widgetDataMap,
     workData,
+    transactions,
+    bills,
+    savings,
+    goals,
+    notes,
+    attachments,
+    financeState,
+
     refreshDashboard,
+    flush,
+
     setupPasscode,
     unlock,
     lock,
     resetPasscode,
+
     addWidget,
+    removeWidget,
     updateWidget,
     saveWidgets,
-    removeWidget,
     saveWidgetData,
+
+    updateFinanceState,
+
+    createTransaction,
+    updateTransaction,
+    deleteTransaction,
+    createBill,
+    updateBill,
+    deleteBill,
+    saveSavings,
+    clearSavings,
+    createGoal,
+    updateGoal,
+    deleteGoal,
+    createNote,
+    updateNote,
+    deleteNote,
     uploadAttachment,
-    createTransaction: (payload) => mutateCollection({ url: "/api/personal/transactions", method: "POST", payload }),
-    updateTransaction: (payload) => mutateCollection({ url: "/api/personal/transactions", method: "PUT", payload }),
-    deleteTransaction: (id) => mutateCollection({ url: "/api/personal/transactions", method: "DELETE", payload: { id } }),
-    createBill: (payload) => mutateCollection({ url: "/api/personal/bills", method: "POST", payload }),
-    updateBill: (payload) => mutateCollection({ url: "/api/personal/bills", method: "PUT", payload }),
-    deleteBill: (id) => mutateCollection({ url: "/api/personal/bills", method: "DELETE", payload: { id } }),
-    saveSavings: (payload) => mutateCollection({ url: "/api/personal/savings", method: "PUT", payload }),
-    clearSavings: () => mutateCollection({ url: "/api/personal/savings", method: "DELETE", payload: {} }),
-    createGoal: (payload) => mutateCollection({ url: "/api/personal/goals", method: "POST", payload }),
-    updateGoal: (payload) => mutateCollection({ url: "/api/personal/goals", method: "PUT", payload }),
-    deleteGoal: (id) => mutateCollection({ url: "/api/personal/goals", method: "DELETE", payload: { id } }),
-    createNote: (payload) => mutateCollection({ url: "/api/personal/notes", method: "POST", payload }),
-    updateNote: (payload) => mutateCollection({ url: "/api/personal/notes", method: "PUT", payload }),
-    deleteNote: (id) => mutateCollection({ url: "/api/personal/notes", method: "DELETE", payload: { id } }),
-    deleteAttachment: (id) => mutateCollection({ url: "/api/personal/attachments", method: "DELETE", payload: { id } }),
+    deleteAttachment,
   };
 }

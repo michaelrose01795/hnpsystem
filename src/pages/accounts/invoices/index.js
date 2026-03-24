@@ -4,6 +4,8 @@ import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import InvoiceTable from "@/components/accounts/InvoiceTable";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import Button from "@/components/ui/Button";
 import { useUser } from "@/context/UserContext";
 import { deriveAccountPermissions } from "@/lib/accounts/permissions";
 import { exportToCsv } from "@/utils/exportUtils";
@@ -61,19 +63,36 @@ export default function InvoicesPage() {
   return (
     <ProtectedRoute allowedRoles={INVOICE_ROLES}>
       <Layout>
-        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", alignItems: "center" }}>
-            <div>
-              <h1 style={{ margin: 0, fontSize: "2rem", color: "var(--primary)" }}></h1>
-              <p style={{ margin: "4px 0 0", color: "var(--text-secondary)", fontSize: "0.95rem" }}>Search invoices, filter by status, and review overdue balances.</p>
-            </div>
-            <div style={{ display: "flex", gap: "10px" }}>
-              <button type="button" onClick={handleExport} style={{ padding: "10px 18px", borderRadius: "var(--radius-sm)", border: "1px solid var(--primary)", background: "transparent", color: "var(--primary)", fontWeight: 600 }}>Export</button>
-              <button type="button" onClick={() => router.push("/accounts")} style={{ padding: "10px 16px", borderRadius: "var(--radius-sm)", border: "none", background: "var(--surface-light)", fontWeight: 600 }}>Accounts</button>
-            </div>
+        <DevLayoutSection sectionKey="accounts-invoices-page-shell" sectionType="page-shell" shell>
+          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <DevLayoutSection
+              as="div"
+              sectionKey="accounts-invoices-header-actions"
+              sectionType="toolbar"
+              parentKey="accounts-invoices-page-shell"
+              style={{ display: "flex", justifyContent: "flex-end", gap: "10px", flexWrap: "wrap", alignItems: "center" }}
+            >
+              <Button type="button" variant="secondary" onClick={handleExport}>
+                Export
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => router.push("/accounts")}
+                style={{
+                  background: "rgba(var(--primary-rgb), 0.12)",
+                  borderColor: "rgba(var(--primary-rgb), 0.28)",
+                  color: "var(--primary-dark)",
+                }}
+              >
+                Accounts
+              </Button>
+            </DevLayoutSection>
+            <DevLayoutSection sectionKey="accounts-invoices-table" sectionType="data-table" parentKey="accounts-invoices-page-shell">
+              <InvoiceTable invoices={invoices} filters={filters} onFilterChange={setFilters} pagination={pagination} onPageChange={handlePageChange} onExport={handleExport} loading={loading} accentSurface />
+            </DevLayoutSection>
           </div>
-          <InvoiceTable invoices={invoices} filters={filters} onFilterChange={setFilters} pagination={pagination} onPageChange={handlePageChange} onExport={handleExport} loading={loading} />
-        </div>
+        </DevLayoutSection>
       </Layout>
     </ProtectedRoute>
   );

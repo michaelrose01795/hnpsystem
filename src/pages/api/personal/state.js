@@ -14,7 +14,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, data: state });
     }
 
-    if (req.method === "PUT") {
+    if (req.method === "PUT" || req.method === "POST") {
       const state = req.body?.state;
       if (!state || typeof state !== "object") {
         return res.status(400).json({ success: false, message: "state object is required." });
@@ -23,7 +23,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, data: saved?.state_json || state });
     }
 
-    res.setHeader("Allow", ["GET", "PUT"]);
+    res.setHeader("Allow", ["GET", "PUT", "POST"]);
     return res.status(405).json({ success: false, message: "Method not allowed" });
   } catch (error) {
     return buildPersonalApiError(res, error, "Failed to handle personal state request.");

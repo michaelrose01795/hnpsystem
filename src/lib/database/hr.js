@@ -40,6 +40,13 @@ const parseInterval = (value) => { // Normalise renewal interval inputs.
   return Number.isNaN(numeric) ? null : numeric; // Return null on failure else parsed integer.
 }; // End parseInterval helper.
 
+const calculateBasicSalary = (contractedHours, hourlyRate) => {
+  const hours = Number(contractedHours);
+  const rate = Number(hourlyRate);
+  if (!Number.isFinite(hours) || !Number.isFinite(rate)) return null;
+  return Number((hours * rate).toFixed(2));
+};
+
 
 export async function listTrainingCourses() { // Fetch all training courses sorted by creation date.
   const { data, error } = await adminDb // Query using the service client.
@@ -189,6 +196,8 @@ export async function getAttendanceLogs({ startDate, endDate, limit = DEFAULT_AT
   return (data || []).map((record) => {
     const employee = formatEmployee(record.user);
     const hours = Number(record.hours_worked || 0);
+    const isRecurringOvertime = record.notes === "Overtime - Recurring";
+    const isBulkOvertime = record.notes && record.notes.startsWith("Bulk Overtime");
 
     // Determine if this is a weekend (Saturday=6, Sunday=0)
     const recordDate = new Date(record.date);
@@ -197,7 +206,7 @@ export async function getAttendanceLogs({ startDate, endDate, limit = DEFAULT_AT
 
     // Determine type: Overtime (explicitly marked), Weekend, or Weekday
     let type = "Weekday";
-    if (record.notes === "Overtime" || record.notes === "Overtime - Auto-approved") {
+    if (record.notes === "Overtime" || record.notes === "Overtime - Auto-approved" || isBulkOvertime || isRecurringOvertime) {
       type = "Overtime";
     } else if (isWeekend) {
       type = "Weekend";
@@ -214,11 +223,12 @@ export async function getAttendanceLogs({ startDate, endDate, limit = DEFAULT_AT
       employeeId: employee.name,
       employeeName: employee.name,
       date: record.date,
-      clockIn: record.clock_in,
-      clockOut: record.clock_out,
+      clockIn: isBulkOvertime ? null : isRecurringOvertime ? "AUTO" : record.clock_in,
+      clockOut: isBulkOvertime ? null : isRecurringOvertime ? "AUTO" : record.clock_out,
       totalHours: hours,
       status, // Legacy field
       type,   // New field: "Weekday", "Weekend", or "Overtime"
+      bulk: isBulkOvertime || false, // Bulk overtime — year-level, not per-month
     };
   });
 }
@@ -910,7 +920,10 @@ export async function getEmployeeDirectory() {
       contractedHours: contractedHours !== null ? Number(contractedHours) : 40,
       hourlyRate: hourlyRate !== null && hourlyRate !== undefined ? Number(hourlyRate) : 0,
       overtimeRate: overtimeRate !== null && overtimeRate !== undefined ? Number(overtimeRate) : null,
-      annualSalary: annualSalary !== null && annualSalary !== undefined ? Number(annualSalary) : null,
+      annualSalary:
+        annualSalary !== null && annualSalary !== undefined
+          ? Number(annualSalary)
+          : calculateBasicSalary(contractedHours, hourlyRate),
       payrollNumber: payrollReference || "",
       nationalInsurance: nationalInsuranceNumber || "",
       keycloakId: keycloakUserId || (user.email ? `kc-${user.email.split("@")[0]}` : `kc-${userId}`),

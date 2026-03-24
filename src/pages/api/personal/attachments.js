@@ -7,9 +7,9 @@ import {
   getPersonalState,
   mapAttachmentRow,
   requirePersonalAccess,
+  resolvePersonalAttachmentPath,
   savePersonalState,
 } from "@/lib/profile/personalServer";
-import { resolvePersonalAttachmentPath } from "@/lib/profile/personalAttachments";
 
 function withDownloadUrl(attachment) {
   return {

@@ -33,7 +33,8 @@ async function resolveUserId(req, res) {
   return resolveSessionUserId(session);
 }
 
-// Find an existing rule matching the composite unique key (user_id, day_of_week, pattern_type, week_parity)
+// Find an existing rule matching the composite rule identity.
+// `label` acts as the group identifier for rules created together.
 async function findExistingRule(userId, row) {
   let query = supabase
     .from("overtime_recurring_rules")
@@ -47,6 +48,12 @@ async function findExistingRule(userId, row) {
     query = query.is("week_parity", null);
   } else {
     query = query.eq("week_parity", row.week_parity);
+  }
+
+  if (row.label === null || row.label === undefined) {
+    query = query.is("label", null);
+  } else {
+    query = query.eq("label", row.label);
   }
 
   const { data } = await query.maybeSingle(); // returns null if not found
@@ -73,7 +80,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, data: data || [] }); // return rules array
     }
 
-    // ── PUT — upsert rules (find-then-update-or-insert for composite unique key) ──
+    // ── PUT — upsert rules (find-then-update-or-insert for composite rule identity) ──
     if (req.method === "PUT") {
       const { rules } = req.body || {}; // expect { rules: [{ dayOfWeek, hours, active, patternType?, weekParity?, label? }] }
 

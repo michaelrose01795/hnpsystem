@@ -89,7 +89,7 @@ export const PERSONAL_WIDGET_DEFINITIONS = {
     description: "A free-form widget for bespoke amounts, targets, and notes.",
     category: "custom",
     accent: "var(--accent-purple)",
-    defaultConfig: { title: "Custom widget", preset: "goal-tracker" },
+    defaultConfig: { title: "Custom widget" },
     defaultData: { amount: 0, target: 0, note: "" },
   }),
   "net-position": createDefinition({

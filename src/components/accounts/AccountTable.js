@@ -1,6 +1,9 @@
 // file location: src/components/accounts/AccountTable.js // file path header
 import React from "react"; // import React to define component
 import PropTypes from "prop-types";
+import Button from "@/components/ui/Button";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+
 const columnDefinitions = [
   { key: "account_id", label: "Account ID" },
   { key: "customer_id", label: "Customer" },
@@ -43,11 +46,27 @@ const renderStatusBadge = (status) => {
     </span>
   );
 };
-export default function AccountTable({ accounts, loading, pagination, onPageChange, onSortChange, sortState, onSelectAccount, selectedAccountId }) {
+export default function AccountTable({
+  accounts,
+  loading,
+  pagination,
+  onPageChange,
+  onSortChange,
+  sortState,
+  onSelectAccount,
+  selectedAccountId,
+  canExport,
+  canCreateAccount,
+  onExport,
+  onCreateAccount,
+}) {
+  const [hoveredAccountId, setHoveredAccountId] = React.useState(null);
+
   const sortedIcon = (columnKey) => {
     if (!sortState || sortState.field !== columnKey) return "";
     return sortState.direction === "asc" ? "▲" : "▼";
   };
+
   const handleSort = (columnKey) => {
     if (typeof onSortChange !== "function") return;
     if (sortState && sortState.field === columnKey) {
@@ -57,38 +76,44 @@ export default function AccountTable({ accounts, loading, pagination, onPageChan
     }
     onSortChange({ field: columnKey, direction: "asc" });
   };
+
   return (
-    <div
-      style={{
-        borderRadius: "var(--radius-md)",
-        border: "none",
-        background: "var(--surface)",
-        boxShadow: "none",
-      }}
-    >
-      <table
-        style={{
-          width: "100%",
-          borderCollapse: "collapse",
-        }}
-      >
-        <thead
-          style={{
-            background: "var(--primary)",
-            color: "white",
-          }}
-        >
+    <DevLayoutSection as="section" sectionKey="accounts-ledger-table-card" sectionType="content-card" parentKey="accounts-ledger-table" className="app-section-card" style={{ display: "flex", flexDirection: "column", gap: "16px", background: "rgba(var(--primary-rgb), 0.08)", border: "1px solid rgba(var(--primary-rgb), 0.16)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--text-primary)" }}>Customer Accounts</h2>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+          <span style={{ color: "var(--text-secondary)", fontSize: "0.92rem" }}>
+            {pagination.total || 0} records
+          </span>
+          {canExport && (
+            <Button type="button" variant="secondary" onClick={onExport}>
+              Export
+            </Button>
+          )}
+          {canCreateAccount && (
+            <Button type="button" onClick={onCreateAccount}>
+              New Account
+            </Button>
+          )}
+        </div>
+      </div>
+      <div style={{ overflowX: "auto", overflowY: accounts.length > 10 ? "auto" : "visible", maxHeight: accounts.length > 10 ? "640px" : "none" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead style={{ background: "rgba(var(--primary-rgb), 0.08)", color: "var(--text-primary)" }}>
           <tr>
             {columnDefinitions.map((column) => (
               <th
                 key={column.key}
                 onClick={() => handleSort(column.key)}
                 style={{
-                  padding: "12px",
+                  padding: "13px 12px",
                   cursor: "pointer",
                   textAlign: "left",
                   fontSize: "0.85rem",
                   userSelect: "none",
+                  whiteSpace: "nowrap",
                 }}
               >
                 {column.label} {sortedIcon(column.key)}
@@ -96,172 +121,100 @@ export default function AccountTable({ accounts, loading, pagination, onPageChan
             ))}
             <th
               style={{
-                padding: "12px",
+                padding: "13px 12px",
                 textAlign: "right",
                 fontSize: "0.85rem",
+                whiteSpace: "nowrap",
               }}
             >
               Actions
             </th>
           </tr>
-        </thead>
-        <tbody>
-          {loading && (
-            <tr>
-              <td
-                colSpan={columnDefinitions.length + 1}
-                style={{
-                  padding: "20px",
-                  textAlign: "center",
-                  color: "var(--text-secondary)",
-                }}
-              >
-                Loading accounts…
-              </td>
-            </tr>
-          )}
-          {!loading && accounts.length === 0 && (
-            <tr>
-              <td
-                colSpan={columnDefinitions.length + 1}
-                style={{
-                  padding: "40px",
-                  textAlign: "center",
-                  color: "var(--text-secondary)",
-                }}
-              >
-                No accounts match your filters.
-              </td>
-            </tr>
-          )}
-          {!loading && accounts.map((account) => {
-            const isSelected = selectedAccountId && selectedAccountId === account.account_id;
-            return (
-              <tr
-                key={account.account_id}
-                style={{
-                  background: isSelected ? "rgba(var(--primary-rgb),0.05)" : "transparent",
-                  borderTop: "1px solid rgba(0,0,0,0.04)",
-                }}
-              >
-                {columnDefinitions.map((column) => {
-                  const value = account[column.key];
-                  let content = value;
-                  if (column.key === "status") {
-                    content = renderStatusBadge(value);
-                  } else if (column.key === "balance" || column.key === "credit_limit") {
-                    content = formatCurrency(value);
-                  } else if (column.key === "updated_at") {
-                    content = formatDate(value);
-                  }
-                  return (
-                    <td
-                      key={column.key}
-                      style={{
-                        padding: "14px 12px",
-                        fontWeight: column.key === "account_id" ? 600 : 400,
-                      }}
-                    >
-                      {content || "—"}
-                    </td>
-                  );
-                })}
+          </thead>
+          <tbody>
+            {loading && (
+              <tr>
                 <td
+                  colSpan={columnDefinitions.length + 1}
                   style={{
-                    padding: "14px 12px",
-                    textAlign: "right",
+                    padding: "28px",
+                    textAlign: "center",
+                    color: "var(--text-secondary)",
                   }}
                 >
-                  <button
-                    type="button"
-                    onClick={() => onSelectAccount && onSelectAccount(account, "view")}
-                    style={{
-                      border: "none",
-                      background: "transparent",
-                      color: "var(--primary)",
-                      fontWeight: 600,
-                      marginRight: "12px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    View
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onSelectAccount && onSelectAccount(account, "edit")}
-                    style={{
-                      border: "1px solid var(--primary)",
-                      background: "rgba(var(--primary-rgb),0.08)",
-                      color: "var(--primary)",
-                      fontWeight: 600,
-                      borderRadius: "var(--radius-xs)",
-                      padding: "6px 12px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Edit
-                  </button>
+                  Loading accounts…
                 </td>
               </tr>
-            );
-          })}
-        </tbody>
-      </table>
-      <footer
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "16px",
-        }}
-      >
-        <span
-          style={{
-            color: "var(--text-secondary)",
-            fontSize: "0.9rem",
-          }}
-        >
-          Page {pagination.page} of {Math.max(1, Math.ceil((pagination.total || 0) / pagination.pageSize))}
-        </span>
-        <div
-          style={{
-            display: "flex",
-            gap: "10px",
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => onPageChange(Math.max(1, pagination.page - 1))}
-            disabled={pagination.page <= 1}
-            style={{
-              padding: "8px 14px",
-              borderRadius: "var(--radius-pill)",
-              border: "none",
-              background: pagination.page <= 1 ? "var(--surface-light)" : "var(--surface)",
-              color: "var(--text-secondary)",
-              cursor: pagination.page <= 1 ? "not-allowed" : "pointer",
-            }}
-          >
-            Prev
-          </button>
-          <button
-            type="button"
-            onClick={() => onPageChange(pagination.page + 1)}
-            disabled={pagination.page >= Math.ceil((pagination.total || 0) / pagination.pageSize)}
-            style={{
-              padding: "8px 14px",
-              borderRadius: "var(--radius-pill)",
-              border: "none",
-              background: pagination.page >= Math.ceil((pagination.total || 0) / pagination.pageSize) ? "var(--surface-light)" : "var(--surface)",
-              color: "var(--text-secondary)",
-              cursor: pagination.page >= Math.ceil((pagination.total || 0) / pagination.pageSize) ? "not-allowed" : "pointer",
-            }}
-          >
-            Next
-          </button>
-        </div>
-      </footer>
-    </div>
+            )}
+            {!loading && accounts.length === 0 && (
+              <tr>
+                <td
+                  colSpan={columnDefinitions.length + 1}
+                  style={{
+                    padding: "40px",
+                    textAlign: "center",
+                    color: "var(--text-secondary)",
+                  }}
+                >
+                  No accounts match your filters.
+                </td>
+              </tr>
+            )}
+            {!loading && accounts.map((account) => {
+              const isSelected = selectedAccountId && selectedAccountId === account.account_id;
+              const isHovered = hoveredAccountId === account.account_id;
+              return (
+                <tr
+                  key={account.account_id}
+                  onMouseEnter={() => setHoveredAccountId(account.account_id)}
+                  onMouseLeave={() => setHoveredAccountId((current) => (current === account.account_id ? null : current))}
+                  style={{
+                    background: isSelected ? "rgba(var(--primary-rgb), 0.16)" : isHovered ? "rgba(var(--primary-rgb), 0.12)" : "var(--surface)",
+                    borderTop: "1px solid rgba(var(--primary-rgb), 0.08)",
+                    transition: "background-color 0.18s ease",
+                  }}
+                >
+                  {columnDefinitions.map((column) => {
+                    const value = account[column.key];
+                    let content = value;
+                    if (column.key === "status") {
+                      content = renderStatusBadge(value);
+                    } else if (column.key === "balance" || column.key === "credit_limit") {
+                      content = formatCurrency(value);
+                    } else if (column.key === "updated_at") {
+                      content = formatDate(value);
+                    }
+
+                    return (
+                      <td
+                        key={column.key}
+                        style={{
+                          padding: "14px 12px",
+                          fontWeight: column.key === "account_id" ? 600 : 400,
+                          whiteSpace: column.key === "billing_name" ? "normal" : "nowrap",
+                        }}
+                      >
+                        {content || "—"}
+                      </td>
+                    );
+                  })}
+                  <td style={{ padding: "14px 12px", textAlign: "right" }}>
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", flexWrap: "wrap" }}>
+                      <Button type="button" variant="ghost" size="xs" onClick={() => onSelectAccount && onSelectAccount(account, "view")}>
+                        View
+                      </Button>
+                      <Button type="button" variant="secondary" size="xs" onClick={() => onSelectAccount && onSelectAccount(account, "edit")}>
+                        Edit
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </DevLayoutSection>
   );
 }
 AccountTable.propTypes = {
@@ -280,6 +233,10 @@ AccountTable.propTypes = {
   }),
   onSelectAccount: PropTypes.func,
   selectedAccountId: PropTypes.string,
+  canExport: PropTypes.bool,
+  canCreateAccount: PropTypes.bool,
+  onExport: PropTypes.func,
+  onCreateAccount: PropTypes.func,
 };
 AccountTable.defaultProps = {
   accounts: [],
@@ -290,4 +247,8 @@ AccountTable.defaultProps = {
   sortState: { field: "updated_at", direction: "desc" },
   onSelectAccount: () => {},
   selectedAccountId: null,
+  canExport: false,
+  canCreateAccount: false,
+  onExport: () => {},
+  onCreateAccount: () => {},
 };

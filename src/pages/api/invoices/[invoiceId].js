@@ -19,11 +19,34 @@ async function handler(req, res, session) {
     res.status(400).json({ success: false, message: "Invoice id is required" });
     return;
   }
-  const { data: invoice, error } = await supabase
-    .from("invoices")
-    .select("*")
-    .eq("invoice_id", invoiceId)
-    .maybeSingle();
+  let invoice = null;
+  let error = null;
+
+  const invoiceLookups = [
+    { field: "invoice_number", value: invoiceId },
+    { field: "invoice_id", value: invoiceId },
+    { field: "id", value: invoiceId },
+  ];
+
+  for (const lookup of invoiceLookups) {
+    const result = await supabase
+      .from("invoices")
+      .select("*, customer:customer_id(id, firstname, lastname, name), account:account_id(account_id, billing_name, credit_terms)")
+      .eq(lookup.field, lookup.value)
+      .maybeSingle();
+
+    if (result.error && result.error.code !== "PGRST116") {
+      error = result.error;
+      break;
+    }
+
+    if (result.data) {
+      invoice = result.data;
+      error = null;
+      break;
+    }
+  }
+
   if (error) {
     console.error("Failed to fetch invoice", error);
     res.status(500).json({ success: false, message: "Unable to load invoice" });
@@ -36,7 +59,7 @@ async function handler(req, res, session) {
   const { data: payments } = await supabase
     .from("invoice_payments")
     .select("*")
-    .eq("invoice_id", invoiceId)
+    .eq("invoice_id", invoice?.id || invoiceId)
     .order("payment_date", { ascending: false });
   let job = null;
   if (invoice.job_number) {

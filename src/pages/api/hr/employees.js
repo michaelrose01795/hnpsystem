@@ -64,6 +64,13 @@ const toNumberOrNull = (value) => {
   return Number.isFinite(numeric) ? numeric : null;
 };
 
+const calculateBasicSalary = ({ contractedHours, hourlyRate }) => {
+  const hours = toNumberOrNull(contractedHours);
+  const rate = toNumberOrNull(hourlyRate);
+  if (hours === null || rate === null) return null;
+  return Number((hours * rate).toFixed(2));
+};
+
 const toIsoDate = (value) => {
   if (!value) return null;
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
@@ -106,6 +113,10 @@ async function handleCreateOrUpdate(req, res) {
   const firstName = payload.firstName;
   const lastName = payload.lastName;
   const role = typeof payload.role === "string" && payload.role.trim() ? payload.role.trim() : null;
+  const derivedAnnualSalary = calculateBasicSalary({
+    contractedHours: payload.contractedHours,
+    hourlyRate: payload.hourlyRate,
+  });
 
   try {
     const userRecord = await upsertUser({
@@ -142,6 +153,7 @@ async function handleCreateOrUpdate(req, res) {
       keycloakId: payload.keycloakId || null,
       lineManagerIds: normalizeLineManagerIds(payload.lineManagerIds ?? payload.lineManagerId ?? []),
       lineManagers: [],
+      annualSalary: derivedAnnualSalary,
     };
 
     return res.status(200).json({
@@ -238,6 +250,9 @@ async function upsertUser({ email, firstName, lastName, phone, role, jobTitle, p
       address: addressValue,
       lineManagerIds,
     });
+    const contractedHours = toNumberOrNull(payload.contractedHours);
+    const hourlyRate = toNumberOrNull(payload.hourlyRate);
+    const annualSalary = calculateBasicSalary({ contractedHours, hourlyRate });
 
     return {
       department: payload.department || null,
@@ -247,10 +262,10 @@ async function upsertUser({ email, firstName, lastName, phone, role, jobTitle, p
       probation_end: toIsoDate(payload.probationEnd),
       manager_id: lineManagerIds[0] || null,
       emergency_contact: emergencyContact,
-      contracted_hours: toNumberOrNull(payload.contractedHours),
-      hourly_rate: toNumberOrNull(payload.hourlyRate),
+      contracted_hours: contractedHours,
+      hourly_rate: hourlyRate,
       overtime_rate: toNumberOrNull(payload.overtimeRate),
-      annual_salary: toNumberOrNull(payload.annualSalary),
+      annual_salary: annualSalary,
       payroll_reference: payload.payrollNumber || null,
       national_insurance_number: payload.nationalInsurance || null,
       keycloak_user_id: payload.keycloakId || null,

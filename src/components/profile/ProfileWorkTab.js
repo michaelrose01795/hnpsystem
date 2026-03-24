@@ -16,6 +16,7 @@ import StaffVehiclesCard from "@/components/HR/StaffVehiclesCard";
 import { ACCENT_PALETTES, useTheme } from "@/styles/themeProvider";
 import { isHrCoreRole, isManagerScopedRole } from "@/lib/auth/roles"; // Role checking utilities
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
+import Button from "@/components/ui/Button";
 
 const SAFE_ACCENT_PALETTES =
   ACCENT_PALETTES && typeof ACCENT_PALETTES === "object"
@@ -39,7 +40,26 @@ function formatTime(value) {
 }
 
 function formatCurrency(value) {
-  return `£${Number(value ?? 0).toFixed(2)}`; // currency helper used across metrics
+  return `£${Number(value ?? 0).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function toRoundedHours(value) {
+  return Number(Number(value || 0).toFixed(2));
+}
+
+function calculateHoursBetween(date, start, end) {
+  if (!date || !start || !end) return null;
+  const startMs = new Date(`${date}T${start}:00`).getTime();
+  const endMs = new Date(`${date}T${end}:00`).getTime();
+  if (Number.isNaN(startMs) || Number.isNaN(endMs) || endMs <= startMs) return null;
+  return toRoundedHours((endMs - startMs) / (1000 * 60 * 60));
+}
+
+function addHoursToTime(date, start, hours) {
+  if (!date || !start || !(Number(hours) > 0)) return "";
+  const startMs = new Date(`${date}T${start}:00`).getTime();
+  if (Number.isNaN(startMs)) return "";
+  return new Date(startMs + Number(hours) * 60 * 60 * 1000).toTimeString().slice(0, 5);
 }
 
 function splitEmergencyContact(value) {
@@ -354,6 +374,7 @@ function LeaveRequestModal({
             <label style={{ ...modalLabelStyle, flex: 1 }}>
               Total Working Days Off
               <input
+                className="app-input"
                 type="number"
                 name="totalDays"
                 min="1"
@@ -412,6 +433,7 @@ function LeaveRequestModal({
           <label style={modalLabelStyle}>
             Notes (optional)
             <textarea
+              className="app-input"
               name="notes"
               value={form.notes}
               onChange={handleChange}
@@ -425,26 +447,27 @@ function LeaveRequestModal({
 
           <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "4px" }}>
             {mode === "edit" && onRemove ? (
-              <button
+              <Button
                 type="button"
                 onClick={onRemove}
                 disabled={isRemoving || isSubmitting}
-                style={{
-                  ...modalCancelBtnStyle,
-                  background: "var(--danger-surface)",
-                  color: "var(--danger)",
-                }}
+                variant="secondary"
+                size="sm"
+                className="app-btn--control"
+                style={{ color: "var(--danger)" }}
               >
                 {isRemoving ? "Removing..." : "Remove request"}
-              </button>
+              </Button>
             ) : null}
-            <button type="button" onClick={onClose} style={modalCancelBtnStyle}>
+            <Button type="button" onClick={onClose} variant="ghost" size="sm">
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
+              variant="primary"
+              size="sm"
               disabled={isSubmitting}
-              style={{ ...modalSubmitBtnStyle, opacity: isSubmitting ? 0.7 : 1 }}
+              style={{ opacity: isSubmitting ? 0.7 : 1 }}
             >
               {isSubmitting
                 ? mode === "edit"
@@ -453,7 +476,7 @@ function LeaveRequestModal({
                 : mode === "edit"
                 ? "Save changes"
                 : "Submit Request"}
-            </button>
+            </Button>
           </div>
         </form>
       </div>
@@ -480,26 +503,6 @@ const modalInputStyle = {
   color: "var(--text-primary)",
   fontSize: "0.9rem",
   fontWeight: 500,
-};
-
-const modalCancelBtnStyle = {
-  padding: "10px 18px",
-  borderRadius: "var(--radius-sm)",
-  border: "1px solid var(--border, #ccc)",
-  background: "transparent",
-  color: "var(--text-secondary)",
-  fontWeight: 600,
-  cursor: "pointer",
-};
-
-const modalSubmitBtnStyle = {
-  padding: "10px 18px",
-  borderRadius: "var(--radius-sm)",
-  border: "none",
-  background: "var(--accent-purple)",
-  color: "white",
-  fontWeight: 600,
-  cursor: "pointer",
 };
 
 function AccentOptionContent({ label, light, dark }) {
@@ -553,8 +556,330 @@ const PRESET_CHIPS = [
   { label: "Alt. Sat 4.25h", days: { 6: true }, hours: "4.25", patternType: "alternate" },
 ];
 
+function createRecurringRuleLabel() {
+  return `rule-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 // Import shared recurring overtime utilities (cycle math, matching, grouping, summaries)
 import { groupRulesSmartly, getGroupKey, generateSmartSummary, getUpcomingEntries, detectOverlaps } from "@/lib/overtime/recurringUtils";
+
+function ManualOvertimeModal({ isOpen, onClose, onSaved, userId = null }) {
+  const [mode, setMode] = useState("single"); // "single" or "bulk"
+  const [form, setForm] = useState({
+    date: "",
+    login: "",
+    logout: "",
+    totalHours: "",
+  });
+  const [bulkHours, setBulkHours] = useState("");
+  const [bulkNote, setBulkNote] = useState("");
+  const [error, setError] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useBodyModalLock(isOpen);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setMode("single");
+    setForm({ date: "", login: "", logout: "", totalHours: "" });
+    setBulkHours("");
+    setBulkNote("");
+    setError(null);
+    setIsSaving(false);
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  const handleChange = (field, value) => {
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+      if (field === "date" || field === "login" || field === "logout") {
+        const computedHours = calculateHoursBetween(next.date, next.login, next.logout);
+        if (computedHours !== null) {
+          next.totalHours = String(computedHours);
+        } else if (field !== "logout" && !next.logout && next.date && next.login && Number(next.totalHours) > 0) {
+          next.logout = addHoursToTime(next.date, next.login, next.totalHours);
+        }
+      } else if (field === "totalHours" && next.date && next.login && Number(value) > 0) {
+        next.logout = addHoursToTime(next.date, next.login, value);
+      }
+      return next;
+    });
+    setError(null);
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (isSaving) return;
+
+    if (mode === "bulk") {
+      if (!(Number(bulkHours) > 0)) {
+        setError("Enter total hours greater than 0.");
+        return;
+      }
+      setIsSaving(true);
+      setError(null);
+      try {
+        const response = await fetch("/api/profile/overtime-sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            bulk: true,
+            totalHours: Number(bulkHours),
+            note: bulkNote || undefined,
+            userId,
+          }),
+        });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload?.success) {
+          throw new Error(payload?.message || "Failed to save bulk overtime.");
+        }
+        onSaved?.(payload.data);
+        onClose();
+      } catch (err) {
+        setError(err.message || "Failed to save bulk overtime.");
+      } finally {
+        setIsSaving(false);
+      }
+      return;
+    }
+
+    if (!form.date || !form.login) {
+      setError("Date and login time are required.");
+      return;
+    }
+    if (!form.logout && !(Number(form.totalHours) > 0)) {
+      setError("Provide logout time or total hours.");
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/profile/overtime-sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          date: form.date,
+          start: form.login,
+          end: form.logout || undefined,
+          totalHours: form.totalHours ? Number(form.totalHours) : undefined,
+          userId,
+        }),
+      });
+
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.message || "Failed to save overtime.");
+      }
+
+      onSaved?.(payload.data);
+      onClose();
+    } catch (err) {
+      setError(err.message || "Failed to save overtime.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const tabStyle = (active) => ({
+    flex: 1,
+    padding: "8px 12px",
+    fontSize: "0.82rem",
+    fontWeight: 600,
+    border: "none",
+    borderBottom: active ? "2px solid var(--accent-purple, #7c3aed)" : "2px solid transparent",
+    background: "none",
+    color: active ? "var(--text-primary)" : "var(--text-secondary)",
+    cursor: "pointer",
+    transition: "color 0.15s, border-color 0.15s",
+  });
+
+  const modal = (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 9999,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(0,0,0,0.5)",
+        padding: "20px",
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        style={{
+          width: "min(520px, 100%)",
+          borderRadius: "var(--radius-md)",
+          background: "var(--surface)",
+          padding: "24px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "16px",
+          boxShadow: "var(--shadow-lg)",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700 }}>Add overtime</h3>
+            <p style={{ margin: "4px 0 0", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+              {mode === "single"
+                ? "Type is saved as overtime. Logout or total hours can be calculated from the other fields."
+                : "Add a lump sum of overtime hours. Only total hours will appear in the attendance table."}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{ background: "none", border: "none", fontSize: "1.2rem", cursor: "pointer", color: "var(--text-secondary)" }}
+          >
+            &times;
+          </button>
+        </div>
+
+        <div style={{ display: "flex", borderBottom: "1px solid var(--border, #e5e7eb)" }}>
+          <button type="button" style={tabStyle(mode === "single")} onClick={() => { setMode("single"); setError(null); }}>
+            Single Entry
+          </button>
+          <button type="button" style={tabStyle(mode === "bulk")} onClick={() => { setMode("bulk"); setError(null); }}>
+            Bulk Overtime
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} style={{ display: "grid", gap: "14px" }}>
+          {mode === "single" ? (
+            <>
+              <CalendarField
+                label="Date"
+                name="date"
+                id="manual-overtime-date"
+                value={form.date}
+                onChange={(event) => handleChange("date", event.target.value)}
+                className="manual-overtime-field"
+                required
+              />
+
+              <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))" }}>
+                <label style={modalLabelStyle}>
+                  Login
+                  <input
+                    className="app-input"
+                    type="time"
+                    value={form.login}
+                    onChange={(event) => handleChange("login", event.target.value)}
+                    style={modalInputStyle}
+                    required
+                  />
+                </label>
+                <label style={modalLabelStyle}>
+                  Logout
+                  <input
+                    className="app-input"
+                    type="time"
+                    value={form.logout}
+                    onChange={(event) => handleChange("logout", event.target.value)}
+                    style={modalInputStyle}
+                  />
+                </label>
+                <label style={modalLabelStyle}>
+                  Total Hours
+                  <input
+                    className="app-input"
+                    type="number"
+                    min="0.25"
+                    step="0.25"
+                    value={form.totalHours}
+                    onChange={(event) => handleChange("totalHours", event.target.value)}
+                    style={modalInputStyle}
+                    placeholder="0.50"
+                  />
+                </label>
+              </div>
+
+              <div
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: "var(--radius-sm)",
+                  background: "rgba(var(--accent-purple-rgb), 0.08)",
+                  fontSize: "0.8rem",
+                  color: "var(--text-secondary)",
+                }}
+              >
+                <div>Type: <strong style={{ color: "var(--text-primary)" }}>Overtime</strong></div>
+                <div>Login: <strong style={{ color: "var(--text-primary)" }}>{form.login || "-"}</strong></div>
+                <div>Logout: <strong style={{ color: "var(--text-primary)" }}>{form.logout || "-"}</strong></div>
+                <div>Total hours: <strong style={{ color: "var(--text-primary)" }}>{form.totalHours || "-"}</strong></div>
+              </div>
+            </>
+          ) : (
+            <>
+              <label style={modalLabelStyle}>
+                Total Hours
+                <input
+                  className="app-input"
+                  type="number"
+                  min="0.25"
+                  step="0.25"
+                  value={bulkHours}
+                  onChange={(e) => { setBulkHours(e.target.value); setError(null); }}
+                  style={modalInputStyle}
+                  placeholder="e.g. 500"
+                  required
+                />
+              </label>
+
+              <label style={modalLabelStyle}>
+                Note (optional)
+                <input
+                  className="app-input"
+                  type="text"
+                  value={bulkNote}
+                  onChange={(e) => setBulkNote(e.target.value)}
+                  style={modalInputStyle}
+                  placeholder="e.g. Carried over from previous period"
+                />
+              </label>
+
+              <div
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: "var(--radius-sm)",
+                  background: "rgba(var(--accent-purple-rgb), 0.08)",
+                  fontSize: "0.8rem",
+                  color: "var(--text-secondary)",
+                }}
+              >
+                <div>Type: <strong style={{ color: "var(--text-primary)" }}>Overtime (Bulk)</strong></div>
+                <div>Total hours: <strong style={{ color: "var(--text-primary)" }}>{bulkHours || "-"}</strong></div>
+                {bulkNote ? <div>Note: <strong style={{ color: "var(--text-primary)" }}>{bulkNote}</strong></div> : null}
+              </div>
+            </>
+          )}
+
+          {error ? <div style={{ color: "var(--danger)", fontSize: "0.84rem" }}>{error}</div> : null}
+
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+            <Button type="button" variant="ghost" size="sm" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary" size="sm" disabled={isSaving}>
+              {isSaving ? "Saving..." : mode === "bulk" ? "Add bulk overtime" : "Add overtime"}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+
+  return typeof document === "undefined" ? modal : createPortal(modal, document.body);
+}
 
 // Modal for managing recurring overtime rules — grouped list with smart summaries and add/edit form
 function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
@@ -566,14 +891,14 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
   const [formMode, setFormMode] = useState(null); // null = hidden, "add" = new rule, "edit" = editing group
   const [editingGroupKey, setEditingGroupKey] = useState(null); // composite key of group being edited
   const [hoveredRow, setHoveredRow] = useState(null); // track hovered group key for visual feedback
-  const [formData, setFormData] = useState({ days: {}, hours: "", patternType: "weekly", weekParity: null }); // form state
+  const [formData, setFormData] = useState({ days: {}, hours: "", patternType: "weekly", weekParity: null, groupLabel: null }); // form state
 
   // Fetch existing rules when modal opens
   useEffect(() => {
     if (!isOpen) return;
     setError(null);
     setFormMode(null);
-    setFormData({ days: {}, hours: "", patternType: "weekly", weekParity: null });
+    setFormData({ days: {}, hours: "", patternType: "weekly", weekParity: null, groupLabel: null });
     setEditingGroupKey(null);
     setIsLoading(true);
     const url = userId ? `/api/profile/overtime-recurring-rules?userId=${userId}` : "/api/profile/overtime-recurring-rules";
@@ -598,7 +923,7 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
   const openAddForm = () => {
     setFormMode("add");
     setEditingGroupKey(null);
-    setFormData({ days: {}, hours: "", patternType: "weekly", weekParity: null });
+    setFormData({ days: {}, hours: "", patternType: "weekly", weekParity: null, groupLabel: createRecurringRuleLabel() });
     setError(null);
   };
 
@@ -614,6 +939,7 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
       hours: String(group.hours),
       patternType: group.patternType || "weekly",
       weekParity: group.weekParity || null,
+      groupLabel: group.label || null,
     });
     setError(null);
   };
@@ -622,7 +948,7 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
   const closeForm = () => {
     setFormMode(null);
     setEditingGroupKey(null);
-    setFormData({ days: {}, hours: "", patternType: "weekly", weekParity: null });
+    setFormData({ days: {}, hours: "", patternType: "weekly", weekParity: null, groupLabel: null });
     setError(null);
   };
 
@@ -662,12 +988,17 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
       }
 
       // Upsert selected days with current form values
+      const ruleGroupLabel =
+        formMode === "edit"
+          ? (formData.groupLabel ?? null)
+          : (formData.groupLabel || createRecurringRuleLabel());
       const upsertRules = selectedDays.map((dow) => ({
         dayOfWeek: dow,
         hours: hoursNum,
         active: true,
         patternType: formData.patternType,
         weekParity: formData.patternType === "alternate" ? formData.weekParity : null,
+        label: ruleGroupLabel,
       }));
 
       const response = await fetch("/api/profile/overtime-recurring-rules", {
@@ -691,7 +1022,8 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
             const idx = merged.findIndex((r) =>
               r.day_of_week === saved.day_of_week &&
               (r.pattern_type || "weekly") === (saved.pattern_type || "weekly") &&
-              (r.week_parity || null) === (saved.week_parity || null)
+              (r.week_parity || null) === (saved.week_parity || null) &&
+              (r.label || null) === (saved.label || null)
             );
             if (idx >= 0) merged[idx] = saved; // update existing
             else merged.push(saved); // add new
@@ -780,7 +1112,7 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
             <button
               key={preset.label}
               type="button"
-              onClick={() => setFormData({ days: { ...preset.days }, hours: preset.hours, patternType: preset.patternType, weekParity: preset.patternType === "alternate" ? "odd" : null })}
+              onClick={() => setFormData({ days: { ...preset.days }, hours: preset.hours, patternType: preset.patternType, weekParity: preset.patternType === "alternate" ? "odd" : null, groupLabel: createRecurringRuleLabel() })}
               style={{
                 padding: "4px 10px",
                 borderRadius: "var(--radius-xs)",
@@ -1249,11 +1581,12 @@ export function ProfileWorkTab({
   forcedUserName = null,
   embeddedOverride = null,
   adminPreviewOverride = null,
+  onHeaderActionsChange = null,
 } = {}) {
   const router = useRouter(); // access query params
   const { user, dbUserId } = useUser(); // Keycloak session details + Supabase id for dev mode
   const { data: session } = useSession(); // NextAuth session for role checking
-  const { mode: themeMode, resolvedMode, isDark, toggleTheme, accent, setAccent } = useTheme();
+  const { mode: themeMode, resolvedMode, toggleTheme, accent, setAccent } = useTheme();
 
   // State for user's own profile data (non-admin users)
   const [userProfileData, setUserProfileData] = useState(null);
@@ -1420,24 +1753,6 @@ export function ProfileWorkTab({
     []
   );
 
-  const themeButtonStyle = useMemo(
-    () => ({
-      padding: "8px 16px",
-      borderRadius: "var(--radius-pill)",
-      border: `1px solid ${isDark ? "var(--border)" : "var(--primary)"}`,
-      background: isDark ? "var(--surface-light)" : "var(--primary)",
-      color: isDark ? "var(--text-primary)" : "var(--text-inverse)",
-      fontWeight: 600,
-      fontSize: "0.82rem",
-      transition: "background 0.2s ease, color 0.2s ease",
-      height: "var(--control-height-sm)",
-      display: "inline-flex",
-      alignItems: "center",
-      lineHeight: 1,
-    }),
-    [isDark]
-  );
-
   const aggregatedStats = useMemo(() => {
     if (!profile) return null; // bail if profile missing
 
@@ -1487,7 +1802,7 @@ export function ProfileWorkTab({
     let monthlyWeekendHours = 0;
 
     attendanceSource.forEach((entry) => {
-      if (!entry.date) return;
+      if (!entry.date || entry.bulk) return; // skip bulk overtime — year-level only
       const entryDate = new Date(entry.date);
       if (entryDate < periodStartDate || entryDate > periodEndDate) return; // filter to 26th-to-25th cycle
       const hours = Number(entry.totalHours ?? 0);
@@ -1525,6 +1840,7 @@ export function ProfileWorkTab({
   // Leave request modal state
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
   const [recurringModalOpen, setRecurringModalOpen] = useState(false); // recurring overtime rules modal
+  const [manualOvertimeModalOpen, setManualOvertimeModalOpen] = useState(false);
   const [leaveSubmitting, setLeaveSubmitting] = useState(false);
   const [leaveRemoving, setLeaveRemoving] = useState(false);
   const [editingLeaveRequest, setEditingLeaveRequest] = useState(null);
@@ -1676,6 +1992,37 @@ export function ProfileWorkTab({
   const attendanceRecords = aggregatedStats?.attendanceRecords ?? [];
   const shouldScrollAttendanceHistory = attendanceRecords.length >= 5;
 
+  const headerActions = useMemo(
+    () => (
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+        <div style={{ minWidth: "170px", width: "170px" }}>
+          <DropdownField
+            value={accent}
+            onValueChange={setAccent}
+            options={accentOptions}
+            className="profile-accent-dropdown"
+          />
+        </div>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          className="app-btn--control"
+          onClick={toggleTheme}
+          aria-label="Cycle theme"
+        >
+          {themeLabel}
+        </Button>
+      </div>
+    ),
+    [accent, accentOptions, setAccent, themeLabel, toggleTheme]
+  );
+
+  useEffect(() => {
+    onHeaderActionsChange?.(headerActions);
+    return () => onHeaderActionsChange?.(null);
+  }, [headerActions, onHeaderActionsChange]);
+
   if (!user && !session?.user && !previewUserParam) {
     const fallback = (
       <div style={{ padding: "24px", color: "var(--text-secondary)" }}>
@@ -1699,37 +2046,6 @@ export function ProfileWorkTab({
     >
       <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "18px" }}>
         <header style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              flexWrap: "wrap",
-              justifyContent: "space-between",
-            }}
-          >
-            <h1 style={{ fontSize: "2rem", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
-              Work Profile
-            </h1>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
-              <div style={{ minWidth: "170px", maxWidth: "170px", width: "170px", order: 1 }}>
-                <DropdownField
-                  value={accent}
-                  onValueChange={setAccent}
-                  options={accentOptions}
-                  className="profile-accent-dropdown"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={toggleTheme}
-                style={{ ...themeButtonStyle, order: 2 }}
-                aria-label="Cycle theme"
-              >
-                {themeLabel}
-              </button>
-            </div>
-          </div>
           {isAdminPreview && profile && (
             <div
               style={{
@@ -1926,16 +2242,17 @@ export function ProfileWorkTab({
               <ProfileCard
                 title="Leave Summary"
                 action={
-                  <button
+                  <Button
                     type="button"
+                    variant="primary"
+                    size="sm"
                     onClick={() => {
                       setEditingLeaveRequest(null);
                       setLeaveModalOpen(true);
                     }}
-                    style={buttonStyleLeaveRequest}
                   >
                     Request leave
-                  </button>
+                  </Button>
                 }
                 style={{
                   background: "var(--surface)",
@@ -2052,13 +2369,15 @@ export function ProfileWorkTab({
                 action={
                   <div style={{ display: "flex", gap: "8px" }}>
                     {!ecEditing && (
-                      <button
+                      <Button
                         type="button"
                         onClick={handleStartEcEdit}
-                        style={secondaryButtonStyle}
+                        variant="secondary"
+                        size="sm"
+                        className="app-btn--control"
                       >
                         Edit
-                      </button>
+                      </Button>
                     )}
                   </div>
                 }
@@ -2072,6 +2391,7 @@ export function ProfileWorkTab({
                       <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                         <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>Name</span>
                         <input
+                          className="app-input"
                           type="text"
                           value={ecName}
                           onChange={(e) => { setEcName(e.target.value); setEcError(null); }}
@@ -2082,6 +2402,7 @@ export function ProfileWorkTab({
                       <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                         <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>Phone</span>
                         <input
+                          className="app-input"
                           type="tel"
                           value={ecPhone}
                           onChange={(e) => { setEcPhone(e.target.value); setEcError(null); }}
@@ -2092,6 +2413,7 @@ export function ProfileWorkTab({
                       <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                         <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>Relationship</span>
                         <input
+                          className="app-input"
                           type="text"
                           value={ecRelationship}
                           onChange={(e) => { setEcRelationship(e.target.value); setEcError(null); }}
@@ -2102,6 +2424,7 @@ export function ProfileWorkTab({
                       <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                         <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>Address</span>
                         <input
+                          className="app-input"
                           type="text"
                           value={ecAddress}
                           onChange={(e) => {
@@ -2115,12 +2438,12 @@ export function ProfileWorkTab({
                     </div>
                     {ecError && <div style={{ color: "var(--danger)", fontSize: "0.82rem" }}>{ecError}</div>}
                     <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
-                      <button type="button" onClick={() => setEcEditing(false)} style={ghostButtonStyle}>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => setEcEditing(false)}>
                         Cancel
-                      </button>
-                      <button type="button" onClick={handleSaveEc} disabled={ecSaving} style={primaryButtonStyle}>
+                      </Button>
+                      <Button type="button" variant="primary" size="sm" onClick={handleSaveEc} disabled={ecSaving}>
                         {ecSaving ? "Saving..." : "Save"}
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ) : (
@@ -2153,22 +2476,25 @@ export function ProfileWorkTab({
               }}
               action={
                 <div style={{ display: "flex", gap: "8px" }}>
-                  <button
+                  {!shouldUseHrData && (
+                    <Button
+                      type="button"
+                      onClick={() => setManualOvertimeModalOpen(true)}
+                      variant="primary"
+                      size="sm"
+                    >
+                      Add overtime
+                    </Button>
+                  )}
+                  <Button
                     type="button"
                     onClick={() => setRecurringModalOpen(true)}
-                    style={{
-                      padding: "8px 14px",
-                      borderRadius: "var(--radius-sm)",
-                      border: "1px solid var(--accent-purple)",
-                      background: "var(--surface)",
-                      color: "var(--accent-purple)",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      fontSize: "0.85rem",
-                    }}
+                    variant="secondary"
+                    size="sm"
+                    className="app-btn--control"
                   >
                     Recurring Rules
-                  </button>
+                  </Button>
                 </div>
               }
             >
@@ -2286,10 +2612,19 @@ export function ProfileWorkTab({
     />
   );
 
+  const manualOvertimeModalEl = (
+    <ManualOvertimeModal
+      isOpen={manualOvertimeModalOpen}
+      onClose={() => setManualOvertimeModalOpen(false)}
+      onSaved={() => setProfileReloadKey((prev) => prev + 1)}
+      userId={dbUserId}
+    />
+  );
+
   return isEmbedded ? (
-    <>{content}{confirmDialogEl}{recurringOvertimeModalEl}</>
+    <>{content}{confirmDialogEl}{recurringOvertimeModalEl}{manualOvertimeModalEl}</>
   ) : (
-    <Layout>{content}{confirmDialogEl}{recurringOvertimeModalEl}</Layout>
+    <Layout>{content}{confirmDialogEl}{recurringOvertimeModalEl}{manualOvertimeModalEl}</Layout>
   );
 }
 
@@ -2297,57 +2632,8 @@ export default function ProfileWorkTabWrapper(props) {
   return <ProfileWorkTab {...props} />;
 }
 
-const buttonStyleLeaveRequest = {
-  padding: "8px 14px",
-  borderRadius: "var(--radius-sm)",
-  border: "1px solid var(--accent-purple)",
-  background: "var(--accent-purple)",
-  color: "white",
-  fontWeight: 600,
-  cursor: "pointer",
-  fontSize: "0.85rem",
-};
-
-const secondaryButtonStyle = {
-  padding: "6px 14px",
-  borderRadius: "var(--radius-sm)",
-  border: "1px solid var(--accent-purple)",
-  background: "transparent",
-  color: "var(--accent-purple)",
-  fontWeight: 600,
-  fontSize: "0.82rem",
-  cursor: "pointer",
-};
-
-const primaryButtonStyle = {
-  padding: "8px 16px",
-  borderRadius: "var(--radius-sm)",
-  border: "none",
-  background: "var(--accent-purple)",
-  color: "white",
-  fontWeight: 600,
-  fontSize: "0.82rem",
-  cursor: "pointer",
-};
-
-const ghostButtonStyle = {
-  padding: "8px 16px",
-  borderRadius: "var(--radius-sm)",
-  border: "1px solid var(--border, #ccc)",
-  background: "transparent",
-  color: "var(--text-secondary)",
-  fontWeight: 600,
-  fontSize: "0.82rem",
-  cursor: "pointer",
-};
-
 const inputStyle = {
-  padding: "10px 12px",
-  borderRadius: "var(--radius-sm)",
-  border: "1px solid var(--border, #ccc)",
-  background: "var(--background)",
-  color: "var(--text-primary)",
-  fontSize: "0.9rem",
+  width: "100%",
 };
 
 const labelValueRowStyle = {

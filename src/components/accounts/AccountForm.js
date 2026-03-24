@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react"; // import React and hooks for component logic
 import PropTypes from "prop-types";
 import { ACCOUNT_TYPES, ACCOUNT_STATUSES, DEFAULT_ACCOUNT_FORM_VALUES } from "@/config/accounts";
+import Button from "@/components/ui/Button";
 import { fieldGroupStyles, inputStyles, labelStyles, textareaStyles } from "@/styles/formStyles";
 const fieldDefinitions = [
   { name: "customer_id", label: "Customer ID", type: "text" },
@@ -21,7 +22,7 @@ const billingFields = [
   { name: "billing_postcode", label: "Postcode", type: "text" },
   { name: "billing_country", label: "Country", type: "text" },
 ];
-export default function AccountForm({ initialValues, onSubmit, isSubmitting, readOnly, onCancel }) {
+export default function AccountForm({ initialValues, onSubmit, isSubmitting, readOnly, onCancel, hideSectionDescriptions = false }) {
   const [formValues, setFormValues] = useState({ ...DEFAULT_ACCOUNT_FORM_VALUES, ...initialValues });
   useEffect(() => {
     setFormValues((prev) => ({ ...prev, ...initialValues }));
@@ -44,7 +45,9 @@ export default function AccountForm({ initialValues, onSubmit, isSubmitting, rea
       <section style={fieldGroupStyles}>
         <header style={{ flexBasis: "100%" }}>
           <h2 style={{ margin: 0, color: "var(--primary)", fontSize: "1.25rem" }}>Core Account Details</h2>
-          <p style={{ margin: "4px 0 0", color: "var(--text-secondary)", fontSize: "0.9rem" }}>Maintain account type, balance, and status.</p>
+          {!hideSectionDescriptions && (
+            <p style={{ margin: "4px 0 0", color: "var(--text-secondary)", fontSize: "0.9rem" }}>Maintain account type, balance, and status.</p>
+          )}
         </header>
         {fieldDefinitions.map((field) => (
           <label key={field.name} style={{ flex: "1 1 220px", display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -74,7 +77,9 @@ export default function AccountForm({ initialValues, onSubmit, isSubmitting, rea
       <section style={fieldGroupStyles}>
         <header style={{ flexBasis: "100%" }}>
           <h2 style={{ margin: 0, color: "var(--primary)", fontSize: "1.25rem" }}>Billing Contact</h2>
-          <p style={{ margin: "4px 0 0", color: "var(--text-secondary)", fontSize: "0.9rem" }}>Keep invoicing information up to date for statements.</p>
+          {!hideSectionDescriptions && (
+            <p style={{ margin: "4px 0 0", color: "var(--text-secondary)", fontSize: "0.9rem" }}>Keep invoicing information up to date for statements.</p>
+          )}
         </header>
         {billingFields.map((field) => (
           <label key={field.name} style={{ flex: "1 1 220px", display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -86,13 +91,13 @@ export default function AccountForm({ initialValues, onSubmit, isSubmitting, rea
       {!readOnly && (
         <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
           {onCancel && (
-            <button type="button" onClick={onCancel} style={{ borderRadius: "var(--control-radius-xs)", padding: "10px 16px", border: "none", background: "var(--surface-light)", color: "var(--text-secondary)", fontWeight: 600 }}>
+            <Button type="button" variant="secondary" onClick={onCancel}>
               Cancel
-            </button>
+            </Button>
           )}
-          <button type="submit" disabled={isSubmitting} style={{ borderRadius: "var(--control-radius-xs)", padding: "10px 18px", border: "none", background: "var(--primary)", color: "white", fontWeight: 700, minWidth: "160px", cursor: isSubmitting ? "not-allowed" : "pointer", opacity: isSubmitting ? 0.7 : 1 }}>
+          <Button type="submit" disabled={isSubmitting} style={{ minWidth: "160px" }}>
             {isSubmitting ? "Saving…" : "Save Account"}
-          </button>
+          </Button>
         </div>
       )}
     </form>
@@ -104,10 +109,12 @@ AccountForm.propTypes = {
   isSubmitting: PropTypes.bool,
   readOnly: PropTypes.bool,
   onCancel: PropTypes.func,
+  hideSectionDescriptions: PropTypes.bool,
 };
 AccountForm.defaultProps = {
   initialValues: DEFAULT_ACCOUNT_FORM_VALUES,
   isSubmitting: false,
   readOnly: false,
   onCancel: undefined,
+  hideSectionDescriptions: false,
 };

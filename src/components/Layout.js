@@ -531,7 +531,6 @@ export default function Layout({
             { label: "Company Accounts", href: "/company-accounts", roles: accountsRoleCandidates },
             { label: "Invoices", href: "/accounts/invoices", roles: accountsRoleCandidates },
             { label: "Reports", href: "/accounts/reports", roles: accountsRoleCandidates },
-            { label: "Settings", href: "/accounts/settings", roles: accountsRoleCandidates },
           ],
         },
       ]

@@ -4,6 +4,8 @@ import Layout from "@/components/Layout";
 import ProfileWorkTab from "@/components/profile/ProfileWorkTab";
 import ProfilePersonalTab from "@/components/profile/ProfilePersonalTab";
 import TabSwitcher from "@/components/profile/TabSwitcher";
+import useIsMobile from "@/hooks/useIsMobile";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 export function ProfilePage({
   forcedUserName = null,
@@ -27,24 +29,29 @@ export function ProfilePage({
   const isAdminPreview = adminPreviewOverride ?? isAdminPreviewQuery;
   const isPreviewingAnotherUser = Boolean(forcedUserName || isAdminPreview);
   const personalDisabled = isPreviewingAnotherUser;
-  const [personalHeaderActions, setPersonalHeaderActions] = useState(null);
+  const [headerActions, setHeaderActions] = useState(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
-    if (activeTab !== "personal") {
-      setPersonalHeaderActions(null);
-    }
+    setHeaderActions(null);
   }, [activeTab]);
 
   const content = (
-    <div
+    <DevLayoutSection
+      sectionKey="profile-page-content"
+      sectionType="page-shell"
+      shell
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: "18px",
-        padding: isEmbedded ? "0" : "24px",
+        gap: isMobile ? "12px" : "18px",
+        padding: isEmbedded ? "0" : isMobile ? "12px" : "24px",
       }}
     >
-      <div
+      <DevLayoutSection
+        sectionKey="profile-tab-toolbar"
+        parentKey="profile-page-content"
+        sectionType="toolbar"
         style={{
           display: "flex",
           justifyContent: "space-between",
@@ -54,30 +61,37 @@ export function ProfilePage({
           width: "100%",
         }}
       >
-        <TabSwitcher
-          activeTab={activeTab}
-          onChange={(nextTab) => {
-            if (nextTab === "personal" && personalDisabled) return;
-            setActiveTab(nextTab);
-          }}
-          personalDisabled={personalDisabled}
+        <DevLayoutSection sectionKey="profile-tab-switcher" parentKey="profile-tab-toolbar" sectionType="tab-row">
+          <TabSwitcher
+            activeTab={activeTab}
+            onChange={(nextTab) => {
+              if (nextTab === "personal" && personalDisabled) return;
+              setActiveTab(nextTab);
+            }}
+            personalDisabled={personalDisabled}
           />
-        <div style={{ marginLeft: "auto" }}>{activeTab === "personal" ? personalHeaderActions : null}</div>
-      </div>
+        </DevLayoutSection>
+        <DevLayoutSection sectionKey="profile-tab-actions" parentKey="profile-tab-toolbar" sectionType="toolbar">
+          <div style={{ marginLeft: "auto" }}>{headerActions}</div>
+        </DevLayoutSection>
+      </DevLayoutSection>
 
-      {activeTab === "work" ? (
-        <ProfileWorkTab
-          forcedUserName={forcedUserName}
-          embeddedOverride
-          adminPreviewOverride={adminPreviewOverride}
-        />
-      ) : (
-        <ProfilePersonalTab
-          disabled={personalDisabled}
-          onHeaderActionsChange={setPersonalHeaderActions}
-        />
-      )}
-    </div>
+      <DevLayoutSection sectionKey="profile-active-tab-panel" parentKey="profile-page-content" sectionType="section-shell" shell>
+        {activeTab === "work" ? (
+          <ProfileWorkTab
+            forcedUserName={forcedUserName}
+            embeddedOverride
+            adminPreviewOverride={adminPreviewOverride}
+            onHeaderActionsChange={setHeaderActions}
+          />
+        ) : (
+          <ProfilePersonalTab
+            disabled={personalDisabled}
+            onHeaderActionsChange={setHeaderActions}
+          />
+        )}
+      </DevLayoutSection>
+    </DevLayoutSection>
   );
 
   return isEmbedded ? content : <Layout>{content}</Layout>;

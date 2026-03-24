@@ -859,6 +859,20 @@ textarea::placeholder {
 .app-btn--secondary:hover {
   background: var(--control-bg-hover);
 }
+.app-btn--control {
+  background: var(--control-bg);
+  color: var(--primary);
+  border-radius: var(--control-radius);
+  box-shadow: none;
+}
+.app-btn--control:hover {
+  background: var(--control-bg-hover);
+}
+.app-btn--control:focus-visible {
+  outline: none;
+  background: var(--control-bg-hover);
+  box-shadow: var(--control-ring);
+}
 .app-btn--ghost {
   background: transparent;
   color: var(--primary);
