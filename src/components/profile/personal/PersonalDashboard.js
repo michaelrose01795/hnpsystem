@@ -38,22 +38,9 @@ const WIDGET_COMPONENTS = {
 };
 
 function insightToneStyle(type) {
-  if (type === "warning") {
-    return {
-      background: "rgba(239, 108, 0, 0.12)",
-      color: "var(--warning, #ef6c00)",
-    };
-  }
-  if (type === "positive") {
-    return {
-      background: "rgba(46, 125, 50, 0.12)",
-      color: "var(--success, #2e7d32)",
-    };
-  }
-  return {
-    background: "rgba(21, 101, 192, 0.1)",
-    color: "var(--info, #1565c0)",
-  };
+  if (type === "warning") return { background: "rgba(239, 108, 0, 0.12)", color: "var(--warning, #ef6c00)" };
+  if (type === "positive") return { background: "rgba(46, 125, 50, 0.12)", color: "var(--success, #2e7d32)" };
+  return { background: "rgba(21, 101, 192, 0.1)", color: "var(--info, #1565c0)" };
 }
 
 export default function PersonalDashboard({ dashboard }) {
@@ -65,6 +52,7 @@ export default function PersonalDashboard({ dashboard }) {
     onAddWidget: dashboard.addWidget,
   });
   const [settingsWidgetId, setSettingsWidgetId] = useState(null);
+  const [isMoveMode, setIsMoveMode] = useState(false);
 
   const finance = usePersonalFinance({
     widgetDataMap: dashboard.widgetDataMap,
@@ -112,7 +100,7 @@ export default function PersonalDashboard({ dashboard }) {
   const handleReorderFromModal = useCallback(
     async (sourceId, targetId) => {
       if (!sourceId || !targetId || sourceId === targetId) return;
-      const ordered = [...widgetManager.widgets].sort((a, b) => (a.positionY - b.positionY) || (a.positionX - b.positionX));
+      const ordered = [...widgetManager.widgets].sort((a, b) => a.positionY - b.positionY || a.positionX - b.positionX);
       const sourceIndex = ordered.findIndex((entry) => entry.id === sourceId);
       const targetIndex = ordered.findIndex((entry) => entry.id === targetId);
       if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) return;
@@ -136,45 +124,58 @@ export default function PersonalDashboard({ dashboard }) {
     ? PERSONAL_WIDGET_DEFINITIONS[activeSettingsWidgetRecord.widgetType] || null
     : null;
 
-  const financeHeader = useMemo(() => (
-    <div
-      style={{
-        borderRadius: "16px",
-        border: "1px solid rgba(var(--accent-purple-rgb), 0.16)",
-        background: "var(--surface)",
-        padding: "12px",
-        display: "flex",
-        justifyContent: "space-between",
-        flexWrap: "wrap",
-        gap: "12px",
-      }}
-    >
-      <div style={{ display: "grid", gap: "6px" }}>
-        <div style={{ fontWeight: 800, fontSize: "0.86rem" }}>Personal Finance Dashboard</div>
-        <div style={{ color: "var(--text-secondary)", fontSize: "0.8rem" }}>
-          Finance year: <strong>{finance.model.selectedFinanceYear}</strong>
+  const financeHeader = useMemo(
+    () => (
+      <div
+        style={{
+          borderRadius: "16px",
+          border: "1px solid rgba(var(--accent-purple-rgb), 0.14)",
+          background: "var(--surface)",
+          padding: "14px",
+          display: "grid",
+          gap: "12px",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ display: "grid", gap: "4px" }}>
+            <div style={{ fontWeight: 700, fontSize: "0.95rem" }}>Personal planning</div>
+            <div style={{ color: "var(--text-secondary)", fontSize: "0.82rem" }}>
+              Year <strong>{finance.model.selectedFinanceYear}</strong> · update cards and values in one flow.
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+            <button
+              type="button"
+              onClick={() => setIsMoveMode((current) => !current)}
+              style={{
+                borderRadius: "999px",
+                border: "1px solid rgba(var(--accent-purple-rgb), 0.18)",
+                background: isMoveMode ? "var(--accent-purple)" : "transparent",
+                color: isMoveMode ? "#ffffff" : "var(--text-primary)",
+                padding: "8px 12px",
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              {isMoveMode ? "Finish moving" : "Move cards"}
+            </button>
+            <MonthPicker value={finance.model.selectedMonthKey} onChange={finance.setSelectedMonth} align="right" />
+          </div>
         </div>
       </div>
-      <MonthPicker value={finance.model.selectedMonthKey} onChange={finance.setSelectedMonth} align="right" />
-    </div>
-  ), [finance.model.selectedFinanceYear, finance.model.selectedMonthKey, finance.setSelectedMonth]);
+    ),
+    [finance.model.selectedFinanceYear, finance.model.selectedMonthKey, finance.setSelectedMonth, isMoveMode]
+  );
 
   return (
-    <div style={{ display: "grid", gap: "18px" }}>
+    <div style={{ display: "grid", gap: "16px" }}>
       {financeHeader}
 
       <div style={{ display: "grid", gap: "10px", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
         {(finance.model.insights || []).map((insight, index) => (
-          <div
-            key={`${insight.type}-${index}`}
-            style={{
-              borderRadius: "16px",
-              padding: "14px 16px",
-              ...insightToneStyle(insight.type),
-            }}
-          >
+          <div key={`${insight.type}-${index}`} style={{ borderRadius: "14px", padding: "12px 14px", ...insightToneStyle(insight.type) }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", alignItems: "center" }}>
-              <div style={{ fontSize: "0.74rem", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              <div style={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase" }}>
                 {insight.type}
               </div>
               <StatusBadge tone="neutral">{finance.model.selectedFinanceYear}</StatusBadge>
@@ -187,18 +188,19 @@ export default function PersonalDashboard({ dashboard }) {
       {visibleWidgets.length === 0 ? (
         <div
           style={{
-            borderRadius: "22px",
+            borderRadius: "18px",
             border: "1px dashed rgba(var(--accent-purple-rgb), 0.24)",
-            padding: "24px",
+            padding: "20px",
             background: "var(--surface)",
             color: "var(--text-secondary)",
           }}
         >
-          All widgets are currently hidden. Use <strong>Add widget</strong> to restore them.
+          All cards are hidden. Use <strong>Add widget</strong> to restore them.
         </div>
       ) : (
         <WidgetGrid
           widgets={widgetManager.widgets}
+          moveMode={isMoveMode}
           onReorder={handleReorderFromModal}
           renderWidget={(widget) => {
             const WidgetComponent = WIDGET_COMPONENTS[widget.widgetType] || CustomWidget;
@@ -230,9 +232,7 @@ export default function PersonalDashboard({ dashboard }) {
         onToggle={async (widgetType, isVisible) => {
           if (isVisible) {
             const visibleWidget = visibleWidgetsByType[widgetType];
-            if (visibleWidget?.id) {
-              await widgetManager.removeWidget?.(visibleWidget.id);
-            }
+            if (visibleWidget?.id) await widgetManager.removeWidget?.(visibleWidget.id);
             return;
           }
           await widgetManager.addWidget?.(widgetType);
@@ -251,9 +251,7 @@ export default function PersonalDashboard({ dashboard }) {
         onToggleVisibility={async (nextVisible) => {
           if (!activeSettingsWidgetRecord?.id) return;
           await dashboard.updateWidget(activeSettingsWidgetRecord.id, { isVisible: nextVisible });
-          if (!nextVisible) {
-            setSettingsWidgetId(null);
-          }
+          if (!nextVisible) setSettingsWidgetId(null);
         }}
         onSave={async (nextData) => {
           if (!activeSettingsWidgetRecord?.widgetType) return;
