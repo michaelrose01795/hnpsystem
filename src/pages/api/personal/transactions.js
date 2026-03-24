@@ -59,9 +59,6 @@ export default async function handler(req, res) {
       const id = String(req.body?.id || "");
       if (!id) return res.status(400).json({ success: false, message: "Transaction id is required." });
 
-      const existing = transactions.find((entry) => String(entry.id) === id);
-      if (!existing) return res.status(404).json({ success: false, message: "Transaction not found." });
-
       const nextItem = buildTransactionPayload({ ...req.body, id }, userId);
       const nextTransactions = transactions.map((entry) => (String(entry.id) === id ? { ...entry, ...nextItem } : entry));
       await savePersonalState(userId, { ...state, collections: { ...state.collections, transactions: nextTransactions } }, db);

@@ -50,9 +50,6 @@ export default async function handler(req, res) {
     if (req.method === "PUT") {
       const id = String(req.body?.id || "");
       if (!id) return res.status(400).json({ success: false, message: "Goal id is required." });
-      const existing = goals.find((entry) => String(entry.id) === id);
-      if (!existing) return res.status(404).json({ success: false, message: "Goal not found." });
-
       const nextItem = buildGoalPayload({ ...req.body, id }, userId);
       const nextGoals = goals.map((entry) => (String(entry.id) === id ? { ...entry, ...nextItem } : entry));
       await savePersonalState(userId, { ...state, collections: { ...state.collections, goals: nextGoals } }, db);
