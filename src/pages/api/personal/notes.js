@@ -42,6 +42,9 @@ export default async function handler(req, res) {
       const id = String(req.body?.id || "");
       if (!id) return res.status(400).json({ success: false, message: "Note id is required." });
       const previous = notes.find((entry) => String(entry.id) === id) || {};
+      const existing = notes.find((entry) => String(entry.id) === id);
+      if (!existing) return res.status(404).json({ success: false, message: "Note not found." });
+
       const nextItem = buildNotePayload({ ...previous, ...req.body, id }, userId);
       const nextNotes = notes.map((entry) => (String(entry.id) === id ? { ...entry, ...nextItem } : entry));
       await savePersonalState(userId, { ...state, collections: { ...state.collections, notes: nextNotes } }, db);

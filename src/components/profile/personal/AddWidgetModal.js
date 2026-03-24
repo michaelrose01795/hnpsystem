@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
 import { PERSONAL_WIDGET_TYPE_OPTIONS, sortWidgetsForDisplay } from "@/lib/profile/personalWidgets";
@@ -7,8 +7,8 @@ const moveButtonBaseStyle = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
-  height: "22px",
-  minWidth: "58px",
+  height: "30px",
+  minWidth: "72px",
   borderRadius: "999px",
   border: "none",
   background: "rgba(var(--primary-rgb), 0.08)",
@@ -16,10 +16,25 @@ const moveButtonBaseStyle = {
   cursor: "pointer",
   userSelect: "none",
   touchAction: "none",
-  padding: "0 10px",
-  fontSize: "0.75rem",
+  padding: "0 12px",
+  fontSize: "0.78rem",
   fontWeight: 700,
 };
+
+function useIsCompact() {
+  const [isCompact, setIsCompact] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const media = window.matchMedia("(max-width: 760px)");
+    const apply = () => setIsCompact(media.matches);
+    apply();
+    media.addEventListener("change", apply);
+    return () => media.removeEventListener("change", apply);
+  }, []);
+
+  return isCompact;
+}
 
 export default function AddWidgetModal({
   isOpen,
@@ -32,6 +47,7 @@ export default function AddWidgetModal({
   useBodyModalLock(isOpen);
   const [isMoveMode, setIsMoveMode] = useState(false);
   const [draggedWidgetId, setDraggedWidgetId] = useState(null);
+  const isCompact = useIsCompact();
 
   const widgetTypeById = useMemo(() => {
     const map = new Map();
@@ -71,14 +87,14 @@ export default function AddWidgetModal({
           gap: "16px",
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
           <div>
             <div style={{ fontSize: "1.15rem", fontWeight: 700 }}>Add / Restore Widgets</div>
             <div style={{ fontSize: "0.82rem", color: "var(--text-secondary)", marginTop: "4px" }}>
               Show, hide, and reorder widgets. Personal tab order follows this layout exactly.
             </div>
           </div>
-          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
             <button
               type="button"
               onClick={() => setIsMoveMode((current) => !current)}
@@ -154,7 +170,7 @@ export default function AddWidgetModal({
           }}
         >
           <div style={{ fontSize: "0.76rem", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-secondary)" }}>
-            2-column layout map
+            {isCompact ? "Layout map" : "2-column layout map"}
           </div>
           <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
             {isMoveMode ? "Drag slots to reorder. Hidden widgets stay in the model and can be repositioned." : "Enable Move mode to reorder slots."}
@@ -162,7 +178,7 @@ export default function AddWidgetModal({
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+              gridTemplateColumns: isCompact ? "minmax(0, 1fr)" : "repeat(2, minmax(0, 1fr))",
               gap: "10px",
             }}
           >
