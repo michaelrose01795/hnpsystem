@@ -48,9 +48,6 @@ export default async function handler(req, res) {
     if (req.method === "PUT") {
       const id = String(req.body?.id || "");
       if (!id) return res.status(400).json({ success: false, message: "Bill id is required." });
-      const existing = bills.find((entry) => String(entry.id) === id);
-      if (!existing) return res.status(404).json({ success: false, message: "Bill not found." });
-
       const nextItem = buildBillPayload({ ...req.body, id }, userId);
       const nextBills = bills.map((entry) => (String(entry.id) === id ? { ...entry, ...nextItem } : entry));
       await savePersonalState(userId, { ...state, collections: { ...state.collections, bills: nextBills } }, db);
