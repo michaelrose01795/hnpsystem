@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { StatusTag } from "@/components/HR/MetricCard";
 import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 const panelCardStyle = {
   borderRadius: "var(--radius-md)",
@@ -12,7 +13,6 @@ const panelCardStyle = {
   display: "flex",
   flexDirection: "column",
   gap: "14px",
-  boxShadow: "var(--shadow-lg)",
 };
 
 const sectionCardStyle = {
@@ -88,9 +88,17 @@ export default function EmployeeProfilePanel({ employee }) {
     }
   };
 
+  const profileParentKey = "hr-employees-detail-panel";
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-      <div style={{ ...panelCardStyle, padding: "20px", position: "relative" }}>
+      <DevLayoutSection
+        sectionKey="hr-employee-profile-header"
+        parentKey={profileParentKey}
+        sectionType="content-card"
+        backgroundToken="surface"
+        style={{ ...panelCardStyle, padding: "20px", position: "relative" }}
+      >
         <button
           type="button"
           onClick={() => editButtonRef.current?.click()}
@@ -105,7 +113,6 @@ export default function EmployeeProfilePanel({ employee }) {
             fontWeight: 700,
             color: "var(--text-primary)",
             cursor: "pointer",
-            boxShadow: "var(--shadow-lg)",
           }}
         >
           Edit employee details
@@ -168,15 +175,21 @@ export default function EmployeeProfilePanel({ employee }) {
             )}
           </div>
         </div>
-      </div>
+      </DevLayoutSection>
 
-      <section style={{ display: "grid", gap: "16px" }}>
-        <CardBlock title="Role & Access" icon="RA">
+      <DevLayoutSection
+        as="section"
+        sectionKey="hr-employee-profile-sections"
+        parentKey={profileParentKey}
+        sectionType="section-shell"
+        style={{ display: "grid", gap: "16px" }}
+      >
+        <CardBlock title="Role & Access" icon="RA" sectionKey="hr-employee-role-access" parentKey="hr-employee-profile-sections">
           <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
-            <KeyValue label="Role (Permissions)" value={employee.role} />
-            <KeyValue label="Keycloak ID" value={employee.keycloakId} />
-            <KeyValue label="Job Title" value={employee.jobTitle} />
-            <KeyValue label="Department" value={employee.department} />
+            <KeyValue label="Role (Permissions)" value={employee.role} sectionKey="hr-employee-role" parentKey="hr-employee-role-access" />
+            <KeyValue label="Keycloak ID" value={employee.keycloakId} sectionKey="hr-employee-keycloak" parentKey="hr-employee-role-access" />
+            <KeyValue label="Job Title" value={employee.jobTitle} sectionKey="hr-employee-job-title" parentKey="hr-employee-role-access" />
+            <KeyValue label="Department" value={employee.department} sectionKey="hr-employee-department" parentKey="hr-employee-role-access" />
             <KeyValue
               label="Line Managers"
               value={
@@ -184,28 +197,37 @@ export default function EmployeeProfilePanel({ employee }) {
                   ? employee.lineManagers.map((manager) => manager.name).join(", ")
                   : "Not assigned"
               }
+              sectionKey="hr-employee-line-managers"
+              parentKey="hr-employee-role-access"
             />
           </div>
         </CardBlock>
 
-        <CardBlock title="Tenure & Probation" icon="TP">
+        <CardBlock title="Tenure & Probation" icon="TP" sectionKey="hr-employee-tenure-probation" parentKey="hr-employee-profile-sections">
           <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
             <KeyValue
               label="Start Date"
               value={formatDate(employee.startDate)}
               helper={formatEmploymentTenure(employee.startDate)}
+              sectionKey="hr-employee-start-date"
+              parentKey="hr-employee-tenure-probation"
             />
             <KeyValue
               label="Probation End"
               value={formatDate(employee.probationEnd)}
               helper={formatProbationStatus(employee.probationEnd)}
+              sectionKey="hr-employee-probation-end"
+              parentKey="hr-employee-tenure-probation"
             />
           </div>
         </CardBlock>
 
-        <CardBlock title="Compensation & Hours" icon="CH">
+        <CardBlock title="Compensation & Hours" icon="CH" sectionKey="hr-employee-compensation-hours" parentKey="hr-employee-profile-sections">
           <div style={{ display: "grid", gap: "12px" }}>
-            <div
+            <DevLayoutSection
+              sectionKey="hr-employee-basic-salary"
+              parentKey="hr-employee-compensation-hours"
+              sectionType="stat-card"
               style={{
                 borderRadius: "var(--radius-md)",
                 border: "none",
@@ -217,19 +239,21 @@ export default function EmployeeProfilePanel({ employee }) {
               <div style={{ fontSize: "1.3rem", fontWeight: 700, color: "var(--text-primary)" }}>
                 {formatCurrencyValue(employee.annualSalary)}
               </div>
-            </div>
+            </DevLayoutSection>
             <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
-              <KeyValue label="Hourly Rate" value={formatCurrencyValue(employee.hourlyRate)} helper="Base rate" />
-              <KeyValue label="Contracted Hours" value={formatHours(employee.contractedHours)} helper="Per week" />
+              <KeyValue label="Hourly Rate" value={formatCurrencyValue(employee.hourlyRate)} helper="Base rate" sectionKey="hr-employee-hourly-rate" parentKey="hr-employee-compensation-hours" />
+              <KeyValue label="Contracted Hours" value={formatHours(employee.contractedHours)} helper="Per week" sectionKey="hr-employee-contracted-hours" parentKey="hr-employee-compensation-hours" />
             </div>
           </div>
         </CardBlock>
 
-        <CardBlock title="Contact Information" icon="CI">
+        <CardBlock title="Contact Information" icon="CI" sectionKey="hr-employee-contact-information" parentKey="hr-employee-profile-sections">
           <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
             <KeyValue
               label="Email"
               value={employee.email}
+              sectionKey="hr-employee-email"
+              parentKey="hr-employee-contact-information"
               actions={
                 employee.email && (
                   <ActionRow>
@@ -242,6 +266,8 @@ export default function EmployeeProfilePanel({ employee }) {
             <KeyValue
               label="Phone"
               value={employee.phone}
+              sectionKey="hr-employee-phone"
+              parentKey="hr-employee-contact-information"
               actions={
                 employee.phone && (
                   <ActionRow>
@@ -254,6 +280,8 @@ export default function EmployeeProfilePanel({ employee }) {
             <KeyValue
               label="Emergency Contact"
               value={employee.emergencyContact}
+              sectionKey="hr-employee-emergency-contact"
+              parentKey="hr-employee-contact-information"
               actions={
                 employee.emergencyContact && (
                   <ActionRow>
@@ -265,6 +293,8 @@ export default function EmployeeProfilePanel({ employee }) {
             <KeyValue
               label="Address"
               value={employee.address}
+              sectionKey="hr-employee-address"
+              parentKey="hr-employee-contact-information"
               actions={
                 employee.address && (
                   <ActionRow>
@@ -276,12 +306,16 @@ export default function EmployeeProfilePanel({ employee }) {
           </div>
         </CardBlock>
 
-        <CardBlock title="Documents" icon="DOC" action={null}>
-          <button
+        <CardBlock title="Documents" icon="DOC" action={null} sectionKey="hr-employee-documents" parentKey="hr-employee-profile-sections">
+          <DevLayoutSection
+            as="button"
+            sectionKey="hr-employee-upload-document"
+            parentKey="hr-employee-documents"
+            sectionType="toolbar"
             type="button"
-            className="w-full"
             onClick={() => setShowDocumentsPopup(true)}
             style={{
+              width: "100%",
               padding: "var(--control-padding)",
               borderRadius: "var(--radius-sm)",
               border: "none",
@@ -292,12 +326,21 @@ export default function EmployeeProfilePanel({ employee }) {
             }}
           >
             Upload document
-          </button>
-          <div style={{ display: "grid", gap: "10px" }}>
+          </DevLayoutSection>
+          <DevLayoutSection
+            as="div"
+            sectionKey="hr-employee-documents-list"
+            parentKey="hr-employee-documents"
+            sectionType="data-table"
+            style={{ display: "grid", gap: "10px" }}
+          >
             {employee.documents?.length > 0 ? (
-              employee.documents.map((doc) => (
-                <div
+              employee.documents.map((doc, index) => (
+                <DevLayoutSection
                   key={doc.id}
+                  sectionKey={`hr-employee-document-${doc.id || index + 1}`}
+                  parentKey="hr-employee-documents-list"
+                  sectionType="table-row"
                   style={{
                     borderRadius: "var(--radius-sm)",
                     border: "none",
@@ -332,10 +375,13 @@ export default function EmployeeProfilePanel({ employee }) {
                   >
                     View
                   </button>
-                </div>
+                </DevLayoutSection>
               ))
             ) : (
-              <div
+              <DevLayoutSection
+                sectionKey="hr-employee-documents-empty"
+                parentKey="hr-employee-documents-list"
+                sectionType="content-card"
                 style={{
                   borderRadius: "var(--radius-sm)",
                   border: "1px dashed rgba(var(--grey-accent-rgb), 0.4)",
@@ -345,11 +391,11 @@ export default function EmployeeProfilePanel({ employee }) {
                 }}
               >
                 No documents uploaded yet.
-              </div>
+              </DevLayoutSection>
             )}
-          </div>
+          </DevLayoutSection>
         </CardBlock>
-      </section>
+      </DevLayoutSection>
 
       <DocumentsUploadPopup
         open={showDocumentsPopup}
@@ -361,9 +407,16 @@ export default function EmployeeProfilePanel({ employee }) {
   );
 }
 
-function CardBlock({ title, icon, action = null, children }) {
+function CardBlock({ title, icon, action = null, children, sectionKey, parentKey }) {
   return (
-    <section style={sectionCardStyle}>
+    <DevLayoutSection
+      as="section"
+      sectionKey={sectionKey}
+      parentKey={parentKey}
+      sectionType="content-card"
+      backgroundToken="surface"
+      style={sectionCardStyle}
+    >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <span
@@ -387,13 +440,20 @@ function CardBlock({ title, icon, action = null, children }) {
         {action}
       </div>
       {children}
-    </section>
+    </DevLayoutSection>
   );
 }
 
-function KeyValue({ label, value, helper, actions }) {
+function KeyValue({ label, value, helper, actions, sectionKey, parentKey }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+    <DevLayoutSection
+      as="div"
+      sectionKey={sectionKey}
+      parentKey={parentKey}
+      sectionType="content-card"
+      backgroundToken="surface"
+      style={{ display: "flex", flexDirection: "column", gap: "6px" }}
+    >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "10px" }}>
         <span style={labelStyle}>{label}</span>
         {actions}
@@ -402,7 +462,7 @@ function KeyValue({ label, value, helper, actions }) {
         {value || "-"}
       </span>
       {helper && <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>{helper}</span>}
-    </div>
+    </DevLayoutSection>
   );
 }
 

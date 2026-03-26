@@ -2,28 +2,19 @@
 // file location: src/pages/profile/index.js
 import React, { useMemo, useState, useEffect, useCallback, useRef } from "react"; // React for UI and memoization
 import { usePolling } from "@/hooks/usePolling"; // visibility-gated polling
-import { createPortal } from "react-dom";
 import { useRouter } from "next/router"; // Next.js router for query params
 import { useSession } from "next-auth/react"; // NextAuth session for authentication
 import Layout from "@/components/Layout"; // shared layout wrapper
 import { useUser } from "@/context/UserContext"; // Keycloak user context
-import useBodyModalLock from "@/hooks/useBodyModalLock";
 import { useHrOperationsData } from "@/hooks/useHrData"; // Supabase-backed HR aggregation hook (admin only)
 import { StatusTag } from "@/components/HR/MetricCard"; // HR UI components
 import { CalendarField } from "@/components/calendarAPI";
 import { DropdownField } from "@/components/dropdownAPI";
 import StaffVehiclesCard from "@/components/HR/StaffVehiclesCard";
-import { ACCENT_PALETTES, useTheme } from "@/styles/themeProvider";
 import { isHrCoreRole, isManagerScopedRole } from "@/lib/auth/roles"; // Role checking utilities
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
+import PopupModal from "@/components/popups/popupStyleApi";
 import Button from "@/components/ui/Button";
-
-const SAFE_ACCENT_PALETTES =
-  ACCENT_PALETTES && typeof ACCENT_PALETTES === "object"
-    ? ACCENT_PALETTES
-    : {
-        red: { label: "Red", light: "#dc2626", dark: "#f87171" },
-      };
 
 function formatDate(value) {
   if (!value) return "-"; // guard empty values
@@ -215,6 +206,7 @@ function LeaveRequestModal({
   onClose,
   onSubmit,
   isSubmitting,
+  submitError = "",
   initialValues = null,
   mode = "create",
   onRemove = null,
@@ -228,7 +220,6 @@ function LeaveRequestModal({
     notes: "",
   });
   const [error, setError] = useState(null);
-  useBodyModalLock(isOpen);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -293,34 +284,19 @@ function LeaveRequestModal({
     });
   };
 
-  const modal = (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 9999,
+  return (
+    <PopupModal
+      isOpen={isOpen}
+      onClose={onClose}
+      ariaLabel={mode === "edit" ? "Edit leave request" : "Request leave"}
+      cardStyle={{
+        width: "min(100%, 460px)",
+        padding: "28px",
         display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "rgba(0,0,0,0.5)",
-      }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        flexDirection: "column",
+        gap: "18px",
       }}
     >
-      <div
-        style={{
-          background: "var(--surface)",
-          borderRadius: "var(--radius-md)",
-          padding: "28px",
-          width: "100%",
-          maxWidth: "460px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "18px",
-          boxShadow: "var(--shadow-lg)",
-        }}
-      >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <h2 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 700, color: "var(--text-primary)" }}>
             {mode === "edit" ? "Edit Leave Request" : "Request Leave"}
@@ -444,6 +420,7 @@ function LeaveRequestModal({
           </label>
 
           {error && <div style={{ color: "var(--danger)", fontSize: "0.85rem" }}>{error}</div>}
+          {!error && submitError ? <div style={{ color: "var(--danger)", fontSize: "0.85rem" }}>{submitError}</div> : null}
 
           <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "4px" }}>
             {mode === "edit" && onRemove ? (
@@ -479,11 +456,8 @@ function LeaveRequestModal({
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+    </PopupModal>
   );
-
-  return typeof document === "undefined" ? modal : createPortal(modal, document.body);
 }
 
 const modalLabelStyle = {
@@ -504,43 +478,6 @@ const modalInputStyle = {
   fontSize: "0.9rem",
   fontWeight: 500,
 };
-
-function AccentOptionContent({ label, light, dark }) {
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: "8px",
-        minWidth: 0,
-      }}
-    >
-      <span
-        aria-hidden="true"
-        style={{
-          width: "12px",
-          height: "12px",
-          borderRadius: "var(--radius-pill)",
-          border: "1px solid rgba(var(--text-primary-rgb), 0.2)",
-          background: `linear-gradient(90deg, ${light} 0 50%, ${dark} 50% 100%)`,
-          flexShrink: 0,
-        }}
-      />
-      <span
-        style={{
-          fontWeight: 700,
-          background: `linear-gradient(90deg, ${light} 0 50%, ${dark} 50% 100%)`,
-          WebkitBackgroundClip: "text",
-          backgroundClip: "text",
-          color: "transparent",
-          lineHeight: 1.1,
-        }}
-      >
-        {label}
-      </span>
-    </span>
-  );
-}
 
 // Day labels for recurring overtime rules — Mon-Sat only (no Sundays)
 const RECURRING_DAY_MAP = { 1: "Monday", 2: "Tuesday", 3: "Wednesday", 4: "Thursday", 5: "Friday", 6: "Saturday" };
@@ -575,8 +512,6 @@ function ManualOvertimeModal({ isOpen, onClose, onSaved, userId = null }) {
   const [bulkNote, setBulkNote] = useState("");
   const [error, setError] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
-
-  useBodyModalLock(isOpen);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -698,34 +633,19 @@ function ManualOvertimeModal({ isOpen, onClose, onSaved, userId = null }) {
     transition: "color 0.15s, border-color 0.15s",
   });
 
-  const modal = (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 9999,
+  return (
+    <PopupModal
+      isOpen={isOpen}
+      onClose={onClose}
+      ariaLabel="Add overtime"
+      cardStyle={{
+        width: "min(100%, 520px)",
+        padding: "24px",
         display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "rgba(0,0,0,0.5)",
-        padding: "20px",
-      }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        flexDirection: "column",
+        gap: "16px",
       }}
     >
-      <div
-        style={{
-          width: "min(520px, 100%)",
-          borderRadius: "var(--radius-md)",
-          background: "var(--surface)",
-          padding: "24px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "16px",
-          boxShadow: "var(--shadow-lg)",
-        }}
-      >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
           <div>
             <h3 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700 }}>Add overtime</h3>
@@ -874,11 +794,8 @@ function ManualOvertimeModal({ isOpen, onClose, onSaved, userId = null }) {
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+    </PopupModal>
   );
-
-  return typeof document === "undefined" ? modal : createPortal(modal, document.body);
 }
 
 // Modal for managing recurring overtime rules — grouped list with smart summaries and add/edit form
@@ -1339,35 +1256,19 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
     </div>
   );
 
-  const modal = (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        backgroundColor: "rgba(0, 0, 0, 0.6)",
+  return (
+    <PopupModal
+      isOpen={isOpen}
+      onClose={onClose}
+      ariaLabel="Recurring overtime rules"
+      cardStyle={{
+        width: "min(100%, 560px)",
+        padding: "28px 32px",
         display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "20px",
-        zIndex: 9999,
-        backdropFilter: "blur(8px)",
+        flexDirection: "column",
+        gap: "16px",
       }}
-      onClick={onClose}
     >
-      <div
-        style={{
-          width: "min(560px, 100%)",
-          maxHeight: "90vh",
-          overflowY: "auto",
-          borderRadius: "var(--radius-lg)",
-          background: "var(--surface)",
-          padding: "28px 32px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "16px",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
         {/* Modal header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
@@ -1570,11 +1471,8 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
             Close
           </button>
         </div>
-      </div>
-    </div>
+    </PopupModal>
   );
-
-  return typeof document === "undefined" ? modal : createPortal(modal, document.body); // portal to body
 }
 
 export function ProfileWorkTab({
@@ -1586,8 +1484,6 @@ export function ProfileWorkTab({
   const router = useRouter(); // access query params
   const { user, dbUserId } = useUser(); // Keycloak session details + Supabase id for dev mode
   const { data: session } = useSession(); // NextAuth session for role checking
-  const { mode: themeMode, resolvedMode, toggleTheme, accent, setAccent } = useTheme();
-
   // State for user's own profile data (non-admin users)
   const [userProfileData, setUserProfileData] = useState(null);
   const [userProfileLoading, setUserProfileLoading] = useState(true);
@@ -1737,22 +1633,6 @@ export function ProfileWorkTab({
   const profile = shouldUseHrData ? hrProfile : userProfileData?.profile;
   const emergencyParts = useMemo(() => splitEmergencyContact(profile?.emergencyContact), [profile?.emergencyContact]);
 
-  const themeLabel = useMemo(() => {
-    if (themeMode === "system") {
-      return `System (${resolvedMode === "dark" ? "dark" : "light"})`;
-    }
-    return themeMode === "dark" ? "Dark mode" : "Light mode";
-  }, [resolvedMode, themeMode]);
-
-  const accentOptions = useMemo(
-    () =>
-      Object.entries(SAFE_ACCENT_PALETTES).map(([value, palette]) => ({
-        value,
-        label: <AccentOptionContent label={palette.label} light={palette.light} dark={palette.dark} />,
-      })),
-    []
-  );
-
   const aggregatedStats = useMemo(() => {
     if (!profile) return null; // bail if profile missing
 
@@ -1844,6 +1724,7 @@ export function ProfileWorkTab({
   const [leaveSubmitting, setLeaveSubmitting] = useState(false);
   const [leaveRemoving, setLeaveRemoving] = useState(false);
   const [editingLeaveRequest, setEditingLeaveRequest] = useState(null);
+  const [leaveSubmitError, setLeaveSubmitError] = useState("");
   const [confirmDialog, setConfirmDialog] = useState(null);
 
   // Emergency contact edit state
@@ -1857,6 +1738,7 @@ export function ProfileWorkTab({
 
   const handleLeaveSubmit = useCallback(async (formData) => {
     setLeaveSubmitting(true);
+    setLeaveSubmitError("");
     try {
       const isEditMode = Boolean(editingLeaveRequest?.id);
       const response = await fetch(
@@ -1880,7 +1762,7 @@ export function ProfileWorkTab({
       alert(`Leave request ${isEditMode ? "updated" : "submitted"} successfully.`);
     } catch (err) {
       console.error("Leave request error:", err);
-      alert(`Failed to ${editingLeaveRequest?.id ? "update" : "submit"} leave request. ` + (err.message || ""));
+      setLeaveSubmitError(err.message || `Failed to ${editingLeaveRequest?.id ? "update" : "submit"} leave request.`);
     } finally {
       setLeaveSubmitting(false);
     }
@@ -1888,6 +1770,7 @@ export function ProfileWorkTab({
 
   const handleEditLeaveRequest = useCallback((request) => {
     if (!request?.id) return;
+    setLeaveSubmitError("");
     setEditingLeaveRequest({
       id: request.id,
       type: request.type,
@@ -1992,36 +1875,10 @@ export function ProfileWorkTab({
   const attendanceRecords = aggregatedStats?.attendanceRecords ?? [];
   const shouldScrollAttendanceHistory = attendanceRecords.length >= 5;
 
-  const headerActions = useMemo(
-    () => (
-      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
-        <div style={{ minWidth: "170px", width: "170px" }}>
-          <DropdownField
-            value={accent}
-            onValueChange={setAccent}
-            options={accentOptions}
-            className="profile-accent-dropdown"
-          />
-        </div>
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          className="app-btn--control"
-          onClick={toggleTheme}
-          aria-label="Cycle theme"
-        >
-          {themeLabel}
-        </Button>
-      </div>
-    ),
-    [accent, accentOptions, setAccent, themeLabel, toggleTheme]
-  );
-
   useEffect(() => {
-    onHeaderActionsChange?.(headerActions);
+    onHeaderActionsChange?.(null);
     return () => onHeaderActionsChange?.(null);
-  }, [headerActions, onHeaderActionsChange]);
+  }, [onHeaderActionsChange]);
 
   if (!user && !session?.user && !previewUserParam) {
     const fallback = (
@@ -2248,6 +2105,7 @@ export function ProfileWorkTab({
                     size="sm"
                     onClick={() => {
                       setEditingLeaveRequest(null);
+                      setLeaveSubmitError("");
                       setLeaveModalOpen(true);
                     }}
                   >
@@ -2355,9 +2213,11 @@ export function ProfileWorkTab({
                 onClose={() => {
                   setLeaveModalOpen(false);
                   setEditingLeaveRequest(null);
+                  setLeaveSubmitError("");
                 }}
                 onSubmit={handleLeaveSubmit}
                 isSubmitting={leaveSubmitting}
+                submitError={leaveSubmitError}
                 initialValues={editingLeaveRequest}
                 mode={editingLeaveRequest ? "edit" : "create"}
                 onRemove={editingLeaveRequest ? handleRemoveLeaveRequest : null}

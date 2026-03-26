@@ -156,6 +156,11 @@ export function CardDivider() {
 }
 
 export function SectionLabel({ children }) {
+  const content =
+    typeof children === "string"
+      ? children.replace(/\s*\((?:Database|Linked)\)\s*/g, "").trim()
+      : children;
+
   return (
     <div
       style={{
@@ -167,7 +172,7 @@ export function SectionLabel({ children }) {
         paddingTop: "2px",
       }}
     >
-      {children}
+      {content}
     </div>
   );
 }

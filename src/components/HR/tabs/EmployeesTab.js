@@ -11,8 +11,31 @@ import EmployeeProfilePanel from "@/components/HR/EmployeeProfilePanel";
 import { roleCategories } from "@/config/users";
 import { CalendarField } from "@/components/calendarAPI"; // Date input component
 import { DropdownField } from "@/components/dropdownAPI";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 const defaultFilters = { department: "all", status: "all", employmentType: "all" };
+
+const surfaceButtonStyle = {
+  padding: "var(--control-padding)",
+  borderRadius: "var(--input-radius)",
+  border: "1px solid var(--surface-light)",
+  background: "var(--surface)",
+  fontWeight: 600,
+  color: "var(--text-primary)",
+  cursor: "pointer",
+};
+
+const primaryButtonStyle = {
+  ...surfaceButtonStyle,
+  border: "1px solid rgba(var(--primary-rgb), 0.18)",
+  background: "var(--primary)",
+  color: "var(--text-inverse)",
+};
+
+const accentFieldSurface = {
+  background: "var(--surface)",
+  border: "1px solid var(--surface-light)",
+};
 
 const buildUniqueList = (items = []) => {
   const map = new Map();
@@ -268,12 +291,6 @@ export default function EmployeesTab() {
     [employees]
   );
 
-  useEffect(() => {
-    if (!isLoading && !error && employees.length > 0 && !selectedEmployeeId) {
-      setSelectedEmployeeId(employees[0].id);
-    }
-  }, [isLoading, error, employees, selectedEmployeeId]);
-
   const filteredEmployees = useMemo(() => {
     return employees.filter((employee) => {
       const departmentPass =
@@ -295,6 +312,27 @@ export default function EmployeesTab() {
     () => employees.find((emp) => emp.id === selectedEmployeeId) ?? null,
     [employees, selectedEmployeeId]
   );
+
+  const employeeSummary = useMemo(() => {
+    const active = filteredEmployees.filter((employee) => employee.status === "Active").length;
+    const inactive = filteredEmployees.filter((employee) => employee.status && employee.status !== "Active").length;
+    return {
+      total: filteredEmployees.length,
+      active,
+      inactive,
+    };
+  }, [filteredEmployees]);
+
+  useEffect(() => {
+    if (isLoading || error) return;
+    if (filteredEmployees.length === 0) {
+      setSelectedEmployeeId(null);
+      return;
+    }
+    if (!filteredEmployees.some((employee) => employee.id === selectedEmployeeId)) {
+      setSelectedEmployeeId(filteredEmployees[0].id);
+    }
+  }, [isLoading, error, filteredEmployees, selectedEmployeeId]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -406,10 +444,31 @@ export default function EmployeesTab() {
 
   const upsertLocalEmployee = (employeeRecord) => {
     if (!employeeRecord) return;
+    const normalizedLineManagerIds = Array.isArray(employeeRecord.lineManagerIds)
+      ? employeeRecord.lineManagerIds.map((entry) => Number(entry)).filter(Boolean)
+      : [];
+    const fallbackLineManagers = normalizedLineManagerIds
+      .map((managerId) => {
+        const match = lineManagerOptions.find((option) => Number(option.value) === managerId);
+        if (!match) return null;
+        return {
+          userId: managerId,
+          name: match.label,
+        };
+      })
+      .filter(Boolean);
+    const enrichedEmployeeRecord = {
+      ...employeeRecord,
+      lineManagerIds: normalizedLineManagerIds,
+      lineManagers:
+        Array.isArray(employeeRecord.lineManagers) && employeeRecord.lineManagers.length > 0
+          ? employeeRecord.lineManagers
+          : fallbackLineManagers,
+    };
     setLocalEmployees((prev) => {
-      const key = employeeRecord.userId || employeeRecord.id || employeeRecord.email;
+      const key = enrichedEmployeeRecord.userId || enrichedEmployeeRecord.id || enrichedEmployeeRecord.email;
       const filtered = prev.filter((emp) => (emp.userId || emp.id || emp.email) !== key);
-      return [...filtered, employeeRecord];
+      return [...filtered, enrichedEmployeeRecord];
     });
   };
 
@@ -631,41 +690,33 @@ export default function EmployeesTab() {
   const directorySection = (
     <section
       ref={directorySectionRef}
-      style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: "20px" }}
+      className="hr-employees-layout"
     >
       <SectionCard
+        sectionKey="hr-employees-directory-card"
+        parentKey="hr-employees-directory"
+        sectionType="content-card"
+        backgroundToken="surface"
+        className="hr-employees-directory-card"
         title=""
         subtitle={null}
         action={
-          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end" }}>
-            <div style={{ position: "relative", minWidth: "260px", flex: "1 1 320px" }}>
+          <DevLayoutSection
+            sectionKey="hr-employees-directory-toolbar"
+            parentKey="hr-employees-directory-card"
+            sectionType="filter-row"
+            className="hr-employees-directory-toolbar"
+          >
+            <div className="hr-employees-search">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by employee name..."
-                style={{
-                  width: "100%",
-                  padding: "10px 120px 10px 14px",
-                  borderRadius: "var(--input-radius)",
-                  border: "none",
-                  background: "var(--surface-light)",
-                  color: "var(--text-primary)",
-                  fontSize: "0.9rem",
-                  outline: "none",
-                }}
+                className="hr-employees-search-input"
               />
               <span
-                style={{
-                  position: "absolute",
-                  right: "12px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  fontSize: "0.7rem",
-                  color: "var(--text-secondary)",
-                  pointerEvents: "none",
-                  whiteSpace: "nowrap",
-                }}
+                className="hr-employees-search-meta"
               >
                 {filteredEmployees.length} of {employees.length} employees
               </span>
@@ -676,154 +727,147 @@ export default function EmployeesTab() {
               departments={uniqueDepartments}
               employmentTypes={uniqueEmploymentTypes}
             />
-          </div>
+          </DevLayoutSection>
         }
       >
-        <div style={{ maxHeight: "540px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "10px" }}>
-          {filteredEmployees.length === 0 && (
-            <div
-              style={{
-                padding: "16px",
-                borderRadius: "var(--radius-sm)",
-                border: "1px dashed var(--surface-light)",
-                textAlign: "center",
-                color: "var(--text-secondary)",
-                background: "var(--surface)",
-              }}
-            >
-              No employees match the current filters.
+          <div className="hr-employees-summary-row">
+            <div className="hr-employees-summary-card">
+              <span className="hr-employees-summary-label">Visible employees</span>
+              <strong className="hr-employees-summary-value">{employeeSummary.total}</strong>
             </div>
-          )}
-          {filteredEmployees.map((employee) => {
-            const isSelected = employee.id === selectedEmployeeId;
-            return (
-              <button
-                type="button"
-                key={employee.id}
-                onClick={() => setSelectedEmployeeId(employee.id)}
+            <div className="hr-employees-summary-card">
+              <span className="hr-employees-summary-label">Active</span>
+              <strong className="hr-employees-summary-value">{employeeSummary.active}</strong>
+            </div>
+            <div className="hr-employees-summary-card">
+              <span className="hr-employees-summary-label">Inactive / leave</span>
+              <strong className="hr-employees-summary-value">{employeeSummary.inactive}</strong>
+            </div>
+          </div>
+          <DevLayoutSection
+            sectionKey="hr-employees-directory-list"
+            parentKey="hr-employees-directory-card"
+            sectionType="data-table"
+            backgroundToken="accent-surface"
+            className="hr-employees-list"
+          >
+            {filteredEmployees.length === 0 && (
+              <div
                 style={{
-                  cursor: "pointer",
-                  textAlign: "left",
-                  padding: "14px",
+                  padding: "16px",
                   borderRadius: "var(--radius-sm)",
-                  border: isSelected ? "1px solid var(--accent-purple)" : "none",
-                  background: isSelected ? "rgba(var(--accent-purple-rgb), 0.12)" : "var(--surface)",
-                  display: "grid",
-                  gridTemplateColumns: "46px 1fr auto",
-                  gap: "12px",
-                  alignItems: "center",
-                  boxShadow: isSelected ? "0 10px 24px rgba(0,0,0,0.18)" : "none",
-                  transition: "all 0.15s ease",
-                }}
-                onMouseEnter={(e) => {
-                  if (!isSelected) {
-                    e.currentTarget.style.background = "rgba(var(--accent-purple-rgb), 0.06)";
-                    e.currentTarget.style.borderColor = "rgba(var(--accent-purple-rgb), 0.4)";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isSelected) {
-                    e.currentTarget.style.background = "var(--surface)";
-                    e.currentTarget.style.borderColor = "var(--surface-light)";
-                  }
+                  border: "1px dashed var(--surface-light)",
+                  textAlign: "center",
+                  color: "var(--text-secondary)",
+                  background: "var(--surface)",
                 }}
               >
-                <div
-                  style={{
-                    width: "46px",
-                    height: "46px",
-                    borderRadius: "var(--radius-full)",
-                    background: "rgba(var(--accent-purple-rgb), 0.2)",
-                    color: "var(--accent-purple)",
-                    fontWeight: 700,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    border: "1px solid rgba(var(--accent-purple-rgb), 0.4)",
-                    fontSize: "0.85rem",
-                    letterSpacing: "0.08em",
+                No employees match the current filters.
+              </div>
+            )}
+            {filteredEmployees.map((employee) => {
+              const isSelected = employee.id === selectedEmployeeId;
+              return (
+                <DevLayoutSection
+                  as="div"
+                  key={employee.id}
+                  sectionKey={`hr-employee-row-${employee.userId || employee.id}`}
+                  parentKey="hr-employees-directory-list"
+                  sectionType="table-row"
+                  backgroundToken="accent-surface"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setSelectedEmployeeId(employee.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setSelectedEmployeeId(employee.id);
+                    }
                   }}
-                >
-                  {getInitials(employee.name)}
-                </div>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px", minWidth: 0 }}>
-                  <span style={{ fontWeight: 700, color: "var(--text-primary)", fontSize: "1rem" }}>
-                    {employee.name}
-                  </span>
-                  <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-                    {employee.department || "Department"} • {employee.jobTitle || employee.role || "Role"}
-                  </span>
-                  <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                    {employee.status && (
-                      <span
-                        style={{
-                          padding: "4px 8px",
-                          borderRadius: "var(--radius-pill)",
-                          border: "1px solid rgba(var(--accent-purple-rgb), 0.4)",
-                          background: "rgba(var(--accent-purple-rgb), 0.12)",
-                          color: "var(--accent-purple)",
-                          fontSize: "0.65rem",
-                          fontWeight: 600,
-                        }}
-                      >
-                        {employee.status}
-                      </span>
-                    )}
-                    {employee.employmentType && (
-                      <span
-                        style={{
-                          padding: "4px 8px",
-                          borderRadius: "var(--radius-pill)",
-                          border: "none",
-                          background: "rgba(var(--grey-accent-rgb), 0.15)",
-                          color: "var(--text-primary)",
-                          fontSize: "0.65rem",
-                          fontWeight: 600,
-                        }}
-                      >
-                        {employee.employmentType}
-                      </span>
-                    )}
+                aria-pressed={isSelected}
+                className={`hr-employees-row${isSelected ? " is-selected" : ""}`}
+                style={{
+                  border: isSelected ? "1px solid rgba(var(--primary-rgb), 0.55)" : "1px solid rgba(var(--primary-rgb), 0.2)",
+                  background: isSelected ? "rgba(var(--primary-rgb), 0.12)" : "rgba(var(--primary-rgb), 0.08)",
+                }}
+              >
+                  <div className="hr-employees-row-avatar">
+                    {getInitials(employee.name)}
                   </div>
-                </div>
 
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <StatusTag
-                    label={employee.status}
-                    tone={employee.status === "Active" ? "success" : "danger"}
-                  />
-                  <span style={{ color: "var(--text-secondary)", fontSize: "1.1rem" }}>{">"}</span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+                  <div className="hr-employees-row-body">
+                    <div className="hr-employees-row-header">
+                      <span className="hr-employees-row-name">
+                        {employee.name}
+                      </span>
+                      {employee.email ? (
+                        <span className="hr-employees-row-email">{employee.email}</span>
+                      ) : null}
+                    </div>
+                    <span className="hr-employees-row-role">
+                      {employee.department || "Department"} • {employee.jobTitle || employee.role || "Role"}
+                    </span>
+                    <div className="hr-employees-row-meta">
+                      {employee.startDate ? <span>Started {employee.startDate}</span> : null}
+                      {employee.phone ? <span>{employee.phone}</span> : null}
+                      {employee.contractedHours ? <span>{employee.contractedHours} hrs / week</span> : null}
+                    </div>
+                    <div className="hr-employees-row-badges">
+                      {employee.status && (
+                        <span className="hr-employees-row-pill hr-employees-row-pill--status">
+                          {employee.status}
+                        </span>
+                      )}
+                      {employee.employmentType && (
+                        <span className="hr-employees-row-pill">
+                          {employee.employmentType}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="hr-employees-row-end">
+                    <StatusTag
+                      label={employee.status}
+                      tone={employee.status === "Active" ? "success" : "danger"}
+                    />
+                    <span className="hr-employees-row-chevron">{">"}</span>
+                  </div>
+                </DevLayoutSection>
+              );
+            })}
+          </DevLayoutSection>
       </SectionCard>
 
-      <div
+      <DevLayoutSection
         ref={detailPanelRef}
-        style={{ display: "flex", flexDirection: "column", gap: "12px", maxHeight: "680px", overflowY: "auto" }}
+        sectionKey="hr-employees-detail-panel"
+        parentKey="hr-manager-tab-employees"
+        sectionType="content-card"
+        className="hr-employees-detail-panel"
       >
-        <EmployeeProfilePanel employee={selectedEmployee} />
-        {selectedEmployee && (
-          <button
-            type="button"
-            onClick={handleStartEditEmployee}
-            style={{
-              padding: "var(--control-padding)",
-              borderRadius: "var(--input-radius)",
-              border: "1px solid var(--accent-purple-surface)",
-              background: "var(--surface)",
-              fontWeight: 600,
-              color: "var(--accent-purple)",
-              cursor: "pointer",
-            }}
+        {selectedEmployee ? (
+          <>
+            <EmployeeProfilePanel employee={selectedEmployee} />
+            <button
+              type="button"
+              onClick={handleStartEditEmployee}
+              style={surfaceButtonStyle}
+            >
+              Edit employee details
+            </button>
+          </>
+        ) : (
+          <SectionCard
+            title="Select an employee"
+            subtitle="Choose a row from the directory to review profile and employment details."
           >
-            Edit employee details
-          </button>
+            <span style={{ color: "var(--text-secondary)" }}>
+              The detail panel stays here so HR managers can compare records without losing their place in the list.
+            </span>
+          </SectionCard>
         )}
-      </div>
+      </DevLayoutSection>
     </section>
   );
 
@@ -913,45 +957,40 @@ export default function EmployeesTab() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      {/* Header Actions */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div />
-        <div style={{ display: "flex", gap: "12px" }}>
+    <>
+      <DevLayoutSection
+        sectionKey="hr-employees-header"
+        parentKey="hr-manager-tab-employees"
+        sectionType="toolbar"
+        className="hr-employees-topbar"
+      >
+        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
           <button
             type="button"
             onClick={handleShowAddEmployee}
-            style={{
-              padding: "var(--control-padding)",
-              borderRadius: "var(--input-radius)",
-              border: "1px solid var(--accent-purple-surface)",
-              background: "var(--surface)",
-              fontWeight: 600,
-              color: "var(--accent-purple)",
-              cursor: "pointer",
-            }}
+            style={surfaceButtonStyle}
           >
             + Add Employee
           </button>
           <button
             type="button"
-            style={{
-              padding: "var(--control-padding)",
-              borderRadius: "var(--input-radius)",
-              border: "none",
-              background: "var(--accent-purple)",
-              fontWeight: 600,
-              color: "white",
-              cursor: "pointer",
-            }}
+            style={primaryButtonStyle}
           >
             Manage Keycloak Access
           </button>
         </div>
-      </div>
+      </DevLayoutSection>
 
-      {editFormSection ? editFormSection : isAddingEmployee ? addFormSection : directorySection}
-    </div>
+      {editFormSection ? editFormSection : isAddingEmployee ? addFormSection : (
+        <DevLayoutSection
+          sectionKey="hr-employees-directory"
+          parentKey="hr-manager-tab-employees"
+          sectionType="content-card"
+        >
+          {directorySection}
+        </DevLayoutSection>
+      )}
+    </>
   );
 }
 
@@ -983,15 +1022,7 @@ function EmployeeForm({
             <button
               type="button"
               onClick={onCancel}
-              style={{
-                padding: "var(--control-padding)",
-                borderRadius: "var(--radius-xs)",
-                border: "none",
-                background: "var(--surface)",
-                fontWeight: 600,
-                color: "var(--text-primary)",
-                cursor: "pointer",
-              }}
+              style={surfaceButtonStyle}
             >
               Back
             </button>
@@ -1000,12 +1031,7 @@ function EmployeeForm({
               onClick={onSave}
               disabled={isSaving}
               style={{
-                padding: "var(--control-padding)",
-                borderRadius: "var(--radius-xs)",
-                border: "none",
-                background: "var(--accent-purple)",
-                fontWeight: 600,
-                color: "white",
+                ...primaryButtonStyle,
                 cursor: isSaving ? "not-allowed" : "pointer",
                 opacity: isSaving ? 0.7 : 1,
               }}
@@ -1108,10 +1134,11 @@ function SearchableListDropdown({
         onFocus={() => setIsOpen(true)}
         placeholder={placeholder}
         style={{
+          ...accentFieldSurface,
           padding: "10px",
           borderRadius: "var(--radius-xs)",
-          border: hasError ? "1px solid var(--danger)" : "none",
-          boxShadow: hasError ? "0 0 0 2px rgba(var(--danger-rgb), 0.12)" : "none",
+          border: hasError ? "1px solid var(--danger)" : accentFieldSurface.border,
+            boxShadow: hasError ? "0 0 0 2px rgba(var(--danger-rgb), 0.12)" : "none",
           width: "100%",
           cursor: "pointer",
         }}
@@ -1130,7 +1157,6 @@ function SearchableListDropdown({
             borderRadius: "var(--radius-xs)",
             marginTop: "4px",
             zIndex: 1000,
-            boxShadow: "var(--shadow-md)",
           }}
         >
           {filteredItems.length > 0 ? (
@@ -1141,8 +1167,8 @@ function SearchableListDropdown({
                 style={{
                   padding: "10px 12px",
                   cursor: "pointer",
-                  background: value === item ? "rgba(var(--accent-purple-rgb), 0.1)" : "transparent",
-                  color: value === item ? "var(--accent-purple)" : "var(--text-primary)",
+                  background: value === item ? "rgba(var(--primary-rgb), 0.1)" : "var(--surface)",
+                  color: value === item ? "var(--primary)" : "var(--text-primary)",
                   fontWeight: value === item ? 600 : 400,
                 }}
                 onMouseEnter={(e) => {
@@ -1152,7 +1178,7 @@ function SearchableListDropdown({
                 }}
                 onMouseLeave={(e) => {
                   if (value !== item) {
-                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.background = "var(--surface)";
                   }
                 }}
               >
@@ -1182,6 +1208,7 @@ function SearchableMultiSelect({
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = React.useRef(null);
+  const controlInputRef = React.useRef(null);
 
   const normalizedExcludeIds = useMemo(
     () => new Set((excludeIds || []).map((entry) => Number(entry)).filter(Boolean)),
@@ -1230,14 +1257,17 @@ function SearchableMultiSelect({
   return (
     <div ref={dropdownRef} style={{ position: "relative" }}>
       <div
-        onClick={() => setIsOpen(true)}
+        onClick={() => {
+          setIsOpen(true);
+          setTimeout(() => controlInputRef.current?.focus(), 0);
+        }}
         style={{
           minHeight: "42px",
           padding: "8px 10px",
           borderRadius: "var(--radius-xs)",
-          border: hasError ? "1px solid var(--danger)" : "1px solid rgba(var(--accent-purple-rgb), 0.18)",
+          border: hasError ? "1px solid var(--danger)" : "1px solid var(--surface-light)",
           boxShadow: hasError ? "0 0 0 2px rgba(var(--danger-rgb), 0.12)" : "none",
-          background: "rgba(var(--accent-purple-rgb), 0.08)",
+          background: "var(--surface)",
           display: "flex",
           alignItems: "center",
           gap: "8px",
@@ -1255,24 +1285,47 @@ function SearchableMultiSelect({
                 toggleValue(item.value);
               }}
               style={{
-                border: "1px solid rgba(var(--primary-rgb), 0.45)",
+                border: "1px solid rgba(var(--primary-rgb), 0.24)",
                 borderRadius: "var(--radius-pill)",
                 padding: "8px 12px",
-                background: "var(--primary)",
-                color: "var(--text-inverse)",
+                background: "rgba(var(--primary-rgb), 0.12)",
+                color: "var(--primary)",
                 fontSize: "0.82rem",
                 fontWeight: 600,
                 cursor: "pointer",
-                boxShadow: "0 10px 20px rgba(0,0,0,0.12)",
+                boxShadow: "none",
                 lineHeight: 1,
               }}
             >
               {item.label} ×
             </button>
           ))
-        ) : (
-          <span style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>{placeholder}</span>
-        )}
+        ) : null}
+        <input
+          ref={controlInputRef}
+          type="text"
+          value={searchTerm}
+          onFocus={() => setIsOpen(true)}
+          onClick={(event) => {
+            event.stopPropagation();
+            setIsOpen(true);
+          }}
+          onChange={(event) => {
+            setSearchTerm(event.target.value);
+            if (!isOpen) setIsOpen(true);
+          }}
+          placeholder={selectedItems.length > 0 ? "Search for more users..." : placeholder}
+          style={{
+            flex: "1 1 180px",
+            minWidth: "140px",
+            border: "none",
+            outline: "none",
+            background: "var(--surface)",
+            color: "var(--text-primary)",
+            fontSize: "0.9rem",
+            padding: 0,
+          }}
+        />
       </div>
       {isOpen && (
         <div
@@ -1283,29 +1336,13 @@ function SearchableMultiSelect({
             right: 0,
             maxHeight: "260px",
             overflow: "hidden",
-            background: "rgba(var(--accent-purple-rgb), 0.08)",
+            background: "var(--surface)",
             borderRadius: "var(--radius-xs)",
             marginTop: "4px",
             zIndex: 1000,
-            boxShadow: "var(--shadow-md)",
-            border: "1px solid rgba(var(--accent-purple-rgb), 0.18)",
+            border: "1px solid var(--surface-light)",
           }}
         >
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="Search users..."
-            style={{
-              width: "100%",
-              padding: "10px 12px",
-              border: "none",
-              borderBottom: "1px solid var(--surface-light)",
-              outline: "none",
-              background: "rgba(var(--accent-purple-rgb), 0.14)",
-              color: "var(--text-primary)",
-            }}
-          />
           <div style={{ maxHeight: "210px", overflowY: "auto" }}>
             {filteredItems.length > 0 ? (
               filteredItems.map((item) => {
@@ -1318,7 +1355,7 @@ function SearchableMultiSelect({
                     style={{
                       width: "100%",
                       border: "none",
-                      background: isSelected ? "rgba(var(--accent-purple-rgb), 0.1)" : "transparent",
+                      background: isSelected ? "rgba(var(--primary-rgb), 0.1)" : "var(--surface)",
                       padding: "10px 12px",
                       textAlign: "left",
                       cursor: "pointer",
@@ -1327,7 +1364,7 @@ function SearchableMultiSelect({
                       gap: "2px",
                     }}
                   >
-                    <span style={{ fontWeight: isSelected ? 700 : 600, color: isSelected ? "var(--accent-purple)" : "var(--text-primary)" }}>
+                    <span style={{ fontWeight: isSelected ? 700 : 600, color: isSelected ? "var(--primary)" : "var(--text-primary)" }}>
                       {item.label}
                     </span>
                     {item.description ? (
@@ -1360,13 +1397,13 @@ function SectionHeading({ title, hasError = false, errorCount = 0 }) {
         gap: "10px",
         fontSize: "0.82rem",
         fontWeight: 700,
-        color: hasError ? "var(--danger-dark)" : "var(--accent-purple)",
+        color: hasError ? "var(--danger-dark)" : "var(--primary)",
         textTransform: "uppercase",
         letterSpacing: "0.04em",
         paddingBottom: "6px",
         borderBottom: hasError
           ? "2px solid rgba(var(--danger-rgb), 0.35)"
-          : "2px solid rgba(var(--accent-purple-rgb), 0.15)",
+          : "2px solid rgba(var(--primary-rgb), 0.15)",
       }}
     >
       <span>{title}</span>
@@ -1400,7 +1437,13 @@ function EmployeeDetailsFields({
   lineManagerOptions = [],
 }) {
   const update = (field) => (event) => onFieldChange(field, event.target.value);
-  const inputStyle = { padding: "10px", borderRadius: "var(--radius-xs)", border: "none" };
+  const inputStyle = {
+    padding: "10px",
+    borderRadius: "var(--radius-xs)",
+    border: "1px solid var(--surface-light)",
+    background: "var(--surface)",
+    color: "var(--text-primary)",
+  };
   const applyFieldErrorStyle = (field, baseStyle = inputStyle) =>
     fieldErrors[field]
       ? {
@@ -1422,10 +1465,10 @@ function EmployeeDetailsFields({
   const getSectionShellStyle = (section) => {
     const hasError = Boolean(sectionErrors[section]?.length);
     return {
-      border: hasError ? "1px solid var(--danger-border)" : "1px solid transparent",
+      border: hasError ? "1px solid var(--danger-border)" : "1px solid var(--surface-light)",
       borderRadius: "var(--radius-sm)",
       padding: "12px",
-      background: hasError ? "rgba(var(--danger-rgb), 0.08)" : "transparent",
+      background: hasError ? "rgba(var(--danger-rgb), 0.06)" : "var(--surface-light)",
       boxShadow: hasError ? "0 0 0 2px rgba(var(--danger-rgb), 0.08)" : "none",
     };
   };
@@ -1555,7 +1598,7 @@ function EmployeeDetailsFields({
               step="0.01"
               value={values.annualSalary}
               readOnly
-              style={{ ...applyFieldErrorStyle("annualSalary"), background: "rgba(var(--primary-rgb), 0.06)", cursor: "not-allowed" }}
+              style={{ ...applyFieldErrorStyle("annualSalary"), background: "var(--surface-light)", cursor: "not-allowed" }}
               placeholder="Auto-calculated"
             />
           </FormField>
@@ -1679,7 +1722,8 @@ function AddressSearchField({ value, onChange }) {
   const inputStyle = {
     padding: "10px",
     borderRadius: "var(--radius-xs)",
-    border: "none",
+    border: "1px solid var(--surface-light)",
+    background: "var(--surface)",
     fontSize: "0.9rem",
   };
 
@@ -1726,13 +1770,12 @@ function AddressSearchField({ value, onChange }) {
               left: 0,
               right: 0,
               zIndex: 20,
-              background: "var(--background, #fff)",
-              border: "none",
+              background: "var(--surface)",
+              border: "1px solid var(--surface-light)",
               borderRadius: "var(--radius-xs)",
               marginTop: "4px",
               maxHeight: "200px",
               overflowY: "auto",
-              boxShadow: "var(--shadow-md)",
             }}
           >
             {results.map((addr, i) => (
@@ -1746,7 +1789,7 @@ function AddressSearchField({ value, onChange }) {
                   borderBottom: i < results.length - 1 ? "1px solid var(--surface-light)" : "none",
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-light)")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "var(--surface)")}
               >
                 {addr}
               </div>
@@ -1782,16 +1825,18 @@ function EmergencyContactSection({ value, onChange, userId }) {
   const inputStyle = {
     padding: "10px",
     borderRadius: "var(--radius-xs)",
-    border: "none",
+    border: "1px solid var(--surface-light)",
+    background: "var(--surface)",
     fontSize: "0.9rem",
   };
 
   return (
     <div
       style={{
-        border: "none",
+        border: "1px solid var(--surface-light)",
         borderRadius: "var(--radius-sm)",
         padding: "16px",
+        background: "var(--surface)",
         display: "flex",
         flexDirection: "column",
         gap: "12px",
@@ -1806,7 +1851,7 @@ function EmergencyContactSection({ value, onChange, userId }) {
             href={`/profile?userId=${userId}`}
             style={{
               fontSize: "0.8rem",
-              color: "var(--accent-purple)",
+              color: "var(--primary)",
               textDecoration: "none",
               fontWeight: 600,
             }}
@@ -1860,23 +1905,13 @@ function EmergencyContactSection({ value, onChange, userId }) {
 }
 
 const buttonStylePrimary = {
-  padding: "var(--control-padding)",
-  borderRadius: "var(--input-radius)",
-  border: "none",
-  background: "var(--accent-purple)",
-  color: "white",
-  fontWeight: 600,
-  cursor: "pointer",
+  ...primaryButtonStyle,
 };
 
 const buttonStyleGhost = {
-  padding: "var(--control-padding)",
-  borderRadius: "var(--input-radius)",
-  border: "1px dashed var(--accent-purple)",
-  background: "transparent",
-  color: "var(--accent-purple)",
-  fontWeight: 600,
-  cursor: "pointer",
+  ...surfaceButtonStyle,
+  border: "1px solid rgba(var(--primary-rgb), 0.18)",
+  color: "var(--primary)",
 };
 
 function SampleAutofillBlock({ value, onChange, onApply, onClear }) {
@@ -1884,7 +1919,7 @@ function SampleAutofillBlock({ value, onChange, onApply, onClear }) {
     <div
       style={{
         marginTop: "12px",
-        border: "1px dashed var(--accent-purple-surface)",
+        border: "1px solid rgba(var(--primary-rgb), 0.14)",
         borderRadius: "var(--radius-sm)",
         padding: "16px",
         background: "var(--surface-light)",
@@ -1894,7 +1929,7 @@ function SampleAutofillBlock({ value, onChange, onApply, onClear }) {
       }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-        <strong style={{ color: "var(--accent-purple)" }}>Temporary Sample Autofill</strong>
+        <strong style={{ color: "var(--primary)" }}>Temporary Sample Autofill</strong>
         <span style={{ fontSize: "0.85rem", color: "var(--info)" }}>
           Paste a block of <code>Field: Value</code> lines here to quickly populate the form. Clearing this box does
           not clear any field values.
@@ -1907,7 +1942,8 @@ function SampleAutofillBlock({ value, onChange, onApply, onClear }) {
         style={{
           padding: "12px",
           borderRadius: "var(--input-radius)",
-          border: "none",
+          border: "1px solid var(--surface-light)",
+          background: "var(--surface)",
           resize: "vertical",
         }}
         placeholder="First Name: Soren&#10;Last Name: Sorensen&#10;Email: soren@example.com&#10;..."

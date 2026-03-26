@@ -236,7 +236,7 @@ export default function MultiSelectDropdown({
           className="dropdown-api__search-input"
           style={{
             border: "none",
-            background: "transparent",
+            background: "var(--surface)",
             padding: 0,
             boxShadow: "none",
             flex: 1,
@@ -273,7 +273,7 @@ export default function MultiSelectDropdown({
           className="dropdown-api__chevron"
           style={{
             border: "none",
-            background: "transparent",
+            background: "var(--surface)",
             padding: 0,
             cursor: disabled ? "not-allowed" : "pointer",
           }}

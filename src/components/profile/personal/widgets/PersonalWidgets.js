@@ -51,6 +51,8 @@ export function BaseWidget({
         borderRadius: "16px",
         padding: "10px",
         minHeight: 0,
+        height: "100%",
+        flex: 1,
       }}
     >
       {/* Header */}
@@ -68,7 +70,7 @@ export function BaseWidget({
           <div style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}>
             <div
               style={{
-                fontSize: "0.86rem",
+                fontSize: "1rem",
                 fontWeight: 700,
                 color: "var(--text-primary)",
                 overflow: "hidden",
@@ -86,9 +88,6 @@ export function BaseWidget({
               </StatusBadge>
             ) : null}
           </div>
-          {subtitle ? (
-            <div style={{ fontSize: "0.7rem", color: "var(--text-secondary)", lineHeight: 1.4 }}>{subtitle}</div>
-          ) : null}
         </div>
 
         {onOpenSettings ? (
@@ -114,7 +113,7 @@ export function BaseWidget({
             flexDirection: "column",
             gap: "4px",
             padding: "12px 14px",
-            flex: "none",
+            flex: 1,
           }}
         >
           {children}
@@ -402,6 +401,7 @@ export function SpendingWidget({ widget, onOpenSettings, finance }) {
 export function SavingsWidget({ widget, onOpenSettings, finance }) {
   const month = finance.model.currentMonth;
   const accountBalances = finance.model.savingsAccountBalances || [];
+  const accountGroups = finance.model.savingsAccountGroups || [];
   const transactions = month.monthState.savingsBuckets || [];
   const accounts = finance.financeState.savingsAccounts || [];
   const totalBalance = accountBalances.reduce((sum, a) => sum + a.currentBalance, 0);
@@ -442,37 +442,84 @@ export function SavingsWidget({ widget, onOpenSettings, finance }) {
             {accountBalances.length === 0 ? (
               <EmptyState>No savings accounts — add them in Settings.</EmptyState>
             ) : (
-              accountBalances.map((account) => (
-                <div
-                  key={account.id}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr auto",
-                    gap: "4px",
-                    padding: "8px 10px",
-                    borderRadius: "10px",
-                    background: "var(--surface)",
-                    border: "1px solid rgba(var(--primary-rgb), 0.08)",
-                  }}
-                >
-                  <div style={{ display: "grid", gap: "2px" }}>
-                    <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-primary)" }}>{account.name || "Unnamed"}</span>
-                    <span style={{ fontSize: "0.66rem", color: "var(--text-secondary)", fontWeight: 600 }}>
-                      {account.interestRate > 0 ? `${account.interestRate}% AER` : "No interest rate set"}
-                    </span>
+              <div style={{ display: "grid", gap: "8px" }}>
+                {accountGroups.map((group) => (
+                  <div
+                    key={group.id}
+                    style={{
+                      display: "grid",
+                      gap: "8px",
+                      padding: "8px 10px",
+                      borderRadius: "10px",
+                      background: "var(--surface)",
+                      border: "1px solid rgba(var(--primary-rgb), 0.08)",
+                    }}
+                  >
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "4px", alignItems: "start" }}>
+                      <div style={{ display: "grid", gap: "2px" }}>
+                        <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-primary)" }}>{group.name} total</span>
+                        <span style={{ fontSize: "0.66rem", color: "var(--text-secondary)", fontWeight: 600 }}>
+                          {group.accounts.length} linked account{group.accounts.length === 1 ? "" : "s"}
+                        </span>
+                      </div>
+                      <div style={{ display: "grid", gap: "2px", justifyItems: "end" }}>
+                        <span style={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--text-primary)" }}>{formatCurrency(group.currentBalance)}</span>
+                        {group.monthActivity !== 0 ? (
+                          <span style={{ fontSize: "0.66rem", fontWeight: 600, color: group.monthActivity > 0 ? "var(--success, #2e7d32)" : "var(--danger, #c62828)" }}>
+                            {group.monthActivity > 0 ? "+" : ""}{formatCurrency(group.monthActivity)} this month
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: "0.66rem", color: "var(--text-secondary)" }}>No activity this month</span>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ display: "grid", gap: "6px" }}>
+                      {group.accounts.map((account) => (
+                        <div key={account.id} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "4px", alignItems: "start" }}>
+                          <div style={{ display: "grid", gap: "2px" }}>
+                            <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-primary)" }}>{account.name || "Unnamed"}</span>
+                            <span style={{ fontSize: "0.66rem", color: "var(--text-secondary)", fontWeight: 600 }}>
+                              {account.interestRate > 0 ? `${account.interestRate}% AER` : "No interest rate set"}
+                            </span>
+                          </div>
+                          <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-primary)" }}>{formatCurrency(account.currentBalance)}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div style={{ display: "grid", gap: "2px", justifyItems: "end" }}>
-                    <span style={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--text-primary)" }}>{formatCurrency(account.currentBalance)}</span>
-                    {account.monthActivity !== 0 ? (
-                      <span style={{ fontSize: "0.66rem", fontWeight: 600, color: account.monthActivity > 0 ? "var(--success, #2e7d32)" : "var(--danger, #c62828)" }}>
-                        {account.monthActivity > 0 ? "+" : ""}{formatCurrency(account.monthActivity)} this month
+                ))}
+                {accountBalances.filter((account) => !String(account.parentGroup || "").trim()).map((account) => (
+                  <div
+                    key={account.id}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr auto",
+                      gap: "4px",
+                      padding: "8px 10px",
+                      borderRadius: "10px",
+                      background: "var(--surface)",
+                      border: "1px solid rgba(var(--primary-rgb), 0.08)",
+                    }}
+                  >
+                    <div style={{ display: "grid", gap: "2px" }}>
+                      <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-primary)" }}>{account.name || "Unnamed"}</span>
+                      <span style={{ fontSize: "0.66rem", color: "var(--text-secondary)", fontWeight: 600 }}>
+                        {account.interestRate > 0 ? `${account.interestRate}% AER` : "No interest rate set"}
                       </span>
-                    ) : (
-                      <span style={{ fontSize: "0.66rem", color: "var(--text-secondary)" }}>No activity this month</span>
-                    )}
+                    </div>
+                    <div style={{ display: "grid", gap: "2px", justifyItems: "end" }}>
+                      <span style={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--text-primary)" }}>{formatCurrency(account.currentBalance)}</span>
+                      {account.monthActivity !== 0 ? (
+                        <span style={{ fontSize: "0.66rem", fontWeight: 600, color: account.monthActivity > 0 ? "var(--success, #2e7d32)" : "var(--danger, #c62828)" }}>
+                          {account.monthActivity > 0 ? "+" : ""}{formatCurrency(account.monthActivity)} this month
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: "0.66rem", color: "var(--text-secondary)" }}>No activity this month</span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))
+                ))}
+              </div>
             )}
           </div>
         </SurfacePanel>
@@ -498,11 +545,60 @@ export function SavingsWidget({ widget, onOpenSettings, finance }) {
 
 /* ── BillsWidget ──────────────────────────────────────────────── */
 
-export function BillsWidget({ widget, onOpenSettings, finance }) {
+export function BillsWidget({ widget, onOpenSettings, finance, widgetDataMap, widgetMonthKey }) {
   const month = finance.model.currentMonth;
-  const planDetails = finance.model.plannedPaymentPlanDetails || [];
-  const activePlans = planDetails.filter((p) => p.isActiveThisMonth && p.thisMonthAmount > 0);
-  const legacyPayments = month.monthState.plannedPayments || [];
+  const spendingTotal = Number(month?.totals?.fixedOut || 0);
+  const fuelTotal = Number(month?.totals?.fuelTotal || 0);
+  const mortgageWidgetData = widgetDataMap?.mortgage?.data || {};
+  const holidayWidgetData = widgetDataMap?.holiday?.data || {};
+  const getMortgageLinkedPayment = (settings = {}) => {
+    const sourceId = settings.linkedMortgagePaymentSourceId || "";
+    if (!sourceId) return Number(settings.monthlyPayment || mortgageWidgetData?.monthlyPayment || 0);
+    if (sourceId.startsWith("savings:")) {
+      const savings = finance?.model?.savingsAccountBalances?.find((entry) => entry.id === sourceId.slice(8));
+      return Number(savings?.monthInflow || 0);
+    }
+    if (sourceId.startsWith("fixed:")) {
+      const fixed = month?.monthState?.fixedOutgoings?.find((entry) => entry.id === sourceId.slice(6));
+      return Number(fixed?.amount || 0);
+    }
+    if (sourceId.startsWith("plan:")) {
+      const plan = finance?.model?.plannedPaymentPlanDetails?.find((entry) => entry.id === sourceId.slice(5));
+      return Number(plan?.thisMonthAmount || 0);
+    }
+    return Number(settings.monthlyPayment || mortgageWidgetData?.monthlyPayment || 0);
+  };
+  const resolvedMortgageSettings = mortgageWidgetData?.settings || {};
+  const resolvedMortgagePayment = getMortgageLinkedPayment(resolvedMortgageSettings);
+  const mortgageMonthView = useMemo(
+    () =>
+      calculateGoalContributionForMonth({
+        monthKey: widgetMonthKey,
+        widgetData: {
+          ...mortgageWidgetData,
+          settings: {
+            ...(mortgageWidgetData?.settings || {}),
+            monthlyPayment: resolvedMortgagePayment,
+          },
+        },
+        defaultCategory: "House",
+      }),
+    [mortgageWidgetData, resolvedMortgagePayment, widgetMonthKey]
+  );
+  const holidayMonthView = useMemo(
+    () =>
+      calculateGoalContributionForMonth({
+        monthKey: widgetMonthKey,
+        widgetData: holidayWidgetData,
+        defaultCategory: "Holiday",
+      }),
+    [holidayWidgetData, widgetMonthKey]
+  );
+  const mortgageTotal = Number(mortgageMonthView?.total || resolvedMortgagePayment || 0);
+  const holidayTotal = Number(holidayMonthView?.total || 0);
+  const totalPayments = spendingTotal + fuelTotal + mortgageTotal + holidayTotal;
+  const afterTaxIncome = Number(month?.pay?.afterTaxIncome || 0);
+  const moneyLeftAfterPayments = afterTaxIncome - totalPayments;
   const sectionStyle = {
     background: "rgba(var(--primary-rgb), 0.08)",
     border: "1px solid rgba(var(--primary-rgb), 0.14)",
@@ -511,81 +607,50 @@ export function BillsWidget({ widget, onOpenSettings, finance }) {
   return (
     <BaseWidget
       title={widget.config?.title || "Payments"}
-      subtitle="Planned payment schedules and commitments"
+      subtitle="Monthly payment summary against after-tax income"
       accent="var(--warning, #ef6c00)"
       onOpenSettings={onOpenSettings}
       headline={
         <Headline
-          label="Planned payments this month"
-          value={formatCurrency(month.totals.plannedOut)}
+          label="Total payments this month"
+          value={formatCurrency(totalPayments)}
           accent="var(--warning, #ef6c00)"
         />
       }
     >
       <div style={{ display: "grid", gap: "10px" }}>
-        {planDetails.length > 0 && (
-          <SurfacePanel style={sectionStyle}>
-            <div style={{ display: "grid", gap: "8px" }}>
-              <SectionLabel>Payment schedules</SectionLabel>
-              {planDetails.map((plan) => (
-                <div
-                  key={plan.id}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr auto",
-                    gap: "4px",
-                    padding: "8px 10px",
-                    borderRadius: "10px",
-                    background: "var(--surface)",
-                    border: "1px solid rgba(var(--primary-rgb), 0.08)",
-                    opacity: plan.isActiveThisMonth ? 1 : 0.5,
-                  }}
-                >
-                  <div style={{ display: "grid", gap: "2px" }}>
-                    <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-primary)" }}>{plan.name || "Unnamed"}</span>
-                    <span style={{ fontSize: "0.66rem", color: "var(--text-secondary)", fontWeight: 600 }}>
-                      {plan.startMonth} → {plan.endMonth} · Total: {formatCurrency(plan.totalAcrossMonths)}
-                    </span>
-                  </div>
-                  <div style={{ display: "grid", gap: "2px", justifyItems: "end" }}>
-                    <span style={{ fontSize: "0.88rem", fontWeight: 700, color: plan.isActiveThisMonth ? "var(--text-primary)" : "var(--text-secondary)" }}>
-                      {plan.isActiveThisMonth ? formatCurrency(plan.thisMonthAmount) : "—"}
-                    </span>
-                    <span style={{ fontSize: "0.66rem", color: "var(--text-secondary)", fontWeight: 600 }}>
-                      {plan.isActiveThisMonth ? "this month" : "not active"}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </SurfacePanel>
-        )}
+        <SurfacePanel style={sectionStyle}>
+          <div style={{ display: "grid", gap: "8px" }}>
+            <SectionLabel>Breakdown (Linked)</SectionLabel>
+            <DataRow label="Spending" value={formatCurrency(spendingTotal)} />
+            <DataRow label="Fuel" value={formatCurrency(fuelTotal)} />
+            <DataRow label="Mortgage" value={formatCurrency(mortgageTotal)} />
+            <DataRow label="Holiday" value={formatCurrency(holidayTotal)} />
+          </div>
+        </SurfacePanel>
 
-        {legacyPayments.length > 0 && (
-          <SurfacePanel style={sectionStyle}>
-            <div style={{ display: "grid", gap: "8px" }}>
-              <SectionLabel>One-off payments</SectionLabel>
-              {legacyPayments.map((entry) => (
-                <DataRow key={entry.id} label={entry.name || "Unnamed"} value={formatCurrency(entry.amount || 0)} />
-              ))}
-            </div>
-          </SurfacePanel>
-        )}
-
-        {planDetails.length === 0 && legacyPayments.length === 0 && (
-          <SurfacePanel style={sectionStyle}>
-            <EmptyState>No planned payments — add them in Settings.</EmptyState>
-          </SurfacePanel>
-        )}
+        <SurfacePanel style={sectionStyle}>
+          <div style={{ display: "grid", gap: "8px" }}>
+            <SectionLabel>Compared with income (Linked)</SectionLabel>
+            <DataRow label="Income after tax" value={formatCurrency(afterTaxIncome)} />
+            <DataRow label="Total payments" value={formatCurrency(totalPayments)} />
+            <DataRow
+              label={moneyLeftAfterPayments >= 0 ? "Remaining after payments" : "Over after payments"}
+              value={formatCurrency(Math.abs(moneyLeftAfterPayments))}
+              accent={moneyLeftAfterPayments >= 0 ? "var(--success, #2e7d32)" : "var(--danger, #c62828)"}
+            />
+          </div>
+        </SurfacePanel>
       </div>
     </BaseWidget>
   );
 }
 
-/* ── FuelWidget (Credit Cards) ────────────────────────────────── */
+/* ── FuelWidget ───────────────────────────────────────────────── */
 
 export function FuelWidget({ widget, onOpenSettings, finance }) {
   const month = finance.model.currentMonth;
+  const fuelEntries = month.monthState.fuelEntries || [];
   const sectionStyle = {
     background: "rgba(var(--primary-rgb), 0.08)",
     border: "1px solid rgba(var(--primary-rgb), 0.14)",
@@ -593,21 +658,21 @@ export function FuelWidget({ widget, onOpenSettings, finance }) {
 
   return (
     <BaseWidget
-      title={widget.config?.title || "Credit Cards"}
-      subtitle="Balances and monthly card payments"
-      accent="var(--accent-purple)"
+      title={widget.config?.title || "Fuel"}
+      subtitle="Monthly fuel costs, litres, and average pump price"
+      accent="var(--warning, #ff8f00)"
       onOpenSettings={onOpenSettings}
       headline={
         <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
           <Headline
-            label="Total balances"
-            value={formatCurrency(month.totals.totalCardBalances)}
-            accent="var(--danger, #c62828)"
+            label="Total fuel"
+            value={formatCurrency(month.totals.fuelTotal || 0)}
+            accent="var(--warning, #ff8f00)"
           />
           <Headline
-            label="Monthly payments"
-            value={formatCurrency(month.totals.creditCardOut)}
-            accent="var(--accent-purple)"
+            label="Total litres"
+            value={`${Number(month.totals.fuelLitres || 0).toFixed(2)}L`}
+            accent="var(--info, #1565c0)"
             size="medium"
           />
         </div>
@@ -616,15 +681,31 @@ export function FuelWidget({ widget, onOpenSettings, finance }) {
       <div style={{ display: "grid", gap: "10px" }}>
         <SurfacePanel style={sectionStyle}>
           <div style={{ display: "grid", gap: "8px" }}>
-            <SectionLabel>Cards (Database)</SectionLabel>
-            {month.monthState.creditCards.length === 0 ? (
-              <EmptyState>No credit cards — add them in Settings.</EmptyState>
+            <SectionLabel>Summary (Linked)</SectionLabel>
+            <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
+              <MetricPill label="Spend" value={formatCurrency(month.totals.fuelTotal || 0)} accent="var(--warning, #ff8f00)" />
+              <MetricPill label="Litres" value={`${Number(month.totals.fuelLitres || 0).toFixed(2)}L`} accent="var(--info, #1565c0)" />
+              <MetricPill
+                label="Avg / litre"
+                value={month.totals.fuelAverageCostPerLitre > 0 ? `${Number(month.totals.fuelAverageCostPerLitre).toFixed(3)}` : "—"}
+                accent="var(--success, #2e7d32)"
+              />
+            </div>
+          </div>
+        </SurfacePanel>
+
+        <SurfacePanel style={sectionStyle}>
+          <div style={{ display: "grid", gap: "8px", maxHeight: "280px", overflowY: "auto", paddingRight: "4px" }}>
+            <SectionLabel>Fuel entries (Database)</SectionLabel>
+            {fuelEntries.length === 0 ? (
+              <EmptyState>No fuel entries yet — add them in Settings.</EmptyState>
             ) : (
-              month.monthState.creditCards.map((entry) => (
-                <div key={entry.id}>
-                  <DataRow label={entry.name || "Unnamed card"} value={formatCurrency(entry.balance || 0)} />
-                  <DataRow label="Monthly payment" value={formatCurrency(entry.monthlyPayment || 0)} muted />
-                </div>
+              fuelEntries.map((entry) => (
+                <DataRow
+                  key={entry.id}
+                  label="Entry"
+                  value={`${formatCurrency(entry.cost || 0)} · ${Number(entry.litres || 0).toFixed(2)}L · ${entry.costPerLitre ? Number(entry.costPerLitre).toFixed(3) : "—"}`}
+                />
               ))
             )}
           </div>
@@ -651,7 +732,32 @@ export function MortgageWidget({
     : null;
   const currentSaved = linkedBalance !== null ? linkedBalance : Number(settings.currentSaved || 0);
   const deadline = settings.mortgageDeadline || "";
-  const monthlyPayment = Number(settings.monthlyPayment || widgetData?.monthlyPayment || 0);
+  const linkedMortgagePaymentSourceId = settings.linkedMortgagePaymentSourceId || "";
+  const resolvedLinkedMortgagePayment = useMemo(() => {
+    if (!linkedMortgagePaymentSourceId) return null;
+    if (linkedMortgagePaymentSourceId.startsWith("savings:")) {
+      const savings = finance?.model?.savingsAccountBalances?.find(
+        (entry) => entry.id === linkedMortgagePaymentSourceId.slice(8)
+      );
+      return savings ? Number(savings.monthInflow || 0) : null;
+    }
+    if (linkedMortgagePaymentSourceId.startsWith("fixed:")) {
+      const fixed = finance?.model?.currentMonth?.monthState?.fixedOutgoings?.find(
+        (entry) => entry.id === linkedMortgagePaymentSourceId.slice(6)
+      );
+      return fixed ? Number(fixed.amount || 0) : null;
+    }
+    if (linkedMortgagePaymentSourceId.startsWith("plan:")) {
+      const plan = finance?.model?.plannedPaymentPlanDetails?.find(
+        (entry) => entry.id === linkedMortgagePaymentSourceId.slice(5)
+      );
+      return plan ? Number(plan.thisMonthAmount || 0) : null;
+    }
+    return null;
+  }, [finance, linkedMortgagePaymentSourceId]);
+  const monthlyPayment = resolvedLinkedMortgagePayment !== null
+    ? resolvedLinkedMortgagePayment
+    : Number(settings.monthlyPayment || widgetData?.monthlyPayment || 0);
   const monthView = useMemo(
     () =>
       calculateGoalContributionForMonth({
@@ -673,6 +779,12 @@ export function MortgageWidget({
     currentAmount: currentSaved,
     monthlyContribution: monthlyPayment,
   });
+  const remainingToTarget = Math.max(0, depositTarget - currentSaved);
+  const monthsToDepositTarget = depositTarget <= currentSaved
+    ? 0
+    : monthlyPayment > 0
+      ? Math.ceil(remainingToTarget / monthlyPayment)
+      : null;
 
   const sectionStyle = {
     background: "rgba(var(--primary-rgb), 0.08)",
@@ -705,7 +817,10 @@ export function MortgageWidget({
                   : "Current saved"}
                 value={formatCurrency(currentSaved)}
               />
-              <MetricPill label="Monthly payment" value={formatCurrency(monthlyPayment)} />
+              <MetricPill
+                label={linkedMortgagePaymentSourceId ? "Linked monthly payment" : "Monthly payment"}
+                value={formatCurrency(monthlyPayment)}
+              />
             </div>
           </div>
         </SurfacePanel>
@@ -715,6 +830,14 @@ export function MortgageWidget({
             <SectionLabel>Timeline (Linked)</SectionLabel>
             <DataRow label="Deadline" value={deadline ? formatDate(deadline) : "Not set"} muted />
             <DataRow label="Projected date" value={projectedDate ? formatDate(projectedDate) : "No projection"} />
+            <DataRow
+              label="Estimate to reach deposit"
+              value={
+                monthsToDepositTarget === null
+                  ? "No estimate"
+                  : `${monthsToDepositTarget} month${monthsToDepositTarget === 1 ? "" : "s"}`
+              }
+            />
             <DataRow label={monthView.status} value={formatCurrency(monthView.total || monthlyPayment)} />
           </div>
         </SurfacePanel>
@@ -725,8 +848,40 @@ export function MortgageWidget({
 
 /* ── HolidayWidget ────────────────────────────────────────────── */
 
-export function HolidayWidget({ widget, finance, onOpenSettings }) {
+export function HolidayWidget({ widget, finance, onOpenSettings, widgetData }) {
   const leaveStats = finance.derived.leaveStats;
+  const settings = widgetData?.settings || {};
+  const holidayPaymentLinks = settings.holidayPaymentLinks && typeof settings.holidayPaymentLinks === "object"
+    ? settings.holidayPaymentLinks
+    : {};
+  const linkedPaymentPlanIds = Array.isArray(settings.linkedPaymentPlanIds)
+    ? settings.linkedPaymentPlanIds
+    : Object.keys(holidayPaymentLinks);
+  const linkedPlans = (finance.model.plannedPaymentPlanDetails || []).filter((plan) => linkedPaymentPlanIds.includes(plan.id));
+  const holidayCostThisMonth = linkedPlans.reduce((sum, plan) => sum + Number(plan.thisMonthAmount || 0), 0);
+  const holidayCostTotal = linkedPlans.reduce((sum, plan) => sum + Number(plan.totalAcrossMonths || 0), 0);
+  const leaveMap = new Map((leaveStats.approvedRequests || []).map((request) => [request.id, request]));
+  const linkedHolidayGroups = linkedPlans.reduce((accumulator, plan) => {
+    const linkedLeaveId = holidayPaymentLinks[plan.id] || "";
+    const request = leaveMap.get(linkedLeaveId);
+    const groupKey = linkedLeaveId || `unassigned-${plan.id}`;
+    const label = request
+      ? `${request.type || "Leave"} · ${formatDate(request.startDate)} → ${formatDate(request.endDate)}`
+      : "Unassigned holiday";
+
+    if (!accumulator[groupKey]) {
+      accumulator[groupKey] = {
+        label,
+        thisMonthAmount: 0,
+        totalAcrossMonths: 0,
+      };
+    }
+
+    accumulator[groupKey].thisMonthAmount += Number(plan.thisMonthAmount || 0);
+    accumulator[groupKey].totalAcrossMonths += Number(plan.totalAcrossMonths || 0);
+    return accumulator;
+  }, {});
+  const linkedHolidayRows = Object.values(linkedHolidayGroups);
   const sectionStyle = {
     background: "rgba(var(--primary-rgb), 0.08)",
     border: "1px solid rgba(var(--primary-rgb), 0.14)",
@@ -746,9 +901,9 @@ export function HolidayWidget({ widget, finance, onOpenSettings }) {
             accent="var(--warning, #ef6c00)"
           />
           <Headline
-            label="Remaining"
-            value={leaveStats.remaining ?? "—"}
-            accent="var(--success, #2e7d32)"
+            label="Holiday costs"
+            value={formatCurrency(holidayCostTotal)}
+            accent="var(--info, #00838f)"
             size="medium"
           />
         </div>
@@ -761,7 +916,26 @@ export function HolidayWidget({ widget, finance, onOpenSettings }) {
             <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
               <MetricPill label="Work days" value={`${leaveStats.workDaysTaken.toFixed(1)}d`} accent="var(--warning, #ef6c00)" />
               <MetricPill label="Calendar days" value={`${leaveStats.calendarDaysTaken.toFixed(0)}d`} accent="var(--info, #00838f)" />
+              <MetricPill label="Remaining" value={leaveStats.remaining ?? "—"} accent="var(--success, #2e7d32)" />
+              <MetricPill label="Cost this month" value={formatCurrency(holidayCostThisMonth)} accent="var(--info, #1565c0)" />
             </div>
+          </div>
+        </SurfacePanel>
+
+        <SurfacePanel style={sectionStyle}>
+          <div style={{ display: "grid", gap: "8px" }}>
+            <SectionLabel>Linked holiday costs</SectionLabel>
+            {linkedHolidayRows.length === 0 ? (
+              <EmptyState>No payment schedules linked yet. Link them in Settings to track holiday costs.</EmptyState>
+            ) : (
+              linkedHolidayRows.map((row) => (
+                <DataRow
+                  key={row.label}
+                  label={row.label}
+                  value={`${formatCurrency(row.thisMonthAmount || 0)} / ${formatCurrency(row.totalAcrossMonths || 0)}`}
+                />
+              ))
+            )}
           </div>
         </SurfacePanel>
 

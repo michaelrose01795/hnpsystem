@@ -87,7 +87,7 @@ export default function HRDashboardTab() {
             </thead>
             <tbody>
               {departmentPerformance.map((dept) => (
-                <tr key={dept.id} style={{ borderTop: "1px solid var(--accent-purple-surface)" }}>
+                <tr key={dept.id} style={{ borderTop: "1px solid var(--surface-light)" }}>
                   <td style={{ padding: "14px 0", fontWeight: 600 }}>{dept.department}</td>
                   <td>{dept.productivity}%</td>
                   <td>{dept.quality}%</td>
@@ -124,7 +124,7 @@ export default function HRDashboardTab() {
                   }}
                 >
                   <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                    <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{renewal.course}</span>
+                    <span style={{ fontWeight: 600, color: "var(--primary)" }}>{renewal.course}</span>
                     <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>{renewal.employee}</span>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px" }}>
@@ -157,7 +157,7 @@ export default function HRDashboardTab() {
             </thead>
             <tbody>
               {upcomingAbsences.map((absence) => (
-                <tr key={absence.id} style={{ borderTop: "1px solid var(--accent-purple-surface)" }}>
+                <tr key={absence.id} style={{ borderTop: "1px solid var(--surface-light)" }}>
                   <td style={{ padding: "12px 0", fontWeight: 600 }}>{absence.employee}</td>
                   <td>{absence.department}</td>
                   <td>{absence.type}</td>
@@ -188,7 +188,7 @@ export default function HRDashboardTab() {
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{warning.employee}</span>
+                  <span style={{ fontWeight: 600, color: "var(--primary)" }}>{warning.employee}</span>
                   <StatusTag
                     label={warning.level}
                     tone={warning.level.includes("Final") ? "danger" : "warning"}

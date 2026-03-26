@@ -318,6 +318,9 @@ async function getUserProfile(userId) {
         photo_url,
         emergency_contact,
         home_address,
+        manager_id,
+        dark_mode,
+        accent_color,
         hourly_rate,
         overtime_rate,
         contracted_hours_per_week,
@@ -368,6 +371,16 @@ async function getUserProfile(userId) {
     phone: data.phone || "N/A",
     emergencyContact: formatEmergencyContact(data.emergency_contact),
     address: data.home_address || "Not provided",
+    managerId: Number.isInteger(data.manager_id) ? data.manager_id : null,
+    themeMode:
+      data.dark_mode === null || typeof data.dark_mode === "undefined"
+        ? "system"
+        : typeof data.dark_mode === "boolean"
+          ? data.dark_mode
+            ? "dark"
+            : "light"
+          : data.dark_mode,
+    accentColor: typeof data.accent_color === "string" && data.accent_color.length > 0 ? data.accent_color : "red",
   };
 }
 

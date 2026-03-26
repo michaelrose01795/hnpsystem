@@ -63,7 +63,7 @@ export const PERSONAL_WIDGET_DEFINITIONS = {
   }),
   fuel: createDefinition({
     type: "fuel",
-    label: "Credit Cards",
+    label: "Fuel",
     description: "Highlights fuel spending and recent cost changes.",
     category: "money",
     accent: "var(--warning, #ff8f00)",

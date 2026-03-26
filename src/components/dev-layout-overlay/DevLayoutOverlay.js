@@ -80,6 +80,10 @@ const compareNodeOrder = (a, b) => {
 const buildEntry = ({ key, node, route, order, type, parentKey = "", widthMode = "", isShell = false, backgroundToken = "", source = "explicit" }) => {
   const computed = window.getComputedStyle(node);
   const rect = node.getBoundingClientRect();
+  const textPreview = String(node.textContent || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 180);
 
   return {
     key,
@@ -97,7 +101,9 @@ const buildEntry = ({ key, node, route, order, type, parentKey = "", widthMode =
     childKeys: [],
     childNumbers: [],
     number: "",
+    tagName: String(node.tagName || "").toLowerCase(),
     classData: String(node.className || "").replace(/\s+/g, " ").trim(),
+    textPreview,
     backgroundToken: backgroundToken || getBackgroundToken(node, computed),
     backgroundClass: getBackgroundClass(node),
     backgroundColor: computed.backgroundColor,
@@ -745,10 +751,18 @@ export default function DevLayoutOverlay() {
                 <span className={styles.labelKey}>Route</span><span className={styles.value}>{selected.route}</span>
                 <span className={styles.labelKey}>Section Number</span><span className={styles.value}>{selected.number}</span>
                 <span className={styles.labelKey}>Stable Key</span><span className={`${styles.value} ${styles.codeValue}`}>{selected.key}</span>
+                <span className={styles.labelKey}>Element</span><span className={styles.value}>{selected.tagName || "unknown"}</span>
                 <span className={styles.labelKey}>Section Type</span><span className={styles.value}>{selected.type}</span>
                 <span className={styles.labelKey}>Wrapper Class</span><span className={styles.value}>{selected.wrapperClass}</span>
                 <span className={styles.labelKey}>Source</span><span className={styles.value}>{selected.source}</span>
               </div>
+            </div>
+
+            <div className={styles.sectionBlock}>
+              <p className={styles.blockTitle}>Content Preview</p>
+              <p className={styles.previewText}>
+                {selected.textPreview || "No visible text content detected for this section."}
+              </p>
             </div>
 
             <div className={styles.sectionBlock}>

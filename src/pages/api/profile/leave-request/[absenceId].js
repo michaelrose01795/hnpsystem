@@ -167,15 +167,16 @@ export default async function handler(req, res) {
 
     const requesterResult = await supabase
       .from("users")
-      .select("user_id, first_name, last_name, email, emergency_contact")
+      .select("user_id, first_name, last_name, email, emergency_contact, manager_id")
       .eq("user_id", userId)
       .maybeSingle();
 
     if (requesterResult.error) throw requesterResult.error;
     const requester = requesterResult.data || null;
     const requesterName = buildRequesterName(requester);
-    const lineManagerIds = parseEmployeeMeta(requester?.emergency_contact).lineManagerIds.filter(
-      (managerId) => managerId !== userId
+    const emergencyManagerIds = parseEmployeeMeta(requester?.emergency_contact).lineManagerIds;
+    const lineManagerIds = Array.from(
+      new Set([requester?.manager_id, ...emergencyManagerIds].filter((managerId) => Number.isInteger(managerId) && managerId !== userId))
     );
     const existingNotes = parseLeaveRequestNotes(existing.notes);
 

@@ -8,9 +8,9 @@ import { StatusTag } from "@/components/HR/MetricCard"; // status badge componen
 const buttonStyleSecondary = {
   padding: "var(--control-padding)",
   borderRadius: "var(--input-radius)",
-  border: "1px solid var(--warning)",
+  border: "1px solid var(--surface-light)",
   background: "var(--surface)",
-  color: "var(--danger)",
+  color: "var(--text-primary)",
   fontWeight: 600,
   cursor: "pointer",
 };
@@ -40,15 +40,6 @@ export default function AttendanceTab() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      <header style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-        <h2 style={{ fontSize: "1.4rem", fontWeight: 700, margin: 0, color: "var(--text-primary)" }}>
-          Attendance Tracking
-        </h2>
-        <p style={{ color: "var(--info)", margin: 0 }}>
-          Monitor time logs, absences, late arrivals, and overtime activity across the team.
-        </p>
-      </header>
-
       <section style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "20px" }}>
         <SectionCard
           title="Daily Time Logs"
@@ -73,7 +64,7 @@ export default function AttendanceTab() {
               </thead>
               <tbody>
                 {attendanceLogs.map((log) => (
-                  <tr key={log.id} style={{ borderTop: "1px solid var(--accent-purple-surface)" }}>
+                  <tr key={log.id} style={{ borderTop: "1px solid var(--surface-light)" }}>
                     <td style={{ padding: "12px 0", fontWeight: 600 }}>{log.employeeName}</td>
                     <td>{new Date(log.date).toLocaleDateString()}</td>
                     <td>{log.clockIn ? new Date(log.clockIn).toLocaleTimeString() : "—"}</td>
@@ -105,7 +96,7 @@ export default function AttendanceTab() {
                   borderBottom: "1px solid var(--info-surface)",
                 }}
               >
-                <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{entry.employee}</span>
+                <span style={{ fontWeight: 600, color: "var(--primary)" }}>{entry.employee}</span>
                 <span style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>
                   {entry.overtimeHours} hours @ {entry.overtimeRate}x rate
                 </span>
@@ -128,7 +119,7 @@ export default function AttendanceTab() {
           </thead>
           <tbody>
             {absenceRecords.map((record) => (
-              <tr key={record.id} style={{ borderTop: "1px solid var(--accent-purple-surface)" }}>
+              <tr key={record.id} style={{ borderTop: "1px solid var(--surface-light)" }}>
                 <td style={{ padding: "12px 0", fontWeight: 600 }}>{record.employee}</td>
                 <td>{record.type}</td>
                 <td>{new Date(record.startDate).toLocaleDateString()}</td>

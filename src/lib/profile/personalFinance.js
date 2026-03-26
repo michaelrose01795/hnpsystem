@@ -61,6 +61,7 @@ export function createDefaultMonthFinanceState() {
     fixedOutgoings: [],
     plannedPayments: [],
     creditCards: [],
+    fuelEntries: [],
     savingsBuckets: [],
     overtimeEntries: [],
   };
@@ -176,6 +177,7 @@ export function ensureMonthFinanceState(rawMonthState = null) {
       ? stripLegacyPresetRows(rawMonthState.plannedPayments, DEFAULT_PAYMENT_BUCKETS)
       : [],
     creditCards: Array.isArray(rawMonthState.creditCards) ? stripLegacyCardRows(rawMonthState.creditCards) : [],
+    fuelEntries: Array.isArray(rawMonthState.fuelEntries) ? rawMonthState.fuelEntries : [],
     savingsBuckets: Array.isArray(rawMonthState.savingsBuckets)
       ? stripLegacyPresetRows(rawMonthState.savingsBuckets, DEFAULT_SAVINGS_BUCKETS)
       : [],
@@ -340,9 +342,12 @@ export function buildMonthlyFinanceSummary({ financeState, workData = null, mont
   const plannedOut = roundMoney(legacyPlannedOut + planPlannedOut);
   const creditCardOut = sumByAmount(monthState.creditCards, "monthlyPayment");
   const totalCardBalances = sumByAmount(monthState.creditCards, "balance");
+  const fuelTotal = roundMoney(sumByAmount(monthState.fuelEntries, "cost"));
+  const fuelLitres = Number((monthState.fuelEntries || []).reduce((sum, entry) => sum + toNumber(entry?.litres, 0), 0).toFixed(2));
+  const fuelAverageCostPerLitre = fuelLitres > 0 ? Number((fuelTotal / fuelLitres).toFixed(3)) : 0;
   const savingsTotal = sumByAmount(monthState.savingsBuckets);
   const classicOut = roundMoney(fixedOut + plannedOut + toNumber(monthState.outgoingAdjustments, 0));
-  const totalOut = roundMoney(classicOut + creditCardOut + savingsTotal);
+  const totalOut = roundMoney(classicOut + creditCardOut + fuelTotal + savingsTotal);
 
   const autoTax = calculateWidgetTaxAmount(totalIn);
   const autoNi = calculateWidgetNationalInsuranceAmount(totalIn);
@@ -361,6 +366,7 @@ export function buildMonthlyFinanceSummary({ financeState, workData = null, mont
     ...monthState.plannedPayments.map((item) => ({ category: item.name, amount: roundMoney(item.amount), kind: "Planned" })),
     ...planOutgoings,
     ...monthState.creditCards.map((item) => ({ category: item.name, amount: roundMoney(item.monthlyPayment), kind: "Credit" })),
+    ...monthState.fuelEntries.map((item) => ({ category: item.name || "Fuel", amount: roundMoney(item.cost), kind: "Fuel" })),
     ...monthState.savingsBuckets.map((item) => ({ category: item.name, amount: roundMoney(item.amount), kind: "Savings" })),
   ]
     .filter((entry) => entry.amount > 0)
@@ -394,6 +400,9 @@ export function buildMonthlyFinanceSummary({ financeState, workData = null, mont
       plannedOut,
       creditCardOut,
       totalCardBalances,
+      fuelTotal,
+      fuelLitres,
+      fuelAverageCostPerLitre,
       savingsTotal,
       classicOut,
       totalOut,
@@ -456,6 +465,8 @@ export function buildFinanceDashboardModel({ financeState, workData = null, mont
   const savingsAccountBalances = savingsAccounts.map((account) => {
     let balance = roundMoney(toNumber(account.openingBalance, 0));
     let monthActivity = 0;
+    let monthInflow = 0;
+    let monthOutflow = 0;
     // Walk all months in chronological order up to and including selected month
     const allMonthKeys = Object.keys(financeState?.months || {}).sort();
     for (const mk of allMonthKeys) {
@@ -475,6 +486,14 @@ export function buildFinanceDashboardModel({ financeState, workData = null, mont
           const amt = toNumber(txn.amount, 0);
           return txn.type === "withdrawal" ? sum - amt : sum + amt;
         }, 0);
+        monthInflow = accountTransactions.reduce((sum, txn) => {
+          if (txn.type === "withdrawal") return sum;
+          return sum + toNumber(txn.amount, 0);
+        }, 0);
+        monthOutflow = accountTransactions.reduce((sum, txn) => {
+          if (txn.type !== "withdrawal") return sum;
+          return sum + toNumber(txn.amount, 0);
+        }, 0);
       }
       if (mk > safeMonthKey) break;
     }
@@ -482,8 +501,43 @@ export function buildFinanceDashboardModel({ financeState, workData = null, mont
       ...account,
       currentBalance: balance,
       monthActivity: roundMoney(monthActivity),
+      monthInflow: roundMoney(monthInflow),
+      monthOutflow: roundMoney(monthOutflow),
     };
   });
+  const savingsAccountGroupsMap = new Map();
+  savingsAccountBalances.forEach((account) => {
+    const groupName = String(account.parentGroup || "").trim();
+    if (!groupName) return;
+    if (!savingsAccountGroupsMap.has(groupName)) {
+      savingsAccountGroupsMap.set(groupName, {
+        id: `group-${groupName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "savings"}`,
+        name: groupName,
+        currentBalance: 0,
+        monthActivity: 0,
+        monthInflow: 0,
+        monthOutflow: 0,
+        accounts: [],
+      });
+    }
+    const group = savingsAccountGroupsMap.get(groupName);
+    group.currentBalance = roundMoney(group.currentBalance + toNumber(account.currentBalance, 0));
+    group.monthActivity = roundMoney(group.monthActivity + toNumber(account.monthActivity, 0));
+    group.monthInflow = roundMoney(group.monthInflow + toNumber(account.monthInflow, 0));
+    group.monthOutflow = roundMoney(group.monthOutflow + toNumber(account.monthOutflow, 0));
+    group.accounts.push(account);
+  });
+  const savingsAccountGroups = Array.from(savingsAccountGroupsMap.values())
+    .map((group) => {
+      const sortedAccounts = [...group.accounts].sort((left, right) =>
+        String(left.name || "").localeCompare(String(right.name || ""))
+      );
+      return {
+        ...group,
+        accounts: sortedAccounts,
+      };
+    })
+    .sort((left, right) => String(left.name || "").localeCompare(String(right.name || "")));
 
   // Compute planned payment plan details for the selected month
   const paymentPlans = Array.isArray(financeState?.plannedPaymentPlans) ? financeState.plannedPaymentPlans : [];
@@ -545,6 +599,7 @@ export function buildFinanceDashboardModel({ financeState, workData = null, mont
     yearRows,
     yearTotals,
     savingsAccountBalances,
+    savingsAccountGroups,
     plannedPaymentPlanDetails,
     insights: insights.slice(0, 3),
   };
@@ -557,8 +612,14 @@ export function updateMonthCollection(monthState, key, nextItems) {
   };
 }
 
-export function makeSavingsAccount(name = "", interestRate = 0, openingBalance = 0) {
-  return { id: makeId("sa"), name, interestRate: toNumber(interestRate), openingBalance: toNumber(openingBalance) };
+export function makeSavingsAccount(name = "", interestRate = 0, openingBalance = 0, parentGroup = "") {
+  return {
+    id: makeId("sa"),
+    name,
+    interestRate: toNumber(interestRate),
+    openingBalance: toNumber(openingBalance),
+    parentGroup: String(parentGroup || "").trim(),
+  };
 }
 
 export function makePlannedPaymentPlan(name = "", startMonth = getCurrentMonthKey(), endMonth = getCurrentMonthKey()) {
@@ -596,6 +657,17 @@ export function makeCreditCardItem(name = "Card") {
     name,
     balance: 0,
     monthlyPayment: 0,
+  };
+}
+
+export function makeFuelEntry({ cost = 0, litres = 0, costPerLitre = 0, date = "" } = {}) {
+  return {
+    id: makeId("fuel"),
+    name: "Fuel",
+    date,
+    cost: roundMoney(cost),
+    litres: Number(toNumber(litres, 0).toFixed(2)),
+    costPerLitre: Number(toNumber(costPerLitre, 0).toFixed(3)),
   };
 }
 

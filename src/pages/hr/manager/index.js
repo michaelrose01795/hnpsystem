@@ -21,6 +21,8 @@ import DisciplinaryTab from "@/components/HR/tabs/DisciplinaryTab";
 import RecruitmentTab from "@/components/HR/tabs/RecruitmentTab";
 import ReportsTab from "@/components/HR/tabs/ReportsTab";
 import SettingsTab from "@/components/HR/tabs/SettingsTab";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import { ContentWidth, PageShell } from "@/components/ui/layout-system";
 
 // Tab configuration - each tab represents a major HR function
 const HR_TABS = [
@@ -152,85 +154,42 @@ NEXT_PUBLIC_HR_MANAGER_SAFE_MODE=false`}
 
   return (
     <Layout>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "0",
-          padding: "0",
-          minHeight: "calc(100vh - 40px)",
-        }}
-      >
-        {/* Tab Content Area */}
-        <div
-          style={{
-            background: "transparent",
-            padding: "0",
-            borderRadius: "0",
-            flexGrow: 1,
-          }}
-        >
-          <div
-            className="app-section-card"
-            style={{
-              width: "100%",
-              maxWidth: "none",
-              padding: "20px 24px 28px",
-              position: "relative",
-            }}
+      <PageShell sectionKey="hr-manager-shell" className="hr-manager-shell">
+        <ContentWidth sectionKey="hr-manager-content" parentKey="hr-manager-shell" widthMode="full">
+          <DevLayoutSection
+            sectionKey="hr-manager-tabs"
+            parentKey="hr-manager-content"
+            sectionType="tab-row"
+            className="tab-api tab-scroll-row is-overflowing hr-manager-tabs-row"
           >
-            {/* Tab Navigation */}
-            <div
-              style={{
-                display: "flex",
-                gap: "8px",
-                width: "100%",
-                overflowX: "auto",
-                flexShrink: 0,
-                scrollbarWidth: "thin",
-                scrollbarColor: "var(--scrollbar-thumb) transparent",
-                scrollBehavior: "smooth",
-                WebkitOverflowScrolling: "touch",
-                padding: "0 4px 4px",
-                marginBottom: "16px",
-              }}
-            >
-              {HR_TABS.map((tab) => {
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => setActiveTab(tab.id)}
-                    style={{
-                      flex: "0 0 auto",
-                      borderRadius: "var(--radius-pill)",
-                      border: isActive ? "1px solid rgba(var(--primary-rgb), 0.45)" : "1px solid var(--surface-light)",
-                      padding: "10px 20px",
-                      fontSize: "0.9rem",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      background: isActive ? "var(--primary)" : "var(--surface)",
-                      color: isActive ? "var(--text-inverse)" : "var(--text-primary)",
-                      transition: "all 0.15s ease",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      whiteSpace: "nowrap",
-                      boxShadow: isActive ? "0 10px 20px rgba(0,0,0,0.18)" : "none",
-                    }}
-                  >
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </div>
+            {HR_TABS.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`tab-api__item${isActive ? " is-active" : ""}`}
+                  data-tone="default"
+                  aria-pressed={isActive}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </DevLayoutSection>
 
-            {/* Render active tab component */}
+          <DevLayoutSection
+            sectionKey={`hr-manager-tab-${activeTab}`}
+            parentKey="hr-manager-content"
+            sectionType="content-card"
+            backgroundToken="surface"
+            className="app-section-card hr-manager-tab-panel"
+          >
             <ActiveTabComponent />
-          </div>
-        </div>
-      </div>
+          </DevLayoutSection>
+        </ContentWidth>
+      </PageShell>
     </Layout>
   );
 }

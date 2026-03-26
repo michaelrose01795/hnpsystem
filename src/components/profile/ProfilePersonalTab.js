@@ -1,12 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import useBodyModalLock from "@/hooks/useBodyModalLock";
 import useIsMobile from "@/hooks/useIsMobile";
 import usePersonalDashboard from "@/hooks/usePersonalDashboard";
 import usePersonalTabModel from "@/hooks/usePersonalTabModel";
 import usePersonalWidgets from "@/hooks/usePersonalWidgets";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import DropdownField from "@/components/dropdownAPI/DropdownField";
+import PopupModal from "@/components/popups/popupStyleApi";
 import WidgetSettingsModal from "@/components/profile/personal/WidgetSettingsModal";
 import { formatMonthLabel, normaliseMonthKey, shiftMonthKey } from "@/lib/profile/calculations";
 import { generateHeadline, generateInsights } from "@/lib/profile/personalInsights";
@@ -54,25 +53,8 @@ const WIDGET_COMPONENTS = {
 
 /* ── PasscodeModal ────────────────────────────────────────────── */
 
-const passcodeOverlayStyle = {
-  position: "fixed",
-  inset: 0,
-  background: "rgba(15, 23, 42, 0.64)",
-  backdropFilter: "blur(6px)",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  padding: "24px",
-  zIndex: 2000,
-};
-
 const passcodeCardStyle = {
-  width: "100%",
-  maxWidth: "420px",
-  background: "rgba(var(--surface-rgb), 0.98)",
-  borderRadius: "22px",
-  border: "1px solid rgba(var(--primary-rgb), 0.14)",
-  boxShadow: "var(--shadow-lg)",
+  width: "min(100%, 420px)",
   padding: "24px",
   display: "grid",
   gap: "16px",
@@ -98,7 +80,6 @@ function PasscodeModal({
 }) {
   const [passcode, setPasscode] = useState("");
   const [confirmPasscode, setConfirmPasscode] = useState("");
-  useBodyModalLock(isOpen);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -113,9 +94,14 @@ function PasscodeModal({
     await onSubmit?.({ passcode, confirmPasscode });
   };
 
-  const modal = (
-    <div style={passcodeOverlayStyle}>
-      <form onSubmit={handleSubmit} style={passcodeCardStyle}>
+  return (
+    <PopupModal
+      isOpen={isOpen}
+      onClose={onClose}
+      ariaLabel={mode === "setup" ? "Create personal passcode" : "Unlock personal dashboard"}
+      cardStyle={passcodeCardStyle}
+    >
+      <form onSubmit={handleSubmit} style={{ display: "grid", gap: "16px" }}>
         <div style={{ display: "grid", gap: "8px" }}>
           <div style={{ fontSize: "1.2rem", fontWeight: 700 }}>
             {mode === "setup" ? "Create your personal passcode" : "Unlock personal dashboard"}
@@ -177,10 +163,8 @@ function PasscodeModal({
           </Button>
         </div>
       </form>
-    </div>
+    </PopupModal>
   );
-
-  return typeof document === "undefined" ? modal : createPortal(modal, document.body);
 }
 
 /* ── MonthPicker ──────────────────────────────────────────────── */
@@ -354,18 +338,7 @@ function AddWidgetModal({
   onToggle,
   onClose,
 }) {
-  useBodyModalLock(isOpen);
   const isMobile = useIsMobile();
-  const panelRef = useRef(null);
-
-  const handleBackdropClick = useCallback(
-    (event) => {
-      if (panelRef.current && !panelRef.current.contains(event.target)) {
-        onClose?.();
-      }
-    },
-    [onClose]
-  );
 
   useEffect(() => {
     if (!isOpen) return;
@@ -378,38 +351,18 @@ function AddWidgetModal({
 
   if (!isOpen) return null;
 
-  const modal = (
-    <div
-      onClick={handleBackdropClick}
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(15, 23, 42, 0.55)",
-        backdropFilter: "blur(6px)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: isMobile ? "8px" : "24px",
-        zIndex: 2000,
+  return (
+    <PopupModal
+      isOpen={isOpen}
+      onClose={onClose}
+      ariaLabel="Manage personal dashboard cards"
+      cardStyle={{
+        width: "min(100%, 640px)",
+        padding: isMobile ? "14px" : "20px",
+        display: "grid",
+        gap: "14px",
       }}
     >
-      <div
-        ref={panelRef}
-        style={{
-          width: "100%",
-          maxWidth: "640px",
-          maxHeight: "84vh",
-          overflowY: "auto",
-          WebkitOverflowScrolling: "touch",
-          background: "rgba(var(--surface-rgb), 0.98)",
-          borderRadius: isMobile ? "18px" : "22px",
-          border: "1px solid rgba(var(--primary-rgb), 0.14)",
-          boxShadow: "var(--shadow-lg)",
-          padding: isMobile ? "14px" : "20px",
-          display: "grid",
-          gap: "14px",
-        }}
-      >
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
           <div>
@@ -480,11 +433,8 @@ function AddWidgetModal({
             );
           })}
         </div>
-      </div>
-    </div>
+    </PopupModal>
   );
-
-  return typeof document === "undefined" ? modal : createPortal(modal, document.body);
 }
 
 /* ── WidgetGrid ───────────────────────────────────────────────── */
@@ -561,7 +511,7 @@ function WidgetGrid({
         display: "grid",
         gap: isMobile ? "10px" : "14px",
         gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "repeat(2, minmax(0, 1fr))",
-        alignItems: "start",
+        alignItems: "stretch",
         userSelect: moveMode ? "none" : "auto",
         WebkitUserSelect: moveMode ? "none" : "auto",
       }}
@@ -585,10 +535,12 @@ function WidgetGrid({
             }}
             style={{
               position: "relative",
+              display: "flex",
               borderRadius: "16px",
               cursor: moveMode ? "grab" : "default",
               opacity: isDragging ? 0.4 : 1,
               minHeight: 0,
+              height: "100%",
               transform: isOver ? "scale(1.01)" : isDragging ? "scale(0.97)" : "scale(1)",
               transition: "transform 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease",
               boxShadow: isOver

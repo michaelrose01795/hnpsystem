@@ -8,6 +8,7 @@ import {
   ensureMonthFinanceState,
   makeCollectionItem,
   makeCreditCardItem,
+  makeFuelEntry,
   makeOvertimeEntry,
   makePlannedPaymentPlan,
   makeSavingsAccount,
@@ -132,10 +133,10 @@ export default function usePersonalTabModel({ financeState: rawFinanceState = nu
       })),
 
     // Savings accounts (global, not per-month)
-    addSavingsAccount: (name = "", interestRate = 0, openingBalance = 0) =>
+    addSavingsAccount: (name = "", interestRate = 0, openingBalance = 0, parentGroup = "") =>
       update((current) => ({
         ...current,
-        savingsAccounts: [...(current.savingsAccounts || []), makeSavingsAccount(name, interestRate, openingBalance)],
+        savingsAccounts: [...(current.savingsAccounts || []), makeSavingsAccount(name, interestRate, openingBalance, parentGroup)],
       })),
     updateSavingsAccount: (id, patch) =>
       update((current) => ({
@@ -205,6 +206,22 @@ export default function usePersonalTabModel({ financeState: rawFinanceState = nu
       updateMonth((month) => ({
         ...month,
         creditCards: month.creditCards.filter((entry) => entry.id !== id),
+      })),
+
+    addFuelEntry: ({ cost = 0, litres = 0, costPerLitre = 0, date = "" } = {}) =>
+      updateMonth((month) => ({
+        ...month,
+        fuelEntries: [...(month.fuelEntries || []), makeFuelEntry({ cost, litres, costPerLitre, date })],
+      })),
+    updateFuelEntry: (id, patch) =>
+      updateMonth((month) => ({
+        ...month,
+        fuelEntries: (month.fuelEntries || []).map((entry) => (entry.id === id ? { ...entry, ...patch } : entry)),
+      })),
+    removeFuelEntry: (id) =>
+      updateMonth((month) => ({
+        ...month,
+        fuelEntries: (month.fuelEntries || []).filter((entry) => entry.id !== id),
       })),
 
     addOvertimeEntry: () =>

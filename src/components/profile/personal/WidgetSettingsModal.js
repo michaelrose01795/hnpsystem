@@ -1,18 +1,15 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import React, { useEffect, useState } from "react";
 import { CalendarField } from "@/components/calendarAPI";
 import DropdownField from "@/components/dropdownAPI/DropdownField";
-import useBodyModalLock from "@/hooks/useBodyModalLock";
 import useIsMobile from "@/hooks/useIsMobile";
+import PopupModal from "@/components/popups/popupStyleApi";
 import {
   EmptyState,
   formatCurrency,
   formatDate,
-  getWidgetModalCardStyle,
   toNumber,
   widgetAccentSurfaceStyle,
   widgetInsetSurfaceStyle,
-  widgetModalBackdropStyle,
 } from "@/components/profile/personal/widgets/shared";
 import Button from "@/components/ui/Button";
 import { formatMonthLabel, getCurrentMonthKey, normaliseMonthKey, shiftMonthKey } from "@/lib/profile/calculations";
@@ -48,52 +45,6 @@ function makeRecurringRule() {
     isLocal: true,
   };
 }
-
-const WIDGET_SOURCE_MAP = {
-  income: [
-    { label: "Pay settings", source: "Database" },
-    { label: "Manual adjustments", source: "Database" },
-    { label: "Overtime entries", source: "Overtime widget" },
-  ],
-  spending: [
-    { label: "Fixed outgoings", source: "Database" },
-    { label: "Planned payments", source: "Payments widget" },
-    { label: "Credit card payments", source: "Credit Cards widget" },
-  ],
-  bills: [
-    { label: "Planned payments", source: "Database" },
-    { label: "Shared summary", source: "Outgoings widget" },
-  ],
-  fuel: [
-    { label: "Credit cards", source: "Database" },
-    { label: "Shared summary", source: "Outgoings widget" },
-  ],
-  savings: [
-    { label: "Savings pots", source: "Database" },
-    { label: "Shared summary", source: "Net Position widget" },
-  ],
-  mortgage: [
-    { label: "Mortgage targets", source: "Database" },
-  ],
-  holiday: [
-    { label: "Approved leave", source: "Database" },
-  ],
-  "work-summary": [
-    { label: "Manual overtime entries", source: "Database" },
-    { label: "Pay settings", source: "Income widget" },
-  ],
-  "net-position": [
-    { label: "Income totals", source: "Income widget" },
-    { label: "Outgoings totals", source: "Outgoings widget" },
-    { label: "Savings totals", source: "Savings widget" },
-  ],
-  chart: [
-    { label: "Chart source", source: "Selected in this popup" },
-  ],
-  custom: [
-    { label: "Custom values", source: "Database" },
-  ],
-};
 
 const WIDGET_SETTINGS_PRESETS = {
   income: {
@@ -136,6 +87,8 @@ const WIDGET_SETTINGS_PRESETS = {
     monthKey: getCurrentMonthKey(),
     targetAmount: 0,
     goalDate: "",
+    linkedPaymentPlanIds: [],
+    holidayPaymentLinks: {},
     dateDisplayMode: "month",
     dateValue: getCurrentMonthKey(),
   },
@@ -145,6 +98,7 @@ const WIDGET_SETTINGS_PRESETS = {
     depositTarget: 0,
     currentSaved: 0,
     linkedSavingsAccountId: "",
+    linkedMortgagePaymentSourceId: "",
     monthlyPayment: 0,
     mortgageDeadline: "",
     dateDisplayMode: "month",
@@ -261,47 +215,15 @@ function Section({ title, description = "", children }) {
         >
           {title}
         </div>
-        {description ? <div style={{ fontSize: "0.78rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>{description}</div> : null}
       </div>
       {children}
     </section>
   );
 }
 
-function SourceList({ widgetType }) {
-  const items = WIDGET_SOURCE_MAP[widgetType] || [];
-  if (items.length === 0) return null;
-
-  return (
-    <Section title="Data sources" description="Where this card pulls its visible values from.">
-      <div style={{ display: "grid", gap: "8px" }}>
-        {items.map((item) => (
-          <div
-            key={`${item.label}-${item.source}`}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: "12px",
-              alignItems: "center",
-              padding: "8px 10px",
-              ...widgetInsetSurfaceStyle,
-            }}
-          >
-            <div style={{ fontSize: "0.84rem", color: "var(--text-primary)" }}>{item.label}</div>
-            <div style={{ fontSize: "0.76rem", color: "var(--text-secondary)", whiteSpace: "nowrap" }}>({item.source})</div>
-          </div>
-        ))}
-      </div>
-    </Section>
-  );
-}
-
 function FinanceCollectionEditor({ title, source, rows = [], isMobile, emptyLabel, namePlaceholder, amountPlaceholder, onAdd, onUpdate, onRemove, extraColumns = null }) {
   return (
-    <Section
-      title={`${title} (${source})`}
-      description="Changes here save automatically and update every card using this dataset."
-    >
+    <Section title={title}>
       {rows.length === 0 ? (
         <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
           {emptyLabel}
@@ -340,9 +262,26 @@ function CreditCardEditor({ finance, isMobile }) {
 
   return (
     <Section
-      title="Credit cards (Database)"
-      description="Balances and monthly payments used by the Credit Cards and Outgoings cards."
+      title="Credit cards"
     >
+      {!isMobile && rows.length > 0 ? (
+        <div
+          style={{
+            display: "grid",
+            gap: "4px",
+            gridTemplateColumns: "1.2fr 1fr 1fr auto",
+            fontSize: "0.74rem",
+            color: "var(--text-secondary)",
+            fontWeight: 600,
+            padding: "0 2px",
+          }}
+        >
+          <span>Name</span>
+          <span>Balance</span>
+          <span>Monthly payment</span>
+          <span />
+        </div>
+      ) : null}
       {rows.length === 0 ? (
         <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
           No credit cards added yet.
@@ -838,6 +777,105 @@ function LeaveEditor({ finance, isMobile }) {
   );
 }
 
+function HolidayPaymentLinkEditor({ finance, isMobile, settings = {}, updateSetting }) {
+  const planDetails = finance.model.plannedPaymentPlanDetails || [];
+  const leaveRequests = finance.derived.leaveStats?.approvedRequests || [];
+  const holidayLinks = settings.holidayPaymentLinks && typeof settings.holidayPaymentLinks === "object"
+    ? settings.holidayPaymentLinks
+    : {};
+  const linkedIds = Array.isArray(settings.linkedPaymentPlanIds)
+    ? settings.linkedPaymentPlanIds
+    : Object.keys(holidayLinks);
+  const linkedPlans = planDetails.filter((plan) => linkedIds.includes(plan.id));
+  const currentMonthTotal = linkedPlans.reduce((sum, plan) => sum + Number(plan.thisMonthAmount || 0), 0);
+  const totalAcrossPlans = linkedPlans.reduce((sum, plan) => sum + Number(plan.totalAcrossMonths || 0), 0);
+  const leaveOptions = leaveRequests.map((request) => ({
+    value: request.id,
+    label: `${request.type || "Leave"} · ${formatDate(request.startDate)} → ${formatDate(request.endDate)}`,
+  }));
+
+  return (
+    <Section
+      title="Linked Holiday Costs"
+      description="Tick a payment schedule, then choose which holiday from Leave and Calendar it belongs to."
+    >
+      {planDetails.length === 0 ? (
+        <EmptyState>No payment schedules available yet. Add them in the Outgoings settings first.</EmptyState>
+      ) : leaveRequests.length === 0 ? (
+        <EmptyState>No approved leave records available to link yet. Approved holidays from Leave and Calendar will appear here.</EmptyState>
+      ) : (
+        <div style={{ display: "grid", gap: "8px" }}>
+          {planDetails.map((plan) => {
+            const isLinked = linkedIds.includes(plan.id);
+            const selectedLeaveId = holidayLinks[plan.id] || "";
+            return (
+              <div
+                key={plan.id}
+                style={{
+                  display: "grid",
+                  gap: "10px",
+                  padding: "10px 12px",
+                  ...widgetInsetSurfaceStyle,
+                }}
+              >
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: isMobile ? "flex-start" : "center",
+                    justifyContent: "space-between",
+                    gap: "12px",
+                  }}
+                >
+                  <div style={{ display: "grid", gap: "3px", minWidth: 0 }}>
+                    <div style={{ fontSize: "0.84rem", fontWeight: 700, color: "var(--text-primary)" }}>{plan.name || "Unnamed plan"}</div>
+                    <div style={{ fontSize: "0.74rem", color: "var(--text-secondary)" }}>
+                      {plan.startMonth} → {plan.endMonth} · This month {formatCurrency(plan.thisMonthAmount || 0)} · Total {formatCurrency(plan.totalAcrossMonths || 0)}
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={isLinked}
+                    onChange={(event) => {
+                      const nextIds = event.target.checked
+                        ? [...linkedIds, plan.id]
+                        : linkedIds.filter((id) => id !== plan.id);
+                      const nextLinks = { ...holidayLinks };
+                      if (event.target.checked) {
+                        nextLinks[plan.id] = nextLinks[plan.id] || leaveRequests[0]?.id || "";
+                      } else {
+                        delete nextLinks[plan.id];
+                      }
+                      updateSetting("linkedPaymentPlanIds", nextIds);
+                      updateSetting("holidayPaymentLinks", nextLinks);
+                    }}
+                  />
+                </label>
+
+                {isLinked ? (
+                  <div style={{ display: "grid", gap: "6px" }}>
+                    <FieldLabel>Linked holiday</FieldLabel>
+                    <DropdownField
+                      value={selectedLeaveId}
+                      onChange={(event) => updateSetting("holidayPaymentLinks", { ...holidayLinks, [plan.id]: event.target.value })}
+                      options={leaveOptions}
+                    />
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <StatGrid isMobile={isMobile}>
+        <Stat label="Linked schedules">{linkedPlans.length}</Stat>
+        <Stat label="This month">{formatCurrency(currentMonthTotal)}</Stat>
+        <Stat label="Linked total">{formatCurrency(totalAcrossPlans)}</Stat>
+      </StatGrid>
+    </Section>
+  );
+}
+
 function PlannedPaymentPlansEditor({ finance, isMobile }) {
   const plans = finance.financeState.plannedPaymentPlans || [];
   const planDetails = finance.model.plannedPaymentPlanDetails || [];
@@ -957,6 +995,144 @@ function PlannedPaymentPlansEditor({ finance, isMobile }) {
   );
 }
 
+function FuelEntriesEditor({ finance, isMobile }) {
+  const month = finance.model.currentMonth;
+  const entries = month.monthState.fuelEntries || [];
+  const [draft, setDraft] = useState({
+    cost: "",
+    litres: "",
+    costPerLitre: "",
+  });
+
+  const parseValue = (value) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
+  const roundToString = (value, decimals) => {
+    if (!Number.isFinite(value) || value <= 0) return "";
+    return value.toFixed(decimals);
+  };
+
+  const deriveFuelValues = (nextDraft) => {
+    const costRaw = String(nextDraft.cost ?? "").trim();
+    const litresRaw = String(nextDraft.litres ?? "").trim();
+    const costPerLitreRaw = String(nextDraft.costPerLitre ?? "").trim();
+    const cost = parseValue(costRaw);
+    const litres = parseValue(litresRaw);
+    const costPerLitre = parseValue(costPerLitreRaw);
+    const hasCost = costRaw !== "" && cost > 0;
+    const hasLitres = litresRaw !== "" && litres > 0;
+    const hasCostPerLitre = costPerLitreRaw !== "" && costPerLitre > 0;
+    const populatedFields = [hasCost, hasLitres, hasCostPerLitre].filter(Boolean).length;
+
+    if (populatedFields < 2) return nextDraft;
+    if (populatedFields === 3) return nextDraft;
+
+    if (!hasCost && hasLitres && hasCostPerLitre) {
+      return {
+        ...nextDraft,
+        cost: roundToString(litres * costPerLitre, 2),
+      };
+    }
+    if (!hasLitres && hasCost && hasCostPerLitre) {
+      return {
+        ...nextDraft,
+        litres: roundToString(cost / costPerLitre, 2),
+      };
+    }
+    if (!hasCostPerLitre && hasCost && hasLitres) {
+      return {
+        ...nextDraft,
+        costPerLitre: roundToString(cost / litres, 3),
+      };
+    }
+
+    return nextDraft;
+  };
+
+  const handleDraftChange = (key, value) => {
+    setDraft((current) => deriveFuelValues({ ...current, [key]: value }));
+  };
+
+  const handleAddFuel = () => {
+    const normalised = deriveFuelValues(draft);
+    const cost = parseValue(normalised.cost);
+    const litres = parseValue(normalised.litres);
+    const costPerLitre = parseValue(normalised.costPerLitre);
+    if (!(cost > 0) || !(litres > 0) || !(costPerLitre > 0)) {
+      return;
+    }
+    finance.addFuelEntry({
+      cost,
+      litres,
+      costPerLitre,
+      date: `${finance.model.selectedMonthKey}-01`,
+    });
+    setDraft({ cost: "", litres: "", costPerLitre: "" });
+  };
+
+  return (
+    <Section
+      title="Add Fuel"
+      description="Enter any two values and the third will be calculated automatically."
+    >
+      <StatGrid isMobile={isMobile}>
+        <Stat label="Total £">{formatCurrency(month.totals.fuelTotal || 0)}</Stat>
+        <Stat label="Total L">{`${Number(month.totals.fuelLitres || 0).toFixed(2)}L`}</Stat>
+        <Stat label="Avg cost / litre">{month.totals.fuelAverageCostPerLitre > 0 ? Number(month.totals.fuelAverageCostPerLitre).toFixed(3) : "—"}</Stat>
+      </StatGrid>
+
+      <div style={{ display: "grid", gap: "10px", gridTemplateColumns: isMobile ? "1fr" : "repeat(4, minmax(0, 1fr))" }}>
+        <label>
+          <FieldLabel>Cost (£)</FieldLabel>
+          <input className="app-input" type="number" step="0.01" value={draft.cost} onChange={(e) => handleDraftChange("cost", e.target.value)} />
+        </label>
+        <label>
+          <FieldLabel>Litres (L)</FieldLabel>
+          <input className="app-input" type="number" step="0.01" value={draft.litres} onChange={(e) => handleDraftChange("litres", e.target.value)} />
+        </label>
+        <label>
+          <FieldLabel>Cost per litre</FieldLabel>
+          <input className="app-input" type="number" step="0.001" value={draft.costPerLitre} onChange={(e) => handleDraftChange("costPerLitre", e.target.value)} placeholder="138.9" />
+        </label>
+        <div style={{ display: "flex", alignItems: "end" }}>
+          <Button type="button" variant="primary" size="sm" pill onClick={handleAddFuel}>
+            Add row
+          </Button>
+        </div>
+      </div>
+
+      {entries.length === 0 ? (
+        <EmptyState>No fuel entries added for this month yet.</EmptyState>
+      ) : (
+        <div style={{ display: "grid", gap: "8px", maxHeight: "280px", overflowY: "auto", paddingRight: "4px" }}>
+          {entries.map((entry) => (
+            <div
+              key={entry.id}
+              style={{
+                display: "grid",
+                gap: "8px",
+                gridTemplateColumns: isMobile ? "minmax(0, 1fr) auto" : "minmax(0, 1fr) auto",
+                alignItems: "center",
+                padding: "8px 10px",
+                ...widgetInsetSurfaceStyle,
+              }}
+            >
+              <div style={{ fontSize: "0.82rem", color: "var(--text-primary)", minWidth: 0 }}>
+                {`${formatCurrency(entry.cost || 0)} · ${Number(entry.litres || 0).toFixed(2)}L · ${entry.costPerLitre ? Number(entry.costPerLitre).toFixed(3) : "—"}`}
+              </div>
+              <Button type="button" variant="secondary" size="sm" pill onClick={() => finance.removeFuelEntry(entry.id)}>
+                Remove
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+    </Section>
+  );
+}
+
 function OutgoingAdjustmentEditor({ finance, isMobile }) {
   const month = finance.model.currentMonth;
 
@@ -988,12 +1164,32 @@ function OutgoingAdjustmentEditor({ finance, isMobile }) {
 function SavingsAccountsEditor({ finance, isMobile }) {
   const accounts = finance.financeState.savingsAccounts || [];
   const accountBalances = finance.model.savingsAccountBalances || [];
+  const accountGroups = finance.model.savingsAccountGroups || [];
 
   return (
     <Section
       title="Savings Accounts"
-      description="Your savings accounts with interest rates and opening balances. These persist across all months."
+      description="Your savings accounts with interest rates, opening balances, and optional main savings groups. These persist across all months."
     >
+      {!isMobile && accounts.length > 0 ? (
+        <div
+          style={{
+            display: "grid",
+            gap: "4px",
+            gridTemplateColumns: "1.2fr 1fr 0.8fr 1fr auto",
+            fontSize: "0.74rem",
+            color: "var(--text-secondary)",
+            fontWeight: 600,
+            padding: "0 2px",
+          }}
+        >
+          <span>Name</span>
+          <span>AER %</span>
+          <span>Opening balance</span>
+          <span>Main group</span>
+          <span />
+        </div>
+      ) : null}
       {accounts.length === 0 ? (
         <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
           No savings accounts added yet.
@@ -1008,7 +1204,7 @@ function SavingsAccountsEditor({ finance, isMobile }) {
                 style={{
                   display: "grid",
                   gap: "8px",
-                  gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "1.4fr 0.8fr 1fr auto",
+                  gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "1.2fr 1fr 0.8fr 1fr auto",
                   padding: "8px 10px",
                   ...widgetInsetSurfaceStyle,
                 }}
@@ -1034,6 +1230,12 @@ function SavingsAccountsEditor({ finance, isMobile }) {
                   placeholder="Opening balance"
                   onChange={(e) => finance.updateSavingsAccount(account.id, { openingBalance: toNumber(e.target.value) })}
                 />
+                <input
+                  className="app-input"
+                  value={account.parentGroup || ""}
+                  placeholder="Main savings group / bank"
+                  onChange={(e) => finance.updateSavingsAccount(account.id, { parentGroup: e.target.value })}
+                />
                 <Button type="button" variant="secondary" size="sm" pill onClick={() => finance.removeSavingsAccount(account.id)}>
                   Remove
                 </Button>
@@ -1042,11 +1244,6 @@ function SavingsAccountsEditor({ finance, isMobile }) {
           })}
         </div>
       )}
-      <div style={{ display: "grid", gap: "4px", gridTemplateColumns: isMobile ? "1fr" : "auto auto auto", fontSize: "0.74rem", color: "var(--text-secondary)", fontWeight: 600 }}>
-        {accounts.length > 0 && !isMobile && <span>Name</span>}
-        {accounts.length > 0 && !isMobile && <span>AER %</span>}
-        {accounts.length > 0 && !isMobile && <span>Opening balance</span>}
-      </div>
       <Button type="button" variant="secondary" size="sm" pill onClick={() => finance.addSavingsAccount("", 0, 0)} style={{ justifySelf: "start" }}>
         Add account
       </Button>
@@ -1056,11 +1253,33 @@ function SavingsAccountsEditor({ finance, isMobile }) {
           <div style={{ fontSize: "0.74rem", fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.04em", textTransform: "uppercase", marginTop: "2px" }}>
             Current balances
           </div>
-          <StatGrid isMobile={isMobile}>
-            {accountBalances.map((bal) => (
-              <Stat key={bal.id} label={bal.name || "Unnamed"}>{formatCurrency(bal.currentBalance)}</Stat>
+          <div style={{ display: "grid", gap: "10px" }}>
+            {accountGroups.map((group) => (
+              <div key={group.id} style={{ display: "grid", gap: "8px", ...widgetInsetSurfaceStyle, padding: "10px 12px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+                  <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-primary)" }}>
+                    {group.name} total
+                  </div>
+                  <div style={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--text-primary)" }}>
+                    {formatCurrency(group.currentBalance)}
+                  </div>
+                </div>
+                <div style={{ display: "grid", gap: "6px" }}>
+                  {group.accounts.map((account) => (
+                    <div key={account.id} style={{ display: "flex", justifyContent: "space-between", gap: "10px", fontSize: "0.78rem", color: "var(--text-secondary)", flexWrap: "wrap" }}>
+                      <span>{account.name || "Unnamed"}</span>
+                      <span>{formatCurrency(account.currentBalance)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             ))}
-          </StatGrid>
+            <StatGrid isMobile={isMobile}>
+              {accountBalances.filter((bal) => !String(bal.parentGroup || "").trim()).map((bal) => (
+                <Stat key={bal.id} label={bal.name || "Unnamed"}>{formatCurrency(bal.currentBalance)}</Stat>
+              ))}
+            </StatGrid>
+          </div>
         </>
       )}
     </Section>
@@ -1121,13 +1340,29 @@ function SavingsTransactionsEditor({ finance, isMobile }) {
                       { value: "withdrawal", label: "Withdrawal" },
                     ]}
                   />
-                  <input
-                    className="app-input"
-                    type="number"
-                    value={txn.amount || 0}
-                    placeholder="Amount"
-                    onChange={(e) => finance.updateSavingsBucket(txn.id, { amount: toNumber(e.target.value) })}
-                  />
+                  <div style={{ position: "relative" }}>
+                    <span
+                      style={{
+                        position: "absolute",
+                        left: "10px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        color: "var(--text-secondary)",
+                        fontSize: "0.82rem",
+                        pointerEvents: "none",
+                      }}
+                    >
+                      £
+                    </span>
+                    <input
+                      className="app-input"
+                      type="number"
+                      value={txn.amount === 0 || txn.amount === "0" || txn.amount == null ? "" : txn.amount}
+                      placeholder="0.00"
+                      onChange={(e) => finance.updateSavingsBucket(txn.id, { amount: e.target.value === "" ? "" : toNumber(e.target.value) })}
+                      style={{ paddingLeft: "26px" }}
+                    />
+                  </div>
                   <Button type="button" variant="secondary" size="sm" pill onClick={() => finance.removeSavingsBucket(txn.id)}>
                     Remove
                   </Button>
@@ -1163,9 +1398,7 @@ export default function WidgetSettingsModal({
   onSave,
   onToggleVisibility,
 }) {
-  useBodyModalLock(isOpen);
   const isMobile = useIsMobile();
-  const panelRef = useRef(null);
   const [settings, setSettings] = useState(() => buildInitialSettings(widgetType, data, activeMonthKey));
 
   useEffect(() => {
@@ -1173,17 +1406,6 @@ export default function WidgetSettingsModal({
       setSettings(buildInitialSettings(widgetType, data, activeMonthKey));
     }
   }, [activeMonthKey, data, isOpen, widgetType]);
-
-  const handleBackdropClick = useCallback(
-    (event) => {
-      if (panelRef.current && !panelRef.current.contains(event.target)) {
-        // Don't close if clicking inside a dropdown portal or calendar portal
-        if (event.target.closest(".dropdown-api__menu, .calendar-portal, .react-datepicker-popper")) return;
-        onClose?.();
-      }
-    },
-    [onClose]
-  );
 
   useEffect(() => {
     if (!isOpen) return;
@@ -1239,6 +1461,8 @@ export default function WidgetSettingsModal({
     "trendPct" in settings ||
     "targetAmount" in settings ||
     "goalDate" in settings ||
+    "linkedPaymentPlanIds" in settings ||
+    "holidayPaymentLinks" in settings ||
     "depositTarget" in settings ||
     "currentSaved" in settings ||
     "monthlyPayment" in settings ||
@@ -1258,25 +1482,27 @@ export default function WidgetSettingsModal({
     widgetType === "income" ||
     widgetType === "savings" ||
     widgetType === "fuel";
+  const hasMortgagePaymentSavingsOptions =
+    "depositTarget" in settings ||
+    "currentSaved" in settings ||
+    "monthlyPayment" in settings ||
+    "mortgageDeadline" in settings;
   const monthOptions = buildMonthOptions(settings.monthKey || activeMonthKey, 12);
 
-  const modal = (
-    <div
-      onClick={handleBackdropClick}
-      style={{
-        ...widgetModalBackdropStyle,
-        padding: isMobile ? "8px" : "24px",
-        zIndex: 2100,
+  return (
+    <PopupModal
+      isOpen={isOpen}
+      onClose={onClose}
+      ariaLabel={`${widgetLabel || "Widget"} settings`}
+      cardStyle={{
+        width: "min(100%, 720px)",
+        padding: isMobile ? "16px" : "20px",
+        display: "flex",
+        flexDirection: "column",
+        gap: isMobile ? "12px" : "14px",
+        overflow: "hidden",
       }}
     >
-      <div
-        ref={panelRef}
-        style={{
-          ...getWidgetModalCardStyle(isMobile, {
-            maxWidth: "720px",
-          }),
-        }}
-      >
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "flex-start", flexWrap: "wrap" }}>
           <div style={{ fontSize: isMobile ? "1rem" : "1.05rem", fontWeight: 700 }}>{widgetLabel || "Widget"} settings</div>
@@ -1292,60 +1518,60 @@ export default function WidgetSettingsModal({
             paddingRight: isMobile ? "2px" : "4px",
           }}
         >
-          <SourceList widgetType={widgetType} />
+          <div style={{ display: "grid", gap: "14px", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
+            {/* Visibility */}
+            <Section title="Visibility">
+              <CheckboxRow
+                label="Show this card on the dashboard"
+                checked={widgetIsVisible !== false}
+                onChange={(checked) => onToggleVisibility?.(checked)}
+              />
+            </Section>
 
-          {/* Visibility */}
-          <Section title="Visibility">
-            <CheckboxRow
-              label="Show this card on the dashboard"
-              checked={widgetIsVisible !== false}
-              onChange={(checked) => onToggleVisibility?.(checked)}
-            />
-          </Section>
-
-          {/* Date view */}
-          <Section title="Date view" description="Control which month or day this card uses.">
-            <CheckboxRow
-              label="Follow the dashboard month"
-              checked={settings.useGlobalMonth !== false}
-              onChange={(checked) => updateSetting("useGlobalMonth", checked)}
-            />
-            {settings.useGlobalMonth === false ? (
-              <div style={{ display: "grid", gap: "8px", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
-                <div>
-                  <FieldLabel>Display mode</FieldLabel>
-                  <DropdownField
-                    value={settings.dateDisplayMode || "month"}
-                    onChange={(event) => updateSetting("dateDisplayMode", event.target.value)}
-                    options={[
-                      { value: "month", label: "By month" },
-                      { value: "day", label: "By day" },
-                    ]}
-                  />
-                </div>
-                <div>
-                  <FieldLabel>{settings.dateDisplayMode === "day" ? "Selected day" : "Selected month"}</FieldLabel>
-                  {settings.dateDisplayMode === "day" ? (
-                    <CalendarField
-                      value={settings.dateValue || ""}
-                      onChange={(event) => updateSetting("dateValue", event.target.value)}
-                      placeholder="Selected day"
-                    />
-                  ) : (
+            {/* Date view */}
+            <Section title="Date view" description="Control which month or day this card uses.">
+              <CheckboxRow
+                label="Follow the dashboard month"
+                checked={settings.useGlobalMonth !== false}
+                onChange={(checked) => updateSetting("useGlobalMonth", checked)}
+              />
+              {settings.useGlobalMonth === false ? (
+                <div style={{ display: "grid", gap: "8px", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
+                  <div>
+                    <FieldLabel>Display mode</FieldLabel>
                     <DropdownField
-                      value={settings.dateValue || ""}
-                      onChange={(event) => updateSetting("dateValue", event.target.value)}
-                      options={monthOptions}
+                      value={settings.dateDisplayMode || "month"}
+                      onChange={(event) => updateSetting("dateDisplayMode", event.target.value)}
+                      options={[
+                        { value: "month", label: "By month" },
+                        { value: "day", label: "By day" },
+                      ]}
                     />
-                  )}
+                  </div>
+                  <div>
+                    <FieldLabel>{settings.dateDisplayMode === "day" ? "Selected day" : "Selected month"}</FieldLabel>
+                    {settings.dateDisplayMode === "day" ? (
+                      <CalendarField
+                        value={settings.dateValue || ""}
+                        onChange={(event) => updateSetting("dateValue", event.target.value)}
+                        placeholder="Selected day"
+                      />
+                    ) : (
+                      <DropdownField
+                        value={settings.dateValue || ""}
+                        onChange={(event) => updateSetting("dateValue", event.target.value)}
+                        options={monthOptions}
+                      />
+                    )}
+                  </div>
                 </div>
-              </div>
-            ) : null}
-          </Section>
+              ) : null}
+            </Section>
+          </div>
 
           {/* Widget-specific options */}
           {hasWidgetOptions ? (
-            <Section title="Widget options">
+            <Section title={hasMortgagePaymentSavingsOptions ? "Mortgage payments/savings" : "Widget options"}>
               <div style={{ display: "grid", gap: "10px", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(200px, 1fr))" }}>
               {"baseMonthlyIncome" in settings ? (
                 <label>
@@ -1377,6 +1603,10 @@ export default function WidgetSettingsModal({
                   <CalendarField value={settings.goalDate} onChange={(e) => updateSetting("goalDate", e.target.value)} placeholder="Goal date" />
                 </label>
               ) : null}
+              </div>
+
+              {hasMortgagePaymentSavingsOptions ? (
+                <div style={{ display: "grid", gap: "10px", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
               {"depositTarget" in settings ? (
                 <label>
                   <FieldLabel>Deposit target</FieldLabel>
@@ -1415,9 +1645,76 @@ export default function WidgetSettingsModal({
                         {!linkedId && (
                           <input className="app-input" type="number" value={settings.currentSaved} onChange={(e) => updateSetting("currentSaved", e.target.value)} />
                         )}
-                        {linkedId && (
+                      </>
+                    );
+                  })()}
+                </div>
+              ) : null}
+              {"monthlyPayment" in settings ? (
+                <div style={{ display: "grid", gap: "6px" }}>
+                  <FieldLabel>Monthly payment</FieldLabel>
+                  {(() => {
+                    const savingsAccounts = finance?.financeState?.savingsAccounts || [];
+                    const savingsBalances = finance?.model?.savingsAccountBalances || [];
+                    const fixedOutgoings = finance?.model?.currentMonth?.monthState?.fixedOutgoings || [];
+                    const paymentPlans = finance?.model?.plannedPaymentPlanDetails || [];
+                    const linkedSourceId = settings.linkedMortgagePaymentSourceId || "";
+                    const paymentSourceOptions = [
+                      { label: "Manual entry", value: "" },
+                      ...savingsAccounts.map((account) => {
+                        const balance = savingsBalances.find((entry) => entry.id === account.id);
+                        return {
+                          label: `Savings: ${account.name || "Unnamed"} (${formatCurrency(balance?.monthInflow || 0)}/month)`,
+                          value: `savings:${account.id}`,
+                        };
+                      }),
+                      ...fixedOutgoings.map((entry) => ({
+                        label: `Spending: ${entry.name || "Unnamed"} (${formatCurrency(entry.amount || 0)})`,
+                        value: `fixed:${entry.id}`,
+                      })),
+                      ...paymentPlans.map((plan) => ({
+                        label: `Payment schedule: ${plan.name || "Unnamed"} (${formatCurrency(plan.thisMonthAmount || 0)})`,
+                        value: `plan:${plan.id}`,
+                      })),
+                    ];
+                    const resolveLinkedPaymentValue = (sourceId) => {
+                      if (!sourceId) return null;
+                      if (sourceId.startsWith("savings:")) {
+                        const savingsAccount = savingsBalances.find((entry) => entry.id === sourceId.slice(8));
+                        return savingsAccount ? Number(savingsAccount.monthInflow || 0) : null;
+                      }
+                      if (sourceId.startsWith("fixed:")) {
+                        const fixed = fixedOutgoings.find((entry) => entry.id === sourceId.slice(6));
+                        return fixed ? Number(fixed.amount || 0) : null;
+                      }
+                      if (sourceId.startsWith("plan:")) {
+                        const plan = paymentPlans.find((entry) => entry.id === sourceId.slice(5));
+                        return plan ? Number(plan.thisMonthAmount || 0) : null;
+                      }
+                      return null;
+                    };
+                    return (
+                      <>
+                        <DropdownField
+                          value={linkedSourceId}
+                          options={paymentSourceOptions}
+                          menuStyle={{ maxHeight: "192px", overflowY: "auto" }}
+                          onChange={(event) => {
+                            const val = event.target.value;
+                            updateSetting("linkedMortgagePaymentSourceId", val);
+                            if (val) {
+                              const linkedValue = resolveLinkedPaymentValue(val);
+                              if (linkedValue !== null) updateSetting("monthlyPayment", linkedValue);
+                            }
+                          }}
+                          placeholder="Link monthly mortgage payment..."
+                        />
+                        {!linkedSourceId && (
+                          <input className="app-input" type="number" value={settings.monthlyPayment} onChange={(e) => updateSetting("monthlyPayment", e.target.value)} />
+                        )}
+                        {linkedSourceId && (
                           <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", padding: "2px 0" }}>
-                            Auto-updated from linked savings account
+                            Auto-updated from linked payment source
                           </div>
                         )}
                       </>
@@ -1425,18 +1722,16 @@ export default function WidgetSettingsModal({
                   })()}
                 </div>
               ) : null}
-              {"monthlyPayment" in settings ? (
-                <label>
-                  <FieldLabel>Monthly payment</FieldLabel>
-                  <input className="app-input" type="number" value={settings.monthlyPayment} onChange={(e) => updateSetting("monthlyPayment", e.target.value)} />
-                </label>
-              ) : null}
               {"mortgageDeadline" in settings ? (
                 <label>
                   <FieldLabel>Deadline</FieldLabel>
                   <CalendarField value={settings.mortgageDeadline || ""} onChange={(e) => updateSetting("mortgageDeadline", e.target.value)} placeholder="Deadline" />
                 </label>
               ) : null}
+                </div>
+              ) : null}
+
+              <div style={{ display: "grid", gap: "10px", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(200px, 1fr))" }}>
               {"plannedHours" in settings ? (
                 <label>
                   <FieldLabel>Planned hours</FieldLabel>
@@ -1538,21 +1833,6 @@ export default function WidgetSettingsModal({
             </Section>
           ) : null}
 
-          {widgetType === "fuel" ? (
-            <Section title="Fuel defaults" description="Default values for fuel entries.">
-              <div style={{ display: "grid", gap: "10px", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
-                <label>
-                  <FieldLabel>Default budget</FieldLabel>
-                  <input className="app-input" type="number" value={settings.defaultFuelBudget || ""} onChange={(e) => updateSetting("defaultFuelBudget", e.target.value)} />
-                </label>
-                <label>
-                  <FieldLabel>Default station</FieldLabel>
-                  <input className="app-input" value={settings.defaultFuelStation || ""} onChange={(e) => updateSetting("defaultFuelStation", e.target.value)} />
-                </label>
-              </div>
-            </Section>
-          ) : null}
-
           {widgetType === "spending" && finance ? (
             <>
               <FinanceCollectionEditor
@@ -1584,25 +1864,7 @@ export default function WidgetSettingsModal({
             </>
           ) : null}
 
-          {widgetType === "bills" && finance ? (
-            <>
-              <PlannedPaymentPlansEditor finance={finance} isMobile={isMobile} />
-              <FinanceCollectionEditor
-                title="One-off payments"
-                source="This month only"
-                rows={finance.model.currentMonth.monthState.plannedPayments || []}
-                isMobile={isMobile}
-                emptyLabel="No one-off payments this month."
-                namePlaceholder="Payment name"
-                amountPlaceholder="Amount"
-                onAdd={finance.addPlannedPayment}
-                onUpdate={finance.updatePlannedPayment}
-                onRemove={finance.removePlannedPayment}
-              />
-            </>
-          ) : null}
-
-          {widgetType === "fuel" && finance ? <CreditCardEditor finance={finance} isMobile={isMobile} /> : null}
+          {widgetType === "fuel" && finance ? <FuelEntriesEditor finance={finance} isMobile={isMobile} /> : null}
 
           {widgetType === "savings" && finance ? (
             <>
@@ -1626,7 +1888,10 @@ export default function WidgetSettingsModal({
           ) : null}
 
           {widgetType === "holiday" && finance ? (
-            <LeaveEditor finance={finance} isMobile={isMobile} />
+            <>
+              <LeaveEditor finance={finance} isMobile={isMobile} />
+              <HolidayPaymentLinkEditor finance={finance} isMobile={isMobile} settings={settings} updateSetting={updateSetting} />
+            </>
           ) : null}
 
           {widgetType === "spending" && finance ? (
@@ -1643,9 +1908,6 @@ export default function WidgetSettingsModal({
             Save
           </Button>
         </div>
-      </div>
-    </div>
+    </PopupModal>
   );
-
-  return typeof document === "undefined" ? modal : createPortal(modal, document.body);
 }

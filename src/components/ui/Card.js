@@ -2,10 +2,25 @@
 // Standard card component with shared padding, border radius, and surface styling.
 // Uses the .app-section-card class from globals.css for consistent appearance.
 import React from "react";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
-export default function Card({ title, subtitle, action, children, className = "", style }) {
-  return (
-    <div className={`app-section-card ${className}`} style={style}>
+export default function Card({
+  title,
+  subtitle,
+  action,
+  children,
+  className = "",
+  style,
+  sectionKey,
+  parentKey,
+  sectionType = "content-card",
+  backgroundToken = "",
+  widthMode = "",
+  shell = false,
+}) {
+  const cardClassName = `app-section-card ${className}`.trim();
+  const cardContent = (
+    <>
       {(title || subtitle || action) && (
         <div
           style={{
@@ -43,6 +58,30 @@ export default function Card({ title, subtitle, action, children, className = ""
         </div>
       )}
       {children}
+    </>
+  );
+
+  if (sectionKey) {
+    return (
+      <DevLayoutSection
+        as="div"
+        sectionKey={sectionKey}
+        parentKey={parentKey}
+        sectionType={sectionType}
+        backgroundToken={backgroundToken}
+        widthMode={widthMode}
+        shell={shell}
+        className={cardClassName}
+        style={style}
+      >
+        {cardContent}
+      </DevLayoutSection>
+    );
+  }
+
+  return (
+    <div className={cardClassName} style={style}>
+      {cardContent}
     </div>
   );
 }

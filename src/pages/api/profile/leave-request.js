@@ -83,7 +83,7 @@ export default async function handler(req, res) {
 
     const { data: requester, error: requesterError } = await supabase
       .from("users")
-      .select("user_id, first_name, last_name, email, emergency_contact")
+      .select("user_id, first_name, last_name, email, emergency_contact, manager_id")
       .eq("user_id", userId)
       .maybeSingle();
 
@@ -95,8 +95,9 @@ export default async function handler(req, res) {
       });
     }
 
-    const lineManagerIds = parseEmployeeMeta(requester?.emergency_contact).lineManagerIds.filter(
-      (managerId) => managerId !== userId
+    const emergencyManagerIds = parseEmployeeMeta(requester?.emergency_contact).lineManagerIds;
+    const lineManagerIds = Array.from(
+      new Set([requester?.manager_id, ...emergencyManagerIds].filter((managerId) => Number.isInteger(managerId) && managerId !== userId))
     );
 
     if (lineManagerIds.length === 0) {
