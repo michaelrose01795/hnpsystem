@@ -1,4 +1,4 @@
-import { expectedMonthlyContractHours, getCurrentMonthKey, normaliseMonthKey, shiftMonthKey } from "@/lib/profile/calculations";
+import { calculateFuelEntryValues, expectedMonthlyContractHours, getCurrentMonthKey, normaliseMonthKey, shiftMonthKey } from "@/lib/profile/calculations";
 
 const DEFAULT_PAYMENT_BUCKETS = ["Savings", "LISA", "Fuel", "Holidays", "Grandad", "Joint", "Family"];
 const DEFAULT_SAVINGS_BUCKETS = ["Savings"];
@@ -100,6 +100,7 @@ export function createDefaultFinanceState({ workData = null, monthKey = getCurre
       manualNationalInsurance: 0,
       useManualTax: false,
     },
+    creditCardAccounts: [],
     savingsAccounts: [],
     plannedPaymentPlans: [],
     months: {
@@ -138,6 +139,7 @@ export function ensureFinanceState(rawFinanceState = null, { workData = null, mo
     ...base,
     ...(rawFinanceState && typeof rawFinanceState === "object" ? rawFinanceState : {}),
     paySettings: mergedPay,
+    creditCardAccounts: Array.isArray(rawFinanceState?.creditCardAccounts) ? rawFinanceState.creditCardAccounts : [],
     savingsAccounts: Array.isArray(rawFinanceState?.savingsAccounts) ? rawFinanceState.savingsAccounts : [],
     plannedPaymentPlans: Array.isArray(rawFinanceState?.plannedPaymentPlans) ? rawFinanceState.plannedPaymentPlans : [],
     months: {
@@ -176,8 +178,10 @@ export function ensureMonthFinanceState(rawMonthState = null) {
     plannedPayments: Array.isArray(rawMonthState.plannedPayments)
       ? stripLegacyPresetRows(rawMonthState.plannedPayments, DEFAULT_PAYMENT_BUCKETS)
       : [],
-    creditCards: Array.isArray(rawMonthState.creditCards) ? stripLegacyCardRows(rawMonthState.creditCards) : [],
-    fuelEntries: Array.isArray(rawMonthState.fuelEntries) ? rawMonthState.fuelEntries : [],
+    creditCards: Array.isArray(rawMonthState.creditCards)
+      ? stripLegacyCardRows(rawMonthState.creditCards).map((entry) => normaliseCreditCardEntry(entry))
+      : [],
+    fuelEntries: Array.isArray(rawMonthState.fuelEntries) ? rawMonthState.fuelEntries.map((entry) => normaliseFuelEntry(entry)) : [],
     savingsBuckets: Array.isArray(rawMonthState.savingsBuckets)
       ? stripLegacyPresetRows(rawMonthState.savingsBuckets, DEFAULT_SAVINGS_BUCKETS)
       : [],
@@ -188,6 +192,58 @@ export function ensureMonthFinanceState(rawMonthState = null) {
 function getMonthState(financeState, monthKey) {
   const safeMonthKey = normaliseMonthKey(monthKey, financeState?.selectedMonthKey || getCurrentMonthKey());
   return ensureMonthFinanceState(financeState?.months?.[safeMonthKey]);
+}
+
+function normaliseCreditCardEntry(entry = {}) {
+  const balance = roundMoney(entry.balance ?? 0);
+  const isPaidOff = entry.isPaidOff === true;
+  const storedMonthlyPayment = entry.monthlyPayment;
+  const monthlyPayment = storedMonthlyPayment !== undefined
+    ? roundMoney(storedMonthlyPayment)
+    : isPaidOff
+      ? balance
+      : 0;
+
+  return {
+    ...entry,
+    id: entry.id || makeId("card"),
+    cardId: entry.cardId || "",
+    name: entry.name || "Card",
+    balance,
+    isPaidOff,
+    monthlyPayment: isPaidOff ? balance : monthlyPayment,
+  };
+}
+
+function normaliseFuelPricePerLitre(value) {
+  const parsed = toNumber(value, 0);
+  if (parsed <= 0) return 0;
+  return parsed > 10 ? parsed / 100 : parsed;
+}
+
+function normaliseFuelEntry(entry = {}) {
+  const values = calculateFuelEntryValues({
+    totalCost: entry.cost ?? entry.totalCost ?? 0,
+    litres: entry.litres ?? 0,
+    pricePerLitre: normaliseFuelPricePerLitre(entry.costPerLitre ?? entry.pricePerLitre ?? 0),
+  });
+
+  return {
+    ...entry,
+    id: entry.id || makeId("fuel"),
+    name: entry.name || "Fuel",
+    date: entry.date || "",
+    cost: roundMoney(values.totalCost),
+    litres: Number(toNumber(values.litres, 0).toFixed(2)),
+    costPerLitre: Number(toNumber(values.pricePerLitre, 0).toFixed(3)),
+  };
+}
+
+function getCreditCardMonthlyOutgoing(entry = {}) {
+  if (entry?.isPaidOff === true) {
+    return roundMoney(entry.balance ?? 0);
+  }
+  return roundMoney(entry?.monthlyPayment ?? 0);
 }
 
 function sumByAmount(items = [], key = "amount") {

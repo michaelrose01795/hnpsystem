@@ -50,6 +50,7 @@
     "eslint": "^9.38.0",
     "eslint-config-next": "^16.1.6",
     "playwright": "^1.58.2",
+    "supabase": "^2.84.4",
     "typescript": "5.9.3"
   }
 }
