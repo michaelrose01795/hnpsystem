@@ -3708,7 +3708,7 @@ export default function VhcDetailsPanel({
     return Number.isFinite(num) ? num : 0;
   };
 
-  const computeLabourCost = (hours) => parseNumericValue(hours) * LABOUR_RATE;
+  const computeLabourCost = (hours) => parseNumericValue(hours) * LABOUR_RATE_GROSS_DEFAULT_GBP;
   const parseCurrencyValue = (value) => {
     const numeric = Number.parseFloat(String(value || "").replace(/[^0-9.]/g, ""));
     return Number.isFinite(numeric) && numeric >= 0 ? numeric : null;
@@ -3786,7 +3786,7 @@ export default function VhcDetailsPanel({
     const resolvedPartsCost = resolvePartsCost(itemId, entry);
     const canonicalId = resolveCanonicalVhcId(itemId);
     const labourHours = labourHoursByVhcItem.map.get(canonicalId) || 0;
-    const labourCost = labourHours * LABOUR_RATE;
+    const labourCost = labourHours * LABOUR_RATE_GROSS_DEFAULT_GBP;
     const partsCost = resolvedPartsCost ?? 0;
     const total = partsCost + labourCost;
     return total > 0 ? total : null;

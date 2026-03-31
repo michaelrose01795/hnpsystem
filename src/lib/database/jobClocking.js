@@ -274,6 +274,53 @@ const getTodayRange = () => {
   return { start: start.toISOString(), end: end.toISOString() };
 };
 
+const assertClockInAvailability = async ({
+  userId,
+  jobId,
+  requestId = null,
+  workType = "initial",
+}) => {
+  const normalizedWorkType = normaliseWorkType(workType);
+  const { data, error } = await db
+    .from(TABLE_NAME)
+    .select("id, user_id, request_id, work_type")
+    .eq("job_id", jobId)
+    .is("clock_out", null);
+
+  if (error) {
+    throw new Error(`Failed to validate job clocking availability: ${error.message}`);
+  }
+
+  const openRows = Array.isArray(data) ? data : [];
+  const openByCurrentUser = openRows.find((row) => row.user_id === userId) || null;
+  if (openByCurrentUser) {
+    throw new Error("You already have an active clocking entry on this job.");
+  }
+
+  if (requestId !== null) {
+    const blockingTechRow = openRows.find((row) => {
+      const rowWorkType = normaliseWorkType(row?.work_type);
+      return row.user_id !== userId && rowWorkType !== "mot";
+    });
+    if (blockingTechRow) {
+      throw new Error("This job is still clocked on by a technician.");
+    }
+
+    const blockingMotRow = openRows.find((row) => {
+      const rowRequestId = coerceInteger(row?.request_id);
+      return row.user_id !== userId && rowRequestId !== null && rowRequestId === requestId;
+    });
+    if (blockingMotRow) {
+      throw new Error("This MOT request is already clocked on by another MOT tester.");
+    }
+  } else if (normalizedWorkType !== "mot") {
+    const blockingRow = openRows.find((row) => row.user_id !== userId);
+    if (blockingRow) {
+      throw new Error("This job is already clocked on by another user.");
+    }
+  }
+};
+
 export const clockInToJob = async (...rawArgs) => {
   try {
     const { userId, jobId, jobNumber, workType, requestId } = normaliseClockInArgs(rawArgs);
@@ -288,6 +335,13 @@ export const clockInToJob = async (...rawArgs) => {
     if (!jobNumberText) {
       throw new Error("clockInToJob requires a jobNumber string.");
     }
+
+    await assertClockInAvailability({
+      userId: userIdInt,
+      jobId: jobIdInt,
+      requestId: requestIdValue,
+      workType,
+    });
 
     const clockInTimestamp = new Date().toISOString();
     const payload = {

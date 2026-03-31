@@ -319,14 +319,30 @@ export default async function handler(req, res) {
           approvalStatus: normalizedStatus,
         });
 
-        // Sync note_text, pre_pick_location, request_id directly on vhc_checks
+        // Re-read the (now created/updated) job_request row after sync so we
+        // write the correct metadata back to vhc_checks.
         if (normalizedStatus === "authorized" || normalizedStatus === "completed") {
+          let syncedRequest = null;
+          try {
+            const { data: syncedRows } = await supabase
+              .from("job_requests")
+              .select("request_id, note_text, pre_pick_location")
+              .eq("job_id", jobId)
+              .eq("request_source", "vhc_authorised")
+              .eq("vhc_item_id", vhcItemId)
+              .order("updated_at", { ascending: false })
+              .limit(1);
+            syncedRequest = Array.isArray(syncedRows) ? syncedRows[0] : null;
+          } catch (_err) {
+            // Non-critical; fall back to latestRequest from pre-sync read
+            syncedRequest = latestRequest;
+          }
           await supabase
             .from("vhc_checks")
             .update({
-              note_text: latestRequest?.note_text ?? null,
-              pre_pick_location: latestRequest?.pre_pick_location ?? null,
-              request_id: latestRequest?.request_id ?? null,
+              note_text: syncedRequest?.note_text ?? null,
+              pre_pick_location: syncedRequest?.pre_pick_location ?? null,
+              request_id: syncedRequest?.request_id ?? null,
               updated_at: new Date().toISOString(),
             })
             .eq("vhc_id", vhcItemId);

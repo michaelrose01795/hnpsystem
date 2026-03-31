@@ -818,6 +818,105 @@ export function calculateProjectedSavingsDate(savings = null, referenceDate = ne
   return projected.toISOString();
 }
 
+export function calculateMortgagePaymentBreakdown({
+  remainingBalance = 0,
+  monthlyPayment = 0,
+  interestRate = 0,
+} = {}) {
+  const balance = Math.max(0, toNumber(remainingBalance, 0));
+  const payment = Math.max(0, toNumber(monthlyPayment, 0));
+  const annualRate = Math.max(0, toNumber(interestRate, 0));
+  const monthlyRate = annualRate / 100 / 12;
+
+  if (balance <= 0) {
+    return {
+      monthlyRate,
+      interestPayment: 0,
+      capitalPayment: 0,
+      remainingAfterPayment: 0,
+      isPaymentInsufficient: false,
+    };
+  }
+
+  if (payment <= 0) {
+    return {
+      monthlyRate,
+      interestPayment: 0,
+      capitalPayment: 0,
+      remainingAfterPayment: Number(balance.toFixed(2)),
+      isPaymentInsufficient: true,
+    };
+  }
+
+  const interestPayment = monthlyRate > 0 ? balance * monthlyRate : 0;
+  const rawCapitalPayment = monthlyRate > 0 ? payment - interestPayment : payment;
+  const capitalPayment = Math.max(0, Math.min(balance, rawCapitalPayment));
+  const remainingAfterPayment = Math.max(0, balance - capitalPayment);
+
+  return {
+    monthlyRate,
+    interestPayment: Number(interestPayment.toFixed(2)),
+    capitalPayment: Number(capitalPayment.toFixed(2)),
+    remainingAfterPayment: Number(remainingAfterPayment.toFixed(2)),
+    isPaymentInsufficient: monthlyRate > 0 ? payment <= interestPayment : capitalPayment <= 0,
+  };
+}
+
+export function calculateMortgagePayoffTimeline({
+  remainingBalance = 0,
+  monthlyPayment = 0,
+  interestRate = 0,
+  referenceDate = new Date(),
+} = {}) {
+  const balance = Math.max(0, toNumber(remainingBalance, 0));
+  const payment = Math.max(0, toNumber(monthlyPayment, 0));
+  const annualRate = Math.max(0, toNumber(interestRate, 0));
+  const monthlyRate = annualRate / 100 / 12;
+
+  if (balance <= 0) {
+    return {
+      monthsToPayoff: 0,
+      projectedPayoffDate: referenceDate.toISOString(),
+      isPaymentInsufficient: false,
+    };
+  }
+
+  if (payment <= 0) {
+    return {
+      monthsToPayoff: null,
+      projectedPayoffDate: null,
+      isPaymentInsufficient: true,
+    };
+  }
+
+  let monthsToPayoff = null;
+
+  if (monthlyRate === 0) {
+    monthsToPayoff = Math.ceil(balance / payment);
+  } else if (payment > balance * monthlyRate) {
+    monthsToPayoff = Math.ceil(
+      -Math.log(1 - (monthlyRate * balance) / payment) / Math.log(1 + monthlyRate)
+    );
+  }
+
+  if (!Number.isFinite(monthsToPayoff) || monthsToPayoff === null) {
+    return {
+      monthsToPayoff: null,
+      projectedPayoffDate: null,
+      isPaymentInsufficient: true,
+    };
+  }
+
+  const projectedPayoffDate = new Date(referenceDate);
+  projectedPayoffDate.setMonth(projectedPayoffDate.getMonth() + monthsToPayoff);
+
+  return {
+    monthsToPayoff,
+    projectedPayoffDate: projectedPayoffDate.toISOString(),
+    isPaymentInsufficient: false,
+  };
+}
+
 export function calculateProjectedSavingsDateForPlan({
   monthKey = getCurrentMonthKey(),
   savings = null,

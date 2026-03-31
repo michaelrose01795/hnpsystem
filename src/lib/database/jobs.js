@@ -1637,7 +1637,7 @@ const normaliseRequestsForWriteUp = ({ jobRequests = [], legacyRequests = null }
   const customerRows = rows
     .filter((row) => {
       const source = String(row?.request_source || row?.requestSource || "").toLowerCase().trim();
-      return source === "" || source === "customer_request";
+      return source === "" || source === "customer_request" || isMotRequestLike(row);
     })
     .sort((a, b) => {
       const aSort = Number(a?.sort_order ?? a?.sortOrder ?? 0);
@@ -1660,6 +1660,7 @@ const normaliseRequestsForWriteUp = ({ jobRequests = [], legacyRequests = null }
           raw: cleaned,
           requestId,
           sortOrder: fallbackOrder,
+          isMot: isMotRequestLike(entry),
           status: isCompleteRequestStatus(entry?.status) ? "complete" : "inprogress",
         };
       })
@@ -1703,6 +1704,7 @@ const normaliseRequestsForWriteUp = ({ jobRequests = [], legacyRequests = null }
         raw: cleaned,
         requestId: null,
         sortOrder: index + 1,
+        isMot: isMotRequestLike(entry),
         status: isCompleteRequestStatus(entry?.status) ? "complete" : "inprogress",
       };
     })
@@ -1778,6 +1780,85 @@ const isCompleteRequestStatus = (value) => {
   return normalized === "complete" || normalized === "completed" || normalized === "done";
 };
 
+const normalizeSearchValue = (value = "") =>
+  String(value || "")
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+export const isMotRequestLike = (request = {}) => {
+  const haystack = [
+    request?.description,
+    request?.jobType,
+    request?.job_type,
+    request?.serviceType,
+    request?.service_type,
+    request?.requestSource,
+    request?.request_source,
+    request?.label,
+    request?.raw,
+    request?.noteText,
+    request?.note_text,
+  ]
+    .map((value) => normalizeSearchValue(value))
+    .filter(Boolean)
+    .join(" ");
+
+  return haystack.includes("mot");
+};
+
+const isTaskComplete = (task = {}) =>
+  typeof task?.checked === "boolean" ? task.checked : sanitiseTaskStatus(task?.status) === "complete";
+
+export const summarizeWriteUpTasks = (tasks = []) => {
+  const normalizedTasks = (Array.isArray(tasks) ? tasks : [])
+    .filter((task) => task && typeof task === "object")
+    .map((task) => {
+      const source = String(task?.source || "request").trim().toLowerCase();
+      const checked = isTaskComplete(task);
+      const isMot = Boolean(task?.isMot) || (source === "request" && isMotRequestLike(task));
+
+      return {
+        source,
+        sourceKey: task?.sourceKey || task?.source_key || `${source}-${task?.label || "task"}`,
+        label: (task?.label || "").toString().trim(),
+        checked,
+        status: checked ? "complete" : "additional_work",
+        isMot,
+        requestId:
+          task?.requestId !== null && task?.requestId !== undefined
+            ? Number(task.requestId)
+            : task?.request_id !== null && task?.request_id !== undefined
+            ? Number(task.request_id)
+            : null,
+        sortOrder:
+          task?.sortOrder !== null && task?.sortOrder !== undefined
+            ? Number(task.sortOrder)
+            : task?.sort_order !== null && task?.sort_order !== undefined
+            ? Number(task.sort_order)
+            : null,
+      };
+    });
+
+  const pendingTasks = normalizedTasks.filter((task) => !task.checked);
+  const pendingMotTasks = pendingTasks.filter((task) => task.isMot);
+  const pendingNonMotTasks = pendingTasks.filter((task) => !task.isMot);
+
+  return {
+    totalCount: normalizedTasks.length,
+    allTasksComplete: normalizedTasks.length > 0 && pendingTasks.length === 0,
+    technicianTasksComplete: normalizedTasks.length > 0 && pendingNonMotTasks.length === 0,
+    hasPendingMotOnly: pendingMotTasks.length > 0 && pendingNonMotTasks.length === 0,
+    pendingCount: pendingTasks.length,
+    pendingMotCount: pendingMotTasks.length,
+    pendingNonMotCount: pendingNonMotTasks.length,
+    pendingTasks,
+    pendingMotTasks,
+    pendingNonMotTasks,
+  };
+};
+
 // ✅ Merge stored tasks with live request/VHC sources
 const buildWriteUpTaskList = ({ storedTasks = [], requestItems = [], authorisedItems = [] }) => {
   const registry = new Map();
@@ -1797,6 +1878,15 @@ const buildWriteUpTaskList = ({ storedTasks = [], requestItems = [], authorisedI
       source,
       sourceKey,
       label: task.label,
+      requestId:
+        task?.requestId !== null && task?.requestId !== undefined
+          ? Number(task.requestId)
+          : task?.request_id ?? null,
+      sortOrder:
+        task?.sortOrder !== null && task?.sortOrder !== undefined
+          ? Number(task.sortOrder)
+          : task?.sort_order ?? null,
+      isMot: Boolean(task?.isMot),
       status: checked ? "complete" : "additional_work",
       checked,
     });
@@ -1813,6 +1903,9 @@ const buildWriteUpTaskList = ({ storedTasks = [], requestItems = [], authorisedI
       merged.push({
         ...existing,
         label: existing.label || item.label,
+        requestId: existing.requestId ?? item.requestId ?? null,
+        sortOrder: existing.sortOrder ?? item.sortOrder ?? null,
+        isMot: existing.isMot === true || Boolean(item.isMot),
         checked,
         status: checked ? "complete" : "additional_work",
       });
@@ -1826,6 +1919,9 @@ const buildWriteUpTaskList = ({ storedTasks = [], requestItems = [], authorisedI
           ...legacyExisting,
           sourceKey: item.sourceKey,
           label: legacyExisting.label || item.label,
+          requestId: legacyExisting.requestId ?? item.requestId ?? null,
+          sortOrder: legacyExisting.sortOrder ?? item.sortOrder ?? null,
+          isMot: legacyExisting.isMot === true || Boolean(item.isMot),
           checked,
           status: checked ? "complete" : "additional_work",
         });
@@ -1849,6 +1945,9 @@ const buildWriteUpTaskList = ({ storedTasks = [], requestItems = [], authorisedI
             ...matchedExisting,
             sourceKey: item.sourceKey,
             label: matchedExisting?.label || item.label,
+            requestId: matchedExisting?.requestId ?? item.requestId ?? null,
+            sortOrder: matchedExisting?.sortOrder ?? item.sortOrder ?? null,
+            isMot: matchedExisting?.isMot === true || Boolean(item.isMot),
             checked,
             status: checked ? "complete" : "additional_work",
           });
@@ -1862,6 +1961,9 @@ const buildWriteUpTaskList = ({ storedTasks = [], requestItems = [], authorisedI
         source: item.source,
         sourceKey: item.sourceKey,
         label: item.label,
+        requestId: item.requestId ?? null,
+        sortOrder: item.sortOrder ?? null,
+        isMot: Boolean(item.isMot),
         status: checked ? "complete" : "additional_work",
         checked,
       });
@@ -2084,6 +2186,14 @@ const hydrateVhcChecks = (checks = []) =>
     return { ...check, data: structuredData };
   });
 
+const normalizeAuthorizationDecision = (value = "") => {
+  const normalized = normalizeSearchValue(value);
+  if (!normalized) return "";
+  if (normalized === "authorised" || normalized === "approved") return "authorized";
+  if (normalized === "complete" || normalized === "completed") return "completed";
+  return normalized;
+};
+
 const formatJobData = (data) => {
   if (!data) return null;
   const statusMeta = getMainStatusMetadata(data.status);
@@ -2247,6 +2357,44 @@ const formatJobData = (data) => {
     ? data.booking_request[0]
     : data.booking_request;
 
+  const rawWriteUp = data.job_writeups?.[0] || null;
+  const requestItems = normaliseRequestsForWriteUp({
+    jobRequests: data.job_requests || [],
+    legacyRequests: data.requests,
+  });
+  const authorisedTaskItems = hydrateVhcChecks(data.vhc_checks || [])
+    .filter((row) => {
+      const decision =
+        normalizeAuthorizationDecision(row?.authorization_state) ||
+        normalizeAuthorizationDecision(row?.approval_status);
+      return decision === "authorized" || decision === "completed" || row?.Complete === true || row?.complete === true;
+    })
+    .map((row, index) => {
+      const vhcId = row?.vhc_id ?? row?.vhcItemId ?? `idx-${index + 1}`;
+      const labelBase =
+        (row?.issue_title || row?.issue_description || row?.section || "").toString().trim() ||
+        `Authorised item ${index + 1}`;
+      return {
+        source: "vhc",
+        sourceKey: `vhc-${data.id}-${vhcId}`,
+        label: `Authorized Work: ${labelBase}`,
+        vhcItemId: row?.vhc_id ?? null,
+        status:
+          normalizeAuthorizationDecision(row?.authorization_state) === "completed" ||
+          normalizeAuthorizationDecision(row?.approval_status) === "completed" ||
+          row?.Complete === true ||
+          row?.complete === true
+            ? "complete"
+            : "additional_work",
+      };
+    });
+  const writeUpTasks = buildWriteUpTaskList({
+    storedTasks: extractTasksFromChecklist(rawWriteUp?.task_checklist),
+    requestItems,
+    authorisedItems: authorisedTaskItems,
+  });
+  const writeUpTaskSummary = summarizeWriteUpTasks(writeUpTasks);
+
   const bookingRequest = bookingRequestRow
     ? {
         requestId: bookingRequestRow.request_id,
@@ -2355,7 +2503,8 @@ const formatJobData = (data) => {
     parts_job_items: data.parts_job_items || [], // ✅ Raw parts_job_items for Parts tab
     goodsInParts,
     notes: data.job_notes || [],
-    writeUp: data.job_writeups?.[0] || null,
+    writeUp: rawWriteUp,
+    writeUpTaskSummary,
     files: data.job_files || [], // ✅ NEW: File attachments
     linkedWarrantyJobId: data.warranty_linked_job_id || null,
     warrantyVhcMasterJobId: data.warranty_vhc_master_job_id || null,
@@ -3556,6 +3705,17 @@ export const saveWriteUpToDatabase = async (jobNumber, writeUpData) => {
           source,
           sourceKey: task?.sourceKey || `${source}-${task?.label || "task"}`,
           label: (task?.label || "").toString().trim(),
+          ...(task?.requestId !== null && task?.requestId !== undefined
+            ? { requestId: Number(task.requestId) }
+            : task?.request_id !== null && task?.request_id !== undefined
+            ? { requestId: Number(task.request_id) }
+            : {}),
+          ...(task?.sortOrder !== null && task?.sortOrder !== undefined
+            ? { sortOrder: Number(task.sortOrder) }
+            : task?.sort_order !== null && task?.sort_order !== undefined
+            ? { sortOrder: Number(task.sort_order) }
+            : {}),
+          ...(task?.isMot ? { isMot: true } : {}),
           status,
           checked,
           ...(task?.vhcItemId ? { vhcItemId: task.vhcItemId } : {}),

@@ -3,6 +3,71 @@ const toTrimmedString = (value) => {
   return String(value).trim();
 };
 
+const normaliseDateString = (value) => {
+  const text = toTrimmedString(value);
+  if (!text) return "";
+  const match = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return match ? text : "";
+};
+
+const toLocalDate = (value) => {
+  const text = normaliseDateString(value);
+  if (!text) return null;
+  const [year, month, day] = text.split("-").map(Number);
+  const next = new Date(year, month - 1, day);
+  return Number.isNaN(next.getTime()) ? null : next;
+};
+
+const HALF_DAY_VALUES = new Set(["AM", "PM"]);
+
+export const normaliseLeaveDayType = (value) => {
+  const text = toTrimmedString(value).toUpperCase();
+  return HALF_DAY_VALUES.has(text) ? text : "None";
+};
+
+export const calculateLeaveRequestDayTotals = ({
+  startDate,
+  endDate,
+  halfDay = "None",
+  fallbackTotalDays = null,
+} = {}) => {
+  const start = toLocalDate(startDate);
+  const end = toLocalDate(endDate);
+  const isHalfDay = normaliseLeaveDayType(halfDay) !== "None";
+
+  if (!start || !end || end < start) {
+    const fallbackWorkDays = fallbackTotalDays === null || fallbackTotalDays === undefined || fallbackTotalDays === ""
+      ? 0
+      : Number(fallbackTotalDays);
+    return {
+      workDays: Number.isFinite(fallbackWorkDays) ? Number(fallbackWorkDays.toFixed(1)) : 0,
+      calendarDays: 0,
+    };
+  }
+
+  let calendarDays = 0;
+  let workDays = 0;
+  const cursor = new Date(start);
+
+  while (cursor <= end) {
+    calendarDays += 1;
+    const day = cursor.getDay();
+    if (day !== 0 && day !== 6) {
+      workDays += 1;
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  if (isHalfDay && workDays > 0) {
+    workDays = Math.max(workDays - 0.5, 0.5);
+  }
+
+  return {
+    workDays: Number(workDays.toFixed(1)),
+    calendarDays,
+  };
+};
+
 const normalizeNotificationRef = (entry) => {
   if (!entry || typeof entry !== "object") return null;
   const managerId = Number.parseInt(String(entry.managerId ?? entry.manager_id ?? ""), 10);

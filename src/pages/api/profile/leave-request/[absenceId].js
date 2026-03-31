@@ -6,6 +6,7 @@ import { ensureDirectThread, sendThreadMessage, updateThreadMessageMetadata } fr
 import { parseEmployeeMeta } from "@/lib/hr/employeeMeta";
 import {
   buildLeaveRequestMessageLines,
+  calculateLeaveRequestDayTotals,
   parseLeaveRequestNotes,
   serializeLeaveRequestNotes,
 } from "@/lib/hr/leaveRequests";
@@ -53,6 +54,7 @@ async function markExistingManagerMessages({
   endDate,
   halfDay = "None",
   totalDays = null,
+  calendarDays = null,
   requestNotes = "",
   status,
 }) {
@@ -72,6 +74,7 @@ async function markExistingManagerMessages({
             endDate,
             halfDay,
             totalDays,
+            calendarDays,
             requestNotes,
           },
         },
@@ -90,6 +93,7 @@ async function sendManagerMessages({
   endDate,
   halfDay,
   totalDays,
+  calendarDays,
   requestNotes,
   prefix = "/leaverequest",
 }) {
@@ -124,6 +128,7 @@ async function sendManagerMessages({
           endDate,
           halfDay,
           totalDays,
+          calendarDays,
           requestNotes,
         },
       },
@@ -232,7 +237,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, data: { removed: true, absenceId } });
     }
 
-    const { type, startDate, endDate, notes = "", halfDay = "None", totalDays = null } = req.body || {};
+    const { type, startDate, endDate, notes = "", halfDay = "None" } = req.body || {};
 
     if (!type || !startDate || !endDate) {
       return res.status(400).json({
@@ -255,6 +260,14 @@ export default async function handler(req, res) {
       });
     }
 
+    const leaveTotals = calculateLeaveRequestDayTotals({ startDate, endDate, halfDay });
+    if (!(leaveTotals.workDays > 0)) {
+      return res.status(400).json({
+        success: false,
+        message: "Selected dates do not include any working days.",
+      });
+    }
+
     if (lineManagerIds.length === 0) {
       return res.status(400).json({
         success: false,
@@ -269,15 +282,19 @@ export default async function handler(req, res) {
       managerIds: lineManagerIds,
       type: existing.type,
       startDate: existing.start_date,
-      endDate: existing.end_date,
-      halfDay: existingNotes.halfDay,
-      totalDays: existingNotes.totalDays,
-      requestNotes: existingNotes.requestNotes,
-      status: "Superseded",
-    });
+        endDate: existing.end_date,
+        halfDay: existingNotes.halfDay,
+        totalDays: existingNotes.totalDays,
+        calendarDays: calculateLeaveRequestDayTotals({
+          startDate: existing.start_date,
+          endDate: existing.end_date,
+          halfDay: existingNotes.halfDay,
+          fallbackTotalDays: existingNotes.totalDays,
+        }).calendarDays,
+        requestNotes: existingNotes.requestNotes,
+        status: "Superseded",
+      });
 
-    const normalizedTotalDays =
-      totalDays === null || totalDays === undefined || totalDays === "" ? null : Number(totalDays);
     const nextRefs = await sendManagerMessages({
       requesterId: userId,
       requesterName,
@@ -287,7 +304,8 @@ export default async function handler(req, res) {
       startDate,
       endDate,
       halfDay,
-      totalDays: normalizedTotalDays,
+      totalDays: leaveTotals.workDays,
+      calendarDays: leaveTotals.calendarDays,
       requestNotes: notes,
       prefix: "/leaverequest updated",
     });
@@ -296,7 +314,7 @@ export default async function handler(req, res) {
       requestNotes: notes || "",
       declineReason: "",
       halfDay,
-      totalDays: normalizedTotalDays,
+      totalDays: leaveTotals.workDays,
       lineManagerIds,
       managerNotificationRefs: nextRefs,
     };
@@ -329,7 +347,8 @@ export default async function handler(req, res) {
         status: updated.approval_status,
         notes,
         halfDay,
-        totalDays: normalizedTotalDays,
+        totalDays: leaveTotals.workDays,
+        calendarDays: leaveTotals.calendarDays,
       },
     });
   } catch (error) {

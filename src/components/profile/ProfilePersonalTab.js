@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import useIsMobile from "@/hooks/useIsMobile";
 import usePersonalDashboard from "@/hooks/usePersonalDashboard";
 import usePersonalTabModel from "@/hooks/usePersonalTabModel";
@@ -7,6 +7,7 @@ import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import DropdownField from "@/components/dropdownAPI/DropdownField";
 import PopupModal from "@/components/popups/popupStyleApi";
 import WidgetSettingsModal from "@/components/profile/personal/WidgetSettingsModal";
+import PersonalSettingsPopup from "@/components/profile/personal/PersonalSettingsPopup";
 import { formatMonthLabel, normaliseMonthKey, shiftMonthKey } from "@/lib/profile/calculations";
 import { generateHeadline, generateInsights } from "@/lib/profile/personalInsights";
 import { PERSONAL_WIDGET_DEFINITIONS, PERSONAL_WIDGET_TYPE_OPTIONS, sortWidgetsForDisplay } from "@/lib/profile/personalWidgets";
@@ -22,6 +23,7 @@ import {
   BillsWidget,
   ChartWidget,
   CustomWidget,
+  FinanceOverviewWidget,
   FuelWidget,
   HolidayWidget,
   IncomeWidget,
@@ -49,6 +51,7 @@ const WIDGET_COMPONENTS = {
   chart: ChartWidget,
   notes: NotesWidget,
   attachments: AttachmentsWidget,
+  "finance-overview": FinanceOverviewWidget,
 };
 
 /* ── PasscodeModal ────────────────────────────────────────────── */
@@ -205,16 +208,6 @@ function MonthPicker({
           Month
         </div>
       ) : null}
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        onClick={() => onChange?.(shiftMonthKey(monthKey, -1))}
-        style={{ width: "40px", minWidth: "40px", padding: 0 }}
-        aria-label="Previous month"
-      >
-        ‹
-      </Button>
       <DropdownField
         value={monthKey}
         onChange={(event) => onChange?.(normaliseMonthKey(event.target.value, monthKey))}
@@ -228,23 +221,18 @@ function MonthPicker({
         controlStyle={{ justifyContent: "center" }}
         valueStyle={{ justifyContent: "center", whiteSpace: "nowrap" }}
       />
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        onClick={() => onChange?.(shiftMonthKey(monthKey, 1))}
-        style={{ width: "40px", minWidth: "40px", padding: 0 }}
-        aria-label="Next month"
-      >
-        ›
-      </Button>
     </div>
   );
 }
 
 /* ── InsightPanel ─────────────────────────────────────────────── */
 
-function InsightCard({ insight }) {
+const INSIGHT_TYPE_TO_TONE = { warning: "warning", positive: "success", info: "neutral" };
+
+function InsightCard({ insight, onAction }) {
+  const action = insight.action;
+  const hasAction = action && typeof action === "object" && action.label;
+
   return (
     <div
       style={{
@@ -257,23 +245,29 @@ function InsightCard({ insight }) {
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
-        <StatusBadge tone="neutral">
+        <StatusBadge tone={INSIGHT_TYPE_TO_TONE[insight.type] || "neutral"}>
           {insight.type}
         </StatusBadge>
       </div>
       <div style={{ fontSize: "0.82rem", fontWeight: 600, lineHeight: 1.5, color: "var(--text-primary)" }}>
         {insight.message}
       </div>
-      {insight.action ? (
-        <div style={{ fontSize: "0.72rem", color: "var(--text-secondary)", fontWeight: 600 }}>
-          {insight.action}
-        </div>
+      {hasAction ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          style={{ justifySelf: "start", fontSize: "0.72rem", fontWeight: 600, padding: "2px 8px", minHeight: 0 }}
+          onClick={() => onAction?.(action)}
+        >
+          {action.label}
+        </Button>
       ) : null}
     </div>
   );
 }
 
-function InsightPanel({ finance }) {
+function InsightPanel({ finance, onAction }) {
   const isMobile = useIsMobile();
 
   const insights = useMemo(
@@ -321,7 +315,7 @@ function InsightPanel({ finance }) {
           }}
         >
           {insights.map((insight) => (
-            <InsightCard key={insight.category} insight={insight} />
+            <InsightCard key={insight.category} insight={insight} onAction={onAction} />
           ))}
         </div>
       )}
@@ -333,7 +327,6 @@ function InsightPanel({ finance }) {
 
 function AddWidgetModal({
   isOpen,
-  widgets = [],
   visibleWidgetsByType = {},
   onToggle,
   onClose,
@@ -355,7 +348,7 @@ function AddWidgetModal({
     <PopupModal
       isOpen={isOpen}
       onClose={onClose}
-      ariaLabel="Manage personal dashboard cards"
+      ariaLabel="Edit personal dashboard widgets"
       cardStyle={{
         width: "min(100%, 640px)",
         padding: isMobile ? "14px" : "20px",
@@ -366,9 +359,9 @@ function AddWidgetModal({
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
           <div>
-            <div style={{ fontSize: "1rem", fontWeight: 700 }}>Manage cards</div>
+            <div style={{ fontSize: "1rem", fontWeight: 700 }}>Edit widgets</div>
             <div style={{ fontSize: "0.78rem", color: "var(--text-secondary)", marginTop: "2px", lineHeight: 1.4 }}>
-              Toggle which cards appear on your dashboard.
+              Show or hide widgets on your dashboard.
             </div>
           </div>
           <Button type="button" variant="secondary" size="sm" pill onClick={onClose}>
@@ -442,112 +435,38 @@ function AddWidgetModal({
 function WidgetGrid({
   widgets = [],
   renderWidget,
-  onReorder = null,
-  moveMode = false,
 }) {
   const visibleWidgets = useMemo(
     () => sortWidgetsForDisplay((widgets || []).filter((widget) => widget.isVisible !== false)),
     [widgets]
   );
-  const [draggingId, setDraggingId] = useState(null);
-  const [overId, setOverId] = useState(null);
   const isMobile = useIsMobile();
-  const dragImageRef = useRef(null);
-  const itemRefs = useRef({});
-
-  const handleDragStart = useCallback(
-    (event, widgetId) => {
-      if (!moveMode) return;
-      setDraggingId(widgetId);
-      event.dataTransfer.effectAllowed = "move";
-      event.dataTransfer.setData("text/plain", widgetId);
-      if (!dragImageRef.current) {
-        const el = document.createElement("div");
-        el.style.width = "1px";
-        el.style.height = "1px";
-        el.style.position = "fixed";
-        el.style.top = "-9999px";
-        document.body.appendChild(el);
-        dragImageRef.current = el;
-      }
-      event.dataTransfer.setDragImage(dragImageRef.current, 0, 0);
-    },
-    [moveMode]
-  );
-
-  const handleDragOver = useCallback(
-    (event, widgetId) => {
-      if (!moveMode) return;
-      event.preventDefault();
-      event.dataTransfer.dropEffect = "move";
-      setOverId(widgetId);
-    },
-    [moveMode]
-  );
-
-  const handleDrop = useCallback(
-    async (event, targetId) => {
-      if (!moveMode) return;
-      event.preventDefault();
-      const sourceId = draggingId;
-      setDraggingId(null);
-      setOverId(null);
-      if (!sourceId || !targetId || sourceId === targetId) return;
-      await onReorder?.(sourceId, targetId);
-    },
-    [draggingId, moveMode, onReorder]
-  );
-
-  const handleDragEnd = useCallback(() => {
-    setDraggingId(null);
-    setOverId(null);
-  }, []);
-
-  /* Row-height equalization removed — widgets now show full content. */
 
   return (
     <div
+      className="personal-widget-grid"
       style={{
         display: "grid",
+        width: "100%",
+        minWidth: 0,
         gap: isMobile ? "10px" : "14px",
-        gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "repeat(2, minmax(0, 1fr))",
+        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
         alignItems: "stretch",
-        userSelect: moveMode ? "none" : "auto",
-        WebkitUserSelect: moveMode ? "none" : "auto",
+        justifyItems: "stretch",
       }}
     >
       {visibleWidgets.map((widget) => {
-        const isDragging = draggingId === widget.id;
-        const isOver = overId === widget.id && draggingId && draggingId !== widget.id;
-
         return (
           <div
             key={widget.id}
-            draggable={moveMode}
-            onDragStart={(e) => handleDragStart(e, widget.id)}
-            onDragOver={(e) => handleDragOver(e, widget.id)}
-            onDragLeave={() => { if (overId === widget.id) setOverId(null); }}
-            onDrop={(e) => handleDrop(e, widget.id)}
-            onDragEnd={handleDragEnd}
-            ref={(node) => {
-              if (node) itemRefs.current[widget.id] = node;
-              else delete itemRefs.current[widget.id];
-            }}
             style={{
               position: "relative",
               display: "flex",
+              width: "100%",
+              minWidth: 0,
               borderRadius: "16px",
-              cursor: moveMode ? "grab" : "default",
-              opacity: isDragging ? 0.4 : 1,
               minHeight: 0,
               height: "100%",
-              transform: isOver ? "scale(1.01)" : isDragging ? "scale(0.97)" : "scale(1)",
-              transition: "transform 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease",
-              boxShadow: isOver
-                ? "0 0 0 2px rgba(var(--primary-rgb), 0.18), 0 4px 14px rgba(var(--primary-rgb), 0.12)"
-                : moveMode
-                  ? "0 1px 4px rgba(var(--primary-rgb), 0.06)"
-                  : "none",
             }}
           >
             {renderWidget?.(widget)}
@@ -569,8 +488,17 @@ function PersonalDashboard({ dashboard }) {
     onAddWidget: dashboard.addWidget,
   });
   const [settingsWidgetId, setSettingsWidgetId] = useState(null);
-  const [isMoveMode, setIsMoveMode] = useState(false);
+  const [settingsPopupOpen, setSettingsPopupOpen] = useState(false);
+  const [settingsPopupSection, setSettingsPopupSection] = useState(null);
   const isMobile = useIsMobile();
+  const neutralPanelStyle = useMemo(
+    () => ({
+      background: "var(--surface)",
+      border: "1px solid rgba(var(--text-primary-rgb), 0.08)",
+      borderRadius: "var(--radius-md)",
+    }),
+    []
+  );
 
   const finance = usePersonalTabModel({
     financeState: dashboard.financeState,
@@ -615,25 +543,13 @@ function PersonalDashboard({ dashboard }) {
     deleteAttachment: dashboard.deleteAttachment,
   };
 
-  const handleReorderFromModal = useCallback(
-    async (sourceId, targetId) => {
-      if (!sourceId || !targetId || sourceId === targetId) return;
-      const ordered = [...widgetManager.widgets].sort((a, b) => a.positionY - b.positionY || a.positionX - b.positionX);
-      const sourceIndex = ordered.findIndex((entry) => entry.id === sourceId);
-      const targetIndex = ordered.findIndex((entry) => entry.id === targetId);
-      if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) return;
-      const next = [...ordered];
-      const [moved] = next.splice(sourceIndex, 1);
-      next.splice(targetIndex, 0, moved);
-      const withSlots = next.map((entry, index) => ({
-        ...entry,
-        positionX: (index % 2) + 1,
-        positionY: Math.floor(index / 2) + 1,
-      }));
-      await widgetManager.persistLayout(withSlots);
-    },
-    [widgetManager]
-  );
+  const handleInsightAction = useCallback((action) => {
+    if (!action || typeof action !== "object") return;
+    if (action.target === "settings") {
+      setSettingsPopupSection(action.section || null);
+      setSettingsPopupOpen(true);
+    }
+  }, []);
 
   const activeSettingsWidgetRecord = settingsWidgetId
     ? widgetManager.widgets.find((widget) => widget.id === settingsWidgetId) || null
@@ -645,9 +561,12 @@ function PersonalDashboard({ dashboard }) {
   return (
     <div style={{ display: "grid", gap: isMobile ? "10px" : "14px" }}>
       {/* ── Dashboard header ── */}
-      <div
+      <DevLayoutSection
+        sectionKey="profile-personal-dashboard-header"
+        parentKey="profile-personal-dashboard-unlocked"
+        sectionType="toolbar"
         style={{
-          ...widgetAccentSurfaceStyle,
+          ...neutralPanelStyle,
           padding: isMobile ? "12px" : "14px",
           display: "flex",
           flexDirection: isMobile ? "column" : "row",
@@ -677,9 +596,9 @@ function PersonalDashboard({ dashboard }) {
             size="sm"
             className="app-btn--control"
             style={toolbarButtonStyle}
-            onClick={() => setIsMoveMode((current) => !current)}
+            onClick={() => dashboard.onOpenAddWidget?.()}
           >
-            {isMoveMode ? "Done" : "Move"}
+            Edit
           </Button>
           <MonthPicker
             value={finance.model.selectedMonthKey}
@@ -689,16 +608,27 @@ function PersonalDashboard({ dashboard }) {
             showLabel={false}
           />
         </div>
-      </div>
+      </DevLayoutSection>
 
       {/* ── Insights ── */}
-      <InsightPanel finance={finance} />
+      <DevLayoutSection
+        sectionKey="profile-personal-dashboard-insights"
+        parentKey="profile-personal-dashboard-unlocked"
+        sectionType="content-card"
+      >
+        <div style={neutralPanelStyle}>
+          <InsightPanel finance={finance} onAction={handleInsightAction} />
+        </div>
+      </DevLayoutSection>
 
       {/* ── Widget grid ── */}
       {visibleWidgets.length === 0 ? (
-        <div
+        <DevLayoutSection
+          sectionKey="profile-personal-dashboard-empty-state"
+          parentKey="profile-personal-dashboard-unlocked"
+          sectionType="content-card"
           style={{
-            ...widgetAccentSurfaceStyle,
+            ...neutralPanelStyle,
             borderStyle: "dashed",
             padding: isMobile ? "20px 16px" : "28px 20px",
             color: "var(--text-secondary)",
@@ -707,38 +637,54 @@ function PersonalDashboard({ dashboard }) {
             lineHeight: 1.5,
           }}
         >
-          No cards visible. Use <strong>Add widget</strong> above to add some.
-        </div>
+          No widgets visible. Use <strong>Edit</strong> above to show some.
+        </DevLayoutSection>
       ) : (
-        <WidgetGrid
-          widgets={widgetManager.widgets}
-          moveMode={isMoveMode}
-          onReorder={handleReorderFromModal}
-          renderWidget={(widget) => {
-            const WidgetComponent = WIDGET_COMPONENTS[widget.widgetType] || CustomWidget;
-            const widgetData = dashboard.widgetDataMap[widget.widgetType]?.data || {};
+        <DevLayoutSection
+          sectionKey="profile-personal-dashboard-widget-grid"
+          parentKey="profile-personal-dashboard-unlocked"
+          sectionType="section-shell"
+          shell
+        >
+          <WidgetGrid
+            widgets={widgetManager.widgets}
+            renderWidget={(widget) => {
+              const WidgetComponent = WIDGET_COMPONENTS[widget.widgetType] || CustomWidget;
+              const widgetData = dashboard.widgetDataMap[widget.widgetType]?.data || {};
 
-            return (
-              <WidgetComponent
-                widget={widget}
-                widgetData={widgetData}
-                widgetMonthKey={finance.model.selectedMonthKey}
-                dashboardMonthKey={finance.model.selectedMonthKey}
-                widgetDataMap={dashboard.widgetDataMap}
-                datasets={datasets}
-                actions={actions}
-                onOpenSettings={() => setSettingsWidgetId(widget.id)}
-                finance={finance}
-              />
-            );
-          }}
-        />
+              return (
+                <DevLayoutSection
+                  as="div"
+                  sectionKey={`profile-personal-widget-${widget.widgetType}-${widget.id}`}
+                  parentKey="profile-personal-dashboard-widget-grid"
+                  sectionType="content-card"
+                  style={{
+                    width: "100%",
+                    minWidth: 0,
+                    display: "flex",
+                  }}
+                >
+                  <WidgetComponent
+                    widget={widget}
+                    widgetData={widgetData}
+                    widgetMonthKey={finance.model.selectedMonthKey}
+                    dashboardMonthKey={finance.model.selectedMonthKey}
+                    widgetDataMap={dashboard.widgetDataMap}
+                    datasets={datasets}
+                    actions={actions}
+                    onOpenSettings={() => setSettingsWidgetId(widget.id)}
+                    finance={finance}
+                  />
+                </DevLayoutSection>
+              );
+            }}
+          />
+        </DevLayoutSection>
       )}
 
       {/* ── Modals ── */}
       <AddWidgetModal
         isOpen={dashboard.isAddWidgetOpen}
-        widgets={widgetManager.widgets}
         visibleWidgetsByType={visibleWidgetsByType}
         onClose={dashboard.onCloseAddWidget}
         onToggle={async (widgetType, isVisible) => {
@@ -751,25 +697,42 @@ function PersonalDashboard({ dashboard }) {
         }}
       />
 
-      <WidgetSettingsModal
-        isOpen={Boolean(activeSettingsWidget)}
-        widgetId={activeSettingsWidgetRecord?.id || null}
-        widgetType={activeSettingsWidgetRecord?.widgetType || null}
-        widgetLabel={activeSettingsWidget?.label}
-        activeMonthKey={finance.model.selectedMonthKey}
-        widgetIsVisible={activeSettingsWidgetRecord?.isVisible !== false}
+      <DevLayoutSection
+        as="div"
+        sectionKey="profile-personal-widget-settings-modal"
+        parentKey="profile-personal-dashboard-unlocked"
+        sectionType="modal"
+      >
+        <WidgetSettingsModal
+          isOpen={Boolean(activeSettingsWidget)}
+          widgetId={activeSettingsWidgetRecord?.id || null}
+          widgetType={activeSettingsWidgetRecord?.widgetType || null}
+          widgetLabel={activeSettingsWidget?.label}
+          activeMonthKey={finance.model.selectedMonthKey}
+          widgetIsVisible={activeSettingsWidgetRecord?.isVisible !== false}
+          finance={finance}
+          data={activeSettingsWidgetRecord ? dashboard.widgetDataMap[activeSettingsWidgetRecord.widgetType]?.data || {} : {}}
+          onClose={() => setSettingsWidgetId(null)}
+          onToggleVisibility={async (nextVisible) => {
+            if (!activeSettingsWidgetRecord?.id) return;
+            await dashboard.updateWidget(activeSettingsWidgetRecord.id, { isVisible: nextVisible });
+            if (!nextVisible) setSettingsWidgetId(null);
+          }}
+          onSave={async (nextData) => {
+            if (!activeSettingsWidgetRecord?.widgetType) return;
+            await dashboard.saveWidgetData(activeSettingsWidgetRecord.widgetType, nextData);
+          }}
+        />
+      </DevLayoutSection>
+
+      <PersonalSettingsPopup
+        isOpen={settingsPopupOpen}
+        onClose={() => {
+          setSettingsPopupOpen(false);
+          setSettingsPopupSection(null);
+        }}
         finance={finance}
-        data={activeSettingsWidgetRecord ? dashboard.widgetDataMap[activeSettingsWidgetRecord.widgetType]?.data || {} : {}}
-        onClose={() => setSettingsWidgetId(null)}
-        onToggleVisibility={async (nextVisible) => {
-          if (!activeSettingsWidgetRecord?.id) return;
-          await dashboard.updateWidget(activeSettingsWidgetRecord.id, { isVisible: nextVisible });
-          if (!nextVisible) setSettingsWidgetId(null);
-        }}
-        onSave={async (nextData) => {
-          if (!activeSettingsWidgetRecord?.widgetType) return;
-          await dashboard.saveWidgetData(activeSettingsWidgetRecord.widgetType, nextData);
-        }}
+        initialSection={settingsPopupSection}
       />
 
     </div>
@@ -803,9 +766,6 @@ export default function ProfilePersonalTab({ disabled = false, onHeaderActionsCh
     return (
       <DevLayoutSection sectionKey="profile-personal-header-actions" parentKey="profile-tab-actions" sectionType="toolbar">
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
-          <Button type="button" variant="secondary" size="sm" className="app-btn--control" style={toolbarButtonStyle} onClick={() => setIsAddWidgetOpen(true)}>
-            Add widget
-          </Button>
           <Button type="button" variant="secondary" size="sm" className="app-btn--control" style={toolbarButtonStyle} onClick={dashboard.lock}>
             Lock
           </Button>
@@ -828,7 +788,7 @@ export default function ProfilePersonalTab({ disabled = false, onHeaderActionsCh
         shell
         style={{
           background: "var(--surface)",
-          border: "1px solid rgba(var(--accent-purple-rgb), 0.12)",
+          border: "1px solid rgba(var(--text-primary-rgb), 0.08)",
           borderRadius: "14px",
           padding: "24px",
           color: "var(--text-secondary)",
@@ -872,6 +832,7 @@ export default function ProfilePersonalTab({ disabled = false, onHeaderActionsCh
             dashboard={{
               ...dashboard,
               isAddWidgetOpen,
+              onOpenAddWidget: () => setIsAddWidgetOpen(true),
               onCloseAddWidget: () => setIsAddWidgetOpen(false),
             }}
           />
@@ -884,7 +845,7 @@ export default function ProfilePersonalTab({ disabled = false, onHeaderActionsCh
           shell
           style={{
             background: "var(--surface)",
-            border: "1px solid rgba(var(--accent-purple-rgb), 0.12)",
+            border: "1px solid rgba(var(--text-primary-rgb), 0.08)",
             borderRadius: "14px",
             padding: "24px",
             display: "grid",

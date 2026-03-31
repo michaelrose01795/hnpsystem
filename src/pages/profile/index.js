@@ -79,6 +79,7 @@ export function ProfilePage({
   const [headerActions, setHeaderActions] = useState(null);
   const isMobile = useIsMobile();
   const { mode: themeMode, resolvedMode, toggleTheme, accent, setAccent } = useTheme();
+  const isWorkTab = activeTab === "work";
 
   useEffect(() => {
     setHeaderActions(null);
@@ -137,14 +138,16 @@ export function ProfilePage({
         </DevLayoutSection>
         <DevLayoutSection sectionKey="profile-tab-actions" parentKey="profile-tab-toolbar" sectionType="toolbar">
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
-            <div style={{ minWidth: "170px", width: "170px" }}>
-              <DropdownField
-                value={accent}
-                onValueChange={setAccent}
-                options={accentOptions}
-                className="profile-accent-dropdown"
-              />
-            </div>
+            {isWorkTab ? (
+              <div style={{ minWidth: "170px", width: "170px" }}>
+                <DropdownField
+                  value={accent}
+                  onValueChange={setAccent}
+                  options={accentOptions}
+                  className="profile-accent-dropdown"
+                />
+              </div>
+            ) : null}
             <Button
               type="button"
               variant="secondary"

@@ -44,10 +44,14 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, inval
     critical: { fill: "var(--danger)", text: "var(--text-inverse)", label: "var(--danger)" },
     advisory: { fill: "var(--warning)", text: "var(--text-inverse)", label: "var(--warning)" },
     good: { fill: "var(--success)", text: "var(--text-inverse)", label: "var(--success)" },
-    unknown: { fill: "rgba(var(--primary-rgb), 0.24)", text: "var(--text-inverse)", label: unknownFill },
+    unknown: {
+      fill: "rgba(var(--accent-purple-rgb), 0.22)",
+      text: "var(--text-primary)",
+      label: unknownFill,
+    },
   };
-  const selectedAxleFill = "rgba(var(--accent-purple-rgb), 0.16)";
-  const selectedAxleStroke = "rgba(var(--accent-purple-rgb), 0.65)";
+  const selectedAxleFill = "rgba(var(--accent-purple-rgb), 0.14)";
+  const selectedAxleStroke = "rgba(var(--accent-purple-rgb), 0.75)";
 
   const containerStyle = {
     width: "100%",
@@ -60,8 +64,22 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, inval
     alignItems: "center",
     justifyContent: "center",
     color: palette.textPrimary,
-    border: `1px solid ${palette.border}`,
+    border: "1px solid rgba(var(--accent-purple-rgb), 0.22)",
     boxShadow: "none",
+  };
+
+  const stageStyle = {
+    width: "100%",
+    height: "auto",
+    maxWidth: "360px",
+    borderRadius: "var(--radius-lg)",
+    backgroundImage:
+      "linear-gradient(180deg, rgba(var(--accent-purple-rgb), 0.12), rgba(var(--accent-purple-rgb), 0.04)), var(--vhc-vehicle-diagram-image)",
+    backgroundPosition: "50% 50%",
+    backgroundRepeat: "no-repeat",
+    backgroundSize: "118% auto",
+    backgroundColor: "rgba(var(--accent-purple-rgb), 0.03)",
+    boxShadow: "inset 0 0 0 1px rgba(var(--accent-purple-rgb), 0.18)",
   };
 
   return (
@@ -70,16 +88,7 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, inval
         viewBox={`0 0 ${DIAGRAM_WIDTH} ${DIAGRAM_HEIGHT}`}
         role="img"
         aria-label="Brake pad and disc overview diagram"
-        style={{
-          width: "100%",
-          height: "auto",
-          maxWidth: "360px",
-          backgroundImage: "var(--vhc-vehicle-diagram-image)",
-          backgroundPosition: "50% 50%",
-          backgroundRepeat: "no-repeat",
-          backgroundSize: "118% auto",
-          borderRadius: "var(--radius-md)",
-        }}
+        style={stageStyle}
       >
         {isFrontActive ? (
           <rect
@@ -150,7 +159,15 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, inval
                 height={PAD_HEIGHT}
                 rx="12"
                 fill={colors.fill}
-                stroke={isInvalid ? "var(--danger)" : isActive ? palette.accent : palette.border}
+                stroke={
+                  isInvalid
+                    ? "var(--danger)"
+                    : isActive
+                    ? "var(--accent-purple)"
+                    : status === "unknown"
+                    ? "rgba(var(--accent-purple-rgb), 0.45)"
+                    : colors.fill
+                }
                 strokeWidth={isInvalid ? 3 : isActive ? 3 : 1.5}
               />
               <text

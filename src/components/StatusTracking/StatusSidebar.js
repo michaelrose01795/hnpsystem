@@ -1,13 +1,14 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/components/StatusTracking/StatusSidebar.js
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import JobProgressTracker from '@/components/StatusTracking/JobProgressTracker';
 import SmartSummaryBlock from '@/components/StatusTracking/SmartSummaryBlock'; // Smart Summary panel
 import { SearchBar } from '@/components/searchBarAPI';
 import { buildSmartSummary } from '@/lib/status/smartSummaryBuilder'; // Summary generation from snapshot
 import { enhanceTimeline } from '@/lib/status/timelineEnhancer'; // Timeline enhancement pipeline
 import { getAllTrackerFlags } from '@/config/trackerFlags'; // Feature flags for tracker enhancements
+import { supabase } from '@/lib/supabaseClient'; // Supabase client for real-time subscriptions
 // ⚠️ Mock data found — replacing with Supabase query
 // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
 
@@ -113,6 +114,55 @@ export default function StatusSidebar({
     };
   }, [searchInput, jobId, hasUrlJobId]);
 
+  // Stable reference to the snapshot loader so subscriptions can call it without stale closures.
+  const snapshotLoaderRef = useRef(null);
+
+  // Subscribe to real-time changes on tables that affect the tracker.
+  // When any relevant row changes, re-fetch the full snapshot so the tracker
+  // updates instantly without manual page refresh.
+  useEffect(() => {
+    if (!jobId) return undefined;
+
+    // Resolve numeric job ID for Supabase filters (snapshot may not be loaded yet).
+    const numericId = snapshot?.job?.id || (Number.isFinite(Number(jobId)) ? Number(jobId) : null);
+    if (!numericId) return undefined;
+
+    const channelName = `tracker-live-${numericId}`;
+    const channel = supabase.channel(channelName);
+
+    const handleChange = () => {
+      if (snapshotLoaderRef.current) {
+        snapshotLoaderRef.current(jobId);
+      }
+    };
+
+    const tables = [
+      { table: "jobs", filter: `id=eq.${numericId}` },
+      { table: "job_status_history", filter: `job_id=eq.${numericId}` },
+      { table: "job_requests", filter: `job_id=eq.${numericId}` },
+      { table: "vhc_checks", filter: `job_id=eq.${numericId}` },
+      { table: "parts_job_items", filter: `job_id=eq.${numericId}` },
+      { table: "job_clocking", filter: `job_id=eq.${numericId}` },
+      { table: "job_writeups", filter: `job_id=eq.${numericId}` },
+      { table: "invoices", filter: `job_id=eq.${numericId}` },
+      { table: "vhc_declinations", filter: `job_id=eq.${numericId}` },
+    ];
+
+    tables.forEach(({ table, filter }) => {
+      channel.on(
+        "postgres_changes",
+        { event: "*", schema: "public", table, filter },
+        handleChange
+      );
+    });
+
+    void channel.subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [jobId, snapshot?.job?.id]);
+
   // Fetch the complete status snapshot for this job
   const fetchStatusSnapshot = async (targetJobId) => {
     try {
@@ -138,6 +188,9 @@ export default function StatusSidebar({
     }
     return false;
   };
+
+  // Keep the ref in sync so real-time callbacks always call the latest loader.
+  snapshotLoaderRef.current = fetchStatusSnapshot;
 
   // Handle job search
   const handleSearch = async (e) => {

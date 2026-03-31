@@ -56,7 +56,10 @@ const resolveTechStatusTooltip = (job, { isClockedOn = false } = {}) => {
   const requiresVhc = job?.vhcRequired === true;
   const vhcComplete = Boolean(job?.vhcCompletedAt);
   const writeUpStatus = normalizeStatusKey(job?.writeUp?.completion_status);
-  const writeUpComplete = writeUpStatus === "complete" || writeUpStatus === "waiting_additional_work";
+  const writeUpComplete =
+    job?.writeUpTaskSummary?.technicianTasksComplete === true ||
+    writeUpStatus === "complete" ||
+    writeUpStatus === "waiting_additional_work";
   const completionStatus = normalizeStatusKey(
     job?.techCompletionStatus || job?.tech_completion_status
   );
@@ -100,6 +103,22 @@ const getMakeModel = (job) => {
   if (job.makeModel) return job.makeModel;
   const combined = [job.make, job.model].filter(Boolean).join(" ");
   return combined || "N/A";
+};
+
+const isTechTaskComplete = (job = {}) => {
+  const rawStatus = normalizeStatusKey(job?.rawStatus || job?.status);
+  const completionStatus = normalizeStatusKey(
+    job?.techCompletionStatus || job?.tech_completion_status
+  );
+  return (
+    rawStatus.includes("tech complete") ||
+    rawStatus.includes("technician work completed") ||
+    rawStatus.includes("invoiced") ||
+    rawStatus === "complete" ||
+    rawStatus === "completed" ||
+    completionStatus === "tech_complete" ||
+    completionStatus === "complete"
+  );
 };
 
 export default function MyJobsPage() {
@@ -152,8 +171,13 @@ export default function MyJobsPage() {
     const normalized = String(roleName).toLowerCase();
     return normalized.includes("tech") || normalized.includes("mot");
   });
+  const hasMotRoleAccess = userRoles.some((roleName) =>
+    String(roleName).toLowerCase().includes("mot")
+  );
   const hasTechnicianAccess =
     (username && allowedTechNames.has(username)) || hasRoleAccess;
+  const isMotTester =
+    (username && motTestersList.includes(username)) || hasMotRoleAccess;
 
   const isAssignedToTechnician = useCallback(
     (job) => {
@@ -189,6 +213,78 @@ export default function MyJobsPage() {
     [dbUserId, normalizedUserNames]
   );
 
+  const fetchOpenClockingByJob = useCallback(async (jobIds = []) => {
+    const numericIds = Array.from(
+      new Set(
+        (Array.isArray(jobIds) ? jobIds : [])
+          .map((id) => Number(id))
+          .filter((id) => Number.isInteger(id))
+      )
+    );
+
+    if (numericIds.length === 0) {
+      return new Map();
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("job_clocking")
+        .select("id, job_id, user_id, request_id, work_type, clock_in, clock_out")
+        .in("job_id", numericIds)
+        .is("clock_out", null);
+
+      if (error) {
+        throw error;
+      }
+
+      const nextMap = new Map();
+      (data || []).forEach((row) => {
+        const jobId = Number(row?.job_id);
+        if (!Number.isInteger(jobId)) {
+          return;
+        }
+        if (!nextMap.has(jobId)) {
+          nextMap.set(jobId, []);
+        }
+        nextMap.get(jobId).push(row);
+      });
+      return nextMap;
+    } catch (error) {
+      console.error("[MyJobs] failed to fetch open job clocking:", error);
+      return new Map();
+    }
+  }, []);
+
+  const shouldShowMotHandoffJob = useCallback(
+    (job, clockingMap) => {
+      if (!isMotTester || !dbUserId || !job) {
+        return false;
+      }
+
+      if (!job?.writeUpTaskSummary?.hasPendingMotOnly || !isTechTaskComplete(job)) {
+        return false;
+      }
+
+      const openRows = clockingMap.get(Number(job.id)) || [];
+      const technicianClocking = openRows.find(
+        (row) => String(row?.work_type || "").trim().toLowerCase() !== "mot"
+      );
+      if (technicianClocking) {
+        return false;
+      }
+
+      const motClaim = openRows.find(
+        (row) => String(row?.work_type || "").trim().toLowerCase() === "mot"
+      );
+      if (!motClaim) {
+        return true;
+      }
+
+      return Number(motClaim.user_id) === Number(dbUserId);
+    },
+    [isMotTester, dbUserId]
+  );
+
   const fetchJobsForTechnician = useCallback(async () => {
     if (!hasTechnicianAccess || !dbUserId) return;
 
@@ -198,8 +294,13 @@ export default function MyJobsPage() {
       const fetchedJobs = await getAllJobs();
       console.log("[MyJobs] fetched jobs:", fetchedJobs);
       setJobs(fetchedJobs);
+      const clockingMap = await fetchOpenClockingByJob(
+        fetchedJobs.map((job) => job?.id).filter(Boolean)
+      );
 
-      const assignedJobs = fetchedJobs.filter((job) => isAssignedToTechnician(job));
+      const assignedJobs = fetchedJobs.filter(
+        (job) => isAssignedToTechnician(job) || shouldShowMotHandoffJob(job, clockingMap)
+      );
 
       const statusRank = {
         "in-progress": 0,
@@ -232,7 +333,14 @@ export default function MyJobsPage() {
     } finally {
       setLoading(false);
     }
-  }, [hasTechnicianAccess, dbUserId, isAssignedToTechnician]);
+  }, [
+    hasTechnicianAccess,
+    dbUserId,
+    isAssignedToTechnician,
+    fetchOpenClockingByJob,
+    shouldShowMotHandoffJob,
+    activeJobIds,
+  ]);
 
   useEffect(() => {
     if (!hasTechnicianAccess || !dbUserId) return;
@@ -300,7 +408,11 @@ export default function MyJobsPage() {
         (payload) => {
           const nextAssigned = payload?.new?.assigned_to;
           const previousAssigned = payload?.old?.assigned_to;
-          if (matchesUserAssignment(nextAssigned) || matchesUserAssignment(previousAssigned)) {
+          if (
+            isMotTester ||
+            matchesUserAssignment(nextAssigned) ||
+            matchesUserAssignment(previousAssigned)
+          ) {
             fetchJobsForTechnician();
           }
         }
@@ -313,13 +425,25 @@ export default function MyJobsPage() {
         supabase.removeChannel(channel);
       }
     };
-  }, [dbUserId, fetchJobsForTechnician, normalizedUserNames]);
+  }, [dbUserId, fetchJobsForTechnician, normalizedUserNames, isMotTester]);
 
   useEffect(() => {
     if (!dbUserId || !jobIdsFilterString) return;
 
     const channel = supabase
-      .channel(`myjobs-parts-${dbUserId}-${jobIdsFilterString}`)
+      .channel(`myjobs-requests-${dbUserId}-${jobIdsFilterString}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "job_requests",
+          filter: `job_id=in.(${jobIdsFilterString})`
+        },
+        () => {
+          fetchJobsForTechnician();
+        }
+      )
       .on(
         "postgres_changes",
         {
@@ -346,17 +470,17 @@ export default function MyJobsPage() {
     if (!dbUserId) return;
 
     const channel = supabase
-      .channel(`myjobs-clocking-${dbUserId}`)
+      .channel(`myjobs-clocking-${dbUserId}-${jobIdsFilterString || "none"}`)
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
-          table: "job_clocking",
-          filter: `user_id=eq.${dbUserId}`
+          table: "job_clocking"
         },
         () => {
           fetchActiveJobs();
+          fetchJobsForTechnician();
         }
       )
       .subscribe();
@@ -367,7 +491,7 @@ export default function MyJobsPage() {
         supabase.removeChannel(channel);
       }
     };
-  }, [dbUserId, fetchActiveJobs]);
+  }, [dbUserId, jobIdsFilterString, fetchActiveJobs, fetchJobsForTechnician]);
 
   useEffect(() => {
     if (previousFetchRef.current !== fetchJobsForTechnician) {

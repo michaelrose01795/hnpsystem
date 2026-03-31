@@ -1,4 +1,5 @@
 import { supabaseService } from "@/lib/supabaseClient";
+import { syncStaffVehiclePayrollDeduction } from "@/lib/profile/staffVehiclePayrollDeductions";
 
 const mapHistory = (row = {}) => ({
   id: row.history_id,
@@ -16,16 +17,43 @@ export default async function handler(req, res) {
     return res.status(500).json({ success: false, error: "Service role key missing" });
   }
 
-  if (req.method !== "POST") {
-    res.setHeader("Allow", ["POST"]);
+  if (!["POST", "PUT", "DELETE"].includes(req.method)) {
+    res.setHeader("Allow", ["POST", "PUT", "DELETE"]);
     return res.status(405).json({ success: false, error: "Method not allowed" });
   }
 
   try {
-    const { vehicleId, jobNumber, description, cost, deductFromPayroll = true } = req.body || {};
+    if (req.method === "DELETE") {
+      const { historyId } = req.body || {};
+      if (!historyId) {
+        return res.status(400).json({ success: false, error: "historyId is required" });
+      }
 
-    if (!vehicleId) {
+      const { error } = await supabaseService
+        .from("staff_vehicle_history")
+        .delete()
+        .eq("history_id", historyId);
+
+      if (error) throw error;
+
+      return res.status(200).json({ success: true });
+    }
+
+    const {
+      historyId,
+      vehicleId,
+      jobNumber,
+      description,
+      cost,
+      deductFromPayroll,
+      recordedAt,
+    } = req.body || {};
+
+    if (req.method === "POST" && !vehicleId) {
       return res.status(400).json({ success: false, error: "vehicleId is required" });
+    }
+    if (req.method === "PUT" && !historyId) {
+      return res.status(400).json({ success: false, error: "historyId is required" });
     }
 
     let resolvedJobId = null;
@@ -45,17 +73,64 @@ export default async function handler(req, res) {
       resolvedJobId = jobRow.id;
     }
 
-    const payload = {
-      vehicle_id: vehicleId,
-      job_id: resolvedJobId,
-      description: description?.trim() || null,
-      cost: Number(cost ?? 0),
-      deduct_from_payroll: Boolean(deductFromPayroll),
-    };
+    let effectiveVehicleId = vehicleId;
+    let existingHistoryRow = null;
+    if (req.method === "PUT") {
+      const { data: existingHistory, error: existingHistoryError } = await supabaseService
+        .from("staff_vehicle_history")
+        .select("history_id, vehicle_id, job_id, description, cost, deduct_from_payroll, recorded_at")
+        .eq("history_id", historyId)
+        .single();
 
-    const { data, error } = await supabaseService
-      .from("staff_vehicle_history")
-      .insert([payload])
+      if (existingHistoryError || !existingHistory?.vehicle_id) {
+        return res.status(404).json({ success: false, error: "Vehicle history entry not found" });
+      }
+
+      existingHistoryRow = existingHistory;
+      effectiveVehicleId = existingHistory.vehicle_id;
+    }
+
+    const { data: vehicleRow, error: vehicleError } = await supabaseService
+      .from("staff_vehicles")
+      .select("vehicle_id, user_id")
+      .eq("vehicle_id", effectiveVehicleId)
+      .single();
+
+    if (vehicleError || !vehicleRow?.user_id) {
+      return res.status(404).json({ success: false, error: "Vehicle not found" });
+    }
+
+    const payload = {
+      vehicle_id: effectiveVehicleId,
+      job_id:
+        req.method === "PUT" && !jobNumber
+          ? existingHistoryRow?.job_id ?? null
+          : resolvedJobId,
+      description:
+        description === undefined
+          ? existingHistoryRow?.description ?? null
+          : description?.trim() || null,
+      cost:
+        cost === undefined
+          ? Number(existingHistoryRow?.cost ?? 0)
+          : Number(cost ?? 0),
+      deduct_from_payroll:
+        deductFromPayroll === undefined
+          ? req.method === "PUT"
+            ? existingHistoryRow?.deduct_from_payroll !== false
+            : true
+          : Boolean(deductFromPayroll),
+    };
+    if (recordedAt || existingHistoryRow?.recorded_at) {
+      payload.recorded_at = recordedAt || existingHistoryRow?.recorded_at;
+    }
+
+    const query =
+      req.method === "POST"
+        ? supabaseService.from("staff_vehicle_history").insert([payload])
+        : supabaseService.from("staff_vehicle_history").update(payload).eq("history_id", historyId);
+
+    const { data, error } = await query
       .select(
         `
           history_id,
@@ -74,7 +149,19 @@ export default async function handler(req, res) {
       throw error;
     }
 
-    return res.status(201).json({ success: true, history: mapHistory(data) });
+    await syncStaffVehiclePayrollDeduction(
+      {
+        historyId: data.history_id,
+        vehicleId: data.vehicle_id,
+        userId: vehicleRow.user_id,
+        recordedAt: data.recorded_at,
+        cost: data.cost,
+        deductFromPayroll: data.deduct_from_payroll,
+      },
+      supabaseService
+    );
+
+    return res.status(req.method === "POST" ? 201 : 200).json({ success: true, history: mapHistory(data) });
   } catch (error) {
     console.error("❌ staff/vehicle-history error", error);
     return res

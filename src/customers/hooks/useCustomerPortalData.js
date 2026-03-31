@@ -5,6 +5,33 @@ import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
 
+const DEFAULT_CUSTOMER_DASHBOARD_WIDGETS = [
+  { id: "hero", type: "hero", config: {} },
+  { id: "booking-calendar", type: "booking-calendar", config: {} },
+  { id: "vhc-summary", type: "vhc-summary", config: {} },
+  { id: "appointment-timeline", type: "appointment-timeline", config: {} },
+  { id: "customer-details", type: "customer-details", config: {} },
+  { id: "vehicle-garage", type: "vehicle-garage", config: {} },
+  { id: "parts-access", type: "parts-access", config: {} },
+  { id: "messaging-hub", type: "messaging-hub", config: {} },
+  { id: "finance-overview", type: "finance-overview", config: {} },
+  { id: "tracking-overview", type: "tracking-overview", config: {} },
+];
+
+const sanitiseDashboardWidgets = (widgets = []) => {
+  if (!Array.isArray(widgets) || widgets.length === 0) {
+    return DEFAULT_CUSTOMER_DASHBOARD_WIDGETS;
+  }
+
+  return widgets
+    .map((widget, index) => ({
+      id: String(widget?.id || `${widget?.type || "widget"}-${index + 1}`),
+      type: String(widget?.type || "user-defined").trim() || "user-defined",
+      config: widget?.config && typeof widget.config === "object" ? widget.config : {},
+    }))
+    .filter((widget) => widget.type);
+};
+
 const resolveContactName = (entry) => {
   if (!entry) return "";
   if (typeof entry === "string") return entry;
@@ -92,6 +119,8 @@ export function useCustomerPortalData() {
     paymentPlans: [],
     outstandingInvoices: [],
     contacts: buildContacts(usersByRole),
+    dashboardWidgets: DEFAULT_CUSTOMER_DASHBOARD_WIDGETS,
+    widgetsSaving: false,
   });
 
   const loadPortalData = useCallback(async () => {
@@ -123,6 +152,17 @@ export function useCustomerPortalData() {
 
         if (!customerRow) {
           throw new Error("No customer profile linked to this account.");
+        }
+
+        let dashboardWidgets = DEFAULT_CUSTOMER_DASHBOARD_WIDGETS;
+        try {
+          const widgetResponse = await fetch(`/api/customer/widgets?customerId=${encodeURIComponent(customerRow.id)}`);
+          const widgetPayload = await widgetResponse.json();
+          if (widgetResponse.ok && widgetPayload?.success) {
+            dashboardWidgets = sanitiseDashboardWidgets(widgetPayload.widgets);
+          }
+        } catch (_widgetError) {
+          dashboardWidgets = DEFAULT_CUSTOMER_DASHBOARD_WIDGETS;
         }
 
         const { data: vehiclesData } = await supabase
@@ -327,6 +367,8 @@ export function useCustomerPortalData() {
           paymentPlans,
           outstandingInvoices,
           contacts: buildContacts(usersByRole),
+          dashboardWidgets,
+          widgetsSaving: false,
         });
       } catch (error) {
         setState((prev) => ({
@@ -343,5 +385,56 @@ export function useCustomerPortalData() {
 
   const contacts = useMemo(() => buildContacts(usersByRole), [usersByRole]);
 
-  return { ...state, contacts, refreshPortalData: loadPortalData };
+  const saveDashboardWidgets = useCallback(
+    async (widgets = []) => {
+      const customerId = state.customer?.id;
+      if (!customerId) {
+        throw new Error("Customer profile missing. Reload the portal and try again.");
+      }
+
+      const nextWidgets = sanitiseDashboardWidgets(widgets);
+      setState((current) => ({
+        ...current,
+        dashboardWidgets: nextWidgets,
+        widgetsSaving: true,
+        error: null,
+      }));
+
+      try {
+        const response = await fetch("/api/customer/widgets", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            customerId,
+            widgets: nextWidgets,
+          }),
+        });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || payload?.success === false) {
+          throw new Error(payload?.error || "Unable to save dashboard widgets.");
+        }
+
+        setState((current) => ({
+          ...current,
+          dashboardWidgets: sanitiseDashboardWidgets(payload?.widgets || nextWidgets),
+          widgetsSaving: false,
+        }));
+      } catch (error) {
+        setState((current) => ({
+          ...current,
+          widgetsSaving: false,
+          error: error.message || "Unable to save dashboard widgets.",
+        }));
+        throw error;
+      }
+    },
+    [state.customer?.id]
+  );
+
+  return {
+    ...state,
+    contacts,
+    refreshPortalData: loadPortalData,
+    saveDashboardWidgets,
+  };
 }

@@ -36,6 +36,34 @@ const formatNoteValue = (value = "") => {
     .replace(/\n{3,}/g, "\n\n");
 };
 
+const normalizeSearchValue = (value = "") =>
+  String(value || "")
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const isMotRequestLike = (request = {}) => {
+  const haystack = [
+    request?.description,
+    request?.jobType,
+    request?.job_type,
+    request?.serviceType,
+    request?.service_type,
+    request?.requestSource,
+    request?.request_source,
+    request?.label,
+    request?.raw,
+    request?.noteText,
+    request?.note_text,
+  ]
+    .map((value) => normalizeSearchValue(value))
+    .filter(Boolean)
+    .join(" ");
+
+  return haystack.includes("mot");
+};
+
 // ✅ Normalise requests so we can show numbered entries consistently
 const buildRequestList = (rawRequests) => {
   if (!rawRequests) return [];
@@ -64,7 +92,7 @@ const buildRequestList = (rawRequests) => {
         typeof entry === "object" && entry !== null
           ? String(entry.requestSource ?? entry.request_source ?? "").toLowerCase().trim()
           : "";
-      if (source && source !== "customer_request") {
+      if (source && source !== "customer_request" && !isMotRequestLike(entry)) {
         return null;
       }
       const rawText =
@@ -102,6 +130,7 @@ const buildRequestList = (rawRequests) => {
             ? Number(requestId)
             : null,
         sortOrder: Number.isFinite(sortOrder) && sortOrder > 0 ? sortOrder : null,
+        isMot: isMotRequestLike(entry),
         label: `Request ${index + 1}: ${cleaned}`,
         status:
           normalizedStatus === "complete" ||
@@ -485,6 +514,7 @@ const buildTaskChecklistSnapshot = (tasks = []) =>
     label: task?.label || "",
     status: task?.status === "complete" ? "complete" : "additional_work",
     checked: isTaskChecked(task),
+    ...(task?.isMot ? { isMot: true } : {}),
     ...(task?.vhcItemId ? { vhcItemId: task.vhcItemId } : {}),
   }));
 

@@ -296,6 +296,17 @@ export default function usePersonalDashboard({ enabled = true } = {}) {
     };
   }, [enabled, flush, refreshDashboard]);
 
+  useEffect(() => {
+    if (!enabled || typeof window === "undefined") return;
+    const onStaffVehiclePayrollUpdated = () => {
+      void refreshDashboard({ silent: true });
+    };
+    window.addEventListener("staff-vehicle-payroll-updated", onStaffVehiclePayrollUpdated);
+    return () => {
+      window.removeEventListener("staff-vehicle-payroll-updated", onStaffVehiclePayrollUpdated);
+    };
+  }, [enabled, refreshDashboard]);
+
   // Session cache: write whenever unlocked state changes
   useEffect(() => {
     if (!meta.isUnlocked || !personalState) return;

@@ -15,6 +15,8 @@ import {
   widgetModalBackdropStyle,
 } from "@/components/profile/personal/widgets/shared";
 import Button from "@/components/ui/Button";
+import { formatMonthLabel } from "@/lib/profile/calculations";
+import { FIXED_OUTGOING_CATEGORY_OPTIONS } from "@/lib/profile/personalFinance";
 
 const RECURRING_DAY_OPTIONS = [
   { value: 1, label: "Monday" },
@@ -48,9 +50,10 @@ function makeRecurringRule() {
   };
 }
 
-function Section({ title, description, children }) {
+function Section({ title, description, children, sectionId }) {
   return (
     <section
+      data-section={sectionId || undefined}
       style={{
         display: "grid",
         gap: "12px",
@@ -237,6 +240,7 @@ function RecurringRulesSection() {
 
   return (
     <Section
+      sectionId="recurring-rules"
       title="Recurring Overtime Rules"
       description="Add the days and hours that should auto-log overtime."
     >
@@ -337,9 +341,11 @@ function RecurringRulesSection() {
 function PayAndWorkSection({ finance, isMobile }) {
   const pay = finance.financeState.paySettings || {};
   const month = finance.model.currentMonth;
+  const monthLabel = formatMonthLabel(finance.model.selectedMonthKey);
 
   return (
     <Section
+      sectionId="pay"
       title="Pay and Work"
       description="Your contracted hours, pay rates, and salary. These values are used across all income and work calculations."
     >
@@ -397,20 +403,25 @@ function PayAndWorkSection({ finance, isMobile }) {
       <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "0.84rem", fontWeight: 600, cursor: "pointer" }}>
         <input
           type="checkbox"
-          checked={Boolean(pay.useManualTax)}
-          onChange={(e) => finance.updatePaySetting("useManualTax", e.target.checked)}
+          checked={Boolean(month.monthState.useManualTax)}
+          onChange={(e) => finance.updateMonthTaxOverride("useManualTax", e.target.checked)}
         />
-        <span>Override tax and NI with fixed £ amounts</span>
+        <span>{`Override tax and NI for ${monthLabel} only with fixed £ amounts`}</span>
       </label>
-      {pay.useManualTax ? (
+      <div style={{ fontSize: "0.78rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>
+        These overrides are saved against the selected month only and never update other months.
+      </div>
+      {month.monthState.useManualTax ? (
         <div style={{ display: "grid", gap: "10px", gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "1fr 1fr" }}>
           <label>
             <FieldLabel>Tax (£)</FieldLabel>
             <input
               className="app-input"
               type="number"
-              value={pay.manualTax || 0}
-              onChange={(e) => finance.updatePaySetting("manualTax", toNumber(e.target.value))}
+              step="0.01"
+              min="0"
+              value={month.monthState.manualTax || 0}
+              onChange={(e) => finance.updateMonthTaxOverride("manualTax", toNumber(e.target.value))}
             />
           </label>
           <label>
@@ -418,15 +429,17 @@ function PayAndWorkSection({ finance, isMobile }) {
             <input
               className="app-input"
               type="number"
-              value={pay.manualNationalInsurance || 0}
-              onChange={(e) => finance.updatePaySetting("manualNationalInsurance", toNumber(e.target.value))}
+              step="0.01"
+              min="0"
+              value={month.monthState.manualNationalInsurance || 0}
+              onChange={(e) => finance.updateMonthTaxOverride("manualNationalInsurance", toNumber(e.target.value))}
             />
           </label>
         </div>
       ) : null}
 
       <StatGrid isMobile={isMobile}>
-        <Stat label="Hours worked">{month.pay.expectedHours.toFixed(1)}h</Stat>
+        <Stat label="Hours worked">{month.pay.hoursWorked.toFixed(1)}h</Stat>
         <Stat label="Base pay">{formatCurrency(month.pay.basePay)}</Stat>
         <Stat label="Tax">{formatCurrency(month.pay.tax)}</Stat>
         <Stat label="NI">{formatCurrency(month.pay.nationalInsurance)}</Stat>
@@ -440,6 +453,7 @@ function OvertimeSection({ finance, isMobile }) {
 
   return (
     <Section
+      sectionId="overtime"
       title="Overtime"
       description="Log extra hours worked on specific days. Attendance overtime from the Work tab is included automatically."
     >
@@ -480,6 +494,7 @@ function LeaveSection({ finance, isMobile }) {
 
   return (
     <Section
+      sectionId="leave"
       title="Leave and Calendar"
       description="Holiday and leave balances pulled from the Work tab. Approved leave requests are shown below."
     >
@@ -526,6 +541,7 @@ function SavingsSection({ finance, isMobile }) {
 
   return (
     <Section
+      sectionId="savings"
       title="Savings and Pots"
       description="Monthly savings allocations. Each pot represents a named target you put money toward this month."
     >
@@ -561,10 +577,12 @@ function SavingsSection({ finance, isMobile }) {
 
 function PaymentsSection({ finance, isMobile }) {
   const month = finance.model.currentMonth;
-  const rowStyle = isMobile ? "minmax(0, 1fr)" : "1.6fr 1fr auto";
+  const fixedOutgoingRowStyle = isMobile ? "minmax(0, 1fr)" : "1.5fr 0.9fr 1fr auto";
+  const plannedPaymentRowStyle = isMobile ? "minmax(0, 1fr)" : "1.6fr 1fr auto";
 
   return (
     <Section
+      sectionId="payments"
       title="Payments and Outgoings"
       description="Fixed monthly costs and planned one-off payments. These are used to calculate your total outgoings."
     >
@@ -579,9 +597,14 @@ function PaymentsSection({ finance, isMobile }) {
       </div>
       <div style={{ display: "grid", gap: "8px" }}>
         {month.monthState.fixedOutgoings.map((entry) => (
-          <div key={entry.id} style={{ display: "grid", gap: "8px", gridTemplateColumns: rowStyle, padding: "8px 10px", ...widgetInsetSurfaceStyle }}>
-            <input className="app-input" value={entry.name || ""} placeholder="Category" onChange={(e) => finance.updateFixedOutgoing(entry.id, { name: e.target.value })} />
+          <div key={entry.id} style={{ display: "grid", gap: "8px", gridTemplateColumns: fixedOutgoingRowStyle, padding: "8px 10px", ...widgetInsetSurfaceStyle }}>
+            <input className="app-input" value={entry.name || ""} placeholder="Name" onChange={(e) => finance.updateFixedOutgoing(entry.id, { name: e.target.value })} />
             <input className="app-input" type="number" value={entry.amount || 0} placeholder="Amount" onChange={(e) => finance.updateFixedOutgoing(entry.id, { amount: toNumber(e.target.value) })} />
+            <DropdownField
+              value={entry.category || "other"}
+              onChange={(e) => finance.updateFixedOutgoing(entry.id, { category: e.target.value })}
+              options={FIXED_OUTGOING_CATEGORY_OPTIONS}
+            />
             <Button type="button" variant="secondary" size="sm" pill onClick={() => finance.removeFixedOutgoing(entry.id)}>Remove</Button>
           </div>
         ))}
@@ -595,7 +618,7 @@ function PaymentsSection({ finance, isMobile }) {
       </div>
       <div style={{ display: "grid", gap: "8px" }}>
         {month.monthState.plannedPayments.map((entry) => (
-          <div key={entry.id} style={{ display: "grid", gap: "8px", gridTemplateColumns: rowStyle, padding: "8px 10px", ...widgetInsetSurfaceStyle }}>
+          <div key={entry.id} style={{ display: "grid", gap: "8px", gridTemplateColumns: plannedPaymentRowStyle, padding: "8px 10px", ...widgetInsetSurfaceStyle }}>
             <input className="app-input" value={entry.name || ""} placeholder="Payment name" onChange={(e) => finance.updatePlannedPayment(entry.id, { name: e.target.value })} />
             <input className="app-input" type="number" value={entry.amount || 0} placeholder="Amount" onChange={(e) => finance.updatePlannedPayment(entry.id, { amount: toNumber(e.target.value) })} />
             <Button type="button" variant="secondary" size="sm" pill onClick={() => finance.removePlannedPayment(entry.id)}>Remove</Button>
@@ -611,9 +634,12 @@ function PaymentsSection({ finance, isMobile }) {
 
 function CreditCardsSection({ finance, isMobile }) {
   const month = finance.model.currentMonth;
+  const accounts = finance.financeState.creditCardAccounts || [];
+  const accountOptions = accounts.map((entry) => ({ value: entry.id, label: entry.name || "Card" }));
 
   return (
     <Section
+      sectionId="credit-cards"
       title="Credit Cards"
       description="Track card balances and monthly payments. Card payments are included in your total outgoings calculation."
     >
@@ -622,6 +648,44 @@ function CreditCardsSection({ finance, isMobile }) {
         <Stat label="Total balances">{formatCurrency(month.totals.totalCardBalances)}</Stat>
       </StatGrid>
 
+      <div style={{ fontSize: "0.74rem", fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.04em", textTransform: "uppercase", marginTop: "2px" }}>
+        Credit card names
+      </div>
+      {accounts.length === 0 ? (
+        <EmptyState>No credit card names added yet.</EmptyState>
+      ) : (
+        <div style={{ display: "grid", gap: "8px" }}>
+          {accounts.map((entry) => (
+            <div
+              key={entry.id}
+              style={{
+                display: "grid",
+                gap: "8px",
+                gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "minmax(0, 1fr) auto",
+                padding: "8px 10px",
+                ...widgetInsetSurfaceStyle,
+              }}
+            >
+              <input
+                className="app-input"
+                value={entry.name || ""}
+                placeholder="Card name"
+                onChange={(e) => finance.updateCreditCardAccount(entry.id, { name: e.target.value })}
+              />
+              <Button type="button" variant="secondary" size="sm" pill onClick={() => finance.removeCreditCardAccount(entry.id)}>
+                Remove
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+      <Button type="button" variant="secondary" size="sm" pill style={{ justifySelf: "start" }} onClick={() => finance.addCreditCardAccount("")}>
+        Add credit card name
+      </Button>
+
+      <div style={{ fontSize: "0.74rem", fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.04em", textTransform: "uppercase", marginTop: "2px" }}>
+        {formatMonthLabel(finance.model.selectedMonthKey)} balances
+      </div>
       <div style={{ display: "grid", gap: "8px" }}>
         {month.monthState.creditCards.map((entry) => (
           <div
@@ -629,14 +693,42 @@ function CreditCardsSection({ finance, isMobile }) {
             style={{
               display: "grid",
               gap: "8px",
-              gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "1.2fr 1fr 1fr auto",
+              gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "1.4fr 1fr 1fr auto auto",
               padding: "8px 10px",
               ...widgetInsetSurfaceStyle,
             }}
           >
-            <input className="app-input" value={entry.name || ""} placeholder="Card name" onChange={(e) => finance.updateCreditCard(entry.id, { name: e.target.value })} />
+            <DropdownField
+              value={entry.cardId || ""}
+              onChange={(event) => {
+                const selectedId = event.target.value;
+                const selectedAccount = accounts.find((account) => account.id === selectedId) || null;
+                finance.updateCreditCard(entry.id, {
+                  cardId: selectedId,
+                  name: selectedAccount?.name || entry.name || "",
+                });
+              }}
+              options={accountOptions}
+              ariaLabel="Credit card"
+              placeholder="Choose card"
+            />
             <input className="app-input" type="number" value={entry.balance || 0} placeholder="Balance" onChange={(e) => finance.updateCreditCard(entry.id, { balance: toNumber(e.target.value) })} />
-            <input className="app-input" type="number" value={entry.monthlyPayment || 0} placeholder="Monthly pay" onChange={(e) => finance.updateCreditCard(entry.id, { monthlyPayment: toNumber(e.target.value) })} />
+            <input
+              className="app-input"
+              type="number"
+              value={entry.monthlyPayment || 0}
+              placeholder={entry.isPaidOff ? "Paid off" : "Monthly pay"}
+              disabled={entry.isPaidOff === true}
+              onChange={(e) => finance.updateCreditCard(entry.id, { monthlyPayment: toNumber(e.target.value) })}
+            />
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.8rem", fontWeight: 600 }}>
+              <input
+                type="checkbox"
+                checked={entry.isPaidOff === true}
+                onChange={(e) => finance.updateCreditCard(entry.id, { isPaidOff: e.target.checked })}
+              />
+              <span>Paid off</span>
+            </label>
             <Button type="button" variant="secondary" size="sm" pill onClick={() => finance.removeCreditCard(entry.id)}>Remove</Button>
           </div>
         ))}
@@ -653,6 +745,7 @@ function AdjustmentsSection({ finance, isMobile }) {
 
   return (
     <Section
+      sectionId="adjustments"
       title="Manual Adjustments"
       description="One-off income or outgoing adjustments for this month that don't fit into the categories above."
     >
@@ -673,6 +766,15 @@ function AdjustmentsSection({ finance, isMobile }) {
             type="number"
             value={month.monthState.incomeAdjustments || 0}
             onChange={(e) => finance.updateMonthField("incomeAdjustments", toNumber(e.target.value))}
+          />
+        </label>
+        <label>
+          <FieldLabel>Work deduction</FieldLabel>
+          <input
+            className="app-input"
+            type="text"
+            value={formatCurrency(month.pay.workDeductions || 0)}
+            readOnly
           />
         </label>
         <label>
@@ -698,9 +800,22 @@ function AdjustmentsSection({ finance, isMobile }) {
   );
 }
 
-export default function PersonalSettingsPopup({ isOpen, onClose, finance }) {
+export default function PersonalSettingsPopup({ isOpen, onClose, finance, initialSection = null }) {
   useBodyModalLock(isOpen);
   const isMobile = useIsMobile();
+  const scrollContainerRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (!isOpen || !initialSection) return;
+    // Delay slightly to allow DOM to render
+    const timer = setTimeout(() => {
+      const container = scrollContainerRef.current;
+      if (!container) return;
+      const target = container.querySelector(`[data-section="${initialSection}"]`);
+      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+    return () => clearTimeout(timer);
+  }, [isOpen, initialSection]);
 
   if (!isOpen || !finance) return null;
 
@@ -733,6 +848,7 @@ export default function PersonalSettingsPopup({ isOpen, onClose, finance }) {
         </div>
 
         <div
+          ref={scrollContainerRef}
           style={{
             flex: 1,
             minHeight: 0,

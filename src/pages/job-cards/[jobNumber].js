@@ -31,7 +31,7 @@ import { resolveMainStatusId } from "@/lib/status/statusFlow";
 import VhcDetailsPanel from "@/components/VHC/VhcDetailsPanel";
 import InvoiceSection from "@/components/Invoices/InvoiceSection";
 import { calculateVhcFinancialTotals } from "@/lib/vhc/calculateVhcTotals";
-import { normaliseDecisionStatus } from "@/lib/vhc/summaryStatus";
+import { normaliseDecisionStatus, buildVhcRowStatusView } from "@/lib/vhc/summaryStatus";
 import { isValidUuid, sanitizeNumericId } from "@/lib/utils/ids";
 import { clockInToJob, getUserActiveJobs, switchJob } from "@/lib/database/jobClocking";
 import PartsTabNew from "@/components/PartsTab_New";
@@ -8572,14 +8572,26 @@ function VHCTab({
   const hasAwaitingCustomerDecision = useMemo(() => {
     const checks = Array.isArray(jobData?.vhcChecks) ? jobData.vhcChecks : [];
     return checks.some((check) => {
-      const decision = normaliseDecisionStatus(
-        check?.approval_status ??
+      const section = (check?.section || "").toString().trim();
+      if (section === "VHC_CHECKSHEET" || section === "VHC Checksheet") return false;
+      const severity = check?.severity || check?.traffic_light || check?.display_status;
+      const rowView = buildVhcRowStatusView({
+        decisionValue:
+          check?.approval_status ??
           check?.approvalStatus ??
           check?.authorization_state ??
           check?.authorizationState ??
-          check?.display_status
-      );
-      return decision === "awaiting_customer_decision" || decision === "awaiting customer decision";
+          check?.display_status,
+        rawSeverity: severity,
+        displayStatus: check?.display_status,
+        labourHoursValue: check?.labour_hours ?? check?.labourHours,
+        labourComplete: check?.labour_complete ?? check?.labourComplete,
+        partsNotRequired: check?.parts_not_required ?? check?.partsNotRequired,
+        resolvedPartsCost: undefined,
+        partsCost: check?.parts_cost ?? check?.partsCost,
+        totalOverride: check?.total_override ?? check?.totalOverride,
+      });
+      return rowView.dotStateKey === "awaiting";
     });
   }, [jobData?.vhcChecks]);
   const vhcAssistantState = useMemo(

@@ -155,8 +155,10 @@ export default function CreateJobCardPage() {
   // Shared state (same across all tabs)
   const [cosmeticDamagePresent, setCosmeticDamagePresent] = useState(false); // track whether cosmetic damage observed
   const [cosmeticNotes, setCosmeticNotes] = useState(""); // notes about cosmetic damage
+  const [washRequired, setWashRequired] = useState(false); // whether the vehicle needs washing after workshop
   const [vhcRequired, setVhcRequired] = useState(false); // whether VHC is required
   const WAITING_STATUS_STORAGE_KEY = "jobCardCreateWaitingStatus"; // key used to persist waiting status background choice
+  const WASH_REQUIRED_STORAGE_KEY = "jobCardCreateWashRequired"; // key used to persist wash choice when revisiting the create page
   const [showNewCustomer, setShowNewCustomer] = useState(false); // toggle new customer popup
   const [showExistingCustomer, setShowExistingCustomer] = useState(false); // toggle existing customer popup
   const [showDocumentsPopup, setShowDocumentsPopup] = useState(false); // toggle documents popup
@@ -289,6 +291,19 @@ export default function CreateJobCardPage() {
     if (typeof window === "undefined") return; // guard for SSR
     localStorage.setItem(WAITING_STATUS_STORAGE_KEY, waitingStatus); // store the selection for next visit
   }, [waitingStatus]); // run whenever waiting status changes
+
+  useEffect(() => { // load persisted wash selection when revisiting the page
+    if (typeof window === "undefined") return; // ensure browser environment before accessing localStorage
+    const storedWashChoice = localStorage.getItem(WASH_REQUIRED_STORAGE_KEY); // restore explicit yes/no choice when present
+    if (storedWashChoice === "true" || storedWashChoice === "false") {
+      setWashRequired(storedWashChoice === "true");
+    }
+  }, []); // run once on mount
+
+  useEffect(() => { // persist wash selection for future visits
+    if (typeof window === "undefined") return; // guard for SSR
+    localStorage.setItem(WASH_REQUIRED_STORAGE_KEY, String(washRequired)); // store the selection for next visit
+  }, [washRequired]); // run whenever wash selection changes
 
   // ✅ Detect sub-job mode from query param ?primeJob=XXXXX
   useEffect(() => {
@@ -457,6 +472,39 @@ export default function CreateJobCardPage() {
     background: "var(--layer-section-level-2)",
     border: "none",
   };
+
+  const linkedJobCardBaseNumber =
+    (isSubJobMode ? primeJobData?.jobNumber : jobNumberDisplay) || "00000";
+  const jobCardSelectorOptions = jobTabs.map((tab, index) => ({
+    id: tab.id,
+    index,
+    label: index === 0 ? linkedJobCardBaseNumber : `${linkedJobCardBaseNumber}.${index}`,
+  }));
+  const hasLinkedJobCards = jobCardSelectorOptions.length > 1;
+  const activeJobCardLabel =
+    jobCardSelectorOptions[activeTabIndex]?.label || linkedJobCardBaseNumber;
+
+  const binaryToggleGroupStyle = {
+    display: "flex",
+    gap: "8px",
+    padding: "6px",
+    borderRadius: "var(--control-radius)",
+    backgroundColor: "var(--surface)",
+    border: "none",
+    width: "fit-content",
+  };
+
+  const getBinaryToggleButtonStyle = (isSelected) => ({
+    padding: "6px 14px",
+    borderRadius: "var(--control-radius)",
+    border: isSelected ? "1px solid var(--primary)" : "1px solid transparent",
+    backgroundColor: isSelected ? "var(--surface)" : "transparent",
+    color: isSelected ? "var(--text-primary)" : "var(--text-secondary)",
+    fontSize: "12px",
+    fontWeight: isSelected ? "600" : "500",
+    cursor: "pointer",
+    transition: "all 0.2s",
+  });
 
   // remove a request from the list by index
   const handleRemoveRequest = (index) => {
@@ -1248,7 +1296,7 @@ export default function CreateJobCardPage() {
           new Set(detectJobTypesForRequests(sanitizedRequests).map((d) => d.jobType))
         );
 
-        const jobPayload = {
+          const jobPayload = {
           regNumber: regUpper,
           jobNumber: null,
           description: jobDescription || `Job card for ${regUpper}`,
@@ -1263,7 +1311,7 @@ export default function CreateJobCardPage() {
           requests: sanitizedRequests,
           cosmeticNotes: isFirstTab ? (cosmeticNotes || null) : null,
           vhcRequired: isFirstTab ? vhcRequired : false,
-          maintenanceInfo: isFirstTab ? { cosmeticDamagePresent } : {},
+          maintenanceInfo: isFirstTab ? { cosmeticDamagePresent, washRequired } : {},
           // Prime/Sub-job parameters
           primeJobId: isSubJobMode && primeJobData
             ? primeJobData.id
@@ -1468,103 +1516,6 @@ export default function CreateJobCardPage() {
           </div>
         </DevLayoutSection>
 
-        {/* ✅ Job Tabs Bar - Always shown unless in sub-job mode */}
-        {!isSubJobMode && (
-          <DevLayoutSection
-            sectionKey="job-cards-create-job-tabs"
-            sectionType="tab-row"
-            parentKey="job-cards-create-page-shell"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "4px",
-              marginBottom: "12px",
-              padding: "8px 12px",
-              backgroundColor: "var(--accent-purple-surface)",
-              borderRadius: "var(--radius-sm)",
-              border: "none",
-            }}
-          >
-            {jobTabs.map((tab, index) => (
-              <div
-                key={tab.id}
-                onClick={() => setActiveTabIndex(index)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  minHeight: "var(--control-height)",
-                  gap: "8px",
-                  padding: "0 16px",
-                  borderRadius: "var(--radius-xs)",
-                  backgroundColor: activeTabIndex === index ? "var(--primary)" : "var(--surface-light)",
-                  color: activeTabIndex === index ? "white" : "var(--text-primary)",
-                  cursor: "pointer",
-                  fontWeight: activeTabIndex === index ? "600" : "500",
-                  fontSize: "13px",
-                  transition: "all 0.2s",
-                }}
-              >
-                <span>Job {index + 1}</span>
-                {jobTabs.length > 1 && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeJobTab(index);
-                    }}
-                    style={{
-                      width: "18px",
-                      height: "18px",
-                      borderRadius: "var(--radius-full)",
-                      border: "none",
-                      backgroundColor: activeTabIndex === index ? "rgba(255,255,255,0.3)" : "var(--text-secondary)",
-                      color: activeTabIndex === index ? "white" : "var(--surface)",
-                      cursor: "pointer",
-                      fontSize: "12px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      padding: 0,
-                    }}
-                  >
-                    ×
-                  </button>
-                )}
-              </div>
-            ))}
-            {/* Add New Job Tab Button */}
-            <button
-              onClick={addNewJobTab}
-              style={{
-                width: "var(--control-height)",
-                height: "var(--control-height)",
-                borderRadius: "var(--radius-xs)",
-                border: "2px dashed var(--primary)",
-                backgroundColor: "transparent",
-                color: "var(--primary)",
-                cursor: "pointer",
-                fontSize: "18px",
-                fontWeight: "600",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                transition: "all 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = "var(--primary-surface)";
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = "transparent";
-              }}
-              title="Add another linked job"
-            >
-              +
-            </button>
-            <span style={{ marginLeft: "8px", fontSize: "12px", color: "var(--text-secondary)" }}>
-              Link new job card
-            </span>
-          </DevLayoutSection>
-        )}
-
         {/* ✅ Sub-job Mode Banner */}
         {isSubJobMode && primeJobData && (
           <DevLayoutSection
@@ -1649,17 +1600,136 @@ export default function CreateJobCardPage() {
                 overflowY: "auto",
               }}
             >
-              <h3
+              <div
+                className="job-cards-create-info-header"
                 style={{
-                  fontSize: "16px",
-                  fontWeight: "600",
-                  color: "var(--text-primary)",
-                  marginTop: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "12px",
                   marginBottom: "16px",
+                  flexWrap: "wrap",
                 }}
               >
-                Job Information
-              </h3>
+                <h3
+                  style={{
+                    fontSize: "16px",
+                    fontWeight: "600",
+                    color: "var(--text-primary)",
+                    margin: 0,
+                  }}
+                >
+                  {`Job cards #${activeJobCardLabel}`}
+                </h3>
+
+                <div
+                  className="job-cards-create-selector-wrap"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    flexWrap: "wrap",
+                    justifyContent: "flex-end",
+                  }}
+                >
+                  <div
+                    className="job-cards-create-selector"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      padding: "6px",
+                      backgroundColor: "var(--accent-purple-surface)",
+                      borderRadius: "var(--radius-pill)",
+                      border: "none",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    {jobCardSelectorOptions.map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => setActiveTabIndex(option.index)}
+                        aria-pressed={activeTabIndex === option.index}
+                        style={{
+                          minHeight: "36px",
+                          padding: "0 14px",
+                          borderRadius: "var(--radius-pill)",
+                          border: "none",
+                          backgroundColor: activeTabIndex === option.index ? "var(--primary)" : "var(--surface-light)",
+                          color: activeTabIndex === option.index ? "white" : "var(--text-primary)",
+                          cursor: "pointer",
+                          fontWeight: activeTabIndex === option.index ? "600" : "500",
+                          fontSize: "13px",
+                          transition: "all 0.2s",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {!isSubJobMode && (
+                    <button
+                      type="button"
+                      onClick={addNewJobTab}
+                      className="job-cards-create-add-linked-button"
+                      style={{
+                        minHeight: "36px",
+                        padding: "0 14px",
+                        borderRadius: "var(--radius-pill)",
+                        border: "1px dashed var(--primary)",
+                        backgroundColor: "transparent",
+                        color: "var(--primary)",
+                        cursor: "pointer",
+                        fontSize: "13px",
+                        fontWeight: "600",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "all 0.2s",
+                        whiteSpace: "nowrap",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "var(--primary-surface)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                      }}
+                      title="Add another linked job"
+                    >
+                      + Link job card
+                    </button>
+                  )}
+
+                  {!isSubJobMode && hasLinkedJobCards && (
+                    <button
+                      type="button"
+                      onClick={() => removeJobTab(activeTabIndex)}
+                      className="job-cards-create-remove-linked-button"
+                      style={{
+                        minHeight: "36px",
+                        padding: "0 14px",
+                        borderRadius: "var(--radius-pill)",
+                        border: "1px solid var(--border)",
+                        backgroundColor: "var(--surface-light)",
+                        color: "var(--text-secondary)",
+                        cursor: "pointer",
+                        fontSize: "13px",
+                        fontWeight: "600",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "all 0.2s",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      Remove selected
+                    </button>
+                  )}
+                </div>
+              </div>
 
               <div style={{ marginBottom: "10px" }}>
                 <label
@@ -2663,20 +2733,23 @@ export default function CreateJobCardPage() {
             sectionType="section-shell"
             parentKey="job-cards-create-content"
             shell
-            style={{ display: "flex", gap: "16px" }}
+            className="job-cards-create-bottom-row"
           >
             <DevLayoutSection
               sectionKey="job-cards-create-cosmetic-damage"
               sectionType="content-card"
               parentKey="job-cards-create-bottom-row"
+              className="job-cards-create-bottom-card"
               style={{
-                flex: 1,
                 padding: "var(--section-card-padding)",
                 borderRadius: "var(--radius-md)",
                 ...sectionCardStyle,
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", marginBottom: "8px" }}>
+              <div className="job-cards-create-bottom-card-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", marginBottom: "8px" }}>
                 <h4
                   style={{
                     fontSize: "14px",
@@ -2687,33 +2760,13 @@ export default function CreateJobCardPage() {
                 >
                   Cosmetic Damage
                 </h4>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "8px",
-                    padding: "6px",
-                    borderRadius: "var(--control-radius)",
-                    backgroundColor: "var(--surface)",
-                    border: "none",
-                    width: "fit-content",
-                  }}
-                >
+                <div style={binaryToggleGroupStyle}>
                   {[true, false].map((choice) => (
                     <button
                       key={choice ? "yes" : "no"}
                       onClick={() => setCosmeticDamagePresent(choice)}
                       type="button"
-                      style={{
-                        padding: "6px 14px",
-                        borderRadius: "var(--control-radius)",
-                        border: cosmeticDamagePresent === choice ? "1px solid var(--primary)" : "1px solid transparent",
-                        backgroundColor: cosmeticDamagePresent === choice ? "var(--surface)" : "transparent",
-                        color: cosmeticDamagePresent === choice ? "var(--text-primary)" : "var(--text-secondary)",
-                        fontSize: "12px",
-                        fontWeight: cosmeticDamagePresent === choice ? "600" : "500",
-                        cursor: "pointer",
-                        transition: "all 0.2s",
-                      }}
+                      style={getBinaryToggleButtonStyle(cosmeticDamagePresent === choice)}
                     >
                       {choice ? "Yes" : "No"}
                     </button>
@@ -2750,11 +2803,51 @@ export default function CreateJobCardPage() {
               )}
             </DevLayoutSection>
             <DevLayoutSection
+              sectionKey="job-cards-create-wash"
+              sectionType="content-card"
+              parentKey="job-cards-create-bottom-row"
+              className="job-cards-create-bottom-card"
+              style={{
+                padding: "var(--section-card-padding)",
+                borderRadius: "var(--radius-md)",
+                ...sectionCardStyle,
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+                justifyContent: "space-between",
+              }}
+            >
+              <div className="job-cards-create-bottom-card-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+                <h4
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    color: "var(--text-primary)",
+                    margin: 0,
+                  }}
+                >
+                  Wash
+                </h4>
+                <div style={binaryToggleGroupStyle}>
+                  {[true, false].map((choice) => (
+                    <button
+                      key={`wash-${choice ? "yes" : "no"}`}
+                      type="button"
+                      onClick={() => setWashRequired(choice)}
+                      style={getBinaryToggleButtonStyle(washRequired === choice)}
+                    >
+                      {choice ? "Yes" : "No"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </DevLayoutSection>
+            <DevLayoutSection
               sectionKey="job-cards-create-vhc-required"
               sectionType="content-card"
               parentKey="job-cards-create-bottom-row"
+              className="job-cards-create-bottom-card"
               style={{
-                flex: 1,
                 padding: "var(--section-card-padding)",
                 borderRadius: "var(--radius-md)",
                 ...sectionCardStyle,
@@ -2763,7 +2856,7 @@ export default function CreateJobCardPage() {
                 gap: "12px",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+              <div className="job-cards-create-bottom-card-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
                 <h4
                   style={{
                     fontSize: "14px",
@@ -2774,33 +2867,13 @@ export default function CreateJobCardPage() {
                 >
                   VHC Required?
                 </h4>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "8px",
-                    padding: "6px",
-                    borderRadius: "var(--control-radius)",
-                    backgroundColor: "var(--surface)",
-                    border: "none",
-                    width: "fit-content",
-                  }}
-                >
+                <div style={binaryToggleGroupStyle}>
                   {[true, false].map((choice) => (
                     <button
                       key={`vhc-${choice ? "yes" : "no"}`}
                       type="button"
                       onClick={() => setVhcRequired(choice)}
-                      style={{
-                        padding: "6px 14px",
-                        borderRadius: "var(--control-radius)",
-                        border: vhcRequired === choice ? "1px solid var(--primary)" : "1px solid transparent",
-                        backgroundColor: vhcRequired === choice ? "var(--surface)" : "transparent",
-                        color: vhcRequired === choice ? "var(--text-primary)" : "var(--text-secondary)",
-                        fontWeight: vhcRequired === choice ? "600" : "500",
-                        fontSize: "12px",
-                        cursor: "pointer",
-                        transition: "all 0.2s",
-                      }}
+                      style={getBinaryToggleButtonStyle(vhcRequired === choice)}
                     >
                       {choice ? "Yes" : "No"}
                     </button>
@@ -2812,8 +2885,8 @@ export default function CreateJobCardPage() {
               sectionKey="job-cards-create-documents"
               sectionType="content-card"
               parentKey="job-cards-create-bottom-row"
+              className="job-cards-create-bottom-card"
               style={{
-                flex: 1,
                 padding: "var(--section-card-padding)",
                 borderRadius: "var(--radius-md)",
                 ...sectionCardStyle,
@@ -2823,7 +2896,7 @@ export default function CreateJobCardPage() {
                 justifyContent: "space-between",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+              <div className="job-cards-create-bottom-card-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
                 <h4
                   style={{
                     fontSize: "14px",

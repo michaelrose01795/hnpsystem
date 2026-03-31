@@ -84,10 +84,13 @@ const buildStatusPayload = (statusText, addWarning) => {
   };
 };
 
-const resolveTechStatus = ({ status, techCompletionStatus }) => {
+const resolveTechStatus = ({ status, techCompletionStatus, hasActiveClocking = false }) => {
   const completionStatus = NORMALIZE_TECH(techCompletionStatus);
   if (completionStatus === TECH_STATUSES.COMPLETE) {
     return completionStatus;
+  }
+  if (hasActiveClocking) {
+    return TECH_STATUSES.IN_PROGRESS;
   }
   return NORMALIZE_TECH(status) || TECH_STATUSES.IN_PROGRESS;
 };
@@ -193,6 +196,48 @@ const buildPartsStatus = (summary) => {
   return "in_progress";
 };
 
+const MOT_KEYWORDS = ["mot"];
+const isMotLike = (row) => {
+  const haystack = [row?.description, row?.job_type, row?.request_source]
+    .map((v) => String(v || "").toLowerCase().replace(/[_-]+/g, " ").trim())
+    .filter(Boolean)
+    .join(" ");
+  return MOT_KEYWORDS.some((kw) => haystack.includes(kw));
+};
+
+const isRequestComplete = (status) => {
+  const normalized = String(status || "").trim().toLowerCase();
+  return normalized === "complete" || normalized === "completed" || normalized === "done";
+};
+
+const buildRequestsSummary = (rows = []) => {
+  const all = Array.isArray(rows) ? rows : [];
+  const total = all.length;
+  const completed = all.filter((r) => isRequestComplete(r.status)).length;
+  const pending = total - completed;
+  const motRequests = all.filter(isMotLike);
+  const motTotal = motRequests.length;
+  const motCompleted = motRequests.filter((r) => isRequestComplete(r.status)).length;
+  const motPending = motTotal - motCompleted;
+  const hasMot = motTotal > 0;
+  const allComplete = total > 0 && pending === 0;
+  const techComplete = total > 0 && all.filter((r) => !isMotLike(r)).every((r) => isRequestComplete(r.status));
+
+  return {
+    total,
+    completed,
+    pending,
+    allComplete,
+    techComplete,
+    mot: {
+      total: motTotal,
+      completed: motCompleted,
+      pending: motPending,
+      hasMot,
+    },
+  };
+};
+
 const buildBlockingReasons = ({
   jobRow,
   invoiceRow,
@@ -285,6 +330,7 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
     vehicleRes,
     writeUpRes,
     clockingRes,
+    requestsRes,
   ] = await Promise.all([
     db
       .from("job_status_history")
@@ -346,6 +392,11 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
       .select("id, user_id, clock_in, clock_out, work_type, user:user_id (first_name, last_name)")
       .eq("job_id", jobIdValue)
       .order("clock_in", { ascending: true }),
+    db
+      .from("job_requests")
+      .select("request_id, description, status, request_source, job_type, sort_order")
+      .eq("job_id", jobIdValue)
+      .order("sort_order", { ascending: true }),
   ]);
 
   const statusEntries = [];
@@ -691,6 +742,11 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
       userName: entry.userName,
     }));
 
+  const requestsSummary = buildRequestsSummary(requestsRes?.data || []);
+  const pricingCompleted = (historyRes.data || []).some(
+    (row) => resolveSubStatusId(row.to_status) === "pricing_completed"
+  );
+
   const partsSummary = buildPartsSummary(partsRes.data || []);
   const partsStatus = buildPartsStatus(partsSummary);
   const latestKeyEvent = keyRes?.data?.[0] || null;
@@ -714,6 +770,7 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
   const techStatus = resolveTechStatus({
     status: resolvedMainStatusLabel,
     techCompletionStatus: jobRow.tech_completion_status,
+    hasActiveClocking: Boolean(activeClocking),
   });
 
   const vhcRequired = Boolean(jobRow.vhc_required);
@@ -742,6 +799,7 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
         jobRow.updated_at ||
         new Date().toISOString(),
       updatedBy: latestMainStatusEntry?.userId || jobRow.status_updated_by || null,
+      jobSource: jobRow.job_source || null,
     },
     tech: {
       status: techStatus || null,
@@ -797,6 +855,8 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
         completedBy: washChecklistUserName, // Who last toggled the wash checkbox
         updatedAt: jobRow?.maintenance_info?.valetChecklist?.updatedAt || null, // When checklist was last updated
       },
+      requests: requestsSummary,
+      pricingCompleted,
     },
     timeline: timelineEntries,
     blockingReasons: buildBlockingReasons({

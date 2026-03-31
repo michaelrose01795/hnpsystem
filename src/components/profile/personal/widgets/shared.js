@@ -47,8 +47,8 @@ export const widgetTextAreaStyle = {
 };
 
 export const widgetAccentSurfaceStyle = {
-  background: "rgba(var(--primary-rgb), 0.07)",
-  border: "1px solid rgba(var(--primary-rgb), 0.14)",
+  background: "var(--accent-layer-4, rgba(var(--primary-rgb), 0.07))",
+  border: "1px solid rgba(var(--accent-layer-2-rgb, var(--primary-rgb)), 0.42)",
   borderRadius: "var(--radius-md)",
 };
 

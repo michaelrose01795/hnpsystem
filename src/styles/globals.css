@@ -99,6 +99,22 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   position: relative;
 }
 
+.personal-widget-grid {
+  width: 100%;
+  min-width: 0;
+}
+
+.personal-widget-grid > * {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 720px) and (orientation: portrait) {
+  .personal-widget-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
 .app-layout-main-column {
   flex: 1;
   width: 100%;
@@ -3622,6 +3638,30 @@ input[type="search"]::-webkit-search-results-decoration {
   color: var(--text-primary) !important;
 }
 
+.job-cards-create-bottom-row {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+
+.job-cards-create-bottom-card {
+  min-width: 0;
+  height: 100%;
+}
+
+.job-cards-create-info-header {
+  row-gap: 10px;
+}
+
+.job-cards-create-selector-wrap {
+  min-width: 0;
+}
+
+.job-cards-create-selector {
+  min-width: 0;
+}
+
 /* Dark mode: dark grey background with white text */
 [data-theme="dark"] .cosmetic-notes-active {
   background-color: #2a2a2e !important;
@@ -3668,6 +3708,26 @@ input[type="search"]::-webkit-search-results-decoration {
   }
 }
 
+@media (max-width: 1100px) {
+  .job-cards-create-bottom-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .job-cards-create-info-header {
+    align-items: flex-start !important;
+  }
+
+  .job-cards-create-selector-wrap {
+    width: 100%;
+    justify-content: flex-start !important;
+  }
+
+  .job-cards-create-bottom-card-header {
+    flex-direction: column;
+    align-items: flex-start !important;
+  }
+}
+
 @media (max-width: 720px) {
   .myjobs-header {
     display: none;
@@ -3688,6 +3748,20 @@ input[type="search"]::-webkit-search-results-decoration {
   .myjobs-make {
     flex: 1 1 100% !important;
     min-width: 0 !important;
+  }
+
+  .job-cards-create-bottom-row {
+    grid-template-columns: 1fr;
+  }
+
+  .job-cards-create-selector {
+    width: 100%;
+  }
+
+  .job-cards-create-selector button,
+  .job-cards-create-add-linked-button,
+  .job-cards-create-remove-linked-button {
+    flex: 1 1 auto;
   }
 }
 

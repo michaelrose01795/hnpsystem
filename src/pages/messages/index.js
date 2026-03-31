@@ -1733,6 +1733,15 @@ function MessagesPage() {
   }, [messages]);
 
   useEffect(() => {
+    if (!isMobileView || mobilePanelView !== "conversation") return;
+    const frame = window.requestAnimationFrame(() => {
+      if (!scrollerRef.current) return;
+      scrollerRef.current.scrollTop = scrollerRef.current.scrollHeight;
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeThreadId, activeSystemView, isMobileView, messages.length, mobilePanelView]);
+
+  useEffect(() => {
     const previousKey = activeUnreadMarkerKeyRef.current;
     if (previousKey && previousKey !== currentUnreadMarkerKey) {
       dismissUnreadMarker(previousKey);
@@ -2709,12 +2718,14 @@ function MessagesPage() {
                     marginTop: isMobileView ? "8px" : "16px",
                     flex: 1,
                     minHeight: 0,
-                    maxHeight: isMobileView ? "none" : "540px", // fill available space on mobile
+                    height: isMobileView ? "min(52vh, 360px)" : undefined,
+                    maxHeight: isMobileView ? "min(52vh, 360px)" : "540px",
                     overflowY: "auto",
                     display: "flex",
                     flexDirection: "column",
                     gap: isMobileView ? "12px" : "18px",
                     paddingRight: "6px",
+                    overscrollBehavior: "contain",
                   }}
                 >
                   {loadingMessages && (

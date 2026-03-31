@@ -19,10 +19,10 @@ const TYRE_KEYS = [
 
 const statusPalette = {
   unknown: {
-    fill: "rgba(var(--primary-rgb), 0.22)",
+    fill: "rgba(var(--accent-purple-rgb), 0.2)",
     text: "var(--text-primary)",
-    label: "var(--primary)",
-    border: "rgba(var(--primary-rgb), 0.52)",
+    label: "var(--accent-purple)",
+    border: "rgba(var(--accent-purple-rgb), 0.5)",
   },
   danger: {
     fill: "var(--danger)",
@@ -74,14 +74,14 @@ export default function TyreDiagram({
 }) {
   const activeKey = activeTyre?.toLowerCase();
   const invalidTyreSet = new Set((invalidTyres || []).map((key) => String(key).toLowerCase()));
-  const selectedWheelFill = "rgba(var(--accent-purple-rgb), 0.16)";
-  const selectedWheelStroke = "rgba(var(--accent-purple-rgb), 0.65)";
+  const selectedWheelFill = "rgba(var(--accent-purple-rgb), 0.14)";
+  const selectedWheelStroke = "rgba(var(--accent-purple-rgb), 0.75)";
 
   const containerStyle = {
     width: "100%",
     borderRadius: "var(--radius-xl)",
     padding: "24px",
-    border: `1px solid ${palette.border}`,
+    border: "1px solid rgba(var(--accent-purple-rgb), 0.22)",
     background: palette.surface,
     display: "flex",
     flexDirection: "column",
@@ -100,13 +100,15 @@ export default function TyreDiagram({
     margin: 0,
     padding: 0,
     borderRadius: "var(--radius-md)",
-    backgroundColor: "inherit",
-    backgroundImage: "var(--vhc-vehicle-diagram-image)",
+    backgroundColor: "rgba(var(--accent-purple-rgb), 0.03)",
+    backgroundImage:
+      "linear-gradient(180deg, rgba(var(--accent-purple-rgb), 0.12), rgba(var(--accent-purple-rgb), 0.04)), var(--vhc-vehicle-diagram-image)",
     backgroundPosition: "50% 50%",
     backgroundRepeat: "no-repeat",
     backgroundSize: "118% auto",
     display: "grid",
     placeItems: "center",
+    boxShadow: "inset 0 0 0 1px rgba(var(--accent-purple-rgb), 0.18)",
   };
 
   return (
@@ -173,7 +175,7 @@ export default function TyreDiagram({
                   minWidth: `${TYRE_HIT_WIDTH}px`,
                   borderRadius: "var(--radius-pill)",
                   border: `${isInvalid ? 2 : isActive ? 2 : 1.5}px solid ${
-                    isInvalid ? "var(--danger)" : isActive ? "var(--primary)" : colors.border
+                    isInvalid ? "var(--danger)" : isActive ? "var(--accent-purple)" : colors.border
                   }`,
                   background: colors.fill,
                   boxSizing: "border-box",
@@ -220,14 +222,14 @@ export default function TyreDiagram({
         onClick={onSpareSelect}
         style={{
           borderRadius: "var(--radius-md)",
-          border: `1px solid ${invalidSpare ? "var(--danger)" : spareActive ? "var(--primary)" : palette.border}`,
+          border: `1px solid ${invalidSpare ? "var(--danger)" : spareActive ? "var(--accent-purple)" : "rgba(var(--accent-purple-rgb), 0.22)"}`,
           padding: "8px 18px",
           background: invalidSpare
             ? "var(--danger-surface)"
             : spareActive
-              ? "rgba(var(--primary-rgb), 0.12)"
-              : palette.surfaceAlt,
-          color: invalidSpare ? "var(--danger)" : spareActive ? "var(--primary)" : palette.textPrimary,
+              ? "rgba(var(--accent-purple-rgb), 0.12)"
+              : "rgba(var(--accent-purple-rgb), 0.05)",
+          color: invalidSpare ? "var(--danger)" : spareActive ? "var(--accent-purple)" : palette.textPrimary,
           fontWeight: 600,
           cursor: onSpareSelect ? "pointer" : "default",
           boxShadow: invalidSpare ? "0 0 0 2px var(--danger-surface)" : "none",

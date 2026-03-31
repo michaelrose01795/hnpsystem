@@ -9,6 +9,7 @@ import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver";
 import { ensureDirectThread, sendThreadMessage } from "@/lib/database/messages";
 import { parseEmployeeMeta } from "@/lib/hr/employeeMeta";
 import {
+  calculateLeaveRequestDayTotals,
   formatLeaveDateRange,
   parseLeaveRequestNotes,
   serializeLeaveRequestNotes,
@@ -57,7 +58,7 @@ export default async function handler(req, res) {
     }
 
     // Validate request body
-    const { type, startDate, endDate, notes, halfDay = "None", totalDays = null } = req.body;
+    const { type, startDate, endDate, notes, halfDay = "None" } = req.body;
 
     if (!type || !startDate || !endDate) {
       return res.status(400).json({
@@ -78,6 +79,14 @@ export default async function handler(req, res) {
       return res.status(400).json({
         success: false,
         message: "End date must be on or after start date.",
+      });
+    }
+
+    const leaveTotals = calculateLeaveRequestDayTotals({ startDate, endDate, halfDay });
+    if (!(leaveTotals.workDays > 0)) {
+      return res.status(400).json({
+        success: false,
+        message: "Selected dates do not include any working days.",
       });
     }
 
@@ -111,7 +120,7 @@ export default async function handler(req, res) {
     const notePayload = {
       requestNotes: notes || "",
       halfDay,
-      totalDays: totalDays === null || totalDays === undefined || totalDays === "" ? null : Number(totalDays),
+      totalDays: leaveTotals.workDays,
       lineManagerIds,
       managerNotificationRefs: [],
     };
@@ -143,7 +152,7 @@ export default async function handler(req, res) {
     const requestLines = [
       `/leaverequest ${type} requested for ${leaveSummary}.`,
       halfDay && halfDay !== "None" ? `Half day: ${halfDay}.` : null,
-      totalDays ? `Working days requested: ${totalDays}.` : null,
+      leaveTotals.workDays ? `Working days requested: ${leaveTotals.workDays}.` : null,
       notes ? `Details: ${notes}` : null,
     ].filter(Boolean);
 
@@ -168,10 +177,11 @@ export default async function handler(req, res) {
             leaveType: type,
             startDate,
             endDate,
-            halfDay,
-            totalDays: notePayload.totalDays,
-            requestNotes: notes || "",
-          },
+        halfDay,
+        totalDays: notePayload.totalDays,
+        calendarDays: leaveTotals.calendarDays,
+        requestNotes: notes || "",
+      },
         },
       });
 
@@ -204,6 +214,7 @@ export default async function handler(req, res) {
         notes,
         halfDay,
         totalDays: notePayload.totalDays,
+        calendarDays: leaveTotals.calendarDays,
       },
     });
   } catch (error) {

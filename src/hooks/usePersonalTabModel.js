@@ -7,12 +7,15 @@ import {
   ensureFinanceState,
   ensureMonthFinanceState,
   makeCollectionItem,
+  makeCreditCardAccount,
   makeCreditCardItem,
+  makeFixedOutgoingItem,
   makeFuelEntry,
   makeOvertimeEntry,
   makePlannedPaymentPlan,
   makeSavingsAccount,
   makeSavingsTransaction,
+  makeUserAccount,
 } from "@/lib/profile/personalFinance";
 
 /**
@@ -80,6 +83,33 @@ export default function usePersonalTabModel({ financeState: rawFinanceState = nu
     [update]
   );
 
+  const updateCurrentMonthTaxOverride = useCallback(
+    (patch) => {
+      const safePatch = Object.fromEntries(
+        Object.entries(patch || {}).filter(([key]) => TAX_OVERRIDE_KEYS.has(key))
+      );
+      if (Object.keys(safePatch).length === 0) return;
+
+      updateMonth((month) => ({
+        ...month,
+        ...safePatch,
+      }));
+    },
+    [updateMonth]
+  );
+
+  const resetCurrentMonthTaxOverride = useCallback(
+    () => {
+      updateMonth((month) => ({
+        ...month,
+        useManualTax: false,
+        manualTax: 0,
+        manualNationalInsurance: 0,
+      }));
+    },
+    [updateMonth]
+  );
+
   return {
     financeState,
     model,
@@ -91,19 +121,29 @@ export default function usePersonalTabModel({ financeState: rawFinanceState = nu
         selectedMonthKey: normaliseMonthKey(monthKey, current.selectedMonthKey),
       })),
 
-    updatePaySetting: (key, value) =>
+    updatePaySetting: (key, value) => {
+      if (TAX_OVERRIDE_KEYS.has(key)) {
+        updateCurrentMonthTaxOverride({ [key]: value });
+        return;
+      }
       update((current) => ({
         ...current,
         paySettings: { ...current.paySettings, [key]: value },
-      })),
+      }));
+    },
 
     updateMonthField: (key, value) =>
       updateMonth((month) => ({ ...month, [key]: value })),
 
+    updateMonthTaxOverride: (key, value) =>
+      updateCurrentMonthTaxOverride({ [key]: value }),
+
+    resetMonthTaxOverride: resetCurrentMonthTaxOverride,
+
     addFixedOutgoing: () =>
       updateMonth((month) => ({
         ...month,
-        fixedOutgoings: [...month.fixedOutgoings, makeCollectionItem("", 0)],
+        fixedOutgoings: [...month.fixedOutgoings, makeFixedOutgoingItem("", 0, "other")],
       })),
     updateFixedOutgoing: (id, patch) =>
       updateMonth((month) => ({
@@ -192,16 +232,96 @@ export default function usePersonalTabModel({ financeState: rawFinanceState = nu
         savingsBuckets: month.savingsBuckets.filter((entry) => entry.id !== id),
       })),
 
+    addCreditCardAccount: (name = "") =>
+      update((current) => ({
+        ...current,
+        creditCardAccounts: [...(current.creditCardAccounts || []), makeCreditCardAccount(name)],
+      })),
+    updateCreditCardAccount: (id, patch) =>
+      update((current) => ({
+        ...current,
+        creditCardAccounts: (current.creditCardAccounts || []).map((entry) => (entry.id === id ? { ...entry, ...patch } : entry)),
+      })),
+    removeCreditCardAccount: (id) =>
+      update((current) => {
+        const nextMonths = Object.fromEntries(
+          Object.entries(current.months || {}).map(([monthKey, rawMonth]) => {
+            const month = ensureMonthFinanceState(rawMonth, { creditCardAccounts: current.creditCardAccounts || [] });
+            return [
+              monthKey,
+              {
+                ...month,
+                creditCards: month.creditCards.map((entry) =>
+                  entry.cardId === id
+                    ? { ...entry, cardId: "" }
+                    : entry
+                ),
+              },
+            ];
+          })
+        );
+
+        return {
+          ...current,
+          creditCardAccounts: (current.creditCardAccounts || []).filter((entry) => entry.id !== id),
+          months: nextMonths,
+        };
+      }),
     addCreditCard: () =>
-      updateMonth((month) => ({
-        ...month,
-        creditCards: [...month.creditCards, makeCreditCardItem("Card")],
-      })),
+      update((current) => {
+        const monthKey = normaliseMonthKey(current.selectedMonthKey, getCurrentMonthKey());
+        const month = ensureMonthFinanceState(current.months?.[monthKey], {
+          creditCardAccounts: current.creditCardAccounts || [],
+        });
+        const defaultAccount = (current.creditCardAccounts || [])[0] || null;
+        return {
+          ...current,
+          months: {
+            ...current.months,
+            [monthKey]: {
+              ...month,
+              creditCards: [
+                ...month.creditCards,
+                makeCreditCardItem({
+                  cardId: defaultAccount?.id || "",
+                  name: defaultAccount?.name || "Card",
+                }),
+              ],
+            },
+          },
+        };
+      }),
     updateCreditCard: (id, patch) =>
-      updateMonth((month) => ({
-        ...month,
-        creditCards: month.creditCards.map((entry) => (entry.id === id ? { ...entry, ...patch } : entry)),
-      })),
+      update((current) => {
+        const monthKey = normaliseMonthKey(current.selectedMonthKey, getCurrentMonthKey());
+        const month = ensureMonthFinanceState(current.months?.[monthKey], {
+          creditCardAccounts: current.creditCardAccounts || [],
+        });
+        const nextCards = month.creditCards.map((entry) => {
+          if (entry.id !== id) return entry;
+          if (patch.cardId !== undefined) {
+            const matchedAccount = (current.creditCardAccounts || []).find((account) => account.id === patch.cardId) || null;
+            return {
+              ...entry,
+              ...patch,
+              cardId: matchedAccount?.id || "",
+              name: matchedAccount?.name || patch.name || entry.name || "",
+            };
+          }
+          return { ...entry, ...patch };
+        });
+
+        return {
+          ...current,
+          months: {
+            ...current.months,
+            [monthKey]: {
+              ...month,
+              creditCards: nextCards,
+            },
+          },
+        };
+      }),
     removeCreditCard: (id) =>
       updateMonth((month) => ({
         ...month,
@@ -216,7 +336,16 @@ export default function usePersonalTabModel({ financeState: rawFinanceState = nu
     updateFuelEntry: (id, patch) =>
       updateMonth((month) => ({
         ...month,
-        fuelEntries: (month.fuelEntries || []).map((entry) => (entry.id === id ? { ...entry, ...patch } : entry)),
+        fuelEntries: (month.fuelEntries || []).map((entry) => {
+          if (entry.id !== id) return entry;
+          const next = makeFuelEntry({
+            cost: patch.cost ?? entry.cost,
+            litres: patch.litres ?? entry.litres,
+            costPerLitre: patch.costPerLitre ?? entry.costPerLitre,
+            date: patch.date ?? entry.date,
+          });
+          return { ...entry, ...patch, ...next, id: entry.id };
+        }),
       })),
     removeFuelEntry: (id) =>
       updateMonth((month) => ({
@@ -240,6 +369,43 @@ export default function usePersonalTabModel({ financeState: rawFinanceState = nu
         overtimeEntries: month.overtimeEntries.filter((entry) => entry.id !== id),
       })),
 
+    // User accounts (global, display-only snapshot accounts for Finance Overview)
+    addAccount: ({ name = "", type = "current", balance = 0, showInOverview = true, creditLimit = 0 } = {}) =>
+      update((current) => {
+        const existing = current.userAccounts || [];
+        const trimmedName = String(name || "").trim();
+        const isDuplicate = existing.some(
+          (entry) => entry.type === type && String(entry.name || "").trim().toLowerCase() === trimmedName.toLowerCase()
+        );
+        if (isDuplicate && trimmedName) return current;
+        return {
+          ...current,
+          userAccounts: [...existing, makeUserAccount({ name, type, balance, showInOverview, creditLimit })],
+        };
+      }),
+    updateAccount: (id, patch) =>
+      update((current) => ({
+        ...current,
+        userAccounts: (current.userAccounts || []).map((entry) => {
+          if (entry.id !== id) return entry;
+          const next = { ...entry, ...patch };
+          if (patch.name !== undefined) next.name = String(patch.name || "").trim();
+          return next;
+        }),
+      })),
+    removeAccount: (id) =>
+      update((current) => ({
+        ...current,
+        userAccounts: (current.userAccounts || []).filter((entry) => entry.id !== id),
+      })),
+    toggleAccountVisibility: (id) =>
+      update((current) => ({
+        ...current,
+        userAccounts: (current.userAccounts || []).map((entry) =>
+          entry.id === id ? { ...entry, showInOverview: !entry.showInOverview } : entry
+        ),
+      })),
+
     toggleCollapsed: (widgetType) =>
       update((current) => ({
         ...current,
@@ -253,3 +419,4 @@ export default function usePersonalTabModel({ financeState: rawFinanceState = nu
       })),
   };
 }
+  const TAX_OVERRIDE_KEYS = new Set(["useManualTax", "manualTax", "manualNationalInsurance"]);

@@ -1,4 +1,5 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
+import useIsMobile from "@/hooks/useIsMobile";
 import {
   DataRow,
   EmptyState,
@@ -9,13 +10,13 @@ import {
   StatusBadge,
   formatCurrency,
   formatDate,
-  toNumber,
   widgetAccentSurfaceStyle,
-  widgetInputStyle,
   widgetInsetSurfaceStyle,
 } from "@/components/profile/personal/widgets/shared";
 import Button from "@/components/ui/Button";
 import {
+  calculateMortgagePaymentBreakdown,
+  calculateMortgagePayoffTimeline,
   calculateGoalContributionForMonth,
   calculateIncomeForMonth,
   calculateProjectedSavingsDate,
@@ -27,6 +28,82 @@ import {
 const widgetActionButtonStyle = {
   minWidth: "96px",
 };
+
+function SummaryBlock({ label, value, accent = "var(--text-primary)" }) {
+  return (
+    <div
+      style={{
+        ...widgetAccentSurfaceStyle,
+        padding: "12px 14px",
+        display: "grid",
+        gap: "4px",
+      }}
+    >
+      <span style={{ fontSize: "0.66rem", fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+        {label}
+      </span>
+      <span style={{ fontSize: "1.15rem", fontWeight: 800, color: accent, lineHeight: 1.2 }}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function buildDisplayRowsNewestFirst(rows = [], limit = null) {
+  const ordered = [...(rows || [])].reverse();
+  return Number.isInteger(limit) ? ordered.slice(0, limit) : ordered;
+}
+
+function InlineValuePair({ leftLabel, leftValue, rightLabel, rightValue }) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        padding: "8px 10px",
+        borderRadius: "10px",
+        background: "var(--surface)",
+        border: "1px solid rgba(var(--primary-rgb), 0.08)",
+      }}
+    >
+      <div style={{ display: "grid", gap: "2px" }}>
+        <span style={{ fontSize: "0.66rem", color: "var(--text-secondary)", fontWeight: 600 }}>{leftLabel}</span>
+        <span style={{ fontSize: "0.88rem", color: "var(--text-primary)", fontWeight: 700 }}>{leftValue}</span>
+      </div>
+      <div style={{ display: "grid", gap: "2px", justifyItems: "end", borderLeft: "2px solid var(--primary)", paddingLeft: "10px" }}>
+        <span style={{ fontSize: "0.66rem", color: "var(--text-secondary)", fontWeight: 600 }}>{rightLabel}</span>
+        <span style={{ fontSize: "0.88rem", color: "var(--text-primary)", fontWeight: 700, textAlign: "right" }}>{rightValue}</span>
+      </div>
+    </div>
+  );
+}
+
+function resolveMortgageMode(settings = {}) {
+  return settings.mode === "bills" ? "bills" : "saving";
+}
+
+function resolveLinkedMortgagePayment(finance, sourceId = "") {
+  if (!sourceId) return null;
+  if (sourceId.startsWith("savings:")) {
+    const savings = finance?.model?.savingsAccountBalances?.find(
+      (entry) => entry.id === sourceId.slice(8)
+    );
+    return savings ? Number(savings.monthInflow || 0) : null;
+  }
+  if (sourceId.startsWith("fixed:")) {
+    const fixed = finance?.model?.currentMonth?.monthState?.fixedOutgoings?.find(
+      (entry) => entry.id === sourceId.slice(6)
+    );
+    return fixed ? Number(fixed.amount || 0) : null;
+  }
+  if (sourceId.startsWith("plan:")) {
+    const plan = finance?.model?.plannedPaymentPlanDetails?.find(
+      (entry) => entry.id === sourceId.slice(5)
+    );
+    return plan ? Number(plan.thisMonthAmount || 0) : null;
+  }
+  return null;
+}
 
 /* ── BaseWidget ───────────────────────────────────────────────── */
 
@@ -126,6 +203,7 @@ export function BaseWidget({
 /* ── IncomeWidget ─────────────────────────────────────────────── */
 
 export function IncomeWidget({ widget, onOpenSettings, finance }) {
+  const isMobile = useIsMobile();
   const month = finance.model.currentMonth;
   const pay = finance.financeState.paySettings || {};
   const year = finance.model.yearTotals || {};
@@ -143,14 +221,13 @@ export function IncomeWidget({ widget, onOpenSettings, finance }) {
       onOpenSettings={onOpenSettings}
       headline={
         <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
-          <Headline
-            label={`Year total after tax (${finance.model.selectedFinanceYear})`}
+          <SummaryBlock
+            label={`TOTAL AFTER TAX (${String(finance.model.selectedFinanceYear || "").toUpperCase()})`}
             value={formatCurrency(year.totalAfterTax)}
             accent="var(--success, #2e7d32)"
-            size="medium"
           />
-          <Headline
-            label={`${monthLabel} total after tax`}
+          <SummaryBlock
+            label={`${String(monthLabel || "").toUpperCase()} TOTAL AFTER TAX`}
             value={formatCurrency(month.pay.afterTaxIncome)}
             accent="var(--success, #2e7d32)"
           />
@@ -164,12 +241,8 @@ export function IncomeWidget({ widget, onOpenSettings, finance }) {
             <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
               <MetricPill label="Tax" value={formatCurrency(year.totalTax)} accent="var(--danger, #c62828)" />
               <MetricPill label="NI" value={formatCurrency(year.totalNationalInsurance)} accent="var(--danger, #c62828)" />
-              <MetricPill label="Hours worked" value={`${Number(year.workedHours || 0).toFixed(1)}h`} accent="var(--info, #1565c0)" />
-              <MetricPill
-                label={year.bulkOvertimeHours > 0 ? `Overtime (incl. ${Number(year.bulkOvertimeHours).toFixed(1)}h bulk)` : "Overtime"}
-                value={`${Number(year.overtimeHours || 0).toFixed(1)}h`}
-                accent="var(--warning, #ef6c00)"
-              />
+              <MetricPill label="Hours worked" value={`${Number(year.hoursWorked || 0).toFixed(1)}h`} accent="var(--info, #1565c0)" />
+              <MetricPill label="Overtime" value={`${Number(year.overtimeHours || 0).toFixed(1)}h`} accent="var(--warning, #ef6c00)" />
             </div>
           </div>
         </SurfacePanel>
@@ -177,67 +250,68 @@ export function IncomeWidget({ widget, onOpenSettings, finance }) {
         <SurfacePanel style={incomeSectionStyle}>
           <div style={{ display: "grid", gap: "8px" }}>
             <SectionLabel>{monthLabel} pay</SectionLabel>
-            <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", padding: "8px 10px", borderRadius: "10px", background: "var(--surface)", border: "1px solid rgba(var(--primary-rgb), 0.08)" }}>
-                <div style={{ display: "grid", gap: "2px" }}>
-                  <span style={{ fontSize: "0.66rem", color: "var(--text-secondary)", fontWeight: 600 }}>Hours worked</span>
-                  <span style={{ fontSize: "0.88rem", color: "var(--text-primary)", fontWeight: 700 }}>{month.pay.expectedHours.toFixed(1)}h</span>
-                </div>
-                <div style={{ display: "grid", gap: "2px", justifyItems: "end", borderLeft: "2px solid var(--primary)", paddingLeft: "10px" }}>
-                  <span style={{ fontSize: "0.66rem", color: "var(--text-secondary)", fontWeight: 600 }}>Basic total</span>
-                  <span style={{ fontSize: "0.88rem", color: "var(--text-primary)", fontWeight: 700 }}>{formatCurrency(month.pay.basePay)}</span>
-                </div>
+            {isMobile ? (
+              <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "minmax(0, 1fr)" }}>
+                <InlineValuePair
+                  leftLabel="Hours worked"
+                  leftValue={`${month.pay.hoursWorked.toFixed(1)}h`}
+                  rightLabel="Basic total"
+                  rightValue={formatCurrency(month.pay.basePay)}
+                />
+                <InlineValuePair
+                  leftLabel="Overtime worked"
+                  leftValue={`${month.pay.overtimeHours.toFixed(1)}h`}
+                  rightLabel="Overtime total"
+                  rightValue={formatCurrency(month.pay.overtimePay)}
+                />
+                <InlineValuePair
+                  leftLabel="Other income"
+                  leftValue={formatCurrency(month.totals.classicIncome)}
+                  rightLabel="Tax NI"
+                  rightValue={`${formatCurrency(month.pay.tax)} / ${formatCurrency(month.pay.nationalInsurance)}`}
+                />
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", padding: "8px 10px", borderRadius: "10px", background: "var(--surface)", border: "1px solid rgba(var(--primary-rgb), 0.08)" }}>
-                <div style={{ display: "grid", gap: "2px" }}>
-                  <span style={{ fontSize: "0.66rem", color: "var(--text-secondary)", fontWeight: 600 }}>Overtime worked</span>
-                  <span style={{ fontSize: "0.88rem", color: "var(--text-primary)", fontWeight: 700 }}>{month.pay.overtimeHours.toFixed(1)}h</span>
-                </div>
-                <div style={{ display: "grid", gap: "2px", justifyItems: "end", borderLeft: "2px solid var(--primary)", paddingLeft: "10px" }}>
-                  <span style={{ fontSize: "0.66rem", color: "var(--text-secondary)", fontWeight: 600 }}>Overtime total</span>
-                  <span style={{ fontSize: "0.88rem", color: "var(--text-primary)", fontWeight: 700 }}>{formatCurrency(month.pay.overtimePay)}</span>
-                </div>
-              </div>
-              <MetricPill label="Other income" value={formatCurrency(month.totals.classicIncome)} accent="var(--info, #1565c0)" />
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", padding: "8px 10px", borderRadius: "10px", background: "var(--surface)", border: "1px solid rgba(var(--primary-rgb), 0.08)" }}>
-                <div style={{ display: "grid", gap: "2px" }}>
-                  <span style={{ fontSize: "0.66rem", color: "var(--text-secondary)", fontWeight: 600 }}>Tax</span>
-                  <input
-                    type="number"
-                    value={pay.useManualTax ? (pay.manualTax || 0) : month.pay.tax}
-                    onChange={(e) => {
-                      const v = toNumber(e.target.value);
-                      if (!pay.useManualTax) finance.updatePaySetting("useManualTax", true);
-                      finance.updatePaySetting("manualTax", v);
-                    }}
-                    style={{ ...widgetInputStyle, fontSize: "0.88rem", fontWeight: 700, padding: "2px 4px", minHeight: "unset" }}
-                  />
-                </div>
-                <div style={{ display: "grid", gap: "2px", borderLeft: "2px solid var(--primary)", paddingLeft: "10px" }}>
-                  <span style={{ fontSize: "0.66rem", color: "var(--text-secondary)", fontWeight: 600 }}>NI</span>
-                  <input
-                    type="number"
-                    value={pay.useManualTax ? (pay.manualNationalInsurance || 0) : month.pay.nationalInsurance}
-                    onChange={(e) => {
-                      const v = toNumber(e.target.value);
-                      if (!pay.useManualTax) finance.updatePaySetting("useManualTax", true);
-                      finance.updatePaySetting("manualNationalInsurance", v);
-                    }}
-                    style={{ ...widgetInputStyle, fontSize: "0.88rem", fontWeight: 700, padding: "2px 4px", minHeight: "unset" }}
-                  />
-                </div>
-              </div>
-            </div>
-            {pay.useManualTax && (
-              <div style={{ textAlign: "right" }}>
-                <button
-                  onClick={() => finance.updatePaySetting("useManualTax", false)}
-                  style={{ background: "none", border: "none", color: "var(--primary)", fontSize: "0.68rem", fontWeight: 600, cursor: "pointer", padding: 0, textDecoration: "underline" }}
-                >
-                  Reset Tax &amp; NI to auto
-                </button>
+            ) : (
+              <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
+                <InlineValuePair
+                  leftLabel="Hours worked"
+                  leftValue={`${month.pay.hoursWorked.toFixed(1)}h`}
+                  rightLabel="Basic total"
+                  rightValue={formatCurrency(month.pay.basePay)}
+                />
+                <InlineValuePair
+                  leftLabel="Overtime worked"
+                  leftValue={`${month.pay.overtimeHours.toFixed(1)}h`}
+                  rightLabel="Overtime total"
+                  rightValue={formatCurrency(month.pay.overtimePay)}
+                />
+                <MetricPill label="Other income" value={formatCurrency(month.totals.classicIncome)} accent="var(--info, #1565c0)" />
+                <InlineValuePair
+                  leftLabel="Tax"
+                  leftValue={formatCurrency(month.pay.tax)}
+                  rightLabel="NI"
+                  rightValue={formatCurrency(month.pay.nationalInsurance)}
+                />
               </div>
             )}
+            {month.pay.workDeductions > 0
+              ? (month.pay.workDeductionEntries || []).map((entry) => {
+                  const description = String(entry.description || "").trim();
+                  const label = entry.registration
+                    ? description
+                      ? `${entry.registration} - ${description}`
+                      : entry.registration
+                    : (description || entry.label || "Work Deduction");
+                  return (
+                  <DataRow
+                    key={entry.id}
+                    label={label}
+                    value={`-${formatCurrency(entry.amount)}`}
+                    muted
+                  />
+                  );
+                })
+              : null}
             {(month.monthState.incomeAdjustments || 0) !== 0 ? (
               <DataRow label="Adjustment" value={formatCurrency(month.monthState.incomeAdjustments)} muted />
             ) : null}
@@ -265,6 +339,7 @@ export function IncomeWidget({ widget, onOpenSettings, finance }) {
 
 export function WorkSummaryWidget({ widget, onOpenSettings, finance }) {
   const month = finance.model.currentMonth;
+  const totalWorkedHours = Number(month.pay.totalWorkedHours ?? month.pay.hoursWorked ?? 0);
   const sectionStyle = {
     background: "rgba(var(--primary-rgb), 0.08)",
     border: "1px solid rgba(var(--primary-rgb), 0.14)",
@@ -273,21 +348,30 @@ export function WorkSummaryWidget({ widget, onOpenSettings, finance }) {
   return (
     <BaseWidget
       title={widget.config?.title || "Work / Hours"}
-      subtitle="Attendance and manual overtime this month"
+      subtitle="Worked hours and overtime this month"
       accent="var(--warning, #ef6c00)"
       onOpenSettings={onOpenSettings}
       headline={
-        <div style={{ display: "flex", gap: "24px", flexWrap: "wrap", alignItems: "flex-end" }}>
-          <Headline
+        <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
+          <SummaryBlock
+            label="Total worked"
+            value={`${totalWorkedHours.toFixed(1)}h`}
+            accent="var(--info, #1565c0)"
+          />
+          <SummaryBlock
+            label="Total pay after tax"
+            value={formatCurrency(month.pay.afterTaxIncome)}
+            accent="var(--success, #2e7d32)"
+          />
+          <SummaryBlock
             label="Total overtime"
             value={`${month.pay.overtimeHours.toFixed(1)}h`}
             accent="var(--warning, #ef6c00)"
           />
-          <Headline
-            label="Overtime pay"
+          <SummaryBlock
+            label="Total overtime pay (before tax)"
             value={formatCurrency(month.pay.overtimePay)}
-            accent="var(--success, #2e7d32)"
-            size="medium"
+            accent="var(--warning, #ef6c00)"
           />
         </div>
       }
@@ -295,12 +379,12 @@ export function WorkSummaryWidget({ widget, onOpenSettings, finance }) {
       <div style={{ display: "grid", gap: "10px" }}>
         <SurfacePanel style={sectionStyle}>
           <div style={{ display: "grid", gap: "8px" }}>
-            <SectionLabel>Hours breakdown (Linked)</SectionLabel>
+            <SectionLabel>Linked summary</SectionLabel>
             <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
-              <MetricPill label="Expected hours" value={`${month.pay.expectedHours.toFixed(1)}h`} accent="var(--text-secondary)" />
-              <MetricPill label="Hours worked" value={month.pay.workedHours !== null ? `${month.pay.workedHours.toFixed(1)}h` : "—"} accent="var(--info, #1565c0)" />
-              <MetricPill label="Attendance OT" value={`${month.pay.attendanceOvertimeHours.toFixed(1)}h`} accent="var(--info, #1565c0)" />
-              <MetricPill label="Manual OT" value={`${month.pay.manualOvertimeHours.toFixed(1)}h`} accent="var(--warning, #ef6c00)" />
+              <MetricPill label="Attendance logged" value={month.pay.attendanceWorkedHours !== null ? `${month.pay.attendanceWorkedHours.toFixed(1)}h` : "—"} accent="var(--info, #1565c0)" />
+              <MetricPill label="Total OT hour" value={`${month.pay.overtimeHours.toFixed(1)}h`} accent="var(--warning, #ef6c00)" />
+              <MetricPill label="Base pay (before tax)" value={formatCurrency(month.pay.basePay)} accent="var(--success, #2e7d32)" />
+              <MetricPill label="OT rate" value={formatCurrency(month.pay.overtimeRate)} accent="var(--text-secondary)" />
             </div>
             {month.pay.leaveDaysInMonth > 0 ? (
               <DataRow label="Leave days this month" value={`${month.pay.leaveDaysInMonth}d`} accent="var(--info, #1565c0)" />
@@ -333,6 +417,7 @@ export function WorkSummaryWidget({ widget, onOpenSettings, finance }) {
 
 export function SpendingWidget({ widget, onOpenSettings, finance }) {
   const month = finance.model.currentMonth;
+  const creditCards = buildDisplayRowsNewestFirst(month.monthState.creditCards || []);
   const sectionStyle = {
     background: "rgba(var(--primary-rgb), 0.08)",
     border: "1px solid rgba(var(--primary-rgb), 0.14)",
@@ -356,10 +441,11 @@ export function SpendingWidget({ widget, onOpenSettings, finance }) {
         <SurfacePanel style={sectionStyle}>
           <div style={{ display: "grid", gap: "8px" }}>
             <SectionLabel>Breakdown (Linked)</SectionLabel>
-            <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
+            <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "repeat(4, minmax(0, 1fr))" }}>
               <MetricPill label="Fixed" value={formatCurrency(month.totals.fixedOut)} accent="var(--danger, #c62828)" />
               <MetricPill label="Planned" value={formatCurrency(month.totals.plannedOut)} accent="var(--warning, #ef6c00)" />
-              <MetricPill label="Cards" value={formatCurrency(month.totals.creditCardOut)} accent="var(--accent-purple)" />
+              <MetricPill label="Card payments" value={formatCurrency(month.totals.creditCardOut)} accent="var(--accent-purple)" />
+              <MetricPill label="Card balances" value={formatCurrency(month.totals.totalCardBalances)} accent="var(--accent-purple)" />
             </div>
           </div>
         </SurfacePanel>
@@ -388,6 +474,23 @@ export function SpendingWidget({ widget, onOpenSettings, finance }) {
           </SurfacePanel>
         ) : null}
 
+        <SurfacePanel style={sectionStyle}>
+          <div style={{ display: "grid", gap: "8px" }}>
+            <SectionLabel>Credit cards (Database)</SectionLabel>
+            {creditCards.length === 0 ? (
+              <EmptyState>No credit cards set for this month.</EmptyState>
+            ) : (
+              creditCards.map((entry) => (
+                <DataRow
+                  key={entry.id}
+                  label={`${entry.name || "Card"}${entry.isPaidOff ? " · fully paid off" : ""}`}
+                  value={`${formatCurrency(entry.balance || 0)} balance · ${formatCurrency(entry.isPaidOff ? entry.balance || 0 : entry.monthlyPayment || 0)}`}
+                />
+              ))
+            )}
+          </div>
+        </SurfacePanel>
+
         {(month.monthState.outgoingAdjustments || 0) !== 0 ? (
           <DataRow label="Adjustment" value={formatCurrency(month.monthState.outgoingAdjustments)} muted />
         ) : null}
@@ -402,7 +505,7 @@ export function SavingsWidget({ widget, onOpenSettings, finance }) {
   const month = finance.model.currentMonth;
   const accountBalances = finance.model.savingsAccountBalances || [];
   const accountGroups = finance.model.savingsAccountGroups || [];
-  const transactions = month.monthState.savingsBuckets || [];
+  const transactions = buildDisplayRowsNewestFirst(month.monthState.savingsBuckets || [], 4);
   const accounts = finance.financeState.savingsAccounts || [];
   const totalBalance = accountBalances.reduce((sum, a) => sum + a.currentBalance, 0);
   const sectionStyle = {
@@ -421,16 +524,15 @@ export function SavingsWidget({ widget, onOpenSettings, finance }) {
       onOpenSettings={onOpenSettings}
       headline={
         <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
-          <Headline
-            label="Total balance"
+          <SummaryBlock
+            label="TOTAL BALANCE"
             value={formatCurrency(totalBalance)}
             accent="var(--info, #1565c0)"
           />
-          <Headline
-            label="Saved this month"
+          <SummaryBlock
+            label="SAVED THIS MONTH"
             value={formatCurrency(month.totals.savingsTotal)}
             accent="var(--success, #2e7d32)"
-            size="medium"
           />
         </div>
       }
@@ -551,25 +653,20 @@ export function BillsWidget({ widget, onOpenSettings, finance, widgetDataMap, wi
   const fuelTotal = Number(month?.totals?.fuelTotal || 0);
   const mortgageWidgetData = widgetDataMap?.mortgage?.data || {};
   const holidayWidgetData = widgetDataMap?.holiday?.data || {};
-  const getMortgageLinkedPayment = (settings = {}) => {
-    const sourceId = settings.linkedMortgagePaymentSourceId || "";
-    if (!sourceId) return Number(settings.monthlyPayment || mortgageWidgetData?.monthlyPayment || 0);
-    if (sourceId.startsWith("savings:")) {
-      const savings = finance?.model?.savingsAccountBalances?.find((entry) => entry.id === sourceId.slice(8));
-      return Number(savings?.monthInflow || 0);
-    }
-    if (sourceId.startsWith("fixed:")) {
-      const fixed = month?.monthState?.fixedOutgoings?.find((entry) => entry.id === sourceId.slice(6));
-      return Number(fixed?.amount || 0);
-    }
-    if (sourceId.startsWith("plan:")) {
-      const plan = finance?.model?.plannedPaymentPlanDetails?.find((entry) => entry.id === sourceId.slice(5));
-      return Number(plan?.thisMonthAmount || 0);
-    }
-    return Number(settings.monthlyPayment || mortgageWidgetData?.monthlyPayment || 0);
-  };
   const resolvedMortgageSettings = mortgageWidgetData?.settings || {};
-  const resolvedMortgagePayment = getMortgageLinkedPayment(resolvedMortgageSettings);
+  const mortgageMode = resolveMortgageMode(resolvedMortgageSettings);
+  const resolvedMortgagePayment = resolveLinkedMortgagePayment(
+    finance,
+    resolvedMortgageSettings.linkedMortgagePaymentSourceId || ""
+  );
+  const mortgageBillsPayment = resolvedMortgagePayment !== null
+    ? resolvedMortgagePayment
+    : Number(
+      resolvedMortgageSettings.mortgageMonthlyPayment
+      || resolvedMortgageSettings.monthlyPayment
+      || mortgageWidgetData?.monthlyPayment
+      || 0
+    );
   const mortgageMonthView = useMemo(
     () =>
       calculateGoalContributionForMonth({
@@ -578,12 +675,12 @@ export function BillsWidget({ widget, onOpenSettings, finance, widgetDataMap, wi
           ...mortgageWidgetData,
           settings: {
             ...(mortgageWidgetData?.settings || {}),
-            monthlyPayment: resolvedMortgagePayment,
+            mortgageMonthlyPayment: mortgageBillsPayment,
           },
         },
         defaultCategory: "House",
       }),
-    [mortgageWidgetData, resolvedMortgagePayment, widgetMonthKey]
+    [mortgageBillsPayment, mortgageWidgetData, widgetMonthKey]
   );
   const holidayMonthView = useMemo(
     () =>
@@ -594,7 +691,9 @@ export function BillsWidget({ widget, onOpenSettings, finance, widgetDataMap, wi
       }),
     [holidayWidgetData, widgetMonthKey]
   );
-  const mortgageTotal = Number(mortgageMonthView?.total || resolvedMortgagePayment || 0);
+  const mortgageTotal = mortgageMode === "bills"
+    ? Number(mortgageMonthView?.total || mortgageBillsPayment || 0)
+    : 0;
   const holidayTotal = Number(holidayMonthView?.total || 0);
   const totalPayments = spendingTotal + fuelTotal + mortgageTotal + holidayTotal;
   const afterTaxIncome = Number(month?.pay?.afterTaxIncome || 0);
@@ -650,7 +749,7 @@ export function BillsWidget({ widget, onOpenSettings, finance, widgetDataMap, wi
 
 export function FuelWidget({ widget, onOpenSettings, finance }) {
   const month = finance.model.currentMonth;
-  const fuelEntries = month.monthState.fuelEntries || [];
+  const fuelEntries = buildDisplayRowsNewestFirst(month.monthState.fuelEntries || [], 5);
   const sectionStyle = {
     background: "rgba(var(--primary-rgb), 0.08)",
     border: "1px solid rgba(var(--primary-rgb), 0.14)",
@@ -725,66 +824,73 @@ export function MortgageWidget({
   finance,
 }) {
   const settings = widgetData?.settings || {};
-  const depositTarget = Number(settings.depositTarget || 0);
+  const mode = resolveMortgageMode(settings);
+  const savingsGoal = Number(settings.savingsGoal || settings.depositTarget || 0);
   const linkedAccountId = settings.linkedSavingsAccountId || "";
   const linkedBalance = linkedAccountId
     ? (finance?.model?.savingsAccountBalances || []).find((b) => b.id === linkedAccountId)?.currentBalance || 0
     : null;
-  const currentSaved = linkedBalance !== null ? linkedBalance : Number(settings.currentSaved || 0);
-  const deadline = settings.mortgageDeadline || "";
+  const totalSaved = linkedBalance !== null
+    ? linkedBalance
+    : Number(settings.totalSaved || settings.currentSaved || 0);
+  const savingsDeadline = settings.savingsDeadline || settings.mortgageDeadline || "";
   const linkedMortgagePaymentSourceId = settings.linkedMortgagePaymentSourceId || "";
-  const resolvedLinkedMortgagePayment = useMemo(() => {
-    if (!linkedMortgagePaymentSourceId) return null;
-    if (linkedMortgagePaymentSourceId.startsWith("savings:")) {
-      const savings = finance?.model?.savingsAccountBalances?.find(
-        (entry) => entry.id === linkedMortgagePaymentSourceId.slice(8)
-      );
-      return savings ? Number(savings.monthInflow || 0) : null;
-    }
-    if (linkedMortgagePaymentSourceId.startsWith("fixed:")) {
-      const fixed = finance?.model?.currentMonth?.monthState?.fixedOutgoings?.find(
-        (entry) => entry.id === linkedMortgagePaymentSourceId.slice(6)
-      );
-      return fixed ? Number(fixed.amount || 0) : null;
-    }
-    if (linkedMortgagePaymentSourceId.startsWith("plan:")) {
-      const plan = finance?.model?.plannedPaymentPlanDetails?.find(
-        (entry) => entry.id === linkedMortgagePaymentSourceId.slice(5)
-      );
-      return plan ? Number(plan.thisMonthAmount || 0) : null;
-    }
-    return null;
-  }, [finance, linkedMortgagePaymentSourceId]);
+  const resolvedLinkedMortgagePayment = useMemo(
+    () => resolveLinkedMortgagePayment(finance, linkedMortgagePaymentSourceId),
+    [finance, linkedMortgagePaymentSourceId]
+  );
+  const monthlyContribution = resolvedLinkedMortgagePayment !== null
+    ? resolvedLinkedMortgagePayment
+    : Number(settings.monthlyContribution || settings.monthlyPayment || widgetData?.monthlyPayment || 0);
   const monthlyPayment = resolvedLinkedMortgagePayment !== null
     ? resolvedLinkedMortgagePayment
-    : Number(settings.monthlyPayment || widgetData?.monthlyPayment || 0);
+    : Number(settings.mortgageMonthlyPayment || settings.monthlyPayment || widgetData?.monthlyPayment || 0);
+  const interestRate = Number(settings.interestRate || 0);
+  const termLengthYears = Number(settings.termLengthYears || 0);
+  const remainingBalance = Number(settings.remainingBalance || 0);
   const monthView = useMemo(
     () =>
       calculateGoalContributionForMonth({
         monthKey: widgetMonthKey,
         widgetData: {
           ...widgetData,
-          target: depositTarget,
-          current: currentSaved,
-          deadline,
-          monthlyPayment,
+          target: savingsGoal,
+          current: totalSaved,
+          deadline: savingsDeadline,
+          monthlyPayment: monthlyContribution,
         },
         defaultCategory: "House",
       }),
-    [currentSaved, deadline, depositTarget, monthlyPayment, widgetData, widgetMonthKey]
+    [monthlyContribution, savingsDeadline, savingsGoal, totalSaved, widgetData, widgetMonthKey]
   );
 
   const projectedDate = calculateProjectedSavingsDate({
-    targetAmount: depositTarget,
-    currentAmount: currentSaved,
-    monthlyContribution: monthlyPayment,
+    targetAmount: savingsGoal,
+    currentAmount: totalSaved,
+    monthlyContribution,
   });
-  const remainingToTarget = Math.max(0, depositTarget - currentSaved);
-  const monthsToDepositTarget = depositTarget <= currentSaved
+  const remainingToTarget = Math.max(0, savingsGoal - totalSaved);
+  const monthsToDepositTarget = savingsGoal <= totalSaved
     ? 0
-    : monthlyPayment > 0
-      ? Math.ceil(remainingToTarget / monthlyPayment)
+    : monthlyContribution > 0
+      ? Math.ceil(remainingToTarget / monthlyContribution)
       : null;
+  const mortgageBreakdown = useMemo(
+    () => calculateMortgagePaymentBreakdown({
+      remainingBalance,
+      monthlyPayment,
+      interestRate,
+    }),
+    [interestRate, monthlyPayment, remainingBalance]
+  );
+  const mortgageTimeline = useMemo(
+    () => calculateMortgagePayoffTimeline({
+      remainingBalance,
+      monthlyPayment,
+      interestRate,
+    }),
+    [interestRate, monthlyPayment, remainingBalance]
+  );
 
   const sectionStyle = {
     background: "rgba(var(--primary-rgb), 0.08)",
@@ -794,53 +900,99 @@ export function MortgageWidget({
   return (
     <BaseWidget
       title={widget.config?.title || "Mortgage"}
-      subtitle="House deposit and payment planning"
+      subtitle={mode === "bills" ? "Mortgage repayment overview" : "Saving for your mortgage goal"}
       accent="var(--text-primary)"
-      monthLabel={monthView.label}
-      statusLabel={monthView.status}
+      monthLabel={mode === "saving" ? monthView.label : ""}
+      statusLabel={mode === "saving" ? monthView.status : "Mortgage Bills"}
       onOpenSettings={onOpenSettings}
       headline={
-        <Headline
-          label="Deposit target"
-          value={formatCurrency(depositTarget)}
-        />
+        mode === "bills" ? (
+          <Headline
+            label="Monthly payment"
+            value={formatCurrency(monthlyPayment)}
+          />
+        ) : (
+          <Headline
+            label="Savings goal"
+            value={formatCurrency(savingsGoal)}
+          />
+        )
       }
     >
       <div style={{ display: "grid", gap: "10px" }}>
-        <SurfacePanel style={sectionStyle}>
-          <div style={{ display: "grid", gap: "8px" }}>
-            <SectionLabel>House goal (Database)</SectionLabel>
-            <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
-              <MetricPill
-                label={linkedAccountId
-                  ? `Saved (${(finance?.financeState?.savingsAccounts || []).find((a) => a.id === linkedAccountId)?.name || "Linked"})`
-                  : "Current saved"}
-                value={formatCurrency(currentSaved)}
-              />
-              <MetricPill
-                label={linkedMortgagePaymentSourceId ? "Linked monthly payment" : "Monthly payment"}
-                value={formatCurrency(monthlyPayment)}
-              />
-            </div>
-          </div>
-        </SurfacePanel>
+        {mode === "bills" ? (
+          <>
+            <SurfacePanel style={sectionStyle}>
+              <div style={{ display: "grid", gap: "8px" }}>
+                <SectionLabel>Mortgage bills</SectionLabel>
+                <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
+                  <MetricPill label="Monthly payment" value={formatCurrency(monthlyPayment)} />
+                  <MetricPill label="Interest rate" value={`${interestRate.toFixed(2)}%`} />
+                  <MetricPill label="Term length" value={termLengthYears > 0 ? `${termLengthYears} years` : "Not set"} />
+                  <MetricPill label="Remaining balance" value={formatCurrency(remainingBalance)} />
+                </div>
+              </div>
+            </SurfacePanel>
 
-        <SurfacePanel style={sectionStyle}>
-          <div style={{ display: "grid", gap: "8px" }}>
-            <SectionLabel>Timeline (Linked)</SectionLabel>
-            <DataRow label="Deadline" value={deadline ? formatDate(deadline) : "Not set"} muted />
-            <DataRow label="Projected date" value={projectedDate ? formatDate(projectedDate) : "No projection"} />
-            <DataRow
-              label="Estimate to reach deposit"
-              value={
-                monthsToDepositTarget === null
-                  ? "No estimate"
-                  : `${monthsToDepositTarget} month${monthsToDepositTarget === 1 ? "" : "s"}`
-              }
-            />
-            <DataRow label={monthView.status} value={formatCurrency(monthView.total || monthlyPayment)} />
-          </div>
-        </SurfacePanel>
+            <SurfacePanel style={sectionStyle}>
+              <div style={{ display: "grid", gap: "8px" }}>
+                <SectionLabel>Payment breakdown</SectionLabel>
+                <DataRow label="Interest" value={formatCurrency(mortgageBreakdown.interestPayment)} />
+                <DataRow label="Capital" value={formatCurrency(mortgageBreakdown.capitalPayment)} />
+                <DataRow label="Balance after payment" value={formatCurrency(mortgageBreakdown.remainingAfterPayment)} />
+                <DataRow
+                  label="Estimated payoff"
+                  value={
+                    mortgageTimeline.isPaymentInsufficient
+                      ? "Payment too low"
+                      : mortgageTimeline.projectedPayoffDate
+                        ? formatDate(mortgageTimeline.projectedPayoffDate)
+                        : "No projection"
+                  }
+                />
+              </div>
+            </SurfacePanel>
+          </>
+        ) : (
+          <>
+            <SurfacePanel style={sectionStyle}>
+              <div style={{ display: "grid", gap: "8px" }}>
+                <SectionLabel>Saving for mortgage</SectionLabel>
+                <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
+                  <MetricPill label="Savings goal" value={formatCurrency(savingsGoal)} />
+                  <MetricPill
+                    label={linkedAccountId
+                      ? `Total saved (${(finance?.financeState?.savingsAccounts || []).find((a) => a.id === linkedAccountId)?.name || "Linked"})`
+                      : "Total saved"}
+                    value={formatCurrency(totalSaved)}
+                  />
+                  <MetricPill
+                    label={linkedMortgagePaymentSourceId ? "Linked monthly contribution" : "Monthly contribution"}
+                    value={formatCurrency(monthlyContribution)}
+                  />
+                  <MetricPill label="Remaining amount" value={formatCurrency(remainingToTarget)} />
+                </div>
+              </div>
+            </SurfacePanel>
+
+            <SurfacePanel style={sectionStyle}>
+              <div style={{ display: "grid", gap: "8px" }}>
+                <SectionLabel>Timeline</SectionLabel>
+                <DataRow label="Target date" value={savingsDeadline ? formatDate(savingsDeadline) : "Not set"} muted />
+                <DataRow label="Projected date" value={projectedDate ? formatDate(projectedDate) : "No projection"} />
+                <DataRow
+                  label="Time remaining"
+                  value={
+                    monthsToDepositTarget === null
+                      ? "No estimate"
+                      : `${monthsToDepositTarget} month${monthsToDepositTarget === 1 ? "" : "s"}`
+                  }
+                />
+                <DataRow label={monthView.status} value={formatCurrency(monthView.total || monthlyContribution)} />
+              </div>
+            </SurfacePanel>
+          </>
+        )}
       </div>
     </BaseWidget>
   );
@@ -1402,6 +1554,188 @@ export function AttachmentsWidget({ widget, datasets, actions }) {
                 ))}
               </div>
             )}
+          </div>
+        </SurfacePanel>
+      </div>
+    </BaseWidget>
+  );
+}
+
+/* ── FinanceOverviewWidget ─────────────────────────────────────── */
+
+const OVERVIEW_MAX_VISIBLE_ACCOUNTS = 5;
+
+function OverviewAccountRow({ name, balance, negative = false }) {
+  const color = negative || balance < 0 ? "var(--danger, #c62828)" : "var(--text-primary)";
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", fontSize: "0.82rem", padding: "2px 0" }}>
+      <span style={{ color: "var(--text-secondary)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
+      <span style={{ fontWeight: 700, color, whiteSpace: "nowrap" }}>{formatCurrency(balance)}</span>
+    </div>
+  );
+}
+
+export function FinanceOverviewWidget({ widget, onOpenSettings, finance }) {
+  const [expanded, setExpanded] = useState(false);
+  const month = finance.model.currentMonth;
+  const userAccounts = finance.financeState.userAccounts || [];
+
+  const visibleNonCardAccounts = useMemo(
+    () => userAccounts.filter((a) => a.showInOverview && a.type !== "credit-card"),
+    [userAccounts]
+  );
+  const creditCardAccounts = useMemo(
+    () => userAccounts.filter((a) => a.type === "credit-card"),
+    [userAccounts]
+  );
+
+  const accountsTotal = useMemo(
+    () => visibleNonCardAccounts.reduce((sum, a) => sum + Number(a.balance || 0), 0),
+    [visibleNonCardAccounts]
+  );
+  const creditCardTotal = useMemo(
+    () => creditCardAccounts.reduce((sum, a) => sum + Math.abs(Number(a.balance || 0)), 0),
+    [creditCardAccounts]
+  );
+
+  const incomeAfterTax = month.pay.afterTaxIncome;
+  const totalIn = month.totals.totalIn;
+  const totalOut = month.totals.totalOut;
+  const difference = month.totals.totalIn - month.totals.classicOut;
+  const differencePositive = difference >= 0;
+
+  const displayedAccounts = expanded
+    ? visibleNonCardAccounts
+    : visibleNonCardAccounts.slice(0, OVERVIEW_MAX_VISIBLE_ACCOUNTS);
+  const hiddenCount = visibleNonCardAccounts.length - OVERVIEW_MAX_VISIBLE_ACCOUNTS;
+
+  const sectionStyle = {
+    background: "rgba(var(--primary-rgb), 0.08)",
+    border: "1px solid rgba(var(--primary-rgb), 0.14)",
+  };
+
+  const toggleExpanded = useCallback(() => setExpanded((prev) => !prev), []);
+
+  return (
+    <BaseWidget
+      title={widget.config?.title || "Finance Overview"}
+      accent="var(--success, #2e7d32)"
+      onOpenSettings={onOpenSettings}
+      headline={
+        <SummaryBlock
+          label="INCOME AFTER TAX"
+          value={formatCurrency(incomeAfterTax)}
+          accent="var(--success, #2e7d32)"
+        />
+      }
+    >
+      <div style={{ display: "grid", gap: "10px" }}>
+        {/* Accounts section */}
+        <SurfacePanel style={sectionStyle}>
+          <div style={{ display: "grid", gap: "6px" }}>
+            <SectionLabel>Accounts (current balances)</SectionLabel>
+            {visibleNonCardAccounts.length === 0 ? (
+              <EmptyState>No accounts added yet. Open Settings to add accounts.</EmptyState>
+            ) : (
+              <>
+                {displayedAccounts.map((account) => (
+                  <OverviewAccountRow
+                    key={account.id}
+                    name={account.name || "Unnamed"}
+                    balance={account.balance}
+                  />
+                ))}
+                {hiddenCount > 0 && !expanded ? (
+                  <button
+                    type="button"
+                    onClick={toggleExpanded}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "var(--primary)",
+                      fontSize: "0.76rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      padding: "2px 0",
+                      textAlign: "left",
+                    }}
+                  >
+                    + {hiddenCount} more
+                  </button>
+                ) : hiddenCount > 0 && expanded ? (
+                  <button
+                    type="button"
+                    onClick={toggleExpanded}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "var(--primary)",
+                      fontSize: "0.76rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      padding: "2px 0",
+                      textAlign: "left",
+                    }}
+                  >
+                    Show less
+                  </button>
+                ) : null}
+                <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", borderTop: "1px solid rgba(var(--primary-rgb), 0.12)", paddingTop: "6px", marginTop: "2px" }}>
+                  <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-secondary)" }}>Total in accounts</span>
+                  <span style={{ fontSize: "0.88rem", fontWeight: 800, color: accountsTotal < 0 ? "var(--danger, #c62828)" : "var(--success, #2e7d32)" }}>
+                    {formatCurrency(accountsTotal)}
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+        </SurfacePanel>
+
+        {/* Credit cards section */}
+        <SurfacePanel style={sectionStyle}>
+          <div style={{ display: "grid", gap: "6px" }}>
+            <SectionLabel>Credit cards (total owed)</SectionLabel>
+            {creditCardAccounts.length === 0 ? (
+              <EmptyState>No credit cards added yet.</EmptyState>
+            ) : (
+              <>
+                {creditCardAccounts.map((account) => (
+                  <OverviewAccountRow
+                    key={account.id}
+                    name={account.name || "Unnamed"}
+                    balance={Math.abs(account.balance)}
+                    negative
+                  />
+                ))}
+                <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", borderTop: "1px solid rgba(var(--primary-rgb), 0.12)", paddingTop: "6px", marginTop: "2px" }}>
+                  <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-secondary)" }}>Total owed</span>
+                  <span style={{ fontSize: "0.88rem", fontWeight: 800, color: "var(--danger, #c62828)" }}>
+                    {formatCurrency(creditCardTotal)}
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+        </SurfacePanel>
+
+        {/* Totals section */}
+        <SurfacePanel style={sectionStyle}>
+          <div style={{ display: "grid", gap: "6px" }}>
+            <SectionLabel>Monthly totals</SectionLabel>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", fontSize: "0.82rem" }}>
+              <span style={{ color: "var(--text-secondary)" }}>Total In</span>
+              <span style={{ fontWeight: 700, color: "var(--success, #2e7d32)" }}>{formatCurrency(totalIn)}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", fontSize: "0.82rem" }}>
+              <span style={{ color: "var(--text-secondary)" }}>Total Out</span>
+              <span style={{ fontWeight: 700, color: "var(--danger, #c62828)" }}>{formatCurrency(totalOut)}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", borderTop: "1px solid rgba(var(--primary-rgb), 0.12)", paddingTop: "6px", marginTop: "2px" }}>
+              <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-secondary)" }}>Difference</span>
+              <span style={{ fontSize: "0.88rem", fontWeight: 800, color: differencePositive ? "var(--success, #2e7d32)" : "var(--danger, #c62828)" }}>
+                {formatCurrency(difference)}
+              </span>
+            </div>
           </div>
         </SurfacePanel>
       </div>

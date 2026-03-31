@@ -121,6 +121,15 @@ export const PERSONAL_WIDGET_DEFINITIONS = {
     category: "files",
     accent: "var(--accent-purple)",
   }),
+  "finance-overview": createDefinition({
+    type: "finance-overview",
+    label: "Finance Overview",
+    description: "Shows income after tax, account balances, credit card debt, and in/out totals.",
+    category: "money",
+    accent: "var(--success, #2e7d32)",
+    defaultConfig: {},
+    defaultData: {},
+  }),
 };
 
 export const PERSONAL_WIDGET_TYPE_OPTIONS = Object.values(PERSONAL_WIDGET_DEFINITIONS);

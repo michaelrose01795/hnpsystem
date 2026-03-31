@@ -66,6 +66,18 @@ const extractRequestText = (requests) => {
   return "";
 };
 
+// Check whether a job's description, type, or requests mention MOT.
+const jobMentionsMot = (job = {}) => {
+  const haystack = [
+    toText(job?.type),
+    toText(job?.description),
+    extractRequestText(job?.requests),
+  ]
+    .join(" ")
+    .toLowerCase();
+  return haystack.includes("mot");
+};
+
 export const deriveJobTypeDisplay = (job = {}, options = {}) => {
   const includeExtraCount = options.includeExtraCount !== false;
   const fallback = options.fallback || "Other";
@@ -73,7 +85,11 @@ export const deriveJobTypeDisplay = (job = {}, options = {}) => {
 
   // Primary source: AI detections persisted from create flow into jobs.job_categories
   if (categories.length > 0) {
-    const primary = formatDetectedJobTypeLabel(categories[0]);
+    let primary = formatDetectedJobTypeLabel(categories[0]);
+    // If the detection returned "Other" but the job is actually MOT, override.
+    if (primary === "Other" && jobMentionsMot(job)) {
+      primary = "MOT";
+    }
     if (primary) {
       const remaining = Math.max(0, categories.length - 1);
       if (includeExtraCount && remaining > 0) {

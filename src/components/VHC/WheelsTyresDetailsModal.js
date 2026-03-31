@@ -242,76 +242,109 @@ const formatTreadDisplay = (tread = {}) => {
 
 
 function AutoCompleteInput({ value, onChange, options, placeholder }) {
-  const [filtered, setFiltered] = useState([]);
+  const dropdownOptions = useMemo(() => {
+    const normalized = Array.from(
+      new Set(
+        (options || [])
+          .map((option) => String(option || "").trim())
+          .filter(Boolean),
+      ),
+    ).map((option) => ({
+      label: option,
+      value: option,
+      description: "",
+    }));
 
-  const handleChange = (event) => {
-    const next = event.target.value;
-    onChange(next);
-    setFiltered(
-      options.filter((option) => option.toLowerCase().includes(next.toLowerCase())),
-    );
-  };
+    const safeValue = String(value || "").trim();
+    if (safeValue && !normalized.some((option) => option.value === safeValue)) {
+      normalized.unshift({
+        label: safeValue,
+        value: safeValue,
+        description: "Saved value",
+      });
+    }
+
+    return normalized;
+  }, [options, value]);
 
   return (
-    <div style={{ position: "relative", width: "100%" }}>
-      <input
-        placeholder={placeholder}
-        value={value}
-        onChange={handleChange}
-        style={baseInputStyle}
-        onFocus={(e) => {
-          e.target.style.borderColor = palette.accent;
-        }}
-        onBlur={(e) => {
-          e.target.style.borderColor = palette.border;
-        }}
-      />
-      {filtered.length > 0 ? (
-        <div
-          style={{
-            position: "absolute",
-            top: "calc(100% + 6px)",
-            left: 0,
-            right: 0,
-            borderRadius: "var(--radius-md)",
-            border: `1px solid ${palette.border}`,
-            background: palette.surface,
-            maxHeight: "160px",
-            overflowY: "auto",
-            zIndex: 14,
-          }}
-        >
-          {filtered.map((option) => (
-            <button
-              key={option}
-              type="button"
-              onMouseDown={() => {
-                onChange(option);
-                setFiltered([]);
-              }}
-              style={{
-                width: "100%",
-                border: "none",
-                background: "transparent",
-                textAlign: "left",
-                padding: "10px 16px",
-                fontSize: "13px",
-                color: palette.textPrimary,
-                cursor: "pointer",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = palette.accentSurface;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "transparent";
-              }}
-            >
-              {option}
-            </button>
-          ))}
-        </div>
-      ) : null}
+    <DropdownField
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      options={dropdownOptions}
+      placeholder={placeholder}
+      searchable
+      searchPlaceholder={`Search ${placeholder?.toLowerCase() || "options"}`}
+      emptyState="No matches found"
+      style={{ width: "100%" }}
+      menuStyle={{ maxHeight: "240px" }}
+      helperText=""
+    />
+  );
+}
+
+function TyreSpecInputRow({ children }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "nowrap",
+        gap: "12px",
+        marginTop: "10px",
+        alignItems: "flex-end",
+        overflowX: "auto",
+        paddingBottom: "2px",
+      }}
+    >
+      {children}
     </div>
+  );
+}
+
+function TyreSpecFields({ tyre, onFieldChange }) {
+  return (
+    <TyreSpecInputRow>
+      <div style={{ flex: "0 0 210px", minWidth: "210px" }}>
+        <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>
+          <span style={{ fontWeight: 700, color: palette.textPrimary }}>Make</span>
+          <AutoCompleteInput
+            value={tyre.manufacturer}
+            onChange={(value) => onFieldChange("manufacturer", value)}
+            options={tyreBrands}
+            placeholder="Search make"
+          />
+        </label>
+      </div>
+      <div style={{ flex: "0 0 220px", minWidth: "220px" }}>
+        <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>
+          <span style={{ fontWeight: 700, color: palette.textPrimary }}>Size</span>
+          <AutoCompleteInput
+            value={tyre.size}
+            onChange={(value) => onFieldChange("size", value)}
+            options={tyreSizes}
+            placeholder="Search size"
+          />
+        </label>
+      </div>
+      <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>
+        Load Index
+        <input
+          value={tyre.load}
+          onChange={(event) => onFieldChange("load", event.target.value)}
+          placeholder="e.g. 91"
+          style={{ ...baseInputStyle, width: "110px", minWidth: "110px" }}
+        />
+      </label>
+      <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>
+        Speed Rating
+        <input
+          value={tyre.speed}
+          onChange={(event) => onFieldChange("speed", event.target.value)}
+          placeholder="e.g. V"
+          style={{ ...baseInputStyle, width: "110px", minWidth: "110px" }}
+        />
+      </label>
+    </TyreSpecInputRow>
   );
 }
 
@@ -825,58 +858,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                 <>
                   <div style={sectionCardStyle}>
                     <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Tyre Details</span>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexWrap: "nowrap",
-                        gap: "12px",
-                        marginTop: "10px",
-                        alignItems: "flex-end",
-                        overflowX: "auto",
-                        paddingBottom: "2px",
-                      }}
-                    >
-                      <div style={{ flex: "0 0 190px", minWidth: "190px" }}>
-                        <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>
-                          <span style={{ fontWeight: 700, color: palette.textPrimary }}>Make</span>
-                          <AutoCompleteInput
-                            value={currentTyre.manufacturer}
-                            onChange={(value) => updateTyre("manufacturer", value)}
-                            options={tyreBrands}
-                            placeholder="Select manufacturer"
-                          />
-                        </label>
-                      </div>
-                      <div style={{ display: "flex", flexWrap: "nowrap", gap: "12px", alignItems: "flex-end" }}>
-                        <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>
-                          Size
-                          <AutoCompleteInput
-                            value={currentTyre.size}
-                            onChange={(value) => updateTyre("size", value)}
-                            options={tyreSizes}
-                            placeholder="e.g. 205/55 R16"
-                          />
-                        </label>
-                        <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>
-                          Load Index
-                          <input
-                            value={currentTyre.load}
-                            onChange={(event) => updateTyre("load", event.target.value)}
-                            placeholder="e.g. 91"
-                            style={{ ...baseInputStyle, width: "110px", minWidth: "110px" }}
-                          />
-                        </label>
-                        <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>
-                          Speed Rating
-                          <input
-                            value={currentTyre.speed}
-                            onChange={(event) => updateTyre("speed", event.target.value)}
-                            placeholder="e.g. V"
-                            style={{ ...baseInputStyle, width: "110px", minWidth: "110px" }}
-                          />
-                        </label>
-                      </div>
-                    </div>
+                    <TyreSpecFields tyre={currentTyre} onFieldChange={updateTyre} />
                   </div>
 
                   <div style={sectionCardStyle}>
@@ -905,58 +887,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                     <>
                       <div style={sectionCardStyle}>
                         <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Spare Details</span>
-                        <div
-                          style={{
-                            display: "flex",
-                            flexWrap: "nowrap",
-                            gap: "12px",
-                            marginTop: "10px",
-                            alignItems: "flex-end",
-                            overflowX: "auto",
-                            paddingBottom: "2px",
-                          }}
-                        >
-                          <div style={{ flex: "0 0 190px", minWidth: "190px" }}>
-                            <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>
-                              <span style={{ fontWeight: 700, color: palette.textPrimary }}>Make</span>
-                              <AutoCompleteInput
-                                value={tyres.Spare.details.manufacturer}
-                                onChange={(value) => updateTyre("manufacturer", value)}
-                                options={tyreBrands}
-                                placeholder="Select manufacturer"
-                              />
-                            </label>
-                          </div>
-                          <div style={{ display: "flex", flexWrap: "nowrap", gap: "12px", alignItems: "flex-end" }}>
-                            <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>
-                              Size
-                              <AutoCompleteInput
-                                value={tyres.Spare.details.size}
-                                onChange={(value) => updateTyre("size", value)}
-                                options={tyreSizes}
-                                placeholder="e.g. 205/55 R16"
-                              />
-                            </label>
-                            <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>
-                              Load Index
-                              <input
-                                value={tyres.Spare.details.load}
-                                onChange={(event) => updateTyre("load", event.target.value)}
-                                placeholder="e.g. 91"
-                                style={{ ...baseInputStyle, width: "110px", minWidth: "110px" }}
-                              />
-                            </label>
-                            <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>
-                              Speed Rating
-                              <input
-                                value={tyres.Spare.details.speed}
-                                onChange={(event) => updateTyre("speed", event.target.value)}
-                                placeholder="e.g. V"
-                                style={{ ...baseInputStyle, width: "110px", minWidth: "110px" }}
-                              />
-                            </label>
-                          </div>
-                        </div>
+                        <TyreSpecFields tyre={tyres.Spare.details} onFieldChange={updateTyre} />
                       </div>
 
                       <div style={sectionCardStyle}>

@@ -15,6 +15,8 @@ import { isHrCoreRole, isManagerScopedRole } from "@/lib/auth/roles"; // Role ch
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import PopupModal from "@/components/popups/popupStyleApi";
 import Button from "@/components/ui/Button";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import { calculateLeaveRequestDayTotals, normaliseLeaveDayType } from "@/lib/hr/leaveRequests";
 
 function formatDate(value) {
   if (!value) return "-"; // guard empty values
@@ -214,8 +216,8 @@ function LeaveRequestModal({
 }) {
   const [form, setForm] = useState({
     type: "Holiday",
+    endDate: "",
     startDate: "",
-    totalDays: 1,
     halfDay: "None",
     notes: "",
   });
@@ -226,7 +228,7 @@ function LeaveRequestModal({
     setForm({
       type: initialValues?.type || "Holiday",
       startDate: initialValues?.startDate || "",
-      totalDays: initialValues?.totalDays || 1,
+      endDate: initialValues?.endDate || initialValues?.startDate || "",
       halfDay: initialValues?.halfDay || "None",
       notes: initialValues?.notes || "",
     });
@@ -241,24 +243,13 @@ function LeaveRequestModal({
     setError(null);
   };
 
-  // Auto-calculate end date from start date + total working days (excludes weekends)
-  const computedEndDate = (() => {
-    if (!form.startDate || !form.totalDays || form.totalDays < 1) return "";
-    const start = new Date(form.startDate + "T00:00:00");
-    if (isNaN(start.getTime())) return "";
-    const result = new Date(start);
-    // If start date falls on a weekend, advance to Monday
-    while (result.getDay() === 0 || result.getDay() === 6) {
-      result.setDate(result.getDate() + 1);
-    }
-    let daysToAdd = Math.max(1, Math.floor(Number(form.totalDays))) - 1;
-    while (daysToAdd > 0) {
-      result.setDate(result.getDate() + 1);
-      const day = result.getDay();
-      if (day !== 0 && day !== 6) daysToAdd--;
-    }
-    return result.toISOString().split("T")[0];
-  })();
+  const leaveTotals = calculateLeaveRequestDayTotals({
+    startDate: form.startDate,
+    endDate: form.endDate,
+    halfDay: form.halfDay,
+  });
+  const hasValidDateRange = Boolean(form.startDate && form.endDate && new Date(`${form.endDate}T00:00:00`) >= new Date(`${form.startDate}T00:00:00`));
+  const selectedDayType = normaliseLeaveDayType(form.halfDay);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -266,20 +257,24 @@ function LeaveRequestModal({
       setError("Start date is required.");
       return;
     }
-    if (!form.totalDays || form.totalDays < 1) {
-      setError("Total days off must be at least 1.");
+    if (!form.endDate) {
+      setError("Finish date is required.");
       return;
     }
-    if (!computedEndDate) {
-      setError("Could not calculate end date. Check your inputs.");
+    if (!hasValidDateRange) {
+      setError("Finish date must be on or after the start date.");
+      return;
+    }
+    if (!(leaveTotals.workDays > 0)) {
+      setError("Selected dates do not include any working days.");
       return;
     }
     onSubmit({
       type: form.type,
       startDate: form.startDate,
-      endDate: computedEndDate,
+      endDate: form.endDate,
       halfDay: form.halfDay,
-      totalDays: form.totalDays,
+      totalDays: leaveTotals.workDays,
       notes: form.notes,
     });
   };
@@ -290,7 +285,7 @@ function LeaveRequestModal({
       onClose={onClose}
       ariaLabel={mode === "edit" ? "Edit leave request" : "Request leave"}
       cardStyle={{
-        width: "min(100%, 460px)",
+        width: "min(100%, 620px)",
         padding: "28px",
         display: "flex",
         flexDirection: "column",
@@ -318,8 +313,8 @@ function LeaveRequestModal({
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-          <div style={{ display: "flex", gap: "12px" }}>
-            <div style={{ flex: 1 }}>
+          <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+            <div>
               <DropdownField
                 label="Leave Type"
                 name="type"
@@ -333,7 +328,24 @@ function LeaveRequestModal({
                 ]}
               />
             </div>
-            <div style={{ flex: 1 }}>
+            <div>
+              <DropdownField
+                label="Day Type"
+                name="halfDay"
+                value={form.halfDay}
+                onChange={handleChange}
+                className="leave-modal-field"
+                options={[
+                  { label: "Full day", value: "None" },
+                  { label: "Morning only", value: "AM" },
+                  { label: "Afternoon only", value: "PM" },
+                ]}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+            <div>
               <CalendarField
                 label="Start Date"
                 name="startDate"
@@ -344,41 +356,33 @@ function LeaveRequestModal({
                 required
               />
             </div>
-          </div>
-
-          <div style={{ display: "flex", gap: "12px" }}>
-            <label style={{ ...modalLabelStyle, flex: 1 }}>
-              Total Working Days Off
-              <input
-                className="app-input"
-                type="number"
-                name="totalDays"
-                min="1"
-                value={form.totalDays}
-                onChange={handleChange}
-                style={modalInputStyle}
-              />
-              <span style={{ fontSize: "0.72rem", color: "var(--text-secondary)", fontWeight: 400, marginTop: "2px" }}>
-                Weekends (Sat &amp; Sun) excluded
-              </span>
-            </label>
-            <div style={{ flex: 1 }}>
-              <DropdownField
-                label="Half Day"
-                name="halfDay"
-                value={form.halfDay}
+            <div>
+              <CalendarField
+                label="Finish Date"
+                name="endDate"
+                id="leave-end-date"
+                value={form.endDate}
                 onChange={handleChange}
                 className="leave-modal-field"
-                options={[
-                  { label: "None", value: "None" },
-                  { label: "Half Day (AM)", value: "AM" },
-                  { label: "Half Day (PM)", value: "PM" },
-                ]}
+                required
               />
             </div>
           </div>
 
-          {computedEndDate && form.startDate && (
+          <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+            <div style={{ ...modalStatStyle }}>
+              <span style={modalStatLabelStyle}>Total work days</span>
+              <span style={modalStatValueStyle}>{hasValidDateRange ? `${leaveTotals.workDays.toFixed(1)}d` : "—"}</span>
+              <span style={modalStatHintStyle}>Monday to Friday only</span>
+            </div>
+            <div style={{ ...modalStatStyle }}>
+              <span style={modalStatLabelStyle}>Total days</span>
+              <span style={modalStatValueStyle}>{hasValidDateRange ? `${leaveTotals.calendarDays}d` : "—"}</span>
+              <span style={modalStatHintStyle}>Monday to Sunday</span>
+            </div>
+          </div>
+
+          {hasValidDateRange && (
             <div style={{
               padding: "10px 12px",
               borderRadius: "var(--radius-sm)",
@@ -391,17 +395,19 @@ function LeaveRequestModal({
               gap: "4px",
             }}>
               <div>
-                End Date: <span style={{ fontWeight: 700, color: "var(--text-primary)" }}>
-                  {new Date(computedEndDate + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
+                Leave dates: <span style={{ fontWeight: 700, color: "var(--text-primary)" }}>
+                  {new Date(`${form.startDate}T00:00:00`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
+                  {" - "}
+                  {new Date(`${form.endDate}T00:00:00`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
                 </span>
-                {form.halfDay !== "None" && (
+                {selectedDayType !== "None" && (
                   <span style={{ marginLeft: "8px", fontSize: "0.8rem", color: "var(--accent-purple)" }}>
-                    ({form.halfDay === "AM" ? "Morning half day" : "Afternoon half day"})
+                    ({selectedDayType === "AM" ? "Morning only" : "Afternoon only"})
                   </span>
                 )}
               </div>
               <div style={{ fontSize: "0.78rem" }}>
-                {Math.floor(Number(form.totalDays))}{form.halfDay !== "None" ? ".5" : ""} working day{(Number(form.totalDays) !== 1 || form.halfDay !== "None") ? "s" : ""} (weekends excluded)
+                {leaveTotals.workDays.toFixed(1)} work day{leaveTotals.workDays === 1 ? "" : "s"} selected
               </div>
             </div>
           )}
@@ -477,6 +483,35 @@ const modalInputStyle = {
   color: "var(--text-primary)",
   fontSize: "0.9rem",
   fontWeight: 500,
+};
+
+const modalStatStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "4px",
+  padding: "12px 14px",
+  borderRadius: "var(--radius-md)",
+  border: "1px solid rgba(var(--accent-purple-rgb), 0.14)",
+  background: "rgba(var(--accent-purple-rgb), 0.06)",
+};
+
+const modalStatLabelStyle = {
+  fontSize: "0.74rem",
+  fontWeight: 700,
+  color: "var(--text-secondary)",
+  letterSpacing: "0.04em",
+  textTransform: "uppercase",
+};
+
+const modalStatValueStyle = {
+  fontSize: "1rem",
+  fontWeight: 700,
+  color: "var(--text-primary)",
+};
+
+const modalStatHintStyle = {
+  fontSize: "0.76rem",
+  color: "var(--text-secondary)",
 };
 
 // Day labels for recurring overtime rules — Mon-Sat only (no Sundays)
@@ -1775,6 +1810,7 @@ export function ProfileWorkTab({
       id: request.id,
       type: request.type,
       startDate: request.startDate,
+      endDate: request.endDate || request.startDate,
       totalDays: request.totalDays || 1,
       halfDay: request.halfDay || "None",
       notes: request.requestNotes || "",
@@ -1961,71 +1997,25 @@ export function ProfileWorkTab({
         {!isLoading && !error && profile ? (
           <>
             {/* KPI Row: Total Hours | Hourly Rate (admin) | Leave Remaining — side by side */}
-            <section style={{
-              display: "grid",
-              gap: "12px",
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-            }}>
+            <DevLayoutSection
+              as="section"
+              sectionKey="profile-work-kpi-card-group"
+              parentKey="profile-active-tab-panel"
+              sectionType="section-shell"
+              shell
+              style={{
+                display: "grid",
+                gap: "12px",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              }}
+            >
               {/* Total Hours (logged) card with 3 sub-columns + grand total */}
-              <div style={{
-                background: "var(--surface)",
-                borderRadius: "var(--radius-md)",
-                border: "1px solid rgba(var(--accent-purple-rgb), 0.28)",
-                overflow: "hidden",
-                display: "flex",
-                flexDirection: "column",
-                minHeight: "112px",
-              }}>
-                <div style={{
-                  padding: "10px 14px 6px",
-                  fontSize: "0.76rem",
-                  fontWeight: 600,
-                  color: "var(--text-secondary)",
-                }}>
-                  Total Hours &mdash; {new Date().toLocaleDateString("en-GB", { month: "short", year: "numeric" })}
-                </div>
-                <div style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr 1fr",
-                  flex: 1,
-                }}>
-                  <div style={{ padding: "6px 8px", textAlign: "center", borderRight: "1px solid rgba(var(--accent-purple-rgb), 0.12)" }}>
-                    <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Work</div>
-                    <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--accent-purple)" }}>
-                      {aggregatedStats?.monthlyWeekdayHours?.toFixed(2) ?? "0.00"}h
-                    </div>
-                  </div>
-                  <div style={{ padding: "6px 8px", textAlign: "center", borderRight: "1px solid rgba(var(--accent-purple-rgb), 0.12)" }}>
-                    <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Overtime</div>
-                    <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--danger, #e53935)" }}>
-                      {aggregatedStats?.monthlyOvertimeHours?.toFixed(2) ?? "0.00"}h
-                    </div>
-                  </div>
-                  <div style={{ padding: "6px 8px", textAlign: "center" }}>
-                    <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Weekend</div>
-                    <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--info, #1e88e5)" }}>
-                      {aggregatedStats?.monthlyWeekendHours?.toFixed(2) ?? "0.00"}h
-                    </div>
-                  </div>
-                </div>
-                <div style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "8px 10px",
-                  borderTop: "1px solid rgba(var(--accent-purple-rgb), 0.15)",
-                  background: "rgba(var(--accent-purple-rgb), 0.06)",
-                }}>
-                  <span style={{ fontSize: "0.72rem", fontWeight: 600, color: "var(--text-secondary)" }}>Total</span>
-                  <span style={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--text-primary)" }}>
-                    {aggregatedStats?.monthlyTotalHours?.toFixed(2) ?? "0.00"}h
-                  </span>
-                </div>
-              </div>
-
-              {/* Pay Rates card — 50/50 split matching Total Hours style */}
-              {isAdminOrManager && (
+              <DevLayoutSection
+                as="div"
+                sectionKey="profile-work-kpi-total-hours"
+                parentKey="profile-active-tab-panel"
+                sectionType="content-card"
+              >
                 <div style={{
                   background: "var(--surface)",
                   borderRadius: "var(--radius-md)",
@@ -2041,173 +2031,266 @@ export function ProfileWorkTab({
                     fontWeight: 600,
                     color: "var(--text-secondary)",
                   }}>
-                    Pay Rates
+                    Total Hours &mdash; {new Date().toLocaleDateString("en-GB", { month: "short", year: "numeric" })}
                   </div>
                   <div style={{
                     display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
+                    gridTemplateColumns: "1fr 1fr 1fr",
                     flex: 1,
                   }}>
                     <div style={{ padding: "6px 8px", textAlign: "center", borderRight: "1px solid rgba(var(--accent-purple-rgb), 0.12)" }}>
-                      <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Hourly Rate</div>
-                      <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--success, #43a047)" }}>
-                        {formatCurrency(profile.hourlyRate ?? 0)}
+                      <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Work</div>
+                      <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--accent-purple)" }}>
+                        {aggregatedStats?.monthlyWeekdayHours?.toFixed(2) ?? "0.00"}h
+                      </div>
+                    </div>
+                    <div style={{ padding: "6px 8px", textAlign: "center", borderRight: "1px solid rgba(var(--accent-purple-rgb), 0.12)" }}>
+                      <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Overtime</div>
+                      <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--danger, #e53935)" }}>
+                        {aggregatedStats?.monthlyOvertimeHours?.toFixed(2) ?? "0.00"}h
                       </div>
                     </div>
                     <div style={{ padding: "6px 8px", textAlign: "center" }}>
-                      <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Overtime Rate</div>
-                      <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--danger, #e53935)" }}>
-                        {formatCurrency(profile.overtimeRate ?? 0)}
+                      <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Weekend</div>
+                      <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--info, #1e88e5)" }}>
+                        {aggregatedStats?.monthlyWeekendHours?.toFixed(2) ?? "0.00"}h
                       </div>
                     </div>
                   </div>
+                  <div style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "8px 10px",
+                    borderTop: "1px solid rgba(var(--accent-purple-rgb), 0.15)",
+                    background: "rgba(var(--accent-purple-rgb), 0.06)",
+                  }}>
+                    <span style={{ fontSize: "0.72rem", fontWeight: 600, color: "var(--text-secondary)" }}>Total</span>
+                    <span style={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--text-primary)" }}>
+                      {aggregatedStats?.monthlyTotalHours?.toFixed(2) ?? "0.00"}h
+                    </span>
+                  </div>
                 </div>
-              )}
-              <KpiCard
-                label="Estimated Pay"
-                primary={
-                  Number(profile?.hourlyRate ?? 0) > 0 || Number(profile?.overtimeRate ?? 0) > 0
-                    ? formatCurrency(aggregatedStats?.estimatedPay ?? 0)
-                    : "No rate data"
-                }
-                secondary="Based on logged weekday and overtime hours"
-                accentColor="var(--success)"
-              />
-              <KpiCard
-                label="Leave Remaining"
-                primary={
-                  aggregatedStats?.leaveRemaining !== null
-                    ? `${aggregatedStats.leaveRemaining} days`
-                    : "No data"
-                }
-                secondary={
-                  aggregatedStats?.leaveEntitlement
-                    ? `${aggregatedStats.leaveTaken ?? 0} taken of ${aggregatedStats.leaveEntitlement}`
-                    : null
-                }
-                accentColor="var(--danger)"
-              />
-            </section>
+              </DevLayoutSection>
 
-            <section
+              {/* Pay Rates card — 50/50 split matching Total Hours style */}
+              {isAdminOrManager && (
+                <DevLayoutSection
+                  as="div"
+                  sectionKey="profile-work-kpi-pay-rates"
+                  parentKey="profile-active-tab-panel"
+                  sectionType="content-card"
+                >
+                  <div style={{
+                    background: "var(--surface)",
+                    borderRadius: "var(--radius-md)",
+                    border: "1px solid rgba(var(--accent-purple-rgb), 0.28)",
+                    overflow: "hidden",
+                    display: "flex",
+                    flexDirection: "column",
+                    minHeight: "112px",
+                  }}>
+                    <div style={{
+                      padding: "10px 14px 6px",
+                      fontSize: "0.76rem",
+                      fontWeight: 600,
+                      color: "var(--text-secondary)",
+                    }}>
+                      Pay Rates
+                    </div>
+                    <div style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      flex: 1,
+                    }}>
+                      <div style={{ padding: "6px 8px", textAlign: "center", borderRight: "1px solid rgba(var(--accent-purple-rgb), 0.12)" }}>
+                        <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Hourly Rate</div>
+                        <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--success, #43a047)" }}>
+                          {formatCurrency(profile.hourlyRate ?? 0)}
+                        </div>
+                      </div>
+                      <div style={{ padding: "6px 8px", textAlign: "center" }}>
+                        <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Overtime Rate</div>
+                        <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--danger, #e53935)" }}>
+                          {formatCurrency(profile.overtimeRate ?? 0)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </DevLayoutSection>
+              )}
+              <DevLayoutSection
+                as="div"
+                sectionKey="profile-work-kpi-estimated-pay"
+                parentKey="profile-active-tab-panel"
+                sectionType="content-card"
+              >
+                <KpiCard
+                  label="Estimated Pay"
+                  primary={
+                    Number(profile?.hourlyRate ?? 0) > 0 || Number(profile?.overtimeRate ?? 0) > 0
+                      ? formatCurrency(aggregatedStats?.estimatedPay ?? 0)
+                      : "No rate data"
+                  }
+                  secondary="Based on logged weekday and overtime hours"
+                  accentColor="var(--success)"
+                />
+              </DevLayoutSection>
+              <DevLayoutSection
+                as="div"
+                sectionKey="profile-work-kpi-leave-remaining"
+                parentKey="profile-active-tab-panel"
+                sectionType="content-card"
+              >
+                <KpiCard
+                  label="Leave Remaining"
+                  primary={
+                    aggregatedStats?.leaveRemaining !== null
+                      ? `${aggregatedStats.leaveRemaining} days`
+                      : "No data"
+                  }
+                  secondary={
+                    aggregatedStats?.leaveEntitlement
+                      ? `${aggregatedStats.leaveTaken ?? 0} taken of ${aggregatedStats.leaveEntitlement}`
+                      : null
+                  }
+                  accentColor="var(--danger)"
+                />
+              </DevLayoutSection>
+            </DevLayoutSection>
+
+            <DevLayoutSection
+              as="section"
+              sectionKey="profile-work-summary-card-group"
+              parentKey="profile-active-tab-panel"
+              sectionType="section-shell"
+              shell
               style={{
                 display: "grid",
                 gap: "16px",
                 gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 480px), 1fr))",
               }}
             >
-              <ProfileCard
-                title="Leave Summary"
-                action={
-                  <Button
-                    type="button"
-                    variant="primary"
-                    size="sm"
-                    onClick={() => {
-                      setEditingLeaveRequest(null);
-                      setLeaveSubmitError("");
-                      setLeaveModalOpen(true);
-                    }}
-                  >
-                    Request leave
-                  </Button>
-                }
-                style={{
-                  background: "var(--surface)",
-                }}
+              <DevLayoutSection
+                as="div"
+                sectionKey="profile-work-leave-summary"
+                parentKey="profile-active-tab-panel"
+                sectionType="content-card"
               >
-                <div style={{ display: "grid", gap: "12px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
-                    <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: 600 }}>
-                      Entitlement
-                    </span>
-                    <span style={{ fontWeight: 700 }}>{aggregatedStats?.leaveEntitlement ?? "-"} days</span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
-                    <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: 600 }}>Taken</span>
-                    <span style={{ fontWeight: 600 }}>{aggregatedStats?.leaveTaken ?? "-"} days</span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
-                    <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: 600 }}>
-                      Remaining
-                    </span>
-                    <span style={{ fontWeight: 700, color: "var(--success)" }}>
-                      {aggregatedStats?.leaveRemaining ?? "-"} days
-                    </span>
-                  </div>
-                  {leaveRequests.length > 0 && (
-                    <div style={{ display: "grid", gap: "10px", paddingTop: "8px", borderTop: "1px solid rgba(var(--accent-purple-rgb), 0.12)" }}>
-                      <span style={{ fontSize: "0.78rem", color: "var(--text-secondary)", fontWeight: 700 }}>
-                        Recent requests
+                <ProfileCard
+                  title="Leave Summary"
+                  action={
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      onClick={() => {
+                        setEditingLeaveRequest(null);
+                        setLeaveSubmitError("");
+                        setLeaveModalOpen(true);
+                      }}
+                    >
+                      Request leave
+                    </Button>
+                  }
+                  style={{
+                    background: "var(--surface)",
+                  }}
+                >
+                  <div style={{ display: "grid", gap: "12px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
+                      <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: 600 }}>
+                        Entitlement
                       </span>
-                      {leaveRequests.slice(0, 4).map((request) => {
-                        const status = String(request.status || "Pending");
-                        const isApproved = status.toLowerCase() === "approved";
-                        const isDeclined = status.toLowerCase() === "declined" || status.toLowerCase() === "rejected";
-                        const isEditable = true;
-                        return (
-                          <button
-                            type="button"
-                            key={request.id}
-                            onClick={() => {
-                              if (isEditable) {
-                                handleEditLeaveRequest(request);
-                              }
-                            }}
-                            style={{
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: "6px",
-                              padding: "10px 12px",
-                              borderRadius: "var(--radius-sm)",
-                              background: "rgba(var(--accent-purple-rgb), 0.06)",
-                              border: "1px solid rgba(var(--accent-purple-rgb), 0.12)",
-                              textAlign: "left",
-                              cursor: isEditable ? "pointer" : "default",
-                            }}
-                          >
-                            <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center" }}>
-                              <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>
-                                {request.type} · {new Date(`${request.startDate}T00:00:00`).toLocaleDateString("en-GB")}
-                              </span>
-                              <span
-                                style={{
-                                  padding: "4px 8px",
-                                  borderRadius: "var(--radius-pill)",
-                                  fontSize: "0.72rem",
-                                  fontWeight: 700,
-                                  background: isApproved
-                                    ? "var(--success-surface)"
-                                    : isDeclined
-                                    ? "var(--danger-surface)"
-                                    : "var(--info-surface)",
-                                  color: isApproved
-                                    ? "var(--success)"
-                                    : isDeclined
-                                    ? "var(--danger)"
-                                    : "var(--info-dark)",
-                                }}
-                              >
-                                {status}
-                              </span>
-                            </div>
-                            {request.requestNotes ? (
-                              <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
-                                {request.requestNotes}
-                              </span>
-                            ) : null}
-                            {request.declineReason ? (
-                              <span style={{ fontSize: "0.78rem", color: "var(--danger)", fontWeight: 600 }}>
-                                Decline reason: {request.declineReason}
-                              </span>
-                            ) : null}
-                          </button>
-                        );
-                      })}
+                      <span style={{ fontWeight: 700 }}>{aggregatedStats?.leaveEntitlement ?? "-"} days</span>
                     </div>
-                  )}
-                </div>
-              </ProfileCard>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
+                      <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: 600 }}>Taken</span>
+                      <span style={{ fontWeight: 600 }}>{aggregatedStats?.leaveTaken ?? "-"} days</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
+                      <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: 600 }}>
+                        Remaining
+                      </span>
+                      <span style={{ fontWeight: 700, color: "var(--success)" }}>
+                        {aggregatedStats?.leaveRemaining ?? "-"} days
+                      </span>
+                    </div>
+                    {leaveRequests.length > 0 && (
+                      <div style={{ display: "grid", gap: "10px", paddingTop: "8px", borderTop: "1px solid rgba(var(--accent-purple-rgb), 0.12)" }}>
+                        <span style={{ fontSize: "0.78rem", color: "var(--text-secondary)", fontWeight: 700 }}>
+                          Recent requests
+                        </span>
+                        {leaveRequests.slice(0, 4).map((request) => {
+                          const status = String(request.status || "Pending");
+                          const isApproved = status.toLowerCase() === "approved";
+                          const isDeclined = status.toLowerCase() === "declined" || status.toLowerCase() === "rejected";
+                          const isEditable = true;
+                          return (
+                            <button
+                              type="button"
+                              key={request.id}
+                              onClick={() => {
+                                if (isEditable) {
+                                  handleEditLeaveRequest(request);
+                                }
+                              }}
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "6px",
+                                padding: "10px 12px",
+                                borderRadius: "var(--radius-sm)",
+                                background: "rgba(var(--accent-purple-rgb), 0.06)",
+                                border: "1px solid rgba(var(--accent-purple-rgb), 0.12)",
+                                textAlign: "left",
+                                cursor: isEditable ? "pointer" : "default",
+                              }}
+                            >
+                              <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center" }}>
+                                <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>
+                                  {request.type} · {new Date(`${request.startDate}T00:00:00`).toLocaleDateString("en-GB")}
+                                </span>
+                                <span
+                                  style={{
+                                    padding: "4px 8px",
+                                    borderRadius: "var(--radius-pill)",
+                                    fontSize: "0.72rem",
+                                    fontWeight: 700,
+                                    background: isApproved
+                                      ? "var(--success-surface)"
+                                      : isDeclined
+                                      ? "var(--danger-surface)"
+                                      : "var(--info-surface)",
+                                    color: isApproved
+                                      ? "var(--success)"
+                                      : isDeclined
+                                      ? "var(--danger)"
+                                      : "var(--info-dark)",
+                                  }}
+                                >
+                                  {status}
+                                </span>
+                              </div>
+                              {request.requestNotes ? (
+                                <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+                                  {request.requestNotes}
+                                </span>
+                              ) : null}
+                              {request.declineReason ? (
+                                <span style={{ fontSize: "0.78rem", color: "var(--danger)", fontWeight: 600 }}>
+                                  Decline reason: {request.declineReason}
+                                </span>
+                              ) : null}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </ProfileCard>
+              </DevLayoutSection>
               <LeaveRequestModal
                 isOpen={leaveModalOpen}
                 onClose={() => {
@@ -2224,175 +2307,189 @@ export function ProfileWorkTab({
                 isRemoving={leaveRemoving}
               />
 
+              <DevLayoutSection
+                as="div"
+                sectionKey="profile-work-emergency-contact"
+                parentKey="profile-active-tab-panel"
+                sectionType="content-card"
+              >
+                <ProfileCard
+                  title="Emergency Contact"
+                  action={
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      {!ecEditing && (
+                        <Button
+                          type="button"
+                          onClick={handleStartEcEdit}
+                          variant="secondary"
+                          size="sm"
+                          className="app-btn--control"
+                        >
+                          Edit
+                        </Button>
+                      )}
+                    </div>
+                  }
+                  style={{
+                    background: "var(--surface)",
+                  }}
+                >
+                  {ecEditing ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      <div style={{ display: "grid", gap: "10px" }}>
+                        <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>Name</span>
+                          <input
+                            className="app-input"
+                            type="text"
+                            value={ecName}
+                            onChange={(e) => { setEcName(e.target.value); setEcError(null); }}
+                            placeholder="Full name"
+                            style={inputStyle}
+                          />
+                        </label>
+                        <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>Phone</span>
+                          <input
+                            className="app-input"
+                            type="tel"
+                            value={ecPhone}
+                            onChange={(e) => { setEcPhone(e.target.value); setEcError(null); }}
+                            placeholder="Phone number"
+                            style={inputStyle}
+                          />
+                        </label>
+                        <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>Relationship</span>
+                          <input
+                            className="app-input"
+                            type="text"
+                            value={ecRelationship}
+                            onChange={(e) => { setEcRelationship(e.target.value); setEcError(null); }}
+                            placeholder="e.g. Partner, Parent, Sibling"
+                            style={inputStyle}
+                          />
+                        </label>
+                        <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>Address</span>
+                          <input
+                            className="app-input"
+                            type="text"
+                            value={ecAddress}
+                            onChange={(e) => {
+                              setEcAddress(e.target.value);
+                              setEcError(null);
+                            }}
+                            placeholder="Home address"
+                            style={inputStyle}
+                          />
+                        </label>
+                      </div>
+                      {ecError && <div style={{ color: "var(--danger)", fontSize: "0.82rem" }}>{ecError}</div>}
+                      <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => setEcEditing(false)}>
+                          Cancel
+                        </Button>
+                        <Button type="button" variant="primary" size="sm" onClick={handleSaveEc} disabled={ecSaving}>
+                          {ecSaving ? "Saving..." : "Save"}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ display: "grid", gap: "10px" }}>
+                      <div style={labelValueRowStyle}>
+                        <span style={labelStyle}>Name</span>
+                        <span style={valueStyle}>{emergencyParts.name}</span>
+                      </div>
+                      <div style={labelValueRowStyle}>
+                        <span style={labelStyle}>Phone</span>
+                        <span style={valueStyle}>{emergencyParts.phone}</span>
+                      </div>
+                      <div style={labelValueRowStyle}>
+                        <span style={labelStyle}>Relationship</span>
+                        <span style={valueStyle}>{emergencyParts.relationship}</span>
+                      </div>
+                      <div style={labelValueRowStyle}>
+                        <span style={labelStyle}>Address</span>
+                        <span style={valueStyle}>{profile?.address || "No address on file"}</span>
+                      </div>
+                    </div>
+                  )}
+                </ProfileCard>
+              </DevLayoutSection>
+            </DevLayoutSection>
+
+            <DevLayoutSection
+              as="div"
+              sectionKey="profile-work-attendance-history"
+              parentKey="profile-active-tab-panel"
+              sectionType="content-card"
+            >
               <ProfileCard
-                title="Emergency Contact"
+                title="Attendance History"
+                style={{
+                  background: "rgba(var(--primary-rgb), 0.08)",
+                  border: "1px solid rgba(var(--primary-rgb), 0.2)",
+                }}
                 action={
                   <div style={{ display: "flex", gap: "8px" }}>
-                    {!ecEditing && (
+                    {!shouldUseHrData && (
                       <Button
                         type="button"
-                        onClick={handleStartEcEdit}
-                        variant="secondary"
+                        onClick={() => setManualOvertimeModalOpen(true)}
+                        variant="primary"
                         size="sm"
-                        className="app-btn--control"
                       >
-                        Edit
+                        Add overtime
                       </Button>
                     )}
-                  </div>
-                }
-                style={{
-                  background: "var(--surface)",
-                }}
-              >
-                {ecEditing ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                    <div style={{ display: "grid", gap: "10px" }}>
-                      <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                        <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>Name</span>
-                        <input
-                          className="app-input"
-                          type="text"
-                          value={ecName}
-                          onChange={(e) => { setEcName(e.target.value); setEcError(null); }}
-                          placeholder="Full name"
-                          style={inputStyle}
-                        />
-                      </label>
-                      <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                        <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>Phone</span>
-                        <input
-                          className="app-input"
-                          type="tel"
-                          value={ecPhone}
-                          onChange={(e) => { setEcPhone(e.target.value); setEcError(null); }}
-                          placeholder="Phone number"
-                          style={inputStyle}
-                        />
-                      </label>
-                      <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                        <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>Relationship</span>
-                        <input
-                          className="app-input"
-                          type="text"
-                          value={ecRelationship}
-                          onChange={(e) => { setEcRelationship(e.target.value); setEcError(null); }}
-                          placeholder="e.g. Partner, Parent, Sibling"
-                          style={inputStyle}
-                        />
-                      </label>
-                      <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                        <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>Address</span>
-                        <input
-                          className="app-input"
-                          type="text"
-                          value={ecAddress}
-                          onChange={(e) => {
-                            setEcAddress(e.target.value);
-                            setEcError(null);
-                          }}
-                          placeholder="Home address"
-                          style={inputStyle}
-                        />
-                      </label>
-                    </div>
-                    {ecError && <div style={{ color: "var(--danger)", fontSize: "0.82rem" }}>{ecError}</div>}
-                    <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
-                      <Button type="button" variant="ghost" size="sm" onClick={() => setEcEditing(false)}>
-                        Cancel
-                      </Button>
-                      <Button type="button" variant="primary" size="sm" onClick={handleSaveEc} disabled={ecSaving}>
-                        {ecSaving ? "Saving..." : "Save"}
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ display: "grid", gap: "10px" }}>
-                    <div style={labelValueRowStyle}>
-                      <span style={labelStyle}>Name</span>
-                      <span style={valueStyle}>{emergencyParts.name}</span>
-                    </div>
-                    <div style={labelValueRowStyle}>
-                      <span style={labelStyle}>Phone</span>
-                      <span style={valueStyle}>{emergencyParts.phone}</span>
-                    </div>
-                    <div style={labelValueRowStyle}>
-                      <span style={labelStyle}>Relationship</span>
-                      <span style={valueStyle}>{emergencyParts.relationship}</span>
-                    </div>
-                    <div style={labelValueRowStyle}>
-                      <span style={labelStyle}>Address</span>
-                      <span style={valueStyle}>{profile?.address || "No address on file"}</span>
-                    </div>
-                  </div>
-                )}
-              </ProfileCard>
-            </section>
-
-            <ProfileCard
-              title="Attendance History"
-              style={{
-                background: "var(--surface)",
-              }}
-              action={
-                <div style={{ display: "flex", gap: "8px" }}>
-                  {!shouldUseHrData && (
                     <Button
                       type="button"
-                      onClick={() => setManualOvertimeModalOpen(true)}
-                      variant="primary"
+                      onClick={() => setRecurringModalOpen(true)}
+                      variant="secondary"
                       size="sm"
+                      className="app-btn--control"
                     >
-                      Add overtime
+                      Recurring Rules
                     </Button>
-                  )}
-                  <Button
-                    type="button"
-                    onClick={() => setRecurringModalOpen(true)}
-                    variant="secondary"
-                    size="sm"
-                    className="app-btn--control"
-                  >
-                    Recurring Rules
-                  </Button>
-                </div>
-              }
-            >
-
-              <div
-                style={{
-                  maxHeight: shouldScrollAttendanceHistory ? "290px" : "none",
-                  overflowY: shouldScrollAttendanceHistory ? "auto" : "visible",
-                  marginTop: "10px",
-                }}
+                  </div>
+                }
               >
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                  <thead>
-                    <tr
-                      style={{
-                        color: "var(--text-secondary)",
-                        fontSize: "0.72rem",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.04em",
-                        position: "sticky",
-                        top: 0,
-                        background: "var(--surface)",
-                        zIndex: 1,
-                      }}
-                    >
-                      <th style={{ textAlign: "left", padding: "10px 0" }}>Date</th>
-                      <th style={{ textAlign: "center", padding: "10px 0" }}>Login</th>
-                      <th style={{ textAlign: "center", padding: "10px 0" }}>Logout</th>
-                      <th style={{ textAlign: "center", padding: "10px 0" }}>Total Hours</th>
-                      <th style={{ textAlign: "center", padding: "10px 0" }}>Type</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {attendanceRecords.map((entry) => {
-                      const nextDay = isNextDayClocking(entry.clockIn, entry.clockOut);
-                      return (
-                        <tr key={entry.id} style={{ borderTop: "1px solid rgba(var(--accent-purple-rgb), 0.18)" }}>
-                          <td style={{ padding: "12px 0", fontWeight: 600 }}>{formatDate(entry.date)}</td>
+
+                <div
+                  style={{
+                    maxHeight: shouldScrollAttendanceHistory ? "290px" : "none",
+                    overflowY: shouldScrollAttendanceHistory ? "auto" : "visible",
+                    marginTop: "10px",
+                  }}
+                >
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr
+                        style={{
+                          color: "var(--text-secondary)",
+                          fontSize: "0.72rem",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.04em",
+                          position: "sticky",
+                          top: 0,
+                          background: "var(--surface)",
+                          zIndex: 1,
+                        }}
+                      >
+                        <th style={{ textAlign: "left", padding: "10px 0" }}>Date</th>
+                        <th style={{ textAlign: "center", padding: "10px 0" }}>Login</th>
+                        <th style={{ textAlign: "center", padding: "10px 0" }}>Logout</th>
+                        <th style={{ textAlign: "center", padding: "10px 0" }}>Total Hours</th>
+                        <th style={{ textAlign: "center", padding: "10px 0" }}>Type</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {attendanceRecords.map((entry) => {
+                        const nextDay = isNextDayClocking(entry.clockIn, entry.clockOut);
+                        return (
+                          <tr key={entry.id} style={{ borderTop: "1px solid rgba(var(--accent-purple-rgb), 0.18)" }}>
+                            <td style={{ padding: "12px 0", fontWeight: 600 }}>{formatDate(entry.date)}</td>
                           <td style={{ textAlign: "center", padding: "12px 0" }}>{formatTime(entry.clockIn)}</td>
                           <td style={{ textAlign: "center", padding: "12px 0" }}>
                             {entry.clockOut ? formatTime(entry.clockOut) : (
@@ -2437,6 +2534,7 @@ export function ProfileWorkTab({
                 </table>
               </div>
             </ProfileCard>
+            </DevLayoutSection>
 
             {profile && <StaffVehiclesCard userId={profile.userId} vehicles={profileStaffVehicles} />}
           </>

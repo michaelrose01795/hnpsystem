@@ -83,9 +83,10 @@ function resolveWashStatus(snapshot) {
   return null; // Not applicable yet (booked/checked_in)
 }
 
-// Infer the next likely step based on current job state.
-function inferNextStep(snapshot) {
-  if (!snapshot?.job) return null; // No job data
+// Infer all pending next steps based on current job state.
+// Returns an array of step objects, each with label, description, department.
+function inferNextSteps(snapshot) {
+  if (!snapshot?.job) return []; // No job data
 
   const stage = snapshot.job.overallStatus; // Current main status ID
   const workflows = snapshot.workflows || {}; // Workflow states
@@ -93,116 +94,158 @@ function inferNextStep(snapshot) {
   const vhc = workflows.vhc || {}; // VHC state
   const parts = workflows.parts || {}; // Parts state
   const writeUp = workflows.writeUp || {}; // Write-up state
+  const requests = workflows.requests || {}; // Request completion state
+  const mot = requests.mot || {}; // MOT request state
+  const pricingCompleted = workflows.pricingCompleted === true; // Pricing sub-status logged
 
   if (stage === "booked") {
-    return {
+    return [{
       label: "Check in vehicle",
       description: "Vehicle needs to be checked in and keys collected.",
       department: "Service Reception",
-    };
+    }];
   }
 
   if (stage === "checked_in") {
     if (!clocking.active) {
-      return {
+      return [{
         label: "Assign to technician",
         description: "Vehicle is checked in, waiting for a technician to clock on.",
         department: "Workshop",
-      };
+      }];
     }
-    return {
+    return [{
       label: "Work starting",
       description: "Technician is clocking on to begin work.",
       department: "Workshop",
-    };
+    }];
   }
 
   if (stage === "in_progress") {
-    // Parts blocking takes priority.
+    const steps = [];
+
+    // Check if tech has marked work complete.
+    const techComplete = (snapshot.timeline || []).some(
+      (entry) => entry.status === "technician_work_completed"
+    );
+
+    // MOT still pending — always surface this.
+    if (mot.hasMot && mot.pending > 0) {
+      steps.push({
+        label: "MOT",
+        description: `${mot.pending} MOT request${mot.pending === 1 ? "" : "s"} remaining for MOT tester.`,
+        department: "MOT Bay",
+      });
+    }
+
+    // Parts blocking.
     if (parts.blocking) {
       const summary = parts.summary || {}; // Parts count summary
       const waitingCount = (summary.waiting || 0) + (summary.onOrder || 0); // Total blocked items
-      return {
+      steps.push({
         label: "Resolve parts",
         description: `${waitingCount} part${waitingCount === 1 ? "" : "s"} waiting or on order.`,
         department: "Parts",
-      };
+      });
     }
 
-    // VHC workflow steps.
-    if (vhc.required && vhc.status === "pending") {
-      return {
-        label: "Complete VHC",
-        description: "Vehicle health check is required.",
-        department: "Workshop",
-      };
-    }
-    if (vhc.required && vhc.status === "completed" && !vhc.sentAt) {
-      return {
-        label: "Price & send VHC",
-        description: "VHC completed, needs pricing and sending to customer.",
-        department: "VHC",
-      };
-    }
-    if (vhc.required && vhc.status === "sent") {
-      return {
-        label: "Awaiting customer decision",
-        description: "VHC sent to customer, waiting for response.",
-        department: "VHC",
-      };
-    }
-
-    // Active clocking means work in progress.
-    if (clocking.active) {
-      return {
-        label: "Work in progress",
-        description: "Technician is currently working on this job.",
-        department: "Workshop",
-      };
+    // VHC workflow — show current VHC step when relevant.
+    if (vhc.required) {
+      if (vhc.status === "pending" || vhc.status === "in_progress") {
+        steps.push({
+          label: "Complete VHC",
+          description: "Vehicle health check is required.",
+          department: "Workshop",
+        });
+      } else if ((vhc.status === "completed") && !pricingCompleted) {
+        steps.push({
+          label: "Price VHC",
+          description: "VHC completed, items need pricing before sending to customer.",
+          department: "VHC",
+        });
+      } else if ((vhc.status === "completed") && pricingCompleted && !vhc.sentAt) {
+        steps.push({
+          label: "Send VHC to customer",
+          description: "VHC priced, ready to send to customer for approval.",
+          department: "VHC",
+        });
+      } else if (vhc.status === "sent") {
+        steps.push({
+          label: "Awaiting customer approval",
+          description: "VHC sent to customer, waiting for approval.",
+          department: "VHC",
+        });
+      } else if (vhc.status === "authorised" && parts.blocking) {
+        // Customer approved but parts still needed — already covered by parts step above.
+      }
     }
 
     // Warranty write-up needed.
     if (writeUp.status === "missing" && snapshot.job?.jobSource === "Warranty") {
-      return {
+      steps.push({
         label: "Complete write-up",
         description: "Warranty job requires a completed write-up.",
         department: "Workshop",
-      };
+      });
     }
 
-    // Tech work complete — ready for invoice.
-    const techComplete = (snapshot.timeline || []).some(
-      (entry) => entry.status === "technician_work_completed"
-    );
-    if (techComplete) {
-      return {
-        label: "Ready for invoice",
-        description: "Technician work is complete, ready to invoice.",
-        department: "Accounts",
-      };
+    // Write-up tab not complete (non-MOT requests still pending).
+    if (requests.total > 0 && !requests.techComplete && !techComplete) {
+      const nonMotPending = requests.pending - (mot.pending || 0);
+      if (nonMotPending > 0) {
+        steps.push({
+          label: "Complete requests",
+          description: `${nonMotPending} request${nonMotPending === 1 ? "" : "s"} still in progress.`,
+          department: "Workshop",
+        });
+      }
     }
 
-    // Default in-progress step.
-    return {
-      label: "Awaiting technician start",
-      description: "Waiting for a technician to begin work.",
-      department: "Workshop",
-    };
+    // If no specific blockers found, show general status.
+    if (steps.length === 0) {
+      if (clocking.active) {
+        steps.push({
+          label: "Work in progress",
+          description: "Technician is currently working on this job.",
+          department: "Workshop",
+        });
+      } else if (techComplete) {
+        steps.push({
+          label: "Ready for invoice",
+          description: "Technician work is complete, ready to invoice.",
+          department: "Accounts",
+        });
+      } else {
+        steps.push({
+          label: "Awaiting technician start",
+          description: "Waiting for a technician to begin work.",
+          department: "Workshop",
+        });
+      }
+    }
+
+    return steps;
   }
 
   if (stage === "invoiced") {
-    return {
+    return [{
       label: "Release vehicle",
       description: "Job has been invoiced, vehicle can be released.",
       department: "Accounts",
-    };
+    }];
   }
 
   if (stage === "released") {
-    return null; // Job is complete, no next step
+    return []; // Job is complete, no next step
   }
 
-  return null; // Unknown status, no inference possible
+  return []; // Unknown status, no inference possible
+}
+
+// Backward-compatible single next step (first from the list).
+function inferNextStep(snapshot) {
+  const steps = inferNextSteps(snapshot);
+  return steps.length > 0 ? steps[0] : null;
 }
 
 // Build a plain-English summary sentence from the snapshot.
@@ -269,7 +312,8 @@ export function buildSmartSummary(snapshot, enhancedTimeline = []) {
   const technician = resolveTechnician(snapshot); // Resolve technician name
   const trackingStatus = resolveTrackingStatus(snapshot); // Resolve tracking status
   const washStatus = resolveWashStatus(snapshot); // Resolve wash status
-  const nextStep = inferNextStep(snapshot); // Infer next likely step
+  const nextSteps = inferNextSteps(snapshot); // Infer all pending next steps
+  const nextStep = nextSteps.length > 0 ? nextSteps[0] : null; // Primary next step for backward compat
   const summary = buildSummarySentence(snapshot, technician); // Build summary sentence
   const invoiceStatus = snapshot.workflows?.invoice?.status || null; // Invoice readiness
   const currentResponsible = resolveCurrentResponsible(snapshot); // Department or person responsible
@@ -288,7 +332,8 @@ export function buildSmartSummary(snapshot, enhancedTimeline = []) {
     trackingStatus, // Tracking status string
     washStatus, // Wash/valet status string or null
     summary, // Plain-English summary sentence
-    nextStep, // Next likely step object or null
+    nextStep, // Primary next step object or null (backward compat)
+    nextSteps, // All pending next steps array
     blockingReasons: snapshot.blockingReasons || [], // Passthrough blocking reasons
     invoiceStatus, // Invoice readiness status
     currentResponsible, // Department or person responsible

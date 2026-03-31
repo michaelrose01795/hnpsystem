@@ -1,4 +1,5 @@
 import { calculateFuelEntryValues, expectedMonthlyContractHours, getCurrentMonthKey, normaliseMonthKey, shiftMonthKey } from "@/lib/profile/calculations";
+import { calculateLeaveRequestDayTotals } from "@/lib/hr/leaveRequests";
 
 const DEFAULT_PAYMENT_BUCKETS = ["Savings", "LISA", "Fuel", "Holidays", "Grandad", "Joint", "Family"];
 const DEFAULT_SAVINGS_BUCKETS = ["Savings"];
@@ -12,12 +13,93 @@ export function roundMoney(value) {
   return Number(toNumber(value).toFixed(2));
 }
 
+function sumWorkDeductionsForMonth(workData, monthKey) {
+  const deductions = Array.isArray(workData?.staffVehiclePayrollDeductions)
+    ? workData.staffVehiclePayrollDeductions
+    : [];
+
+  return roundMoney(
+    deductions.reduce((sum, entry) => {
+      if (entry?.monthKey !== monthKey) return sum;
+      return sum + toNumber(entry.amount, 0);
+    }, 0)
+  );
+}
+
+function getWorkDeductionEntriesForMonth(workData, monthKey) {
+  const deductions = Array.isArray(workData?.staffVehiclePayrollDeductions)
+    ? workData.staffVehiclePayrollDeductions
+    : [];
+  const grouped = new Map();
+
+  deductions
+    .filter((entry) => entry?.monthKey === monthKey && toNumber(entry.amount, 0) > 0)
+    .forEach((entry) => {
+      const registration = String(entry?.registration || entry?.reg || "").trim().toUpperCase();
+      const description = String(entry?.description || "").trim();
+      const label = registration || entry?.label || "Work Deduction";
+      const key = `${registration || String(entry?.vehicleId ?? "")}::${description || String(entry?.historyId ?? entry?.id ?? label)}`;
+      const existing = grouped.get(key) || {
+        id: key,
+        registration,
+        description,
+        label,
+        amount: 0,
+      };
+
+      existing.amount = roundMoney(existing.amount + toNumber(entry.amount, 0));
+      grouped.set(key, existing);
+    });
+
+  return Array.from(grouped.values()).sort((left, right) =>
+    String(left.registration || left.label || "").localeCompare(String(right.registration || right.label || ""))
+  );
+}
+
 function makeId(prefix) {
   return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
 function compactItems(items = []) {
   return (items || []).filter((entry) => entry && String(entry.name || entry.category || "").trim().length > 0);
+}
+
+function normaliseCreditCardAccountName(value = "") {
+  return String(value || "").trim();
+}
+
+function normaliseCreditCardAccountEntry(entry = {}) {
+  return {
+    ...entry,
+    id: entry.id || makeId("cardacct"),
+    name: normaliseCreditCardAccountName(entry.name) || "Card",
+  };
+}
+
+function buildCreditCardAccounts(rawFinanceState = null) {
+  const accounts = new Map();
+
+  const addAccount = (entry = {}) => {
+    const normalised = normaliseCreditCardAccountEntry(entry);
+    const key = String(normalised.id || normalised.name.toLowerCase());
+    if (!accounts.has(key)) {
+      accounts.set(key, normalised);
+    }
+  };
+
+  (Array.isArray(rawFinanceState?.creditCardAccounts) ? rawFinanceState.creditCardAccounts : []).forEach(addAccount);
+
+  Object.values(rawFinanceState?.months || {}).forEach((monthState) => {
+    (Array.isArray(monthState?.creditCards) ? monthState.creditCards : []).forEach((entry) => {
+      const name = normaliseCreditCardAccountName(entry?.name);
+      if (!name) return;
+      addAccount({ id: entry?.cardId || undefined, name });
+    });
+  });
+
+  return Array.from(accounts.values()).sort((left, right) =>
+    String(left.name || "").localeCompare(String(right.name || ""))
+  );
 }
 
 export function getFinanceYearLabel(monthKey = getCurrentMonthKey()) {
@@ -58,12 +140,59 @@ export function createDefaultMonthFinanceState() {
     otherIncome: 0,
     incomeAdjustments: 0,
     outgoingAdjustments: 0,
+    useManualTax: false,
+    manualTax: 0,
+    manualNationalInsurance: 0,
     fixedOutgoings: [],
     plannedPayments: [],
     creditCards: [],
     fuelEntries: [],
     savingsBuckets: [],
     overtimeEntries: [],
+  };
+}
+
+export const FIXED_OUTGOING_CATEGORY_OPTIONS = [
+  { value: "mortgage", label: "Mortgage" },
+  { value: "house-bills", label: "House bills" },
+  { value: "savings", label: "Savings" },
+  { value: "day-to-day", label: "Day to day spend" },
+  { value: "transport", label: "Transport" },
+  { value: "insurance", label: "Insurance" },
+  { value: "debt", label: "Debt" },
+  { value: "other", label: "Other" },
+];
+
+const FIXED_OUTGOING_CATEGORY_SET = new Set(FIXED_OUTGOING_CATEGORY_OPTIONS.map((option) => option.value));
+
+export function normaliseFixedOutgoingCategory(value = "") {
+  const normalised = String(value || "").trim().toLowerCase();
+  return FIXED_OUTGOING_CATEGORY_SET.has(normalised) ? normalised : "other";
+}
+
+function inferFixedOutgoingCategory(name = "") {
+  const normalisedName = String(name || "").trim().toLowerCase();
+  if (!normalisedName) return "other";
+  if (normalisedName.includes("mortgage")) return "mortgage";
+  if (normalisedName.includes("saving")) return "savings";
+  if (normalisedName.includes("bill") || normalisedName.includes("rent") || normalisedName.includes("utility") || normalisedName.includes("council")) return "house-bills";
+  if (normalisedName.includes("food") || normalisedName.includes("shop") || normalisedName.includes("grocery") || normalisedName.includes("spend")) return "day-to-day";
+  if (normalisedName.includes("fuel") || normalisedName.includes("travel") || normalisedName.includes("train") || normalisedName.includes("car")) return "transport";
+  if (normalisedName.includes("insurance")) return "insurance";
+  if (normalisedName.includes("loan") || normalisedName.includes("debt") || normalisedName.includes("card")) return "debt";
+  return "other";
+}
+
+function normaliseFixedOutgoingEntry(entry = {}) {
+  const explicitCategory = String(entry.category || "").trim();
+  return {
+    ...entry,
+    id: entry.id || makeId("row"),
+    name: String(entry.name || ""),
+    amount: roundMoney(entry.amount ?? 0),
+    category: explicitCategory
+      ? normaliseFixedOutgoingCategory(explicitCategory)
+      : inferFixedOutgoingCategory(entry.name),
   };
 }
 
@@ -96,12 +225,10 @@ export function createDefaultFinanceState({ workData = null, monthKey = getCurre
       hourlyRate: toNumber(workData?.hourlyRate, 0),
       overtimeRate: toNumber(workData?.overtimeRate, toNumber(workData?.hourlyRate, 0)),
       annualSalary: toNumber(workData?.annualSalary, 0),
-      manualTax: 0,
-      manualNationalInsurance: 0,
-      useManualTax: false,
     },
     creditCardAccounts: [],
     savingsAccounts: [],
+    userAccounts: [],
     plannedPaymentPlans: [],
     months: {
       [normaliseMonthKey(monthKey, getCurrentMonthKey())]: createDefaultMonthFinanceState(),
@@ -115,6 +242,13 @@ export function createDefaultFinanceState({ workData = null, monthKey = getCurre
 export function ensureFinanceState(rawFinanceState = null, { workData = null, monthKey = getCurrentMonthKey() } = {}) {
   const base = createDefaultFinanceState({ workData, monthKey });
   const existingPay = rawFinanceState?.paySettings || {};
+  const legacyManualTax = toNumber(existingPay.manualTax, 0);
+  const legacyManualNationalInsurance = toNumber(existingPay.manualNationalInsurance, 0);
+  const hasLegacyTaxFields =
+    existingPay.useManualTax !== undefined ||
+    existingPay.manualTax !== undefined ||
+    existingPay.manualNationalInsurance !== undefined;
+  const { manualTax: _legacyManualTax, manualNationalInsurance: _legacyManualNationalInsurance, useManualTax: _legacyUseManualTax, ...paySettingsSansLegacy } = existingPay;
 
   // Seed pay settings from DB workData only when the user hasn't set them manually.
   // A value of 0 in existing state is treated as "not yet set" for rates/salary —
@@ -128,19 +262,20 @@ export function ensureFinanceState(rawFinanceState = null, { workData = null, mo
 
   const mergedPay = {
     ...base.paySettings,
-    ...existingPay,
-    contractedWeeklyHours: seedFromDb(existingPay.contractedWeeklyHours, workData?.contractedWeeklyHours),
-    hourlyRate: seedFromDb(existingPay.hourlyRate, workData?.hourlyRate),
-    overtimeRate: seedFromDb(existingPay.overtimeRate, workData?.overtimeRate),
-    annualSalary: seedFromDb(existingPay.annualSalary, workData?.annualSalary),
+    ...paySettingsSansLegacy,
+    contractedWeeklyHours: seedFromDb(paySettingsSansLegacy.contractedWeeklyHours, workData?.contractedWeeklyHours),
+    hourlyRate: seedFromDb(paySettingsSansLegacy.hourlyRate, workData?.hourlyRate),
+    overtimeRate: seedFromDb(paySettingsSansLegacy.overtimeRate, workData?.overtimeRate),
+    annualSalary: seedFromDb(paySettingsSansLegacy.annualSalary, workData?.annualSalary),
   };
 
   const merged = {
     ...base,
     ...(rawFinanceState && typeof rawFinanceState === "object" ? rawFinanceState : {}),
     paySettings: mergedPay,
-    creditCardAccounts: Array.isArray(rawFinanceState?.creditCardAccounts) ? rawFinanceState.creditCardAccounts : [],
+    creditCardAccounts: buildCreditCardAccounts(rawFinanceState),
     savingsAccounts: Array.isArray(rawFinanceState?.savingsAccounts) ? rawFinanceState.savingsAccounts : [],
+    userAccounts: Array.isArray(rawFinanceState?.userAccounts) ? rawFinanceState.userAccounts : [],
     plannedPaymentPlans: Array.isArray(rawFinanceState?.plannedPaymentPlans) ? rawFinanceState.plannedPaymentPlans : [],
     months: {
       ...(rawFinanceState?.months || {}),
@@ -158,11 +293,34 @@ export function ensureFinanceState(rawFinanceState = null, { workData = null, mo
   const safeMonthKey = normaliseMonthKey(merged.selectedMonthKey, monthKey);
   merged.selectedMonthKey = safeMonthKey;
   merged.selectedFinanceYear = getFinanceYearLabel(safeMonthKey);
-  merged.months[safeMonthKey] = ensureMonthFinanceState(merged.months[safeMonthKey]);
+  const rawSelectedMonthState = merged.months[safeMonthKey];
+  const selectedMonthState = ensureMonthFinanceState(rawSelectedMonthState, {
+    creditCardAccounts: merged.creditCardAccounts,
+  });
+  const monthAlreadyHasScopedTaxOverride =
+    rawSelectedMonthState &&
+    typeof rawSelectedMonthState === "object" &&
+    (
+      rawSelectedMonthState.useManualTax !== undefined ||
+      rawSelectedMonthState.manualTax !== undefined ||
+      rawSelectedMonthState.manualNationalInsurance !== undefined
+    );
+
+  merged.months[safeMonthKey] = hasLegacyTaxFields && !monthAlreadyHasScopedTaxOverride
+    ? ensureMonthFinanceState(
+        {
+          ...selectedMonthState,
+          useManualTax: Boolean(existingPay.useManualTax),
+          manualTax: legacyManualTax,
+          manualNationalInsurance: legacyManualNationalInsurance,
+        },
+        { creditCardAccounts: merged.creditCardAccounts }
+      )
+    : selectedMonthState;
   return merged;
 }
 
-export function ensureMonthFinanceState(rawMonthState = null) {
+export function ensureMonthFinanceState(rawMonthState = null, { creditCardAccounts = [] } = {}) {
   // Brand-new month — return defaults so first visit gets seeded buckets.
   if (!rawMonthState || typeof rawMonthState !== "object") {
     return createDefaultMonthFinanceState();
@@ -174,12 +332,14 @@ export function ensureMonthFinanceState(rawMonthState = null) {
   return {
     ...base,
     ...rawMonthState,
-    fixedOutgoings: Array.isArray(rawMonthState.fixedOutgoings) ? rawMonthState.fixedOutgoings : [],
+    fixedOutgoings: Array.isArray(rawMonthState.fixedOutgoings)
+      ? rawMonthState.fixedOutgoings.map((entry) => normaliseFixedOutgoingEntry(entry))
+      : [],
     plannedPayments: Array.isArray(rawMonthState.plannedPayments)
       ? stripLegacyPresetRows(rawMonthState.plannedPayments, DEFAULT_PAYMENT_BUCKETS)
       : [],
     creditCards: Array.isArray(rawMonthState.creditCards)
-      ? stripLegacyCardRows(rawMonthState.creditCards).map((entry) => normaliseCreditCardEntry(entry))
+      ? stripLegacyCardRows(rawMonthState.creditCards).map((entry) => normaliseCreditCardEntry(entry, creditCardAccounts))
       : [],
     fuelEntries: Array.isArray(rawMonthState.fuelEntries) ? rawMonthState.fuelEntries.map((entry) => normaliseFuelEntry(entry)) : [],
     savingsBuckets: Array.isArray(rawMonthState.savingsBuckets)
@@ -191,10 +351,22 @@ export function ensureMonthFinanceState(rawMonthState = null) {
 
 function getMonthState(financeState, monthKey) {
   const safeMonthKey = normaliseMonthKey(monthKey, financeState?.selectedMonthKey || getCurrentMonthKey());
-  return ensureMonthFinanceState(financeState?.months?.[safeMonthKey]);
+  return ensureMonthFinanceState(financeState?.months?.[safeMonthKey], {
+    creditCardAccounts: Array.isArray(financeState?.creditCardAccounts) ? financeState.creditCardAccounts : [],
+  });
 }
 
-function normaliseCreditCardEntry(entry = {}) {
+function normaliseCreditCardEntry(entry = {}, creditCardAccounts = []) {
+  const requestedId = String(entry.cardId || "").trim();
+  const requestedName = normaliseCreditCardAccountName(entry.name);
+  const matchedAccount = creditCardAccounts.find((account) =>
+    String(account.id || "") === requestedId ||
+    (
+      !requestedId &&
+      requestedName &&
+      normaliseCreditCardAccountName(account.name).toLowerCase() === requestedName.toLowerCase()
+    )
+  ) || null;
   const balance = roundMoney(entry.balance ?? 0);
   const isPaidOff = entry.isPaidOff === true;
   const storedMonthlyPayment = entry.monthlyPayment;
@@ -207,8 +379,8 @@ function normaliseCreditCardEntry(entry = {}) {
   return {
     ...entry,
     id: entry.id || makeId("card"),
-    cardId: entry.cardId || "",
-    name: entry.name || "Card",
+    cardId: matchedAccount?.id || requestedId || "",
+    name: matchedAccount?.name || requestedName || "Card",
     balance,
     isPaidOff,
     monthlyPayment: isPaidOff ? balance : monthlyPayment,
@@ -368,8 +540,9 @@ export function buildMonthlyFinanceSummary({ financeState, workData = null, mont
   const paySettings = financeState?.paySettings || {};
   const monthState = getMonthState(financeState, safeMonthKey);
 
-  const expectedHours = expectedMonthlyContractHours(toNumber(paySettings.contractedWeeklyHours, 0), safeMonthKey);
-  const workedHours = getWorkedHoursForMonth(workData, safeMonthKey);
+  const hoursWorked = expectedMonthlyContractHours(toNumber(paySettings.contractedWeeklyHours, 0), safeMonthKey);
+  const attendanceWorkedHours = getWorkedHoursForMonth(workData, safeMonthKey);
+  const totalWorkedHours = attendanceWorkedHours !== null ? attendanceWorkedHours : hoursWorked;
   const attendanceOvertimeHours = getAttendanceOvertimeHours(workData, safeMonthKey);
   const manualOvertimeHours = sumOvertimeHours(monthState.overtimeEntries);
   const overtimeHours = Number((attendanceOvertimeHours + manualOvertimeHours).toFixed(2));
@@ -378,7 +551,7 @@ export function buildMonthlyFinanceSummary({ financeState, workData = null, mont
   const overtimeRate = toNumber(paySettings.overtimeRate, hourlyRate);
   const annualSalary = toNumber(paySettings.annualSalary, 0);
 
-  const basePay = roundMoney(expectedHours * hourlyRate);
+  const basePay = roundMoney(hoursWorked * hourlyRate);
   const overtimePay = roundMoney(overtimeHours * overtimeRate);
 
   const workIncome = roundMoney(basePay + overtimePay);
@@ -386,6 +559,12 @@ export function buildMonthlyFinanceSummary({ financeState, workData = null, mont
   const totalIn = roundMoney(workIncome + classicIncome);
 
   const fixedOut = sumByAmount(monthState.fixedOutgoings);
+  const fixedOutgoingSavingsTotal = roundMoney(
+    (monthState.fixedOutgoings || []).reduce(
+      (sum, entry) => sum + (normaliseFixedOutgoingCategory(entry?.category) === "savings" ? toNumber(entry?.amount, 0) : 0),
+      0
+    )
+  );
   const legacyPlannedOut = sumByAmount(monthState.plannedPayments);
   // Sum planned payment plans for this month
   const plans = Array.isArray(financeState?.plannedPaymentPlans) ? financeState.plannedPaymentPlans : [];
@@ -396,20 +575,25 @@ export function buildMonthlyFinanceSummary({ financeState, workData = null, mont
     return sum;
   }, 0);
   const plannedOut = roundMoney(legacyPlannedOut + planPlannedOut);
-  const creditCardOut = sumByAmount(monthState.creditCards, "monthlyPayment");
+  const creditCardOut = roundMoney((monthState.creditCards || []).reduce((sum, entry) => sum + getCreditCardMonthlyOutgoing(entry), 0));
   const totalCardBalances = sumByAmount(monthState.creditCards, "balance");
   const fuelTotal = roundMoney(sumByAmount(monthState.fuelEntries, "cost"));
   const fuelLitres = Number((monthState.fuelEntries || []).reduce((sum, entry) => sum + toNumber(entry?.litres, 0), 0).toFixed(2));
   const fuelAverageCostPerLitre = fuelLitres > 0 ? Number((fuelTotal / fuelLitres).toFixed(3)) : 0;
   const savingsTotal = sumByAmount(monthState.savingsBuckets);
+  const savingsAllocatedTotal = roundMoney(fixedOutgoingSavingsTotal + savingsTotal);
   const classicOut = roundMoney(fixedOut + plannedOut + toNumber(monthState.outgoingAdjustments, 0));
   const totalOut = roundMoney(classicOut + creditCardOut + fuelTotal + savingsTotal);
 
   const autoTax = calculateWidgetTaxAmount(totalIn);
   const autoNi = calculateWidgetNationalInsuranceAmount(totalIn);
-  const tax = paySettings.useManualTax ? roundMoney(paySettings.manualTax) : roundMoney(autoTax);
-  const nationalInsurance = paySettings.useManualTax ? roundMoney(paySettings.manualNationalInsurance) : roundMoney(autoNi);
-  const afterTaxIncome = roundMoney(totalIn - tax - nationalInsurance);
+  const taxOverrideEnabled = monthState.useManualTax === true;
+  const tax = taxOverrideEnabled ? roundMoney(monthState.manualTax) : roundMoney(autoTax);
+  const nationalInsurance = taxOverrideEnabled ? roundMoney(monthState.manualNationalInsurance) : roundMoney(autoNi);
+  const workDeductionEntries = getWorkDeductionEntriesForMonth(workData, safeMonthKey);
+  const workDeductions = sumWorkDeductionsForMonth(workData, safeMonthKey);
+  const preDeductionAfterTaxIncome = roundMoney(totalIn - tax - nationalInsurance);
+  const afterTaxIncome = roundMoney(preDeductionAfterTaxIncome - workDeductions);
 
   const difference = roundMoney(totalIn - totalOut);
   const moneyLeftAfterTax = roundMoney(afterTaxIncome - totalOut);
@@ -421,7 +605,7 @@ export function buildMonthlyFinanceSummary({ financeState, workData = null, mont
     ...monthState.fixedOutgoings.map((item) => ({ category: item.name, amount: roundMoney(item.amount), kind: "Fixed" })),
     ...monthState.plannedPayments.map((item) => ({ category: item.name, amount: roundMoney(item.amount), kind: "Planned" })),
     ...planOutgoings,
-    ...monthState.creditCards.map((item) => ({ category: item.name, amount: roundMoney(item.monthlyPayment), kind: "Credit" })),
+    ...monthState.creditCards.map((item) => ({ category: item.name, amount: getCreditCardMonthlyOutgoing(item), kind: "Credit" })),
     ...monthState.fuelEntries.map((item) => ({ category: item.name || "Fuel", amount: roundMoney(item.cost), kind: "Fuel" })),
     ...monthState.savingsBuckets.map((item) => ({ category: item.name, amount: roundMoney(item.amount), kind: "Savings" })),
   ]
@@ -433,9 +617,10 @@ export function buildMonthlyFinanceSummary({ financeState, workData = null, mont
   return {
     monthKey: safeMonthKey,
     pay: {
-      expectedHours,
-      workedHours,
-      actualHoursWorked: workedHours,
+      hoursWorked,
+      attendanceWorkedHours,
+      totalWorkedHours,
+      actualHoursWorked: attendanceWorkedHours,
       attendanceOvertimeHours,
       manualOvertimeHours,
       overtimeHours,
@@ -446,6 +631,9 @@ export function buildMonthlyFinanceSummary({ financeState, workData = null, mont
       workIncome,
       tax,
       nationalInsurance,
+      preDeductionAfterTaxIncome,
+      workDeductionEntries,
+      workDeductions,
       afterTaxIncome,
       leaveDaysInMonth,
     },
@@ -459,7 +647,9 @@ export function buildMonthlyFinanceSummary({ financeState, workData = null, mont
       fuelTotal,
       fuelLitres,
       fuelAverageCostPerLitre,
+      fixedOutgoingSavingsTotal,
       savingsTotal,
+      savingsAllocatedTotal,
       classicOut,
       totalOut,
       difference,
@@ -507,7 +697,7 @@ export function buildFinanceDashboardModel({ financeState, workData = null, mont
       overtimePay: 0,
     }
   );
-  yearTotals.workedHours = financeYearWorkedHours;
+  yearTotals.hoursWorked = financeYearWorkedHours;
 
   // Add bulk overtime hours (year-level entries not tied to a single month)
   const bulkOvertimeHours = getBulkOvertimeHoursForYear(workData, financeYearMonths);
@@ -707,23 +897,57 @@ export function makeCollectionItem(name = "", amount = 0) {
   };
 }
 
-export function makeCreditCardItem(name = "Card") {
+export function makeFixedOutgoingItem(name = "", amount = 0, category = "other") {
   return {
-    id: makeId("card"),
+    id: makeId("row"),
     name,
-    balance: 0,
-    monthlyPayment: 0,
+    amount: roundMoney(amount),
+    category: normaliseFixedOutgoingCategory(category),
   };
 }
 
+export function makeCreditCardItem(name = "Card") {
+  const resolvedName = typeof name === "object" && name !== null ? name.name : name;
+  const resolvedCardId = typeof name === "object" && name !== null ? name.cardId : "";
+  return {
+    id: makeId("card"),
+    cardId: resolvedCardId || "",
+    name: normaliseCreditCardAccountName(resolvedName) || "Card",
+    balance: 0,
+    monthlyPayment: 0,
+    isPaidOff: false,
+  };
+}
+
+export function makeCreditCardAccount(name = "") {
+  return normaliseCreditCardAccountEntry({ name });
+}
+
 export function makeFuelEntry({ cost = 0, litres = 0, costPerLitre = 0, date = "" } = {}) {
+  const values = calculateFuelEntryValues({
+    totalCost: cost,
+    litres,
+    pricePerLitre: normaliseFuelPricePerLitre(costPerLitre),
+  });
+
   return {
     id: makeId("fuel"),
     name: "Fuel",
     date,
-    cost: roundMoney(cost),
-    litres: Number(toNumber(litres, 0).toFixed(2)),
-    costPerLitre: Number(toNumber(costPerLitre, 0).toFixed(3)),
+    cost: roundMoney(values.totalCost),
+    litres: Number(toNumber(values.litres, 0).toFixed(2)),
+    costPerLitre: Number(toNumber(values.pricePerLitre, 0).toFixed(3)),
+  };
+}
+
+export function makeUserAccount({ name = "", type = "current", balance = 0, showInOverview = true, creditLimit = 0 } = {}) {
+  return {
+    id: makeId("ua"),
+    name: String(name || "").trim(),
+    type: ["current", "savings", "credit-card", "other"].includes(type) ? type : "current",
+    showInOverview: showInOverview !== false,
+    balance: roundMoney(balance),
+    creditLimit: type === "credit-card" ? roundMoney(creditLimit) : 0,
   };
 }
 
@@ -768,7 +992,12 @@ function getCurrentCycleBounds(referenceDate = new Date()) {
 
 function countLeaveDays(leaveRequests = []) {
   return (leaveRequests || []).reduce(
-    (sum, request) => sum + toNumber(request?.totalDays, 0),
+    (sum, request) => sum + calculateLeaveRequestDayTotals({
+      startDate: request?.startDate,
+      endDate: request?.endDate,
+      halfDay: request?.halfDay,
+      fallbackTotalDays: request?.totalDays,
+    }).workDays,
     0
   );
 }
@@ -779,6 +1008,35 @@ export function adaptWorkProfileData(profilePayload = {}) {
   const overtimeSessions = Array.isArray(profilePayload?.overtimeSessions) ? profilePayload.overtimeSessions : [];
   const leaveBalance = profilePayload?.leaveBalance || null;
   const leaveRequests = Array.isArray(profilePayload?.leaveRequests) ? profilePayload.leaveRequests : [];
+  const staffVehicles = Array.isArray(profilePayload?.staffVehicles) ? profilePayload.staffVehicles : [];
+  const staffVehicleRegistrationMap = new Map(
+    staffVehicles.map((vehicle) => [String(vehicle?.id || vehicle?.vehicleId || ""), String(vehicle?.registration || "").trim().toUpperCase()])
+  );
+  const staffVehicleHistoryDescriptionMap = new Map();
+  staffVehicles.forEach((vehicle) => {
+    const history = Array.isArray(vehicle?.history) ? vehicle.history : [];
+    history.forEach((entry) => {
+      const historyId = String(entry?.id || entry?.historyId || "");
+      if (!historyId) return;
+      staffVehicleHistoryDescriptionMap.set(historyId, String(entry?.description || "").trim());
+    });
+  });
+  const staffVehiclePayrollDeductions = Array.isArray(profilePayload?.staffVehiclePayrollDeductions)
+    ? profilePayload.staffVehiclePayrollDeductions.map((entry) => ({
+        id: entry?.id ?? entry?.deductionId ?? null,
+        historyId: entry?.historyId ?? entry?.history_id ?? null,
+        vehicleId: entry?.vehicleId ?? entry?.vehicle_id ?? null,
+        registration:
+          staffVehicleRegistrationMap.get(String(entry?.vehicleId ?? entry?.vehicle_id ?? "")) ||
+          String(entry?.registration || "").trim().toUpperCase(),
+        description:
+          staffVehicleHistoryDescriptionMap.get(String(entry?.historyId ?? entry?.history_id ?? "")) ||
+          String(entry?.description || "").trim(),
+        monthKey: entry?.monthKey ?? entry?.month_key ?? null,
+        label: entry?.label || "Work Deduction",
+        amount: roundMoney(entry?.amount ?? 0),
+      }))
+    : [];
   const { start, end } = getCurrentCycleBounds();
 
   let hoursWorked = 0;
@@ -818,6 +1076,7 @@ export function adaptWorkProfileData(profilePayload = {}) {
     overtimeValue: Number(overtimeValue.toFixed(2)),
     estimatedIncome: Number(estimatedIncome.toFixed(2)),
     contractedWeeklyHours: Number(contractedWeeklyHours.toFixed(2)),
+    employmentType: String(firstDefined(profile?.employmentType, profile?.employment_type, profile?.employmentTypeLabel) || "Full-time"),
     hourlyRate: Number(hourlyRate.toFixed(2)),
     overtimeRate: Number(overtimeRate.toFixed(2)),
     annualSalary: Number(annualSalary.toFixed(2)),
@@ -825,6 +1084,7 @@ export function adaptWorkProfileData(profilePayload = {}) {
     leaveTaken: leaveBalance?.taken ?? countLeaveDays(leaveRequests),
     leaveAllowance: leaveBalance?.entitlement ?? null,
     leaveRequests,
+    staffVehiclePayrollDeductions,
     overtimeSessions,
     attendanceLogs,
   };
@@ -853,16 +1113,22 @@ export function calculateLeaveStats(workData = null) {
   );
 
   const workDaysTaken = approved.reduce(
-    (sum, r) => sum + toNumber(r?.totalDays, 0),
+    (sum, r) => sum + calculateLeaveRequestDayTotals({
+      startDate: r?.startDate,
+      endDate: r?.endDate,
+      halfDay: r?.halfDay,
+      fallbackTotalDays: r?.totalDays,
+    }).workDays,
     0
   );
 
   const calendarDaysTaken = approved.reduce((sum, r) => {
-    if (!r?.startDate || !r?.endDate) return sum;
-    const start = new Date(r.startDate);
-    const end = new Date(r.endDate);
-    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return sum;
-    return sum + Math.max(Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1, 0);
+    return sum + calculateLeaveRequestDayTotals({
+      startDate: r?.startDate,
+      endDate: r?.endDate,
+      halfDay: r?.halfDay,
+      fallbackTotalDays: r?.totalDays,
+    }).calendarDays;
   }, 0);
 
   return {
@@ -886,8 +1152,8 @@ export function buildDerivedModel({ financeModel = null, workData = null } = {})
 
   return {
     expectedWorkDays,
-    expectedHours: pay.expectedHours || 0,
-    workedHours: pay.workedHours ?? null,
+    hoursWorked: pay.hoursWorked || 0,
+    attendanceWorkedHours: pay.attendanceWorkedHours ?? null,
     actualHoursWorked: pay.actualHoursWorked ?? null,
     leaveDaysInMonth: pay.leaveDaysInMonth || 0,
     totalIncome: totals.totalIn || 0,
@@ -895,6 +1161,8 @@ export function buildDerivedModel({ financeModel = null, workData = null } = {})
     overtimePay: pay.overtimePay || 0,
     overtimeHours: pay.overtimeHours || 0,
     afterTaxIncome: pay.afterTaxIncome || 0,
+    workDeductions: pay.workDeductions || 0,
+    preDeductionAfterTaxIncome: pay.preDeductionAfterTaxIncome || 0,
     tax: pay.tax || 0,
     nationalInsurance: pay.nationalInsurance || 0,
     totalOutgoings: totals.totalOut || 0,
@@ -903,6 +1171,7 @@ export function buildDerivedModel({ financeModel = null, workData = null } = {})
     creditCardPayments: totals.creditCardOut || 0,
     totalCardBalances: totals.totalCardBalances || 0,
     savingsTotal: totals.savingsTotal || 0,
+    savingsAllocatedTotal: totals.savingsAllocatedTotal || 0,
     netRemaining: totals.difference || 0,
     moneyLeftAfterTax: totals.moneyLeftAfterTax || 0,
     deltaFromPrevious: financeModel?.deltaFromPrevious || 0,
@@ -914,7 +1183,7 @@ export function buildDerivedModel({ financeModel = null, workData = null } = {})
     yearAfterTaxIncome: financeModel?.yearTotals?.totalAfterTax || 0,
     yearTax: financeModel?.yearTotals?.totalTax || 0,
     yearNationalInsurance: financeModel?.yearTotals?.totalNationalInsurance || 0,
-    yearWorkedHours: financeModel?.yearTotals?.workedHours || 0,
+    yearWorkedHours: financeModel?.yearTotals?.hoursWorked || 0,
     yearOvertimeHours: financeModel?.yearTotals?.overtimeHours || 0,
     yearOvertimePay: financeModel?.yearTotals?.overtimePay || 0,
   };

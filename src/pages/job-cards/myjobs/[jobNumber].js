@@ -9,7 +9,13 @@ import { useUser } from "@/context/UserContext";
 import { useNextAction } from "@/context/NextActionContext";
 import { useRoster } from "@/context/RosterContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
-import { getJobByNumber, updateJob, updateJobStatus, deleteJobFile } from "@/lib/database/jobs";
+import {
+  getJobByNumber,
+  updateJob,
+  updateJobStatus,
+  deleteJobFile,
+  summarizeWriteUpTasks,
+} from "@/lib/database/jobs";
 import { getVHCChecksByJob } from "@/lib/database/vhc";
 import { getClockingStatus } from "@/lib/database/clocking";
 import { clockInToJob, clockOutFromJob, getUserActiveJobs } from "@/lib/database/jobClocking";
@@ -31,6 +37,7 @@ import { DISPLAY as TECH_DISPLAY } from "@/lib/status/catalog/tech";
 import { revalidateAllJobs } from "@/lib/swr/mutations"; // SWR cache invalidation after mutations
 import { buildVhcAssistantState } from "@/features/vhc-assistant/buildVhcAssistantState";
 import VhcAssistantPanel from "@/features/vhc-assistant/components/VhcAssistantPanel";
+import { normaliseDecisionStatus } from "@/lib/vhc/summaryStatus";
 
 // VHC Section Modals
 import WheelsTyresDetailsModal from "@/components/VHC/WheelsTyresDetailsModal";
@@ -299,7 +306,7 @@ const getVhcActionButtonStyle = ({ active = false, disabled = false } = {}) => (
   opacity: disabled ? 0.5 : 1,
 });
 
-const resolveTechStatusLabel = (jobCard) => {
+const resolveTechStatusLabel = (jobCard, { hasActiveClocking = false } = {}) => {
   const rawStatus = normalizeStatusId(jobCard?.rawStatus || jobCard?.status || "");
   const completionStatus = normalizeStatusId(jobCard?.techCompletionStatus || "");
   if (
@@ -313,6 +320,9 @@ const resolveTechStatusLabel = (jobCard) => {
   ) {
     return "Complete";
   }
+  if (hasActiveClocking) {
+    return "In Progress";
+  }
   if (
     rawStatus?.includes("booked") ||
     rawStatus?.includes("checked_in") ||
@@ -325,6 +335,20 @@ const resolveTechStatusLabel = (jobCard) => {
     return "In Progress";
   }
   return "In Progress";
+};
+
+const isTechTaskComplete = (jobCard = {}) => {
+  const rawStatus = normalizeStatusId(jobCard?.rawStatus || jobCard?.status || "");
+  const completionStatus = normalizeStatusId(jobCard?.techCompletionStatus || "");
+  return (
+    rawStatus?.includes("tech_complete") ||
+    rawStatus?.includes("technician_work_completed") ||
+    rawStatus?.includes("invoiced") ||
+    rawStatus === "complete" ||
+    rawStatus === "completed" ||
+    completionStatus === "tech_complete" ||
+    completionStatus === "complete"
+  );
 };
 
 const calculateClockingMinutesTotal = (rows = [], now = Date.now()) => {
@@ -366,6 +390,7 @@ export default function TechJobDetailPage() {
   const [newNote, setNewNote] = useState("");
   const [showAdditionalContents, setShowAdditionalContents] = useState(false);
   const [jobClocking, setJobClocking] = useState(null);
+  const [liveWriteUpTasks, setLiveWriteUpTasks] = useState(null);
   const [clockOutLoading, setClockOutLoading] = useState(false);
   const [clockInLoading, setClockInLoading] = useState(false);
   const [clockingRows, setClockingRows] = useState([]);
@@ -636,6 +661,23 @@ export default function TechJobDetailPage() {
     [jobCardId]
   );
 
+  const loadStatusSnapshot = useCallback(async (targetJobId) => {
+    if (!targetJobId) {
+      setStatusSnapshot(null);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/status/snapshot?jobId=${targetJobId}`);
+      const payload = await response.json();
+      if (payload?.success && payload?.snapshot) {
+        setStatusSnapshot(payload.snapshot);
+      }
+    } catch (snapshotError) {
+      console.error("Failed to load status snapshot:", snapshotError);
+    }
+  }, []);
+
   // FIXED: Define all useCallback hooks FIRST before any useEffect that uses them
 
   // Callback: Refresh clocking status
@@ -768,7 +810,9 @@ export default function TechJobDetailPage() {
     }
 
     try {
-      let query = supabase.from("job_clocking").select("clock_in, clock_out");
+      let query = supabase
+        .from("job_clocking")
+        .select("id, user_id, request_id, work_type, clock_in, clock_out");
       if (jobCardId) {
         query = query.eq("job_id", jobCardId);
       } else {
@@ -798,6 +842,7 @@ export default function TechJobDetailPage() {
       }
 
       setJobData(job);
+      setLiveWriteUpTasks(null);
       const mappedFiles = ((job?.jobCard?.files || job?.files || [])).map(mapJobFileRecord);
       setJobDocuments(mappedFiles);
 
@@ -805,9 +850,11 @@ export default function TechJobDetailPage() {
       if (jobCardIdForFetch) {
         const checks = await getVHCChecksByJob(jobCardIdForFetch);
         setVhcChecks(checks);
+        await loadStatusSnapshot(jobCardIdForFetch);
       } else {
         setVhcChecks([]);
         setNotes([]);
+        setStatusSnapshot(null);
       }
 
       await refreshClockingStatus();
@@ -821,7 +868,16 @@ export default function TechJobDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [jobNumber, router, refreshClockingStatus, loadPartsRequests, loadAuthorizedParts, loadNotes]);
+  }, [
+    jobNumber,
+    router,
+    refreshClockingStatus,
+    loadPartsRequests,
+    loadAuthorizedParts,
+    loadNotes,
+    loadStatusSnapshot,
+    fetchClockedHoursTotal,
+  ]);
 
   useEffect(() => {
     fetchJobData();
@@ -832,25 +888,8 @@ export default function TechJobDetailPage() {
       setStatusSnapshot(null);
       return;
     }
-    let isActive = true;
-    const loadSnapshot = async () => {
-      try {
-        const response = await fetch(`/api/status/snapshot?jobId=${jobCardId}`);
-        const payload = await response.json();
-        if (!isActive) return;
-        if (payload?.success && payload?.snapshot) {
-          setStatusSnapshot(payload.snapshot);
-        }
-      } catch (snapshotError) {
-        if (!isActive) return;
-        console.error("Failed to load status snapshot:", snapshotError);
-      }
-    };
-    loadSnapshot();
-    return () => {
-      isActive = false;
-    };
-  }, [jobCardId]);
+    void loadStatusSnapshot(jobCardId);
+  }, [jobCardId, loadStatusSnapshot]);
 
   useEffect(() => {
     fetchClockedHoursTotal();
@@ -859,6 +898,25 @@ export default function TechJobDetailPage() {
   const hasActiveClocking = useMemo(
     () => clockingRows.some((row) => row && !row.clock_out),
     [clockingRows]
+  );
+  const activeClockingRows = useMemo(
+    () => clockingRows.filter((row) => row && !row.clock_out),
+    [clockingRows]
+  );
+  const workshopUserId = dbUserId ?? user?.id ?? null;
+  const motWorkClaim = useMemo(
+    () =>
+      activeClockingRows.find(
+        (row) => String(row?.work_type || "").trim().toLowerCase() === "mot"
+      ) || null,
+    [activeClockingRows]
+  );
+  const technicianWorkClocking = useMemo(
+    () =>
+      activeClockingRows.find(
+        (row) => String(row?.work_type || "").trim().toLowerCase() !== "mot"
+      ) || null,
+    [activeClockingRows]
   );
 
   const clockedMinutesTotal = useMemo(
@@ -879,6 +937,8 @@ export default function TechJobDetailPage() {
     const channel = supabase.channel(`job-clockings-${jobCardId}`);
     const handleClockingChange = () => {
       fetchClockedHoursTotal();
+      refreshJobClocking();
+      loadStatusSnapshot(jobCardId);
     };
 
     channel.on(
@@ -896,7 +956,54 @@ export default function TechJobDetailPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [jobCardId, fetchClockedHoursTotal]);
+  }, [jobCardId, fetchClockedHoursTotal, refreshJobClocking, loadStatusSnapshot]);
+
+  useEffect(() => {
+    if (!jobCardId) return undefined;
+
+    const channel = supabase.channel(`myjob-live-${jobCardId}`);
+    const handleJobRefresh = () => {
+      fetchJobData();
+    };
+
+    channel.on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "jobs",
+        filter: `id=eq.${jobCardId}`,
+      },
+      handleJobRefresh
+    );
+
+    channel.on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "job_writeups",
+        filter: `job_id=eq.${jobCardId}`,
+      },
+      handleJobRefresh
+    );
+
+    channel.on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "job_requests",
+        filter: `job_id=eq.${jobCardId}`,
+      },
+      handleJobRefresh
+    );
+
+    void channel.subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [jobCardId, fetchJobData]);
 
   useEffect(() => {
     if (!jobCardId) {
@@ -983,7 +1090,6 @@ export default function TechJobDetailPage() {
 
   // Callback: Handle job clock in
   const handleJobClockIn = useCallback(async () => {
-    const workshopUserId = dbUserId ?? user?.id;
     if (!workshopUserId) {
       alert("Unable to clock in because your workshop profile is not linked.");
       return;
@@ -999,23 +1105,29 @@ export default function TechJobDetailPage() {
 
     setClockInLoading(true);
     try {
+      const isMotClockIn = canClockIntoMotHandoff && pendingMotRequest?.requestId;
       const result = await clockInToJob(
         workshopUserId,
         jobCardId,
         jobCardNumber,
-        "initial"
+        isMotClockIn ? "mot" : "initial",
+        isMotClockIn ? pendingMotRequest.requestId : null
       );
 
       if (result.success) {
         alert(`Clocked in to Job ${jobCardNumber}`);
-        setStatus("In Progress");
+        if (!isMotClockIn) {
+          setStatus("In Progress");
+        }
         setCurrentJob(result.data);
         await refreshCurrentJob();
         setJobClocking(result.data);
         await refreshJobClocking();
         await fetchClockedHoursTotal();
         await refreshClockingStatus();
-        await syncJobStatus(IN_PROGRESS_STATUS, jobData?.jobCard?.status);
+        if (!isMotClockIn) {
+          await syncJobStatus(IN_PROGRESS_STATUS, jobData?.jobCard?.status);
+        }
       } else {
         alert(result.error || "Failed to clock in to this job.");
       }
@@ -1028,6 +1140,7 @@ export default function TechJobDetailPage() {
   }, [
     dbUserId,
     user?.id,
+    workshopUserId,
     jobCardId,
     jobCardNumber,
     jobClocking,
@@ -1038,6 +1151,8 @@ export default function TechJobDetailPage() {
     refreshClockingStatus,
     syncJobStatus,
     jobData?.jobCard?.status,
+    canClockIntoMotHandoff,
+    pendingMotRequest,
   ]);
 
   const handlePartsRequestSubmit = useCallback(async () => {
@@ -1430,8 +1545,70 @@ export default function TechJobDetailPage() {
     return mandatoryComplete;
   }, [sectionStatus]);
 
+  // Compute VHC resolution state from actual check rows for accurate tab colour.
+  const vhcResolutionSnapshot = useMemo(() => {
+    const checks = Array.isArray(jobData?.jobCard?.vhcChecks) ? jobData.jobCard.vhcChecks : [];
+    const summaryRows = checks.filter((check) => {
+      const section = (check?.section || "").toString().trim();
+      return section !== "VHC_CHECKSHEET" && section !== "VHC Checksheet";
+    });
+    if (summaryRows.length === 0) {
+      return { total: 0, resolved: 0, unresolved: 0, unresolvedRedAmberOrAuthorised: 0 };
+    }
+
+    let resolved = 0;
+    let unresolved = 0;
+    let unresolvedRedAmberOrAuthorised = 0;
+
+    summaryRows.forEach((check) => {
+      const decisions = [
+        check?.display_status,
+        check?.approval_status,
+        check?.approvalStatus,
+        check?.authorization_state,
+        check?.authorizationState,
+        check?.status,
+      ]
+        .filter(Boolean)
+        .map((v) => normaliseDecisionStatus(v));
+
+      const severity = (check?.severity || check?.traffic_light || "").toString().toLowerCase();
+      const isRed = severity.includes("red");
+      const isAmber = severity.includes("amber");
+      const hasDeclined = decisions.includes("declined");
+      const hasNotApplicable = decisions.includes("n/a");
+      const isAuthorised = decisions.includes("authorized");
+      const hasCompleted =
+        decisions.includes("completed") ||
+        check?.Complete === true ||
+        check?.complete === true;
+
+      const isResolved = hasDeclined || hasNotApplicable || (isAuthorised && hasCompleted);
+
+      if (isResolved) {
+        resolved += 1;
+      } else {
+        unresolved += 1;
+      }
+
+      if (isRed || isAmber || (isAuthorised && !hasCompleted)) {
+        if (!isResolved) {
+          unresolvedRedAmberOrAuthorised += 1;
+        }
+      }
+    });
+    return { total: summaryRows.length, resolved, unresolved, unresolvedRedAmberOrAuthorised };
+  }, [jobData?.jobCard?.vhcChecks]);
+
+  const hasRedAmberRepairRows = vhcResolutionSnapshot.unresolvedRedAmberOrAuthorised > 0;
+  const vhcTabComplete =
+    vhcResolutionSnapshot.total > 0 &&
+    vhcResolutionSnapshot.unresolvedRedAmberOrAuthorised === 0;
+  const vhcTabCompleteInstant = vhcTabComplete || Boolean(jobData?.jobCard?.vhcCompletedAt);
+  const vhcTabAmberReady = hasRedAmberRepairRows && !vhcTabCompleteInstant;
+
   const isVhcCompleted =
-    vhcCompleteOverride || Boolean(jobData?.jobCard?.vhcCompletedAt);
+    vhcCompleteOverride || vhcTabCompleteInstant;
   const showVhcReopenButton = isVhcCompleted;
 
   const writeUpCompletion = (() => {
@@ -1480,7 +1657,19 @@ export default function TechJobDetailPage() {
     typeof writeUpChecklistRowsComplete === "boolean"
       ? writeUpChecklistRowsComplete
       : writeUpCompletion === "complete" || writeUpCompletion === "waiting_additional_work";
-  const rectificationsComplete = writeUpComplete;
+  const writeUpTaskSummary = useMemo(
+    () => summarizeWriteUpTasks(liveWriteUpTasks || []),
+    [liveWriteUpTasks]
+  );
+  const effectiveWriteUpTaskSummary =
+    liveWriteUpTasks !== null
+      ? writeUpTaskSummary
+      : jobData?.jobCard?.writeUpTaskSummary || null;
+  const writeUpTechComplete =
+    effectiveWriteUpTaskSummary?.technicianTasksComplete === true || writeUpComplete;
+  const pendingMotTasks = effectiveWriteUpTaskSummary?.pendingMotTasks || [];
+  const hasPendingMotOnly = effectiveWriteUpTaskSummary?.hasPendingMotOnly === true;
+  const rectificationsComplete = writeUpTechComplete;
   const vhcAssistantState = useMemo(
     () =>
       buildVhcAssistantState({
@@ -1492,9 +1681,16 @@ export default function TechJobDetailPage() {
         sentToCustomer: false,
         canEdit: true,
         context: "internal",
-        writeUpComplete,
+        writeUpComplete: writeUpTechComplete,
       }),
-    [vhcChecks, jobData?.jobCard?.parts_job_items, jobData?.jobCard?.vhcCompletedAt, sectionStatus, jobRequiresVhc, writeUpComplete]
+    [
+      vhcChecks,
+      jobData?.jobCard?.parts_job_items,
+      jobData?.jobCard?.vhcCompletedAt,
+      sectionStatus,
+      jobRequiresVhc,
+      writeUpTechComplete,
+    ]
   );
 
   const handleCompleteVhcClick = useCallback(async () => {
@@ -1628,7 +1824,13 @@ export default function TechJobDetailPage() {
   // Effect: Sync job status to "In Progress" when clocked in
   useEffect(() => {
     if (!jobClocking || !jobCardId) return;
+    if (String(jobClocking?.workType || "").trim().toLowerCase() === "mot") {
+      return;
+    }
     const currentStatus = jobData?.jobCard?.status;
+    if (isTechTaskComplete(jobData?.jobCard)) {
+      return;
+    }
     if ((currentStatus || "").trim() === IN_PROGRESS_STATUS) {
       return;
     }
@@ -2085,8 +2287,13 @@ export default function TechJobDetailPage() {
     const normalized = String(roleName).toLowerCase();
     return normalized.includes("tech") || normalized.includes("mot");
   });
+  const hasMotRoleAccess = userRoles.some((roleName) =>
+    String(roleName).toLowerCase().includes("mot")
+  );
   const isTech =
     (username && allowedTechNames.has(username)) || hasRoleAccess;
+  const isMotTester =
+    (username && motTestersList.includes(username)) || hasMotRoleAccess;
   const canManageDocuments = isTech;
 
   useEffect(() => {
@@ -2101,7 +2308,7 @@ export default function TechJobDetailPage() {
     if (!isMarkedComplete) return;
 
     const requiresVhc = jobData?.jobCard?.vhcRequired === true;
-    const canCompleteJobLocal = writeUpComplete && (!requiresVhc || isVhcCompleted);
+    const canCompleteJobLocal = writeUpTechComplete && (!requiresVhc || isVhcCompleted);
     if (canCompleteJobLocal) return;
 
     updateJob(jobCardId, { tech_completion_status: null }).then((statusResult) => {
@@ -2124,7 +2331,7 @@ export default function TechJobDetailPage() {
     jobData?.jobCard?.techCompletionStatus,
     jobData?.jobCard?.vhcRequired,
     isVhcCompleted,
-    writeUpComplete,
+    writeUpTechComplete,
   ]);
 
 
@@ -2196,7 +2403,7 @@ export default function TechJobDetailPage() {
   const snapshotTechStatus = statusSnapshot?.tech?.status || null;
   const techStatusDisplay =
     (snapshotTechStatus && TECH_DISPLAY[snapshotTechStatus]) ||
-    resolveTechStatusLabel(jobCard);
+    resolveTechStatusLabel(jobCard, { hasActiveClocking: Boolean(jobClocking) });
   const jobStatusColor = STATUS_COLORS[techStatusDisplay] || "var(--info)";
   const jobStatusBadgeStyle = getStatusBadgeStyle(techStatusDisplay, jobStatusColor);
   // Count authorised VHC items for the quick stats
@@ -2212,7 +2419,18 @@ export default function TechJobDetailPage() {
   const categories = Array.isArray(jobCard?.jobCategories) ? jobCard.jobCategories : [];
   const detectedJobTypes =
     categories.length > 0
-      ? categories.map((entry) => formatDetectedJobTypeLabel(entry))
+      ? categories.map((entry) => {
+          const label = formatDetectedJobTypeLabel(entry);
+          // If the detection returned "Other" but the job clearly involves MOT, show "MOT".
+          if (label === "Other") {
+            const motHaystack = [
+              jobCard?.type, jobCard?.description,
+              ...(Array.isArray(jobCard?.requests) ? jobCard.requests.map((r) => (typeof r === "string" ? r : r?.description || "")) : []),
+            ].join(" ").toLowerCase();
+            if (motHaystack.includes("mot")) return "MOT";
+          }
+          return label;
+        })
       : [deriveJobTypeLabel(jobCard)];
 
   // Quick stats data for display
@@ -2262,13 +2480,24 @@ export default function TechJobDetailPage() {
     "";
 
   const isVhcCompleteForTech = !jobRequiresVhc || isVhcCompleted;
-
-  const canCompleteJob = writeUpComplete && isVhcCompleteForTech;
+  const technicianWorkDone = isTechTaskComplete(jobCard);
+  const pendingMotRequest = pendingMotTasks[0] || null;
+  const motClockedByAnotherUser =
+    Boolean(motWorkClaim) && Number(motWorkClaim?.user_id) !== Number(workshopUserId);
+  const canClockIntoMotHandoff =
+    isMotTester &&
+    technicianWorkDone &&
+    hasPendingMotOnly &&
+    !technicianWorkClocking &&
+    !motClockedByAnotherUser;
+  const canCompleteJob = writeUpTechComplete && isVhcCompleteForTech;
   const completeJobLockedReasons = [];
-  if (!writeUpComplete) {
+  if (!writeUpTechComplete) {
     if (!rectificationsComplete) {
       completeJobLockedReasons.push("Complete all write-up checkboxes");
     }
+  } else if (hasPendingMotOnly) {
+    completeJobLockedReasons.push("MOT request will hand over to an MOT tester after tech completion");
   }
   if (!isVhcCompleteForTech) {
     completeJobLockedReasons.push("Complete mandatory VHC sections");
@@ -2456,6 +2685,11 @@ export default function TechJobDetailPage() {
                 <button
                   onClick={handleJobClockIn}
                   disabled={clockInLoading || clockOutLoading}
+                  title={
+                    canClockIntoMotHandoff
+                      ? "Clock in to complete the remaining MOT request"
+                      : "Clock in to start technician work"
+                  }
                   style={{
                     padding: "6px 12px",
                     backgroundColor: "var(--accent-purple-surface)",
@@ -2469,7 +2703,11 @@ export default function TechJobDetailPage() {
                     transition: "all 0.2s ease"
                   }}
                 >
-                  {clockInLoading ? "Clocking In..." : "Clock In"}
+                  {clockInLoading
+                    ? "Clocking In..."
+                    : canClockIntoMotHandoff
+                    ? "Clock In to MOT"
+                    : "Clock In"}
                 </button>
                 </>
               )}
@@ -2610,9 +2848,12 @@ export default function TechJobDetailPage() {
         >
           {visibleTabs.map((tab) => {
             const isActive = activeTab === tab;
+            const isVhcTab = tab === "vhc";
+            const isVhcGreen = isVhcTab && isVhcCompleted;
+            const isVhcAmber = isVhcTab && vhcTabAmberReady;
             const isComplete =
-              (tab === "vhc" && isVhcCompleted) ||
-              (tab === "write-up" && writeUpComplete);
+              isVhcGreen ||
+              (tab === "write-up" && writeUpTechComplete);
             const labelMap = {
               overview: "Overview",
               vhc: "VHC",
@@ -2621,13 +2862,23 @@ export default function TechJobDetailPage() {
               "write-up": "Write-Up",
               documents: "Documents",
             };
+            const tabTone = isComplete ? "success" : isVhcAmber ? "warning" : "default";
             const baseBackground = isActive ? "var(--primary)" : "transparent";
             const completeBackground = isActive ? "var(--success)" : "var(--success-surface)";
-            const background = isComplete ? completeBackground : baseBackground;
-            const color = isComplete
+            const amberBackground = isActive ? "var(--warning)" : "var(--warning-surface, rgba(245, 158, 11, 0.1))";
+            const background = tabTone === "success"
+              ? completeBackground
+              : tabTone === "warning"
+              ? amberBackground
+              : baseBackground;
+            const color = tabTone === "success"
               ? isActive
                 ? "var(--text-inverse)"
                 : "var(--success-dark)"
+              : tabTone === "warning"
+              ? isActive
+                ? "var(--text-inverse)"
+                : "var(--warning-dark)"
               : isActive
               ? "var(--text-inverse)"
               : "var(--text-primary)";
@@ -4162,6 +4413,9 @@ export default function TechJobDetailPage() {
                     },
                   };
                 });
+              }}
+              onTasksSnapshotChange={(nextTasks) => {
+                setLiveWriteUpTasks(Array.isArray(nextTasks) ? nextTasks : []);
               }}
             />
           </DevLayoutSection>

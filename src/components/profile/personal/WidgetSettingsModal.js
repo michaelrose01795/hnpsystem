@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { CalendarField } from "@/components/calendarAPI";
 import DropdownField from "@/components/dropdownAPI/DropdownField";
 import useIsMobile from "@/hooks/useIsMobile";
@@ -12,7 +12,16 @@ import {
   widgetInsetSurfaceStyle,
 } from "@/components/profile/personal/widgets/shared";
 import Button from "@/components/ui/Button";
-import { formatMonthLabel, getCurrentMonthKey, normaliseMonthKey, shiftMonthKey } from "@/lib/profile/calculations";
+import {
+  calculateMortgagePaymentBreakdown,
+  calculateMortgagePayoffTimeline,
+  calculateProjectedSavingsDate,
+  formatMonthLabel,
+  getCurrentMonthKey,
+  normaliseMonthKey,
+  shiftMonthKey,
+} from "@/lib/profile/calculations";
+import { FIXED_OUTGOING_CATEGORY_OPTIONS } from "@/lib/profile/personalFinance";
 
 const RECURRING_DAY_OPTIONS = [
   { value: 1, label: "Monday" },
@@ -95,12 +104,17 @@ const WIDGET_SETTINGS_PRESETS = {
   mortgage: {
     useGlobalMonth: true,
     monthKey: getCurrentMonthKey(),
-    depositTarget: 0,
-    currentSaved: 0,
+    mode: "saving",
+    savingsGoal: 0,
+    monthlyContribution: 0,
+    totalSaved: 0,
+    savingsDeadline: "",
     linkedSavingsAccountId: "",
     linkedMortgagePaymentSourceId: "",
-    monthlyPayment: 0,
-    mortgageDeadline: "",
+    mortgageMonthlyPayment: 0,
+    interestRate: 0,
+    termLengthYears: 25,
+    remainingBalance: 0,
     dateDisplayMode: "month",
     dateValue: getCurrentMonthKey(),
   },
@@ -160,13 +174,30 @@ function buildInitialSettings(widgetType, data = {}, activeMonthKey = getCurrent
   const savedDateValue = saved.dateValue || saved.monthKey || activeMonthKey;
   const normalisedMonth = normaliseMonthKey(saved.monthKey || activeMonthKey, activeMonthKey);
 
-  return {
+  const initial = {
     ...preset,
     ...saved,
     monthKey: normalisedMonth,
     dateDisplayMode: savedMode,
     dateValue: savedMode === "day" ? String(savedDateValue).slice(0, 10) : String(savedDateValue).slice(0, 7),
   };
+
+  if (widgetType === "mortgage") {
+    return {
+      ...initial,
+      mode: saved.mode === "bills" ? "bills" : "saving",
+      savingsGoal: toNumber(saved.savingsGoal ?? saved.depositTarget, 0),
+      monthlyContribution: toNumber(saved.monthlyContribution ?? saved.monthlyPayment, 0),
+      totalSaved: toNumber(saved.totalSaved ?? saved.currentSaved, 0),
+      savingsDeadline: saved.savingsDeadline || saved.mortgageDeadline || "",
+      mortgageMonthlyPayment: toNumber(saved.mortgageMonthlyPayment ?? saved.monthlyPayment, 0),
+      interestRate: toNumber(saved.interestRate, 0),
+      termLengthYears: toNumber(saved.termLengthYears, preset.termLengthYears),
+      remainingBalance: toNumber(saved.remainingBalance, 0),
+    };
+  }
+
+  return initial;
 }
 
 function buildMonthOptions(centerMonthKey, radius = 12) {
@@ -221,7 +252,313 @@ function Section({ title, description = "", children }) {
   );
 }
 
-function FinanceCollectionEditor({ title, source, rows = [], isMobile, emptyLabel, namePlaceholder, amountPlaceholder, onAdd, onUpdate, onRemove, extraColumns = null }) {
+function SegmentedTabs({ value, options = [], onChange }) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gap: "8px",
+        gridTemplateColumns: `repeat(${options.length || 1}, minmax(0, 1fr))`,
+        ...widgetInsetSurfaceStyle,
+        padding: "6px",
+      }}
+    >
+      {options.map((option) => {
+        const isActive = option.value === value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => onChange(option.value)}
+            style={{
+              border: "none",
+              borderRadius: "10px",
+              padding: "10px 12px",
+              background: isActive ? "rgba(var(--primary-rgb), 0.12)" : "transparent",
+              color: "var(--text-primary)",
+              fontSize: "0.82rem",
+              fontWeight: 700,
+              cursor: "pointer",
+              transition: "var(--control-transition)",
+            }}
+          >
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function resolveLinkedMortgagePaymentValue(finance, sourceId = "") {
+  const savingsBalances = finance?.model?.savingsAccountBalances || [];
+  const fixedOutgoings = finance?.model?.currentMonth?.monthState?.fixedOutgoings || [];
+  const paymentPlans = finance?.model?.plannedPaymentPlanDetails || [];
+
+  if (!sourceId) return null;
+  if (sourceId.startsWith("savings:")) {
+    const savingsAccount = savingsBalances.find((entry) => entry.id === sourceId.slice(8));
+    return savingsAccount ? Number(savingsAccount.monthInflow || 0) : null;
+  }
+  if (sourceId.startsWith("fixed:")) {
+    const fixed = fixedOutgoings.find((entry) => entry.id === sourceId.slice(6));
+    return fixed ? Number(fixed.amount || 0) : null;
+  }
+  if (sourceId.startsWith("plan:")) {
+    const plan = paymentPlans.find((entry) => entry.id === sourceId.slice(5));
+    return plan ? Number(plan.thisMonthAmount || 0) : null;
+  }
+  return null;
+}
+
+function MortgageModeEditor({ finance, isMobile, settings, updateSetting }) {
+  const accounts = finance?.financeState?.savingsAccounts || [];
+  const balances = finance?.model?.savingsAccountBalances || [];
+  const fixedOutgoings = finance?.model?.currentMonth?.monthState?.fixedOutgoings || [];
+  const paymentPlans = finance?.model?.plannedPaymentPlanDetails || [];
+  const mode = settings.mode === "bills" ? "bills" : "saving";
+  const linkedSavingsId = settings.linkedSavingsAccountId || "";
+  const linkedPaymentSourceId = settings.linkedMortgagePaymentSourceId || "";
+  const linkedSavingsBalance = linkedSavingsId
+    ? balances.find((entry) => entry.id === linkedSavingsId)?.currentBalance || 0
+    : null;
+  const linkedPaymentValue = resolveLinkedMortgagePaymentValue(finance, linkedPaymentSourceId);
+  const totalSaved = linkedSavingsBalance !== null ? Number(linkedSavingsBalance) : Number(settings.totalSaved || 0);
+  const monthlyContribution = linkedPaymentValue !== null
+    ? Number(linkedPaymentValue)
+    : Number(settings.monthlyContribution || 0);
+  const mortgageMonthlyPayment = linkedPaymentValue !== null
+    ? Number(linkedPaymentValue)
+    : Number(settings.mortgageMonthlyPayment || 0);
+  const remainingAmount = Math.max(0, Number(settings.savingsGoal || 0) - totalSaved);
+  const projectedDate = calculateProjectedSavingsDate({
+    targetAmount: settings.savingsGoal || 0,
+    currentAmount: totalSaved,
+    monthlyContribution,
+  });
+  const monthsToGoal = Number(settings.savingsGoal || 0) <= totalSaved
+    ? 0
+    : monthlyContribution > 0
+      ? Math.ceil(remainingAmount / monthlyContribution)
+      : null;
+  const paymentBreakdown = useMemo(
+    () => calculateMortgagePaymentBreakdown({
+      remainingBalance: settings.remainingBalance,
+      monthlyPayment: mortgageMonthlyPayment,
+      interestRate: settings.interestRate,
+    }),
+    [mortgageMonthlyPayment, settings.interestRate, settings.remainingBalance]
+  );
+  const payoffTimeline = useMemo(
+    () => calculateMortgagePayoffTimeline({
+      remainingBalance: settings.remainingBalance,
+      monthlyPayment: mortgageMonthlyPayment,
+      interestRate: settings.interestRate,
+    }),
+    [mortgageMonthlyPayment, settings.interestRate, settings.remainingBalance]
+  );
+
+  const savingsAccountOptions = [
+    { label: "Manual entry", value: "" },
+    ...accounts.map((account) => {
+      const balance = balances.find((entry) => entry.id === account.id);
+      return {
+        label: `${account.name || "Unnamed"} (${formatCurrency(balance?.currentBalance || 0)})`,
+        value: account.id,
+      };
+    }),
+  ];
+
+  const paymentSourceOptions = [
+    { label: "Manual entry", value: "" },
+    ...accounts.map((account) => {
+      const balance = balances.find((entry) => entry.id === account.id);
+      return {
+        label: `Savings: ${account.name || "Unnamed"} (${formatCurrency(balance?.monthInflow || 0)}/month)`,
+        value: `savings:${account.id}`,
+      };
+    }),
+    ...fixedOutgoings.map((entry) => ({
+      label: `Spending: ${entry.name || "Unnamed"} (${formatCurrency(entry.amount || 0)})`,
+      value: `fixed:${entry.id}`,
+    })),
+    ...paymentPlans.map((plan) => ({
+      label: `Payment schedule: ${plan.name || "Unnamed"} (${formatCurrency(plan.thisMonthAmount || 0)})`,
+      value: `plan:${plan.id}`,
+    })),
+  ];
+
+  return (
+    <Section title="Mortgage mode" description="Only one mortgage mode is active at a time.">
+      <SegmentedTabs
+        value={mode}
+        onChange={(nextMode) => updateSetting("mode", nextMode)}
+        options={[
+          { value: "saving", label: "Saving for Mortgage" },
+          { value: "bills", label: "Mortgage Bills" },
+        ]}
+      />
+
+      {mode === "saving" ? (
+        <div style={{ display: "grid", gap: "12px" }}>
+          <div style={{ display: "grid", gap: "10px", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
+            <label>
+              <FieldLabel>Savings goal</FieldLabel>
+              <input className="app-input" type="number" value={settings.savingsGoal} onChange={(e) => updateSetting("savingsGoal", e.target.value)} />
+            </label>
+            <div style={{ display: "grid", gap: "6px" }}>
+              <FieldLabel>Total saved</FieldLabel>
+              <DropdownField
+                value={linkedSavingsId}
+                options={savingsAccountOptions}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  updateSetting("linkedSavingsAccountId", value);
+                  if (value) {
+                    const balance = balances.find((entry) => entry.id === value);
+                    updateSetting("totalSaved", balance?.currentBalance || 0);
+                  }
+                }}
+                placeholder="Link savings account..."
+              />
+              {!linkedSavingsId ? (
+                <input className="app-input" type="number" value={settings.totalSaved} onChange={(e) => updateSetting("totalSaved", e.target.value)} />
+              ) : null}
+            </div>
+            <div style={{ display: "grid", gap: "6px" }}>
+              <FieldLabel>Monthly contribution</FieldLabel>
+              <DropdownField
+                value={linkedPaymentSourceId}
+                options={paymentSourceOptions}
+                menuStyle={{ maxHeight: "192px", overflowY: "auto" }}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  updateSetting("linkedMortgagePaymentSourceId", value);
+                  if (value) {
+                    const linkedValue = resolveLinkedMortgagePaymentValue(finance, value);
+                    if (linkedValue !== null) updateSetting("monthlyContribution", linkedValue);
+                  }
+                }}
+                placeholder="Link monthly contribution..."
+              />
+              {!linkedPaymentSourceId ? (
+                <input className="app-input" type="number" value={settings.monthlyContribution} onChange={(e) => updateSetting("monthlyContribution", e.target.value)} />
+              ) : (
+                <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                  Auto-updated from linked contribution source
+                </div>
+              )}
+            </div>
+            <label>
+              <FieldLabel>Timeline target date</FieldLabel>
+              <CalendarField value={settings.savingsDeadline || ""} onChange={(e) => updateSetting("savingsDeadline", e.target.value)} placeholder="Target date" />
+            </label>
+          </div>
+
+          <div style={{ display: "grid", gap: "8px", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))" }}>
+            <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px" }}>
+              <FieldLabel>Remaining amount</FieldLabel>
+              <div style={{ fontSize: "0.92rem", fontWeight: 700 }}>{formatCurrency(remainingAmount)}</div>
+            </div>
+            <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px" }}>
+              <FieldLabel>Timeline</FieldLabel>
+              <div style={{ fontSize: "0.92rem", fontWeight: 700 }}>
+                {monthsToGoal === null ? "No estimate" : `${monthsToGoal} month${monthsToGoal === 1 ? "" : "s"}`}
+              </div>
+            </div>
+            <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px" }}>
+              <FieldLabel>Projected date</FieldLabel>
+              <div style={{ fontSize: "0.92rem", fontWeight: 700 }}>{projectedDate ? formatDate(projectedDate) : "No projection"}</div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: "grid", gap: "12px" }}>
+          <div style={{ display: "grid", gap: "10px", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
+            <div style={{ display: "grid", gap: "6px" }}>
+              <FieldLabel>Monthly payment</FieldLabel>
+              <DropdownField
+                value={linkedPaymentSourceId}
+                options={paymentSourceOptions}
+                menuStyle={{ maxHeight: "192px", overflowY: "auto" }}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  updateSetting("linkedMortgagePaymentSourceId", value);
+                  if (value) {
+                    const linkedValue = resolveLinkedMortgagePaymentValue(finance, value);
+                    if (linkedValue !== null) updateSetting("mortgageMonthlyPayment", linkedValue);
+                  }
+                }}
+                placeholder="Link monthly payment..."
+              />
+              {!linkedPaymentSourceId ? (
+                <input className="app-input" type="number" value={settings.mortgageMonthlyPayment} onChange={(e) => updateSetting("mortgageMonthlyPayment", e.target.value)} />
+              ) : (
+                <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                  Auto-updated from linked payment source
+                </div>
+              )}
+            </div>
+            <label>
+              <FieldLabel>Interest rate (%)</FieldLabel>
+              <input className="app-input" type="number" step="0.01" value={settings.interestRate} onChange={(e) => updateSetting("interestRate", e.target.value)} />
+            </label>
+            <label>
+              <FieldLabel>Term length (years)</FieldLabel>
+              <input className="app-input" type="number" value={settings.termLengthYears} onChange={(e) => updateSetting("termLengthYears", e.target.value)} />
+            </label>
+            <label>
+              <FieldLabel>Remaining balance</FieldLabel>
+              <input className="app-input" type="number" value={settings.remainingBalance} onChange={(e) => updateSetting("remainingBalance", e.target.value)} />
+            </label>
+          </div>
+
+          <div style={{ display: "grid", gap: "8px", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))" }}>
+            <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px" }}>
+              <FieldLabel>Breakdown</FieldLabel>
+              <div style={{ fontSize: "0.84rem", lineHeight: 1.5 }}>
+                {formatCurrency(paymentBreakdown.interestPayment)} interest / {formatCurrency(paymentBreakdown.capitalPayment)} capital
+              </div>
+            </div>
+            <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px" }}>
+              <FieldLabel>Balance after payment</FieldLabel>
+              <div style={{ fontSize: "0.92rem", fontWeight: 700 }}>{formatCurrency(paymentBreakdown.remainingAfterPayment)}</div>
+            </div>
+            <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px" }}>
+              <FieldLabel>Payoff timeline</FieldLabel>
+              <div style={{ fontSize: "0.84rem", lineHeight: 1.5 }}>
+                {payoffTimeline.isPaymentInsufficient
+                  ? "Payment too low"
+                  : payoffTimeline.monthsToPayoff === null
+                    ? "No estimate"
+                    : `${payoffTimeline.monthsToPayoff} months`}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </Section>
+  );
+}
+
+function FinanceCollectionEditor({
+  title,
+  source,
+  rows = [],
+  isMobile,
+  emptyLabel,
+  namePlaceholder,
+  amountPlaceholder,
+  onAdd,
+  onUpdate,
+  onRemove,
+  extraColumns = null,
+  categoryOptions = null,
+}) {
+  const gridTemplateColumns = extraColumns || (
+    isMobile ? "minmax(0, 1fr)" : categoryOptions ? "1.5fr 0.9fr 1fr auto" : "1.6fr 1fr auto"
+  );
+
   return (
     <Section title={title}>
       {rows.length === 0 ? (
@@ -236,13 +573,20 @@ function FinanceCollectionEditor({ title, source, rows = [], isMobile, emptyLabe
               style={{
                 display: "grid",
                 gap: "8px",
-                gridTemplateColumns: extraColumns || (isMobile ? "minmax(0, 1fr)" : "1.6fr 1fr auto"),
+                gridTemplateColumns,
                 padding: "8px 10px",
                 ...widgetInsetSurfaceStyle,
               }}
             >
               <input className="app-input" value={entry.name || ""} placeholder={namePlaceholder} onChange={(e) => onUpdate(entry.id, { name: e.target.value })} />
               <input className="app-input" type="number" value={entry.amount || 0} placeholder={amountPlaceholder} onChange={(e) => onUpdate(entry.id, { amount: toNumber(e.target.value) })} />
+              {categoryOptions ? (
+                <DropdownField
+                  value={entry.category || "other"}
+                  onChange={(e) => onUpdate(entry.id, { category: e.target.value })}
+                  options={categoryOptions}
+                />
+              ) : null}
               <Button type="button" variant="secondary" size="sm" pill onClick={() => onRemove(entry.id)}>
                 Remove
               </Button>
@@ -259,6 +603,8 @@ function FinanceCollectionEditor({ title, source, rows = [], isMobile, emptyLabe
 
 function CreditCardEditor({ finance, isMobile }) {
   const rows = finance?.model?.currentMonth?.monthState?.creditCards || [];
+  const accounts = finance?.financeState?.creditCardAccounts || [];
+  const accountOptions = accounts.map((entry) => ({ value: entry.id, label: entry.name || "Card" }));
 
   return (
     <Section
@@ -269,7 +615,7 @@ function CreditCardEditor({ finance, isMobile }) {
           style={{
             display: "grid",
             gap: "4px",
-            gridTemplateColumns: "1.2fr 1fr 1fr auto",
+            gridTemplateColumns: "1.4fr 1fr 1fr auto auto",
             fontSize: "0.74rem",
             color: "var(--text-secondary)",
             fontWeight: 600,
@@ -279,9 +625,49 @@ function CreditCardEditor({ finance, isMobile }) {
           <span>Name</span>
           <span>Balance</span>
           <span>Monthly payment</span>
+          <span>Paid off</span>
           <span />
         </div>
       ) : null}
+      <div style={{ fontSize: "0.74rem", fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+        Credit card names
+      </div>
+      {accounts.length === 0 ? (
+        <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+          No credit card names added yet.
+        </div>
+      ) : (
+        <div style={{ display: "grid", gap: "8px" }}>
+          {accounts.map((entry) => (
+            <div
+              key={entry.id}
+              style={{
+                display: "grid",
+                gap: "8px",
+                gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "minmax(0, 1fr) auto",
+                padding: "8px 10px",
+                ...widgetInsetSurfaceStyle,
+              }}
+            >
+              <input
+                className="app-input"
+                value={entry.name || ""}
+                placeholder="Card name"
+                onChange={(e) => finance.updateCreditCardAccount(entry.id, { name: e.target.value })}
+              />
+              <Button type="button" variant="secondary" size="sm" pill onClick={() => finance.removeCreditCardAccount(entry.id)}>
+                Remove
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+      <Button type="button" variant="secondary" size="sm" pill onClick={() => finance?.addCreditCardAccount("")} style={{ justifySelf: "start" }}>
+        Add credit card name
+      </Button>
+      <div style={{ fontSize: "0.74rem", fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+        {formatMonthLabel(finance?.model?.selectedMonthKey || getCurrentMonthKey())} balances
+      </div>
       {rows.length === 0 ? (
         <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
           No credit cards added yet.
@@ -294,14 +680,42 @@ function CreditCardEditor({ finance, isMobile }) {
               style={{
                 display: "grid",
                 gap: "8px",
-                gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "1.2fr 1fr 1fr auto",
+                gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "1.4fr 1fr 1fr auto auto",
                 padding: "8px 10px",
                 ...widgetInsetSurfaceStyle,
               }}
             >
-              <input className="app-input" value={entry.name || ""} placeholder="Card name" onChange={(e) => finance.updateCreditCard(entry.id, { name: e.target.value })} />
+              <DropdownField
+                value={entry.cardId || ""}
+                onChange={(event) => {
+                  const selectedId = event.target.value;
+                  const selectedAccount = accounts.find((account) => account.id === selectedId) || null;
+                  finance.updateCreditCard(entry.id, {
+                    cardId: selectedId,
+                    name: selectedAccount?.name || entry.name || "",
+                  });
+                }}
+                options={accountOptions}
+                ariaLabel="Credit card"
+                placeholder="Choose card"
+              />
               <input className="app-input" type="number" value={entry.balance || 0} placeholder="Balance" onChange={(e) => finance.updateCreditCard(entry.id, { balance: toNumber(e.target.value) })} />
-              <input className="app-input" type="number" value={entry.monthlyPayment || 0} placeholder="Monthly payment" onChange={(e) => finance.updateCreditCard(entry.id, { monthlyPayment: toNumber(e.target.value) })} />
+              <input
+                className="app-input"
+                type="number"
+                value={entry.monthlyPayment || 0}
+                placeholder={entry.isPaidOff ? "Paid off" : "Monthly payment"}
+                disabled={entry.isPaidOff === true}
+                onChange={(e) => finance.updateCreditCard(entry.id, { monthlyPayment: toNumber(e.target.value) })}
+              />
+              <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.8rem", fontWeight: 600 }}>
+                <input
+                  type="checkbox"
+                  checked={entry.isPaidOff === true}
+                  onChange={(e) => finance.updateCreditCard(entry.id, { isPaidOff: e.target.checked })}
+                />
+                <span>Paid off</span>
+              </label>
               <Button type="button" variant="secondary" size="sm" pill onClick={() => finance.removeCreditCard(entry.id)}>
                 Remove
               </Button>
@@ -336,6 +750,7 @@ function Stat({ label, children }) {
 function PayAndWorkEditor({ finance, isMobile }) {
   const pay = finance.financeState.paySettings || {};
   const month = finance.model.currentMonth;
+  const monthLabel = formatMonthLabel(finance.model.selectedMonthKey);
 
   return (
     <Section
@@ -394,19 +809,24 @@ function PayAndWorkEditor({ finance, isMobile }) {
         Tax and NI overrides
       </div>
       <CheckboxRow
-        label="Override tax and NI with fixed £ amounts"
-        checked={Boolean(pay.useManualTax)}
-        onChange={(checked) => finance.updatePaySetting("useManualTax", checked)}
+        label={`Override tax and NI for ${monthLabel} only with fixed £ amounts`}
+        checked={Boolean(month.monthState.useManualTax)}
+        onChange={(checked) => finance.updateMonthTaxOverride("useManualTax", checked)}
       />
-      {pay.useManualTax ? (
+      <div style={{ fontSize: "0.78rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>
+        These overrides are saved against the selected month only and never update other months.
+      </div>
+      {month.monthState.useManualTax ? (
         <div style={{ display: "grid", gap: "10px", gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "1fr 1fr" }}>
           <label>
             <FieldLabel>Tax (£)</FieldLabel>
             <input
               className="app-input"
               type="number"
-              value={pay.manualTax || 0}
-              onChange={(e) => finance.updatePaySetting("manualTax", toNumber(e.target.value))}
+              step="0.01"
+              min="0"
+              value={month.monthState.manualTax || 0}
+              onChange={(e) => finance.updateMonthTaxOverride("manualTax", toNumber(e.target.value))}
             />
           </label>
           <label>
@@ -414,15 +834,29 @@ function PayAndWorkEditor({ finance, isMobile }) {
             <input
               className="app-input"
               type="number"
-              value={pay.manualNationalInsurance || 0}
-              onChange={(e) => finance.updatePaySetting("manualNationalInsurance", toNumber(e.target.value))}
+              step="0.01"
+              min="0"
+              value={month.monthState.manualNationalInsurance || 0}
+              onChange={(e) => finance.updateMonthTaxOverride("manualNationalInsurance", toNumber(e.target.value))}
             />
           </label>
         </div>
       ) : null}
+      <div style={{ display: "flex", justifyContent: "flex-start" }}>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          pill
+          onClick={finance.resetMonthTaxOverride}
+          disabled={!month.monthState.useManualTax}
+        >
+          Reset Tax and NI to Auto
+        </Button>
+      </div>
 
       <StatGrid isMobile={isMobile}>
-        <Stat label="Hours worked">{month.pay.expectedHours.toFixed(1)}h</Stat>
+        <Stat label="Hours worked">{month.pay.hoursWorked.toFixed(1)}h</Stat>
         <Stat label="Base pay">{formatCurrency(month.pay.basePay)}</Stat>
         <Stat label="Tax">{formatCurrency(month.pay.tax)}</Stat>
         <Stat label="NI">{formatCurrency(month.pay.nationalInsurance)}</Stat>
@@ -447,6 +881,15 @@ function IncomeAdjustmentsEditor({ finance, isMobile }) {
             type="number"
             value={month.monthState.incomeAdjustments || 0}
             onChange={(e) => finance.updateMonthField("incomeAdjustments", toNumber(e.target.value))}
+          />
+        </label>
+        <label>
+          <FieldLabel>Work deduction</FieldLabel>
+          <input
+            className="app-input"
+            type="text"
+            value={formatCurrency(month.pay.workDeductions || 0)}
+            readOnly
           />
         </label>
       </div>
@@ -1009,6 +1452,12 @@ function FuelEntriesEditor({ finance, isMobile }) {
     return Number.isFinite(parsed) ? parsed : 0;
   };
 
+  const parseCostPerLitreValue = (value) => {
+    const parsed = parseValue(value);
+    if (parsed <= 0) return 0;
+    return parsed > 10 ? parsed / 100 : parsed;
+  };
+
   const roundToString = (value, decimals) => {
     if (!Number.isFinite(value) || value <= 0) return "";
     return value.toFixed(decimals);
@@ -1020,7 +1469,7 @@ function FuelEntriesEditor({ finance, isMobile }) {
     const costPerLitreRaw = String(nextDraft.costPerLitre ?? "").trim();
     const cost = parseValue(costRaw);
     const litres = parseValue(litresRaw);
-    const costPerLitre = parseValue(costPerLitreRaw);
+    const costPerLitre = parseCostPerLitreValue(costPerLitreRaw);
     const hasCost = costRaw !== "" && cost > 0;
     const hasLitres = litresRaw !== "" && litres > 0;
     const hasCostPerLitre = costPerLitreRaw !== "" && costPerLitre > 0;
@@ -1386,6 +1835,154 @@ function SavingsTransactionsEditor({ finance, isMobile }) {
   );
 }
 
+const USER_ACCOUNT_TYPE_OPTIONS = [
+  { value: "current", label: "Current Account" },
+  { value: "savings", label: "Savings Account" },
+  { value: "credit-card", label: "Credit Card" },
+  { value: "other", label: "Other" },
+];
+
+function UserAccountsEditor({ finance, isMobile }) {
+  const accounts = finance.financeState.userAccounts || [];
+  const [validationError, setValidationError] = useState("");
+
+  const handleAdd = () => {
+    setValidationError("");
+    finance.addAccount({ name: "", type: "current", balance: 0, showInOverview: true });
+  };
+
+  const handleUpdateName = (id, name) => {
+    setValidationError("");
+    const account = accounts.find((a) => a.id === id);
+    if (!account) return;
+    const trimmed = String(name || "").trim();
+    if (trimmed) {
+      const duplicate = accounts.some(
+        (a) => a.id !== id && a.type === account.type && String(a.name || "").trim().toLowerCase() === trimmed.toLowerCase()
+      );
+      if (duplicate) {
+        setValidationError(`An account named "${trimmed}" already exists for this type.`);
+        return;
+      }
+    }
+    finance.updateAccount(id, { name });
+  };
+
+  return (
+    <Section title="Accounts" description="Add bank accounts and credit cards. These are snapshot balances for the Finance Overview widget only — they do not affect income or outgoing totals.">
+      {!isMobile && accounts.length > 0 ? (
+        <div
+          style={{
+            display: "grid",
+            gap: "4px",
+            gridTemplateColumns: "1.4fr 1fr 1fr 0.6fr auto",
+            fontSize: "0.74rem",
+            color: "var(--text-secondary)",
+            fontWeight: 600,
+            padding: "0 2px",
+          }}
+        >
+          <span>Name</span>
+          <span>Type</span>
+          <span>Balance</span>
+          <span>Visible</span>
+          <span />
+        </div>
+      ) : null}
+      {accounts.length === 0 ? (
+        <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+          No accounts added yet.
+        </div>
+      ) : (
+        <div style={{ display: "grid", gap: "8px" }}>
+          {accounts.map((account) => (
+            <div
+              key={account.id}
+              style={{
+                display: "grid",
+                gap: "8px",
+                gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "1.4fr 1fr 1fr 0.6fr auto",
+                padding: "8px 10px",
+                ...widgetInsetSurfaceStyle,
+              }}
+            >
+              <input
+                className="app-input"
+                value={account.name || ""}
+                placeholder="Account name"
+                onChange={(e) => handleUpdateName(account.id, e.target.value)}
+              />
+              <DropdownField
+                value={account.type || "current"}
+                onChange={(e) => finance.updateAccount(account.id, { type: e.target.value })}
+                options={USER_ACCOUNT_TYPE_OPTIONS}
+              />
+              <input
+                className="app-input"
+                type="number"
+                step="0.01"
+                value={account.balance || 0}
+                placeholder="Balance"
+                onChange={(e) => finance.updateAccount(account.id, { balance: toNumber(e.target.value) })}
+              />
+              <label style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <input
+                  type="checkbox"
+                  checked={account.showInOverview !== false}
+                  onChange={() => finance.toggleAccountVisibility(account.id)}
+                />
+              </label>
+              <Button type="button" variant="secondary" size="sm" pill onClick={() => finance.removeAccount(account.id)}>
+                Remove
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {accounts.some((a) => a.type === "credit-card") ? (
+        <div style={{ display: "grid", gap: "8px" }}>
+          <div style={{ fontSize: "0.74rem", fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.04em", textTransform: "uppercase", marginTop: "2px" }}>
+            Credit limits (optional)
+          </div>
+          {accounts.filter((a) => a.type === "credit-card").map((account) => (
+            <div
+              key={account.id}
+              style={{
+                display: "grid",
+                gap: "8px",
+                gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "1fr 1fr",
+                padding: "6px 10px",
+                ...widgetInsetSurfaceStyle,
+              }}
+            >
+              <div style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-primary)", display: "flex", alignItems: "center" }}>
+                {account.name || "Unnamed"}
+              </div>
+              <input
+                className="app-input"
+                type="number"
+                step="0.01"
+                value={account.creditLimit || 0}
+                placeholder="Credit limit"
+                onChange={(e) => finance.updateAccount(account.id, { creditLimit: toNumber(e.target.value) })}
+              />
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {validationError ? (
+        <div style={{ fontSize: "0.78rem", color: "var(--danger, #c62828)", lineHeight: 1.4 }}>{validationError}</div>
+      ) : null}
+
+      <Button type="button" variant="secondary" size="sm" pill onClick={handleAdd} style={{ justifySelf: "start" }}>
+        Add account
+      </Button>
+    </Section>
+  );
+}
+
 export default function WidgetSettingsModal({
   isOpen,
   widgetType,
@@ -1443,14 +2040,22 @@ export default function WidgetSettingsModal({
   const handleSave = async () => {
     const dateValue = settings.dateValue || activeMonthKey;
     const resolvedMonthKey = String(dateValue).slice(0, 7);
+    const nextSettings = {
+      ...data?.settings,
+      ...settings,
+      monthKey: normaliseMonthKey(resolvedMonthKey, activeMonthKey),
+    };
+
+    if (widgetType === "mortgage") {
+      delete nextSettings.depositTarget;
+      delete nextSettings.currentSaved;
+      delete nextSettings.monthlyPayment;
+      delete nextSettings.mortgageDeadline;
+    }
 
     await onSave?.({
       ...data,
-      settings: {
-        ...data?.settings,
-        ...settings,
-        monthKey: normaliseMonthKey(resolvedMonthKey, activeMonthKey),
-      },
+      settings: nextSettings,
     });
     onClose?.();
   };
@@ -1463,10 +2068,7 @@ export default function WidgetSettingsModal({
     "goalDate" in settings ||
     "linkedPaymentPlanIds" in settings ||
     "holidayPaymentLinks" in settings ||
-    "depositTarget" in settings ||
-    "currentSaved" in settings ||
-    "monthlyPayment" in settings ||
-    "mortgageDeadline" in settings ||
+    widgetType === "mortgage" ||
     "plannedHours" in settings ||
     "plannedOvertimeHours" in settings ||
     "chartSource" in settings ||
@@ -1482,11 +2084,6 @@ export default function WidgetSettingsModal({
     widgetType === "income" ||
     widgetType === "savings" ||
     widgetType === "fuel";
-  const hasMortgagePaymentSavingsOptions =
-    "depositTarget" in settings ||
-    "currentSaved" in settings ||
-    "monthlyPayment" in settings ||
-    "mortgageDeadline" in settings;
   const monthOptions = buildMonthOptions(settings.monthKey || activeMonthKey, 12);
 
   return (
@@ -1571,7 +2168,15 @@ export default function WidgetSettingsModal({
 
           {/* Widget-specific options */}
           {hasWidgetOptions ? (
-            <Section title={hasMortgagePaymentSavingsOptions ? "Mortgage payments/savings" : "Widget options"}>
+            widgetType === "mortgage" ? (
+              <MortgageModeEditor
+                finance={finance}
+                isMobile={isMobile}
+                settings={settings}
+                updateSetting={updateSetting}
+              />
+            ) : (
+            <Section title="Widget options">
               <div style={{ display: "grid", gap: "10px", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(200px, 1fr))" }}>
               {"baseMonthlyIncome" in settings ? (
                 <label>
@@ -1604,132 +2209,6 @@ export default function WidgetSettingsModal({
                 </label>
               ) : null}
               </div>
-
-              {hasMortgagePaymentSavingsOptions ? (
-                <div style={{ display: "grid", gap: "10px", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
-              {"depositTarget" in settings ? (
-                <label>
-                  <FieldLabel>Deposit target</FieldLabel>
-                  <input className="app-input" type="number" value={settings.depositTarget} onChange={(e) => updateSetting("depositTarget", e.target.value)} />
-                </label>
-              ) : null}
-              {"currentSaved" in settings ? (
-                <div style={{ display: "grid", gap: "6px" }}>
-                  <FieldLabel>Current saved</FieldLabel>
-                  {(() => {
-                    const accounts = finance?.financeState?.savingsAccounts || [];
-                    const balances = finance?.model?.savingsAccountBalances || [];
-                    const linkedId = settings.linkedSavingsAccountId || "";
-                    const accountOptions = [
-                      { label: "Manual entry", value: "" },
-                      ...accounts.map((a) => {
-                        const bal = balances.find((b) => b.id === a.id);
-                        return { label: `${a.name || "Unnamed"} (${formatCurrency(bal?.currentBalance || 0)})`, value: a.id };
-                      }),
-                    ];
-                    return (
-                      <>
-                        <DropdownField
-                          value={linkedId}
-                          options={accountOptions}
-                          onChange={(event) => {
-                            const val = event.target.value;
-                            updateSetting("linkedSavingsAccountId", val);
-                            if (val) {
-                              const bal = balances.find((b) => b.id === val);
-                              if (bal) updateSetting("currentSaved", bal.currentBalance || 0);
-                            }
-                          }}
-                          placeholder="Link savings account..."
-                        />
-                        {!linkedId && (
-                          <input className="app-input" type="number" value={settings.currentSaved} onChange={(e) => updateSetting("currentSaved", e.target.value)} />
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
-              ) : null}
-              {"monthlyPayment" in settings ? (
-                <div style={{ display: "grid", gap: "6px" }}>
-                  <FieldLabel>Monthly payment</FieldLabel>
-                  {(() => {
-                    const savingsAccounts = finance?.financeState?.savingsAccounts || [];
-                    const savingsBalances = finance?.model?.savingsAccountBalances || [];
-                    const fixedOutgoings = finance?.model?.currentMonth?.monthState?.fixedOutgoings || [];
-                    const paymentPlans = finance?.model?.plannedPaymentPlanDetails || [];
-                    const linkedSourceId = settings.linkedMortgagePaymentSourceId || "";
-                    const paymentSourceOptions = [
-                      { label: "Manual entry", value: "" },
-                      ...savingsAccounts.map((account) => {
-                        const balance = savingsBalances.find((entry) => entry.id === account.id);
-                        return {
-                          label: `Savings: ${account.name || "Unnamed"} (${formatCurrency(balance?.monthInflow || 0)}/month)`,
-                          value: `savings:${account.id}`,
-                        };
-                      }),
-                      ...fixedOutgoings.map((entry) => ({
-                        label: `Spending: ${entry.name || "Unnamed"} (${formatCurrency(entry.amount || 0)})`,
-                        value: `fixed:${entry.id}`,
-                      })),
-                      ...paymentPlans.map((plan) => ({
-                        label: `Payment schedule: ${plan.name || "Unnamed"} (${formatCurrency(plan.thisMonthAmount || 0)})`,
-                        value: `plan:${plan.id}`,
-                      })),
-                    ];
-                    const resolveLinkedPaymentValue = (sourceId) => {
-                      if (!sourceId) return null;
-                      if (sourceId.startsWith("savings:")) {
-                        const savingsAccount = savingsBalances.find((entry) => entry.id === sourceId.slice(8));
-                        return savingsAccount ? Number(savingsAccount.monthInflow || 0) : null;
-                      }
-                      if (sourceId.startsWith("fixed:")) {
-                        const fixed = fixedOutgoings.find((entry) => entry.id === sourceId.slice(6));
-                        return fixed ? Number(fixed.amount || 0) : null;
-                      }
-                      if (sourceId.startsWith("plan:")) {
-                        const plan = paymentPlans.find((entry) => entry.id === sourceId.slice(5));
-                        return plan ? Number(plan.thisMonthAmount || 0) : null;
-                      }
-                      return null;
-                    };
-                    return (
-                      <>
-                        <DropdownField
-                          value={linkedSourceId}
-                          options={paymentSourceOptions}
-                          menuStyle={{ maxHeight: "192px", overflowY: "auto" }}
-                          onChange={(event) => {
-                            const val = event.target.value;
-                            updateSetting("linkedMortgagePaymentSourceId", val);
-                            if (val) {
-                              const linkedValue = resolveLinkedPaymentValue(val);
-                              if (linkedValue !== null) updateSetting("monthlyPayment", linkedValue);
-                            }
-                          }}
-                          placeholder="Link monthly mortgage payment..."
-                        />
-                        {!linkedSourceId && (
-                          <input className="app-input" type="number" value={settings.monthlyPayment} onChange={(e) => updateSetting("monthlyPayment", e.target.value)} />
-                        )}
-                        {linkedSourceId && (
-                          <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", padding: "2px 0" }}>
-                            Auto-updated from linked payment source
-                          </div>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
-              ) : null}
-              {"mortgageDeadline" in settings ? (
-                <label>
-                  <FieldLabel>Deadline</FieldLabel>
-                  <CalendarField value={settings.mortgageDeadline || ""} onChange={(e) => updateSetting("mortgageDeadline", e.target.value)} placeholder="Deadline" />
-                </label>
-              ) : null}
-                </div>
-              ) : null}
 
               <div style={{ display: "grid", gap: "10px", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(200px, 1fr))" }}>
               {"plannedHours" in settings ? (
@@ -1831,6 +2310,11 @@ export default function WidgetSettingsModal({
                 <CheckboxRow label="Include fuel in net position" checked={settings.includeFuel !== false} onChange={(checked) => updateSetting("includeFuel", checked)} />
               ) : null}
             </Section>
+            )
+          ) : null}
+
+          {widgetType === "finance-overview" && finance ? (
+            <UserAccountsEditor finance={finance} isMobile={isMobile} />
           ) : null}
 
           {widgetType === "spending" && finance ? (
@@ -1841,11 +2325,12 @@ export default function WidgetSettingsModal({
                 rows={finance.model.currentMonth.monthState.fixedOutgoings || []}
                 isMobile={isMobile}
                 emptyLabel="No fixed outgoings added yet."
-                namePlaceholder="Category"
+                namePlaceholder="Name"
                 amountPlaceholder="Amount"
                 onAdd={finance.addFixedOutgoing}
                 onUpdate={finance.updateFixedOutgoing}
                 onRemove={finance.removeFixedOutgoing}
+                categoryOptions={FIXED_OUTGOING_CATEGORY_OPTIONS}
               />
               <PlannedPaymentPlansEditor finance={finance} isMobile={isMobile} />
               <FinanceCollectionEditor

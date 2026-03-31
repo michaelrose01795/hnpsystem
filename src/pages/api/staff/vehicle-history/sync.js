@@ -1,4 +1,5 @@
 import { supabaseService } from "@/lib/supabaseClient";
+import { syncStaffVehiclePayrollDeduction } from "@/lib/profile/staffVehiclePayrollDeductions";
 
 const extractRequestOne = (requests = []) => {
   const req = requests.find((item) => Number(item.request_number) === 1) || null;
@@ -52,6 +53,16 @@ export default async function handler(req, res) {
       });
     }
 
+    const { data: vehicleRow, error: vehicleError } = await supabaseService
+      .from("staff_vehicles")
+      .select("vehicle_id, user_id, payroll_deduction_enabled")
+      .eq("vehicle_id", vehicleId)
+      .single();
+
+    if (vehicleError || !vehicleRow?.user_id) {
+      return res.status(404).json({ success: false, error: "Vehicle not found" });
+    }
+
     const { data: jobs, error: jobsError } = await supabaseService
       .from("jobs")
       .select("id, job_number, customer, description, job_description_snapshot, created_at, updated_at, completed_at, vehicle_reg")
@@ -96,7 +107,7 @@ export default async function handler(req, res) {
         job_id: job.id,
         description,
         cost: Number(cost ?? 0),
-        deduct_from_payroll: true,
+        deduct_from_payroll: vehicleRow.payroll_deduction_enabled !== false,
         recorded_at: recordedAt,
       });
     }
@@ -137,6 +148,22 @@ export default async function handler(req, res) {
         payrollProcessedAt: row.payroll_processed_at || null,
       });
     });
+
+    await Promise.all(
+      (insertedRows || []).map((row) =>
+        syncStaffVehiclePayrollDeduction(
+          {
+            historyId: row.history_id,
+            vehicleId: row.vehicle_id,
+            userId: vehicleRow.user_id,
+            recordedAt: row.recorded_at,
+            cost: row.cost,
+            deductFromPayroll: row.deduct_from_payroll,
+          },
+          supabaseService
+        )
+      )
+    );
 
     return res.status(200).json({ success: true, added: addedHistory });
   } catch (error) {

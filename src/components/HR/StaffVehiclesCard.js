@@ -21,6 +21,15 @@ const initialHistoryForm = {
   jobNumber: "",
 };
 
+const PERSONAL_DASHBOARD_REFRESH_EVENT = "staff-vehicle-payroll-updated";
+
+function buildInitialHistoryForm(vehicle = null) {
+  return {
+    ...initialHistoryForm,
+    deductFromPayroll: vehicle?.payrollDeductionEnabled !== false,
+  };
+}
+
 export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
   const [localVehicles, setLocalVehicles] = useState(vehicles);
   const [vehicleForm, setVehicleForm] = useState(initialVehicleForm);
@@ -29,6 +38,7 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
   const [selectedHistoryVehicleId, setSelectedHistoryVehicleId] = useState(null);
   const [savingVehicle, setSavingVehicle] = useState(false);
   const [savingHistory, setSavingHistory] = useState({});
+  const [deletingHistory, setDeletingHistory] = useState({});
   const [savingEdit, setSavingEdit] = useState({});
   const [deletingVehicle, setDeletingVehicle] = useState({});
   const [isLookupLoading, setIsLookupLoading] = useState(false);
@@ -45,6 +55,21 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
     }
   }, [selectedHistoryVehicleId, vehicles]);
 
+  useEffect(() => {
+    if (!selectedHistoryVehicleId) return;
+    const vehicle = localVehicles.find((entry) => entry.id === selectedHistoryVehicleId) || null;
+    setHistoryForms((prev) => (
+      prev[selectedHistoryVehicleId]
+        ? prev
+        : { ...prev, [selectedHistoryVehicleId]: buildInitialHistoryForm(vehicle) }
+    ));
+  }, [localVehicles, selectedHistoryVehicleId]);
+
+  const notifyPersonalDashboardRefresh = () => {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(new Event(PERSONAL_DASHBOARD_REFRESH_EVENT));
+  };
+
   const handleVehicleFieldChange = (field, value) => {
     setVehicleForm((prev) => ({ ...prev, [field]: value }));
     setError("");
@@ -55,7 +80,7 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
     setHistoryForms((prev) => ({
       ...prev,
       [vehicleId]: {
-        ...(prev[vehicleId] || initialHistoryForm),
+        ...(prev[vehicleId] || buildInitialHistoryForm(localVehicles.find((entry) => entry.id === vehicleId))),
         [field]: value,
       },
     }));
@@ -72,7 +97,8 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
       const summary = payload?.data || {};
       if (!summary) return;
       setHistoryForms((prev) => {
-        const current = prev[vehicleId] || initialHistoryForm;
+        const current =
+          prev[vehicleId] || buildInitialHistoryForm(localVehicles.find((entry) => entry.id === vehicleId));
         const next = { ...current };
         if (summary.requestDescription) {
           next.description = summary.requestDescription;
@@ -152,6 +178,7 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
       setLocalVehicles((prev) => [payload.vehicle, ...prev]);
       setVehicleForm(initialVehicleForm);
       setShowVehicleForm(false);
+      notifyPersonalDashboardRefresh();
     } catch (err) {
       setError(err.message || "Unable to add vehicle.");
     } finally {
@@ -228,7 +255,8 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
       setError("Select a vehicle to log the repair.");
       return;
     }
-    const formState = historyForms[vehicleId] || initialHistoryForm;
+    const formState =
+      historyForms[vehicleId] || buildInitialHistoryForm(localVehicles.find((entry) => entry.id === vehicleId));
     if (!formState.description.trim()) {
       setError("Please provide a repair description.");
       return;
@@ -258,7 +286,11 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
             : vehicle
         )
       );
-      setHistoryForms((prev) => ({ ...prev, [vehicleId]: initialHistoryForm }));
+      setHistoryForms((prev) => ({
+        ...prev,
+        [vehicleId]: buildInitialHistoryForm(localVehicles.find((entry) => entry.id === vehicleId)),
+      }));
+      notifyPersonalDashboardRefresh();
     } catch (err) {
       setError(err.message || "Unable to save history entry.");
     } finally {
@@ -302,6 +334,7 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
         )
       );
       setEditVisibility((prev) => ({ ...prev, [vehicleId]: false }));
+      notifyPersonalDashboardRefresh();
     } catch (err) {
       setError(err.message || "Unable to update vehicle.");
     } finally {
@@ -329,10 +362,41 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
         return next;
       });
       setConfirmRemoveId(null);
+      notifyPersonalDashboardRefresh();
     } catch (err) {
       setError(err.message || "Unable to remove vehicle.");
     } finally {
       setDeletingVehicle((prev) => ({ ...prev, [vehicleId]: false }));
+    }
+  };
+
+  const removeHistory = async (vehicleId, historyId) => {
+    if (!vehicleId || !historyId) return;
+    setDeletingHistory((prev) => ({ ...prev, [historyId]: true }));
+    setError("");
+    try {
+      const response = await fetch("/api/staff/vehicle-history", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ historyId }),
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(payload?.error || "Failed to remove history entry");
+      }
+
+      setLocalVehicles((prev) =>
+        prev.map((vehicle) =>
+          vehicle.id === vehicleId
+            ? { ...vehicle, history: (vehicle.history || []).filter((entry) => entry.id !== historyId) }
+            : vehicle
+        )
+      );
+      notifyPersonalDashboardRefresh();
+    } catch (err) {
+      setError(err.message || "Unable to remove history entry.");
+    } finally {
+      setDeletingHistory((prev) => ({ ...prev, [historyId]: false }));
     }
   };
 
@@ -386,6 +450,7 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
             ],
           }))
         );
+        notifyPersonalDashboardRefresh();
       } catch (err) {
         if (!cancelled) {
           setError(err.message || "Unable to sync vehicle history.");
@@ -402,6 +467,7 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
   return (
     <SectionCard
       title="Staff Vehicles"
+      style={staffVehiclesCardStyle}
       action={
         <button
           type="button"
@@ -453,10 +519,10 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
                 type="button"
                 onClick={() => setConfirmRemoveId(null)}
                 style={{
-                  border: "1px solid var(--accent-purple-surface)",
+                  border: "1px solid rgba(var(--primary-rgb), 0.22)",
                   borderRadius: "var(--input-radius)",
                   padding: "var(--control-padding)",
-                  background: "transparent",
+                  background: "rgba(var(--surface-rgb, 255, 255, 255), 0.4)",
                   fontWeight: 600,
                   color: "var(--text-secondary)",
                   cursor: "pointer",
@@ -502,7 +568,7 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
         {localVehicles.length === 0 && (
           <div
             style={{
-              border: "1px dashed var(--accent-purple-surface)",
+              border: "1px dashed rgba(var(--primary-rgb), 0.28)",
               borderRadius: "var(--radius-md)",
               padding: "var(--page-card-padding)",
               textAlign: "center",
@@ -530,8 +596,8 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
               style={{
                 padding: "14px 16px",
                 borderRadius: "var(--radius-sm)",
-                border: "1px solid rgba(var(--accent-purple-rgb), 0.2)",
-                background: "rgba(var(--accent-purple-rgb), 0.06)",
+                border: "1px solid rgba(var(--primary-rgb), 0.2)",
+                background: "rgba(var(--primary-rgb), 0.08)",
                 width: "100%",
                 display: "flex",
                 flexDirection: "column",
@@ -575,8 +641,8 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
                       fontWeight: 700,
                       color: vehicle.payrollDeductionEnabled ? "var(--success)" : "var(--text-secondary)",
                       background: vehicle.payrollDeductionEnabled
-                        ? "rgba(var(--success-rgb), 0.12)"
-                        : "rgba(148, 163, 184, 0.2)",
+                        ? "rgba(var(--success-rgb), 0.14)"
+                        : "rgba(var(--text-primary-rgb), 0.08)",
                     }}
                   >
                     {vehicle.payrollDeductionEnabled ? "Payroll deductions on" : "Payroll deductions off"}
@@ -826,7 +892,7 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
                 />
               </label>
               <label style={historyLabelStyle}>
-                Cost (Â£)
+                Cost (£)
                 <input
                   type="number"
                   step="0.01"
@@ -865,13 +931,13 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
           {historyEntries.length === 0 ? (
             <div
               style={{
-                border: "1px solid rgba(var(--accent-purple-rgb), 0.18)",
+                border: "1px solid rgba(var(--primary-rgb), 0.18)",
                 borderRadius: "var(--radius-sm)",
                 padding: "18px",
                 textAlign: "center",
                 color: "var(--text-secondary)",
                 fontSize: "0.85rem",
-                background: "rgba(var(--accent-purple-rgb), 0.04)",
+                background: "rgba(var(--primary-rgb), 0.05)",
               }}
             >
               No repair history yet.
@@ -892,13 +958,14 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
                   <th style={{ textAlign: "left", padding: "6px 0" }}>Date</th>
                   <th style={{ textAlign: "left", padding: "6px 0" }}>Payroll</th>
                   <th style={{ textAlign: "right", padding: "6px 0" }}>Cost</th>
+                  <th style={{ textAlign: "right", padding: "6px 0" }}>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {historyEntries.map((entry) => (
-                  <tr key={`${entry.id}-${entry.vehicle?.id}`} style={{ borderTop: "1px solid rgba(var(--accent-purple-rgb), 0.2)" }}>
+                  <tr key={`${entry.id}-${entry.vehicle?.id}`} style={{ borderTop: "1px solid rgba(var(--primary-rgb), 0.2)" }}>
                     <td style={{ padding: "10px 0", fontWeight: 600, color: "var(--text-primary)" }}>
-                      {entry.vehicle?.registration || "â€”"}
+                      {entry.vehicle?.registration || "-"}
                     </td>
                     <td style={{ padding: "10px 0", fontWeight: 600, color: "var(--text-primary)" }}>
                       {entry.description || "Workshop visit"}
@@ -910,7 +977,22 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
                       {entry.deductFromPayroll ? "Deduct" : "Manual"}
                     </td>
                     <td style={{ padding: "10px 0", textAlign: "right", fontWeight: 600 }}>
-                      Â£{Number(entry.cost ?? 0).toFixed(2)}
+                      £{Number(entry.cost ?? 0).toFixed(2)}
+                    </td>
+                    <td style={{ padding: "10px 0", textAlign: "right" }}>
+                      <button
+                        type="button"
+                        onClick={() => removeHistory(entry.vehicle?.id, entry.id)}
+                        disabled={deletingHistory[entry.id]}
+                        style={{
+                          ...dangerActionButton,
+                          padding: "8px 10px",
+                          opacity: deletingHistory[entry.id] ? 0.7 : 1,
+                          cursor: deletingHistory[entry.id] ? "not-allowed" : "pointer",
+                        }}
+                      >
+                        {deletingHistory[entry.id] ? "Removing..." : "Remove"}
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -926,8 +1008,8 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
             marginTop: "22px",
             padding: "16px",
             borderRadius: "var(--radius-sm)",
-            border: "1px solid rgba(var(--accent-purple-rgb), 0.2)",
-            background: "rgba(var(--accent-purple-rgb), 0.06)",
+            border: "1px solid rgba(var(--primary-rgb), 0.2)",
+            background: "rgba(var(--primary-rgb), 0.08)",
           }}
         >
           <div style={{ fontWeight: 700, color: "var(--text-primary)", marginBottom: "12px" }}>
@@ -1056,18 +1138,18 @@ const historyLabelStyle = {
 const historyInputStyle = {
   padding: "var(--control-padding)",
   borderRadius: "var(--input-radius)",
-  border: "1px solid var(--accent-purple-surface)",
+  border: "1px solid rgba(var(--primary-rgb), 0.22)",
   fontSize: "0.9rem",
   fontWeight: 500,
-  background: "var(--surface)",
+  background: "rgba(var(--surface-rgb, 255, 255, 255), 0.86)",
   color: "var(--text-primary)",
 };
 
 const primaryActionButton = {
-  border: "1px solid var(--accent-purple)",
+  border: "1px solid var(--primary)",
   borderRadius: "var(--input-radius)",
   padding: "var(--control-padding)",
-  background: "var(--accent-purple)",
+  background: "var(--primary)",
   color: "white",
   fontWeight: 600,
   fontSize: "0.8rem",
@@ -1075,11 +1157,11 @@ const primaryActionButton = {
 };
 
 const secondaryActionButton = {
-  border: "1px solid rgba(var(--accent-purple-rgb), 0.4)",
+  border: "1px solid rgba(var(--primary-rgb), 0.34)",
   borderRadius: "var(--input-radius)",
   padding: "var(--control-padding)",
-  background: "transparent",
-  color: "var(--accent-purple)",
+  background: "rgba(var(--surface-rgb, 255, 255, 255), 0.38)",
+  color: "var(--text-primary)",
   fontWeight: 600,
   fontSize: "0.8rem",
   cursor: "pointer",
@@ -1094,6 +1176,11 @@ const dangerActionButton = {
   fontWeight: 600,
   fontSize: "0.8rem",
   cursor: "pointer",
+};
+
+const staffVehiclesCardStyle = {
+  background: "rgba(var(--primary-rgb), 0.08)",
+  border: "1px solid rgba(var(--primary-rgb), 0.18)",
 };
 
 function VehicleInfo({ label, value }) {

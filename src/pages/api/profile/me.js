@@ -9,8 +9,9 @@ import { getDatabaseClient } from "@/lib/database/client";
 import { getDisplayName } from "@/lib/users/displayName";
 import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver";
 import dayjs from "dayjs";
-import { parseLeaveRequestNotes } from "@/lib/hr/leaveRequests";
+import { calculateLeaveRequestDayTotals, parseLeaveRequestNotes } from "@/lib/hr/leaveRequests";
 import { getOvertimePeriodBounds } from "@/lib/database/hr";
+import { getStaffVehiclePayrollDeductionsForUser } from "@/lib/profile/staffVehiclePayrollDeductions";
 
 const adminDb = getDatabaseClient();
 
@@ -239,7 +240,7 @@ async function getUserLeaveBalance(userId, employmentType) {
   // Calculate days taken from approved absences
   const { data: absences, error } = await supabase
     .from("hr_absences")
-    .select("start_date, end_date, approval_status")
+    .select("start_date, end_date, approval_status, notes")
     .eq("user_id", userId)
     .eq("approval_status", "Approved");
 
@@ -248,16 +249,15 @@ async function getUserLeaveBalance(userId, employmentType) {
     throw error;
   }
 
-  const calculateDays = (startDate, endDate) => {
-    if (!startDate || !endDate) return 0;
-    const start = dayjs(startDate);
-    const end = dayjs(endDate);
-    if (!start.isValid() || !end.isValid()) return 0;
-    return Math.max(end.diff(start, "day") + 1, 0);
-  };
-
   const taken = (absences || []).reduce((sum, absence) => {
-    return sum + calculateDays(absence.start_date, absence.end_date);
+    const noteData = parseLeaveRequestNotes(absence.notes);
+    const totals = calculateLeaveRequestDayTotals({
+      startDate: absence.start_date,
+      endDate: absence.end_date,
+      halfDay: noteData.halfDay,
+      fallbackTotalDays: noteData.totalDays,
+    });
+    return sum + totals.workDays;
   }, 0);
 
   const remaining = Math.max(entitlement - taken, 0);
@@ -284,6 +284,12 @@ async function getUserLeaveRequests(userId, limit = 100) {
 
   return (data || []).map((row) => {
     const noteData = parseLeaveRequestNotes(row.notes);
+    const totals = calculateLeaveRequestDayTotals({
+      startDate: row.start_date,
+      endDate: row.end_date,
+      halfDay: noteData.halfDay,
+      fallbackTotalDays: noteData.totalDays,
+    });
     return {
       id: row.absence_id,
       type: row.type,
@@ -293,7 +299,8 @@ async function getUserLeaveRequests(userId, limit = 100) {
       requestNotes: noteData.requestNotes || "",
       declineReason: noteData.declineReason || "",
       halfDay: noteData.halfDay || "None",
-      totalDays: noteData.totalDays ?? null,
+      totalDays: totals.workDays,
+      calendarDays: totals.calendarDays,
       createdAt: row.created_at,
     };
   });
@@ -447,6 +454,10 @@ async function getUserStaffVehicles(userId) {
   }));
 }
 
+async function getUserStaffVehiclePayrollDeductions(userId) {
+  return getStaffVehiclePayrollDeductionsForUser(userId, adminDb);
+}
+
 export default async function handler(req, res) {
   if (req.method !== "GET") {
     res.setHeader("Allow", ["GET"]);
@@ -501,13 +512,14 @@ export default async function handler(req, res) {
     }
 
     // Fetch all user-specific data in parallel
-    const [profile, attendanceLogs, overtimeSnapshot, leaveBalance, leaveRequests, staffVehicles] = await Promise.all([
+    const [profile, attendanceLogs, overtimeSnapshot, leaveBalance, leaveRequests, staffVehicles, staffVehiclePayrollDeductions] = await Promise.all([
       getUserProfile(userId),
       getUserAttendanceLogs(userId, 500),
       getUserOvertimeSnapshot(userId),
       getUserLeaveBalance(userId, null),
       getUserLeaveRequests(userId, 100),
       getUserStaffVehicles(userId),
+      getUserStaffVehiclePayrollDeductions(userId),
     ]);
 
     // If profile exists, recalculate leave balance with correct employment type
@@ -527,6 +539,7 @@ export default async function handler(req, res) {
         leaveBalance: finalLeaveBalance,
         leaveRequests,
         staffVehicles,
+        staffVehiclePayrollDeductions,
       },
     });
   } catch (error) {

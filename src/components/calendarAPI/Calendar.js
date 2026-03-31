@@ -44,7 +44,7 @@ export default function Calendar({
   disabledDates = [], // Array of dates to disable
   highlightedDates = [], // Array of dates to highlight (e.g., today)
   showWeekNumbers = false,
-  firstDayOfWeek = 0, // 0 = Sunday, 1 = Monday, etc.
+  firstDayOfWeek = 1, // 0 = Sunday, 1 = Monday, etc.
   id,
   required = false,
   name,
@@ -229,7 +229,7 @@ export default function Calendar({
 
   // Format month/year display
   const monthYearDisplay = useMemo(() => {
-    return currentMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+    return currentMonth.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
   }, [currentMonth]);
 
   // Get weekday names
@@ -399,7 +399,7 @@ export default function Calendar({
         <input
           type="hidden"
           name={name}
-          value={displayValue}
+          value={normalizedValue ? formatDate(normalizedValue) : ""}
         />
       )}
     </div>

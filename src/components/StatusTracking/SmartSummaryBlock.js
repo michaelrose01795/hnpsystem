@@ -231,23 +231,46 @@ export default function SmartSummaryBlock({ summary, isCompact = false, isWide =
         )}
       </div>
 
-      {/* Next likely step card */}
-      {summary.nextStep && (
-        <div style={STYLES.nextStepCard}>
-          <span style={STYLES.nextStepLabel}>
-            Next Step
-            {showConfidence && summary.nextStepConfidence && (
-              <span style={STYLES.confidenceBadge(summary.nextStepConfidence)}>
-                {summary.nextStepConfidence}
-              </span>
-            )}
-          </span>
-          <span style={STYLES.nextStepTitle}>{summary.nextStep.label}</span>
-          {summary.nextStep.description && (
-            <span style={STYLES.nextStepDescription}>{summary.nextStep.description}</span>
-          )}
-        </div>
-      )}
+      {/* Next steps — render all pending steps when multiple exist */}
+      {((summary.nextSteps && summary.nextSteps.length > 0) || summary.nextStep) && (() => {
+        const steps = summary.nextSteps && summary.nextSteps.length > 0
+          ? summary.nextSteps
+          : summary.nextStep ? [summary.nextStep] : [];
+        if (steps.length === 0) return null;
+        const multiStep = steps.length > 1;
+        return (
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            {steps.map((step, index) => (
+              <div key={step.label || index} style={STYLES.nextStepCard}>
+                <span style={STYLES.nextStepLabel}>
+                  {multiStep ? `Next Step ${index + 1}` : "Next Step"}
+                  {step.department && (
+                    <span style={{
+                      fontSize: "9px",
+                      fontWeight: 600,
+                      color: "var(--grey-accent)",
+                      marginLeft: "8px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.04em",
+                    }}>
+                      {step.department}
+                    </span>
+                  )}
+                  {!multiStep && showConfidence && summary.nextStepConfidence && (
+                    <span style={STYLES.confidenceBadge(summary.nextStepConfidence)}>
+                      {summary.nextStepConfidence}
+                    </span>
+                  )}
+                </span>
+                <span style={STYLES.nextStepTitle}>{step.label}</span>
+                {step.description && (
+                  <span style={STYLES.nextStepDescription}>{step.description}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        );
+      })()}
 
       {/* Job story — natural-language narrative */}
       {summary.jobStory && (

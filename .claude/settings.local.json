@@ -72,7 +72,8 @@
       "Bash(find /workspaces/hnpsystem/src -name \"*.js\" -type f -exec grep -l \"<Link\" {})",
       "Bash(grep -n \"<Link\" /workspaces/hnpsystem/src/pages/customers/[customerSlug].js)",
       "Bash(find /d/hnpsystem/src/hooks -type f \\\\\\(-name *personal* -o -name *Personal* \\\\\\))",
-      "Bash(find /d/hnpsystem/src/lib/profile -type f \\\\\\(-name *personal* -o -name *Personal* \\\\\\))"
+      "Bash(find /d/hnpsystem/src/lib/profile -type f \\\\\\(-name *personal* -o -name *Personal* \\\\\\))",
+      "Bash(node -e \"require\\(''''./src/lib/profile/personalInsights.js''''\\)\")"
     ],
     "deny": [],
     "ask": []
