@@ -4555,6 +4555,12 @@ export default function TechJobDetailPage() {
   );
 }
 
+export async function getServerSideProps() {
+  return {
+    props: {},
+  };
+}
+
 function DocumentsTab({
   documents = [],
   canDelete,
