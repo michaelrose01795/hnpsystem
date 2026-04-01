@@ -14,7 +14,14 @@
     "migrate:add-severity": "node scripts/run-migration-add-severity.js",
     "seed:labour-presets": "node scripts/seed-labour-presets.js",
     "seed:parts-search-presets": "node scripts/seed-parts-search-presets.js",
-    "seed:job-request-presets": "node scripts/seed-job-request-presets.js"
+    "seed:job-request-presets": "node scripts/seed-job-request-presets.js",
+    "db:seed": "node scripts/db-seed.js",
+    "test": "npx playwright test",
+    "test:smoke": "npx playwright test --project=auth-setup --project=smoke",
+    "test:workflows": "npx playwright test --project=auth-setup --project=workflows",
+    "test:visual": "npx playwright test --project=auth-setup --project=visual",
+    "test:report": "npx playwright show-report",
+    "verify": "node scripts/verify.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.81.1",
