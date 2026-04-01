@@ -47,7 +47,7 @@
     "react-select": "^5.10.2",
     "swr": "^2.4.1",
     "tailwindcss": "^4.1.17",
-    "vercel": "^32.3.0"
+    "vercel": "^50.38.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",

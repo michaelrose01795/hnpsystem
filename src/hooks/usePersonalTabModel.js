@@ -141,20 +141,87 @@ export default function usePersonalTabModel({ financeState: rawFinanceState = nu
     resetMonthTaxOverride: resetCurrentMonthTaxOverride,
 
     addFixedOutgoing: () =>
-      updateMonth((month) => ({
-        ...month,
-        fixedOutgoings: [...month.fixedOutgoings, makeFixedOutgoingItem("", 0, "other")],
+      update((current) => ({
+        ...current,
+        fixedOutgoings: [...(current.fixedOutgoings || []), makeFixedOutgoingItem("", 0, "other")],
       })),
     updateFixedOutgoing: (id, patch) =>
-      updateMonth((month) => ({
-        ...month,
-        fixedOutgoings: month.fixedOutgoings.map((entry) => (entry.id === id ? { ...entry, ...patch } : entry)),
-      })),
+      update((current) => {
+        const monthKey = normaliseMonthKey(current.selectedMonthKey, getCurrentMonthKey());
+        return {
+          ...current,
+          fixedOutgoings: (current.fixedOutgoings || []).map((entry) => {
+            if (entry.id !== id) return entry;
+            const override = entry.monthOverrides?.[monthKey];
+            if (
+              patch &&
+              Object.prototype.hasOwnProperty.call(patch, "amount") &&
+              override?.enabled === true
+            ) {
+              return {
+                ...entry,
+                monthOverrides: {
+                  ...(entry.monthOverrides || {}),
+                  [monthKey]: {
+                    enabled: true,
+                    amount: patch.amount,
+                  },
+                },
+              };
+            }
+            return { ...entry, ...patch };
+          }),
+        };
+      }),
     removeFixedOutgoing: (id) =>
-      updateMonth((month) => ({
-        ...month,
-        fixedOutgoings: month.fixedOutgoings.filter((entry) => entry.id !== id),
+      update((current) => ({
+        ...current,
+        fixedOutgoings: (current.fixedOutgoings || []).filter((entry) => entry.id !== id),
       })),
+    setFixedOutgoingMonthOverride: (id, enabled) =>
+      update((current) => {
+        const monthKey = normaliseMonthKey(current.selectedMonthKey, getCurrentMonthKey());
+        return {
+          ...current,
+          fixedOutgoings: (current.fixedOutgoings || []).map((entry) => {
+            if (entry.id !== id) return entry;
+            const nextOverrides = { ...(entry.monthOverrides || {}) };
+            if (enabled) {
+              nextOverrides[monthKey] = {
+                enabled: true,
+                amount: nextOverrides[monthKey]?.amount ?? entry.amount ?? 0,
+              };
+            } else {
+              delete nextOverrides[monthKey];
+            }
+            return {
+              ...entry,
+              monthOverrides: nextOverrides,
+            };
+          }),
+        };
+      }),
+    updateFixedOutgoingMonthOverrideAmount: (id, amount) =>
+      update((current) => {
+        const monthKey = normaliseMonthKey(current.selectedMonthKey, getCurrentMonthKey());
+        return {
+          ...current,
+          fixedOutgoings: (current.fixedOutgoings || []).map((entry) =>
+            entry.id === id
+              ? {
+                  ...entry,
+                  monthOverrides: {
+                    ...(entry.monthOverrides || {}),
+                    [monthKey]: {
+                      enabled: true,
+                      amount,
+                    },
+                  },
+                }
+              : entry
+          ),
+        };
+      }),
 
     addPlannedPayment: () =>
       updateMonth((month) => ({

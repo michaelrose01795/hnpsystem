@@ -64,13 +64,14 @@ export default async function handler(req, res) {
         }
 
         setPersonalUnlockCookie(res, state.userId);
-        await ensureDefaultPersonalSetup(state.userId, db);
+        const personalState = await ensureDefaultPersonalSetup(state.userId, db);
 
         return res.status(200).json({
           success: true,
           data: {
             isSetup: true,
             isUnlocked: true,
+            personalState,
           },
         });
       }
@@ -86,13 +87,14 @@ export default async function handler(req, res) {
         }
 
         setPersonalUnlockCookie(res, state.userId);
-        await ensureDefaultPersonalSetup(state.userId, db);
+        const personalState = await ensureDefaultPersonalSetup(state.userId, db);
 
         return res.status(200).json({
           success: true,
           data: {
             isSetup: true,
             isUnlocked: true,
+            personalState,
           },
         });
       }

@@ -361,24 +361,52 @@ export default function usePersonalDashboard({ enabled = true } = {}) {
 
   const setupPasscode = useCallback(
     async ({ passcode, confirmPasscode }) => {
-      await requestJson("/api/personal/security", {
+      const security = await requestJson("/api/personal/security", {
         method: "POST",
         body: JSON.stringify({ action: "setup", passcode, confirmPasscode }),
       });
       if (typeof window !== "undefined") window.sessionStorage.setItem(UNLOCK_STORAGE_KEY, "1");
-      await refreshDashboard({ silent: true });
+      if (security?.isUnlocked) {
+        skipNextSaveRef.current = true;
+        startTransition(() => {
+          setPersonalState(security.personalState || null);
+          setMeta((current) => ({
+            ...current,
+            isInitialising: false,
+            isLoading: false,
+            isSetup: true,
+            isUnlocked: true,
+            error: null,
+          }));
+        });
+      }
+      void refreshDashboard({ silent: true });
     },
     [refreshDashboard, requestJson]
   );
 
   const unlock = useCallback(
     async ({ passcode }) => {
-      await requestJson("/api/personal/security", {
+      const security = await requestJson("/api/personal/security", {
         method: "POST",
         body: JSON.stringify({ action: "unlock", passcode }),
       });
       if (typeof window !== "undefined") window.sessionStorage.setItem(UNLOCK_STORAGE_KEY, "1");
-      await refreshDashboard({ silent: true });
+      if (security?.isUnlocked) {
+        skipNextSaveRef.current = true;
+        startTransition(() => {
+          setPersonalState(security.personalState || null);
+          setMeta((current) => ({
+            ...current,
+            isInitialising: false,
+            isLoading: false,
+            isSetup: true,
+            isUnlocked: true,
+            error: null,
+          }));
+        });
+      }
+      void refreshDashboard({ silent: true });
     },
     [refreshDashboard, requestJson]
   );

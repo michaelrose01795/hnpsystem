@@ -144,6 +144,7 @@ export function createDefaultMonthFinanceState() {
     manualTax: 0,
     manualNationalInsurance: 0,
     fixedOutgoings: [],
+    fixedOutgoingOverrides: {},
     plannedPayments: [],
     creditCards: [],
     fuelEntries: [],
@@ -154,7 +155,9 @@ export function createDefaultMonthFinanceState() {
 
 export const FIXED_OUTGOING_CATEGORY_OPTIONS = [
   { value: "mortgage", label: "Mortgage" },
+  { value: "bills", label: "Bills" },
   { value: "house-bills", label: "House bills" },
+  { value: "subscriptions", label: "Subscriptions" },
   { value: "savings", label: "Savings" },
   { value: "day-to-day", label: "Day to day spend" },
   { value: "transport", label: "Transport" },
@@ -174,7 +177,14 @@ function inferFixedOutgoingCategory(name = "") {
   const normalisedName = String(name || "").trim().toLowerCase();
   if (!normalisedName) return "other";
   if (normalisedName.includes("mortgage")) return "mortgage";
+  if (
+    normalisedName.includes("subscription") ||
+    normalisedName.includes("netflix") ||
+    normalisedName.includes("spotify") ||
+    normalisedName.includes("prime")
+  ) return "subscriptions";
   if (normalisedName.includes("saving")) return "savings";
+  if (normalisedName.includes("bill")) return "bills";
   if (normalisedName.includes("bill") || normalisedName.includes("rent") || normalisedName.includes("utility") || normalisedName.includes("council")) return "house-bills";
   if (normalisedName.includes("food") || normalisedName.includes("shop") || normalisedName.includes("grocery") || normalisedName.includes("spend")) return "day-to-day";
   if (normalisedName.includes("fuel") || normalisedName.includes("travel") || normalisedName.includes("train") || normalisedName.includes("car")) return "transport";
@@ -185,6 +195,19 @@ function inferFixedOutgoingCategory(name = "") {
 
 function normaliseFixedOutgoingEntry(entry = {}) {
   const explicitCategory = String(entry.category || "").trim();
+  const rawMonthOverrides =
+    entry.monthOverrides && typeof entry.monthOverrides === "object"
+      ? entry.monthOverrides
+      : {};
+  const monthOverrides = Object.fromEntries(
+    Object.entries(rawMonthOverrides).map(([monthKey, override]) => [
+      normaliseMonthKey(monthKey, getCurrentMonthKey()),
+      {
+        enabled: override?.enabled === true,
+        amount: roundMoney(override?.amount ?? 0),
+      },
+    ])
+  );
   return {
     ...entry,
     id: entry.id || makeId("row"),
@@ -193,7 +216,38 @@ function normaliseFixedOutgoingEntry(entry = {}) {
     category: explicitCategory
       ? normaliseFixedOutgoingCategory(explicitCategory)
       : inferFixedOutgoingCategory(entry.name),
+    monthOverrides,
   };
+}
+
+function getFixedOutgoingMatchKey(entry = {}) {
+  return `${String(entry.name || "").trim().toLowerCase()}::${normaliseFixedOutgoingCategory(entry.category)}`;
+}
+
+function buildLegacyGlobalFixedOutgoingEntries(rawFinanceState = null, preferredMonthKey = getCurrentMonthKey()) {
+  const months = rawFinanceState?.months && typeof rawFinanceState.months === "object"
+    ? rawFinanceState.months
+    : {};
+  const orderedMonthKeys = Object.keys(months).sort((left, right) => {
+    if (left === preferredMonthKey) return -1;
+    if (right === preferredMonthKey) return 1;
+    return left.localeCompare(right);
+  });
+  const seenKeys = new Set();
+  const result = [];
+
+  orderedMonthKeys.forEach((monthKey) => {
+    const rows = Array.isArray(months?.[monthKey]?.fixedOutgoings) ? months[monthKey].fixedOutgoings : [];
+    rows.forEach((row) => {
+      const normalised = normaliseFixedOutgoingEntry(row);
+      const matchKey = getFixedOutgoingMatchKey(normalised);
+      if (!normalised.name.trim() || seenKeys.has(matchKey)) return;
+      seenKeys.add(matchKey);
+      result.push(normalised);
+    });
+  });
+
+  return result;
 }
 
 function stripLegacyPresetRows(items = [], presetNames = []) {
@@ -217,7 +271,7 @@ function stripLegacyCardRows(items = []) {
 
 export function createDefaultFinanceState({ workData = null, monthKey = getCurrentMonthKey() } = {}) {
   return {
-    version: 2,
+    version: 3,
     selectedMonthKey: normaliseMonthKey(monthKey, getCurrentMonthKey()),
     selectedFinanceYear: getFinanceYearLabel(monthKey),
     paySettings: {
@@ -229,6 +283,7 @@ export function createDefaultFinanceState({ workData = null, monthKey = getCurre
     creditCardAccounts: [],
     savingsAccounts: [],
     userAccounts: [],
+    fixedOutgoings: [],
     plannedPaymentPlans: [],
     months: {
       [normaliseMonthKey(monthKey, getCurrentMonthKey())]: createDefaultMonthFinanceState(),
@@ -269,6 +324,11 @@ export function ensureFinanceState(rawFinanceState = null, { workData = null, mo
     annualSalary: seedFromDb(paySettingsSansLegacy.annualSalary, workData?.annualSalary),
   };
 
+  const rawSelectedMonthKey = normaliseMonthKey(rawFinanceState?.selectedMonthKey, monthKey);
+  const globalFixedOutgoings = Array.isArray(rawFinanceState?.fixedOutgoings) && rawFinanceState.fixedOutgoings.length > 0
+    ? rawFinanceState.fixedOutgoings.map((entry) => normaliseFixedOutgoingEntry(entry))
+    : buildLegacyGlobalFixedOutgoingEntries(rawFinanceState, rawSelectedMonthKey);
+
   const merged = {
     ...base,
     ...(rawFinanceState && typeof rawFinanceState === "object" ? rawFinanceState : {}),
@@ -276,6 +336,7 @@ export function ensureFinanceState(rawFinanceState = null, { workData = null, mo
     creditCardAccounts: buildCreditCardAccounts(rawFinanceState),
     savingsAccounts: Array.isArray(rawFinanceState?.savingsAccounts) ? rawFinanceState.savingsAccounts : [],
     userAccounts: Array.isArray(rawFinanceState?.userAccounts) ? rawFinanceState.userAccounts : [],
+    fixedOutgoings: globalFixedOutgoings,
     plannedPaymentPlans: Array.isArray(rawFinanceState?.plannedPaymentPlans) ? rawFinanceState.plannedPaymentPlans : [],
     months: {
       ...(rawFinanceState?.months || {}),
@@ -335,6 +396,10 @@ export function ensureMonthFinanceState(rawMonthState = null, { creditCardAccoun
     fixedOutgoings: Array.isArray(rawMonthState.fixedOutgoings)
       ? rawMonthState.fixedOutgoings.map((entry) => normaliseFixedOutgoingEntry(entry))
       : [],
+    fixedOutgoingOverrides:
+      rawMonthState.fixedOutgoingOverrides && typeof rawMonthState.fixedOutgoingOverrides === "object"
+        ? rawMonthState.fixedOutgoingOverrides
+        : {},
     plannedPayments: Array.isArray(rawMonthState.plannedPayments)
       ? stripLegacyPresetRows(rawMonthState.plannedPayments, DEFAULT_PAYMENT_BUCKETS)
       : [],
@@ -353,6 +418,41 @@ function getMonthState(financeState, monthKey) {
   const safeMonthKey = normaliseMonthKey(monthKey, financeState?.selectedMonthKey || getCurrentMonthKey());
   return ensureMonthFinanceState(financeState?.months?.[safeMonthKey], {
     creditCardAccounts: Array.isArray(financeState?.creditCardAccounts) ? financeState.creditCardAccounts : [],
+  });
+}
+
+function resolveFixedOutgoingsForMonth(financeState, monthKey) {
+  const safeMonthKey = normaliseMonthKey(monthKey, financeState?.selectedMonthKey || getCurrentMonthKey());
+  const monthState = getMonthState(financeState, safeMonthKey);
+  const globalFixedOutgoings = Array.isArray(financeState?.fixedOutgoings)
+    ? financeState.fixedOutgoings.map((entry) => normaliseFixedOutgoingEntry(entry))
+    : [];
+  const legacyRows = Array.isArray(monthState?.fixedOutgoings)
+    ? monthState.fixedOutgoings.map((entry) => normaliseFixedOutgoingEntry(entry))
+    : [];
+  const legacyByKey = new Map(
+    legacyRows
+      .filter((entry) => String(entry.name || "").trim())
+      .map((entry) => [getFixedOutgoingMatchKey(entry), entry])
+  );
+
+  return globalFixedOutgoings.map((entry) => {
+    const override = entry.monthOverrides?.[safeMonthKey];
+    const legacyMatch = legacyByKey.get(getFixedOutgoingMatchKey(entry));
+    const hasMonthOverride = override?.enabled === true;
+    const resolvedAmount = hasMonthOverride
+      ? roundMoney(override.amount)
+      : legacyMatch
+        ? roundMoney(legacyMatch.amount)
+        : roundMoney(entry.amount);
+
+    return {
+      ...entry,
+      amount: resolvedAmount,
+      baseAmount: roundMoney(entry.amount),
+      overrideAmount: hasMonthOverride ? roundMoney(override.amount) : null,
+      isMonthOverrideEnabled: hasMonthOverride,
+    };
   });
 }
 
@@ -538,7 +638,12 @@ export function getLeaveForMonth(workData, monthKey) {
 export function buildMonthlyFinanceSummary({ financeState, workData = null, monthKey }) {
   const safeMonthKey = normaliseMonthKey(monthKey, financeState?.selectedMonthKey || getCurrentMonthKey());
   const paySettings = financeState?.paySettings || {};
-  const monthState = getMonthState(financeState, safeMonthKey);
+  const baseMonthState = getMonthState(financeState, safeMonthKey);
+  const resolvedFixedOutgoings = resolveFixedOutgoingsForMonth(financeState, safeMonthKey);
+  const monthState = {
+    ...baseMonthState,
+    fixedOutgoings: resolvedFixedOutgoings,
+  };
 
   const hoursWorked = expectedMonthlyContractHours(toNumber(paySettings.contractedWeeklyHours, 0), safeMonthKey);
   const attendanceWorkedHours = getWorkedHoursForMonth(workData, safeMonthKey);
@@ -903,6 +1008,7 @@ export function makeFixedOutgoingItem(name = "", amount = 0, category = "other")
     name,
     amount: roundMoney(amount),
     category: normaliseFixedOutgoingCategory(category),
+    monthOverrides: {},
   };
 }
 

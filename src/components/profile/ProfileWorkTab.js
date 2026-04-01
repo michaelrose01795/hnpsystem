@@ -137,21 +137,22 @@ function SkeletonTableRow({ cols = 5 }) {
   );
 }
 
-function ProfileCard({ title, action, children, style, headerStyle }) {
-  return (
-    <div
-      style={{
-        background: "var(--surface)",
-        borderRadius: "var(--radius-md)",
-        border: "1px solid rgba(var(--accent-purple-rgb), 0.28)",
-        padding: "16px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "12px",
-        boxShadow: "var(--shadow-lg)",
-        ...style,
-      }}
-    >
+function ProfileCard({
+  title,
+  action,
+  children,
+  style,
+  headerStyle,
+  className = "",
+  sectionKey,
+  parentKey = "",
+  sectionType = "content-card",
+  backgroundToken = "",
+  widthMode = "",
+  shell = false,
+}) {
+  const cardContent = (
+    <>
       {(title || action) && (
         <div
           style={{
@@ -169,24 +170,63 @@ function ProfileCard({ title, action, children, style, headerStyle }) {
         </div>
       )}
       {children}
+    </>
+  );
+
+  const cardStyle = {
+    background: "var(--profile-card-bg, var(--surface))",
+    borderRadius: "var(--radius-md)",
+    border: "var(--profile-card-border, 1px solid rgba(var(--accent-purple-rgb), 0.28))",
+    padding: "16px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "12px",
+    boxShadow: "var(--shadow-lg)",
+    ...style,
+  };
+
+  if (sectionKey) {
+    return (
+      <DevLayoutSection
+        as="div"
+        sectionKey={sectionKey}
+        parentKey={parentKey}
+        sectionType={sectionType}
+        backgroundToken={backgroundToken}
+        widthMode={widthMode}
+        shell={shell}
+        className={className || undefined}
+        style={cardStyle}
+      >
+        {cardContent}
+      </DevLayoutSection>
+    );
+  }
+
+  return (
+    <div className={className || undefined} style={cardStyle}>
+      {cardContent}
     </div>
   );
 }
 
-function KpiCard({ label, primary, secondary, accentColor }) {
-  return (
-    <div
-      style={{
-        background: "var(--surface)",
-        borderRadius: "var(--radius-md)",
-        border: "1px solid rgba(var(--accent-purple-rgb), 0.28)",
-        padding: "14px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "6px",
-        minHeight: "112px",
-      }}
-    >
+function KpiCard(props) {
+  const {
+    label,
+    primary,
+    secondary,
+    accentColor,
+    className = "",
+    sectionKey,
+    parentKey = "",
+    sectionType = "content-card",
+    backgroundToken = "",
+    widthMode = "",
+    shell = false,
+  } = props;
+
+  const cardContent = (
+    <>
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
         <span style={{ fontSize: "0.76rem", fontWeight: 600, color: "var(--text-secondary)" }}>
           {label}
@@ -198,6 +238,41 @@ function KpiCard({ label, primary, secondary, accentColor }) {
       {secondary ? (
         <div style={{ fontSize: "0.74rem", color: "var(--text-secondary)" }}>{secondary}</div>
       ) : null}
+    </>
+  );
+
+  const cardStyle = {
+    background: "var(--profile-card-bg, var(--surface))",
+    borderRadius: "var(--radius-md)",
+    border: "var(--profile-card-border, 1px solid rgba(var(--accent-purple-rgb), 0.28))",
+    padding: "14px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "6px",
+    minHeight: "112px",
+  };
+
+  if (sectionKey) {
+    return (
+      <DevLayoutSection
+        as="div"
+        sectionKey={sectionKey}
+        parentKey={parentKey}
+        sectionType={sectionType}
+        backgroundToken={backgroundToken}
+        widthMode={widthMode}
+        shell={shell}
+        className={className || undefined}
+        style={cardStyle}
+      >
+        {cardContent}
+      </DevLayoutSection>
+    );
+  }
+
+  return (
+    <div className={className || undefined} style={cardStyle}>
+      {cardContent}
     </div>
   );
 }
@@ -2002,6 +2077,7 @@ export function ProfileWorkTab({
               sectionKey="profile-work-kpi-card-group"
               parentKey="profile-active-tab-panel"
               sectionType="section-shell"
+              backgroundToken="accent-surface"
               shell
               style={{
                 display: "grid",
@@ -2010,29 +2086,22 @@ export function ProfileWorkTab({
               }}
             >
               {/* Total Hours (logged) card with 3 sub-columns + grand total */}
-              <DevLayoutSection
-                as="div"
+              <ProfileCard
+                className="app-profile-accent-card"
                 sectionKey="profile-work-kpi-total-hours"
                 parentKey="profile-active-tab-panel"
-                sectionType="content-card"
-              >
-                <div style={{
-                  background: "var(--surface)",
-                  borderRadius: "var(--radius-md)",
-                  border: "1px solid rgba(var(--accent-purple-rgb), 0.28)",
+                backgroundToken="accent-surface"
+                style={{
+                  padding: 0,
+                  gap: 0,
                   overflow: "hidden",
-                  display: "flex",
-                  flexDirection: "column",
                   minHeight: "112px",
-                }}>
-                  <div style={{
-                    padding: "10px 14px 6px",
-                    fontSize: "0.76rem",
-                    fontWeight: 600,
-                    color: "var(--text-secondary)",
-                  }}>
-                    Total Hours &mdash; {new Date().toLocaleDateString("en-GB", { month: "short", year: "numeric" })}
-                  </div>
+                }}
+                headerStyle={{
+                  padding: "10px 14px 6px",
+                }}
+                title={`Total Hours - ${new Date().toLocaleDateString("en-GB", { month: "short", year: "numeric" })}`}
+              >
                   <div style={{
                     display: "grid",
                     gridTemplateColumns: "1fr 1fr 1fr",
@@ -2071,93 +2140,78 @@ export function ProfileWorkTab({
                       {aggregatedStats?.monthlyTotalHours?.toFixed(2) ?? "0.00"}h
                     </span>
                   </div>
-                </div>
-              </DevLayoutSection>
+              </ProfileCard>
 
               {/* Pay Rates card — 50/50 split matching Total Hours style */}
               {isAdminOrManager && (
-                <DevLayoutSection
-                  as="div"
+                <ProfileCard
+                  className="app-profile-accent-card"
                   sectionKey="profile-work-kpi-pay-rates"
                   parentKey="profile-active-tab-panel"
-                  sectionType="content-card"
+                  backgroundToken="accent-surface"
+                  style={{
+                    padding: 0,
+                    gap: 0,
+                    overflow: "hidden",
+                    minHeight: "112px",
+                  }}
+                  headerStyle={{
+                    padding: "10px 14px 6px",
+                  }}
+                  title="Pay Rates"
                 >
                   <div style={{
-                    background: "var(--surface)",
-                    borderRadius: "var(--radius-md)",
-                    border: "1px solid rgba(var(--accent-purple-rgb), 0.28)",
-                    overflow: "hidden",
-                    display: "flex",
-                    flexDirection: "column",
-                    minHeight: "112px",
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    flex: 1,
                   }}>
-                    <div style={{
-                      padding: "10px 14px 6px",
-                      fontSize: "0.76rem",
-                      fontWeight: 600,
-                      color: "var(--text-secondary)",
-                    }}>
-                      Pay Rates
-                    </div>
-                    <div style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      flex: 1,
-                    }}>
-                      <div style={{ padding: "6px 8px", textAlign: "center", borderRight: "1px solid rgba(var(--accent-purple-rgb), 0.12)" }}>
-                        <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Hourly Rate</div>
-                        <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--success, #43a047)" }}>
-                          {formatCurrency(profile.hourlyRate ?? 0)}
-                        </div>
+                    <div style={{ padding: "6px 8px", textAlign: "center", borderRight: "1px solid rgba(var(--accent-purple-rgb), 0.12)" }}>
+                      <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Hourly Rate</div>
+                      <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--success, #43a047)" }}>
+                        {formatCurrency(profile.hourlyRate ?? 0)}
                       </div>
-                      <div style={{ padding: "6px 8px", textAlign: "center" }}>
-                        <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Overtime Rate</div>
-                        <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--danger, #e53935)" }}>
-                          {formatCurrency(profile.overtimeRate ?? 0)}
-                        </div>
+                    </div>
+                    <div style={{ padding: "6px 8px", textAlign: "center" }}>
+                      <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Overtime Rate</div>
+                      <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--danger, #e53935)" }}>
+                        {formatCurrency(profile.overtimeRate ?? 0)}
                       </div>
                     </div>
                   </div>
-                </DevLayoutSection>
+                </ProfileCard>
               )}
-              <DevLayoutSection
-                as="div"
+              <KpiCard
+                className="app-profile-accent-card"
                 sectionKey="profile-work-kpi-estimated-pay"
                 parentKey="profile-active-tab-panel"
-                sectionType="content-card"
-              >
-                <KpiCard
-                  label="Estimated Pay"
-                  primary={
-                    Number(profile?.hourlyRate ?? 0) > 0 || Number(profile?.overtimeRate ?? 0) > 0
-                      ? formatCurrency(aggregatedStats?.estimatedPay ?? 0)
-                      : "No rate data"
-                  }
-                  secondary="Based on logged weekday and overtime hours"
-                  accentColor="var(--success)"
-                />
-              </DevLayoutSection>
-              <DevLayoutSection
-                as="div"
+                backgroundToken="accent-surface"
+                label="Estimated Pay"
+                primary={
+                  Number(profile?.hourlyRate ?? 0) > 0 || Number(profile?.overtimeRate ?? 0) > 0
+                    ? formatCurrency(aggregatedStats?.estimatedPay ?? 0)
+                    : "No rate data"
+                }
+                secondary="Based on logged weekday and overtime hours"
+                accentColor="var(--success)"
+              />
+              <KpiCard
+                className="app-profile-accent-card"
                 sectionKey="profile-work-kpi-leave-remaining"
                 parentKey="profile-active-tab-panel"
-                sectionType="content-card"
-              >
-                <KpiCard
-                  label="Leave Remaining"
-                  primary={
-                    aggregatedStats?.leaveRemaining !== null
-                      ? `${aggregatedStats.leaveRemaining} days`
-                      : "No data"
-                  }
-                  secondary={
-                    aggregatedStats?.leaveEntitlement
-                      ? `${aggregatedStats.leaveTaken ?? 0} taken of ${aggregatedStats.leaveEntitlement}`
-                      : null
-                  }
-                  accentColor="var(--danger)"
-                />
-              </DevLayoutSection>
+                backgroundToken="accent-surface"
+                label="Leave Remaining"
+                primary={
+                  aggregatedStats?.leaveRemaining !== null
+                    ? `${aggregatedStats.leaveRemaining} days`
+                    : "No data"
+                }
+                secondary={
+                  aggregatedStats?.leaveEntitlement
+                    ? `${aggregatedStats.leaveTaken ?? 0} taken of ${aggregatedStats.leaveEntitlement}`
+                    : null
+                }
+                accentColor="var(--danger)"
+              />
             </DevLayoutSection>
 
             <DevLayoutSection
@@ -2165,6 +2219,7 @@ export function ProfileWorkTab({
               sectionKey="profile-work-summary-card-group"
               parentKey="profile-active-tab-panel"
               sectionType="section-shell"
+              backgroundToken="accent-surface"
               shell
               style={{
                 display: "grid",
@@ -2172,32 +2227,27 @@ export function ProfileWorkTab({
                 gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 480px), 1fr))",
               }}
             >
-              <DevLayoutSection
-                as="div"
+              <ProfileCard
+                className="app-profile-accent-card"
                 sectionKey="profile-work-leave-summary"
                 parentKey="profile-active-tab-panel"
-                sectionType="content-card"
+                backgroundToken="accent-surface"
+                title="Leave Summary"
+                action={
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    onClick={() => {
+                      setEditingLeaveRequest(null);
+                      setLeaveSubmitError("");
+                      setLeaveModalOpen(true);
+                    }}
+                  >
+                    Request leave
+                  </Button>
+                }
               >
-                <ProfileCard
-                  title="Leave Summary"
-                  action={
-                    <Button
-                      type="button"
-                      variant="primary"
-                      size="sm"
-                      onClick={() => {
-                        setEditingLeaveRequest(null);
-                        setLeaveSubmitError("");
-                        setLeaveModalOpen(true);
-                      }}
-                    >
-                      Request leave
-                    </Button>
-                  }
-                  style={{
-                    background: "var(--surface)",
-                  }}
-                >
                   <div style={{ display: "grid", gap: "12px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
                       <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: 600 }}>
@@ -2289,8 +2339,7 @@ export function ProfileWorkTab({
                       </div>
                     )}
                   </div>
-                </ProfileCard>
-              </DevLayoutSection>
+              </ProfileCard>
               <LeaveRequestModal
                 isOpen={leaveModalOpen}
                 onClose={() => {
@@ -2307,33 +2356,28 @@ export function ProfileWorkTab({
                 isRemoving={leaveRemoving}
               />
 
-              <DevLayoutSection
-                as="div"
+              <ProfileCard
+                className="app-profile-accent-card"
                 sectionKey="profile-work-emergency-contact"
                 parentKey="profile-active-tab-panel"
-                sectionType="content-card"
+                backgroundToken="accent-surface"
+                title="Emergency Contact"
+                action={
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    {!ecEditing && (
+                      <Button
+                        type="button"
+                        onClick={handleStartEcEdit}
+                        variant="secondary"
+                        size="sm"
+                        className="app-btn--control"
+                      >
+                        Edit
+                      </Button>
+                    )}
+                  </div>
+                }
               >
-                <ProfileCard
-                  title="Emergency Contact"
-                  action={
-                    <div style={{ display: "flex", gap: "8px" }}>
-                      {!ecEditing && (
-                        <Button
-                          type="button"
-                          onClick={handleStartEcEdit}
-                          variant="secondary"
-                          size="sm"
-                          className="app-btn--control"
-                        >
-                          Edit
-                        </Button>
-                      )}
-                    </div>
-                  }
-                  style={{
-                    background: "var(--surface)",
-                  }}
-                >
                   {ecEditing ? (
                     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                       <div style={{ display: "grid", gap: "10px" }}>
@@ -2415,46 +2459,39 @@ export function ProfileWorkTab({
                       </div>
                     </div>
                   )}
-                </ProfileCard>
-              </DevLayoutSection>
+              </ProfileCard>
             </DevLayoutSection>
 
-            <DevLayoutSection
-              as="div"
+            <ProfileCard
+              className="app-profile-accent-card"
               sectionKey="profile-work-attendance-history"
               parentKey="profile-active-tab-panel"
-              sectionType="content-card"
-            >
-              <ProfileCard
-                title="Attendance History"
-                style={{
-                  background: "rgba(var(--primary-rgb), 0.08)",
-                  border: "1px solid rgba(var(--primary-rgb), 0.2)",
-                }}
-                action={
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    {!shouldUseHrData && (
-                      <Button
-                        type="button"
-                        onClick={() => setManualOvertimeModalOpen(true)}
-                        variant="primary"
-                        size="sm"
-                      >
-                        Add overtime
-                      </Button>
-                    )}
+              backgroundToken="accent-surface"
+              title="Attendance History"
+              action={
+                <div style={{ display: "flex", gap: "8px" }}>
+                  {!shouldUseHrData && (
                     <Button
                       type="button"
-                      onClick={() => setRecurringModalOpen(true)}
-                      variant="secondary"
+                      onClick={() => setManualOvertimeModalOpen(true)}
+                      variant="primary"
                       size="sm"
-                      className="app-btn--control"
                     >
-                      Recurring Rules
+                      Add overtime
                     </Button>
-                  </div>
-                }
-              >
+                  )}
+                  <Button
+                    type="button"
+                    onClick={() => setRecurringModalOpen(true)}
+                    variant="secondary"
+                    size="sm"
+                    className="app-btn--control"
+                  >
+                    Recurring Rules
+                  </Button>
+                </div>
+              }
+            >
 
                 <div
                   style={{
@@ -2534,9 +2571,17 @@ export function ProfileWorkTab({
                 </table>
               </div>
             </ProfileCard>
-            </DevLayoutSection>
 
-            {profile && <StaffVehiclesCard userId={profile.userId} vehicles={profileStaffVehicles} />}
+            {profile && (
+              <StaffVehiclesCard
+                userId={profile.userId}
+                vehicles={profileStaffVehicles}
+                className="app-profile-accent-card"
+                sectionKey="profile-work-staff-vehicles"
+                parentKey="profile-active-tab-panel"
+                backgroundToken="accent-surface"
+              />
+            )}
           </>
         ) : null}
 

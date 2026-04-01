@@ -162,7 +162,7 @@ function PasscodeModal({
             Close
           </Button>
           <Button type="submit" variant="primary" size="sm" pill disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : mode === "setup" ? "Save passcode" : "Unlock"}
+            {isSubmitting ? (mode === "setup" ? "Saving..." : "Unlocking...") : mode === "setup" ? "Save passcode" : "Unlock"}
           </Button>
         </div>
       </form>
@@ -189,6 +189,7 @@ function MonthPicker({
   compact = false,
   align = "left",
   showLabel = true,
+  width = null,
 }) {
   const monthKey = normaliseMonthKey(value);
   const monthOptions = useMemo(() => buildMonthOptions(monthKey, 12), [monthKey]);
@@ -213,9 +214,10 @@ function MonthPicker({
         onChange={(event) => onChange?.(normaliseMonthKey(event.target.value, monthKey))}
         options={monthOptions}
         ariaLabel="Selected month"
+        size="sm"
         style={{
-          width: compact ? "100%" : "190px",
-          minWidth: compact ? "140px" : "190px",
+          width: compact ? "100%" : width || "190px",
+          minWidth: compact ? "140px" : width || "190px",
           flex: compact ? "1 1 180px" : "0 0 auto",
         }}
         controlStyle={{ justifyContent: "center" }}
@@ -479,7 +481,7 @@ function WidgetGrid({
 
 /* ── PersonalDashboard ────────────────────────────────────────── */
 
-function PersonalDashboard({ dashboard }) {
+function PersonalDashboard({ dashboard, finance }) {
   const widgetManager = usePersonalWidgets({
     widgets: dashboard.widgets,
     onSaveWidgets: dashboard.saveWidgets,
@@ -499,12 +501,6 @@ function PersonalDashboard({ dashboard }) {
     }),
     []
   );
-
-  const finance = usePersonalTabModel({
-    financeState: dashboard.financeState,
-    workData: dashboard.workData,
-    onUpdateFinanceState: dashboard.updateFinanceState,
-  });
 
   const visibleWidgets = widgetManager.widgets.filter((widget) => widget.isVisible !== false);
   const visibleWidgetsByType = visibleWidgets.reduce((accumulator, widget) => {
@@ -560,56 +556,6 @@ function PersonalDashboard({ dashboard }) {
 
   return (
     <div style={{ display: "grid", gap: isMobile ? "10px" : "14px" }}>
-      {/* ── Dashboard header ── */}
-      <DevLayoutSection
-        sectionKey="profile-personal-dashboard-header"
-        parentKey="profile-personal-dashboard-unlocked"
-        sectionType="toolbar"
-        style={{
-          ...neutralPanelStyle,
-          padding: isMobile ? "12px" : "14px",
-          display: "flex",
-          flexDirection: isMobile ? "column" : "row",
-          justifyContent: "space-between",
-          gap: isMobile ? "10px" : "12px",
-          alignItems: isMobile ? "stretch" : "center",
-          flexWrap: "wrap",
-        }}
-      >
-        <div style={{ display: "grid", gap: "2px" }}>
-          <div style={{ fontWeight: 700, fontSize: "0.92rem" }}>Personal planning</div>
-          <div style={{ color: "var(--text-secondary)", fontSize: "0.76rem" }}>
-            Year <strong>{finance.model.selectedFinanceYear}</strong>
-          </div>
-        </div>
-        <div
-          style={{
-            display: "flex",
-            gap: "8px",
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            className="app-btn--control"
-            style={toolbarButtonStyle}
-            onClick={() => dashboard.onOpenAddWidget?.()}
-          >
-            Edit
-          </Button>
-          <MonthPicker
-            value={finance.model.selectedMonthKey}
-            onChange={finance.setSelectedMonth}
-            align={isMobile ? "left" : "right"}
-            compact={isMobile}
-            showLabel={false}
-          />
-        </div>
-      </DevLayoutSection>
-
       {/* ── Insights ── */}
       <DevLayoutSection
         sectionKey="profile-personal-dashboard-insights"
@@ -743,6 +689,11 @@ function PersonalDashboard({ dashboard }) {
 
 export default function ProfilePersonalTab({ disabled = false, onHeaderActionsChange = null }) {
   const dashboard = usePersonalDashboard({ enabled: !disabled });
+  const finance = usePersonalTabModel({
+    financeState: dashboard.financeState,
+    workData: dashboard.workData,
+    onUpdateFinanceState: dashboard.updateFinanceState,
+  });
   const [isPasscodeModalOpen, setIsPasscodeModalOpen] = useState(false);
   const [isAddWidgetOpen, setIsAddWidgetOpen] = useState(false);
   const [modalError, setModalError] = useState("");
@@ -766,13 +717,30 @@ export default function ProfilePersonalTab({ disabled = false, onHeaderActionsCh
     return (
       <DevLayoutSection sectionKey="profile-personal-header-actions" parentKey="profile-tab-actions" sectionType="toolbar">
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+          <MonthPicker
+            value={finance.model.selectedMonthKey}
+            onChange={finance.setSelectedMonth}
+            align="right"
+            showLabel={false}
+            width="190px"
+          />
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            className="app-btn--control"
+            style={toolbarButtonStyle}
+            onClick={() => setIsAddWidgetOpen(true)}
+          >
+            Edit
+          </Button>
           <Button type="button" variant="secondary" size="sm" className="app-btn--control" style={toolbarButtonStyle} onClick={dashboard.lock}>
             Lock
           </Button>
         </div>
       </DevLayoutSection>
     );
-  }, [dashboard.isUnlocked, dashboard.lock]);
+  }, [dashboard.isUnlocked, dashboard.lock, finance.model.selectedMonthKey, finance.setSelectedMonth]);
 
   useEffect(() => {
     onHeaderActionsChange?.(headerActions);
@@ -807,13 +775,31 @@ export default function ProfilePersonalTab({ disabled = false, onHeaderActionsCh
     setIsSubmitting(true);
     setModalError("");
     try {
+      if (String(passcode || "").length !== 4) {
+        throw new Error(
+          passcodeMode === "setup"
+            ? "Enter a 4-digit passcode."
+            : "Enter your 4-digit code."
+        );
+      }
+
+      if (passcodeMode === "setup" && String(confirmPasscode || "").length !== 4) {
+        throw new Error("Confirm your 4-digit passcode.");
+      }
+
       if (passcodeMode === "setup") {
         await dashboard.setupPasscode({ passcode, confirmPasscode });
       } else {
         await dashboard.unlock({ passcode });
       }
+      setIsPasscodeModalOpen(false);
+      setModalError("");
     } catch (error) {
-      setModalError(error.message || "Unable to unlock personal dashboard.");
+      const nextMessage =
+        error?.statusCode === 401
+          ? "That code is incorrect. Please try again."
+          : error?.message || "Unable to unlock personal dashboard.";
+      setModalError(nextMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -835,6 +821,7 @@ export default function ProfilePersonalTab({ disabled = false, onHeaderActionsCh
               onOpenAddWidget: () => setIsAddWidgetOpen(true),
               onCloseAddWidget: () => setIsAddWidgetOpen(false),
             }}
+            finance={finance}
           />
         </DevLayoutSection>
       ) : (
@@ -898,7 +885,10 @@ export default function ProfilePersonalTab({ disabled = false, onHeaderActionsCh
         mode={passcodeMode}
         isSubmitting={isSubmitting}
         error={modalError}
-        onClose={() => setIsPasscodeModalOpen(false)}
+        onClose={() => {
+          setIsPasscodeModalOpen(false);
+          setModalError("");
+        }}
         onSubmit={handlePasscodeSubmit}
       />
     </>

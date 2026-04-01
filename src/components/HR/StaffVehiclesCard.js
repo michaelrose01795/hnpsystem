@@ -30,7 +30,15 @@ function buildInitialHistoryForm(vehicle = null) {
   };
 }
 
-export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
+export default function StaffVehiclesCard({
+  userId,
+  userName,
+  vehicles = [],
+  className = "",
+  sectionKey,
+  parentKey,
+  backgroundToken = "",
+}) {
   const [localVehicles, setLocalVehicles] = useState(vehicles);
   const [vehicleForm, setVehicleForm] = useState(initialVehicleForm);
   const [historyForms, setHistoryForms] = useState({});
@@ -467,6 +475,10 @@ export default function StaffVehiclesCard({ userId, userName, vehicles = [] }) {
   return (
     <SectionCard
       title="Staff Vehicles"
+      className={className}
+      sectionKey={sectionKey}
+      parentKey={parentKey}
+      backgroundToken={backgroundToken}
       style={staffVehiclesCardStyle}
       action={
         <button
@@ -1179,8 +1191,8 @@ const dangerActionButton = {
 };
 
 const staffVehiclesCardStyle = {
-  background: "rgba(var(--primary-rgb), 0.08)",
-  border: "1px solid rgba(var(--primary-rgb), 0.18)",
+  background: "var(--profile-card-bg, rgba(var(--primary-rgb), 0.08))",
+  border: "var(--profile-card-border, 1px solid rgba(var(--primary-rgb), 0.18))",
 };
 
 function VehicleInfo({ label, value }) {

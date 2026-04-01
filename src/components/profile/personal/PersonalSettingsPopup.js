@@ -577,14 +577,15 @@ function SavingsSection({ finance, isMobile }) {
 
 function PaymentsSection({ finance, isMobile }) {
   const month = finance.model.currentMonth;
-  const fixedOutgoingRowStyle = isMobile ? "minmax(0, 1fr)" : "1.5fr 0.9fr 1fr auto";
+  const monthLabel = formatMonthLabel(finance.model.selectedMonthKey);
+  const fixedOutgoingRowStyle = isMobile ? "minmax(0, 1fr)" : "1.5fr 0.9fr 1fr minmax(180px, auto) auto";
   const plannedPaymentRowStyle = isMobile ? "minmax(0, 1fr)" : "1.6fr 1fr auto";
 
   return (
     <Section
       sectionId="payments"
       title="Payments and Outgoings"
-      description="Fixed monthly costs and planned one-off payments. These are used to calculate your total outgoings."
+      description="Fixed monthly costs apply to every month by default. Turn on an override for the selected month only when one month needs a different amount."
     >
       <StatGrid isMobile={isMobile}>
         <Stat label="Fixed outgoings">{formatCurrency(month.totals.fixedOut)}</Stat>
@@ -599,12 +600,34 @@ function PaymentsSection({ finance, isMobile }) {
         {month.monthState.fixedOutgoings.map((entry) => (
           <div key={entry.id} style={{ display: "grid", gap: "8px", gridTemplateColumns: fixedOutgoingRowStyle, padding: "8px 10px", ...widgetInsetSurfaceStyle }}>
             <input className="app-input" value={entry.name || ""} placeholder="Name" onChange={(e) => finance.updateFixedOutgoing(entry.id, { name: e.target.value })} />
-            <input className="app-input" type="number" value={entry.amount || 0} placeholder="Amount" onChange={(e) => finance.updateFixedOutgoing(entry.id, { amount: toNumber(e.target.value) })} />
+            <input
+              className="app-input"
+              type="number"
+              value={entry.isMonthOverrideEnabled ? entry.overrideAmount || 0 : entry.baseAmount || 0}
+              placeholder="Amount"
+              onChange={(e) => {
+                const nextAmount = toNumber(e.target.value);
+                if (entry.isMonthOverrideEnabled) {
+                  finance.updateFixedOutgoingMonthOverrideAmount(entry.id, nextAmount);
+                  return;
+                }
+                finance.updateFixedOutgoing(entry.id, { amount: nextAmount });
+              }}
+            />
             <DropdownField
               value={entry.category || "other"}
               onChange={(e) => finance.updateFixedOutgoing(entry.id, { category: e.target.value })}
               options={FIXED_OUTGOING_CATEGORY_OPTIONS}
+              size="sm"
             />
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", minHeight: "var(--control-height-sm)", fontSize: "0.78rem", fontWeight: 600, color: "var(--text-primary)", padding: "0 4px" }}>
+              <input
+                type="checkbox"
+                checked={Boolean(entry.isMonthOverrideEnabled)}
+                onChange={(event) => finance.setFixedOutgoingMonthOverride(entry.id, event.target.checked)}
+              />
+              <span>Override {monthLabel}</span>
+            </label>
             <Button type="button" variant="secondary" size="sm" pill onClick={() => finance.removeFixedOutgoing(entry.id)}>Remove</Button>
           </div>
         ))}

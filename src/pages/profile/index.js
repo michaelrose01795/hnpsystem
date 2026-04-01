@@ -145,19 +145,22 @@ export function ProfilePage({
                   onValueChange={setAccent}
                   options={accentOptions}
                   className="profile-accent-dropdown"
+                  size="sm"
                 />
               </div>
             ) : null}
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              className="app-btn--control"
-              onClick={toggleTheme}
-              aria-label="Cycle theme"
-            >
-              {themeLabel}
-            </Button>
+            {isWorkTab ? (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="app-btn--control"
+                onClick={toggleTheme}
+                aria-label="Cycle theme"
+              >
+                {themeLabel}
+              </Button>
+            ) : null}
             {headerActions}
           </div>
         </DevLayoutSection>

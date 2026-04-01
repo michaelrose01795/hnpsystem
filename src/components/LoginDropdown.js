@@ -5,6 +5,22 @@ import { Dropdown } from "@/components/dropdownAPI";
 const ROLE_ALIASES = {
   "valet service": ["valet"],
 };
+const DEFAULT_DEV_LOGIN_CATEGORY = "retail";
+const DEFAULT_DEV_LOGIN_DEPARTMENT = "techs";
+const DEFAULT_DEV_LOGIN_USER = "michael";
+
+const normalizeValue = (value) =>
+  String(value || "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+
+const isPreferredDevLoginDepartment = (category, department) =>
+  normalizeValue(category) === DEFAULT_DEV_LOGIN_CATEGORY &&
+  normalizeValue(department) === DEFAULT_DEV_LOGIN_DEPARTMENT;
+
+const isPreferredDevLoginUser = (user) =>
+  normalizeValue(user?.name).split(" ").includes(DEFAULT_DEV_LOGIN_USER);
 
 /**
  * LoginDropdown
@@ -63,21 +79,22 @@ export default function LoginDropdown({
     return matchKey ? source[matchKey] : null;
   };
 
-  const getUsersForDepartment = (department) => {
-    const detailed = resolveDepartmentRoster(usersByRoleDetailed, department);
-    const fallback = resolveDepartmentRoster(usersByRole, department);
+  const userOptions = useMemo(() => {
+    if (!selectedDepartment) return [];
+    const detailed = resolveDepartmentRoster(usersByRoleDetailed, selectedDepartment);
+    const fallback = resolveDepartmentRoster(usersByRole, selectedDepartment);
     const source =
       Array.isArray(detailed) && detailed.length > 0 ? detailed : fallback || [];
 
     return source.map((user, index) =>
       typeof user === "string"
         ? {
-            id: `${department}-${index}`,
+            id: `${selectedDepartment}-${index}`,
             name: user,
-            role: department,
+            role: selectedDepartment,
           }
         : {
-            id: user.id ?? user.user_id ?? `${department}-${index}`,
+            id: user.id ?? user.user_id ?? `${selectedDepartment}-${index}`,
             name:
               user.name ||
               user.displayName ||
@@ -87,14 +104,9 @@ export default function LoginDropdown({
               user.email ||
               `User ${index + 1}`,
             email: user.email || "",
-            role: user.role || department,
+            role: user.role || selectedDepartment,
           }
     );
-  };
-
-  const userOptions = useMemo(() => {
-    if (!selectedDepartment) return [];
-    return getUsersForDepartment(selectedDepartment);
   }, [selectedDepartment, usersByRole, usersByRoleDetailed]);
 
   useEffect(() => {
@@ -135,6 +147,21 @@ export default function LoginDropdown({
       setSelectedUser(onlyUser);
     }
   }, [selectedDepartment, userOptions, selectedUser, setSelectedUser]);
+
+  useEffect(() => {
+    if (!isPreferredDevLoginDepartment(selectedCategory, selectedDepartment)) return;
+    if (selectedUser || userOptions.length === 0) return;
+    const preferredUser = userOptions.find(isPreferredDevLoginUser);
+    if (preferredUser) {
+      setSelectedUser(preferredUser);
+    }
+  }, [
+    selectedCategory,
+    selectedDepartment,
+    selectedUser,
+    setSelectedUser,
+    userOptions,
+  ]);
 
   const wrapperClassName = ["login-dropdown", className].filter(Boolean).join(" ").trim();
 
