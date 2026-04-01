@@ -17,6 +17,11 @@ import PopupModal from "@/components/popups/popupStyleApi";
 import Button from "@/components/ui/Button";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { calculateLeaveRequestDayTotals, normaliseLeaveDayType } from "@/lib/hr/leaveRequests";
+import {
+  adaptWorkProfileData,
+  buildFinanceDashboardModel,
+  ensureFinanceState,
+} from "@/lib/profile/personalFinance";
 
 function formatDate(value) {
   if (!value) return "-"; // guard empty values
@@ -181,7 +186,7 @@ function ProfileCard({
     display: "flex",
     flexDirection: "column",
     gap: "12px",
-    boxShadow: "var(--shadow-lg)",
+    boxShadow: "none",
     ...style,
   };
 
@@ -216,6 +221,7 @@ function KpiCard(props) {
     primary,
     secondary,
     accentColor,
+    style,
     className = "",
     sectionKey,
     parentKey = "",
@@ -250,6 +256,7 @@ function KpiCard(props) {
     flexDirection: "column",
     gap: "6px",
     minHeight: "112px",
+    ...style,
   };
 
   if (sectionKey) {
@@ -1642,11 +1649,18 @@ export function ProfileWorkTab({
 
         const shouldUseDevQuery = !session?.user && dbUserId;
         const profileUrl = shouldUseDevQuery ? `/api/profile/me?userId=${dbUserId}` : "/api/profile/me";
+        const personalStateUrl = shouldUseDevQuery ? `/api/personal/state?userId=${dbUserId}` : "/api/personal/state";
 
-        const response = await fetch(profileUrl, {
-          signal: controller.signal,
-          credentials: "include",
-        });
+        const [response, personalStateResponse] = await Promise.all([
+          fetch(profileUrl, {
+            signal: controller.signal,
+            credentials: "include",
+          }),
+          fetch(personalStateUrl, {
+            signal: controller.signal,
+            credentials: "include",
+          }).catch(() => null),
+        ]);
 
         if (!response.ok) {
           const errPayload = await response.json().catch(() => null);
@@ -1661,6 +1675,9 @@ export function ProfileWorkTab({
         }
 
         const payload = await response.json();
+        const personalStatePayload = personalStateResponse?.ok
+          ? await personalStateResponse.json().catch(() => null)
+          : null;
 
         if (!payload?.success || !payload?.data) {
           throw new Error(payload?.message || "Profile data payload malformed");
@@ -1672,7 +1689,10 @@ export function ProfileWorkTab({
         console.log("Attendance logs count:", payload.data?.attendanceLogs?.length || 0);
         console.log("Sample attendance log:", payload.data?.attendanceLogs?.[0]);
 
-        setUserProfileData(payload.data);
+        setUserProfileData({
+          ...payload.data,
+          personalFinanceState: personalStatePayload?.success ? personalStatePayload.data?.financeState || null : null,
+        });
         hasProfileDataRef.current = true; // Mark that initial data has loaded
         setUserProfileLoading(false);
       } catch (error) {
@@ -1810,6 +1830,16 @@ export function ProfileWorkTab({
     const estimatedPay =
       monthlyWeekdayHours * Number(profile?.hourlyRate ?? 0) +
       monthlyOvertimeHours * Number(profile?.overtimeRate ?? 0);
+    const workData = adaptWorkProfileData(userProfileData || {});
+    const financeState = ensureFinanceState(userProfileData?.personalFinanceState, {
+      workData,
+    });
+    const financeModel = buildFinanceDashboardModel({
+      financeState,
+      workData,
+      monthKey: financeState.selectedMonthKey,
+    });
+    const totalPayAfterTax = Number(financeModel?.currentMonth?.pay?.afterTaxIncome ?? 0);
 
     return {
       totalHours: todayHours,
@@ -1825,6 +1855,7 @@ export function ProfileWorkTab({
       monthlyWeekendHours: Number(monthlyWeekendHours.toFixed(2)),
       monthlyTotalHours: Number(monthlyTotalHours.toFixed(2)),
       estimatedPay: Number(estimatedPay.toFixed(2)),
+      totalPayAfterTax: Number(totalPayAfterTax.toFixed(2)),
     };
   }, [attendanceLogs, leaveBalances, overtimeSummaries, profile, shouldUseHrData, userProfileData]);
   // Leave request modal state
@@ -2080,18 +2111,23 @@ export function ProfileWorkTab({
               backgroundToken="accent-surface"
               shell
               style={{
+                background: "var(--accent-purple-surface)",
+                border: "var(--section-card-border)",
+                borderRadius: "var(--radius-lg)",
+                padding: "var(--section-card-padding)",
                 display: "grid",
-                gap: "12px",
+                gap: "14px",
                 gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
               }}
             >
               {/* Total Hours (logged) card with 3 sub-columns + grand total */}
               <ProfileCard
-                className="app-profile-accent-card"
                 sectionKey="profile-work-kpi-total-hours"
                 parentKey="profile-active-tab-panel"
                 backgroundToken="accent-surface"
                 style={{
+                  background: "var(--surface)",
+                  border: "var(--section-card-border)",
                   padding: 0,
                   gap: 0,
                   overflow: "hidden",
@@ -2181,24 +2217,34 @@ export function ProfileWorkTab({
                 </ProfileCard>
               )}
               <KpiCard
-                className="app-profile-accent-card"
                 sectionKey="profile-work-kpi-estimated-pay"
                 parentKey="profile-active-tab-panel"
                 backgroundToken="accent-surface"
-                label="Estimated Pay"
+                style={{
+                  background: "var(--surface)",
+                  border: "var(--section-card-border)",
+                }}
+                label="Total Pay After Tax"
                 primary={
                   Number(profile?.hourlyRate ?? 0) > 0 || Number(profile?.overtimeRate ?? 0) > 0
-                    ? formatCurrency(aggregatedStats?.estimatedPay ?? 0)
-                    : "No rate data"
+                    ? formatCurrency(
+                        Number(aggregatedStats?.totalPayAfterTax ?? 0) > 0
+                          ? aggregatedStats?.totalPayAfterTax
+                          : aggregatedStats?.estimatedPay ?? 0
+                      )
+                    : formatCurrency(aggregatedStats?.totalPayAfterTax ?? 0)
                 }
-                secondary="Based on logged weekday and overtime hours"
+                secondary="Linked to the Personal tab income widget"
                 accentColor="var(--success)"
               />
               <KpiCard
-                className="app-profile-accent-card"
                 sectionKey="profile-work-kpi-leave-remaining"
                 parentKey="profile-active-tab-panel"
                 backgroundToken="accent-surface"
+                style={{
+                  background: "var(--surface)",
+                  border: "var(--section-card-border)",
+                }}
                 label="Leave Remaining"
                 primary={
                   aggregatedStats?.leaveRemaining !== null
@@ -2228,10 +2274,13 @@ export function ProfileWorkTab({
               }}
             >
               <ProfileCard
-                className="app-profile-accent-card"
                 sectionKey="profile-work-leave-summary"
                 parentKey="profile-active-tab-panel"
                 backgroundToken="accent-surface"
+                style={{
+                  background: "var(--surface)",
+                  border: "var(--section-card-border)",
+                }}
                 title="Leave Summary"
                 action={
                   <Button
@@ -2248,28 +2297,47 @@ export function ProfileWorkTab({
                   </Button>
                 }
               >
-                  <div style={{ display: "grid", gap: "12px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
-                      <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: 600 }}>
-                        Entitlement
-                      </span>
-                      <span style={{ fontWeight: 700 }}>{aggregatedStats?.leaveEntitlement ?? "-"} days</span>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
-                      <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: 600 }}>Taken</span>
-                      <span style={{ fontWeight: 600 }}>{aggregatedStats?.leaveTaken ?? "-"} days</span>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
-                      <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: 600 }}>
-                        Remaining
-                      </span>
-                      <span style={{ fontWeight: 700, color: "var(--success)" }}>
-                        {aggregatedStats?.leaveRemaining ?? "-"} days
-                      </span>
+                  <div style={{ display: "grid", gap: "14px" }}>
+                    <div
+                      style={{
+                        display: "grid",
+                        gap: "12px",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+                      }}
+                    >
+                      <div style={emergencyInfoCardStyle}>
+                        <span style={emergencyInfoLabelStyle}>Entitlement</span>
+                        <span style={emergencyInfoValueStyle}>{aggregatedStats?.leaveEntitlement ?? "-"} days</span>
+                      </div>
+                      <div style={emergencyInfoCardStyle}>
+                        <span style={emergencyInfoLabelStyle}>Taken</span>
+                        <span style={emergencyInfoValueStyle}>{aggregatedStats?.leaveTaken ?? "-"} days</span>
+                      </div>
+                      <div
+                        style={{
+                          ...emergencyInfoCardStyle,
+                          background: "rgba(var(--success-rgb, 67, 160, 71), 0.08)",
+                          border: "1px solid rgba(var(--success-rgb, 67, 160, 71), 0.16)",
+                        }}
+                      >
+                        <span style={emergencyInfoLabelStyle}>Remaining</span>
+                        <span style={{ ...emergencyInfoValueStyle, color: "var(--success)" }}>
+                          {aggregatedStats?.leaveRemaining ?? "-"} days
+                        </span>
+                      </div>
                     </div>
                     {leaveRequests.length > 0 && (
-                      <div style={{ display: "grid", gap: "10px", paddingTop: "8px", borderTop: "1px solid rgba(var(--accent-purple-rgb), 0.12)" }}>
-                        <span style={{ fontSize: "0.78rem", color: "var(--text-secondary)", fontWeight: 700 }}>
+                      <div
+                        style={{
+                          display: "grid",
+                          gap: "10px",
+                          padding: "12px 14px",
+                          borderRadius: "var(--radius-md)",
+                          background: "rgba(var(--accent-purple-rgb), 0.05)",
+                          border: "1px solid rgba(var(--accent-purple-rgb), 0.1)",
+                        }}
+                      >
+                        <span style={{ fontSize: "0.78rem", color: "var(--text-primary)", fontWeight: 700 }}>
                           Recent requests
                         </span>
                         {leaveRequests.slice(0, 4).map((request) => {
@@ -2292,7 +2360,7 @@ export function ProfileWorkTab({
                                 gap: "6px",
                                 padding: "10px 12px",
                                 borderRadius: "var(--radius-sm)",
-                                background: "rgba(var(--accent-purple-rgb), 0.06)",
+                                background: "var(--surface)",
                                 border: "1px solid rgba(var(--accent-purple-rgb), 0.12)",
                                 textAlign: "left",
                                 cursor: isEditable ? "pointer" : "default",
@@ -2357,10 +2425,13 @@ export function ProfileWorkTab({
               />
 
               <ProfileCard
-                className="app-profile-accent-card"
                 sectionKey="profile-work-emergency-contact"
                 parentKey="profile-active-tab-panel"
                 backgroundToken="accent-surface"
+                style={{
+                  background: "var(--surface)",
+                  border: "var(--section-card-border)",
+                }}
                 title="Emergency Contact"
                 action={
                   <div style={{ display: "flex", gap: "8px" }}>
@@ -2440,95 +2511,201 @@ export function ProfileWorkTab({
                       </div>
                     </div>
                   ) : (
-                    <div style={{ display: "grid", gap: "10px" }}>
-                      <div style={labelValueRowStyle}>
-                        <span style={labelStyle}>Name</span>
-                        <span style={valueStyle}>{emergencyParts.name}</span>
+                    <div style={{ display: "grid", gap: "14px" }}>
+                      <div
+                        style={{
+                          display: "grid",
+                          gap: "12px",
+                          gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+                        }}
+                      >
+                        <div style={emergencyInfoCardStyle}>
+                          <span style={emergencyInfoLabelStyle}>Name</span>
+                          <span style={emergencyInfoValueStyle}>{emergencyParts.name}</span>
+                        </div>
+                        <div style={emergencyInfoCardStyle}>
+                          <span style={emergencyInfoLabelStyle}>Phone</span>
+                          <span style={emergencyInfoValueStyle}>{emergencyParts.phone}</span>
+                        </div>
+                        <div style={emergencyInfoCardStyle}>
+                          <span style={emergencyInfoLabelStyle}>Relationship</span>
+                          <span style={emergencyInfoValueStyle}>{emergencyParts.relationship}</span>
+                        </div>
+                        <div style={emergencyInfoCardStyle}>
+                          <span style={emergencyInfoLabelStyle}>Address</span>
+                          <span style={emergencyInfoValueStyle}>{profile?.address || "No address on file"}</span>
+                        </div>
                       </div>
-                      <div style={labelValueRowStyle}>
-                        <span style={labelStyle}>Phone</span>
-                        <span style={valueStyle}>{emergencyParts.phone}</span>
-                      </div>
-                      <div style={labelValueRowStyle}>
-                        <span style={labelStyle}>Relationship</span>
-                        <span style={valueStyle}>{emergencyParts.relationship}</span>
-                      </div>
-                      <div style={labelValueRowStyle}>
-                        <span style={labelStyle}>Address</span>
-                        <span style={valueStyle}>{profile?.address || "No address on file"}</span>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: "10px",
+                          padding: "12px 14px",
+                          borderRadius: "var(--radius-md)",
+                          background: "rgba(var(--accent-purple-rgb), 0.05)",
+                          border: "1px solid rgba(var(--accent-purple-rgb), 0.1)",
+                        }}
+                      >
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            minWidth: "28px",
+                            height: "28px",
+                            borderRadius: "999px",
+                            background: "rgba(var(--accent-purple-rgb), 0.12)",
+                            color: "var(--accent-purple)",
+                            fontWeight: 700,
+                            fontSize: "0.78rem",
+                          }}
+                        >
+                          EC
+                        </span>
+                        <div style={{ display: "grid", gap: "4px" }}>
+                          <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-primary)" }}>
+                            Keep these details up to date
+                          </span>
+                          <span style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+                            This contact may be used if HR or management need to reach someone in an emergency.
+                          </span>
+                        </div>
                       </div>
                     </div>
                   )}
               </ProfileCard>
             </DevLayoutSection>
 
-            <ProfileCard
-              className="app-profile-accent-card"
-              sectionKey="profile-work-attendance-history"
+            <DevLayoutSection
+              as="section"
+              sectionKey="profile-work-attendance-history-group"
               parentKey="profile-active-tab-panel"
+              sectionType="section-shell"
               backgroundToken="accent-surface"
-              title="Attendance History"
-              action={
-                <div style={{ display: "flex", gap: "8px" }}>
-                  {!shouldUseHrData && (
+              shell
+              style={{
+                display: "grid",
+                gap: "16px",
+                gridTemplateColumns: "minmax(0, 1fr)",
+              }}
+            >
+              <ProfileCard
+                sectionKey="profile-work-attendance-history"
+                parentKey="profile-work-attendance-history-group"
+                backgroundToken="accent-surface"
+                style={{
+                  background: "var(--surface)",
+                  border: "var(--section-card-border)",
+                }}
+                title={<span style={{ color: "var(--accent-dark, var(--accent-purple))" }}>Attendance History</span>}
+                action={
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    {!shouldUseHrData && (
+                      <Button
+                        type="button"
+                        onClick={() => setManualOvertimeModalOpen(true)}
+                        variant="primary"
+                        size="sm"
+                      >
+                        Add overtime
+                      </Button>
+                    )}
                     <Button
                       type="button"
-                      onClick={() => setManualOvertimeModalOpen(true)}
-                      variant="primary"
+                      onClick={() => setRecurringModalOpen(true)}
+                      variant="secondary"
                       size="sm"
+                      className="app-btn--control"
                     >
-                      Add overtime
+                      Recurring Rules
                     </Button>
-                  )}
-                  <Button
-                    type="button"
-                    onClick={() => setRecurringModalOpen(true)}
-                    variant="secondary"
-                    size="sm"
-                    className="app-btn--control"
-                  >
-                    Recurring Rules
-                  </Button>
-                </div>
-              }
-            >
+                  </div>
+                }
+              >
 
-                <div
+                <DevLayoutSection
+                  as="div"
+                  sectionKey="profile-auto-data-table-2-shell"
+                  parentKey="profile-work-attendance-history"
+                  sectionType="data-table-shell"
+                  backgroundToken="surface"
                   style={{
                     maxHeight: shouldScrollAttendanceHistory ? "290px" : "none",
                     overflowY: shouldScrollAttendanceHistory ? "auto" : "visible",
                     marginTop: "10px",
+                    borderRadius: "var(--radius-md)",
+                    overflow: "hidden",
+                    border: "1px solid rgba(var(--accent-purple-rgb), 0.12)",
+                    background: "var(--surface)",
                   }}
                 >
-                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                    <thead>
+                  <DevLayoutSection
+                    as="table"
+                    sectionKey="profile-auto-data-table-2"
+                    parentKey="profile-work-attendance-history"
+                    sectionType="data-table"
+                    backgroundToken="surface"
+                    style={{ width: "100%", borderCollapse: "collapse", background: "var(--surface)", tableLayout: "fixed" }}
+                  >
+                    <colgroup>
+                      <col style={{ width: "112px" }} />
+                      <col style={{ width: "92px" }} />
+                      <col style={{ width: "104px" }} />
+                      <col style={{ width: "120px" }} />
+                      <col />
+                    </colgroup>
+                    <DevLayoutSection
+                      as="thead"
+                      sectionKey="profile-auto-data-table-2-headings"
+                      parentKey="profile-auto-data-table-2"
+                      sectionType="table-headings"
+                      backgroundToken="accent-dark"
+                    >
                       <tr
                         style={{
-                          color: "var(--text-secondary)",
+                          color: "var(--text-inverse, #ffffff)",
                           fontSize: "0.72rem",
                           textTransform: "uppercase",
                           letterSpacing: "0.04em",
                           position: "sticky",
                           top: 0,
-                          background: "var(--surface)",
+                          background: "var(--accent-dark, var(--accent-purple))",
                           zIndex: 1,
                         }}
                       >
-                        <th style={{ textAlign: "left", padding: "10px 0" }}>Date</th>
-                        <th style={{ textAlign: "center", padding: "10px 0" }}>Login</th>
-                        <th style={{ textAlign: "center", padding: "10px 0" }}>Logout</th>
-                        <th style={{ textAlign: "center", padding: "10px 0" }}>Total Hours</th>
-                        <th style={{ textAlign: "center", padding: "10px 0" }}>Type</th>
+                        <th style={{ textAlign: "left", padding: "12px 10px 12px 14px", whiteSpace: "nowrap" }}>Date</th>
+                        <th style={{ textAlign: "center", padding: "12px 8px" }}>Login</th>
+                        <th style={{ textAlign: "center", padding: "12px 8px" }}>Logout</th>
+                        <th style={{ textAlign: "center", padding: "12px 8px" }}>Total Hours</th>
+                        <th style={{ textAlign: "center", padding: "12px 14px 12px 8px" }}>Type</th>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {attendanceRecords.map((entry) => {
+                    </DevLayoutSection>
+                    <DevLayoutSection
+                      as="tbody"
+                      sectionKey="profile-auto-data-table-2-rows"
+                      parentKey="profile-auto-data-table-2"
+                      sectionType="table-rows"
+                      backgroundToken="accent-surface"
+                      style={{
+                        background: "var(--accent-purple-surface)",
+                      }}
+                    >
+                      {attendanceRecords.map((entry, index) => {
                         const nextDay = isNextDayClocking(entry.clockIn, entry.clockOut);
                         return (
-                          <tr key={entry.id} style={{ borderTop: "1px solid rgba(var(--accent-purple-rgb), 0.18)" }}>
-                            <td style={{ padding: "12px 0", fontWeight: 600 }}>{formatDate(entry.date)}</td>
-                          <td style={{ textAlign: "center", padding: "12px 0" }}>{formatTime(entry.clockIn)}</td>
-                          <td style={{ textAlign: "center", padding: "12px 0" }}>
+                          <tr
+                            key={entry.id}
+                            style={{
+                              borderTop: "1px solid rgba(var(--accent-purple-rgb), 0.18)",
+                              background: index % 2 === 0
+                                ? "var(--accent-purple-surface)"
+                                : "rgba(var(--accent-purple-rgb), 0.16)",
+                            }}
+                          >
+                            <td style={{ padding: "14px 10px 14px 14px", fontWeight: 600, whiteSpace: "nowrap", verticalAlign: "middle" }}>{formatDate(entry.date)}</td>
+                          <td style={{ textAlign: "center", padding: "14px 8px", verticalAlign: "middle" }}>{formatTime(entry.clockIn)}</td>
+                          <td style={{ textAlign: "center", padding: "14px 8px", verticalAlign: "middle" }}>
                             {entry.clockOut ? formatTime(entry.clockOut) : (
                               <span style={{ fontSize: "0.72rem", fontWeight: 600, color: "var(--success)", background: "rgba(var(--success-rgb, 67,160,71), 0.12)", padding: "2px 8px", borderRadius: "var(--radius-pill)" }}>Active</span>
                             )}
@@ -2536,14 +2713,14 @@ export function ProfileWorkTab({
                               <span style={{ fontSize: "0.7rem", color: "var(--warning)", marginLeft: "4px" }}>+1d</span>
                             )}
                           </td>
-                          <td style={{ textAlign: "center", padding: "12px 0" }}>
+                          <td style={{ textAlign: "center", padding: "14px 8px", verticalAlign: "middle" }}>
                             {nextDay ? (
                               <span style={{ color: "var(--warning)", fontWeight: 600 }}>Next Day</span>
                             ) : (
                               `${Number(entry.totalHours ?? 0).toFixed(2)}h`
                             )}
                           </td>
-                          <td style={{ textAlign: "center", padding: "12px 0" }}>
+                          <td style={{ textAlign: "center", padding: "14px 14px 14px 8px", verticalAlign: "middle" }}>
                             <StatusTag
                               label={entry.type || entry.status}
                               tone={
@@ -2562,25 +2739,39 @@ export function ProfileWorkTab({
                     })}
                     {attendanceRecords.length === 0 && (
                       <tr>
-                        <td colSpan={5} style={{ padding: "16px 0", color: "var(--text-secondary)", textAlign: "center" }}>
+                        <td colSpan={5} style={{ padding: "18px 14px", color: "var(--text-secondary)", textAlign: "center" }}>
                           No records found.
                         </td>
                       </tr>
                     )}
-                  </tbody>
-                </table>
-              </div>
-            </ProfileCard>
+                  </DevLayoutSection>
+                </DevLayoutSection>
+              </DevLayoutSection>
+              </ProfileCard>
+            </DevLayoutSection>
 
             {profile && (
-              <StaffVehiclesCard
-                userId={profile.userId}
-                vehicles={profileStaffVehicles}
-                className="app-profile-accent-card"
-                sectionKey="profile-work-staff-vehicles"
+              <DevLayoutSection
+                as="section"
+                sectionKey="profile-work-staff-vehicles-group"
                 parentKey="profile-active-tab-panel"
+                sectionType="section-shell"
                 backgroundToken="accent-surface"
-              />
+                shell
+                style={{
+                  display: "grid",
+                  gap: "16px",
+                  gridTemplateColumns: "minmax(0, 1fr)",
+                }}
+              >
+                <StaffVehiclesCard
+                  userId={profile.userId}
+                  vehicles={profileStaffVehicles}
+                  sectionKey="profile-work-staff-vehicles"
+                  parentKey="profile-work-staff-vehicles-group"
+                  backgroundToken="accent-surface"
+                />
+              </DevLayoutSection>
             )}
           </>
         ) : null}
@@ -2639,20 +2830,28 @@ const inputStyle = {
   width: "100%",
 };
 
-const labelValueRowStyle = {
-  display: "flex",
-  justifyContent: "space-between",
-  gap: "16px",
-  fontSize: "0.9rem",
-  alignItems: "center",
+const emergencyInfoCardStyle = {
+  display: "grid",
+  gap: "6px",
+  padding: "12px 14px",
+  borderRadius: "var(--radius-md)",
+  border: "1px solid rgba(var(--accent-purple-rgb), 0.12)",
+  background: "rgba(var(--accent-purple-rgb), 0.04)",
+  alignContent: "start",
+  minHeight: "78px",
 };
 
-const labelStyle = {
+const emergencyInfoLabelStyle = {
+  fontSize: "0.74rem",
   color: "var(--text-secondary)",
-  fontWeight: 600,
+  fontWeight: 700,
+  letterSpacing: "0.03em",
+  textTransform: "uppercase",
 };
 
-const valueStyle = {
+const emergencyInfoValueStyle = {
   color: "var(--text-primary)",
   fontWeight: 600,
+  lineHeight: 1.45,
+  wordBreak: "break-word",
 };

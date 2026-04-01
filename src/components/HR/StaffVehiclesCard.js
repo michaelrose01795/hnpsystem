@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { SectionCard } from "@/components/Section"; // section card layout — imported directly, ghost chain removed
 import { DropdownField } from "@/components/dropdownAPI";
 import { SearchBar } from "@/components/searchBarAPI";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 const initialVehicleForm = {
   make: "",
@@ -55,6 +56,7 @@ export default function StaffVehiclesCard({
   const [editVisibility, setEditVisibility] = useState({});
   const [confirmRemoveId, setConfirmRemoveId] = useState(null);
   const [error, setError] = useState("");
+  const overlayParentKey = sectionKey || "profile-work-staff-vehicles";
 
   useEffect(() => {
     setLocalVehicles(vehicles);
@@ -517,7 +519,7 @@ export default function StaffVehiclesCard({
               display: "flex",
               flexDirection: "column",
               gap: "12px",
-              boxShadow: "var(--shadow-lg)",
+              boxShadow: "none",
             }}
           >
             <div style={{ fontWeight: 700, color: "var(--text-primary)" }}>
@@ -576,7 +578,14 @@ export default function StaffVehiclesCard({
         </div>
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "16px", width: "100%" }}>
+      <DevLayoutSection
+        as="div"
+        sectionKey={`${overlayParentKey}-vehicle-list`}
+        parentKey={overlayParentKey}
+        sectionType="content-group"
+        backgroundToken="surface"
+        style={{ display: "flex", flexDirection: "column", gap: "16px", width: "100%" }}
+      >
         {localVehicles.length === 0 && (
           <div
             style={{
@@ -605,6 +614,10 @@ export default function StaffVehiclesCard({
           return (
             <article
               key={vehicle.id}
+              data-dev-section="1"
+              data-dev-section-key={`${overlayParentKey}-vehicle-card`}
+              data-dev-section-type="content-card"
+              data-dev-section-parent={`${overlayParentKey}-vehicle-list`}
               style={{
                 padding: "14px 16px",
                 borderRadius: "var(--radius-sm)",
@@ -647,10 +660,13 @@ export default function StaffVehiclesCard({
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                   <span
                     style={{
-                      padding: "6px 12px",
-                      borderRadius: "var(--radius-pill)",
-                      fontSize: "0.72rem",
+                      padding: "var(--control-padding)",
+                      borderRadius: "var(--input-radius)",
+                      fontSize: "0.8rem",
                       fontWeight: 700,
+                      border: vehicle.payrollDeductionEnabled
+                        ? "1px solid rgba(var(--success-rgb), 0.28)"
+                        : "1px solid rgba(var(--primary-rgb), 0.22)",
                       color: vehicle.payrollDeductionEnabled ? "var(--success)" : "var(--text-secondary)",
                       background: vehicle.payrollDeductionEnabled
                         ? "rgba(var(--success-rgb), 0.14)"
@@ -804,10 +820,21 @@ export default function StaffVehiclesCard({
             </article>
           );
         })}
-      </div>
+      </DevLayoutSection>
 
-      <div style={{ marginTop: "22px", display: "flex", flexDirection: "column", gap: "14px" }}>
+      <DevLayoutSection
+        as="div"
+        sectionKey={`${overlayParentKey}-history`}
+        parentKey={overlayParentKey}
+        sectionType="content-group"
+        backgroundToken="surface"
+        style={{ marginTop: "22px", display: "flex", flexDirection: "column", gap: "14px" }}
+      >
         <div
+          data-dev-section="1"
+          data-dev-section-key={`${overlayParentKey}-history-toolbar`}
+          data-dev-section-type="toolbar"
+          data-dev-section-parent={`${overlayParentKey}-history`}
           style={{
             display: "flex",
             justifyContent: "space-between",
@@ -827,7 +854,12 @@ export default function StaffVehiclesCard({
         </div>
 
         {showHistoryForm && (
-          <form
+          <DevLayoutSection
+            as="form"
+            sectionKey={`${overlayParentKey}-history-form`}
+            parentKey={`${overlayParentKey}-history`}
+            sectionType="form-block"
+            backgroundToken="surface"
             onSubmit={(event) => submitHistory(selectedHistoryVehicleId, event)}
             style={{
               padding: "8px 0",
@@ -936,10 +968,24 @@ export default function StaffVehiclesCard({
                 {savingHistory[selectedHistoryVehicleId] ? "Saving..." : "Add entry"}
               </button>
             </div>
-          </form>
+          </DevLayoutSection>
         )}
 
-        <div style={{ maxHeight: "360px", overflowY: "auto" }}>
+        <DevLayoutSection
+          as="div"
+          sectionKey={`${overlayParentKey}-history-table-shell`}
+          parentKey={`${overlayParentKey}-history`}
+          sectionType="data-table-shell"
+          backgroundToken="surface"
+          style={{
+            maxHeight: "360px",
+            overflowY: "auto",
+            borderRadius: "var(--radius-md)",
+            overflow: "hidden",
+            border: "1px solid rgba(var(--accent-purple-rgb), 0.12)",
+            background: "var(--accent-purple-surface)",
+          }}
+        >
           {historyEntries.length === 0 ? (
             <div
               style={{
@@ -955,43 +1001,88 @@ export default function StaffVehiclesCard({
               No repair history yet.
             </div>
           ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
+            <DevLayoutSection
+              as="table"
+              sectionKey={`${overlayParentKey}-history-table`}
+              parentKey={`${overlayParentKey}-history`}
+              sectionType="data-table"
+              backgroundToken="accent-surface"
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                background: "var(--accent-purple-surface)",
+                tableLayout: "fixed",
+              }}
+            >
+              <colgroup>
+                <col style={{ width: "92px" }} />
+                <col />
+                <col style={{ width: "112px" }} />
+                <col style={{ width: "92px" }} />
+                <col style={{ width: "88px" }} />
+                <col style={{ width: "112px" }} />
+              </colgroup>
+              <DevLayoutSection
+                as="thead"
+                sectionKey={`${overlayParentKey}-history-headings`}
+                parentKey={`${overlayParentKey}-history-table`}
+                sectionType="table-headings"
+                backgroundToken="accent-dark"
+              >
                 <tr
                   style={{
-                    color: "var(--text-secondary)",
+                    color: "var(--text-inverse, #ffffff)",
                     fontSize: "0.72rem",
                     textTransform: "uppercase",
                     letterSpacing: "0.04em",
+                    position: "sticky",
+                    top: 0,
+                    background: "var(--accent-dark, var(--accent-purple))",
+                    zIndex: 1,
                   }}
                 >
-                  <th style={{ textAlign: "left", padding: "6px 0" }}>Reg</th>
-                  <th style={{ textAlign: "left", padding: "6px 0" }}>Description</th>
-                  <th style={{ textAlign: "left", padding: "6px 0" }}>Date</th>
-                  <th style={{ textAlign: "left", padding: "6px 0" }}>Payroll</th>
-                  <th style={{ textAlign: "right", padding: "6px 0" }}>Cost</th>
-                  <th style={{ textAlign: "right", padding: "6px 0" }}>Action</th>
+                  <th style={{ textAlign: "left", padding: "12px 10px 12px 14px", whiteSpace: "nowrap" }}>Reg</th>
+                  <th style={{ textAlign: "left", padding: "12px 8px" }}>Description</th>
+                  <th style={{ textAlign: "left", padding: "12px 8px 12px 12px", whiteSpace: "nowrap" }}>Date</th>
+                  <th style={{ textAlign: "center", padding: "12px 8px" }}>Payroll</th>
+                  <th style={{ textAlign: "right", padding: "12px 8px" }}>Cost</th>
+                  <th style={{ textAlign: "right", padding: "12px 14px 12px 8px" }}>Action</th>
                 </tr>
-              </thead>
-              <tbody>
-                {historyEntries.map((entry) => (
-                  <tr key={`${entry.id}-${entry.vehicle?.id}`} style={{ borderTop: "1px solid rgba(var(--primary-rgb), 0.2)" }}>
-                    <td style={{ padding: "10px 0", fontWeight: 600, color: "var(--text-primary)" }}>
+              </DevLayoutSection>
+              <DevLayoutSection
+                as="tbody"
+                sectionKey={`${overlayParentKey}-history-rows`}
+                parentKey={`${overlayParentKey}-history-table`}
+                sectionType="table-rows"
+                backgroundToken="accent-surface"
+                style={{ background: "var(--accent-purple-surface)" }}
+              >
+                {historyEntries.map((entry, index) => (
+                  <tr
+                    key={`${entry.id}-${entry.vehicle?.id}`}
+                    style={{
+                      borderTop: "1px solid rgba(var(--accent-purple-rgb), 0.18)",
+                      background: index % 2 === 0
+                        ? "var(--accent-purple-surface)"
+                        : "rgba(var(--accent-purple-rgb), 0.16)",
+                    }}
+                  >
+                    <td style={{ padding: "14px 10px 14px 14px", fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap", verticalAlign: "middle" }}>
                       {entry.vehicle?.registration || "-"}
                     </td>
-                    <td style={{ padding: "10px 0", fontWeight: 600, color: "var(--text-primary)" }}>
+                    <td style={{ padding: "14px 8px", fontWeight: 600, color: "var(--text-primary)", verticalAlign: "middle", lineHeight: 1.4 }}>
                       {entry.description || "Workshop visit"}
                     </td>
-                    <td style={{ padding: "10px 0", color: "var(--text-secondary)" }}>
+                    <td style={{ padding: "14px 8px 14px 12px", color: "var(--text-secondary)", whiteSpace: "nowrap", verticalAlign: "middle" }}>
                       {entry.recordedAt ? new Date(entry.recordedAt).toLocaleDateString() : "Pending"}
                     </td>
-                    <td style={{ padding: "10px 0", color: "var(--text-secondary)" }}>
+                    <td style={{ padding: "14px 8px", color: "var(--text-secondary)", textAlign: "center", verticalAlign: "middle" }}>
                       {entry.deductFromPayroll ? "Deduct" : "Manual"}
                     </td>
-                    <td style={{ padding: "10px 0", textAlign: "right", fontWeight: 600 }}>
+                    <td style={{ padding: "14px 8px", textAlign: "right", fontWeight: 600, verticalAlign: "middle" }}>
                       £{Number(entry.cost ?? 0).toFixed(2)}
                     </td>
-                    <td style={{ padding: "10px 0", textAlign: "right" }}>
+                    <td style={{ padding: "14px 14px 14px 8px", textAlign: "right", verticalAlign: "middle" }}>
                       <button
                         type="button"
                         onClick={() => removeHistory(entry.vehicle?.id, entry.id)}
@@ -1008,14 +1099,19 @@ export default function StaffVehiclesCard({
                     </td>
                   </tr>
                 ))}
-              </tbody>
-            </table>
+              </DevLayoutSection>
+            </DevLayoutSection>
           )}
-        </div>
-      </div>
+        </DevLayoutSection>
+      </DevLayoutSection>
 
       {showVehicleForm && (
-        <div
+        <DevLayoutSection
+          as="div"
+          sectionKey={`${overlayParentKey}-add-vehicle-form`}
+          parentKey={overlayParentKey}
+          sectionType="form-block"
+          backgroundToken="surface"
           style={{
             marginTop: "22px",
             padding: "16px",
@@ -1132,7 +1228,7 @@ export default function StaffVehiclesCard({
               </button>
             </div>
           </form>
-        </div>
+        </DevLayoutSection>
       )}
     </SectionCard>
   );
@@ -1191,8 +1287,8 @@ const dangerActionButton = {
 };
 
 const staffVehiclesCardStyle = {
-  background: "var(--profile-card-bg, rgba(var(--primary-rgb), 0.08))",
-  border: "var(--profile-card-border, 1px solid rgba(var(--primary-rgb), 0.18))",
+  background: "var(--surface)",
+  border: "var(--section-card-border)",
 };
 
 function VehicleInfo({ label, value }) {

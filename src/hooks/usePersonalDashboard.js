@@ -380,9 +380,14 @@ export default function usePersonalDashboard({ enabled = true } = {}) {
           }));
         });
       }
-      void refreshDashboard({ silent: true });
+      const nextWorkProfile = await requestJson("/api/profile/me", { method: "GET" }).catch(() => null);
+      if (nextWorkProfile) {
+        startTransition(() => {
+          setWorkProfile(nextWorkProfile);
+        });
+      }
     },
-    [refreshDashboard, requestJson]
+    [requestJson]
   );
 
   const unlock = useCallback(
@@ -406,9 +411,14 @@ export default function usePersonalDashboard({ enabled = true } = {}) {
           }));
         });
       }
-      void refreshDashboard({ silent: true });
+      const nextWorkProfile = await requestJson("/api/profile/me", { method: "GET" }).catch(() => null);
+      if (nextWorkProfile) {
+        startTransition(() => {
+          setWorkProfile(nextWorkProfile);
+        });
+      }
     },
-    [refreshDashboard, requestJson]
+    [requestJson]
   );
 
   const lock = useCallback(async () => {
