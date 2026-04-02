@@ -45,7 +45,6 @@ const hexToRgbObject = (hexColor) => {
 };
 
 const clampChannel = (value) => Math.max(0, Math.min(255, Math.round(value)));
-const rgbToCss = (rgb) => `${clampChannel(rgb.r)}, ${clampChannel(rgb.g)}, ${clampChannel(rgb.b)}`;
 const rgbToHex = (rgb) =>
   `#${[rgb.r, rgb.g, rgb.b]
     .map((value) => clampChannel(value).toString(16).padStart(2, "0"))
@@ -64,51 +63,6 @@ const normalizeAccent = (value) => {
   if (!value || typeof value !== "string") return DEFAULT_ACCENT;
   const normalized = value.toLowerCase();
   return ACCENT_PALETTES[normalized] ? normalized : DEFAULT_ACCENT;
-};
-
-const getErrorPalette = (accentName, resolvedMode) => {
-  // Keep error colors independent from accent: red accents use amber errors; all other accents use red errors.
-  if (accentName === "red") {
-    return resolvedMode === "dark"
-      ? {
-          base: "#fbbf24",
-          dark: "#f59e0b",
-          text: "#fde68a",
-          surface: "rgba(251, 191, 36, 0.24)",
-          hover: "#fcd34d",
-          borderAlpha: 0.55,
-          surfaceHoverAlpha: 0.34,
-        }
-      : {
-          base: "#f59e0b",
-          dark: "#b45309",
-          text: "#92400e",
-          surface: "#fef3c7",
-          hover: "#d97706",
-          borderAlpha: 0.4,
-          surfaceHoverAlpha: 0.2,
-        };
-  }
-
-  return resolvedMode === "dark"
-    ? {
-        base: "#ff7a7a",
-        dark: "#f87171",
-        text: "#ffc0c0",
-        surface: "rgba(255, 122, 122, 0.5)",
-        hover: "#ff9696",
-        borderAlpha: 0.55,
-        surfaceHoverAlpha: 0.32,
-      }
-    : {
-        base: "#ef4444",
-        dark: "#b91c1c",
-        text: "#b91c1c",
-        surface: "#fee2e2",
-        hover: "#dc2626",
-        borderAlpha: 0.4,
-        surfaceHoverAlpha: 0.2,
-      };
 };
 
 const normalizeMode = (value) => {
@@ -223,62 +177,53 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
     const baseAccentRgb = hexToRgbObject(resolvedAccent);
     const white = { r: 255, g: 255, b: 255 };
     const black = { r: 0, g: 0, b: 0 };
-    const accentLayer1 = resolved === "dark" ? blend(baseAccentRgb, black, 0.86) : blend(baseAccentRgb, white, 0.76);
-    const accentLayer2 = resolved === "dark" ? blend(baseAccentRgb, black, 0.81) : blend(baseAccentRgb, white, 0.84);
-    const accentLayer3 = resolved === "dark" ? blend(baseAccentRgb, black, 0.75) : blend(baseAccentRgb, white, 0.9);
-    const accentLayer4 = resolved === "dark" ? blend(baseAccentRgb, black, 0.69) : blend(baseAccentRgb, white, 0.94);
+    const surfaceTarget = resolved === "dark" ? { r: 22, g: 22, b: 26 } : white;
+    const primaryLight = rgbToHex(
+      resolved === "dark" ? blend(baseAccentRgb, white, 0.18) : blend(baseAccentRgb, black, 0.18)
+    );
+    const primaryDark = rgbToHex(
+      resolved === "dark" ? blend(baseAccentRgb, white, 0.34) : blend(baseAccentRgb, black, 0.32)
+    );
+    const accentSurface = resolved === "dark" ? `rgba(${resolvedAccentRgb}, 0.16)` : `rgba(${resolvedAccentRgb}, 0.08)`;
+    const accentBase = resolved === "dark" ? `rgba(${resolvedAccentRgb}, 0.22)` : `rgba(${resolvedAccentRgb}, 0.14)`;
+    const accentBaseHover = resolved === "dark" ? `rgba(${resolvedAccentRgb}, 0.3)` : `rgba(${resolvedAccentRgb}, 0.22)`;
+    const accentSurfaceHover = accentBase;
+    const accentStrong = resolvedAccent;
+    const sectionLevel1 = accentSurface;
+    const sectionLevel2 = accentBase;
+    const sectionLevel3 = accentBaseHover;
+    const sectionLevel4 = accentStrong;
     const borderTone = resolved === "dark" ? blend(baseAccentRgb, white, 0.45) : blend(baseAccentRgb, black, 0.22);
-    const accentReadable = resolved === "dark" ? blend(baseAccentRgb, white, 0.24) : blend(baseAccentRgb, black, 0.12);
-    const accentPanelTone = resolved === "dark" ? blend(baseAccentRgb, black, 0.72) : blend(baseAccentRgb, white, 0.9);
-    const errorPalette = getErrorPalette(normalizedAccent, resolved);
-    const errorRgb = hexToRgb(errorPalette.base);
+    const shellBgColor = rgbToHex(blend(baseAccentRgb, surfaceTarget, resolved === "dark" ? 0.78 : 0.86));
     if (typeof document !== "undefined") {
+      document.documentElement.style.setProperty("--accent-base", accentBase);
+      document.documentElement.style.setProperty("--accent-base-rgb", resolvedAccentRgb);
+      document.documentElement.style.setProperty("--accent-surface", accentSurface);
+      document.documentElement.style.setProperty("--accent-base-hover", accentBaseHover);
+      document.documentElement.style.setProperty("--accent-surface-hover", accentSurfaceHover);
+      document.documentElement.style.setProperty("--accent-strong", accentStrong);
       document.documentElement.style.setProperty("--primary", resolvedAccent);
-      document.documentElement.style.setProperty("--primary-light", resolvedAccent);
-      document.documentElement.style.setProperty("--primary-dark", resolvedAccent);
+      document.documentElement.style.setProperty("--primary-light", primaryLight);
+      document.documentElement.style.setProperty("--primary-dark", primaryDark);
       document.documentElement.style.setProperty("--primary-rgb", resolvedAccentRgb);
       document.documentElement.style.setProperty("--border", rgbToHex(borderTone));
-      document.documentElement.style.setProperty("--info-dark", rgbToHex(accentReadable));
-      document.documentElement.style.setProperty("--search-text", resolvedAccent);
-      document.documentElement.style.setProperty("--accent-blue", resolvedAccent);
-      document.documentElement.style.setProperty("--accent-orange", resolvedAccent);
-      document.documentElement.style.setProperty(
-        "--accent-blue-surface",
-        resolved === "dark" ? `rgba(${resolvedAccentRgb}, 0.2)` : `rgba(${resolvedAccentRgb}, 0.12)`
-      );
-      document.documentElement.style.setProperty(
-        "--accent-orange-surface",
-        resolved === "dark" ? `rgba(${resolvedAccentRgb}, 0.2)` : `rgba(${resolvedAccentRgb}, 0.12)`
-      );
-      document.documentElement.style.setProperty("--accent-purple", resolvedAccent);
-      document.documentElement.style.setProperty("--accent-purple-rgb", resolvedAccentRgb);
-      document.documentElement.style.setProperty(
-        "--accent-purple-surface",
-        resolved === "dark" ? `rgba(${resolvedAccentRgb}, 0.22)` : `rgba(${resolvedAccentRgb}, 0.14)`
-      );
       document.documentElement.style.setProperty(
         "--overlay",
         resolved === "dark" ? `rgba(${resolvedAccentRgb}, 0.5)` : `rgba(${resolvedAccentRgb}, 0.35)`
       );
-      document.documentElement.style.setProperty("--accent-layer-1", rgbToHex(accentLayer1));
-      document.documentElement.style.setProperty("--accent-layer-2", rgbToHex(accentLayer2));
-      document.documentElement.style.setProperty("--accent-layer-3", rgbToHex(accentLayer3));
-      document.documentElement.style.setProperty("--accent-layer-4", rgbToHex(accentLayer4));
-      document.documentElement.style.setProperty("--accent-layer-1-rgb", rgbToCss(accentLayer1));
-      document.documentElement.style.setProperty("--accent-layer-2-rgb", rgbToCss(accentLayer2));
-      document.documentElement.style.setProperty("--accent-layer-3-rgb", rgbToCss(accentLayer3));
-      document.documentElement.style.setProperty("--accent-layer-4-rgb", rgbToCss(accentLayer4));
-      document.documentElement.style.setProperty("--layer-section-level-1", "var(--accent-layer-1)");
-      document.documentElement.style.setProperty("--layer-section-level-2", "var(--accent-layer-2)");
-      document.documentElement.style.setProperty("--layer-section-level-3", "var(--accent-layer-3)");
-      document.documentElement.style.setProperty("--layer-section-level-4", "var(--accent-layer-4)");
-      document.documentElement.style.setProperty("--layer-gradient", "var(--accent-layer-3)");
+      document.documentElement.style.setProperty("--search-text", primaryDark);
+      document.documentElement.style.setProperty("--layer-section-level-1", sectionLevel1);
+      document.documentElement.style.setProperty("--layer-section-level-2", sectionLevel2);
+      document.documentElement.style.setProperty("--layer-section-level-3", sectionLevel3);
+      document.documentElement.style.setProperty("--layer-section-level-4", sectionLevel4);
+      document.documentElement.style.setProperty("--layer-gradient", accentBase);
+      document.documentElement.style.setProperty("--profile-table-surface", accentBase);
+      document.documentElement.style.setProperty("--profile-table-alt-surface", accentBaseHover);
 
       // Update html/body background to accent layer so mobile browser overscroll
       // areas and safe-area insets show the accent colour instead of plain white/dark.
-      const shellBg = rgbToHex(accentLayer3);
-      document.documentElement.style.backgroundColor = shellBg;
-      if (document.body) document.body.style.backgroundColor = shellBg;
+      document.documentElement.style.backgroundColor = shellBgColor;
+      if (document.body) document.body.style.backgroundColor = shellBgColor;
       // Update theme-color meta so mobile browser chrome matches
       let themeMeta = document.querySelector('meta[name="theme-color"]');
       if (!themeMeta) {
@@ -286,39 +231,14 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
         themeMeta.setAttribute("name", "theme-color");
         document.head.appendChild(themeMeta);
       }
-      themeMeta.setAttribute("content", shellBg);
+      themeMeta.setAttribute("content", shellBgColor);
 
-      document.documentElement.style.setProperty("--row-background", rgbToHex(accentPanelTone));
-      document.documentElement.style.setProperty("--section-gradient-outer", "var(--accent-layer-2)");
-      document.documentElement.style.setProperty("--section-gradient-inner", "var(--accent-layer-3)");
-      document.documentElement.style.setProperty("--section-gradient-center", "var(--accent-layer-4)");
-      document.documentElement.style.setProperty("--scrollbar-thumb", resolvedAccent);
-      document.documentElement.style.setProperty(
-        "--scrollbar-thumb-hover",
-        resolved === "dark" ? rgbToHex(blend(baseAccentRgb, white, 0.2)) : rgbToHex(blend(baseAccentRgb, black, 0.18))
-      );
-      document.documentElement.style.setProperty("--danger", errorPalette.base);
-      document.documentElement.style.setProperty("--danger-dark", errorPalette.dark);
-      document.documentElement.style.setProperty("--danger-surface", errorPalette.surface);
-      document.documentElement.style.setProperty("--danger-rgb", errorRgb);
-      document.documentElement.style.setProperty("--danger-text", errorPalette.text);
-      document.documentElement.style.setProperty(
-        "--danger-border",
-        `rgba(${errorRgb}, ${errorPalette.borderAlpha})`
-      );
-      document.documentElement.style.setProperty("--danger-hover", errorPalette.hover);
-      document.documentElement.style.setProperty(
-        "--danger-surface-hover",
-        `rgba(${errorRgb}, ${errorPalette.surfaceHoverAlpha})`
-      );
-      document.documentElement.style.setProperty("--error", "var(--danger)");
-      document.documentElement.style.setProperty("--error-dark", "var(--danger-dark)");
-      document.documentElement.style.setProperty("--error-surface", "var(--danger-surface)");
-      document.documentElement.style.setProperty("--error-rgb", "var(--danger-rgb)");
-      document.documentElement.style.setProperty("--error-text", "var(--danger-text)");
-      document.documentElement.style.setProperty("--error-border", "var(--danger-border)");
-      document.documentElement.style.setProperty("--error-hover", "var(--danger-hover)");
-      document.documentElement.style.setProperty("--error-surface-hover", "var(--danger-surface-hover)");
+      document.documentElement.style.setProperty("--row-background", "var(--surface)");
+      document.documentElement.style.setProperty("--section-gradient-outer", accentBaseHover);
+      document.documentElement.style.setProperty("--section-gradient-inner", accentBase);
+      document.documentElement.style.setProperty("--section-gradient-center", "var(--surface)");
+      document.documentElement.style.setProperty("--scrollbar-thumb", accentStrong);
+      document.documentElement.style.setProperty("--scrollbar-thumb-hover", primaryLight);
     }
     setAccent(normalizedAccent);
     return normalizedAccent;
@@ -385,11 +305,20 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
       applyAccent(accent, nextResolved);
     };
 
-    media.addEventListener ? media.addEventListener("change", handleChange) : media.addListener(handleChange);
+    const supportsAddEventListener = typeof media.addEventListener === "function";
+    const supportsRemoveEventListener = typeof media.removeEventListener === "function";
+
+    if (supportsAddEventListener) {
+      media.addEventListener("change", handleChange);
+    } else {
+      media.addListener(handleChange);
+    }
     return () => {
-      media.removeEventListener
-        ? media.removeEventListener("change", handleChange)
-        : media.removeListener(handleChange);
+      if (supportsRemoveEventListener) {
+        media.removeEventListener("change", handleChange);
+      } else {
+        media.removeListener(handleChange);
+      }
     };
   }, [accent, applyAccent, mode]);
 
@@ -400,7 +329,9 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
         const storedMode = readStoredMode();
         const storedAccent = readStoredAccent();
         const nextMode =
-          storedMode === "light" || storedMode === "dark" || storedMode === "system" ? storedMode : mode;
+          storedMode === "light" || storedMode === "dark" || storedMode === "system"
+            ? storedMode
+            : normalizedDefault;
         const { resolved } = applyMode(nextMode);
         applyAccent(storedAccent, resolved);
         setLoading(false);
@@ -456,7 +387,7 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
     return () => {
       cancelled = true;
     };
-  }, [dbUserId, applyAccent, applyMode]);
+  }, [dbUserId, applyAccent, applyMode, normalizedDefault]);
 
   const persistPreference = useCallback(
     async (nextMode) => {

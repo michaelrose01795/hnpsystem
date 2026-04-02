@@ -2,10 +2,11 @@
 // Centralised styling tokens for the VHC workspace and broader app shell.
 
 const palette = {
-  accent: "var(--primary)",
-  accentHover: "var(--primary-dark)",
-  accentSoft: "var(--surface-light)",
-  accentSurface: "var(--surface-light)",
+  accent: "var(--accent-strong)",
+  accentBase: "var(--accent-base)",
+  accentHover: "var(--primary-light)",
+  accentSoft: "var(--accent-surface)",
+  accentSurface: "var(--accent-surface)",
   backgroundGradient: "var(--surface)",
   modalGradient: "var(--surface)",
   surface: "var(--surface)",
@@ -278,33 +279,35 @@ export const appShellTheme = {
   radii,
   shadows,
   light: {
-    background: "var(--layer-section-level-3)",
-    mainBg: "var(--layer-section-level-3)",
-    sidebarBg: "var(--layer-section-level-2)",
+    background: "var(--accent-base)",
+    mainBg: "var(--accent-base)",
+    sidebarBg: "var(--accent-base)",
     sidebarBorder: "var(--border)",
     sidebarText: "var(--text-primary)",
-    accent: "var(--primary)",
-    headerBg: "var(--layer-section-level-2)",
-    cardBg: "var(--layer-section-level-1)",
+    accent: "var(--accent-strong)",
+    headerBg: "var(--accent-base)",
+    cardBg: "var(--surface)",
     text: "var(--text-primary)",
     mutedText: "var(--text-secondary)",
   },
   dark: {
-    background: "var(--layer-section-level-3)",
-    mainBg: "var(--layer-section-level-3)",
-    sidebarBg: "var(--layer-section-level-2)",
+    background: "var(--accent-base)",
+    mainBg: "var(--accent-base)",
+    sidebarBg: "var(--accent-base)",
     sidebarBorder: "var(--border)",
     sidebarText: "var(--text-primary)",
-    accent: "var(--primary)",
-    headerBg: "var(--layer-section-level-2)",
-    cardBg: "var(--layer-section-level-1)",
+    accent: "var(--accent-strong)",
+    headerBg: "var(--accent-base)",
+    cardBg: "var(--surface)",
     text: "var(--text-primary)",
     mutedText: "var(--text-secondary)",
   },
 };
 
-export default {
+const appTheme = {
   palette,
   radii,
   shadows,
 };
+
+export default appTheme;

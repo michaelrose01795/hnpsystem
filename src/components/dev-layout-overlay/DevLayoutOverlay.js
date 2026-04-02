@@ -6,8 +6,13 @@ import { useDevLayoutRegistry } from "@/context/DevLayoutRegistryContext";
 import styles from "@/components/dev-layout-overlay/DevLayoutOverlay.module.css";
 
 const FALLBACK_SELECTORS = [
+  { selector: ".app-layout-page-shell,.app-page-shell", type: "page-shell" },
   { selector: ".app-page-card", type: "page-shell" },
-  { selector: ".app-section-card", type: "content-card" },
+  {
+    selector:
+      ".app-section-card,.app-layout-section-shell,.app-layout-card,.app-layout-surface-subtle,.app-layout-surface-accent,.customer-portal-card",
+    type: "content-card",
+  },
   { selector: ".app-toolbar-row,.app-layout-toolbar-row", type: "toolbar" },
   { selector: ".tab-scroll-row,.tab-api,.app-layout-tab-row", type: "tab-row" },
   { selector: ".table-api,table", type: "data-table" },

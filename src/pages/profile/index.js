@@ -102,86 +102,88 @@ export function ProfilePage({
   );
 
   const content = (
-    <DevLayoutSection
-      sectionKey="profile-page-content"
-      sectionType="page-shell"
-      shell
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: isMobile ? "12px" : "18px",
-        padding: isEmbedded ? "0" : isMobile ? "12px" : "24px",
-      }}
-    >
+    <div className={isEmbedded ? undefined : "max-w-3xl mx-auto px-6 py-8"} style={isEmbedded ? undefined : { width: "100%" }}>
       <DevLayoutSection
-        sectionKey="profile-tab-toolbar"
-        parentKey="profile-page-content"
-        sectionType="toolbar"
+        sectionKey="profile-page-content"
+        sectionType="page-shell"
+        shell
         style={{
           display: "flex",
-          justifyContent: "space-between",
-          gap: "12px",
-          alignItems: "flex-start",
-          flexWrap: "wrap",
-          width: "100%",
+          flexDirection: "column",
+          gap: isMobile ? "12px" : "18px",
+          padding: "0",
         }}
       >
-        <DevLayoutSection sectionKey="profile-tab-switcher" parentKey="profile-tab-toolbar" sectionType="tab-row">
-          <TabSwitcher
-            activeTab={activeTab}
-            onChange={(nextTab) => {
-              if (nextTab === "personal" && personalDisabled) return;
-              setActiveTab(nextTab);
-            }}
-            personalDisabled={personalDisabled}
-          />
-        </DevLayoutSection>
-        <DevLayoutSection sectionKey="profile-tab-actions" parentKey="profile-tab-toolbar" sectionType="toolbar">
-          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
-            {isWorkTab ? (
-              <div style={{ minWidth: "170px", width: "170px" }}>
-                <DropdownField
-                  value={accent}
-                  onValueChange={setAccent}
-                  options={accentOptions}
-                  className="profile-accent-dropdown"
+        <DevLayoutSection
+          sectionKey="profile-tab-toolbar"
+          parentKey="profile-page-content"
+          sectionType="toolbar"
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: "12px",
+            alignItems: "flex-start",
+            flexWrap: "wrap",
+            width: "100%",
+          }}
+        >
+          <DevLayoutSection sectionKey="profile-tab-switcher" parentKey="profile-tab-toolbar" sectionType="tab-row">
+            <TabSwitcher
+              activeTab={activeTab}
+              onChange={(nextTab) => {
+                if (nextTab === "personal" && personalDisabled) return;
+                setActiveTab(nextTab);
+              }}
+              personalDisabled={personalDisabled}
+            />
+          </DevLayoutSection>
+          <DevLayoutSection sectionKey="profile-tab-actions" parentKey="profile-tab-toolbar" sectionType="toolbar">
+            <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+              {isWorkTab ? (
+                <div style={{ minWidth: "170px", width: "170px" }}>
+                  <DropdownField
+                    value={accent}
+                    onValueChange={setAccent}
+                    options={accentOptions}
+                    className="profile-accent-dropdown"
+                    size="sm"
+                  />
+                </div>
+              ) : null}
+              {isWorkTab ? (
+                <Button
+                  type="button"
+                  variant="secondary"
                   size="sm"
-                />
-              </div>
-            ) : null}
-            {isWorkTab ? (
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                className="app-btn--control"
-                onClick={toggleTheme}
-                aria-label="Cycle theme"
-              >
-                {themeLabel}
-              </Button>
-            ) : null}
-            {headerActions}
-          </div>
+                  className="app-btn--control"
+                  onClick={toggleTheme}
+                  aria-label="Cycle theme"
+                >
+                  {themeLabel}
+                </Button>
+              ) : null}
+              {headerActions}
+            </div>
+          </DevLayoutSection>
+        </DevLayoutSection>
+
+        <DevLayoutSection sectionKey="profile-active-tab-panel" parentKey="profile-page-content" sectionType="section-shell" shell>
+          {activeTab === "work" ? (
+            <ProfileWorkTab
+              forcedUserName={forcedUserName}
+              embeddedOverride
+              adminPreviewOverride={adminPreviewOverride}
+              onHeaderActionsChange={setHeaderActions}
+            />
+          ) : (
+            <ProfilePersonalTab
+              disabled={personalDisabled}
+              onHeaderActionsChange={setHeaderActions}
+            />
+          )}
         </DevLayoutSection>
       </DevLayoutSection>
-
-      <DevLayoutSection sectionKey="profile-active-tab-panel" parentKey="profile-page-content" sectionType="section-shell" shell>
-        {activeTab === "work" ? (
-          <ProfileWorkTab
-            forcedUserName={forcedUserName}
-            embeddedOverride
-            adminPreviewOverride={adminPreviewOverride}
-            onHeaderActionsChange={setHeaderActions}
-          />
-        ) : (
-          <ProfilePersonalTab
-            disabled={personalDisabled}
-            onHeaderActionsChange={setHeaderActions}
-          />
-        )}
-      </DevLayoutSection>
-    </DevLayoutSection>
+    </div>
   );
 
   return isEmbedded ? content : <Layout>{content}</Layout>;

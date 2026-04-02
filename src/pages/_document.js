@@ -58,10 +58,9 @@ const getBootTheme = (cookies = {}) => {
   const accentName = normalizeAccent(cookies["hp-dms-accent"]);
   const accentPalette = ACCENT_PALETTES[accentName] || ACCENT_PALETTES.red;
   const primary = resolvedMode === "dark" ? accentPalette.dark : accentPalette.light;
-  // Compute accent layer 3 (page shell background) so html/body bg matches
   const accent = hexToRgbObj(primary);
-  const target = resolvedMode === "dark" ? { r: 0, g: 0, b: 0 } : { r: 255, g: 255, b: 255 };
-  const ratio = resolvedMode === "dark" ? 0.75 : 0.9;
+  const target = resolvedMode === "dark" ? { r: 22, g: 22, b: 26 } : { r: 255, g: 255, b: 255 };
+  const ratio = resolvedMode === "dark" ? 0.78 : 0.86;
   const background = rgbObjToHex({
     r: blendChannel(accent.r, target.r, ratio),
     g: blendChannel(accent.g, target.g, ratio),
@@ -182,26 +181,60 @@ const themeBootScript = `
           ].join(", ")
         : "220, 38, 38";
 
-    document.documentElement.style.setProperty("--primary", resolvedAccent);
-    document.documentElement.style.setProperty("--primary-light", resolvedAccent);
-    document.documentElement.style.setProperty("--primary-dark", resolvedAccent);
-    document.documentElement.style.setProperty("--primary-rgb", rgb);
-    document.documentElement.style.setProperty("--search-text", resolvedAccent);
-    document.documentElement.style.setProperty("--accent-blue", resolvedAccent);
-    document.documentElement.style.setProperty("--accent-orange", resolvedAccent);
-    document.documentElement.style.setProperty("--accent-purple", resolvedAccent);
-    document.documentElement.style.setProperty("--accent-purple-rgb", rgb);
-    document.documentElement.style.setProperty("--scrollbar-thumb", resolvedAccent);
-    // Compute accent layer 3 for html/body background so mobile overscroll areas match
     var blendCh = function(f,t,r){ return Math.round(f+(t-f)*r); };
     var hexToR = function(h){ h=h.replace("#",""); return {r:parseInt(h.slice(0,2),16),g:parseInt(h.slice(2,4),16),b:parseInt(h.slice(4,6),16)}; };
     var toHex2 = function(o){ return "#"+[o.r,o.g,o.b].map(function(c){return c.toString(16).padStart(2,"0");}).join(""); };
     var ac = hexToR(resolvedAccent);
-    var tgt = resolvedMode === "dark" ? {r:0,g:0,b:0} : {r:255,g:255,b:255};
-    var ratio = resolvedMode === "dark" ? 0.75 : 0.9;
-    var shellBg = toHex2({r:blendCh(ac.r,tgt.r,ratio),g:blendCh(ac.g,tgt.g,ratio),b:blendCh(ac.b,tgt.b,ratio)});
+    var white = {r:255,g:255,b:255};
+    var black = {r:0,g:0,b:0};
+    var primaryLight = toHex2({
+      r: blendCh(ac.r, resolvedMode === "dark" ? white.r : black.r, 0.18),
+      g: blendCh(ac.g, resolvedMode === "dark" ? white.g : black.g, 0.18),
+      b: blendCh(ac.b, resolvedMode === "dark" ? white.b : black.b, 0.18)
+    });
+    var primaryDark = toHex2({
+      r: blendCh(ac.r, resolvedMode === "dark" ? white.r : black.r, resolvedMode === "dark" ? 0.34 : 0.32),
+      g: blendCh(ac.g, resolvedMode === "dark" ? white.g : black.g, resolvedMode === "dark" ? 0.34 : 0.32),
+      b: blendCh(ac.b, resolvedMode === "dark" ? white.b : black.b, resolvedMode === "dark" ? 0.34 : 0.32)
+    });
+    var accentSurface = resolvedMode === "dark" ? "rgba(" + rgb + ", 0.16)" : "rgba(" + rgb + ", 0.08)";
+    var accentBase = resolvedMode === "dark" ? "rgba(" + rgb + ", 0.22)" : "rgba(" + rgb + ", 0.14)";
+    var accentBaseHover = resolvedMode === "dark" ? "rgba(" + rgb + ", 0.3)" : "rgba(" + rgb + ", 0.22)";
+    var accentSurfaceHover = accentBase;
+    var accentStrong = resolvedAccent;
+    var shellBg = toHex2({
+      r: blendCh(ac.r, resolvedMode === "dark" ? 22 : white.r, resolvedMode === "dark" ? 0.78 : 0.86),
+      g: blendCh(ac.g, resolvedMode === "dark" ? 22 : white.g, resolvedMode === "dark" ? 0.78 : 0.86),
+      b: blendCh(ac.b, resolvedMode === "dark" ? 26 : white.b, resolvedMode === "dark" ? 0.78 : 0.86)
+    });
+
+    document.documentElement.style.setProperty("--accent-base", accentBase);
+    document.documentElement.style.setProperty("--accent-base-rgb", rgb);
+    document.documentElement.style.setProperty("--accent-surface", accentSurface);
+    document.documentElement.style.setProperty("--accent-base-hover", accentBaseHover);
+    document.documentElement.style.setProperty("--accent-surface-hover", accentSurfaceHover);
+    document.documentElement.style.setProperty("--accent-strong", accentStrong);
+    document.documentElement.style.setProperty("--primary", resolvedAccent);
+    document.documentElement.style.setProperty("--primary-light", primaryLight);
+    document.documentElement.style.setProperty("--primary-dark", primaryDark);
+    document.documentElement.style.setProperty("--primary-rgb", rgb);
+    document.documentElement.style.setProperty("--search-text", primaryDark);
+    document.documentElement.style.setProperty("--scrollbar-thumb", accentStrong);
+    document.documentElement.style.setProperty("--scrollbar-thumb-hover", primaryLight);
+    document.documentElement.style.setProperty("--layer-section-level-1", accentSurface);
+    document.documentElement.style.setProperty("--layer-section-level-2", accentBase);
+    document.documentElement.style.setProperty("--layer-section-level-3", accentBaseHover);
+    document.documentElement.style.setProperty("--layer-section-level-4", accentStrong);
+    document.documentElement.style.setProperty("--profile-table-surface", accentBase);
+    document.documentElement.style.setProperty("--profile-table-alt-surface", accentBaseHover);
+    document.documentElement.style.setProperty("--overlay", resolvedMode === "dark" ? "rgba(" + rgb + ", 0.5)" : "rgba(" + rgb + ", 0.35)");
+    document.documentElement.style.setProperty("--row-background", "var(--surface)");
+    document.documentElement.style.setProperty("--layer-gradient", accentBase);
+    document.documentElement.style.setProperty("--section-gradient-outer", accentBaseHover);
+    document.documentElement.style.setProperty("--section-gradient-inner", accentBase);
+    document.documentElement.style.setProperty("--section-gradient-center", "var(--surface)");
     document.documentElement.style.backgroundColor = shellBg;
-    document.body.style.backgroundColor = shellBg;
+    if (document.body) document.body.style.backgroundColor = shellBg;
     var tm = document.querySelector('meta[name="theme-color"]');
     if (tm) tm.setAttribute("content", shellBg);
 

@@ -327,7 +327,7 @@ export default function NewsFeed() {
                 padding: "20px 24px",
                 border: "none",
                 borderRadius: "var(--radius-sm)",
-                backgroundColor: "var(--layer-section-level-1)",
+                backgroundColor: "var(--accent-surface)",
                 cursor: "pointer",
                 transition: "transform 0.3s ease, box-shadow 0.3s ease",
                 maxWidth: "100%",
@@ -621,4 +621,3 @@ export default function NewsFeed() {
     </Layout>
   );
 }
-

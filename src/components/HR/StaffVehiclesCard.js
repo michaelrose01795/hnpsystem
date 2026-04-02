@@ -619,14 +619,14 @@ export default function StaffVehiclesCard({
               data-dev-section-type="content-card"
               data-dev-section-parent={`${overlayParentKey}-vehicle-list`}
               style={{
-                padding: "14px 16px",
-                borderRadius: "var(--radius-sm)",
-                border: "1px solid rgba(var(--primary-rgb), 0.2)",
-                background: "rgba(var(--primary-rgb), 0.08)",
+                padding: "16px",
+                borderRadius: "var(--radius-md)",
+                border: "none",
+                background: "var(--accent-surface)",
                 width: "100%",
                 display: "flex",
                 flexDirection: "column",
-                gap: "12px",
+                gap: "14px",
               }}
             >
               <div
@@ -634,30 +634,36 @@ export default function StaffVehiclesCard({
                   display: "flex",
                   justifyContent: "space-between",
                   flexWrap: "wrap",
-                  gap: "12px",
-                  alignItems: "center",
+                  gap: "14px",
+                  alignItems: "flex-start",
                 }}
               >
-                <div style={{ flex: "1 1 240px", minWidth: "220px" }}>
-                  <h3 style={{ margin: 0, fontSize: "1rem", color: "var(--text-primary)" }}>
-                    {vehicle.make || "Vehicle"} {vehicle.model}
-                  </h3>
-                  <p style={{ margin: "4px 0 0", color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-                    Reg {vehicle.registration} - VIN {vehicle.vin || "N/A"}
+                <div style={{ flex: "1 1 260px", minWidth: "220px", display: "grid", gap: "8px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                    <h3 style={{ margin: 0, fontSize: "1rem", color: "var(--text-primary)", lineHeight: 1.2 }}>
+                      {vehicle.make || "Vehicle"} {vehicle.model}
+                    </h3>
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        padding: "4px 10px",
+                        borderRadius: "var(--radius-pill)",
+                        background: "var(--surface)",
+                        color: "var(--accent-base)",
+                        fontSize: "0.76rem",
+                        fontWeight: 800,
+                        letterSpacing: "0.04em",
+                      }}
+                    >
+                      {vehicle.registration || "No reg"}
+                    </span>
+                  </div>
+                  <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.86rem", lineHeight: 1.45 }}>
+                    {vehicle.vin ? `VIN ${vehicle.vin}` : "VIN not recorded"}
                   </p>
                 </div>
-                <div
-                  style={{
-                    flex: "1 1 220px",
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
-                    gap: "10px",
-                  }}
-                >
-                  <VehicleInfo label="Colour" value={vehicle.colour || "-"} />
-                  <VehicleInfo label="Payroll ref" value={vehicle.payrollDeductionReference || "-"} />
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
                   <span
                     style={{
                       padding: "var(--control-padding)",
@@ -699,13 +705,19 @@ export default function StaffVehiclesCard({
 
               <div
                 style={{
+                  padding: "12px 14px",
+                  borderRadius: "var(--radius-sm)",
+                  background: "rgba(var(--surface-rgb, 255, 255, 255), 0.72)",
                   display: "grid",
                   gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-                  gap: "10px",
+                  gap: "12px",
                 }}
               >
+                <VehicleInfo label="Registration" value={vehicle.registration || "-"} />
                 <VehicleInfo label="Make" value={vehicle.make || "-"} />
                 <VehicleInfo label="Model" value={vehicle.model || "-"} />
+                <VehicleInfo label="Colour" value={vehicle.colour || "-"} />
+                <VehicleInfo label="Payroll Ref" value={vehicle.payrollDeductionReference || "-"} />
                 <VehicleInfo label="VIN" value={vehicle.vin || "-"} />
               </div>
 
@@ -982,20 +994,20 @@ export default function StaffVehiclesCard({
             overflowY: "auto",
             borderRadius: "var(--radius-md)",
             overflow: "hidden",
-            border: "1px solid rgba(var(--accent-purple-rgb), 0.12)",
-            background: "var(--accent-purple-surface)",
+            border: "1px solid rgba(var(--accent-base-rgb), 0.12)",
+            background: "var(--profile-table-surface)",
           }}
         >
           {historyEntries.length === 0 ? (
             <div
               style={{
-                border: "1px solid rgba(var(--primary-rgb), 0.18)",
+                border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
                 borderRadius: "var(--radius-sm)",
                 padding: "18px",
                 textAlign: "center",
                 color: "var(--text-secondary)",
                 fontSize: "0.85rem",
-                background: "rgba(var(--primary-rgb), 0.05)",
+                background: "var(--accent-surface)",
               }}
             >
               No repair history yet.
@@ -1010,7 +1022,7 @@ export default function StaffVehiclesCard({
               style={{
                 width: "100%",
                 borderCollapse: "collapse",
-                background: "var(--accent-purple-surface)",
+                background: "var(--profile-table-surface)",
                 tableLayout: "fixed",
               }}
             >
@@ -1037,7 +1049,7 @@ export default function StaffVehiclesCard({
                     letterSpacing: "0.04em",
                     position: "sticky",
                     top: 0,
-                    background: "var(--accent-dark, var(--accent-purple))",
+                    background: "var(--accent-strong)",
                     zIndex: 1,
                   }}
                 >
@@ -1055,16 +1067,16 @@ export default function StaffVehiclesCard({
                 parentKey={`${overlayParentKey}-history-table`}
                 sectionType="table-rows"
                 backgroundToken="accent-surface"
-                style={{ background: "var(--accent-purple-surface)" }}
+                style={{ background: "var(--profile-table-surface)" }}
               >
                 {historyEntries.map((entry, index) => (
                   <tr
                     key={`${entry.id}-${entry.vehicle?.id}`}
                     style={{
-                      borderTop: "1px solid rgba(var(--accent-purple-rgb), 0.18)",
+                      borderTop: "1px solid rgba(var(--accent-base-rgb), 0.18)",
                       background: index % 2 === 0
-                        ? "var(--accent-purple-surface)"
-                        : "rgba(var(--accent-purple-rgb), 0.16)",
+                        ? "var(--profile-table-surface)"
+                        : "var(--profile-table-alt-surface)",
                     }}
                   >
                     <td style={{ padding: "14px 10px 14px 14px", fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap", verticalAlign: "middle" }}>

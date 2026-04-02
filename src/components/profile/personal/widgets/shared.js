@@ -47,14 +47,14 @@ export const widgetTextAreaStyle = {
 };
 
 export const widgetAccentSurfaceStyle = {
-  background: "var(--accent-layer-4, rgba(var(--primary-rgb), 0.07))",
-  border: "1px solid rgba(var(--accent-layer-2-rgb, var(--primary-rgb)), 0.42)",
+  background: "var(--accent-surface)",
+  border: "1px solid rgba(var(--accent-base-rgb), 0.24)",
   borderRadius: "var(--radius-md)",
 };
 
 export const widgetInsetSurfaceStyle = {
   background: "var(--surface)",
-  border: "1px solid rgba(var(--primary-rgb), 0.08)",
+  border: "1px solid rgba(var(--accent-base-rgb), 0.12)",
   borderRadius: "var(--radius-sm)",
 };
 
@@ -77,7 +77,7 @@ export function getWidgetModalCardStyle(isMobile = false, overrides = {}) {
     maxHeight: isMobile ? "calc(100vh - 16px)" : "calc(100vh - 48px)",
     background: "rgba(var(--surface-rgb), 0.98)",
     borderRadius: isMobile ? "18px" : "22px",
-    border: "1px solid rgba(var(--primary-rgb), 0.14)",
+    border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
     boxShadow: "var(--shadow-lg)",
     padding: isMobile ? "16px" : "20px",
     display: "flex",
@@ -99,7 +99,7 @@ export function Headline({ label, value, accent = "var(--text-primary)", size = 
       <span style={{ fontSize: "0.66rem", fontWeight: 600, color: "var(--text-secondary)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
         {label}
       </span>
-      <span style={{ fontSize: valueSizes[size] || valueSizes.large, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.2 }}>
+      <span style={{ fontSize: valueSizes[size] || valueSizes.large, fontWeight: 800, color: accent, lineHeight: 1.2 }}>
         {value}
       </span>
     </div>
@@ -117,17 +117,17 @@ export function DataRow({ label, value, accent, muted = false }) {
         gap: "8px",
         padding: "5px 0",
         fontSize: "0.82rem",
-        borderBottom: "1px solid rgba(var(--primary-rgb), 0.08)",
+        borderBottom: "1px solid rgba(var(--accent-base-rgb), 0.12)",
       }}
     >
       <span style={{ color: muted ? "var(--text-secondary)" : "var(--text-primary)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
-      <span style={{ fontWeight: 700, color: "var(--text-primary)", whiteSpace: "nowrap", flexShrink: 0 }}>{value}</span>
+      <span style={{ fontWeight: 700, color: accent || "var(--text-primary)", whiteSpace: "nowrap", flexShrink: 0 }}>{value}</span>
     </div>
   );
 }
 
 /** Small inline metric for tight grid layouts. */
-export function MetricPill({ label, value, accent = "var(--accent-purple)" }) {
+export function MetricPill({ label, value, accent = "var(--accent-base)" }) {
   return (
     <div
       style={{
@@ -136,14 +136,14 @@ export function MetricPill({ label, value, accent = "var(--accent-purple)" }) {
         padding: "8px 10px",
         borderRadius: "10px",
         background: "var(--surface)",
-        border: "1px solid rgba(var(--primary-rgb), 0.08)",
-        borderLeft: "2px solid var(--primary)",
+        border: "1px solid rgba(var(--accent-base-rgb), 0.12)",
+        borderLeft: `2px solid ${accent}`,
       }}
     >
       <span style={{ fontSize: "0.66rem", color: "var(--text-secondary)", fontWeight: 600 }}>
         {label}
       </span>
-      <span style={{ fontSize: "0.88rem", color: "var(--text-primary)", fontWeight: 700 }}>
+      <span style={{ fontSize: "0.88rem", color: accent, fontWeight: 700 }}>
         {value}
       </span>
     </div>
@@ -152,7 +152,7 @@ export function MetricPill({ label, value, accent = "var(--accent-purple)" }) {
 
 /** Divider line between sections inside a card. */
 export function CardDivider() {
-  return <div style={{ borderTop: "1px solid rgba(var(--primary-rgb), 0.08)", margin: "4px 0" }} />;
+  return <div style={{ borderTop: "1px solid rgba(var(--accent-base-rgb), 0.12)", margin: "4px 0" }} />;
 }
 
 export function SectionLabel({ children }) {
@@ -184,7 +184,7 @@ export function EmptyState({ children }) {
         borderRadius: "var(--radius-sm)",
         padding: "12px 14px",
         background: "var(--surface)",
-        border: "1px solid rgba(var(--primary-rgb), 0.08)",
+        border: "1px solid rgba(var(--accent-base-rgb), 0.12)",
         color: "var(--text-secondary)",
         fontSize: "0.8rem",
         lineHeight: 1.5,
@@ -220,7 +220,7 @@ export function StatusBadge({ children, tone = "info", style = {} }) {
       color: "var(--warning, #ef6c00)",
     },
     neutral: {
-      background: "rgba(var(--primary-rgb), 0.06)",
+      background: "var(--accent-surface)",
       color: "var(--text-secondary)",
     },
     info: {

@@ -2031,13 +2031,25 @@ export function ProfileWorkTab({
     return isEmbedded ? fallback : <Layout>{fallback}</Layout>;
   }
 
+  const profileSectionShellStyle = {
+    background: "var(--accent-purple-surface)",
+    border: "var(--section-card-border)",
+    borderRadius: "var(--radius-lg)",
+    padding: "var(--section-card-padding)",
+  };
+
+  const profileSurfaceCardStyle = {
+    background: "var(--surface)",
+    border: "var(--section-card-border)",
+  };
+
   const content = (
     <div
       style={{
         display: "flex",
         flexDirection: "column",
         gap: "20px",
-        padding: isEmbedded ? "0" : "24px",
+        padding: "0",
         background: "transparent",
         color: "var(--text-primary)",
         minHeight: "100%",
@@ -2111,10 +2123,7 @@ export function ProfileWorkTab({
               backgroundToken="accent-surface"
               shell
               style={{
-                background: "var(--accent-purple-surface)",
-                border: "var(--section-card-border)",
-                borderRadius: "var(--radius-lg)",
-                padding: "var(--section-card-padding)",
+                ...profileSectionShellStyle,
                 display: "grid",
                 gap: "14px",
                 gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
@@ -2126,8 +2135,7 @@ export function ProfileWorkTab({
                 parentKey="profile-active-tab-panel"
                 backgroundToken="accent-surface"
                 style={{
-                  background: "var(--surface)",
-                  border: "var(--section-card-border)",
+                  ...profileSurfaceCardStyle,
                   padding: 0,
                   gap: 0,
                   overflow: "hidden",
@@ -2169,7 +2177,7 @@ export function ProfileWorkTab({
                     gap: "6px",
                     padding: "8px 10px",
                     borderTop: "1px solid rgba(var(--accent-purple-rgb), 0.15)",
-                    background: "rgba(var(--accent-purple-rgb), 0.06)",
+                    background: "var(--surface)",
                   }}>
                     <span style={{ fontSize: "0.72rem", fontWeight: 600, color: "var(--text-secondary)" }}>Total</span>
                     <span style={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--text-primary)" }}>
@@ -2186,6 +2194,7 @@ export function ProfileWorkTab({
                   parentKey="profile-active-tab-panel"
                   backgroundToken="accent-surface"
                   style={{
+                    ...profileSurfaceCardStyle,
                     padding: 0,
                     gap: 0,
                     overflow: "hidden",
@@ -2221,8 +2230,7 @@ export function ProfileWorkTab({
                 parentKey="profile-active-tab-panel"
                 backgroundToken="accent-surface"
                 style={{
-                  background: "var(--surface)",
-                  border: "var(--section-card-border)",
+                  ...profileSurfaceCardStyle,
                 }}
                 label="Total Pay After Tax"
                 primary={
@@ -2242,8 +2250,7 @@ export function ProfileWorkTab({
                 parentKey="profile-active-tab-panel"
                 backgroundToken="accent-surface"
                 style={{
-                  background: "var(--surface)",
-                  border: "var(--section-card-border)",
+                  ...profileSurfaceCardStyle,
                 }}
                 label="Leave Remaining"
                 primary={
@@ -2268,6 +2275,7 @@ export function ProfileWorkTab({
               backgroundToken="accent-surface"
               shell
               style={{
+                ...profileSectionShellStyle,
                 display: "grid",
                 gap: "16px",
                 gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 480px), 1fr))",
@@ -2278,8 +2286,7 @@ export function ProfileWorkTab({
                 parentKey="profile-active-tab-panel"
                 backgroundToken="accent-surface"
                 style={{
-                  background: "var(--surface)",
-                  border: "var(--section-card-border)",
+                  ...profileSurfaceCardStyle,
                 }}
                 title="Leave Summary"
                 action={
@@ -2316,8 +2323,8 @@ export function ProfileWorkTab({
                       <div
                         style={{
                           ...emergencyInfoCardStyle,
-                          background: "rgba(var(--success-rgb, 67, 160, 71), 0.08)",
-                          border: "1px solid rgba(var(--success-rgb, 67, 160, 71), 0.16)",
+                          background: "var(--accent-purple-surface)",
+                          border: "1px solid rgba(var(--accent-purple-rgb), 0.14)",
                         }}
                       >
                         <span style={emergencyInfoLabelStyle}>Remaining</span>
@@ -2333,7 +2340,7 @@ export function ProfileWorkTab({
                           gap: "10px",
                           padding: "12px 14px",
                           borderRadius: "var(--radius-md)",
-                          background: "rgba(var(--accent-purple-rgb), 0.05)",
+                          background: "var(--accent-purple-surface)",
                           border: "1px solid rgba(var(--accent-purple-rgb), 0.1)",
                         }}
                       >
@@ -2543,7 +2550,7 @@ export function ProfileWorkTab({
                           gap: "10px",
                           padding: "12px 14px",
                           borderRadius: "var(--radius-md)",
-                          background: "rgba(var(--accent-purple-rgb), 0.05)",
+                          background: "var(--accent-purple-surface)",
                           border: "1px solid rgba(var(--accent-purple-rgb), 0.1)",
                         }}
                       >
@@ -2637,7 +2644,7 @@ export function ProfileWorkTab({
                     borderRadius: "var(--radius-md)",
                     overflow: "hidden",
                     border: "1px solid rgba(var(--accent-purple-rgb), 0.12)",
-                    background: "var(--surface)",
+                    background: "var(--profile-table-surface)",
                   }}
                 >
                   <DevLayoutSection
@@ -2646,7 +2653,7 @@ export function ProfileWorkTab({
                     parentKey="profile-work-attendance-history"
                     sectionType="data-table"
                     backgroundToken="surface"
-                    style={{ width: "100%", borderCollapse: "collapse", background: "var(--surface)", tableLayout: "fixed" }}
+                    style={{ width: "100%", borderCollapse: "collapse", background: "var(--profile-table-surface)", tableLayout: "fixed" }}
                   >
                     <colgroup>
                       <col style={{ width: "112px" }} />
@@ -2688,7 +2695,7 @@ export function ProfileWorkTab({
                       sectionType="table-rows"
                       backgroundToken="accent-surface"
                       style={{
-                        background: "var(--accent-purple-surface)",
+                        background: "var(--profile-table-surface)",
                       }}
                     >
                       {attendanceRecords.map((entry, index) => {
@@ -2699,8 +2706,8 @@ export function ProfileWorkTab({
                             style={{
                               borderTop: "1px solid rgba(var(--accent-purple-rgb), 0.18)",
                               background: index % 2 === 0
-                                ? "var(--accent-purple-surface)"
-                                : "rgba(var(--accent-purple-rgb), 0.16)",
+                                ? "var(--profile-table-surface)"
+                                : "var(--profile-table-alt-surface)",
                             }}
                           >
                             <td style={{ padding: "14px 10px 14px 14px", fontWeight: 600, whiteSpace: "nowrap", verticalAlign: "middle" }}>{formatDate(entry.date)}</td>
@@ -2836,7 +2843,7 @@ const emergencyInfoCardStyle = {
   padding: "12px 14px",
   borderRadius: "var(--radius-md)",
   border: "1px solid rgba(var(--accent-purple-rgb), 0.12)",
-  background: "rgba(var(--accent-purple-rgb), 0.04)",
+  background: "var(--accent-purple-surface)",
   alignContent: "start",
   minHeight: "78px",
 };

@@ -64,6 +64,25 @@ export function DevLayoutOverlayProvider({ children }) {
     window.localStorage.setItem(STORAGE_MODE_KEY, mode);
   }, [mode, canAccess, hydrated]);
 
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+
+    if (!canAccess || !enabled) {
+      root.removeAttribute("data-dev-overlay-enabled");
+      root.removeAttribute("data-dev-overlay-mode");
+      return;
+    }
+
+    root.setAttribute("data-dev-overlay-enabled", "true");
+    root.setAttribute("data-dev-overlay-mode", mode);
+
+    return () => {
+      root.removeAttribute("data-dev-overlay-enabled");
+      root.removeAttribute("data-dev-overlay-mode");
+    };
+  }, [canAccess, enabled, mode]);
+
   const setMode = useCallback((nextMode) => {
     if (!MODES.includes(nextMode)) return;
     setModeState(nextMode);

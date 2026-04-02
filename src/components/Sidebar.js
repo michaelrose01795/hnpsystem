@@ -37,6 +37,7 @@ export default function Sidebar({
   visibleRoles = null,
   modeLabel: _modeLabel = null, // keep legacy prop available without rendering the old text block
 }) {
+  void _modeLabel;
   const router = useRouter();
   const pathname = (router.asPath || router.pathname || "").split("?")[0];
   const { user, dbUserId } = useUser();
@@ -48,8 +49,6 @@ export default function Sidebar({
     Array.isArray(visibleRoles) && visibleRoles.length > 0
       ? visibleRoles.map((role) => role.toLowerCase())
       : derivedRoles;
-  const partsRoles = new Set(["parts", "parts manager"]);
-  const hasPartsSidebarAccess = userRoles.some((role) => partsRoles.has(role));
   const dashboardShortcuts = departmentDashboardShortcuts.filter((shortcut) => {
     if (!shortcut.roles || shortcut.roles.length === 0) return true;
     return shortcut.roles.some((role) => userRoles.includes(role));
@@ -185,8 +184,8 @@ export default function Sidebar({
               minHeight: 24,
               padding: "0 6px",
               borderRadius: 999,
-              background: "var(--primary)",
-              color: "var(--surface)",
+              background: "var(--accent-strong)",
+              color: "var(--text-inverse)",
               fontSize: "0.75rem",
               fontWeight: 700,
               display: "inline-flex",
@@ -427,8 +426,8 @@ export default function Sidebar({
                               flex: 1,
                               marginBottom: 0,
                               border: "none",
-                              background: devOverlayEnabled ? "var(--primary)" : "rgba(var(--primary-rgb), 0.08)",
-                              color: devOverlayEnabled ? "var(--text-inverse)" : "var(--primary-dark)",
+                              background: devOverlayEnabled ? "var(--accent-strong)" : "var(--accent-base)",
+                              color: devOverlayEnabled ? "var(--text-inverse)" : "var(--accent-strong)",
                               fontSize: "0.78rem",
                               fontWeight: 700,
                               textAlign: "center",
