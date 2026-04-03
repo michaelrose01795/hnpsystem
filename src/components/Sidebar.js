@@ -11,6 +11,7 @@ import { sidebarSections } from "@/config/navigation";
 import { departmentDashboardShortcuts } from "@/config/departmentDashboards";
 import BrandLogo from "@/components/BrandLogo";
 import { useDevLayoutOverlay } from "@/context/DevLayoutOverlayContext";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 const LOGOUT_BARRIER_STORAGE_KEY = "hnp-logout-barrier-until";
 const LOGOUT_BARRIER_MS = 8000;
@@ -200,8 +201,17 @@ export default function Sidebar({
     );
   };
 
+  const sidebarSectionKey = isCondensed ? "app-sidebar-shell-mobile" : "app-sidebar-shell";
+  const sidebarHeaderKey = isCondensed ? "app-sidebar-header-mobile" : "app-sidebar-header";
+  const sidebarBodyKey = isCondensed ? "app-sidebar-body-mobile" : "app-sidebar-body";
+
   return (
-    <aside
+    <DevLayoutSection
+      as="aside"
+      sectionKey={sidebarSectionKey}
+      sectionType="section-shell"
+      shell
+      backgroundToken="app-sidebar-shell"
       className="app-sidebar"
       style={{
         padding: "0",
@@ -223,8 +233,12 @@ export default function Sidebar({
     >
       {/* Header */}
       {/* Brand logo replaces the old Navigation/Workspace labels while keeping header spacing consistent. Background now follows the sidebar theme for both light/dark modes. */}
-      <div
+      <DevLayoutSection
         className="sidebar-logo-header app-sidebar__header"
+        sectionKey={sidebarHeaderKey}
+        parentKey={sidebarSectionKey}
+        sectionType="content-card"
+        backgroundToken="app-sidebar-header"
         style={{
           position: "relative",
           display: "flex",
@@ -251,10 +265,17 @@ export default function Sidebar({
             style={headerLogoStyle}
           />
         </div>
-      </div>
+      </DevLayoutSection>
 
       {/* Navigation Content */}
-      <div className="app-sidebar__body">
+      <DevLayoutSection
+        className="app-sidebar__body"
+        sectionKey={sidebarBodyKey}
+        parentKey={sidebarSectionKey}
+        sectionType="content-card"
+        backgroundToken="app-sidebar-body"
+        style={{ background: "var(--surface)" }}
+      >
         {dashboardShortcuts.length > 0 && (
           <>
             <div
@@ -463,7 +484,7 @@ export default function Sidebar({
             })}
           </>
         )}
-      </div>
-    </aside>
+      </DevLayoutSection>
+    </DevLayoutSection>
   );
 }

@@ -474,7 +474,7 @@ const buildGuide = (section, sections) => {
 export default function DevLayoutOverlay() {
   const router = useRouter();
   const { registeredSections, syncComputedSections } = useDevLayoutRegistry();
-  const { canAccess, enabled, mode, setMode, cycleMode } = useDevLayoutOverlay();
+  const { canAccess, enabled, mode, setMode, toggleEnabled, cycleMode } = useDevLayoutOverlay();
   const [sections, setSections] = useState([]);
   const [selectedKey, setSelectedKey] = useState("");
   const [copiedAction, setCopiedAction] = useState("");
@@ -684,6 +684,15 @@ export default function DevLayoutOverlay() {
                 </p>
               </div>
               <div className={styles.panelHeaderActions}>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={enabled}
+                  className={`app-btn ${enabled ? "app-btn--primary" : "app-btn--secondary"} app-btn--xs app-btn--pill`}
+                  onClick={toggleEnabled}
+                >
+                  Screen Overlay {enabled ? "ON" : "OFF"}
+                </button>
                 <button
                   type="button"
                   className={`app-btn ${mode === "labels" ? "app-btn--primary" : "app-btn--secondary"} app-btn--xs app-btn--pill`}

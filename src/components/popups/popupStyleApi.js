@@ -1,5 +1,7 @@
 import React from "react";
 import ModalPortal from "@/components/popups/ModalPortal";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import { useDevLayoutOverlay } from "@/context/DevLayoutOverlayContext";
 
 export const popupStyleApi = {
   backdrop: {
@@ -53,12 +55,18 @@ export default function PopupModal({
   ariaLabel,
   children,
 }) {
+  const { canAccess, enabled, toggleEnabled } = useDevLayoutOverlay();
+
   if (!isOpen) return null;
 
   return (
     <ModalPortal>
-      <div
+      <DevLayoutSection
         className="popup-backdrop"
+        sectionKey="shared-popup-backdrop"
+        sectionType="floating-action"
+        shell
+        backgroundToken="popup-backdrop"
         role={role}
         aria-modal="true"
         aria-label={ariaLabel}
@@ -68,14 +76,42 @@ export default function PopupModal({
           if (event.target === event.currentTarget) onClose?.();
         }}
       >
-        <div
+        <DevLayoutSection
           className="popup-card"
+          sectionKey="shared-popup-card"
+          parentKey="shared-popup-backdrop"
+          sectionType="content-card"
+          backgroundToken="popup-card"
           style={getPopupCardStyle(cardStyle)}
           onClick={(event) => event.stopPropagation()}
         >
+          {canAccess && (
+            <div
+              style={{
+                position: "absolute",
+                top: "12px",
+                right: "12px",
+                zIndex: 2,
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+              }}
+            >
+              <button
+                type="button"
+                role="switch"
+                aria-checked={enabled}
+                aria-label="Toggle dev layout overlay for the current screen"
+                className={`app-btn ${enabled ? "app-btn--primary" : "app-btn--secondary"} app-btn--xs app-btn--pill`}
+                onClick={toggleEnabled}
+              >
+                Screen Overlay {enabled ? "ON" : "OFF"}
+              </button>
+            </div>
+          )}
           {children}
-        </div>
-      </div>
+        </DevLayoutSection>
+      </DevLayoutSection>
     </ModalPortal>
   );
 }

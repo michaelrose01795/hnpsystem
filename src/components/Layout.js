@@ -27,6 +27,7 @@ import { getUserActiveJobs, clockOutFromJob } from "@/lib/database/jobClocking";
 import { DropdownField } from "@/components/dropdownAPI";
 import { getWelcomeQuoteSlotKey } from "@/lib/welcomeQuoteSlot";
 import BrandLogo from "@/components/BrandLogo";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 const SERVICE_ACTION_ROLES = new Set([
   "service",
@@ -756,9 +757,20 @@ export default function Layout({
   const showNavToggleButton = !hideSidebar && !isTablet; // Hide on tablet/mobile since we use tab-style buttons
 
   return (
-    <div style={layoutStyles}>
+    <DevLayoutSection
+      sectionKey="app-layout-chrome"
+      sectionType="section-shell"
+      shell
+      backgroundToken="app-layout-chrome"
+      style={layoutStyles}
+    >
       {showDesktopSidebar && (
-        <div
+        <DevLayoutSection
+          sectionKey="app-layout-sidebar-rail"
+          parentKey="app-layout-chrome"
+          sectionType="section-shell"
+          shell
+          backgroundToken="app-sidebar-rail"
           style={{
             width: isSidebarOpen ? `${NAV_DRAWER_WIDTH}px` : "0px",
             padding: "16px 0",
@@ -781,10 +793,15 @@ export default function Layout({
               modeLabel={activeModeLabel}
             />
           )}
-        </div>
+        </DevLayoutSection>
       )}
 
-      <div
+      <DevLayoutSection
+        sectionKey="app-layout-main-column"
+        parentKey="app-layout-chrome"
+        sectionType="section-shell"
+        shell
+        backgroundToken="app-main-column"
         className="app-layout-main-column"
         style={{
           flex: hideSidebar ? "none" : 1,
@@ -924,7 +941,13 @@ export default function Layout({
         )}
 
         {!hideSidebar && (
-          <section
+          <DevLayoutSection
+            as="section"
+            sectionKey="app-layout-topbar"
+            parentKey="app-layout-main-column"
+            sectionType="toolbar"
+            shell
+            backgroundToken="app-topbar-shell"
             className="app-topbar-shell"
             style={{
               background: "rgba(var(--surface-rgb), 0.92)",
@@ -1194,10 +1217,16 @@ export default function Layout({
                 </div>
               )}
             </div>
-          </section>
+          </DevLayoutSection>
         )}
 
-        <main
+        <DevLayoutSection
+          as="main"
+          sectionKey="app-layout-main-shell"
+          parentKey="app-layout-main-column"
+          sectionType="page-shell"
+          shell
+          backgroundToken="app-page-shell"
           className="app-page-shell"
           style={{
             flex: 1,
@@ -1212,7 +1241,11 @@ export default function Layout({
               overflow: "visible",
             }}
           >
-            <div
+            <DevLayoutSection
+              sectionKey="app-layout-page-card"
+              parentKey="app-layout-main-shell"
+              sectionType="content-card"
+              backgroundToken={contentBackground ? "app-page-card-custom" : "app-page-card"}
               className={disableContentCard || hideSidebar ? "app-page-card app-page-card--bare" : "app-page-card"}
               style={
                 disableContentCard || hideSidebar
@@ -1226,10 +1259,10 @@ export default function Layout({
                 {showHrTabs && <HrTabsBar />}
                 {children}
               </div>
-            </div>
+            </DevLayoutSection>
           </div>
-        </main>
-      </div>
+        </DevLayoutSection>
+      </DevLayoutSection>
 
       {showNavToggleButton && (
         <button
@@ -1386,6 +1419,6 @@ export default function Layout({
           </div>
         </div>
       </div>
-    </div>
+    </DevLayoutSection>
   );
 }

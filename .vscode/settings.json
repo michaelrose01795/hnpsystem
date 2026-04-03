@@ -1,3 +1,4 @@
 {
-    "chat.agent.maxRequests": 100000000
+    "chat.agent.maxRequests": 100000000,
+    "remote.autoForwardPortsFallback": 0
 }
