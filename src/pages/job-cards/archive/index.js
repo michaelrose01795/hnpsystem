@@ -9,14 +9,14 @@ import { SearchBar } from "@/components/searchBarAPI";
 import { prefetchJob } from "@/lib/swr/prefetch";
 
 const STATUS_BADGES = {
-  Complete: { bg: "var(--success-surface)", color: "var(--info-dark)" },
+  Complete: { bg: "var(--success-surface)", color: "var(--success-text)" },
   Released: { bg: "var(--success-surface)", color: "var(--success-dark)" },
-  Invoiced: { bg: "var(--info-surface)", color: "var(--accent-purple)" },
-  Delivered: { bg: "var(--warning-surface)", color: "var(--danger-dark)" },
-  Archived: { bg: "var(--info-surface)", color: "var(--info-dark)" },
+  Invoiced: { bg: "var(--info-surface)", color: "var(--accentText)" },
+  Delivered: { bg: "var(--warning-surface)", color: "var(--warning-text)" },
+  Archived: { bg: "var(--info-surface)", color: "var(--accentText)" },
 };
 
-const defaultStatusBadge = { bg: "var(--info-surface)", color: "var(--info-dark)" };
+const defaultStatusBadge = { bg: "var(--info-surface)", color: "var(--accentText)" };
 
 export default function ArchivedJobsPage() {
   const [query, setQuery] = useState("");
@@ -245,9 +245,9 @@ export default function ArchivedJobsPage() {
           shell
           backgroundToken="surface"
           style={{
-            background: "var(--accent-purple-surface)",
+            background: "var(--accentSurfaceSubtle)",
             borderRadius: "var(--radius-sm)",
-            border: "1px solid rgba(var(--accent-purple-rgb), 0.22)",
+            border: "1px solid var(--accentBorder)",
           }}
         >
           <DevLayoutSection
@@ -265,8 +265,14 @@ export default function ArchivedJobsPage() {
               backgroundToken="accent-surface"
               style={{ width: "100%", borderCollapse: "collapse" }}
             >
-              <thead data-dev-section-key="job-cards-archive-results-table-headings" style={{ background: "var(--accent-layer-1)" }}>
-                <tr style={{ textAlign: "left", color: "var(--primary-dark)", fontSize: "0.85rem" }}>
+              <thead
+                data-dev-section="1"
+                data-dev-section-key="job-cards-archive-results-table-headings"
+                data-dev-section-type="table-headings"
+                data-dev-section-parent="job-cards-archive-results-table"
+                style={{ background: "var(--accentSurface)", color: "var(--surfaceText)" }}
+              >
+                <tr style={{ textAlign: "left", color: "var(--surfaceText)", fontSize: "0.85rem" }}>
                   <th style={{ padding: "10px 18px" }}>Job #</th>
                   <th style={{ padding: "10px 18px" }}>Customer</th>
                   <th style={{ padding: "10px 18px" }}>Vehicle</th>
@@ -283,25 +289,25 @@ export default function ArchivedJobsPage() {
                       key={job.id}
                       data-dev-section-key={`job-cards-archive-results-row-${job.id}`}
                       style={{
-                        borderTop: "1px solid rgba(var(--accent-purple-rgb), 0.14)",
+                        borderTop: "1px solid var(--accentBorder)",
                         background: "var(--surface)",
                         transition: "background-color 0.18s ease, box-shadow 0.18s ease",
                       }}
                       onMouseEnter={(event) => {
-                        event.currentTarget.style.backgroundColor = "var(--accent-purple-surface)";
-                        event.currentTarget.style.boxShadow = "inset 4px 0 0 var(--accent-purple)";
+                        event.currentTarget.style.backgroundColor = "var(--accentSurfaceSubtle)";
+                        event.currentTarget.style.boxShadow = "inset 4px 0 0 var(--accentMain)";
                       }}
                       onMouseLeave={(event) => {
                         event.currentTarget.style.backgroundColor = "var(--surface)";
                         event.currentTarget.style.boxShadow = "none";
                       }}
                     >
-                      <td style={{ padding: "12px 18px", fontWeight: 600, color: "var(--accent-purple)" }}>{job.jobNumber}</td>
-                      <td style={{ padding: "12px 18px", color: "var(--info-dark)" }}>{job.customer || "—"}</td>
+                      <td style={{ padding: "12px 18px", fontWeight: 600, color: "var(--accentText)" }}>{job.jobNumber}</td>
+                      <td style={{ padding: "12px 18px", color: "var(--surfaceText)" }}>{job.customer || "—"}</td>
                       <td style={{ padding: "12px 18px" }}>
                         <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                          <span style={{ fontWeight: 600 }}>{job.vehicleMakeModel || "—"}</span>
-                          <span style={{ color: "var(--info)" }}>{job.vehicleReg || "—"}</span>
+                          <span style={{ fontWeight: 600, color: "var(--surfaceText)" }}>{job.vehicleMakeModel || "—"}</span>
+                          <span style={{ color: "var(--surfaceTextMuted)" }}>{job.vehicleReg || "—"}</span>
                         </div>
                       </td>
                       <td style={{ padding: "12px 18px" }}>

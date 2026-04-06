@@ -1,3 +1,5 @@
+/* file location: src/styles/globals.css */
+
 /* ========================================================= */
 /* === VHC Total Column — hide number input spinners === */
 /* ========================================================= */
@@ -46,7 +48,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
     Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
   background: var(--page-shell-bg);
-  color: var(--text-primary);
+  color: var(--surfaceText);
   line-height: 1.35;
   min-height: 100dvh;
   overflow-x: hidden;
@@ -123,7 +125,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   flex-direction: column;
   gap: var(--page-stack-gap);
   padding: var(--page-gutter-y) var(--page-gutter-x);
-  background: var(--page-shell-bg);
+  background: transparent;
   min-height: 100%;
   overflow-x: hidden;
 }
@@ -394,7 +396,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
 .app-topbar-button {
   border: var(--nav-link-border);
   background: var(--nav-link-bg);
-  color: var(--accent-strong);
+  color: var(--accentText);
   cursor: pointer;
 }
 
@@ -409,7 +411,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
 .app-topbar-toggle {
   border: none;
   background: var(--nav-link-bg);
-  color: var(--accent-strong);
+  color: var(--accentText);
 }
 
 .app-topbar-toggle.is-active {
@@ -427,31 +429,31 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
 .app-topbar-link.app-topbar-button--secondary:hover,
 .app-topbar-link.app-topbar-button--secondary:focus-visible {
   background: var(--nav-link-bg-hover);
-  color: var(--accent-strong);
+  color: var(--accentText);
 }
 
 .app-topbar-link.is-active,
 .app-topbar-button.is-active,
 .app-topbar-button--secondary.is-active {
-  background: var(--accent-strong);
-  color: var(--text-inverse);
+  background: var(--accentMain);
+  color: var(--onAccentText);
 }
 
 .app-topbar-button--primary {
-  background: var(--accent-strong);
-  color: var(--text-inverse);
+  background: var(--accentMain);
+  color: var(--onAccentText);
   border: none;
 }
 
 .app-topbar-button--primary:hover,
 .app-topbar-button--primary:focus-visible {
-  background: var(--primary-light);
-  color: var(--text-inverse);
+  background: var(--accentHover);
+  color: var(--onAccentText);
 }
 
 .app-topbar-button--secondary {
   background: var(--nav-link-bg);
-  color: var(--accent-strong);
+  color: var(--accentText);
   border: none;
 }
 
@@ -467,18 +469,19 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
 }
 
 .app-sidebar__header {
-  background: transparent;
+  background: var(--surface);
   padding: var(--space-md) var(--space-5);
   color: var(--text-primary);
   border-bottom: 1px solid rgba(var(--text-primary-rgb), 0.08);
 }
 
 .app-sidebar__body {
+  background: var(--surface);
   padding: var(--space-5);
 }
 
 .app-sidebar__section-title {
-  color: var(--accent-strong);
+  color: var(--accentText);
   font-weight: 700;
   font-size: 0.82rem;
   letter-spacing: 0.05em;
@@ -491,7 +494,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   padding: var(--control-padding-sm);
   margin-bottom: var(--space-sm);
   background: var(--nav-link-bg);
-  color: var(--accent-strong);
+  color: var(--accentText);
   border-radius: var(--control-radius-sm);
   font-weight: 600;
   border: var(--nav-link-border);
@@ -512,7 +515,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
 
 .app-sidebar__link.is-active {
   background: var(--nav-link-bg-active);
-  color: var(--text-inverse);
+  color: var(--onAccentText);
   border: var(--nav-link-border-active);
   text-decoration: none;
 }
@@ -946,13 +949,13 @@ textarea::placeholder {
   text-decoration: none;
 }
 .app-btn--primary {
-  background: var(--accent-strong);
-  color: var(--text-inverse);
+  background: var(--accentMain);
+  color: var(--onAccentText);
 }
-.app-btn--primary:hover { background: var(--primary-light); }
+.app-btn--primary:hover { background: var(--accentHover); }
 .app-btn--secondary {
   background: var(--control-bg);
-  color: var(--accent-strong);
+  color: var(--accentText);
   border: none;
 }
 .app-btn--secondary:hover {
@@ -960,7 +963,7 @@ textarea::placeholder {
 }
 .app-btn--control {
   background: var(--control-bg);
-  color: var(--accent-strong);
+  color: var(--accentText);
   border-radius: var(--control-radius);
   box-shadow: none;
 }
@@ -974,7 +977,7 @@ textarea::placeholder {
 }
 .app-btn--ghost {
   background: transparent;
-  color: var(--accent-strong);
+  color: var(--accentText);
   border: none;
 }
 .app-btn--ghost:hover {
@@ -1126,13 +1129,13 @@ label {
 }
 
 .app-badge--primary {
-  background: var(--accent-strong);
-  color: var(--surface);
+  background: var(--accentMain);
+  color: var(--onAccentText);
 }
 
 .customer-portal-shell {
   min-height: 100vh;
-  background: var(--accent-surface);
+  background: var(--accentSurfaceSubtle);
 }
 
 .customer-portal-layout {
@@ -2798,14 +2801,14 @@ input[type="search"]::-webkit-search-results-decoration {
 }
 
 .status-sidebar__searchbar {
-  background: var(--accent-base);
-  color: var(--accent-strong);
+  background: var(--accentSurface);
+  color: var(--accentText);
   box-shadow: none;
 }
 
 .status-sidebar__searchbar:hover,
 .status-sidebar__searchbar:focus-within {
-  background: var(--accent-base-hover);
+  background: var(--accentSurfaceHover);
   box-shadow: none;
 }
 
@@ -2827,6 +2830,34 @@ input[type="search"]::-webkit-search-results-decoration {
 .status-sidebar__searchbar .searchbar-api__clear:hover,
 .status-sidebar__searchbar .searchbar-api__clear:focus-visible {
   background: rgba(var(--surface-rgb), 0.3);
+}
+
+/* ========================================================= */
+/* === Semantic Utility Overrides === */
+/* ========================================================= */
+
+[class*="text-rose-"],
+[class*="text-red-"] {
+  color: var(--dangerMain) !important;
+}
+
+[class*="text-amber-"],
+[class*="text-yellow-"],
+[class*="text-orange-"] {
+  color: var(--warningMain) !important;
+}
+
+[class*="text-green-"] {
+  color: var(--successMain) !important;
+}
+
+[class*="text-slate-"],
+[class*="text-gray-"] {
+  color: var(--surfaceTextMuted) !important;
+}
+
+[class*="bg-black/"] {
+  background-color: var(--overlay) !important;
 }
 
 /* ========================================================= */

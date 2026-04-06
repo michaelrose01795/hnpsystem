@@ -1,3 +1,5 @@
+// file location: src/components/popups/popupStyleApi.js
+
 import React from "react";
 import ModalPortal from "@/components/popups/ModalPortal";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
@@ -10,7 +12,7 @@ export const popupStyleApi = {
     width: "100vw",
     height: "100dvh",
     maxHeight: "100dvh",
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    backgroundColor: "var(--overlay)",
     backdropFilter: "blur(8px)",
     display: "flex",
     alignItems: "center",
@@ -21,8 +23,8 @@ export const popupStyleApi = {
     zIndex: 9999,
   },
   card: {
-    backgroundColor: "var(--surface)",
-    border: "1px solid var(--border)",
+    backgroundColor: "var(--surfaceMain)",
+    border: "1px solid var(--accentBorder)",
     borderRadius: "var(--radius-lg)",
     width: "min(100%, 960px)",
     maxWidth: "calc(100vw - (var(--popup-viewport-gap, var(--space-6)) * 2))",

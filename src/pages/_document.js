@@ -1,16 +1,8 @@
-import Document, { Html, Head, Main, NextScript } from "next/document";
+// file location: src/pages/_document.js
+// Custom Next.js document that boots the shared semantic theme tokens before React hydrates.
 
-const ACCENT_PALETTES = {
-  red: { light: "#dc2626", dark: "#f87171" },
-  beige: { light: "#d2b48c", dark: "#c2a27b" },
-  grey: { light: "#6b7280", dark: "#9ca3af" },
-  blue: { light: "#2563eb", dark: "#60a5fa" },
-  green: { light: "#16a34a", dark: "#4ade80" },
-  yellow: { light: "#ca8a04", dark: "#facc15" },
-  pink: { light: "#db2777", dark: "#f472b6" },
-  orange: { light: "#ea580c", dark: "#fb923c" },
-  purple: { light: "#7c3aed", dark: "#a78bfa" },
-};
+import Document, { Html, Head, Main, NextScript } from "next/document";
+import { ACCENT_PALETTES, DEFAULT_ACCENT, buildThemeRuntime, normalizeAccent, normalizeMode } from "@/styles/themeRuntime";
 
 const parseCookieHeader = (cookieHeader = "") =>
   String(cookieHeader)
@@ -30,43 +22,28 @@ const parseCookieHeader = (cookieHeader = "") =>
       return acc;
     }, {});
 
-const normalizeMode = (value) => {
-  if (value === "dark" || value === "system") return value;
-  return "light";
-};
-
-const normalizeAccent = (value) => {
-  const normalized = String(value || "").toLowerCase();
-  return ACCENT_PALETTES[normalized] ? normalized : "red";
-};
-
-const blendChannel = (from, to, ratio) => Math.round(from + (to - from) * ratio);
-const hexToRgbObj = (hex) => {
-  const h = hex.replace("#", "");
-  return {
-    r: parseInt(h.slice(0, 2), 16),
-    g: parseInt(h.slice(2, 4), 16),
-    b: parseInt(h.slice(4, 6), 16),
-  };
-};
-const rgbObjToHex = ({ r, g, b }) =>
-  "#" + [r, g, b].map((c) => c.toString(16).padStart(2, "0")).join("");
-
 const getBootTheme = (cookies = {}) => {
+  // Resolve the requested theme mode from cookies first.
   const requestedMode = normalizeMode(cookies["hp-dms-theme"] || "system");
+
+  // Resolve the server-side boot mode conservatively so initial HTML remains deterministic.
   const resolvedMode = requestedMode === "dark" ? "dark" : "light";
-  const accentName = normalizeAccent(cookies["hp-dms-accent"]);
-  const accentPalette = ACCENT_PALETTES[accentName] || ACCENT_PALETTES.red;
-  const primary = resolvedMode === "dark" ? accentPalette.dark : accentPalette.light;
-  const accent = hexToRgbObj(primary);
-  const target = resolvedMode === "dark" ? { r: 22, g: 22, b: 26 } : { r: 255, g: 255, b: 255 };
-  const ratio = resolvedMode === "dark" ? 0.78 : 0.86;
-  const background = rgbObjToHex({
-    r: blendChannel(accent.r, target.r, ratio),
-    g: blendChannel(accent.g, target.g, ratio),
-    b: blendChannel(accent.b, target.b, ratio),
-  });
-  return { requestedMode, resolvedMode, accentName, primary, background };
+
+  // Resolve the stored accent with the shared runtime validator.
+  const accentName = normalizeAccent(cookies["hp-dms-accent"] || DEFAULT_ACCENT);
+
+  // Build the same semantic runtime values that the client provider will later reuse.
+  const runtime = buildThemeRuntime({ resolvedMode, accentName });
+
+  // Return the values needed by the document and boot script.
+  return {
+    requestedMode,
+    resolvedMode,
+    accentName,
+    primary: runtime.accentMain,
+    background: runtime.shellBackground,
+    tokens: runtime.legacy,
+  };
 };
 
 const hasAuthenticatedCookie = (cookies = {}) =>
@@ -156,87 +133,21 @@ const themeBootScript = `
     document.documentElement.setAttribute("data-theme", resolvedMode);
     document.documentElement.style.colorScheme = resolvedMode;
 
-    const accents = {
-      red: { light: "#dc2626", dark: "#f87171" },
-      beige: { light: "#d2b48c", dark: "#c2a27b" },
-      grey: { light: "#6b7280", dark: "#9ca3af" },
-      blue: { light: "#2563eb", dark: "#60a5fa" },
-      green: { light: "#16a34a", dark: "#4ade80" },
-      yellow: { light: "#ca8a04", dark: "#facc15" },
-      pink: { light: "#db2777", dark: "#f472b6" },
-      orange: { light: "#ea580c", dark: "#fb923c" },
-      purple: { light: "#7c3aed", dark: "#a78bfa" },
-    };
+    const accents = ${JSON.stringify(ACCENT_PALETTES)};
 
-    const storedAccent = (window.localStorage.getItem("hp-dms-accent") || readCookie("hp-dms-accent") || "red").toLowerCase();
-    const palette = accents[storedAccent] || accents.red;
+    const storedAccent = (window.localStorage.getItem("hp-dms-accent") || readCookie("hp-dms-accent") || "${DEFAULT_ACCENT}").toLowerCase();
+    const palette = accents[storedAccent] || accents["${DEFAULT_ACCENT}"];
     const resolvedAccent = resolvedMode === "dark" ? palette.dark : palette.light;
-    const hex = resolvedAccent.replace("#", "");
-    const rgb =
-      /^[0-9a-fA-F]{6}$/.test(hex)
-        ? [
-            parseInt(hex.slice(0, 2), 16),
-            parseInt(hex.slice(2, 4), 16),
-            parseInt(hex.slice(4, 6), 16),
-          ].join(", ")
-        : "220, 38, 38";
+    const runtime = ${buildClientRuntimeExpression()};
 
-    var blendCh = function(f,t,r){ return Math.round(f+(t-f)*r); };
-    var hexToR = function(h){ h=h.replace("#",""); return {r:parseInt(h.slice(0,2),16),g:parseInt(h.slice(2,4),16),b:parseInt(h.slice(4,6),16)}; };
-    var toHex2 = function(o){ return "#"+[o.r,o.g,o.b].map(function(c){return c.toString(16).padStart(2,"0");}).join(""); };
-    var ac = hexToR(resolvedAccent);
-    var white = {r:255,g:255,b:255};
-    var black = {r:0,g:0,b:0};
-    var primaryLight = toHex2({
-      r: blendCh(ac.r, resolvedMode === "dark" ? white.r : black.r, 0.18),
-      g: blendCh(ac.g, resolvedMode === "dark" ? white.g : black.g, 0.18),
-      b: blendCh(ac.b, resolvedMode === "dark" ? white.b : black.b, 0.18)
-    });
-    var primaryDark = toHex2({
-      r: blendCh(ac.r, resolvedMode === "dark" ? white.r : black.r, resolvedMode === "dark" ? 0.34 : 0.32),
-      g: blendCh(ac.g, resolvedMode === "dark" ? white.g : black.g, resolvedMode === "dark" ? 0.34 : 0.32),
-      b: blendCh(ac.b, resolvedMode === "dark" ? white.b : black.b, resolvedMode === "dark" ? 0.34 : 0.32)
-    });
-    var accentSurface = resolvedMode === "dark" ? "rgba(" + rgb + ", 0.16)" : "rgba(" + rgb + ", 0.08)";
-    var accentBase = resolvedMode === "dark" ? "rgba(" + rgb + ", 0.22)" : "rgba(" + rgb + ", 0.14)";
-    var accentBaseHover = resolvedMode === "dark" ? "rgba(" + rgb + ", 0.3)" : "rgba(" + rgb + ", 0.22)";
-    var accentSurfaceHover = accentBase;
-    var accentStrong = resolvedAccent;
-    var shellBg = toHex2({
-      r: blendCh(ac.r, resolvedMode === "dark" ? 22 : white.r, resolvedMode === "dark" ? 0.78 : 0.86),
-      g: blendCh(ac.g, resolvedMode === "dark" ? 22 : white.g, resolvedMode === "dark" ? 0.78 : 0.86),
-      b: blendCh(ac.b, resolvedMode === "dark" ? 26 : white.b, resolvedMode === "dark" ? 0.78 : 0.86)
+    Object.entries(runtime.legacy).forEach(([token, value]) => {
+      document.documentElement.style.setProperty(token, value);
     });
 
-    document.documentElement.style.setProperty("--accent-base", accentBase);
-    document.documentElement.style.setProperty("--accent-base-rgb", rgb);
-    document.documentElement.style.setProperty("--accent-surface", accentSurface);
-    document.documentElement.style.setProperty("--accent-base-hover", accentBaseHover);
-    document.documentElement.style.setProperty("--accent-surface-hover", accentSurfaceHover);
-    document.documentElement.style.setProperty("--accent-strong", accentStrong);
-    document.documentElement.style.setProperty("--primary", resolvedAccent);
-    document.documentElement.style.setProperty("--primary-light", primaryLight);
-    document.documentElement.style.setProperty("--primary-dark", primaryDark);
-    document.documentElement.style.setProperty("--primary-rgb", rgb);
-    document.documentElement.style.setProperty("--search-text", primaryDark);
-    document.documentElement.style.setProperty("--scrollbar-thumb", accentStrong);
-    document.documentElement.style.setProperty("--scrollbar-thumb-hover", primaryLight);
-    document.documentElement.style.setProperty("--layer-section-level-1", accentSurface);
-    document.documentElement.style.setProperty("--layer-section-level-2", accentBase);
-    document.documentElement.style.setProperty("--layer-section-level-3", accentBaseHover);
-    document.documentElement.style.setProperty("--layer-section-level-4", accentStrong);
-    document.documentElement.style.setProperty("--profile-table-surface", accentBase);
-    document.documentElement.style.setProperty("--profile-table-alt-surface", accentBaseHover);
-    document.documentElement.style.setProperty("--overlay", resolvedMode === "dark" ? "rgba(" + rgb + ", 0.5)" : "rgba(" + rgb + ", 0.35)");
-    document.documentElement.style.setProperty("--row-background", "var(--surface)");
-    document.documentElement.style.setProperty("--layer-gradient", accentBase);
-    document.documentElement.style.setProperty("--section-gradient-outer", accentBaseHover);
-    document.documentElement.style.setProperty("--section-gradient-inner", accentBase);
-    document.documentElement.style.setProperty("--section-gradient-center", "var(--surface)");
-    document.documentElement.style.backgroundColor = shellBg;
-    if (document.body) document.body.style.backgroundColor = shellBg;
+    document.documentElement.style.backgroundColor = runtime.shellBackground;
+    if (document.body) document.body.style.backgroundColor = runtime.shellBackground;
     var tm = document.querySelector('meta[name="theme-color"]');
-    if (tm) tm.setAttribute("content", shellBg);
+    if (tm) tm.setAttribute("content", runtime.shellBackground);
 
     document.cookie = "hp-dms-theme=" + encodeURIComponent(mode) + "; path=/; max-age=31536000; samesite=lax";
     document.cookie = "hp-dms-accent=" + encodeURIComponent(storedAccent) + "; path=/; max-age=31536000; samesite=lax";
@@ -246,6 +157,160 @@ const themeBootScript = `
   }
 })();
 `;
+
+function buildClientRuntimeExpression() {
+  // Return a small self-contained expression that reproduces the shared runtime helper in the boot script.
+  return `(function() {
+    var hexToRgbObject = function(hexColor) {
+      var hex = String(hexColor || "").replace("#", "");
+      if (!/^[0-9a-fA-F]{6}$/.test(hex)) return { r: 220, g: 38, b: 38 };
+      return {
+        r: parseInt(hex.slice(0, 2), 16),
+        g: parseInt(hex.slice(2, 4), 16),
+        b: parseInt(hex.slice(4, 6), 16),
+      };
+    };
+    var hexToRgbString = function(hexColor) {
+      var rgb = hexToRgbObject(hexColor);
+      return rgb.r + ", " + rgb.g + ", " + rgb.b;
+    };
+    var clampChannel = function(value) {
+      return Math.max(0, Math.min(255, Math.round(value)));
+    };
+    var rgbToHex = function(rgb) {
+      return "#" + [rgb.r, rgb.g, rgb.b].map(function(value) {
+        return clampChannel(value).toString(16).padStart(2, "0");
+      }).join("");
+    };
+    var blend = function(from, to, ratio) {
+      var safeRatio = Math.max(0, Math.min(1, Number(ratio) || 0));
+      return {
+        r: from.r * (1 - safeRatio) + to.r * safeRatio,
+        g: from.g * (1 - safeRatio) + to.g * safeRatio,
+        b: from.b * (1 - safeRatio) + to.b * safeRatio,
+      };
+    };
+    var accentRgbObject = hexToRgbObject(resolvedAccent);
+    var accentRgb = hexToRgbString(resolvedAccent);
+    var white = { r: 255, g: 255, b: 255 };
+    var black = { r: 0, g: 0, b: 0 };
+    var surfaceAnchor = resolvedMode === "dark" ? { r: 22, g: 22, b: 26 } : white;
+    var accentHover = rgbToHex(resolvedMode === "dark" ? blend(accentRgbObject, white, 0.18) : blend(accentRgbObject, black, 0.18));
+    var accentPressed = rgbToHex(resolvedMode === "dark" ? blend(accentRgbObject, white, 0.34) : blend(accentRgbObject, black, 0.32));
+    var accentSurface = resolvedMode === "dark" ? "rgba(" + accentRgb + ", 0.22)" : "rgba(" + accentRgb + ", 0.14)";
+    var accentSurfaceHover = resolvedMode === "dark" ? "rgba(" + accentRgb + ", 0.3)" : "rgba(" + accentRgb + ", 0.22)";
+    var accentSurfaceSubtle = resolvedMode === "dark" ? "rgba(" + accentRgb + ", 0.16)" : "rgba(" + accentRgb + ", 0.08)";
+    var accentBorder = resolvedMode === "dark" ? "rgba(" + accentRgb + ", 0.28)" : "rgba(" + accentRgb + ", 0.18)";
+    var accentBorderStrong = resolvedMode === "dark" ? "rgba(" + accentRgb + ", 0.42)" : "rgba(" + accentRgb + ", 0.32)";
+    var shellBackground = rgbToHex(blend(accentRgbObject, surfaceAnchor, resolvedMode === "dark" ? 0.78 : 0.86));
+    var borderTone = rgbToHex(resolvedMode === "dark" ? blend(accentRgbObject, white, 0.45) : blend(accentRgbObject, black, 0.22));
+    var surfaceMain = resolvedMode === "dark" ? "#16161a" : "#ffffff";
+    var surfaceHover = resolvedMode === "dark" ? "#23232b" : "#f7f7f7";
+    var surfaceMuted = resolvedMode === "dark" ? "#1d1d24" : "#f3f3f3";
+    var surfaceText = resolvedMode === "dark" ? "#f8f7ff" : "#0f0f0f";
+    var surfaceTextMuted = resolvedMode === "dark" ? "#f2f2ff" : "#1f1f1f";
+    var onAccentText = resolvedMode === "dark" ? "#0a0a0c" : "#ffffff";
+    var overlayBackdrop = resolvedMode === "dark" ? "rgba(2, 6, 23, 0.72)" : "rgba(15, 23, 42, 0.4)";
+    var overlayMuted = resolvedMode === "dark" ? "rgba(2, 6, 23, 0.5)" : "rgba(15, 23, 42, 0.24)";
+    return {
+      shellBackground: shellBackground,
+      legacy: {
+        "--accentMain": resolvedAccent,
+        "--accentHover": accentHover,
+        "--accentPressed": accentPressed,
+        "--accentMainRgb": accentRgb,
+        "--accentText": resolvedAccent,
+        "--onAccentText": onAccentText,
+        "--accentSurface": accentSurface,
+        "--accentSurfaceHover": accentSurfaceHover,
+        "--accentSurfaceSubtle": accentSurfaceSubtle,
+        "--accentBorder": accentBorder,
+        "--accentBorderStrong": accentBorderStrong,
+        "--surfaceMain": surfaceMain,
+        "--surfaceHover": surfaceHover,
+        "--surfaceMutedToken": surfaceMuted,
+        "--surfaceText": surfaceText,
+        "--surfaceTextMuted": surfaceTextMuted,
+        "--surface": surfaceMain,
+        "--surface-rgb": hexToRgbString(surfaceMain),
+        "--surface-light": surfaceHover,
+        "--surface-muted": surfaceMuted,
+        "--text-primary": surfaceText,
+        "--text-primary-rgb": hexToRgbString(surfaceText),
+        "--text-secondary": surfaceTextMuted,
+        "--text-secondary-rgb": hexToRgbString(surfaceTextMuted),
+        "--text-inverse": onAccentText,
+        "--text-inverse-rgb": hexToRgbString(onAccentText),
+        "--border": borderTone,
+        "--overlay": overlayBackdrop,
+        "--overlay-muted": overlayMuted,
+        "--page-shell-bg": shellBackground,
+        "--nav-shell-bg": accentSurface,
+        "--page-accent-layer": accentSurface,
+        "--page-card-bg": surfaceMain,
+        "--page-card-bg-alt": accentSurfaceSubtle,
+        "--section-card-bg": surfaceMain,
+        "--tab-container-bg": accentSurface,
+        "--nav-link-bg": accentSurface,
+        "--nav-link-bg-hover": accentSurfaceHover,
+        "--nav-link-bg-active": resolvedAccent,
+        "--nav-link-border": "1px solid " + accentBorder,
+        "--nav-link-border-active": "1px solid " + accentBorderStrong,
+        "--control-bg": accentSurface,
+        "--control-bg-hover": accentSurfaceHover,
+        "--control-bg-active": accentSurfaceHover,
+        "--control-border-color": accentBorder,
+        "--control-border": "1px solid " + accentBorder,
+        "--control-border-hover": accentBorderStrong,
+        "--control-border-focus": accentBorderStrong,
+        "--control-ring": "0 0 0 3px rgba(" + accentRgb + ", " + (resolvedMode === "dark" ? "0.18" : "0.12") + ")",
+        "--control-menu-bg": surfaceMain,
+        "--control-menu-shadow": "none",
+        "--control-muted-text": "rgba(" + hexToRgbString(surfaceTextMuted) + ", " + (resolvedMode === "dark" ? "0.76" : "0.78") + ")",
+        "--control-icon": "rgba(" + hexToRgbString(surfaceTextMuted) + ", " + (resolvedMode === "dark" ? "0.84" : "0.82") + ")",
+        "--row-background": surfaceMain,
+        "--section-gradient-outer": accentSurfaceHover,
+        "--section-gradient-inner": accentSurface,
+        "--section-gradient-center": surfaceMain,
+        "--layer-gradient": accentSurface,
+        "--layer-section-level-1": accentSurfaceSubtle,
+        "--layer-section-level-2": accentSurface,
+        "--layer-section-level-3": accentSurfaceHover,
+        "--layer-section-level-4": resolvedAccent,
+        "--profile-table-surface": accentSurface,
+        "--profile-table-alt-surface": accentSurfaceHover,
+        "--search-surface": resolvedMode === "dark" ? "#2a2a32" : surfaceMain,
+        "--search-surface-muted": resolvedMode === "dark" ? "#3a3a42" : surfaceHover,
+        "--search-text": accentPressed,
+        "--scrollbar-thumb": resolvedAccent,
+        "--scrollbar-thumb-hover": accentHover,
+        "--accent-base": accentSurface,
+        "--accent-base-rgb": accentRgb,
+        "--accent-surface": accentSurfaceSubtle,
+        "--accent-base-hover": accentSurfaceHover,
+        "--accent-surface-hover": accentSurface,
+        "--accent-strong": resolvedAccent,
+        "--primary": resolvedAccent,
+        "--primary-light": accentHover,
+        "--primary-dark": accentPressed,
+        "--primary-rgb": accentRgb,
+        "--info": resolvedAccent,
+        "--info-dark": accentPressed,
+        "--info-surface": accentSurfaceSubtle,
+        "--info-rgb": accentRgb,
+        "--accent-purple": resolvedAccent,
+        "--accent-purple-surface": accentSurfaceSubtle,
+        "--accent-purple-rgb": accentRgb,
+        "--accent-blue": resolvedAccent,
+        "--accent-blue-surface": accentSurfaceSubtle,
+        "--accent-blue-rgb": accentRgb,
+        "--accent-orange": resolvedAccent,
+        "--accent-orange-surface": accentSurfaceSubtle,
+        "--accent-orange-rgb": accentRgb
+      }
+    };
+  })()`;
+}
 
 class MyDocument extends Document {
   static async getInitialProps(ctx) {

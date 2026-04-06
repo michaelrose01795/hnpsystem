@@ -1249,7 +1249,7 @@ export default function ClockingPage() {
 
   return (
     <Layout>
-      <PageShell sectionKey="clocking-page-shell" style={{ background: "var(--background)", minHeight: "100vh", padding: "24px 0" }}>
+      <PageShell sectionKey="clocking-page-shell" style={{ background: "transparent", minHeight: "100vh", padding: "24px 0" }}>
         <ContentWidth sectionKey="clocking-page-content" parentKey="clocking-page-shell" widthMode="content" className="mx-auto w-full max-w-none space-y-6 px-4 sm:px-6 lg:px-10">
           <FilterToolbarRow sectionKey="clocking-toolbar-row" parentKey="clocking-page-content">
             <TabGroup

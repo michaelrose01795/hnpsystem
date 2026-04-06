@@ -17,13 +17,14 @@ export const inputStyles = {
   borderRadius: "var(--input-radius)",
   border: "var(--input-border)",
   background: "var(--input-bg)",
+  color: "var(--surfaceText)",
 };
 
 export const labelStyles = {
   fontSize: "0.85rem",
   fontWeight: 600,
   textTransform: "uppercase",
-  color: "var(--text-secondary)",
+  color: "var(--surfaceTextMuted)",
   letterSpacing: "0.05em",
 };
 

@@ -1,7 +1,18 @@
+// file location: src/styles/themeProvider.js
+// React theme provider that maps the saved mode and accent preference into the shared semantic CSS token system.
+
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useUser } from "@/context/UserContext";
 import { themes } from "@/styles/theme";
+import {
+  ACCENT_PALETTES,
+  DEFAULT_ACCENT,
+  buildThemeRuntime,
+  normalizeAccent,
+  normalizeDbMode,
+  normalizeMode,
+} from "@/styles/themeRuntime";
 
 const STORAGE_KEY = "hp-dms-theme";
 const ACCENT_STORAGE_KEY = "hp-dms-accent";
@@ -9,77 +20,6 @@ const THEME_COOKIE_KEY = "hp-dms-theme";
 const ACCENT_COOKIE_KEY = "hp-dms-accent";
 const PREFERENCE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 const THEME_SEQUENCE = ["system", "light", "dark"];
-const DEFAULT_ACCENT = "red";
-
-export const ACCENT_PALETTES = {
-  red: { label: "Red", light: "#dc2626", dark: "#f87171" },
-  beige: { label: "Beige", light: "#d2b48c", dark: "#c2a27b" },
-  grey: { label: "Grey", light: "#6b7280", dark: "#9ca3af" },
-  blue: { label: "Blue", light: "#2563eb", dark: "#60a5fa" },
-  green: { label: "Green", light: "#16a34a", dark: "#4ade80" },
-  yellow: { label: "Yellow", light: "#ca8a04", dark: "#facc15" },
-  pink: { label: "Pink", light: "#db2777", dark: "#f472b6" },
-  orange: { label: "Orange", light: "#ea580c", dark: "#fb923c" },
-  purple: { label: "Purple", light: "#7c3aed", dark: "#a78bfa" },
-};
-
-const hexToRgb = (hexColor) => {
-  const hex = String(hexColor || "").replace("#", "");
-  if (!/^[0-9a-fA-F]{6}$/.test(hex)) return "220, 38, 38";
-  const r = parseInt(hex.slice(0, 2), 16);
-  const g = parseInt(hex.slice(2, 4), 16);
-  const b = parseInt(hex.slice(4, 6), 16);
-  return `${r}, ${g}, ${b}`;
-};
-
-const hexToRgbObject = (hexColor) => {
-  const hex = String(hexColor || "").replace("#", "");
-  if (!/^[0-9a-fA-F]{6}$/.test(hex)) {
-    return { r: 220, g: 38, b: 38 };
-  }
-  return {
-    r: parseInt(hex.slice(0, 2), 16),
-    g: parseInt(hex.slice(2, 4), 16),
-    b: parseInt(hex.slice(4, 6), 16),
-  };
-};
-
-const clampChannel = (value) => Math.max(0, Math.min(255, Math.round(value)));
-const rgbToHex = (rgb) =>
-  `#${[rgb.r, rgb.g, rgb.b]
-    .map((value) => clampChannel(value).toString(16).padStart(2, "0"))
-    .join("")}`;
-
-const blend = (from, to, ratio = 0.5) => {
-  const safeRatio = Math.max(0, Math.min(1, Number(ratio) || 0));
-  return {
-    r: from.r * (1 - safeRatio) + to.r * safeRatio,
-    g: from.g * (1 - safeRatio) + to.g * safeRatio,
-    b: from.b * (1 - safeRatio) + to.b * safeRatio,
-  };
-};
-
-const normalizeAccent = (value) => {
-  if (!value || typeof value !== "string") return DEFAULT_ACCENT;
-  const normalized = value.toLowerCase();
-  return ACCENT_PALETTES[normalized] ? normalized : DEFAULT_ACCENT;
-};
-
-const normalizeMode = (value) => {
-  if (value === "system" || value === "dark") return value;
-  return "light";
-};
-
-const normalizeDbMode = (value) => {
-  if (value === null || typeof value === "undefined" || value === "") {
-    return "system";
-  }
-  if (typeof value === "boolean") {
-    return value ? "dark" : "light";
-  }
-  return normalizeMode(value);
-};
-
 const getSystemPreferredMode = () => {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
     return "light";
@@ -166,64 +106,28 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
   const [temporaryOverride, setTemporaryOverride] = useState(null);
 
   const applyAccent = useCallback((nextAccent, modeOverride = null) => {
+    // Normalise the requested accent so only supported palettes are applied.
     const normalizedAccent = normalizeAccent(nextAccent);
-    const palette = ACCENT_PALETTES[normalizedAccent] || ACCENT_PALETTES[DEFAULT_ACCENT];
+
+    // Resolve the current colour mode so the runtime helper can derive the right light/dark tokens.
     const resolved =
       modeOverride ||
       (typeof document !== "undefined" ? document.documentElement.getAttribute("data-theme") : null) ||
       "light";
-    const resolvedAccent = resolved === "dark" ? palette.dark : palette.light;
-    const resolvedAccentRgb = hexToRgb(resolvedAccent);
-    const baseAccentRgb = hexToRgbObject(resolvedAccent);
-    const white = { r: 255, g: 255, b: 255 };
-    const black = { r: 0, g: 0, b: 0 };
-    const surfaceTarget = resolved === "dark" ? { r: 22, g: 22, b: 26 } : white;
-    const primaryLight = rgbToHex(
-      resolved === "dark" ? blend(baseAccentRgb, white, 0.18) : blend(baseAccentRgb, black, 0.18)
-    );
-    const primaryDark = rgbToHex(
-      resolved === "dark" ? blend(baseAccentRgb, white, 0.34) : blend(baseAccentRgb, black, 0.32)
-    );
-    const accentSurface = resolved === "dark" ? `rgba(${resolvedAccentRgb}, 0.16)` : `rgba(${resolvedAccentRgb}, 0.08)`;
-    const accentBase = resolved === "dark" ? `rgba(${resolvedAccentRgb}, 0.22)` : `rgba(${resolvedAccentRgb}, 0.14)`;
-    const accentBaseHover = resolved === "dark" ? `rgba(${resolvedAccentRgb}, 0.3)` : `rgba(${resolvedAccentRgb}, 0.22)`;
-    const accentSurfaceHover = accentBase;
-    const accentStrong = resolvedAccent;
-    const sectionLevel1 = accentSurface;
-    const sectionLevel2 = accentBase;
-    const sectionLevel3 = accentBaseHover;
-    const sectionLevel4 = accentStrong;
-    const borderTone = resolved === "dark" ? blend(baseAccentRgb, white, 0.45) : blend(baseAccentRgb, black, 0.22);
-    const shellBgColor = rgbToHex(blend(baseAccentRgb, surfaceTarget, resolved === "dark" ? 0.78 : 0.86));
+
+    // Build the complete semantic token set from the sidebar-led accent model.
+    const runtime = buildThemeRuntime({ resolvedMode: resolved, accentName: normalizedAccent });
+
     if (typeof document !== "undefined") {
-      document.documentElement.style.setProperty("--accent-base", accentBase);
-      document.documentElement.style.setProperty("--accent-base-rgb", resolvedAccentRgb);
-      document.documentElement.style.setProperty("--accent-surface", accentSurface);
-      document.documentElement.style.setProperty("--accent-base-hover", accentBaseHover);
-      document.documentElement.style.setProperty("--accent-surface-hover", accentSurfaceHover);
-      document.documentElement.style.setProperty("--accent-strong", accentStrong);
-      document.documentElement.style.setProperty("--primary", resolvedAccent);
-      document.documentElement.style.setProperty("--primary-light", primaryLight);
-      document.documentElement.style.setProperty("--primary-dark", primaryDark);
-      document.documentElement.style.setProperty("--primary-rgb", resolvedAccentRgb);
-      document.documentElement.style.setProperty("--border", rgbToHex(borderTone));
-      document.documentElement.style.setProperty(
-        "--overlay",
-        resolved === "dark" ? `rgba(${resolvedAccentRgb}, 0.5)` : `rgba(${resolvedAccentRgb}, 0.35)`
-      );
-      document.documentElement.style.setProperty("--search-text", primaryDark);
-      document.documentElement.style.setProperty("--layer-section-level-1", sectionLevel1);
-      document.documentElement.style.setProperty("--layer-section-level-2", sectionLevel2);
-      document.documentElement.style.setProperty("--layer-section-level-3", sectionLevel3);
-      document.documentElement.style.setProperty("--layer-section-level-4", sectionLevel4);
-      document.documentElement.style.setProperty("--layer-gradient", accentBase);
-      document.documentElement.style.setProperty("--profile-table-surface", accentBase);
-      document.documentElement.style.setProperty("--profile-table-alt-surface", accentBaseHover);
+      // Apply every semantic and compatibility variable directly to the root element.
+      Object.entries(runtime.legacy).forEach(([token, value]) => {
+        document.documentElement.style.setProperty(token, value);
+      });
 
       // Update html/body background to accent layer so mobile browser overscroll
       // areas and safe-area insets show the accent colour instead of plain white/dark.
-      document.documentElement.style.backgroundColor = shellBgColor;
-      if (document.body) document.body.style.backgroundColor = shellBgColor;
+      document.documentElement.style.backgroundColor = runtime.shellBackground;
+      if (document.body) document.body.style.backgroundColor = runtime.shellBackground;
       // Update theme-color meta so mobile browser chrome matches
       let themeMeta = document.querySelector('meta[name="theme-color"]');
       if (!themeMeta) {
@@ -231,14 +135,7 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
         themeMeta.setAttribute("name", "theme-color");
         document.head.appendChild(themeMeta);
       }
-      themeMeta.setAttribute("content", shellBgColor);
-
-      document.documentElement.style.setProperty("--row-background", "var(--surface)");
-      document.documentElement.style.setProperty("--section-gradient-outer", accentBaseHover);
-      document.documentElement.style.setProperty("--section-gradient-inner", accentBase);
-      document.documentElement.style.setProperty("--section-gradient-center", "var(--surface)");
-      document.documentElement.style.setProperty("--scrollbar-thumb", accentStrong);
-      document.documentElement.style.setProperty("--scrollbar-thumb-hover", primaryLight);
+      themeMeta.setAttribute("content", runtime.shellBackground);
     }
     setAccent(normalizedAccent);
     return normalizedAccent;
@@ -484,5 +381,7 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
 }
 
 export const useTheme = () => useContext(ThemeContext);
+
+export { ACCENT_PALETTES };
 
 export default ThemeProvider;

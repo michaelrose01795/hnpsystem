@@ -82,6 +82,27 @@ const compareNodeOrder = (a, b) => {
   return 0;
 };
 
+const getRectArea = (rect) => Math.max(0, rect.width) * Math.max(0, rect.height);
+
+const isRectWithinBounds = (rect, bounds) => {
+  if (!rect || !bounds) return false;
+  return (
+    rect.left >= bounds.left - 1 &&
+    rect.top >= bounds.top - 1 &&
+    rect.right <= bounds.right + 1 &&
+    rect.bottom <= bounds.bottom + 1
+  );
+};
+
+const toLocalRect = (rect, bounds) => ({
+  left: rect.left - bounds.left,
+  top: rect.top - bounds.top,
+  width: rect.width,
+  height: rect.height,
+  right: rect.right - bounds.left,
+  bottom: rect.bottom - bounds.top,
+});
+
 const buildEntry = ({ key, node, route, order, type, parentKey = "", widthMode = "", isShell = false, backgroundToken = "", source = "explicit" }) => {
   const computed = window.getComputedStyle(node);
   const rect = node.getBoundingClientRect();
@@ -471,6 +492,36 @@ const buildGuide = (section, sections) => {
   };
 };
 
+const resolveOverlayBounds = (sections, selectedKey = "") => {
+  const pageShells = (sections || []).filter((section) => section.type === "page-shell");
+  if (!pageShells.length) return null;
+
+  const selectedSection = selectedKey ? sections.find((section) => section.key === selectedKey) : null;
+  if (selectedSection) {
+    let parentKey = selectedSection.parentKey || "";
+    while (parentKey) {
+      const parent = sections.find((section) => section.key === parentKey) || null;
+      if (!parent) break;
+      if (parent.type === "page-shell") return parent.rect;
+      parentKey = parent.parentKey || "";
+    }
+  }
+
+  const rankedPageShells = [...pageShells].sort((left, right) => {
+    const leftExplicit = left.source !== "fallback" && !String(left.key || "").startsWith("app-");
+    const rightExplicit = right.source !== "fallback" && !String(right.key || "").startsWith("app-");
+    if (leftExplicit !== rightExplicit) return leftExplicit ? -1 : 1;
+
+    const leftArea = getRectArea(left.rect);
+    const rightArea = getRectArea(right.rect);
+    if (leftArea !== rightArea) return rightArea - leftArea;
+
+    return left.order - right.order;
+  });
+
+  return rankedPageShells[0]?.rect || null;
+};
+
 export default function DevLayoutOverlay() {
   const router = useRouter();
   const { registeredSections, syncComputedSections } = useDevLayoutRegistry();
@@ -526,31 +577,34 @@ export default function DevLayoutOverlay() {
     };
   }, [canAccess, enabled, router.asPath, router.pathname, registeredSections, syncComputedSections]);
 
-  const selected = useMemo(
-    () => sections.find((section) => section.key === selectedKey) || null,
-    [sections, selectedKey]
+  const overlayBounds = useMemo(() => resolveOverlayBounds(sections, selectedKey), [sections, selectedKey]);
+  const scopedSections = useMemo(() => {
+    if (!overlayBounds) return sections;
+    return sections.filter((section) => isRectWithinBounds(section.rect, overlayBounds));
+  }, [sections, overlayBounds]);
+  const scopedSelected = useMemo(
+    () => scopedSections.find((section) => section.key === selectedKey) || null,
+    [scopedSections, selectedKey]
   );
-
+  const scopedGuide = useMemo(() => buildGuide(scopedSelected, scopedSections), [scopedSelected, scopedSections]);
   const stats = useMemo(() => {
-    const issueCount = sections.filter((section) => section.issueTags.length > 0).length;
-    const shellCount = sections.filter((section) => section.isShell).length;
-    const fallbackCount = sections.filter((section) => section.source === "fallback").length;
+    const issueCount = scopedSections.filter((section) => section.issueTags.length > 0).length;
+    const shellCount = scopedSections.filter((section) => section.isShell).length;
+    const fallbackCount = scopedSections.filter((section) => section.source === "fallback").length;
     return {
-      total: sections.length,
+      total: scopedSections.length,
       issueCount,
       shellCount,
       fallbackCount,
     };
-  }, [sections]);
-
-  const guide = useMemo(() => buildGuide(selected, sections), [selected, sections]);
+  }, [scopedSections]);
 
   useEffect(() => {
     if (!selectedKey) return;
-    if (!sections.some((entry) => entry.key === selectedKey)) {
+    if (!scopedSections.some((entry) => entry.key === selectedKey)) {
       setSelectedKey("");
     }
-  }, [sections, selectedKey]);
+  }, [scopedSections, selectedKey]);
 
   useEffect(() => {
     if (!copiedAction) return undefined;
@@ -568,17 +622,27 @@ export default function DevLayoutOverlay() {
   };
   const handleInspectClick = async (sectionKey) => {
     setSelectedKey(sectionKey);
-    const section = sections.find((entry) => entry.key === sectionKey);
+    const section = scopedSections.find((entry) => entry.key === sectionKey);
     if (!section) return;
     const prompts = buildPrompts(section);
     await handleCopy("reference", prompts.reference);
   };
 
+  const overlayStyle = overlayBounds
+    ? {
+        left: overlayBounds.left,
+        top: overlayBounds.top,
+        width: overlayBounds.width,
+        height: overlayBounds.height,
+      }
+    : undefined;
+
   return (
-    <div className={styles.root} aria-hidden="true">
-      {sections.map((section) => {
-        const selectedClass = selected?.key === section.key ? styles.boxSelected : "";
+    <div className={styles.root} aria-hidden="true" style={overlayStyle}>
+      {scopedSections.map((section) => {
+        const selectedClass = scopedSelected?.key === section.key ? styles.boxSelected : "";
         const labelText = mode === "labels" ? section.number : `${section.number} · ${section.type} · ${section.backgroundToken}`;
+        const localRect = overlayBounds ? toLocalRect(section.rect, overlayBounds) : section.rect;
 
         return (
           <React.Fragment key={section.key}>
@@ -592,10 +656,10 @@ export default function DevLayoutOverlay() {
                   await handleInspectClick(section.key);
                 }}
                 style={{
-                  left: section.rect.left,
-                  top: section.rect.top,
-                  width: section.rect.width,
-                  height: section.rect.height,
+                  left: localRect.left,
+                  top: localRect.top,
+                  width: localRect.width,
+                  height: localRect.height,
                 }}
                 title={`${section.number} (${section.key})`}
               />
@@ -603,15 +667,15 @@ export default function DevLayoutOverlay() {
             <div
               className={`${styles.box} ${selectedClass}`.trim()}
               style={{
-                left: section.rect.left,
-                top: section.rect.top,
-                width: section.rect.width,
-                height: section.rect.height,
+                left: localRect.left,
+                top: localRect.top,
+                width: localRect.width,
+                height: localRect.height,
               }}
             />
             <div
               className={`${styles.label} ${mode !== "labels" ? styles.labelDetails : ""}`}
-              style={{ left: section.rect.left + 6, top: Math.max(6, section.rect.top - 10) }}
+              style={{ left: localRect.left + 6, top: Math.max(6, localRect.top - 10) }}
             >
               {labelText}
             </div>
@@ -619,38 +683,38 @@ export default function DevLayoutOverlay() {
         );
       })}
 
-      {selected && guide && (
+      {scopedSelected && scopedGuide && (
         <>
-          {guide.parent && (
+          {scopedGuide.parent && overlayBounds && (
             <>
               <div
                 className={styles.guideLine}
                 style={{
-                  left: guide.parent.rect.left,
-                  top: selected.rect.top - 12,
-                  width: Math.max(1, selected.rect.left - guide.parent.rect.left),
+                  left: scopedGuide.parent.rect.left - overlayBounds.left,
+                  top: scopedSelected.rect.top - overlayBounds.top - 12,
+                  width: Math.max(1, scopedSelected.rect.left - scopedGuide.parent.rect.left),
                   height: 1,
                 }}
               />
-              <div className={styles.guideLabel} style={{ left: guide.parent.rect.left + 4, top: selected.rect.top - 24 }}>
-                left {guide.leftGap}px
+              <div className={styles.guideLabel} style={{ left: scopedGuide.parent.rect.left - overlayBounds.left + 4, top: scopedSelected.rect.top - overlayBounds.top - 24 }}>
+                left {scopedGuide.leftGap}px
               </div>
             </>
           )}
 
-          {guide.previous && (
+          {scopedGuide.previous && overlayBounds && (
             <>
               <div
                 className={styles.guideLine}
                 style={{
-                  left: selected.rect.left - 10,
-                  top: guide.previous.rect.bottom,
+                  left: scopedSelected.rect.left - overlayBounds.left - 10,
+                  top: scopedGuide.previous.rect.bottom - overlayBounds.top,
                   width: 1,
-                  height: Math.max(1, selected.rect.top - guide.previous.rect.bottom),
+                  height: Math.max(1, scopedSelected.rect.top - scopedGuide.previous.rect.bottom),
                 }}
               />
-              <div className={styles.guideLabel} style={{ left: selected.rect.left + 2, top: guide.previous.rect.bottom + 4 }}>
-                gap {guide.topGap}px
+              <div className={styles.guideLabel} style={{ left: scopedSelected.rect.left - overlayBounds.left + 2, top: scopedGuide.previous.rect.bottom - overlayBounds.top + 4 }}>
+                gap {scopedGuide.topGap}px
               </div>
             </>
           )}
@@ -658,29 +722,29 @@ export default function DevLayoutOverlay() {
           <div
             className={styles.guideLine}
             style={{
-              left: selected.rect.left,
-              top: selected.rect.bottom + 6,
-              width: selected.rect.width,
+              left: overlayBounds ? scopedSelected.rect.left - overlayBounds.left : scopedSelected.rect.left,
+              top: overlayBounds ? scopedSelected.rect.bottom - overlayBounds.top + 6 : scopedSelected.rect.bottom + 6,
+              width: scopedSelected.rect.width,
               height: 1,
             }}
           />
-          <div className={styles.guideLabel} style={{ left: selected.rect.left + 8, top: selected.rect.bottom + 8 }}>
-            width {guide.width}px
+          <div className={styles.guideLabel} style={{ left: overlayBounds ? scopedSelected.rect.left - overlayBounds.left + 8 : scopedSelected.rect.left + 8, top: overlayBounds ? scopedSelected.rect.bottom - overlayBounds.top + 8 : scopedSelected.rect.bottom + 8 }}>
+            width {scopedGuide.width}px
           </div>
         </>
       )}
 
-      {selected && (
+      {scopedSelected && (
         <aside className={styles.panel} role="dialog" aria-label="Dev layout inspector">
           <div className={styles.panelScroll}>
             <div className={styles.panelHeader}>
               <div className={styles.panelTitleBlock}>
                 <p className={styles.kicker}>Dev Layout Inspector</p>
                 <h3 className={styles.title}>
-                  Section {selected.number} · {selected.key}
+                  Section {scopedSelected.number} · {scopedSelected.key}
                 </h3>
                 <p className={styles.subtitle}>
-                  {selected.route} · {selected.type} · {selected.source}
+                  {scopedSelected.route} · {scopedSelected.type} · {scopedSelected.source}
                 </p>
               </div>
               <div className={styles.panelHeaderActions}>
@@ -743,7 +807,7 @@ export default function DevLayoutOverlay() {
             </div>
 
             {(() => {
-              const prompts = buildPrompts(selected);
+              const prompts = buildPrompts(scopedSelected);
               return (
                 <div className={styles.sectionBlock}>
                   <p className={styles.blockTitle}>Copy Tools</p>
@@ -760,59 +824,84 @@ export default function DevLayoutOverlay() {
             })()}
 
             <div className={styles.sectionBlock}>
+              <p className={styles.blockTitle}>Overlay Colour Guide</p>
+              <div className={styles.row}>
+                <span className={styles.legendItem}>
+                  <span
+                    className={styles.legendSwatch}
+                    style={{ borderColor: "rgba(var(--accent-base-rgb), 0.74)", borderStyle: "dashed" }}
+                    aria-hidden="true"
+                  />
+                  Default section outline
+                </span>
+                <span className={styles.legendItem}>
+                  <span
+                    className={styles.legendSwatch}
+                    style={{ borderColor: "var(--accent-strong)", borderStyle: "solid" }}
+                    aria-hidden="true"
+                  />
+                  Selected section outline
+                </span>
+              </div>
+              <p className={styles.emptyHint}>
+                Dashed accent outlines mark every detected section. The solid accent outline shows the section currently selected in the inspector.
+              </p>
+            </div>
+
+            <div className={styles.sectionBlock}>
               <p className={styles.blockTitle}>Identity</p>
               <div className={styles.grid}>
-                <span className={styles.labelKey}>Route</span><span className={styles.value}>{selected.route}</span>
-                <span className={styles.labelKey}>Section Number</span><span className={styles.value}>{selected.number}</span>
-                <span className={styles.labelKey}>Stable Key</span><span className={`${styles.value} ${styles.codeValue}`}>{selected.key}</span>
-                <span className={styles.labelKey}>Element</span><span className={styles.value}>{selected.tagName || "unknown"}</span>
-                <span className={styles.labelKey}>Section Type</span><span className={styles.value}>{selected.type}</span>
-                <span className={styles.labelKey}>Wrapper Class</span><span className={styles.value}>{selected.wrapperClass}</span>
-                <span className={styles.labelKey}>Source</span><span className={styles.value}>{selected.source}</span>
+                <span className={styles.labelKey}>Route</span><span className={styles.value}>{scopedSelected.route}</span>
+                <span className={styles.labelKey}>Section Number</span><span className={styles.value}>{scopedSelected.number}</span>
+                <span className={styles.labelKey}>Stable Key</span><span className={`${styles.value} ${styles.codeValue}`}>{scopedSelected.key}</span>
+                <span className={styles.labelKey}>Element</span><span className={styles.value}>{scopedSelected.tagName || "unknown"}</span>
+                <span className={styles.labelKey}>Section Type</span><span className={styles.value}>{scopedSelected.type}</span>
+                <span className={styles.labelKey}>Wrapper Class</span><span className={styles.value}>{scopedSelected.wrapperClass}</span>
+                <span className={styles.labelKey}>Source</span><span className={styles.value}>{scopedSelected.source}</span>
               </div>
             </div>
 
             <div className={styles.sectionBlock}>
               <p className={styles.blockTitle}>Content Preview</p>
               <p className={styles.previewText}>
-                {selected.textPreview || "No visible text content detected for this section."}
+                {scopedSelected.textPreview || "No visible text content detected for this section."}
               </p>
             </div>
 
             <div className={styles.sectionBlock}>
               <p className={styles.blockTitle}>Hierarchy</p>
               <div className={styles.grid}>
-                <span className={styles.labelKey}>Parent</span><span className={styles.value}>{selected.parentNumber || "none"} ({selected.parentKey || "none"})</span>
-                <span className={styles.labelKey}>Children</span><span className={styles.value}>{selected.childNumbers.join(", ") || "none"} {selected.childKeys.length ? `(${selected.childKeys.join(", ")})` : ""}</span>
+                <span className={styles.labelKey}>Parent</span><span className={styles.value}>{scopedSelected.parentNumber || "none"} ({scopedSelected.parentKey || "none"})</span>
+                <span className={styles.labelKey}>Children</span><span className={styles.value}>{scopedSelected.childNumbers.join(", ") || "none"} {scopedSelected.childKeys.length ? `(${scopedSelected.childKeys.join(", ")})` : ""}</span>
               </div>
             </div>
 
             <div className={styles.sectionBlock}>
               <p className={styles.blockTitle}>Layout</p>
               <div className={styles.grid}>
-                <span className={styles.labelKey}>Padding</span><span className={styles.value}>{selected.padding}</span>
-                <span className={styles.labelKey}>Margin</span><span className={styles.value}>{selected.margin}</span>
-                <span className={styles.labelKey}>Radius</span><span className={styles.value}>{selected.radius}</span>
-                <span className={styles.labelKey}>Width/Bounds</span><span className={styles.value}>{selected.width}px × {selected.height}px at x {selected.left}, y {selected.top}</span>
-                <span className={styles.labelKey}>Gap from Prev</span><span className={styles.value}>{selected.computedGapFromPrevious ?? "n/a"} px</span>
-                <span className={styles.labelKey}>Left Offset</span><span className={styles.value}>{selected.computedLeftOffsetFromParent ?? "n/a"} px</span>
+                <span className={styles.labelKey}>Padding</span><span className={styles.value}>{scopedSelected.padding}</span>
+                <span className={styles.labelKey}>Margin</span><span className={styles.value}>{scopedSelected.margin}</span>
+                <span className={styles.labelKey}>Radius</span><span className={styles.value}>{scopedSelected.radius}</span>
+                <span className={styles.labelKey}>Width/Bounds</span><span className={styles.value}>{scopedSelected.width}px × {scopedSelected.height}px at x {scopedSelected.left}, y {scopedSelected.top}</span>
+                <span className={styles.labelKey}>Gap from Prev</span><span className={styles.value}>{scopedSelected.computedGapFromPrevious ?? "n/a"} px</span>
+                <span className={styles.labelKey}>Left Offset</span><span className={styles.value}>{scopedSelected.computedLeftOffsetFromParent ?? "n/a"} px</span>
               </div>
             </div>
 
             <div className={styles.sectionBlock}>
               <p className={styles.blockTitle}>Background</p>
               <div className={styles.grid}>
-                <span className={styles.labelKey}>Background Token</span><span className={styles.value}>{selected.backgroundToken}</span>
-                <span className={styles.labelKey}>Background Class</span><span className={styles.value}>{selected.backgroundClass || "none"}</span>
-                <span className={styles.labelKey}>Computed Background</span><span className={styles.value}>{selected.backgroundColor}</span>
+                <span className={styles.labelKey}>Background Token</span><span className={styles.value}>{scopedSelected.backgroundToken}</span>
+                <span className={styles.labelKey}>Background Class</span><span className={styles.value}>{scopedSelected.backgroundClass || "none"}</span>
+                <span className={styles.labelKey}>Computed Background</span><span className={styles.value}>{scopedSelected.backgroundColor}</span>
               </div>
             </div>
 
             <div className={styles.sectionBlock}>
               <p className={styles.blockTitle}>Likely Issues</p>
               <div className={styles.row}>
-                {selected.issueTags.length === 0 && <span className={`${styles.tag} ${styles.tagSuccess}`}>no-issues-detected</span>}
-                {selected.issueTags.map((tag) => (
+                {scopedSelected.issueTags.length === 0 && <span className={`${styles.tag} ${styles.tagSuccess}`}>no-issues-detected</span>}
+                {scopedSelected.issueTags.map((tag) => (
                   <span key={tag} className={`${styles.tag} ${tagToneClass(tag)}`.trim()}>{tag}</span>
                 ))}
               </div>

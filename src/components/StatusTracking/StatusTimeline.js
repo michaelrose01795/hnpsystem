@@ -42,7 +42,7 @@ export default function StatusTimeline({ currentStatus, currentStatusId = null, 
                 <div
                   className="absolute left-4 top-10 w-0.5 h-12"
                   style={{
-                    backgroundColor: completed || current ? status.color : 'var(--accent-purple-surface)'
+                    backgroundColor: completed || current ? status.color : 'var(--accentSurfaceSubtle)'
                   }}
                 />
               )}
@@ -53,7 +53,7 @@ export default function StatusTimeline({ currentStatus, currentStatusId = null, 
                   current ? 'animate-pulse ring-4 ring-opacity-50' : ''
                 }`}
                 style={{
-                  backgroundColor: completed || current ? status.color : 'var(--accent-purple-surface)',
+                  backgroundColor: completed || current ? status.color : 'var(--accentSurfaceSubtle)',
                   ringColor: current ? status.color : 'transparent'
                 }}
               >
@@ -75,16 +75,16 @@ export default function StatusTimeline({ currentStatus, currentStatusId = null, 
 
               {/* Status details */}
               <div className={`flex-1 pb-4 ${isFuture ? 'opacity-40' : ''}`}>
-                <div className="font-semibold text-sm" style={{ color: completed || current ? status.color : 'var(--info)' }}>
+                <div className="font-semibold text-sm" style={{ color: completed || current ? status.color : 'var(--accentText)' }}>
                   {status.label}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="text-xs mt-1" style={{ color: "var(--surfaceTextMuted)" }}>
                   {status.department}
                 </div>
                 
                 {/* Time spent in this status */}
                 {timeSpent > 0 && (
-                  <div className="text-xs font-semibold mt-2 text-gray-700">
+                  <div className="text-xs font-semibold mt-2" style={{ color: "var(--surfaceTextMuted)" }}>
                     Time: {Math.floor(timeSpent / 60)}m {timeSpent % 60}s
                   </div>
                 )}

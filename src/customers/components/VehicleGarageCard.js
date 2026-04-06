@@ -106,8 +106,8 @@ export default function VehicleGarageCard({ vehicles = [] }) {
                 {vehicle.latestVhc ? (
                   <div className="mt-3 text-xs text-[var(--text-secondary)]">
                     <p>
-                      <span className="font-semibold text-rose-600">{vehicle.latestVhc.redItems}</span> red ·{" "}
-                      <span className="font-semibold text-amber-500">{vehicle.latestVhc.amberItems}</span> amber
+                      <span className="font-semibold text-[var(--dangerMain)]">{vehicle.latestVhc.redItems}</span> red ·{" "}
+                      <span className="font-semibold text-[var(--warningMain)]">{vehicle.latestVhc.amberItems}</span> amber
                       advisories
                     </p>
                     {mediaItems.length ? (

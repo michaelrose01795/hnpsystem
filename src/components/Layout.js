@@ -811,7 +811,7 @@ export default function Layout({
           flexDirection: "column",
           gap: hideSidebar ? 0 : undefined,
           padding: hideSidebar ? "0" : undefined,
-          background: hideSidebar ? "transparent" : undefined,
+          background: "transparent",
           height: "auto",
           maxHeight: "none",
           overflowY: "visible", // allow full page scroll across breakpoints

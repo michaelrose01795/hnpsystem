@@ -36,7 +36,7 @@ export default function Card({
                 style={{
                   fontWeight: 700,
                   fontSize: "var(--text-h3)",
-                  color: "var(--accent-purple)",
+                  color: "var(--accentText)",
                 }}
               >
                 {title}

@@ -1,3 +1,5 @@
+// file location: src/components/profile/personal/widgets/shared.js
+
 import React from "react";
 import { toNumber } from "@/lib/profile/personalFinance";
 
@@ -61,7 +63,7 @@ export const widgetInsetSurfaceStyle = {
 export const widgetModalBackdropStyle = {
   position: "fixed",
   inset: 0,
-  background: "rgba(15, 23, 42, 0.58)",
+  background: "var(--overlay)",
   backdropFilter: "blur(6px)",
   display: "flex",
   alignItems: "center",
@@ -212,20 +214,20 @@ export function SurfacePanel({ children, style = {} }) {
 export function StatusBadge({ children, tone = "info", style = {} }) {
   const tones = {
     positive: {
-      background: "rgba(46, 125, 50, 0.10)",
-      color: "var(--success, #2e7d32)",
+      background: "var(--success-surface)",
+      color: "var(--successMain)",
     },
     warning: {
-      background: "rgba(239, 108, 0, 0.10)",
-      color: "var(--warning, #ef6c00)",
+      background: "var(--warning-surface)",
+      color: "var(--warningMain)",
     },
     neutral: {
-      background: "var(--accent-surface)",
-      color: "var(--text-secondary)",
+      background: "var(--accentSurfaceSubtle)",
+      color: "var(--surfaceTextMuted)",
     },
     info: {
-      background: "rgba(21, 101, 192, 0.08)",
-      color: "var(--info, #1565c0)",
+      background: "var(--accentSurfaceSubtle)",
+      color: "var(--accentText)",
     },
   };
 

@@ -1,3 +1,5 @@
+// file location: src/customers/components/CustomerBookingCalendar.js
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -10,9 +12,9 @@ const STATUS_BADGES = {
 };
 
 const STATUS_CLASSES = {
-  green: "border-emerald-200 bg-emerald-50 text-emerald-900",
-  amber: "border-amber-200 bg-amber-50 text-amber-900",
-  red: "border-rose-200 bg-rose-50 text-rose-900",
+  green: "border-[var(--success-border)] bg-[var(--success-surface)] text-[var(--success-text)]",
+  amber: "border-[var(--warning-border)] bg-[var(--warning-surface)] text-[var(--warning-text)]",
+  red: "border-[var(--danger-border)] bg-[var(--danger-surface)] text-[var(--danger-text)]",
 };
 
 const STATUS_NOTES = {
@@ -135,13 +137,13 @@ export default function CustomerBookingCalendar() {
                   </p>
 
                   {slot.status === "amber" && (
-                    <p className="mt-2 text-sm font-medium text-amber-800">
+                    <p className="mt-2 text-sm font-medium text-[var(--warningMain)]">
                       Limited slots — book soon
                     </p>
                   )}
 
                   {slot.status === "red" && (
-                    <p className="mt-2 text-sm font-medium text-rose-800">
+                    <p className="mt-2 text-sm font-medium text-[var(--dangerMain)]">
                       Fully booked — choose another day
                     </p>
                   )}
@@ -173,14 +175,14 @@ export default function CustomerBookingCalendar() {
           </p>
 
           {selectedSlot.status === "red" && (
-            <p className="mt-2 text-sm text-rose-800">
+            <p className="mt-2 text-sm text-[var(--dangerMain)]">
               Red days prevent new bookings. Please pick a different date or
               message us if it&apos;s urgent.
             </p>
           )}
 
           {selectedSlot.status === "amber" && (
-            <p className="mt-2 text-sm text-amber-900">
+            <p className="mt-2 text-sm text-[var(--warningMain)]">
               Amber days show limited slots — we&apos;ll confirm availability
               while they last.
             </p>

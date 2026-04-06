@@ -1,24 +1,31 @@
-// file location: src/styles/appTheme.js 
-// Centralised styling tokens for the VHC workspace and broader app shell.
+// file location: src/styles/appTheme.js
+// Shared JS-facing theme aliases that point directly at the semantic CSS token system.
 
 const palette = {
-  accent: "var(--accent-strong)",
-  accentBase: "var(--accent-base)",
-  accentHover: "var(--primary-light)",
-  accentSoft: "var(--accent-surface)",
-  accentSurface: "var(--accent-surface)",
-  backgroundGradient: "var(--surface)",
-  modalGradient: "var(--surface)",
-  surface: "var(--surface)",
-  surfaceAlt: "var(--surface-light)",
+  accent: "var(--accentMain)",
+  accentBase: "var(--accentSurface)",
+  accentHover: "var(--accentHover)",
+  accentPressed: "var(--accentPressed)",
+  accentSoft: "var(--accentSurfaceSubtle)",
+  accentSurface: "var(--accentSurface)",
+  accentSurfaceHover: "var(--accentSurfaceHover)",
+  backgroundGradient: "var(--surfaceMain)",
+  modalGradient: "var(--surfaceMain)",
+  surface: "var(--surfaceMain)",
+  surfaceAlt: "var(--surfaceHover)",
+  surfaceMuted: "var(--surfaceMutedToken)",
   border: "var(--border)",
-  textPrimary: "var(--text-primary)",
-  textMuted: "var(--text-secondary)",
+  accentBorder: "var(--accentBorder)",
+  accentBorderStrong: "var(--accentBorderStrong)",
+  textPrimary: "var(--surfaceText)",
+  textMuted: "var(--surfaceTextMuted)",
   overlay: "var(--overlay)",
-  success: "var(--success)",
-  warning: "var(--warning)",
-  danger: "var(--danger)",
-  info: "var(--info)",
+  overlayMuted: "var(--overlay-muted)",
+  onAccent: "var(--onAccentText)",
+  success: "var(--successMain)",
+  warning: "var(--warningMain)",
+  danger: "var(--dangerMain)",
+  info: "var(--accentMain)",
 };
 
 const radii = {
@@ -90,8 +97,8 @@ export const createVhcButtonStyle = (variant = "primary", { disabled = false } =
 
   return {
     ...base,
-    backgroundColor: disabled ? "var(--surface-light)" : palette.accent,
-    color: disabled ? palette.textMuted : "var(--text-inverse)",
+    backgroundColor: disabled ? palette.surfaceAlt : palette.accent,
+    color: disabled ? palette.textMuted : palette.onAccent,
   };
 };
 
@@ -106,7 +113,7 @@ export const vhcModalStyles = {
   overlay: {
     position: "fixed",
     inset: 0,
-    background: "rgba(0, 0, 0, 0.6)",
+    background: palette.overlay,
     backdropFilter: "blur(8px)",
     display: "flex",
     justifyContent: "center",
@@ -250,7 +257,7 @@ export const vhcModalContentStyles = {
 export const popupOverlayStyles = {
   position: "fixed",
   inset: 0,
-  backgroundColor: "rgba(0, 0, 0, 0.6)",
+  backgroundColor: palette.overlay,
   backdropFilter: "blur(8px)",
   display: "flex",
   alignItems: "center",

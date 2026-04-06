@@ -1,15 +1,15 @@
 /* file location: src/components/dev-layout-overlay/DevLayoutOverlay.module.css */
 .root {
   position: fixed;
-  inset: 0;
   z-index: 2800;
   pointer-events: none;
+  overflow: visible;
 }
 
 .box {
-  position: fixed;
+  position: absolute;
   border: 2px dashed rgba(var(--accent-base-rgb), 0.74);
-  background: var(--accent-surface);
+  background: transparent;
   border-radius: 10px;
   pointer-events: none;
   box-shadow: inset 0 0 0 1px rgba(var(--surface-rgb), 0.42);
@@ -17,12 +17,12 @@
 
 .boxSelected {
   border: 3px solid var(--accent-strong);
-  background: var(--accent-base);
+  background: transparent;
   box-shadow: 0 0 0 1px rgba(var(--surface-rgb), 0.45);
 }
 
 .label {
-  position: fixed;
+  position: absolute;
   min-width: 24px;
   padding: 3px 8px;
   border-radius: var(--radius-pill);
@@ -46,7 +46,7 @@
 }
 
 .inspectButton {
-  position: fixed;
+  position: absolute;
   border: none;
   background: transparent;
   cursor: pointer;
@@ -182,6 +182,24 @@
   gap: 8px;
 }
 
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--text-primary);
+}
+
+.legendSwatch {
+  width: 18px;
+  height: 18px;
+  border-width: 2px;
+  border-radius: 6px;
+  border-style: solid;
+  background: transparent;
+  flex-shrink: 0;
+}
+
 .summaryRow {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -253,13 +271,13 @@
 }
 
 .guideLine {
-  position: fixed;
+  position: absolute;
   background: rgba(var(--accent-base-rgb), 0.8);
   pointer-events: none;
 }
 
 .guideLabel {
-  position: fixed;
+  position: absolute;
   border-radius: 999px;
   padding: 2px 7px;
   font-size: 0.68rem;

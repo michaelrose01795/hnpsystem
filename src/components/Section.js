@@ -22,8 +22,8 @@ export default function Section({ title, subtitle, children, style }) {
       style={{ gap: "12px", ...style }} // standard internal spacing between header and content
     >
       <div>
-        <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-dark)" }}>{title}</h2> {/* section heading */}
-        {subtitle && <p style={{ margin: "6px 0 0", color: "var(--info)" }}>{subtitle}</p>} {/* optional subtitle */}
+        <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--accentText)" }}>{title}</h2> {/* section heading */}
+        {subtitle && <p style={{ margin: "6px 0 0", color: "var(--surfaceTextMuted)" }}>{subtitle}</p>} {/* optional subtitle */}
       </div>
       {children} {/* section body content */}
     </section>
