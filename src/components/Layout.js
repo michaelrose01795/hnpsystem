@@ -776,6 +776,8 @@ export default function Layout({
             padding: "16px 0",
             alignSelf: "stretch",
             height: "auto",
+            background: "var(--surface)",
+            borderRadius: "var(--page-card-radius)",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",

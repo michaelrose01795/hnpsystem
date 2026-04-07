@@ -492,6 +492,40 @@ const buildGuide = (section, sections) => {
   };
 };
 
+const isSidebarSection = (section) => {
+  const key = String(section?.key || "");
+  const classData = String(section?.classData || "");
+  const backgroundToken = String(section?.backgroundToken || "");
+
+  return (
+    key.includes("sidebar") ||
+    classData.includes("app-sidebar") ||
+    backgroundToken.includes("sidebar")
+  );
+};
+
+const isTopbarSection = (section) => {
+  const key = String(section?.key || "");
+  const classData = String(section?.classData || "");
+  const backgroundToken = String(section?.backgroundToken || "");
+
+  return (
+    key.includes("topbar") ||
+    classData.includes("app-topbar") ||
+    backgroundToken.includes("topbar")
+  );
+};
+
+const isPrimarySidebarSection = (section) => {
+  const key = String(section?.key || "");
+  return key === "app-sidebar-body" || key === "app-sidebar-body-mobile";
+};
+
+const isSidebarColumnSection = (section) => {
+  const key = String(section?.key || "");
+  return key === "app-layout-sidebar-rail";
+};
+
 const resolveOverlayBounds = (sections, selectedKey = "") => {
   const pageShells = (sections || []).filter((section) => section.type === "page-shell");
   if (!pageShells.length) return null;
@@ -522,10 +556,22 @@ const resolveOverlayBounds = (sections, selectedKey = "") => {
   return rankedPageShells[0]?.rect || null;
 };
 
+const getViewportBounds = () => {
+  if (typeof window === "undefined") return null;
+  return {
+    left: 0,
+    top: 0,
+    right: window.innerWidth,
+    bottom: window.innerHeight,
+    width: window.innerWidth,
+    height: window.innerHeight,
+  };
+};
+
 export default function DevLayoutOverlay() {
   const router = useRouter();
   const { registeredSections, syncComputedSections } = useDevLayoutRegistry();
-  const { canAccess, enabled, mode, setMode, toggleEnabled, cycleMode } = useDevLayoutOverlay();
+  const { canAccess, enabled, mode, fullScreen, setMode, toggleFullScreen, cycleMode } = useDevLayoutOverlay();
   const [sections, setSections] = useState([]);
   const [selectedKey, setSelectedKey] = useState("");
   const [copiedAction, setCopiedAction] = useState("");
@@ -577,11 +623,22 @@ export default function DevLayoutOverlay() {
     };
   }, [canAccess, enabled, router.asPath, router.pathname, registeredSections, syncComputedSections]);
 
-  const overlayBounds = useMemo(() => resolveOverlayBounds(sections, selectedKey), [sections, selectedKey]);
+  const overlayBounds = useMemo(() => {
+    if (fullScreen) {
+      return getViewportBounds();
+    }
+    return resolveOverlayBounds(sections, selectedKey);
+  }, [fullScreen, sections, selectedKey]);
   const scopedSections = useMemo(() => {
     if (!overlayBounds) return sections;
-    return sections.filter((section) => isRectWithinBounds(section.rect, overlayBounds));
-  }, [sections, overlayBounds]);
+    return sections.filter((section) => {
+      if (!isRectWithinBounds(section.rect, overlayBounds)) return false;
+      if (!fullScreen && (isSidebarSection(section) || isTopbarSection(section))) {
+        return false;
+      }
+      return true;
+    });
+  }, [sections, overlayBounds, fullScreen]);
   const scopedSelected = useMemo(
     () => scopedSections.find((section) => section.key === selectedKey) || null,
     [scopedSections, selectedKey]
@@ -641,8 +698,33 @@ export default function DevLayoutOverlay() {
     <div className={styles.root} aria-hidden="true" style={overlayStyle}>
       {scopedSections.map((section) => {
         const selectedClass = scopedSelected?.key === section.key ? styles.boxSelected : "";
+        const sidebarSection = fullScreen && isSidebarSection(section);
+        const primarySidebarSection = fullScreen && isPrimarySidebarSection(section);
+        const sidebarColumnSection = fullScreen && isSidebarColumnSection(section);
         const labelText = mode === "labels" ? section.number : `${section.number} · ${section.type} · ${section.backgroundToken}`;
         const localRect = overlayBounds ? toLocalRect(section.rect, overlayBounds) : section.rect;
+        const labelStyle = sidebarColumnSection
+          ? {
+              left: Math.max(12, localRect.left + Math.min(localRect.width / 2, 120)),
+              top: Math.max(8, localRect.top + 8),
+              transform: "translateX(-50%)",
+            }
+          : primarySidebarSection
+          ? {
+              left: Math.max(12, localRect.left + Math.min(localRect.width / 2, 110)),
+              top: Math.max(10, localRect.top + 10),
+              transform: "translateX(-50%)",
+            }
+          : sidebarSection
+          ? {
+              left: Math.max(8, localRect.right - 8),
+              top: Math.max(8, localRect.top + 34),
+              transform: "translateX(-100%)",
+            }
+          : {
+              left: localRect.left + 6,
+              top: Math.max(6, localRect.top - 10),
+            };
 
         return (
           <React.Fragment key={section.key}>
@@ -665,7 +747,7 @@ export default function DevLayoutOverlay() {
               />
             )}
             <div
-              className={`${styles.box} ${selectedClass}`.trim()}
+              className={`${styles.box} ${sidebarSection ? styles.boxSidebar : ""} ${sidebarColumnSection ? styles.boxSidebarColumn : ""} ${primarySidebarSection ? styles.boxSidebarPrimary : ""} ${selectedClass}`.trim()}
               style={{
                 left: localRect.left,
                 top: localRect.top,
@@ -674,8 +756,8 @@ export default function DevLayoutOverlay() {
               }}
             />
             <div
-              className={`${styles.label} ${mode !== "labels" ? styles.labelDetails : ""}`}
-              style={{ left: localRect.left + 6, top: Math.max(6, localRect.top - 10) }}
+              className={`${styles.label} ${sidebarSection ? styles.labelSidebar : ""} ${sidebarColumnSection ? styles.labelSidebarColumn : ""} ${primarySidebarSection ? styles.labelSidebarPrimary : ""} ${mode !== "labels" ? styles.labelDetails : ""}`}
+              style={labelStyle}
             >
               {labelText}
             </div>
@@ -751,11 +833,12 @@ export default function DevLayoutOverlay() {
                 <button
                   type="button"
                   role="switch"
-                  aria-checked={enabled}
-                  className={`app-btn ${enabled ? "app-btn--primary" : "app-btn--secondary"} app-btn--xs app-btn--pill`}
-                  onClick={toggleEnabled}
+                  aria-checked={fullScreen}
+                  aria-label="Toggle full-screen dev layout overlay"
+                  className={`app-btn ${fullScreen ? "app-btn--primary" : "app-btn--secondary"} app-btn--xs app-btn--pill`}
+                  onClick={toggleFullScreen}
                 >
-                  Screen Overlay {enabled ? "ON" : "OFF"}
+                  Full Screen {fullScreen ? "On" : "Off"}
                 </button>
                 <button
                   type="button"
@@ -910,7 +993,7 @@ export default function DevLayoutOverlay() {
             <div className={styles.sectionBlock}>
               <p className={styles.blockTitle}>Overlay Usage</p>
               <p className={styles.emptyHint}>
-                Click any highlighted region to focus it. Use labels for quick numbering, details for richer overlays, and inspect when copying prompts or checking spacing diagnostics.
+                Click any highlighted region to focus it. In Full Screen mode, sidebar sections are pinned and tinted separately so the navigation lane reads more clearly against the main content area.
               </p>
             </div>
           </div>

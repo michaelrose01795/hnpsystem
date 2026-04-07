@@ -179,7 +179,7 @@
   --input-border: var(--control-border);
 
   --page-max-width: 1680px;
-  --page-content-max-width: 1440px;
+  --page-content-max-width: 100%;
   --page-gutter-x: 20px;
   --page-gutter-y: 18px;
   --page-gutter-x-mobile: 12px;

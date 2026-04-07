@@ -305,6 +305,9 @@ const SECTION_STYLE = {
   display: "flex",
   flexDirection: "column",
   gap: "18px",
+  width: "100%",
+  maxWidth: "100%",
+  minWidth: 0,
 };
 
 const getSectionStyle = (isMobileView) => ({
@@ -346,31 +349,41 @@ const formatRelativeTime = (timestamp) => {
 
 const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = false }) => {
   const vehicleMeta = [entry.makeModel, entry.colour].filter(Boolean).join(" • ");
+  void isMobileView;
 
   return (
     <div
       onClick={onClick}
       style={{
-        padding: "16px 18px",
-        borderRadius: "var(--radius-md)",
-        border: isHighlighted ? "2px solid var(--danger)" : "1px solid rgba(var(--grey-accent-rgb), 0.3)",
-        background: isHighlighted ? "rgba(var(--danger-rgb), 0.05)" : "var(--surface)",
-        boxShadow: isHighlighted ? "0 4px 12px rgba(var(--danger-rgb), 0.2)" : "none",
+        padding: "20px 24px",
+        borderRadius: "var(--radius-sm)",
+        border: isHighlighted
+          ? "1px solid rgba(var(--danger-rgb), 0.3)"
+          : "1px solid rgba(var(--accent-base-rgb), 0.18)",
+        background: isHighlighted
+          ? "linear-gradient(180deg, rgba(var(--danger-rgb), 0.08), var(--accent-surface))"
+          : "var(--accent-surface)",
+        boxShadow: "none",
         display: "flex",
         flexDirection: "column",
-        gap: "8px",
+        gap: "10px",
         cursor: "pointer",
         transition: "all 0.2s ease",
+        width: "100%",
+        maxWidth: "100%",
+        minWidth: 0,
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.position = "relative";
         e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
-        e.currentTarget.style.transform = "translateY(-2px)";
-        e.currentTarget.style.boxShadow = isHighlighted ? "0 6px 16px rgba(var(--danger-rgb), 0.3)" : "0 4px 12px rgba(var(--grey-accent-rgb), 0.2)";
+        e.currentTarget.style.transform = "translateY(-8px)";
+        e.currentTarget.style.boxShadow = isHighlighted
+          ? "0 8px 16px rgba(var(--danger-rgb), 0.12)"
+          : "0 8px 16px rgba(var(--accent-base-rgb), 0.12)";
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.transform = "translateY(0)";
-        e.currentTarget.style.boxShadow = isHighlighted ? "0 4px 12px rgba(var(--danger-rgb), 0.2)" : "none";
+        e.currentTarget.style.boxShadow = "none";
         e.currentTarget.style.zIndex = "0";
       }}
     >
@@ -2160,12 +2173,15 @@ export default function TrackingDashboard() {
       )}
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: isMobileView ? "1fr" : "repeat(2, 1fr)",
-          gap: "12px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "20px",
           maxHeight: isMobileView ? "none" : "calc(4 * 180px + 3 * 12px)",
           overflowY: "auto",
           paddingRight: "4px",
+          width: "100%",
+          maxWidth: "100%",
+          minWidth: 0,
         }}
       >
         {activeEntries.map((entry) => {
@@ -2592,18 +2608,22 @@ export default function TrackingDashboard() {
       <div
         className="app-page-stack"
         style={{
-          display: "grid",
-          gridTemplateColumns: isMobileView ? "minmax(0, 1fr)" : "repeat(auto-fit, minmax(360px, 1fr))",
-          gap: isMobileView ? "var(--page-stack-gap-mobile, 16px)" : "24px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "20px",
+          width: "100%",
+          maxWidth: "100%",
           minWidth: 0,
+          padding: "8px 0",
         }}
       >
         <div
           style={{
-            gridColumn: "1 / -1",
             display: "flex",
             flexDirection: "column",
             gap: isMobileView ? "16px" : "18px",
+            width: "100%",
+            maxWidth: "100%",
             minWidth: 0,
           }}
         >

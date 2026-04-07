@@ -1452,28 +1452,145 @@ export default function CreateJobCardPage() {
           style={{
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "center",
+            alignItems: "flex-start",
             marginBottom: "12px",
             flexShrink: 0,
+            gap: "12px",
+            flexWrap: "wrap",
           }}
         >
-          <div>
+          <div
+            className="job-cards-create-header-left"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              flexWrap: "wrap",
+              minWidth: 0,
+              flex: "1 1 420px",
+            }}
+          >
             <h2
               style={{
                 margin: 0,
-                fontSize: "14px",
-                color: isSubJobMode ? "var(--primary)" : "var(--text-secondary)",
-                fontWeight: "500",
+                fontSize: "16px",
+                color: "var(--text-primary)",
+                fontWeight: "600",
+                whiteSpace: "nowrap",
               }}
             >
-              {isSubJobMode
-                ? `Sub-job for ${primeJobData?.jobNumber || "Prime Job"}`
-                : jobNumberDisplay
-                ? `${jobDivision} — ${jobNumberDisplay}`
-                : "New Job Card"}
+              {`Job cards #${activeJobCardLabel}`}
             </h2>
+
+            <div
+              className="job-cards-create-selector-wrap"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                flexWrap: "wrap",
+                minWidth: 0,
+              }}
+            >
+              <div
+                className="job-cards-create-selector"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  padding: "6px",
+                  backgroundColor: "var(--accent-purple-surface)",
+                  borderRadius: "var(--radius-pill)",
+                  border: "none",
+                  flexWrap: "wrap",
+                }}
+              >
+                {jobCardSelectorOptions.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setActiveTabIndex(option.index)}
+                    aria-pressed={activeTabIndex === option.index}
+                    style={{
+                      minHeight: "36px",
+                      padding: "0 14px",
+                      borderRadius: "var(--radius-pill)",
+                      border: "none",
+                      backgroundColor: activeTabIndex === option.index ? "var(--primary)" : "var(--surface-light)",
+                      color: activeTabIndex === option.index ? "white" : "var(--text-primary)",
+                      cursor: "pointer",
+                      fontWeight: activeTabIndex === option.index ? "600" : "500",
+                      fontSize: "13px",
+                      transition: "all 0.2s",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+
+              {!isSubJobMode && (
+                <button
+                  type="button"
+                  onClick={addNewJobTab}
+                  className="job-cards-create-add-linked-button"
+                  style={{
+                    minHeight: "36px",
+                    padding: "0 14px",
+                    borderRadius: "var(--radius-pill)",
+                    border: "1px dashed var(--primary)",
+                    backgroundColor: "transparent",
+                    color: "var(--primary)",
+                    cursor: "pointer",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transition: "all 0.2s",
+                    whiteSpace: "nowrap",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "var(--primary-surface)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                  }}
+                  title="Add another linked job"
+                >
+                  + Link job card
+                </button>
+              )}
+
+              {!isSubJobMode && hasLinkedJobCards && (
+                <button
+                  type="button"
+                  onClick={() => removeJobTab(activeTabIndex)}
+                  className="job-cards-create-remove-linked-button"
+                  style={{
+                    minHeight: "36px",
+                    padding: "0 14px",
+                    borderRadius: "var(--radius-pill)",
+                    border: "1px solid var(--border)",
+                    backgroundColor: "var(--surface-light)",
+                    color: "var(--text-secondary)",
+                    cursor: "pointer",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transition: "all 0.2s",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Remove selected
+                </button>
+              )}
+            </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
             {/* Job Source Badge */}
             <span
               style={{
@@ -1600,137 +1717,6 @@ export default function CreateJobCardPage() {
                 overflowY: "auto",
               }}
             >
-              <div
-                className="job-cards-create-info-header"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: "12px",
-                  marginBottom: "16px",
-                  flexWrap: "wrap",
-                }}
-              >
-                <h3
-                  style={{
-                    fontSize: "16px",
-                    fontWeight: "600",
-                    color: "var(--text-primary)",
-                    margin: 0,
-                  }}
-                >
-                  {`Job cards #${activeJobCardLabel}`}
-                </h3>
-
-                <div
-                  className="job-cards-create-selector-wrap"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    flexWrap: "wrap",
-                    justifyContent: "flex-end",
-                  }}
-                >
-                  <div
-                    className="job-cards-create-selector"
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "4px",
-                      padding: "6px",
-                      backgroundColor: "var(--accent-purple-surface)",
-                      borderRadius: "var(--radius-pill)",
-                      border: "none",
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    {jobCardSelectorOptions.map((option) => (
-                      <button
-                        key={option.id}
-                        type="button"
-                        onClick={() => setActiveTabIndex(option.index)}
-                        aria-pressed={activeTabIndex === option.index}
-                        style={{
-                          minHeight: "36px",
-                          padding: "0 14px",
-                          borderRadius: "var(--radius-pill)",
-                          border: "none",
-                          backgroundColor: activeTabIndex === option.index ? "var(--primary)" : "var(--surface-light)",
-                          color: activeTabIndex === option.index ? "white" : "var(--text-primary)",
-                          cursor: "pointer",
-                          fontWeight: activeTabIndex === option.index ? "600" : "500",
-                          fontSize: "13px",
-                          transition: "all 0.2s",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  {!isSubJobMode && (
-                    <button
-                      type="button"
-                      onClick={addNewJobTab}
-                      className="job-cards-create-add-linked-button"
-                      style={{
-                        minHeight: "36px",
-                        padding: "0 14px",
-                        borderRadius: "var(--radius-pill)",
-                        border: "1px dashed var(--primary)",
-                        backgroundColor: "transparent",
-                        color: "var(--primary)",
-                        cursor: "pointer",
-                        fontSize: "13px",
-                        fontWeight: "600",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        transition: "all 0.2s",
-                        whiteSpace: "nowrap",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = "var(--primary-surface)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = "transparent";
-                      }}
-                      title="Add another linked job"
-                    >
-                      + Link job card
-                    </button>
-                  )}
-
-                  {!isSubJobMode && hasLinkedJobCards && (
-                    <button
-                      type="button"
-                      onClick={() => removeJobTab(activeTabIndex)}
-                      className="job-cards-create-remove-linked-button"
-                      style={{
-                        minHeight: "36px",
-                        padding: "0 14px",
-                        borderRadius: "var(--radius-pill)",
-                        border: "1px solid var(--border)",
-                        backgroundColor: "var(--surface-light)",
-                        color: "var(--text-secondary)",
-                        cursor: "pointer",
-                        fontSize: "13px",
-                        fontWeight: "600",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        transition: "all 0.2s",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      Remove selected
-                    </button>
-                  )}
-                </div>
-              </div>
-
               <div style={{ marginBottom: "10px" }}>
                 <label
                   style={{

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layout";
 import ModalPortal from "@/components/popups/ModalPortal";
 import { supabase } from "@/lib/supabaseClient";
@@ -145,7 +145,7 @@ const formatTimeAgo = (value) => {
       const years = Math.floor(diffInDays / 365);
       return `${years} year${years === 1 ? "" : "s"} ago`;
     }
-  } catch (error) {
+  } catch {
     return "Unknown time";
   }
 };
@@ -174,7 +174,7 @@ export default function NewsFeed() {
   });
   const [notificationError, setNotificationError] = useState("");
 
-  const userRoles = user?.roles || [];
+  const userRoles = useMemo(() => user?.roles || [], [user?.roles]);
   const userDepartments = useMemo(() => deriveDepartmentsFromRoles(userRoles), [userRoles]);
   const canManageUpdates = useMemo(() => isManagerRole(userRoles), [userRoles]);
 
@@ -269,11 +269,17 @@ export default function NewsFeed() {
 
   return (
     <Layout>
-      <div className="max-w-3xl mx-auto px-6 py-8">
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "100%",
+          padding: "8px 0",
+        }}
+      >
         {canManageUpdates && (
           <div
             className="flex justify-end items-center"
-            style={{ paddingBottom: "48px" }}
+            style={{ width: "100%", paddingBottom: "48px" }}
           >
             <button
               onClick={() => {
