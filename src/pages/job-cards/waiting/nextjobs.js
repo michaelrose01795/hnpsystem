@@ -386,7 +386,6 @@ export default function NextJobsPage() {
   const [dbTechnicians, setDbTechnicians] = useState([]);
   const [dbMotTesters, setDbMotTesters] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null); // Job selected for popup
-  const [assignPopup, setAssignPopup] = useState(false); // Assign popup
   const [searchTerm, setSearchTerm] = useState(""); // Search filter
   const [draggingJob, setDraggingJob] = useState(null); // Job being dragged
   const [dragState, setDragState] = useState(null);
@@ -400,6 +399,14 @@ export default function NextJobsPage() {
   const dropIndicatorRef = useRef(null);
   const searchHighlightTimeoutRef = useRef(null);
   const jobCardRefs = useRef({});
+
+  const clearDragState = useCallback(() => {
+    dragStateRef.current = null;
+    dropIndicatorRef.current = null;
+    setDragState(null);
+    setDraggingJob(null);
+    setDropIndicator(null);
+  }, []);
 
   // ✅ Manager access check
   const username = user?.username;
@@ -957,11 +964,13 @@ export default function NextJobsPage() {
   );
 
   const handleOpenJobDetails = (job) => {
+    clearDragState();
     setFeedbackMessage(null);
     setSelectedJob(job);
   };
 
   const handleCloseJobDetails = () => {
+    clearDragState();
     setFeedbackMessage(null);
     setSelectedJob(null);
   };
@@ -979,74 +988,10 @@ export default function NextJobsPage() {
     handleOpenJobDetails(fallbackJob);
   };
 
-  const handleOpenAssignPopup = () => {
-    setFeedbackMessage(null);
-    setAssignPopup(true);
-  };
-
   const handleViewSelectedJobCard = () => {
     if (!selectedJob?.jobNumber) return;
     prefetchJob(selectedJob.jobNumber); // warm SWR cache for instant load
     router.push(`/job-cards/${encodeURIComponent(selectedJob.jobNumber)}`);
-  };
-
-  // ✅ Assign technician to a job (save to Supabase)
-  const assignTechToJob = async (tech) => {
-    if (!selectedJob) return; // Exit if no job selected
-    const jobId = selectedJob.id;
-    const jobNumber = selectedJob.jobNumber;
-    const technicianName = tech.name;
-    const rawIdentifier = tech.id ?? tech.user_id ?? technicianName;
-    const technicianIdentifier =
-      rawIdentifier && Number.isInteger(Number(rawIdentifier))
-        ? Number(rawIdentifier)
-        : rawIdentifier;
-
-    console.log("🔄 Assigning technician:", technicianName, "to job:", jobId); // Debug log
-    setFeedbackMessage(null);
-
-    // Use the dedicated helper function - it now returns formatted job data or null
-    let updatedJob;
-    try {
-      updatedJob = await assignTechnicianToJob(
-        jobId,
-        technicianIdentifier,
-        technicianName
-      );
-    } catch (err) {
-      console.error("❌ Exception assigning technician:", err);
-      setAssignPopup(false);
-      setFeedbackMessage({
-        type: "error",
-        text: `Failed to assign ${jobNumber} to ${technicianName}: ${err?.message || "Unknown error"}`,
-      });
-      return;
-    }
-
-    if (!updatedJob?.success) {
-      console.error("❌ Failed to assign technician:", updatedJob?.error);
-      setAssignPopup(false);
-      setFeedbackMessage({
-        type: "error",
-        text: `Failed to assign ${jobNumber} to ${technicianName}${
-          updatedJob?.error?.message ? `: ${updatedJob.error.message}` : ""
-        }`,
-      });
-      return;
-    }
-
-    console.log("✅ Technician assigned successfully:", updatedJob); // Debug log
-
-    const latestJobs = await fetchJobs();
-    revalidateAllJobs(); // sync SWR cache after technician assignment
-    const refreshedJob = latestJobs.find((job) => job.id === jobId);
-
-    setAssignPopup(false); // Close assign popup
-    setSelectedJob(refreshedJob || selectedJob); // Keep modal open with latest info
-    setFeedbackMessage({
-      type: "success",
-      text: `Job ${jobNumber} assigned to ${technicianName}`,
-    });
   };
 
   // ✅ Unassign technician (save to Supabase)
@@ -1094,14 +1039,6 @@ export default function NextJobsPage() {
       text: `Technician unassigned from job ${jobNumber}`,
     });
   };
-
-  const clearDragState = useCallback(() => {
-    dragStateRef.current = null;
-    dropIndicatorRef.current = null;
-    setDragState(null);
-    setDraggingJob(null);
-    setDropIndicator(null);
-  }, []);
 
   const resolveDropIndicator = useCallback((clientX, clientY, job) => {
     if (typeof document === "undefined" || !job) return null;
@@ -1435,6 +1372,8 @@ export default function NextJobsPage() {
     if (currentClocking?.customer) clockingSubtitleParts.push(currentClocking.customer);
     const clockingSubtitle = clockingSubtitleParts.join(" • ");
     const clockInLabel = currentClocking ? formatClockInTime(currentClocking.clockIn) : "";
+    const techJobRowBackground = "var(--accent-surface)";
+    const techJobRowHoverBackground = "var(--accent-surface-hover)";
     return (
       <div
         key={panelKey}
@@ -1600,10 +1539,10 @@ export default function NextJobsPage() {
                   marginBottom: "8px",
                   backgroundColor:
                     draggingJob?.jobNumber === job.jobNumber
-                      ? "var(--accent-layer-3)"
+                      ? techJobRowHoverBackground
                       : isSearchHighlighted
                       ? "var(--success-surface)"
-                      : "var(--accent-purple-surface)",
+                      : techJobRowBackground,
                   cursor: hasAccess ? "grab" : "pointer",
                   transition: "all 0.2s",
                   opacity: draggingJob?.jobNumber === job.jobNumber ? 0.5 : 1,
@@ -1614,15 +1553,15 @@ export default function NextJobsPage() {
                 }}
                 onMouseEnter={(e) => {
                   if (draggingJob?.jobNumber !== job.jobNumber) {
-                    e.currentTarget.style.backgroundColor = isSearchHighlighted ? "var(--success-surface)" : "var(--accent-layer-3)";
+                    e.currentTarget.style.backgroundColor = isSearchHighlighted ? "var(--success-surface)" : techJobRowHoverBackground;
                     e.currentTarget.style.boxShadow = isSearchHighlighted
                       ? "0 0 0 2px rgba(34, 197, 94, 0.18), 0 8px 18px rgba(34, 197, 94, 0.22)"
-                      : "0 2px 6px rgba(var(--accent-purple-rgb),0.12)";
+                      : "0 0 0 1px rgba(var(--accent-base-rgb), 0.14)";
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (draggingJob?.jobNumber !== job.jobNumber) {
-                    e.currentTarget.style.backgroundColor = isSearchHighlighted ? "var(--success-surface)" : "var(--accent-purple-surface)";
+                    e.currentTarget.style.backgroundColor = isSearchHighlighted ? "var(--success-surface)" : techJobRowBackground;
                     e.currentTarget.style.boxShadow = isSearchHighlighted
                       ? "0 0 0 2px rgba(34, 197, 94, 0.18), 0 8px 18px rgba(34, 197, 94, 0.22)"
                       : "none";
@@ -2362,24 +2301,10 @@ export default function NextJobsPage() {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: `repeat(${selectedJob?.assignedTech ? 4 : 3}, minmax(0, 1fr))`,
+                  gridTemplateColumns: `repeat(${selectedJob?.assignedTech ? 3 : 2}, minmax(0, 1fr))`,
                   gap: "12px"
                 }}
               >
-                <button
-                  style={jobDetailsPopupSecondaryButtonStyle}
-                  onClick={handleOpenAssignPopup} // Open assign popup
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = "var(--surface-light)";
-                    e.currentTarget.style.borderColor = "var(--accent-purple)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "var(--accent-purple-surface)";
-                    e.currentTarget.style.borderColor = "var(--accent-purple)";
-                  }}
-                >
-                  Assign Tech
-                </button>
                 <button
                   style={jobDetailsPopupPrimaryButtonStyle}
                   onClick={handleViewSelectedJobCard}
@@ -2429,95 +2354,6 @@ export default function NextJobsPage() {
           </div>
             );
           })()
-        )}
-
-        {/* ✅ ASSIGN TECH POPUP */}
-        {assignPopup && (
-          <div
-            style={{
-              ...popupOverlayStyles,
-              zIndex: 10000, // Above job details popup
-            }}
-            onClick={() => setAssignPopup(false)} // Close when clicking overlay
-          >
-            <div
-              data-dev-section-key="nextjobs-assign-popup"
-              data-dev-section-type="content-card"
-              data-dev-background-token="surface"
-              style={{
-                ...popupCardStyles,
-                width: "min(450px, 90%)",
-                padding: "24px",
-              }}
-              onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
-            >
-              <h3 style={{ 
-                fontWeight: "700", 
-                marginBottom: "16px",
-                fontSize: "20px",
-                color: "var(--primary)"
-              }}>
-                Assign Technician
-              </h3>
-              
-              <select
-                onChange={(e) => {
-                  const value = e.target.value;
-                  const selectedTech = assignableStaffList.find(
-                    (t) =>
-                      String((t.id ?? t.name)) === value || t.name === value
-                  );
-                  if (selectedTech) assignTechToJob(selectedTech); // Assign selected tech
-                }}
-                style={{
-                  width: "100%",
-                  padding: "12px",
-                  borderRadius: "var(--radius-xs)",
-                  border: "none",
-                  fontSize: "14px",
-                  marginBottom: "16px",
-                  outline: "none",
-                  cursor: "pointer",
-                  transition: "border-color 0.2s"
-                }}
-                onFocus={(e) => e.currentTarget.style.borderColor = "var(--primary)"}
-                onBlur={(e) => e.currentTarget.style.borderColor = "var(--surface-light)"}
-                defaultValue=""
-              >
-                <option value="" disabled>
-                  Select Technician...
-                </option>
-                {assignableStaffList.map((tech) => (
-                  <option
-                    key={tech.id ?? tech.name}
-                    value={String(tech.id ?? tech.name)}
-                  >
-                    {tech.name}
-                  </option>
-                ))}
-              </select>
-              
-              <button
-                style={{
-                  width: "100%",
-                  backgroundColor: "var(--primary)",
-                  color: "white",
-                  padding: "12px 16px",
-                  borderRadius: "var(--radius-xs)",
-                  cursor: "pointer",
-                  border: "none",
-                  fontSize: "14px",
-                  fontWeight: "600",
-                  transition: "background-color 0.2s"
-                }}
-                onClick={() => setAssignPopup(false)} // Close assign popup
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--danger-dark)")}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--primary)")}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
         )}
         <style jsx>{`
           .outstanding-grid {

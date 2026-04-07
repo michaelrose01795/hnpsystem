@@ -303,7 +303,7 @@ const GlobalSearch = ({
     }
   };
 
-  const dropdownBackground = "var(--layer-section-level-2)";
+  const dropdownBackground = "var(--control-menu-bg)";
   const textColor = isDarkMode ? "var(--search-text)" : "var(--text-primary)";
   const placeholderColor = isDarkMode ? "rgba(var(--primary-rgb), 0.7)" : "rgba(var(--primary-rgb), 0.7)";
   const drawerBorderColor = isDarkMode ? "rgba(var(--accent-purple-rgb), 0.45)" : "var(--surface)";

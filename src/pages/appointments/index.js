@@ -198,8 +198,8 @@ const CALENDAR_SEVERITY_STYLES = {
 
 const SATURDAY_SEVERITY_STYLES = {
   amber: {
-    backgroundColor: "var(--warning-dark)",
-    textColor: "var(--surface)",
+    backgroundColor: "var(--warning-surface)",
+    textColor: "var(--warning)",
     borderColor: "var(--warning)",
   },
   red: {
@@ -1456,42 +1456,64 @@ export default function Appointments() {
         <div
           data-dev-section-key="appointments-auto-data-table-2-shell"
           data-dev-section-type="section-shell"
-          style={{ 
-          flex: "0 0 auto", 
-          maxHeight: "calc(8 * 42px + 60px)", 
-          overflowY: "auto", 
-          marginBottom: "12px", 
-          borderRadius: "var(--radius-sm)", 
-          boxShadow: "none", 
-          backgroundColor: "var(--accent-layer-4)"
-        }}
+          style={{
+            flex: "0 0 auto",
+            maxHeight: "calc(8 * 42px + 60px)",
+            overflowY: "auto",
+            marginBottom: "12px",
+            borderRadius: "var(--radius-md)",
+            border: "var(--control-border)",
+            boxShadow: "none",
+            background: "linear-gradient(180deg, var(--page-card-bg-alt) 0%, var(--section-card-bg) 100%)",
+          }}
         >
           <table
             id="appointments-auto-data-table-2"
             data-dev-section-key="appointments-auto-data-table-2"
             data-dev-section-type="data-table"
-            style={{ width: "100%", borderCollapse: "collapse", backgroundColor: "var(--accent-layer-4)" }}
+            style={{
+              width: "100%",
+              borderCollapse: "separate",
+              borderSpacing: 0,
+              backgroundColor: "transparent",
+            }}
           >
             <thead
               data-dev-section-key="appointments-auto-data-table-2-headings"
               data-dev-section-type="table-headings"
               data-dev-section-parent="appointments-auto-data-table-2"
-              style={{ position: "sticky", top: 0, zIndex: 2, backgroundColor: "var(--primary)" }}
+              style={{
+                position: "sticky",
+                top: 0,
+                zIndex: 5,
+                background: "var(--primary)",
+                boxShadow: "0 1px 0 rgba(var(--shadow-rgb), 0.12)",
+                isolation: "isolate",
+              }}
             >
-              <tr style={{ backgroundColor: "var(--primary)", borderBottom: "2px solid var(--primary-dark)" }}>
+              <tr
+                style={{
+                  background: "var(--primary)",
+                  borderBottom: "1px solid rgba(var(--surface-rgb), 0.18)",
+                }}
+              >
                 {["Day/Date","Availability","Total Hours","Total Jobs","Jobs Scheduled","Finish","Services","MOT","Diagnosis","Other","Staff Off"].map(header => (
                   <th 
                     key={header} 
                     style={{ 
-                      textAlign: "left", 
-                      padding: "10px 12px", 
-                      fontWeight: "600", 
-                      fontSize: "14px", 
-                      color: "var(--text-inverse)", 
-                      borderBottom: "1px solid var(--surface-light)", 
-                      background: "var(--primary)", 
+                      textAlign: header === "Services" || header === "MOT" || header === "Diagnosis" || header === "Other" || header === "Staff Off" || header === "Total Jobs" || header === "Jobs Scheduled" ? "center" : "left",
+                      padding: "12px 14px",
+                      fontWeight: "700",
+                      fontSize: "11px",
+                      letterSpacing: "0.05em",
+                      textTransform: "uppercase",
+                      color: "var(--text-inverse)",
+                      borderBottom: "1px solid rgba(var(--surface-rgb), 0.18)",
+                      background: "var(--primary)",
                       position: "sticky", 
-                      top: 0 
+                      top: 0,
+                      zIndex: 6,
+                      whiteSpace: "nowrap",
                     }}
                   >
                     {header}
@@ -1504,7 +1526,7 @@ export default function Appointments() {
               data-dev-section-type="table-rows"
               data-dev-section-parent="appointments-auto-data-table-2"
             >
-                {dates.map((date) => {
+                {dates.map((date, index) => {
                 const dateKey = date.toDateString();
                 const counts = getJobCounts(date);
                 const staffEntries = staffAbsences[dateKey] || [];
@@ -1520,11 +1542,12 @@ export default function Appointments() {
                 const severityStyle = severityStyleSource[severity];
                 const isCalmDay = severity === "green" || !severityStyle;
                 const isToday = isSameDate(date, new Date());
+                const zebraRowBackground = index % 2 === 0 ? "var(--section-card-bg)" : "rgba(var(--accent-base-rgb), 0.035)";
                 const defaultRowBackground = isCalmDay
                   ? isWeekendSaturday
-                    ? "var(--calendar-saturday-row-bg)"
-                    : "var(--surface)"
-                  : severityStyle.backgroundColor || (isWeekendSaturday ? "var(--calendar-saturday-row-bg)" : "var(--surface)");
+                    ? "var(--warning-surface)"
+                    : zebraRowBackground
+                  : severityStyle.backgroundColor || (isWeekendSaturday ? "var(--warning-surface)" : zebraRowBackground);
                 let rowBackground = defaultRowBackground;
 
                 // Selected date (theme primary fill — red light / purple dark)
@@ -1551,8 +1574,9 @@ export default function Appointments() {
                 const availabilityLabelColor = isCalmDay
                   ? "var(--text-secondary)"
                   : severityStyle?.textColor || "var(--text-primary)";
-                const baseOutline = isToday ? "2px solid var(--primary)" : "none";
-                const hoverOutline = "2px solid var(--accent-purple)";
+                const baseOutline = isToday ? "2px solid rgba(var(--primary-rgb), 0.28)" : "none";
+                const hoverOutline = "2px solid rgba(var(--accent-base-rgb), 0.32)";
+                const cellBorder = "1px solid rgba(var(--accent-base-rgb), 0.12)";
                 
                 return (
                   <tr
@@ -1561,7 +1585,7 @@ export default function Appointments() {
                     style={{
                       cursor: "pointer",
                       backgroundColor: rowBackground,
-                      transition: "background-color 0.2s",
+                      transition: "background-color 0.2s ease, outline-color 0.2s ease",
                       borderLeft: severityBorderLeft,
                       outline: baseOutline,
                       outlineOffset: "-2px",
@@ -1577,78 +1601,113 @@ export default function Appointments() {
                       e.currentTarget.style.outline = baseOutline;
                     }}
                   >
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)", fontWeight: isSelected ? "600" : "400" }}>
-                      {formatDate(date)}
+                    <td style={{ padding: "14px", borderBottom: cellBorder, fontWeight: isSelected ? "700" : "600", verticalAlign: "top" }}>
+                      <div style={{ display: "grid", gap: "4px" }}>
+                        <span>{formatDate(date)}</span>
+                        <span style={{ fontSize: "11px", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                          {isToday ? "Today" : date.toLocaleDateString("en-GB", { weekday: "long" })}
+                        </span>
+                      </div>
                     </td>
                     <td
                       style={{
-                        padding: "10px 12px",
-                        borderBottom: "1px solid var(--surface-light)",
+                        padding: "14px",
+                        borderBottom: cellBorder,
+                        verticalAlign: "top",
                       }}
                     >
-                      <div
-                        style={{
-                          fontSize: "13px",
-                          fontWeight: "600",
-                          color: availabilityLabelColor,
-                        }}
-                      >
-                        {dayTechSummary.availableTechs} tech
-                        {dayTechSummary.availableTechs !== 1 ? "s" : ""} · {totalAvailableHours.toFixed(1)}h avail
-                      </div>
-                      <div
-                        style={{
-                          fontSize: "12px",
-                          color: "var(--grey-accent)",
-                          marginTop: "2px",
-                        }}
-                      >
-                        {bookingPercentDisplay}% booked
+                      <div style={{ display: "grid", gap: "6px" }}>
+                        <div
+                          style={{
+                            fontSize: "13px",
+                            fontWeight: "700",
+                            color: availabilityLabelColor,
+                          }}
+                        >
+                          {dayTechSummary.availableTechs} tech
+                          {dayTechSummary.availableTechs !== 1 ? "s" : ""} available
+                        </div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              padding: "4px 8px",
+                              borderRadius: "var(--radius-pill)",
+                              background: "var(--accent-surface)",
+                              color: "var(--text-primary)",
+                              fontSize: "11px",
+                              fontWeight: "700",
+                            }}
+                          >
+                            {totalAvailableHours.toFixed(1)}h available
+                          </span>
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              padding: "4px 8px",
+                              borderRadius: "var(--radius-pill)",
+                              background: isCalmDay ? "var(--accent-surface)" : severityStyle.backgroundColor,
+                              color: isCalmDay ? "var(--text-secondary)" : availabilityLabelColor,
+                              fontSize: "11px",
+                              fontWeight: "700",
+                            }}
+                          >
+                            {bookingPercentDisplay}% booked
+                          </span>
+                        </div>
                       </div>
                     </td>
                     <td style={{ 
-                      padding: "10px 12px", 
-                      borderBottom: "1px solid var(--surface-light)",
-                      color: counts.totalHours > 0 ? "var(--text-secondary)" : "var(--grey-accent-light)"
+                      padding: "14px",
+                      borderBottom: cellBorder,
+                      color: counts.totalHours > 0 ? "var(--text-primary)" : "var(--grey-accent-light)",
+                      fontWeight: counts.totalHours > 0 ? "700" : "500",
+                      whiteSpace: "nowrap",
                     }}>
                       {counts.totalHours}h
                     </td>
                     <td style={{
-                      padding: "10px 12px", 
-                      borderBottom: "1px solid var(--surface-light)",
-                      fontWeight: counts.totalJobs > 0 ? "600" : "400"
+                      padding: "14px",
+                      borderBottom: cellBorder,
+                      fontWeight: counts.totalJobs > 0 ? "700" : "500",
+                      textAlign: "center",
                     }}>
                       {counts.totalJobs}
                     </td>
                     <td style={{
-                      padding: "10px 12px", 
-                      borderBottom: "1px solid var(--surface-light)",
-                      fontWeight: counts.totalJobs > 0 ? "600" : "400"
+                      padding: "14px",
+                      borderBottom: cellBorder,
+                      fontWeight: counts.totalJobs > 0 ? "700" : "500",
+                      textAlign: "center",
                     }}>
                       {counts.totalJobs}
                     </td>
                     <td style={{
-                      padding: "10px 12px", 
-                      borderBottom: "1px solid var(--surface-light)",
-                      fontWeight: "500"
+                      padding: "14px",
+                      borderBottom: cellBorder,
+                      fontWeight: "600",
+                      whiteSpace: "nowrap",
                     }}>
                       {counts.finishTime || "-"}
                     </td>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)" }}>
+                    <td style={{ padding: "14px", borderBottom: cellBorder, textAlign: "center", fontWeight: counts.services > 0 ? "700" : "500" }}>
                       {counts.services}
                     </td>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)" }}>
+                    <td style={{ padding: "14px", borderBottom: cellBorder, textAlign: "center", fontWeight: counts.mot > 0 ? "700" : "500" }}>
                       {counts.mot}
                     </td>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)" }}>
+                    <td style={{ padding: "14px", borderBottom: cellBorder, textAlign: "center", fontWeight: counts.diagnosis > 0 ? "700" : "500" }}>
                       {counts.diagnosis}
                     </td>
-                    <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)" }}>
+                    <td style={{ padding: "14px", borderBottom: cellBorder, textAlign: "center", fontWeight: counts.other > 0 ? "700" : "500" }}>
                       {counts.other}
                     </td>
                     <td style={{ 
-                      padding: "10px 12px", 
-                      borderBottom: "1px solid var(--surface-light)"
+                      padding: "14px",
+                      borderBottom: cellBorder,
+                      textAlign: "center",
                     }}>
                       {staffEntries.length > 0 ? (
                         <button
@@ -1658,15 +1717,15 @@ export default function Appointments() {
                             minWidth: "32px",
                             padding: "6px 10px",
                             borderRadius: "var(--radius-pill)",
-                            border: "1px solid var(--primary)",
-                            backgroundColor: "var(--surface-light)",
-                            color: "var(--primary)",
-                            fontWeight: "600",
+                            border: "1px solid rgba(var(--accent-base-rgb), 0.24)",
+                            backgroundColor: "var(--accent-surface)",
+                            color: "var(--text-primary)",
+                            fontWeight: "700",
                             cursor: "pointer",
-                            fontSize: "12px"
+                            fontSize: "12px",
                           }}
-                          onMouseEnter={(event) => event.currentTarget.style.backgroundColor = "var(--surface-light)"}
-                          onMouseLeave={(event) => event.currentTarget.style.backgroundColor = "var(--surface-light)"}
+                          onMouseEnter={(event) => event.currentTarget.style.backgroundColor = "var(--accent-surface-hover)"}
+                          onMouseLeave={(event) => event.currentTarget.style.backgroundColor = "var(--accent-surface)"}
                         >
                           {staffEntries.length}
                         </button>
@@ -1944,17 +2003,36 @@ export default function Appointments() {
           {activeDayTab === "jobs" && (
             <>
               {/* ✅ Enhanced Jobs Table */}
-              <div style={{ overflowX: "auto" }}>
+              <div
+                style={{
+                  overflowX: "auto",
+                  border: "var(--control-border)",
+                  borderRadius: "var(--radius-md)",
+                  background: "linear-gradient(180deg, var(--page-card-bg-alt) 0%, var(--section-card-bg) 100%)",
+                }}
+              >
                 <table
                   id="appointments-auto-data-table-3"
                   data-dev-section-key="appointments-auto-data-table-3"
                   data-dev-section-type="data-table"
-                  style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", backgroundColor: "rgba(var(--primary-rgb), 0.1)" }}
+                  style={{
+                    width: "100%",
+                    borderCollapse: "separate",
+                    borderSpacing: 0,
+                    fontSize: "13px",
+                    backgroundColor: "transparent",
+                  }}
                 >
               <thead
                 data-dev-section-key="appointments-auto-data-table-3-headings"
                 data-dev-section-type="table-headings"
                 data-dev-section-parent="appointments-auto-data-table-3"
+                style={{
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 1,
+                  background: "var(--accent-surface-hover)",
+                }}
               >
                 <tr>
                 {[
@@ -1972,10 +2050,14 @@ export default function Appointments() {
                       key={head} 
                       style={{ 
                         textAlign: head === "Check-In" ? "center" : "left", 
-                        padding: "10px 12px", 
-                        background: "rgba(var(--primary-rgb), 0.1)", 
-                        fontWeight: "600", 
-                        borderBottom: "2px solid var(--primary)", 
+                        padding: "12px 14px",
+                        background: "var(--accent-surface-hover)",
+                        color: "var(--text-primary)",
+                        fontWeight: "700",
+                        fontSize: "11px",
+                        letterSpacing: "0.05em",
+                        textTransform: "uppercase",
+                        borderBottom: "1px solid rgba(var(--accent-base-rgb), 0.18)",
                         position: "sticky", 
                         top: 0, 
                         zIndex: 1,
@@ -1996,35 +2078,36 @@ export default function Appointments() {
                   sortedJobs.map((job, idx) => {
                     const isCheckedIn = isJobActuallyCheckedIn(job);
                     const isCurrentlyCheckingIn = checkingInJobId === job.id;
+                    const cellBorder = "1px solid rgba(var(--accent-base-rgb), 0.12)";
                     const rowBackground =
                       highlightJob === job.jobNumber
-                        ? "var(--success)"
+                        ? "var(--success-surface)"
                         : idx % 2 === 0
-                        ? "var(--surface)"
-                        : "transparent";
+                        ? "var(--section-card-bg)"
+                        : "rgba(var(--accent-base-rgb), 0.035)";
 
                     return (
                       <tr 
                         key={idx} 
                         style={{ 
                           backgroundColor: rowBackground, 
-                          transition: "background-color 0.5s"
+                          transition: "background-color 0.2s ease"
                         }}
                         onMouseEnter={(e) => {
                           if (highlightJob !== job.jobNumber) {
-                            e.currentTarget.style.backgroundColor = "var(--surface)";
+                            e.currentTarget.style.backgroundColor = "var(--accent-surface-hover)";
                           }
                         }}
                         onMouseLeave={(e) => {
                           if (highlightJob !== job.jobNumber) {
-                            e.currentTarget.style.backgroundColor = idx % 2 === 0 ? "var(--surface)" : "transparent";
+                            e.currentTarget.style.backgroundColor = idx % 2 === 0 ? "var(--section-card-bg)" : "rgba(var(--accent-base-rgb), 0.035)";
                           }
                         }}
                       >
-                        <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)", fontWeight: "600" }}>
+                        <td style={{ padding: "12px 14px", borderBottom: cellBorder, fontWeight: "700", whiteSpace: "nowrap" }}>
                           {job.appointment?.time || "-"}
                         </td>
-                        <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)", color: "var(--primary)", fontWeight: "600" }}>
+                        <td style={{ padding: "12px 14px", borderBottom: cellBorder, color: "var(--primary)", fontWeight: "700" }}>
                           <button
                             type="button"
                             onClick={() => handleJobRowClick(job.jobNumber || job.id)}
@@ -2033,16 +2116,15 @@ export default function Appointments() {
                               display: "inline-flex",
                               alignItems: "center",
                               gap: "6px",
-                              padding: 0,
+                              padding: "4px 8px",
                               minHeight: 0,
-                              background: "transparent",
+                              borderRadius: "var(--radius-pill)",
+                              background: "var(--accent-surface)",
                               border: "none",
                               color: "var(--primary)",
-                              fontWeight: "600",
+                              fontWeight: "700",
                               fontSize: "inherit",
                               cursor: "pointer",
-                              textDecoration: "underline",
-                              textUnderlineOffset: "2px",
                             }}
                           >
                             <span>{job.jobNumber || job.id || "-"}</span>
@@ -2052,9 +2134,9 @@ export default function Appointments() {
                                   fontSize: "10px",
                                   padding: "2px 6px",
                                   borderRadius: "var(--radius-xs)",
-                                  backgroundColor: "var(--primary-surface)",
+                                  backgroundColor: "rgba(var(--primary-rgb), 0.14)",
                                   color: "var(--primary)",
-                                  fontWeight: "500",
+                                  fontWeight: "600",
                                 }}
                                 title={job.isPrimeJob ? "Prime Job" : `Sub-job of ${job.primeJobNumber}`}
                               >
@@ -2063,16 +2145,16 @@ export default function Appointments() {
                             )}
                           </button>
                         </td>
-                        <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)", fontWeight: "500" }}>
+                        <td style={{ padding: "12px 14px", borderBottom: cellBorder, fontWeight: "600", whiteSpace: "nowrap" }}>
                           {job.reg || "-"}
                         </td>
-                        <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)" }}>
+                        <td style={{ padding: "12px 14px", borderBottom: cellBorder }}>
                           {getVehicleDisplay(job)}
                         </td>
-                        <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)" }}>
+                        <td style={{ padding: "12px 14px", borderBottom: cellBorder }}>
                           {job.customer || "-"}
                         </td>
-                        <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)" }}>
+                        <td style={{ padding: "12px 14px", borderBottom: cellBorder }}>
                           <div style={{
                             display: "flex",
                             flexWrap: "wrap",
@@ -2087,31 +2169,31 @@ export default function Appointments() {
                             ))}
                           </div>
                         </td>
-                        <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)" }}>
+                        <td style={{ padding: "12px 14px", borderBottom: cellBorder }}>
                           <span
                             style={{
                               padding: "4px 10px",
-                              borderRadius: "var(--radius-sm)",
+                              borderRadius: "var(--radius-pill)",
                               fontSize: "11px",
-                              fontWeight: "600",
+                              fontWeight: "700",
                               ...getCustomerStatusBadgeColors(job.waitingStatus || "Neither"),
                             }}
                           >
                             {job.waitingStatus || "Neither"}
                           </span>
                         </td>
-                        <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)", fontWeight: "600" }}>
+                        <td style={{ padding: "12px 14px", borderBottom: cellBorder, fontWeight: "700", whiteSpace: "nowrap" }}>
                           {getEstimatedFinishTime(job)}
                         </td>
-                        <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--surface-light)", textAlign: "center" }}>
+                        <td style={{ padding: "12px 14px", borderBottom: cellBorder, textAlign: "center" }}>
                           {isCheckedIn ? (
                             <span style={{
                               padding: isCompactMobile ? "8px 12px" : "8px 16px",
-                              borderRadius: "var(--radius-xs)",
+                              borderRadius: "var(--radius-pill)",
                               fontSize: "13px",
-                              fontWeight: "600",
-                              backgroundColor: "var(--success)",
-                              color: "var(--info-dark)"
+                              fontWeight: "700",
+                              backgroundColor: "var(--success-surface)",
+                              color: "var(--success-dark)"
                             }}>
                               {isCompactMobile ? "Checked In" : "✓ Checked In"}
                             </span>
@@ -2127,10 +2209,10 @@ export default function Appointments() {
                                 backgroundColor: isCurrentlyCheckingIn ? "var(--background)" : "var(--primary)",
                                 color: "white",
                                 border: "none",
-                                borderRadius: "var(--radius-xs)",
+                                borderRadius: "var(--radius-pill)",
                                 cursor: isCurrentlyCheckingIn ? "not-allowed" : "pointer",
                                 fontSize: "13px",
-                                fontWeight: "600",
+                                fontWeight: "700",
                                 transition: "background-color 0.2s"
                               }}
                               onMouseEnter={(e) => {
@@ -2159,7 +2241,8 @@ export default function Appointments() {
                         padding: "40px", 
                         textAlign: "center", 
                         color: "var(--grey-accent-light)",
-                        fontSize: "14px"
+                        fontSize: "14px",
+                        background: "var(--section-card-bg)",
                       }}
                     >
                       No appointments booked for this day

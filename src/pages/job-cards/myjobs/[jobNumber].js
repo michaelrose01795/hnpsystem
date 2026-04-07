@@ -1088,73 +1088,6 @@ export default function TechJobDetailPage() {
     confirm,
   ]);
 
-  // Callback: Handle job clock in
-  const handleJobClockIn = useCallback(async () => {
-    if (!workshopUserId) {
-      alert("Unable to clock in because your workshop profile is not linked.");
-      return;
-    }
-    if (!jobCardId) {
-      alert("Unable to find job reference.");
-      return;
-    }
-    if (jobClocking) {
-      alert("You are already clocked onto this job.");
-      return;
-    }
-
-    setClockInLoading(true);
-    try {
-      const isMotClockIn = canClockIntoMotHandoff && pendingMotRequest?.requestId;
-      const result = await clockInToJob(
-        workshopUserId,
-        jobCardId,
-        jobCardNumber,
-        isMotClockIn ? "mot" : "initial",
-        isMotClockIn ? pendingMotRequest.requestId : null
-      );
-
-      if (result.success) {
-        alert(`Clocked in to Job ${jobCardNumber}`);
-        if (!isMotClockIn) {
-          setStatus("In Progress");
-        }
-        setCurrentJob(result.data);
-        await refreshCurrentJob();
-        setJobClocking(result.data);
-        await refreshJobClocking();
-        await fetchClockedHoursTotal();
-        await refreshClockingStatus();
-        if (!isMotClockIn) {
-          await syncJobStatus(IN_PROGRESS_STATUS, jobData?.jobCard?.status);
-        }
-      } else {
-        alert(result.error || "Failed to clock in to this job.");
-      }
-    } catch (clockInError) {
-      console.error("Error clocking in to job:", clockInError);
-      alert(clockInError.message || "Error clocking in. Please try again.");
-    } finally {
-      setClockInLoading(false);
-    }
-  }, [
-    dbUserId,
-    user?.id,
-    workshopUserId,
-    jobCardId,
-    jobCardNumber,
-    jobClocking,
-    setStatus,
-    setCurrentJob,
-    refreshCurrentJob,
-    refreshJobClocking,
-    refreshClockingStatus,
-    syncJobStatus,
-    jobData?.jobCard?.status,
-    canClockIntoMotHandoff,
-    pendingMotRequest,
-  ]);
-
   const handlePartsRequestSubmit = useCallback(async () => {
     if (!jobCardId) {
       alert("Unable to submit a part request before the job data is loaded.");
@@ -2347,28 +2280,53 @@ export default function TechJobDetailPage() {
     );
   }
 
-  // Loading state with spinner animation
+  // Loading state
   if (loading) {
     return (
       <Layout jobNumber={jobNumber} requiresLandscape>
-        <div className="redirect-screen" role="status" aria-live="polite">
-          <div className="redirect-card">
-            <div className="login-brand redirect-brand" aria-hidden="true">
-              <img src="/logo.png" alt="H&P logo" className="login-logo" />
-            </div>
-            <div className="redirect-spinner" aria-hidden="true"></div>
-            <div className="redirect-copy">
-              <p className="redirect-kicker">Page Load</p>
-              <h2 className="redirect-title">Loading job...</h2>
-              <p className="redirect-sub">Preparing technician job details.</p>
-            </div>
-            <div className="redirect-dots" aria-hidden="true">
-              <span></span>
-              <span></span>
-              <span></span>
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            minHeight: "60vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "24px",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "12px",
+              color: "var(--text-primary)",
+            }}
+          >
+            <div
+              aria-hidden="true"
+              style={{
+                width: "28px",
+                height: "28px",
+                borderRadius: "50%",
+                border: "3px solid rgba(var(--accent-base-rgb), 0.18)",
+                borderTopColor: "var(--primary)",
+                animation: "spin 0.8s linear infinite",
+              }}
+            />
+            <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-secondary)" }}>
+              Loading job...
             </div>
           </div>
         </div>
+        <style jsx>{`
+          @keyframes spin {
+            to {
+              transform: rotate(360deg);
+            }
+          }
+        `}</style>
       </Layout>
     );
   }
@@ -2511,6 +2469,57 @@ export default function TechJobDetailPage() {
     ? "0 10px 20px rgba(0, 0, 0, 0.18)"
     : "0 6px 14px rgba(0, 0, 0, 0.12)";
 
+  // Callback: Handle job clock in
+  const handleJobClockIn = async () => {
+    if (!workshopUserId) {
+      alert("Unable to clock in because your workshop profile is not linked.");
+      return;
+    }
+    if (!jobCardId) {
+      alert("Unable to find job reference.");
+      return;
+    }
+    if (jobClocking) {
+      alert("You are already clocked onto this job.");
+      return;
+    }
+
+    setClockInLoading(true);
+    try {
+      const isMotClockIn = canClockIntoMotHandoff && pendingMotRequest?.requestId;
+      const result = await clockInToJob(
+        workshopUserId,
+        jobCardId,
+        jobCardNumber,
+        isMotClockIn ? "mot" : "initial",
+        isMotClockIn ? pendingMotRequest.requestId : null
+      );
+
+      if (result.success) {
+        alert(`Clocked in to Job ${jobCardNumber}`);
+        if (!isMotClockIn) {
+          setStatus("In Progress");
+        }
+        setCurrentJob(result.data);
+        await refreshCurrentJob();
+        setJobClocking(result.data);
+        await refreshJobClocking();
+        await fetchClockedHoursTotal();
+        await refreshClockingStatus();
+        if (!isMotClockIn) {
+          await syncJobStatus(IN_PROGRESS_STATUS, jobData?.jobCard?.status);
+        }
+      } else {
+        alert(result.error || "Failed to clock in to this job.");
+      }
+    } catch (clockInError) {
+      console.error("Error clocking in to job:", clockInError);
+      alert(clockInError.message || "Error clocking in. Please try again.");
+    } finally {
+      setClockInLoading(false);
+    }
+  };
+
   const handleCompleteJob = async () => {
     if (!canCompleteJob) return;
     const workshopUserId = dbUserId ?? user?.id;
@@ -2608,7 +2617,7 @@ export default function TechJobDetailPage() {
           alignItems: "center",
           marginBottom: "12px",
           padding: "12px",
-          backgroundColor: "var(--surface)",
+          backgroundColor: "var(--page-card-bg-alt)",
           borderRadius: "var(--radius-xs)",
           flexShrink: 0
         }}
@@ -2824,16 +2833,11 @@ export default function TechJobDetailPage() {
         {/* Tabs Navigation */}
         <DevLayoutSection
           as="div"
+          className="app-layout-tab-row"
           sectionKey="myjob-tab-row"
           sectionType="tab-row"
           parentKey="myjob-page-shell"
           style={{
-          borderRadius: "var(--control-radius)",
-          border: "none",
-          background: "var(--surface)",
-          padding: "6px",
-          display: "inline-flex",
-          gap: "6px",
           width: "fit-content",
           alignSelf: "flex-start",
           maxWidth: "100%",
@@ -2916,6 +2920,7 @@ export default function TechJobDetailPage() {
           sectionKey="myjob-main-content"
           sectionType="section-shell"
           parentKey="myjob-page-shell"
+          backgroundToken="layer-section-level-1"
           shell
           style={{
             flex: 1,
@@ -2935,6 +2940,7 @@ export default function TechJobDetailPage() {
             sectionKey="myjob-main-scroll"
             sectionType="section-shell"
             parentKey="myjob-main-content"
+            backgroundToken="none"
             style={{ flex: 1, overflowY: "auto", paddingRight: "8px", minHeight: 0 }}
           >
           
@@ -2945,6 +2951,8 @@ export default function TechJobDetailPage() {
               sectionKey="myjob-tab-overview"
               sectionType="section-shell"
               parentKey="myjob-main-scroll"
+              backgroundToken="none"
+              shell
               style={{ display: "flex", flexDirection: "column", gap: "16px" }}
             >
               {/* Job Details */}
@@ -2953,6 +2961,7 @@ export default function TechJobDetailPage() {
                 sectionKey="myjob-overview-details"
                 sectionType="content-card"
                 parentKey="myjob-tab-overview"
+                backgroundToken="surface"
                 style={{
                 backgroundColor: "var(--surface)",
                 padding: "24px",
@@ -3089,6 +3098,7 @@ export default function TechJobDetailPage() {
                 sectionKey="myjob-overview-summary-grid"
                 sectionType="section-shell"
                 parentKey="myjob-tab-overview"
+                backgroundToken="none"
                 style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px" }}
               >
                 {/* Vehicle Info */}
@@ -3097,6 +3107,7 @@ export default function TechJobDetailPage() {
                   sectionKey="myjob-overview-vehicle"
                   sectionType="content-card"
                   parentKey="myjob-overview-summary-grid"
+                  backgroundToken="surface"
                   style={{
                   backgroundColor: "var(--surface)",
                   padding: "24px",
@@ -3145,6 +3156,7 @@ export default function TechJobDetailPage() {
                   sectionKey="myjob-overview-customer"
                   sectionType="content-card"
                   parentKey="myjob-overview-summary-grid"
+                  backgroundToken="surface"
                   style={{
                   backgroundColor: "var(--surface)",
                   padding: "24px",
@@ -3189,6 +3201,8 @@ export default function TechJobDetailPage() {
               sectionKey="myjob-tab-vhc"
               sectionType="section-shell"
               parentKey="myjob-main-scroll"
+              backgroundToken="none"
+              shell
               style={{ display: "flex", flexDirection: "column", gap: "20px", height: "100%" }}
             >
               {!activeSection && (showVhcReopenButton ? (
@@ -3197,6 +3211,7 @@ export default function TechJobDetailPage() {
                   sectionKey="myjob-vhc-reopen-banner"
                   sectionType="content-card"
                   parentKey="myjob-tab-vhc"
+                  backgroundToken="layer-section-level-2"
                   style={{
                   backgroundColor: "var(--layer-section-level-2)",
                   borderRadius: "var(--radius-sm)",
@@ -3253,6 +3268,7 @@ export default function TechJobDetailPage() {
                     sectionKey="myjob-vhc-header"
                     sectionType="toolbar"
                     parentKey="myjob-tab-vhc"
+                    backgroundToken="layer-section-level-3"
                     style={{
                     display: "flex",
                     justifyContent: "space-between",
@@ -3334,6 +3350,7 @@ export default function TechJobDetailPage() {
                     sectionKey="myjob-vhc-assistant"
                     sectionType="content-card"
                     parentKey="myjob-tab-vhc"
+                    backgroundToken="surface"
                   >
                     <VhcAssistantPanel
                       state={vhcAssistantState}
@@ -3349,6 +3366,7 @@ export default function TechJobDetailPage() {
                         sectionKey="myjob-vhc-mandatory"
                         sectionType="content-card"
                         parentKey="myjob-tab-vhc"
+                        backgroundToken="layer-section-level-1"
                         style={{ backgroundColor: "var(--layer-section-level-1)", borderRadius: "var(--radius-sm)", padding: "16px" }}
                       >
                     <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "12px", color: "var(--accent-purple)" }}>
@@ -3493,6 +3511,7 @@ export default function TechJobDetailPage() {
                 sectionKey="myjob-vhc-additional"
                 sectionType="content-card"
                 parentKey="myjob-tab-vhc"
+                backgroundToken="layer-section-level-1"
                 style={{ backgroundColor: "var(--layer-section-level-1)", borderRadius: "var(--radius-sm)", padding: "16px" }}
               >
                 <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "12px", color: "var(--info)" }}>
@@ -3646,6 +3665,7 @@ export default function TechJobDetailPage() {
                   sectionKey="myjob-vhc-summary"
                   sectionType="content-card"
                   parentKey="myjob-tab-vhc"
+                  backgroundToken="layer-section-level-1"
                   style={{
                   backgroundColor: "var(--layer-section-level-1)",
                   border: "1px solid var(--info)",
@@ -3859,12 +3879,14 @@ export default function TechJobDetailPage() {
             <DevLayoutSection
               as="div"
               sectionKey="myjob-tab-parts"
-              sectionType="content-card"
+              sectionType="section-shell"
               parentKey="myjob-main-scroll"
+              backgroundToken="none"
+              shell
               style={{
-              backgroundColor: "var(--layer-section-level-2)",
-              padding: "24px",
-              borderRadius: "var(--radius-sm)",
+              backgroundColor: "transparent",
+              padding: 0,
+              borderRadius: 0,
               border: "none",
               display: "flex",
               flexDirection: "column",
@@ -3872,8 +3894,14 @@ export default function TechJobDetailPage() {
               alignItems: "stretch"
             }}
             >
-              <div style={{
-                backgroundColor: "var(--layer-section-level-3)",
+              <DevLayoutSection
+                as="div"
+                sectionKey="myjob-parts-request"
+                sectionType="content-card"
+                parentKey="myjob-tab-parts"
+                backgroundToken="surface"
+                style={{
+                backgroundColor: "var(--surface)",
                 borderRadius: "var(--radius-sm)",
                 border: "none",
                 padding: "20px",
@@ -3971,10 +3999,16 @@ export default function TechJobDetailPage() {
                     {partsFeedback}
                   </div>
                 )}
-              </div>
+              </DevLayoutSection>
 
-              <div style={{
-                backgroundColor: "var(--layer-section-level-3)",
+              <DevLayoutSection
+                as="div"
+                sectionKey="myjob-parts-active-requests"
+                sectionType="content-card"
+                parentKey="myjob-tab-parts"
+                backgroundToken="surface"
+                style={{
+                backgroundColor: "var(--surface)",
                 borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--accent-purple-surface)",
                 padding: "20px",
@@ -4078,11 +4112,17 @@ export default function TechJobDetailPage() {
                     })}
                   </div>
                 )}
-              </div>
+              </DevLayoutSection>
 
               {/* Parts Authorised Section */}
-              <div style={{
-                backgroundColor: "var(--layer-section-level-3)",
+              <DevLayoutSection
+                as="div"
+                sectionKey="myjob-parts-authorised"
+                sectionType="content-card"
+                parentKey="myjob-tab-parts"
+                backgroundToken="surface"
+                style={{
+                backgroundColor: "var(--surface)",
                 borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--success)",
                 padding: "20px",
@@ -4199,7 +4239,7 @@ export default function TechJobDetailPage() {
                     })}
                   </div>
                 )}
-              </div>
+              </DevLayoutSection>
             </DevLayoutSection>
           )}
 
@@ -4210,8 +4250,9 @@ export default function TechJobDetailPage() {
               sectionKey="myjob-tab-notes"
               sectionType="content-card"
               parentKey="myjob-main-scroll"
+              backgroundToken="surface"
               style={{
-              backgroundColor: "var(--layer-section-level-2)",
+              backgroundColor: "var(--surface)",
               padding: "24px",
               borderRadius: "var(--radius-sm)",
               border: "none",
@@ -4220,7 +4261,14 @@ export default function TechJobDetailPage() {
               gap: "20px"
             }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <DevLayoutSection
+                as="div"
+                sectionKey="myjob-notes-toolbar"
+                sectionType="toolbar"
+                parentKey="myjob-tab-notes"
+                backgroundToken="none"
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+              >
                 <h3 style={{ fontSize: "18px", fontWeight: "600", margin: 0 }}>
                   Technician Notes
                 </h3>
@@ -4242,10 +4290,16 @@ export default function TechJobDetailPage() {
                 >
                   + Add Note
                 </button>
-              </div>
+              </DevLayoutSection>
 
               {showAddNote && (
-                <div style={{
+                <DevLayoutSection
+                  as="div"
+                  sectionKey="myjob-notes-compose"
+                  sectionType="content-card"
+                  parentKey="myjob-tab-notes"
+                  backgroundToken="layer-section-level-3"
+                  style={{
                   padding: "20px",
                   backgroundColor: "var(--layer-section-level-3)",
                   borderRadius: "var(--radius-sm)",
@@ -4300,19 +4354,31 @@ export default function TechJobDetailPage() {
                       {notesSubmitting ? "Saving..." : "Save Note"}
                     </button>
                   </div>
-                </div>
+                </DevLayoutSection>
               )}
 
               {notesLoading ? (
-                <div style={{
+                <DevLayoutSection
+                  as="div"
+                  sectionKey="myjob-notes-loading"
+                  sectionType="content-card"
+                  parentKey="myjob-tab-notes"
+                  backgroundToken="none"
+                  style={{
                   padding: "32px",
                   textAlign: "center",
                   color: "var(--info)"
                 }}>
                   Loading notes…
-                </div>
+                </DevLayoutSection>
               ) : notes.length === 0 ? (
-                <div style={{
+                <DevLayoutSection
+                  as="div"
+                  sectionKey="myjob-notes-empty"
+                  sectionType="content-card"
+                  parentKey="myjob-tab-notes"
+                  backgroundToken="layer-section-level-3"
+                  style={{
                   textAlign: "center",
                   padding: "40px",
                   color: "var(--info)",
@@ -4324,9 +4390,16 @@ export default function TechJobDetailPage() {
                   <p style={{ fontSize: "14px", color: "var(--info)" }}>
                     Keep technicians aligned by logging progress, issues and next steps.
                   </p>
-                </div>
+                </DevLayoutSection>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <DevLayoutSection
+                  as="div"
+                  sectionKey="myjob-notes-list"
+                  sectionType="section-shell"
+                  parentKey="myjob-tab-notes"
+                  backgroundToken="none"
+                  style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+                >
                   {notes.map((note, index) => {
                     const noteId = note.noteId || note.note_id || note.id;
                     const creatorName = note.createdBy || "Unknown";
@@ -4336,8 +4409,13 @@ export default function TechJobDetailPage() {
                         ? ` • Updated ${formatDateTime(note.updatedAt)}`
                         : "";
                     return (
-                      <div
+                      <DevLayoutSection
+                        as="div"
                         key={noteId}
+                        sectionKey={`myjob-note-${noteId}`}
+                        sectionType="content-card"
+                        parentKey="myjob-notes-list"
+                        backgroundToken="layer-section-level-3"
                         style={{
                           border: "none",
                           borderRadius: "var(--control-radius-xs)",
@@ -4369,10 +4447,10 @@ export default function TechJobDetailPage() {
                         <p style={{ margin: 0, color: "var(--text-primary)", whiteSpace: "pre-wrap" }}>
                           {note.noteText || note.note_text}
                         </p>
-                      </div>
+                      </DevLayoutSection>
                     );
                   })}
-                </div>
+                </DevLayoutSection>
               )}
             </DevLayoutSection>
           )}
@@ -4381,43 +4459,60 @@ export default function TechJobDetailPage() {
           <DevLayoutSection
             as="div"
             sectionKey="myjob-tab-writeup"
-            sectionType="content-card"
+            sectionType="section-shell"
             parentKey="myjob-main-scroll"
+            backgroundToken="layer-section-level-2"
+            shell
             style={{
             height: "100%",
             overflow: "hidden",
             display: activeTab === "write-up" ? "flex" : "none",
             flexDirection: "column",
-            borderRadius: 0,
+            borderRadius: "var(--radius-sm)",
             border: "none",
-            backgroundColor: "transparent"
+            backgroundColor: "var(--layer-section-level-2)"
           }}
           >
-            <WriteUpForm
-              jobNumber={jobNumber}
-              jobCardData={jobData}
-              showHeader={false}
-              onCompletionChange={(nextStatus) => {
-                setJobData((prev) => {
-                  if (!prev?.jobCard) return prev;
-                  const nextWriteUp = {
-                    ...(prev.jobCard.writeUp || {}),
-                    completion_status: nextStatus,
-                  };
-                  return {
-                    ...prev,
-                    jobCard: {
-                      ...prev.jobCard,
-                      completionStatus: nextStatus,
-                      writeUp: nextWriteUp,
-                    },
-                  };
-                });
+            <DevLayoutSection
+              as="div"
+              sectionKey="myjob-writeup-form-shell"
+              sectionType="content-card"
+              parentKey="myjob-tab-writeup"
+              backgroundToken="surface"
+              style={{
+                flex: 1,
+                minHeight: 0,
+                borderRadius: "var(--radius-sm)",
+                overflow: "hidden",
+                backgroundColor: "var(--surface)"
               }}
-              onTasksSnapshotChange={(nextTasks) => {
-                setLiveWriteUpTasks(Array.isArray(nextTasks) ? nextTasks : []);
-              }}
-            />
+            >
+              <WriteUpForm
+                jobNumber={jobNumber}
+                jobCardData={jobData}
+                showHeader={false}
+                onCompletionChange={(nextStatus) => {
+                  setJobData((prev) => {
+                    if (!prev?.jobCard) return prev;
+                    const nextWriteUp = {
+                      ...(prev.jobCard.writeUp || {}),
+                      completion_status: nextStatus,
+                    };
+                    return {
+                      ...prev,
+                      jobCard: {
+                        ...prev.jobCard,
+                        completionStatus: nextStatus,
+                        writeUp: nextWriteUp,
+                      },
+                    };
+                  });
+                }}
+                onTasksSnapshotChange={(nextTasks) => {
+                  setLiveWriteUpTasks(Array.isArray(nextTasks) ? nextTasks : []);
+                }}
+              />
+            </DevLayoutSection>
           </DevLayoutSection>
 
           {/* DOCUMENTS TAB */}
@@ -4425,21 +4520,36 @@ export default function TechJobDetailPage() {
             <DevLayoutSection
               as="div"
               sectionKey="myjob-tab-documents"
-              sectionType="content-card"
+              sectionType="section-shell"
               parentKey="myjob-main-scroll"
+              backgroundToken="none"
+              shell
               style={{
-              backgroundColor: "var(--layer-section-level-2)",
-              padding: "24px",
-              borderRadius: "var(--radius-sm)",
+              backgroundColor: "transparent",
+              padding: 0,
+              borderRadius: 0,
               border: "none",
             }}
             >
-              <DocumentsTab
-                documents={jobDocuments}
-                canDelete={canManageDocuments}
-                onDelete={handleDeleteDocument}
-                onManageDocuments={canManageDocuments ? () => setShowDocumentsPopup(true) : undefined}
-              />
+              <DevLayoutSection
+                as="div"
+                sectionKey="myjob-documents-browser"
+                sectionType="content-card"
+                parentKey="myjob-tab-documents"
+                backgroundToken="surface"
+                style={{
+                  borderRadius: "var(--radius-sm)",
+                  overflow: "hidden",
+                  backgroundColor: "var(--surface)"
+                }}
+              >
+                <DocumentsTab
+                  documents={jobDocuments}
+                  canDelete={canManageDocuments}
+                  onDelete={handleDeleteDocument}
+                  onManageDocuments={canManageDocuments ? () => setShowDocumentsPopup(true) : undefined}
+                />
+              </DevLayoutSection>
             </DevLayoutSection>
           )}
           </DevLayoutSection>

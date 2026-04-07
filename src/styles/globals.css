@@ -164,6 +164,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   border: var(--page-card-border);
   padding: var(--page-card-padding);
   overflow: visible;
+  box-shadow: none;
 }
 
 .app-page-card--bare {
@@ -218,6 +219,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   border-radius: var(--section-card-radius);
   background: var(--page-card-bg-alt);
   border: var(--section-card-border);
+  box-shadow: none;
 }
 
 .app-layout-card {
@@ -228,6 +230,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   border-radius: var(--section-card-radius);
   background: var(--section-card-bg);
   border: var(--section-card-border);
+  box-shadow: none;
 }
 
 .app-layout-surface-subtle {
@@ -238,6 +241,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   border-radius: var(--radius-sm);
   background: var(--accent-surface);
   border: 1px solid rgba(var(--accent-base-rgb), 0.16);
+  box-shadow: none;
 }
 
 .app-layout-surface-accent {
@@ -250,6 +254,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   border-radius: var(--radius-sm);
   background: var(--profile-card-bg);
   border: var(--profile-card-border);
+  box-shadow: none;
 }
 
 .app-profile-accent-card {
@@ -1168,6 +1173,7 @@ label {
   border: var(--page-card-border);
   background: var(--page-card-bg);
   padding: var(--section-card-padding);
+  box-shadow: none;
 }
 
 .customer-portal-card--muted {
@@ -1175,6 +1181,7 @@ label {
   border: var(--control-border);
   background: var(--surface-light);
   padding: var(--space-md);
+  box-shadow: none;
 }
 
 .customer-portal-header {

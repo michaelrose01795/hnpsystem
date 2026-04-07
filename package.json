@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/use-local-next-cache.js",
     "dev": "next dev",
+    "vercel:dev": "node scripts/vercel-dev.js",
     "lint": "eslint .",
     "uk:check": "node scripts/enforce-uk-english.js",
     "uk:check:all": "node scripts/enforce-uk-english.js --all",

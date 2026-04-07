@@ -57,7 +57,6 @@ import { useJob } from "@/hooks/useJob"; // SWR-powered job card data with cachi
 import { resolveJobCardPermissions } from "@/features/jobCards/workflow/permissions";
 import { getWriteUpCompletionState, getInvoiceWorkflowState, getNextBestAction } from "@/features/jobCards/workflow/selectors";
 import JobWorkflowAssistantCard from "@/features/jobCards/components/JobWorkflowAssistantCard";
-import JobWorkflowDiagnostics from "@/features/jobCards/components/JobWorkflowDiagnostics";
 import { buildVhcAssistantState } from "@/features/vhc-assistant/buildVhcAssistantState";
 import VhcAssistantPanel from "@/features/vhc-assistant/components/VhcAssistantPanel";
 
@@ -3603,7 +3602,6 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
           workflowSummary={workflowSummary}
         />
 
-        <JobWorkflowDiagnostics diagnostics={workflowDiagnostics} />
 
         {/* ✅ Related Jobs Panel */}
         {(relatedJobs.length > 0 || jobData.isPrimeJob) && (
@@ -7106,7 +7104,7 @@ function SchedulingTab({
                     fontWeight: "600",
                     fontSize: "var(--control-font-size)",
                     cursor: canEdit ? "pointer" : "default",
-                    boxShadow: isActive ? "0 0 0 1px rgba(var(--primary-rgb), 0.18), 0 8px 18px rgba(var(--primary-rgb), 0.12)" : "none",
+                    boxShadow: "none",
                     transition: "background-color 0.15s, color 0.15s, box-shadow 0.15s",
                     textAlign: "center",
                   }}
