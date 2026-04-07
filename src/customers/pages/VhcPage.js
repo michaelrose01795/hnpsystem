@@ -16,11 +16,6 @@ export default function CustomerVhcPage() {
           {error}
         </div>
       )}
-      {isLoading ? (
-        <div className="mb-4 rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] p-5 text-sm text-[var(--text-secondary)]">
-          Loading VHC updates…
-        </div>
-      ) : null}
       <div className="grid gap-6 lg:grid-cols-2">
         <VHCSummaryList summaries={vhcSummaries} vehicles={vehicles} />
         <MessagingHub contacts={contacts} />

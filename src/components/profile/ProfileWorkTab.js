@@ -1614,7 +1614,9 @@ export function ProfileWorkTab({
 
   // Only fetch HR operations data if user is admin/manager AND viewing another user's profile
   const shouldUseHrData = isAdminOrManager && (forcedUserName || adminPreviewOverride);
-  const { data: hrData, isLoading: hrLoading, error: hrError } = useHrOperationsData(profileReloadKey);
+  const { data: hrData, isLoading: hrLoading, error: hrError } = useHrOperationsData(profileReloadKey, {
+    enabled: shouldUseHrData,
+  });
 
   const previewUserParam =
     forcedUserName || (typeof router.query.user === "string" ? router.query.user : null); // preview override

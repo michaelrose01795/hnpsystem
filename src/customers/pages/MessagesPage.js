@@ -848,11 +848,6 @@ export default function CustomerMessagesPage() {
           {error}
         </div>
       )}
-      {isLoading ? (
-        <div className="mb-4 rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] p-5 text-sm text-[var(--text-secondary)]">
-          Loading messages…
-        </div>
-      ) : null}
       {/* ── Mobile: iPhone Messages-style navigation ── */}
       {isMobile ? (
         <div className="space-y-4">

@@ -28,11 +28,6 @@ export default function CustomerPartsPage() {
           {error}
         </div>
       )}
-      {isLoading ? (
-        <div className="mb-4 rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] p-5 text-sm text-[var(--text-secondary)]">
-          Loading compatible parts…
-        </div>
-      ) : null}
       {activeVehicle && (
         <div className="mb-4 rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] px-4 py-3 text-xs text-[var(--text-secondary)]">
           Showing accessories for <strong>{activeVehicle.makeModel}</strong> · {activeVehicle.reg}

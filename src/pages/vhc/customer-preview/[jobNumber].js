@@ -1325,16 +1325,7 @@ export default function CustomerPreviewPage() {
     </div>
   );
 
-  // Loading state
-  if (loading) {
-    return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--surface-light)" }}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: "16px", color: "var(--info)" }}>Loading job details...</div>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return null;
 
   // Error state
   if (error) {

@@ -1023,6 +1023,7 @@ export function HolidayWidget({ widget, finance, onOpenSettings, widgetData }) {
 
     if (!accumulator[groupKey]) {
       accumulator[groupKey] = {
+        key: groupKey,
         label,
         thisMonthAmount: 0,
         totalAcrossMonths: 0,
@@ -1082,7 +1083,7 @@ export function HolidayWidget({ widget, finance, onOpenSettings, widgetData }) {
             ) : (
               linkedHolidayRows.map((row) => (
                 <DataRow
-                  key={row.label}
+                  key={row.key}
                   label={row.label}
                   value={`${formatCurrency(row.thisMonthAmount || 0)} / ${formatCurrency(row.totalAcrossMonths || 0)}`}
                 />

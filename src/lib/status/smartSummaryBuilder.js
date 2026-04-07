@@ -94,6 +94,7 @@ function inferNextSteps(snapshot) {
   const vhc = workflows.vhc || {}; // VHC state
   const parts = workflows.parts || {}; // Parts state
   const writeUp = workflows.writeUp || {}; // Write-up state
+  const writeUpTasks = writeUp.tasks || {};
   const requests = workflows.requests || {}; // Request completion state
   const mot = requests.mot || {}; // MOT request state
   const pricingCompleted = workflows.pricingCompleted === true; // Pricing sub-status logged
@@ -107,6 +108,24 @@ function inferNextSteps(snapshot) {
   }
 
   if (stage === "checked_in") {
+    if (writeUpTasks.technicianTasksComplete) {
+      return [{
+        label: "Write-up complete",
+        description: "Technician write-up tasks are complete and workshop work has already progressed.",
+        department: "Workshop",
+      }];
+    }
+    if (writeUpTasks.hasStarted) {
+      const remaining = Number.isFinite(writeUpTasks.pending) ? writeUpTasks.pending : null;
+      return [{
+        label: "Continue write-up",
+        description:
+          remaining && remaining > 0
+            ? `${remaining} write-up task${remaining === 1 ? "" : "s"} still to finish.`
+            : "Write-up tasks have already started on this job.",
+        department: "Workshop",
+      }];
+    }
     if (!clocking.active) {
       return [{
         label: "Assign to technician",
@@ -190,7 +209,16 @@ function inferNextSteps(snapshot) {
     }
 
     // Write-up tab not complete (non-MOT requests still pending).
-    if (requests.total > 0 && !requests.techComplete && !techComplete) {
+    if (writeUpTasks.hasStarted && !writeUpTasks.technicianTasksComplete && !techComplete) {
+      const remaining = Number.isFinite(writeUpTasks.pending) ? writeUpTasks.pending : 0;
+      if (remaining > 0) {
+        steps.push({
+          label: "Continue write-up",
+          description: `${remaining} write-up task${remaining === 1 ? "" : "s"} still in progress.`,
+          department: "Workshop",
+        });
+      }
+    } else if (requests.total > 0 && !requests.techComplete && !techComplete) {
       const nonMotPending = requests.pending - (mot.pending || 0);
       if (nonMotPending > 0) {
         steps.push({

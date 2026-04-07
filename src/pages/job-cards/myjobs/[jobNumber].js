@@ -393,6 +393,7 @@ export default function TechJobDetailPage() {
   const [liveWriteUpTasks, setLiveWriteUpTasks] = useState(null);
   const [clockOutLoading, setClockOutLoading] = useState(false);
   const [clockInLoading, setClockInLoading] = useState(false);
+  const [completeJobFeedback, setCompleteJobFeedback] = useState(null);
   const [clockingRows, setClockingRows] = useState([]);
   const [clockingNow, setClockingNow] = useState(() => Date.now());
   const [partsRequests, setPartsRequests] = useState([]);
@@ -709,8 +710,29 @@ export default function TechJobDetailPage() {
       if (subStatusId) {
         try {
           const { status, status_updated_at, status_updated_by, ...restUpdates } = extraUpdates;
-          if (Object.keys(restUpdates).length > 0) {
-            const response = await updateJob(jobCardId, restUpdates);
+          const subStatusUpdates = { ...restUpdates };
+          if (status) {
+            const targetMeta = getMainStatusMetadata(status);
+            subStatusUpdates.status = targetMeta?.label || status;
+          }
+          if (subStatusUpdates.status) {
+            subStatusUpdates.status_updated_at =
+              status_updated_at || subStatusUpdates.status_updated_at || new Date().toISOString();
+            if (dbUserId) {
+              subStatusUpdates.status_updated_by =
+                status_updated_by || subStatusUpdates.status_updated_by || dbUserId;
+            } else if (status_updated_by) {
+              subStatusUpdates.status_updated_by = status_updated_by;
+            }
+          } else if (status_updated_at) {
+            subStatusUpdates.status_updated_at = status_updated_at;
+          }
+          if (!subStatusUpdates.status_updated_by && status_updated_by) {
+            subStatusUpdates.status_updated_by = status_updated_by;
+          }
+
+          if (Object.keys(subStatusUpdates).length > 0) {
+            const response = await updateJob(jobCardId, subStatusUpdates);
             if (response?.success && response.data) {
               setJobData((prev) => {
                 if (!prev?.jobCard) return prev;
@@ -726,7 +748,7 @@ export default function TechJobDetailPage() {
           }
           await logJobSubStatus(jobCardId, targetStatus, dbUserId, restUpdates?.status_change_reason);
           revalidateAllJobs(); // sync status change to other pages
-          return { status: targetStatus };
+          return { status: subStatusUpdates.status || targetStatus, subStatus: targetStatus };
         } catch (error) {
           console.error("syncJobStatus error:", error);
           return null;
@@ -862,9 +884,11 @@ export default function TechJobDetailPage() {
       await loadPartsRequests(jobCardIdForFetch);
       await loadAuthorizedParts(jobCardIdForFetch);
       await loadNotes(jobCardIdForFetch);
+      return job;
     } catch (fetchError) {
       console.error("Error fetching job:", fetchError);
       alert("Failed to load job");
+      return null;
     } finally {
       setLoading(false);
     }
@@ -2362,16 +2386,18 @@ export default function TechJobDetailPage() {
   const techStatusDisplay =
     (snapshotTechStatus && TECH_DISPLAY[snapshotTechStatus]) ||
     resolveTechStatusLabel(jobCard, { hasActiveClocking: Boolean(jobClocking) });
+  const isHeaderCompleteStatus = String(techStatusDisplay || "").trim().toLowerCase() === "complete";
   const jobStatusColor = STATUS_COLORS[techStatusDisplay] || "var(--info)";
   const jobStatusBadgeStyle = getStatusBadgeStyle(techStatusDisplay, jobStatusColor);
   // Count authorised VHC items for the quick stats
   const vhcSource = Array.isArray(jobData?.vhcChecks) && jobData.vhcChecks.length > 0
     ? jobData.vhcChecks
     : vhcChecks;
-  const vhcAuthorisedCount = vhcSource.filter((check) => {
+  const authorisedVhcItems = vhcSource.filter((check) => {
     const status = String(check?.approval_status || check?.approvalStatus || "").toLowerCase();
     return status === "authorized";
-  }).length;
+  });
+  const vhcAuthorisedCount = authorisedVhcItems.length;
   const clockedHours = formatClockingDuration(clockedMinutesTotal);
   const isWarrantyJob = (jobCard?.jobSource || "").toLowerCase() === "warranty";
   const categories = Array.isArray(jobCard?.jobCategories) ? jobCard.jobCategories : [];
@@ -2394,7 +2420,7 @@ export default function TechJobDetailPage() {
   // Quick stats data for display
   const quickStats = [
     {
-      label: "Job Type",
+      label: "Job Requests",
       value: deriveJobTypeLabel(jobCard),
       accent: "var(--info-dark)",
       pill: false,
@@ -2522,6 +2548,7 @@ export default function TechJobDetailPage() {
 
   const handleCompleteJob = async () => {
     if (!canCompleteJob) return;
+    setCompleteJobFeedback(null);
     const workshopUserId = dbUserId ?? user?.id;
     if (jobClocking && jobCardId) {
       if (!workshopUserId) {
@@ -2557,7 +2584,20 @@ export default function TechJobDetailPage() {
       }
     }
 
-    await syncJobStatus("Technician Work Completed", jobCardStatus);
+    const statusSyncResult = await syncJobStatus("Technician Work Completed", jobCardStatus, {
+      status: "In Progress",
+      status_change_reason: "Technician marked workshop work complete",
+    });
+    if (!statusSyncResult) {
+      setCompleteJobFeedback({
+        tone: "warning",
+        title: "Tech completion saved, but the main job status did not update.",
+        detail:
+          'Fix: change the main job status to "In Progress", then press "Complete Job" again.',
+      });
+      await fetchJobData();
+      return;
+    }
     if (jobCardId) {
       const statusResult = await updateJob(jobCardId, { tech_completion_status: "tech_complete" });
       if (!statusResult?.success) {
@@ -2577,6 +2617,21 @@ export default function TechJobDetailPage() {
         revalidateAllJobs(); // sync completion status to other pages
       }
     }
+
+    const refreshedJob = await fetchJobData();
+    const refreshedMainStatus = resolveMainStatusId(
+      refreshedJob?.jobCard?.status || refreshedJob?.status || null
+    );
+    if (refreshedMainStatus === "checked_in") {
+      setCompleteJobFeedback({
+        tone: "warning",
+        title: 'Technician work is complete, but the main job status is still "Checked In".',
+        detail:
+          'Reason: the technician completion event was logged, but the main job status did not move forward. Fix: use the status control to change the main status to "In Progress", then press "Complete Job" again.',
+      });
+      return;
+    }
+
     router.push("/job-cards/myjobs");
   };
 
@@ -2623,9 +2678,10 @@ export default function TechJobDetailPage() {
         }}
         >
           <div style={{
-            display: "inline-flex",
+            display: "flex",
             alignItems: "center",
             justifyContent: "flex-start",
+            alignSelf: "stretch",
             backgroundColor: "var(--surface)",
             border: "none",
             borderRadius: "var(--radius-sm)",
@@ -2643,124 +2699,246 @@ export default function TechJobDetailPage() {
               {jobCard.jobNumber}
             </h1>
           </div>
-          <div style={{
+          <div
+            style={{
+              flex: 1,
+              minWidth: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "12px",
+            }}
+          >
+            <DevLayoutSection
+              as="div"
+              className="app-layout-tab-row"
+              sectionKey="myjob-tab-row"
+              sectionType="tab-row"
+              parentKey="myjob-header"
+              style={{
+                flex: 1,
+                minWidth: 0,
+                overflowX: "auto",
+                flexShrink: 1,
+                scrollbarWidth: "thin",
+                scrollbarColor: "var(--scrollbar-thumb) transparent",
+                scrollBehavior: "smooth",
+                WebkitOverflowScrolling: "touch",
+              }}
+            >
+              {visibleTabs.map((tab) => {
+                const isActive = activeTab === tab;
+                const isVhcTab = tab === "vhc";
+                const isVhcGreen = isVhcTab && isVhcCompleted;
+                const isVhcAmber = isVhcTab && vhcTabAmberReady;
+                const isComplete =
+                  isVhcGreen ||
+                  (tab === "write-up" && writeUpTechComplete);
+                const labelMap = {
+                  overview: "Overview",
+                  vhc: "VHC",
+                  parts: "Parts",
+                  notes: "Notes",
+                  "write-up": "Write-Up",
+                  documents: "Documents",
+                };
+                const tabTone = isComplete ? "success" : isVhcAmber ? "warning" : "default";
+                const baseBackground = isActive ? "var(--primary)" : "transparent";
+                const completeBackground = isActive ? "var(--success)" : "var(--success-surface)";
+                const amberBackground = isActive ? "var(--warning)" : "var(--warning-surface, rgba(245, 158, 11, 0.1))";
+                const background = tabTone === "success"
+                  ? completeBackground
+                  : tabTone === "warning"
+                  ? amberBackground
+                  : baseBackground;
+                const color = tabTone === "success"
+                  ? isActive
+                    ? "var(--text-inverse)"
+                    : "var(--success-dark)"
+                  : tabTone === "warning"
+                  ? isActive
+                    ? "var(--text-inverse)"
+                    : "var(--warning-dark)"
+                  : isActive
+                  ? "var(--text-inverse)"
+                  : "var(--text-primary)";
+                return (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    style={{
+                      flex: "0 0 auto",
+                      borderRadius: "var(--control-radius)",
+                      border: "1px solid transparent",
+                      padding: "10px 20px",
+                      fontSize: "0.9rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      background,
+                      color,
+                      transition: "all 0.15s ease",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      textTransform: "capitalize",
+                      whiteSpace: "nowrap"
+                    }}
+                  >
+                    {labelMap[tab] || tab.replace("-", " ")}
+                  </button>
+                );
+              })}
+            </DevLayoutSection>
+            <div style={{
             display: "flex",
             alignItems: "center",
             gap: "12px",
             flexWrap: "wrap",
             justifyContent: "flex-end",
-            marginLeft: "auto",
             backgroundColor: "var(--surface)",
             border: "none",
             borderRadius: "var(--radius-sm)",
-            padding: "10px 14px"
+            padding: "10px 14px",
+            flexShrink: 0
           }}>
-            <span style={{
-              backgroundColor: jobStatusBadgeStyle.background,
-              padding: "6px 14px",
-              borderRadius: "var(--radius-xs)",
-              fontSize: "13px",
-              letterSpacing: "0.02em",
-              color: jobStatusBadgeStyle.color,
-              fontWeight: "600"
-            }}>
-              {techStatusDisplay}
-            </span>
-            <span style={{ fontSize: "12px", color: "var(--info)" }}>
-              Updated {formatDateTime(jobCard.updatedAt)}
-            </span>
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-              {jobClocking ? (
-                <button
-                  onClick={handleJobClockOut}
-                  disabled={clockOutLoading || clockInLoading}
-                  style={{
-                    padding: "6px 12px",
-                    backgroundColor: "var(--accent-purple-surface)",
-                    color: "var(--accent-purple)",
-                    border: "1px solid var(--accent-purple-surface)",
-                    borderRadius: "var(--radius-xs)",
-                    cursor: clockOutLoading || clockInLoading ? "not-allowed" : "pointer",
-                    fontSize: "12px",
-                    fontWeight: "600",
-                    opacity: clockOutLoading ? 0.8 : 1,
-                    transition: "all 0.2s ease"
-                  }}
-                >
-                  {clockOutLoading ? "Clocking Out..." : "Clock Out"}
-                </button>
-              ) : (
-                <>
-                <button
-                  onClick={handleJobClockIn}
-                  disabled={clockInLoading || clockOutLoading}
-                  title={
-                    canClockIntoMotHandoff
-                      ? "Clock in to complete the remaining MOT request"
-                      : "Clock in to start technician work"
-                  }
-                  style={{
-                    padding: "6px 12px",
-                    backgroundColor: "var(--accent-purple-surface)",
-                    color: "var(--accent-purple)",
-                    border: "1px solid var(--accent-purple-surface)",
-                    borderRadius: "var(--radius-xs)",
-                    cursor: clockInLoading || clockOutLoading ? "not-allowed" : "pointer",
-                    fontSize: "12px",
-                    fontWeight: "600",
-                    opacity: clockInLoading ? 0.8 : 1,
-                    transition: "all 0.2s ease"
-                  }}
-                >
-                  {clockInLoading
-                    ? "Clocking In..."
-                    : canClockIntoMotHandoff
-                    ? "Clock In to MOT"
-                    : "Clock In"}
-                </button>
-                </>
-              )}
-
-              <button
-                onClick={() => {
-                  if (!canCompleteJob || clockInLoading || clockOutLoading) {
-                    return;
-                  }
-                  handleCompleteJob();
-                }}
-                aria-disabled={!canCompleteJob || clockInLoading || clockOutLoading}
-                onMouseEnter={() => setIsCompleteJobHover(true)}
-                onMouseLeave={() => setIsCompleteJobHover(false)}
+              <span
+                className={isHeaderCompleteStatus ? "app-topbar-button app-topbar-button--primary" : undefined}
                 style={{
-                  padding: "6px 12px",
-                  backgroundColor: canCompleteJob
-                    ? isCompleteJobHover
-                      ? "var(--primary-dark)"
-                      : "var(--primary)"
-                    : isCompleteJobHover
-                    ? "var(--accent-purple-surface)"
-                    : "var(--layer-section-level-2)",
-                  color: canCompleteJob ? "var(--text-inverse)" : "var(--accent-purple)",
-                  border: canCompleteJob
-                    ? "1px solid var(--primary)"
-                    : isCompleteJobHover
-                    ? "1px solid var(--accent-purple)"
-                    : "1px solid var(--surface-light)",
-                  borderRadius: "var(--radius-xs)",
-                  cursor: canCompleteJob ? "pointer" : "not-allowed",
-                  fontSize: "12px",
+                  backgroundColor: isHeaderCompleteStatus ? undefined : jobStatusBadgeStyle.background,
+                  padding: isHeaderCompleteStatus ? undefined : "var(--control-padding-sm)",
+                  borderRadius: isHeaderCompleteStatus ? undefined : "var(--control-radius-sm)",
+                  fontSize: isHeaderCompleteStatus ? undefined : "0.86rem",
+                  letterSpacing: "0.02em",
+                  color: isHeaderCompleteStatus ? undefined : jobStatusBadgeStyle.color,
                   fontWeight: "600",
-                  opacity: clockInLoading || clockOutLoading ? 0.8 : 1,
-                  transition: "all 0.2s ease",
-                  boxShadow: canCompleteJob || isCompleteJobHover ? completeJobHoverShadow : "none"
+                  border: isHeaderCompleteStatus ? undefined : "none",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  minHeight: "var(--control-height-sm)",
+                  lineHeight: 1,
+                  whiteSpace: "nowrap",
+                  cursor: "default",
                 }}
-                title={completeJobLockedTitle}
               >
-                {canCompleteJob ? "Complete Job" : "Complete Job (locked)"}
-              </button>
+                {techStatusDisplay}
+              </span>
+              <span style={{ fontSize: "12px", color: "var(--info)" }}>
+                Updated {formatDateTime(jobCard.updatedAt)}
+              </span>
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                {jobClocking ? (
+                  <button
+                    onClick={handleJobClockOut}
+                    disabled={clockOutLoading || clockInLoading}
+                    style={{
+                      padding: "6px 12px",
+                      backgroundColor: "var(--accent-purple-surface)",
+                      color: "var(--accent-purple)",
+                      border: "1px solid var(--accent-purple-surface)",
+                      borderRadius: "var(--radius-xs)",
+                      cursor: clockOutLoading || clockInLoading ? "not-allowed" : "pointer",
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      opacity: clockOutLoading ? 0.8 : 1,
+                      transition: "all 0.2s ease"
+                    }}
+                  >
+                    {clockOutLoading ? "Clocking Out..." : "Clock Out"}
+                  </button>
+                ) : (
+                  <>
+                  <button
+                    onClick={handleJobClockIn}
+                    disabled={clockInLoading || clockOutLoading}
+                    title={
+                      canClockIntoMotHandoff
+                        ? "Clock in to complete the remaining MOT request"
+                        : "Clock in to start technician work"
+                    }
+                    style={{
+                      padding: "6px 12px",
+                      backgroundColor: "var(--accent-purple-surface)",
+                      color: "var(--accent-purple)",
+                      border: "1px solid var(--accent-purple-surface)",
+                      borderRadius: "var(--radius-xs)",
+                      cursor: clockInLoading || clockOutLoading ? "not-allowed" : "pointer",
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      opacity: clockInLoading ? 0.8 : 1,
+                      transition: "all 0.2s ease"
+                    }}
+                  >
+                    {clockInLoading
+                      ? "Clocking In..."
+                      : canClockIntoMotHandoff
+                      ? "Clock In to MOT"
+                      : "Clock In"}
+                  </button>
+                  </>
+                )}
+
+                <button
+                  onClick={() => {
+                    if (!canCompleteJob || clockInLoading || clockOutLoading) {
+                      return;
+                    }
+                    handleCompleteJob();
+                  }}
+                  aria-disabled={!canCompleteJob || clockInLoading || clockOutLoading}
+                  onMouseEnter={() => setIsCompleteJobHover(true)}
+                  onMouseLeave={() => setIsCompleteJobHover(false)}
+                  style={{
+                    padding: "6px 12px",
+                    backgroundColor: canCompleteJob
+                      ? isCompleteJobHover
+                        ? "var(--primary-dark)"
+                        : "var(--primary)"
+                      : isCompleteJobHover
+                      ? "var(--accent-purple-surface)"
+                      : "var(--layer-section-level-2)",
+                    color: canCompleteJob ? "var(--text-inverse)" : "var(--accent-purple)",
+                    border: canCompleteJob
+                      ? "1px solid var(--primary)"
+                      : isCompleteJobHover
+                      ? "1px solid var(--accent-purple)"
+                      : "1px solid var(--surface-light)",
+                    borderRadius: "var(--radius-xs)",
+                    cursor: canCompleteJob ? "pointer" : "not-allowed",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    opacity: clockInLoading || clockOutLoading ? 0.8 : 1,
+                    transition: "all 0.2s ease",
+                    boxShadow: canCompleteJob || isCompleteJobHover ? completeJobHoverShadow : "none"
+                  }}
+                  title={completeJobLockedTitle}
+                >
+                  {canCompleteJob ? "Complete Job" : "Complete Job (locked)"}
+                </button>
+              </div>
             </div>
           </div>
         </DevLayoutSection>
+
+        {completeJobFeedback ? (
+          <div
+            style={{
+              padding: "12px 14px",
+              borderRadius: "var(--radius-xs)",
+              backgroundColor: "var(--warning-surface)",
+              border: "1px solid var(--warning)",
+              color: "var(--warning-dark)",
+              marginBottom: "12px",
+            }}
+          >
+            <div style={{ fontSize: "13px", fontWeight: "700", marginBottom: "4px" }}>
+              {completeJobFeedback.title}
+            </div>
+            <div style={{ fontSize: "13px", lineHeight: 1.45 }}>
+              {completeJobFeedback.detail}
+            </div>
+          </div>
+        ) : null}
 
         {/* Quick Stats Grid */}
         <DevLayoutSection
@@ -2826,90 +3004,6 @@ export default function TechJobDetailPage() {
                   {stat.label}
                 </span>
               </CardTag>
-            );
-          })}
-        </DevLayoutSection>
-
-        {/* Tabs Navigation */}
-        <DevLayoutSection
-          as="div"
-          className="app-layout-tab-row"
-          sectionKey="myjob-tab-row"
-          sectionType="tab-row"
-          parentKey="myjob-page-shell"
-          style={{
-          width: "fit-content",
-          alignSelf: "flex-start",
-          maxWidth: "100%",
-          overflowX: "auto",
-          flexShrink: 0,
-          scrollbarWidth: "thin",
-          scrollbarColor: "var(--scrollbar-thumb) transparent",
-          scrollBehavior: "smooth",
-          WebkitOverflowScrolling: "touch",
-          marginBottom: "12px",
-        }}
-        >
-          {visibleTabs.map((tab) => {
-            const isActive = activeTab === tab;
-            const isVhcTab = tab === "vhc";
-            const isVhcGreen = isVhcTab && isVhcCompleted;
-            const isVhcAmber = isVhcTab && vhcTabAmberReady;
-            const isComplete =
-              isVhcGreen ||
-              (tab === "write-up" && writeUpTechComplete);
-            const labelMap = {
-              overview: "Overview",
-              vhc: "VHC",
-              parts: "Parts",
-              notes: "Notes",
-              "write-up": "Write-Up",
-              documents: "Documents",
-            };
-            const tabTone = isComplete ? "success" : isVhcAmber ? "warning" : "default";
-            const baseBackground = isActive ? "var(--primary)" : "transparent";
-            const completeBackground = isActive ? "var(--success)" : "var(--success-surface)";
-            const amberBackground = isActive ? "var(--warning)" : "var(--warning-surface, rgba(245, 158, 11, 0.1))";
-            const background = tabTone === "success"
-              ? completeBackground
-              : tabTone === "warning"
-              ? amberBackground
-              : baseBackground;
-            const color = tabTone === "success"
-              ? isActive
-                ? "var(--text-inverse)"
-                : "var(--success-dark)"
-              : tabTone === "warning"
-              ? isActive
-                ? "var(--text-inverse)"
-                : "var(--warning-dark)"
-              : isActive
-              ? "var(--text-inverse)"
-              : "var(--text-primary)";
-            return (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                style={{
-                  flex: "0 0 auto",
-                  borderRadius: "var(--control-radius)",
-                  border: "1px solid transparent",
-                  padding: "10px 20px",
-                  fontSize: "0.9rem",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  background,
-                  color,
-                  transition: "all 0.15s ease",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  textTransform: "capitalize",
-                  whiteSpace: "nowrap"
-                }}
-              >
-                {labelMap[tab] || tab.replace("-", " ")}
-              </button>
             );
           })}
         </DevLayoutSection>
@@ -3001,6 +3095,7 @@ export default function TechJobDetailPage() {
                     </div>
                   </div>
                 )}
+                {authorisedVhcItems.length > 0 ? (
                 <div style={{ marginTop: "24px" }}>
                   <div style={{
                     padding: "16px",
@@ -3011,29 +3106,13 @@ export default function TechJobDetailPage() {
                     <div style={{ fontSize: "13px", fontWeight: "700", color: "var(--info-dark)", marginBottom: "6px" }}>
                       Vehicle Health Check
                     </div>
-                    {(() => {
-                      const vhcSource = Array.isArray(jobData?.vhcChecks) && jobData.vhcChecks.length > 0
-                        ? jobData.vhcChecks
-                        : vhcChecks;
-                      const authorisedItems = vhcSource.filter((check) => {
-                        const status =
-                          String(check?.approval_status || check?.approvalStatus || "").toLowerCase();
-                        return status === "authorized";
-                      });
-                      if (authorisedItems.length === 0) {
-                        return (
-                          <div style={{ fontSize: "13px", color: "var(--info)" }}>
-                            No authorised VHC items yet.
-                          </div>
-                        );
-                      }
-                      return (
+                    <div>
                       <div>
                         <div style={{ fontSize: "12px", fontWeight: "600", color: "var(--info-dark)", marginBottom: "10px" }}>
                           Authorised items
                         </div>
                         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                          {authorisedItems.map((check) => {
+                          {authorisedVhcItems.map((check) => {
                             const resolvedVhcId = check.vhc_id ?? check.id;
                             return (
                               <div
@@ -3081,10 +3160,10 @@ export default function TechJobDetailPage() {
                           })}
                         </div>
                       </div>
-                      );
-                    })()}
+                    </div>
                   </div>
                 </div>
+                ) : null}
                 {jobCard.cosmeticNotes && (
                   <div>
                     <strong style={{ fontSize: "14px", color: "var(--info)", letterSpacing: "0.04em" }}>Cosmetic Notes:</strong>
@@ -4605,7 +4684,7 @@ export default function TechJobDetailPage() {
                       letterSpacing: "0.02em",
                     }}
                   >
-                    Job Types
+                    Job Requests
                   </h3>
                   <button
                     type="button"
@@ -4618,7 +4697,7 @@ export default function TechJobDetailPage() {
                       lineHeight: 1,
                       color: "var(--info)",
                     }}
-                    aria-label="Close job types popup"
+                    aria-label="Close job requests popup"
                   >
                     ×
                   </button>

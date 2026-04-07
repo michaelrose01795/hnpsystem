@@ -2,16 +2,33 @@
 // file location: src/hooks/useHrData.js
 import { useEffect, useState } from "react"; // React primitives for managing stateful hooks
 
-export function useHrOperationsData(refreshKey = 0) {
+export function useHrOperationsData(refreshKey = 0, options = {}) {
+  const enabled = options?.enabled ?? true;
   const [state, setState] = useState({
     data: null, // aggregated HR payload returned from the API
-    isLoading: true, // loading indicator for consumers
+    isLoading: enabled, // loading indicator for consumers
     error: null, // store any thrown error for debugging and UI messaging
   });
 
   useEffect(() => {
+    if (!enabled) {
+      setState((current) => {
+        if (!current.isLoading && current.data === null && current.error === null) {
+          return current;
+        }
+        return { data: null, isLoading: false, error: null };
+      });
+      return undefined;
+    }
+
     let isMounted = true; // track component mount status to prevent state updates after unmount
     const controller = new AbortController(); // allow cancellation when component unmounts
+
+    setState((current) => ({
+      data: current.data,
+      isLoading: true,
+      error: null,
+    }));
 
     const load = async () => {
       try {
@@ -44,7 +61,7 @@ export function useHrOperationsData(refreshKey = 0) {
       isMounted = false; // mark hook as unmounted
       controller.abort(); // cancel pending fetch to avoid unnecessary work
     };
-  }, [refreshKey]);
+  }, [enabled, refreshKey]);
 
   return state; // expose aggregated state to consumers
 }

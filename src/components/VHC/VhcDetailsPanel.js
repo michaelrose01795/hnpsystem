@@ -8021,9 +8021,7 @@ export default function VhcDetailsPanel({
     return renderStatusMessage("Provide a job number to view VHC details.");
   }
 
-  if (loading) {
-    return renderStatusMessage("Loading VHC details…");
-  }
+  if (loading) return null;
 
   if (error) {
     return renderStatusMessage(error, "var(--danger)");

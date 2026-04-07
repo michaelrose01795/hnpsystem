@@ -8,7 +8,6 @@ import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
 import { getAllJobs } from "@/lib/database/jobs";
-import { getClockingStatus } from "@/lib/database/clocking";
 import JobCardModal from "@/components/JobCards/JobCardModal"; // Import Start Job modal
 import { getUserActiveJobs } from "@/lib/database/jobClocking";
 import { supabase } from "@/lib/supabaseClient";
@@ -130,7 +129,6 @@ export default function MyJobsPage() {
   const [myJobs, setMyJobs] = useState([]);
   const [filteredJobs, setFilteredJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
-  const [clockingStatus, setClockingStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all"); // all, in-progress, pending, complete
   const [searchTerm, setSearchTerm] = useState("");
@@ -507,29 +505,6 @@ export default function MyJobsPage() {
     fetchJobsForTechnician();
   }, [techStatus, currentJob?.jobNumber, fetchJobsForTechnician]);
 
-  const refreshClockingStatus = useCallback(async () => {
-    if (!dbUserId) {
-      setClockingStatus(null);
-      return;
-    }
-
-    try {
-      const { success, data } = await getClockingStatus(dbUserId);
-      if (success) {
-        setClockingStatus(data);
-      } else {
-        setClockingStatus(null);
-      }
-    } catch (error) {
-      console.error("❌ Error refreshing clocking status:", error);
-      setClockingStatus(null);
-    }
-  }, [dbUserId]);
-
-  useEffect(() => {
-    refreshClockingStatus();
-  }, [refreshClockingStatus, techStatus, currentJob?.jobNumber]);
-
   // Apply filters when filter or search changes
   useEffect(() => {
     let filtered = [...myJobs];
@@ -614,30 +589,8 @@ export default function MyJobsPage() {
     );
   }
 
-  // ✅ Loading state
   if (loading) {
-    return (
-      <Layout>
-        <div className="redirect-screen" role="status" aria-live="polite">
-          <div className="redirect-card">
-            <div className="login-brand redirect-brand" aria-hidden="true">
-              <img src="/logo.png" alt="H&P logo" className="login-logo" />
-            </div>
-            <div className="redirect-spinner" aria-hidden="true"></div>
-            <div className="redirect-copy">
-              <p className="redirect-kicker">Page Load</p>
-              <h2 className="redirect-title">Loading your jobs...</h2>
-              <p className="redirect-sub">Preparing assigned jobs and status.</p>
-            </div>
-            <div className="redirect-dots" aria-hidden="true">
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
-          </div>
-        </div>
-      </Layout>
-    );
+    return <Layout />;
   }
 
   return (
@@ -652,46 +605,6 @@ export default function MyJobsPage() {
           <div></div>
 
         </div>
-
-        {/* Clocking Status Banner */}
-        {clockingStatus && (
-          <div style={{
-            backgroundColor: "var(--success-surface)",
-            border: "1px solid var(--success)",
-            borderRadius: "var(--radius-sm)",
-            padding: "16px 24px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <div style={{
-                width: "12px",
-                height: "12px",
-                borderRadius: "var(--radius-full)",
-                backgroundColor: "var(--info)",
-                animation: "pulse 2s infinite"
-              }}></div>
-              <div>
-                <p style={{ fontSize: "14px", fontWeight: "600", color: "var(--success-dark)", margin: 0 }}>
-                  Currently Clocked In
-                </p>
-                <p style={{ fontSize: "12px", color: "var(--success-dark)", margin: "4px 0 0 0" }}>
-                  Since {new Date(clockingStatus.clock_in).toLocaleTimeString("en-GB", { 
-                    hour: "2-digit", 
-                    minute: "2-digit" 
-                  })} • {calculateHoursWorked(clockingStatus.clock_in)} hours worked today
-                </p>
-              </div>
-            </div>
-            <style jsx>{`
-              @keyframes pulse {
-                0%, 100% { opacity: 1; }
-                50% { opacity: 0.5; }
-              }
-            `}</style>
-          </div>
-        )}
 
         {/* Search and Filter Bar */}
         <div style={{
@@ -1057,11 +970,3 @@ export default function MyJobsPage() {
   );
 }
 
-// ✅ Helper function to calculate hours worked
-function calculateHoursWorked(clockInTime) {
-  if (!clockInTime) return "0.0";
-  const now = new Date();
-  const clockIn = new Date(clockInTime);
-  const hours = (now - clockIn) / (1000 * 60 * 60);
-  return hours.toFixed(1);
-}

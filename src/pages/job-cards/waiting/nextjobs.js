@@ -1647,30 +1647,8 @@ export default function NextJobsPage() {
     );
   }
 
-  // ✅ Loading state with spinner animation
   if (loading) {
-    return (
-      <Layout>
-        <div className="redirect-screen" role="status" aria-live="polite">
-          <div className="redirect-card">
-            <div className="login-brand redirect-brand" aria-hidden="true">
-              <img src="/logo.png" alt="H&P logo" className="login-logo" />
-            </div>
-            <div className="redirect-spinner" aria-hidden="true"></div>
-            <div className="redirect-copy">
-              <p className="redirect-kicker">Page Load</p>
-              <h2 className="redirect-title">Loading jobs...</h2>
-              <p className="redirect-sub">Preparing next-jobs board data.</p>
-            </div>
-            <div className="redirect-dots" aria-hidden="true">
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
-          </div>
-        </div>
-      </Layout>
-    );
+    return <Layout />;
   }
 
   // ✅ Page layout

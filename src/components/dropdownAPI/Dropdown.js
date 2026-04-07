@@ -84,6 +84,7 @@ export default function Dropdown({
   searchable = false,
   searchPlaceholder = "Search options",
   id,
+  ariaLabel,
   style,
   controlStyle,
   labelStyle,
@@ -385,6 +386,7 @@ export default function Dropdown({
         style={mergedControlStyle}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
+        aria-label={ariaLabel}
         onClick={toggle}
         onKeyDown={handleControlKeyDown}
         disabled={disabled}

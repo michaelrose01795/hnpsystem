@@ -229,6 +229,7 @@ export default function Sidebar({
         overflowX: "hidden",
         overflowY: isCondensed ? "visible" : "auto",
         flexShrink: 0,
+        background: "var(--surface)",
       }}
     >
       {/* Header */}
@@ -274,7 +275,11 @@ export default function Sidebar({
         parentKey={sidebarSectionKey}
         sectionType="content-card"
         backgroundToken="app-sidebar-body"
-        style={{ background: "var(--surface)" }}
+        style={{
+          background: "var(--surface)",
+          flex: 1,
+          minHeight: 0,
+        }}
       >
         {dashboardShortcuts.length > 0 && (
           <>

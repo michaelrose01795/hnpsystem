@@ -747,13 +747,14 @@ const statusBadgeStyle = {
 };
 
 const addSectionButtonStyle = {
-  width: "46px",
-  height: "28px",
-  borderRadius: "8px",
+  width: "24px",
+  height: "24px",
+  minHeight: "24px",
+  borderRadius: "4px",
   border: "1px solid var(--accent-purple)",
   backgroundColor: "var(--surface)",
   color: "var(--accent-purple)",
-  fontSize: "20px",
+  fontSize: "12px",
   lineHeight: 1,
   fontWeight: 700,
   cursor: "pointer",
@@ -2459,41 +2460,9 @@ function WriteUpForm({
     }
   }, [isWarrantyJob, activeTab]);
 
-  // ✅ Loading state with spinner animation
-  if (loading) {
-    return (
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        height: "80vh",
-        flexDirection: "column",
-        gap: "16px"
-      }}>
-        <div style={{
-          width: "60px",
-          height: "60px",
-          border: "4px solid var(--surface)",
-          borderTop: "4px solid var(--primary)",
-          borderRadius: "var(--radius-full)",
-          animation: "spin 1s linear infinite"
-        }}></div>
-        <p style={{ color: "var(--grey-accent)" }}>Loading write-up...</p>
-        <style jsx>{`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
-      </div>
-    );
-  }
+  if (loading) return null;
 
-  if (rosterLoading) {
-    return (
-      <div style={{ padding: "24px", color: "var(--info)" }}>Loading roster…</div>
-    );
-  }
+  if (rosterLoading) return null;
 
   return (
     <div style={{

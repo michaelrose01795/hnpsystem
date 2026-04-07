@@ -18,6 +18,8 @@ import {
   makeUserAccount,
 } from "@/lib/profile/personalFinance";
 
+const TAX_OVERRIDE_KEYS = new Set(["useManualTax", "manualTax", "manualNationalInsurance"]);
+
 /**
  * Unified hook for the Personal tab finance model.
  *
@@ -110,16 +112,22 @@ export default function usePersonalTabModel({ financeState: rawFinanceState = nu
     [updateMonth]
   );
 
+  const setSelectedMonth = useCallback(
+    (monthKey) => {
+      update((current) => ({
+        ...current,
+        selectedMonthKey: normaliseMonthKey(monthKey, current.selectedMonthKey),
+      }));
+    },
+    [update]
+  );
+
   return {
     financeState,
     model,
     derived,
 
-    setSelectedMonth: (monthKey) =>
-      update((current) => ({
-        ...current,
-        selectedMonthKey: normaliseMonthKey(monthKey, current.selectedMonthKey),
-      })),
+    setSelectedMonth,
 
     updatePaySetting: (key, value) => {
       if (TAX_OVERRIDE_KEYS.has(key)) {
@@ -486,4 +494,3 @@ export default function usePersonalTabModel({ financeState: rawFinanceState = nu
       })),
   };
 }
-  const TAX_OVERRIDE_KEYS = new Set(["useManualTax", "manualTax", "manualNationalInsurance"]);

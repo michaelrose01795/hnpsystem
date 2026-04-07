@@ -11,12 +11,14 @@ const consumableNameCollator = new Intl.Collator(undefined, {
 
 const modalStyle = {
   borderRadius: "var(--radius-xl)",
-  width: "min(960px, calc(100vw - 32px))",
-  maxWidth: "960px",
+  width: "min(1120px, calc(100vw - 32px))",
+  maxWidth: "1120px",
   maxHeight: "calc(100vh - 32px)",
   overflow: "hidden",
-  border: "none",
-  padding: "clamp(16px, 3vw, 32px)",
+  border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
+  background: "var(--page-card-bg)",
+  boxShadow: "var(--shadow-xl)",
+  padding: "clamp(16px, 2.4vw, 24px)",
   display: "flex",
   flexDirection: "column",
   gap: "16px",
@@ -25,10 +27,10 @@ const modalStyle = {
 
 const sectionCardStyle = {
   background: "var(--surface)",
-  border: "none",
+  border: "1px solid rgba(var(--accent-base-rgb), 0.14)",
   borderRadius: "var(--radius-md)",
   padding: "16px",
-
+  boxShadow: "none",
 };
 
 const checkboxLabelStyle = {
@@ -36,29 +38,51 @@ const checkboxLabelStyle = {
   alignItems: "center",
   gap: "8px",
   fontWeight: 600,
-  color: "var(--primary-dark)",
+  color: "var(--text-primary)",
 };
 
 const buttonPrimaryStyle = {
   padding: "10px 18px",
   borderRadius: "var(--radius-sm)",
-  border: "none",
+  border: "1px solid rgba(var(--accent-base-rgb), 0.28)",
   background: "var(--primary)",
   color: "var(--surface)",
   fontWeight: 600,
   cursor: "pointer",
-
+  boxShadow: "none",
 };
 
 const buttonSecondaryStyle = {
   padding: "8px 14px",
   borderRadius: "var(--input-radius)",
-  border: "none",
+  border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
   background: "var(--surface)",
-  color: "var(--primary-dark)",
+  color: "var(--text-primary)",
   fontWeight: 600,
   cursor: "pointer",
+  boxShadow: "none",
+};
 
+const inputFieldStyle = {
+  padding: "10px 12px",
+  borderRadius: "var(--input-radius)",
+  border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
+  background: "var(--surface)",
+  color: "var(--text-primary)",
+};
+
+const subtleSectionStyle = {
+  ...sectionCardStyle,
+  background: "var(--accent-surface)",
+};
+
+const sectionHeadingStyle = {
+  margin: 0,
+  color: "var(--text-primary)",
+};
+
+const mutedTextStyle = {
+  color: "var(--text-secondary)",
 };
 
 const requestStatusTone = {
@@ -168,6 +192,10 @@ function StockCheckPopup({
   }, [filteredConsumables, selectedItems, showStockList]);
 
   const selectedCount = selectedItems.size;
+  const requestCount = (data.stockChecks || []).length;
+  const pendingRequestCount = (data.stockChecks || []).filter(
+    (request) => request.status === "pending"
+  ).length;
 
   const closePopup = useCallback(() => {
     if (typeof onClose === "function") {
@@ -518,9 +546,11 @@ function StockCheckPopup({
           flexDirection: "column",
           gap: "8px",
           padding: "12px",
-          border: "none",
+          border: checked
+            ? "1px solid rgba(var(--accent-base-rgb), 0.26)"
+            : "1px solid rgba(var(--accent-base-rgb), 0.12)",
           borderRadius: "var(--radius-sm)",
-          background: "var(--surface-light)",
+          background: checked ? "var(--accent-surface)" : "var(--surface-light)",
         }}
       >
         <div
@@ -576,12 +606,7 @@ function StockCheckPopup({
                   value: event.target.value,
                 }))
               }
-              style={{
-                padding: "8px 10px",
-                borderRadius: "var(--radius-xs)",
-                border: "none",
-                flex: "1 1 220px",
-              }}
+              style={{ ...inputFieldStyle, flex: "1 1 220px" }}
             />
             <button
               type="button"
@@ -621,24 +646,70 @@ function StockCheckPopup({
         aria-modal="true"
       >
         <div className="popup-card" style={modalStyle}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px" }}>
-          <div>
-            <h2 style={{ margin: 0, color: "var(--primary-dark)" }}>Stock Check</h2>
+        <div
+          style={{
+            ...subtleSectionStyle,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            gap: "16px",
+            padding: "20px 22px",
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <h2 style={{ margin: 0, color: "var(--text-primary)" }}>Stock Check</h2>
           </div>
-          <button
-            type="button"
-            onClick={closePopup}
+          <div
             style={{
-              border: "none",
-              background: "transparent",
-              color: "var(--primary-dark)",
-              cursor: "pointer",
-              fontSize: "1.2rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-end",
+              gap: "8px",
+              flexWrap: "wrap",
             }}
-            aria-label="Close stock check"
           >
-            ✕
-          </button>
+            <span
+              style={{
+                padding: "6px 12px",
+                borderRadius: "var(--radius-pill)",
+                background: "rgba(var(--accent-base-rgb), 0.14)",
+                color: "var(--text-primary)",
+                fontSize: "0.85rem",
+                fontWeight: 600,
+              }}
+            >
+              {totalItems} stock items
+            </span>
+            <span
+              style={{
+                padding: "6px 12px",
+                borderRadius: "var(--radius-pill)",
+                background: pendingRequestCount
+                  ? "rgba(var(--warning-rgb), 0.18)"
+                  : "rgba(var(--success-rgb), 0.16)",
+                color: pendingRequestCount ? "var(--warning-dark)" : "var(--success-dark)",
+                fontSize: "0.85rem",
+                fontWeight: 600,
+              }}
+            >
+              {pendingRequestCount} pending
+            </span>
+            <button
+              type="button"
+              onClick={closePopup}
+              style={{
+                ...buttonSecondaryStyle,
+                width: "40px",
+                height: "40px",
+                padding: 0,
+                fontSize: "1.1rem",
+                lineHeight: 1,
+              }}
+              aria-label="Close stock check"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
           <div
@@ -653,58 +724,79 @@ function StockCheckPopup({
             }}
           >
             {error && (
-              <div style={{ ...sectionCardStyle, borderColor: "rgba(var(--primary-rgb),0.35)", background: "rgba(var(--primary-rgb),0.08)" }}>
-                <strong style={{ color: "var(--primary-dark)" }}>{error}</strong>
+              <div
+                style={{
+                  ...sectionCardStyle,
+                  borderColor: "rgba(var(--danger-rgb), 0.28)",
+                  background: "var(--danger-surface)",
+                }}
+              >
+                <strong style={{ color: "var(--danger)" }}>{error}</strong>
               </div>
             )}
             {statusMessage && (
-              <div style={{ ...sectionCardStyle, borderColor: "rgba(var(--success-rgb),0.4)", background: "rgba(var(--success-rgb),0.12)" }}>
+              <div
+                style={{
+                  ...sectionCardStyle,
+                  borderColor: "rgba(var(--success-rgb), 0.3)",
+                  background: "var(--success-surface)",
+                }}
+              >
                 <strong style={{ color: "var(--success-dark)" }}>{statusMessage}</strong>
               </div>
             )}
 
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "flex-start",
+                gap: "16px",
+              }}
+            >
             {isManager && (
-              <div style={{ ...sectionCardStyle, display: "flex", flexDirection: "column", gap: "12px" }}>
-                <h3 style={{ margin: 0, color: "var(--primary-dark)" }}>Add new consumable</h3>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "16px",
+                  flex: "0.95 1 320px",
+                  minWidth: "300px",
+                }}
+              >
+              <div style={{ ...subtleSectionStyle, display: "flex", flexDirection: "column", gap: "12px" }}>
+                <h3 style={sectionHeadingStyle}>Add new consumable</h3>
                 <form
                   onSubmit={handleNewConsumableSubmit}
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
                     gap: "12px",
                     width: "100%",
                   }}
                 >
-                  <label style={{ fontWeight: 600, color: "var(--primary-dark)", display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <label style={{ fontWeight: 600, color: "var(--text-primary)", display: "flex", flexDirection: "column", gap: "6px" }}>
                     Item name
                     <input
                       type="text"
                       value={newConsumableForm.name}
                       onChange={handleNewConsumableChange("name")}
                       placeholder="e.g. nitrile gloves"
-                      style={{
-                        padding: "8px 10px",
-                        borderRadius: "var(--input-radius)",
-                        border: "none",
-                      }}
+                      style={inputFieldStyle}
                       required
                     />
                   </label>
-                  <label style={{ fontWeight: 600, color: "var(--primary-dark)", display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <label style={{ fontWeight: 600, color: "var(--text-primary)", display: "flex", flexDirection: "column", gap: "6px" }}>
                     Default supplier
                     <input
                       type="text"
                       value={newConsumableForm.supplier}
                       onChange={handleNewConsumableChange("supplier")}
                       placeholder="Optional supplier"
-                      style={{
-                        padding: "8px 10px",
-                        borderRadius: "var(--input-radius)",
-                        border: "none",
-                      }}
+                      style={inputFieldStyle}
                     />
                   </label>
-                  <label style={{ fontWeight: 600, color: "var(--primary-dark)", display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <label style={{ fontWeight: 600, color: "var(--text-primary)", display: "flex", flexDirection: "column", gap: "6px" }}>
                     Default unit cost (£)
                     <input
                       type="number"
@@ -713,11 +805,7 @@ function StockCheckPopup({
                       value={newConsumableForm.unitCost}
                       onChange={handleNewConsumableChange("unitCost")}
                       placeholder="0.00"
-                      style={{
-                        padding: "8px 10px",
-                        borderRadius: "var(--input-radius)",
-                        border: "none",
-                      }}
+                      style={inputFieldStyle}
                     />
                   </label>
                   <div style={{ gridColumn: "1 / -1", textAlign: "right" }}>
@@ -735,136 +823,148 @@ function StockCheckPopup({
                   </div>
                 </form>
               </div>
-            )}
 
-            {isManager && (
               <div style={{ ...sectionCardStyle, display: "flex", flexDirection: "column", gap: "12px" }}>
-                <h3 style={{ margin: 0, color: "var(--primary-dark)" }}>Recent stock check requests</h3>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+                  <h3 style={sectionHeadingStyle}>Recent stock check requests</h3>
+                  <span style={{ ...mutedTextStyle, fontSize: "0.9rem" }}>{requestCount} total</span>
+                </div>
                 {data.stockChecks && data.stockChecks.length > 0 ? (
                   <div style={{ overflowX: "auto" }}>
-                    <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 8px" }}>
-                  <thead>
-                    <tr style={{ textAlign: "left", color: "var(--grey-accent-dark)", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                      <th style={{ padding: "8px" }}>Consumable</th>
-                      <th style={{ padding: "8px" }}>Technician</th>
-                      <th style={{ padding: "8px" }}>Submitted</th>
-                      <th style={{ padding: "8px" }}>Status</th>
-                      <th style={{ padding: "8px" }}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.stockChecks.map((request) => {
-                      const tone = requestStatusTone[request.status] || requestStatusTone.pending;
-                      return (
-                        <tr key={request.id} style={{ background: "var(--surface-light)", borderRadius: "var(--radius-sm)" }}>
-                          <td style={{ padding: "8px", fontWeight: 600 }}>{request.consumableName || "—"}</td>
-                          <td style={{ padding: "8px", color: "var(--grey-accent-dark)" }}>{request.technicianName || "—"}</td>
-                          <td style={{ padding: "8px", color: "var(--grey-accent-dark)" }}>
-                            {request.createdAt
-                              ? new Date(request.createdAt).toLocaleString("en-GB", {
-                                  day: "2-digit",
-                                  month: "short",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })
-                              : "—"}
-                          </td>
-                          <td style={{ padding: "8px" }}>
-                            <span
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                padding: "2px 10px",
-                                borderRadius: "var(--radius-pill)",
-                                fontSize: "0.8rem",
-                                fontWeight: 600,
-                                background: tone.background,
-                                color: tone.color,
-                              }}
-                            >
-                              {tone.label}
-                            </span>
-                          </td>
-                          <td style={{ padding: "8px" }}>
-                            {request.status === "pending" ? (
-                              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                                <button
-                                  type="button"
-                                  onClick={() => handleRequestStatusUpdate(request.id, "approved")}
-                                  style={{ ...buttonPrimaryStyle, padding: "6px 12px" }}
-                                  disabled={requestUpdateId === request.id}
-                                >
-                                  Approve
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleRequestStatusUpdate(request.id, "rejected")}
-                                  style={{
-                                    ...buttonSecondaryStyle,
-                                    padding: "6px 12px",
-                                    color: "var(--danger)",
-                                    borderColor: "rgba(var(--danger-rgb),0.4)",
-                                  }}
-                                  disabled={requestUpdateId === request.id}
-                                >
-                                  Reject
-                                </button>
-                              </div>
-                            ) : (
-                              <span style={{ color: "var(--grey-accent-dark)" }}>No actions</span>
-                            )}
-                          </td>
+                    <table className="app-data-table" style={{ width: "100%", minWidth: "680px" }}>
+                      <thead>
+                        <tr>
+                          <th>Consumable</th>
+                          <th>Technician</th>
+                          <th>Submitted</th>
+                          <th>Status</th>
+                          <th>Actions</th>
                         </tr>
-                      );
-                    })}
-                  </tbody>
+                      </thead>
+                      <tbody>
+                        {data.stockChecks.map((request) => {
+                          const tone = requestStatusTone[request.status] || requestStatusTone.pending;
+                          return (
+                            <tr key={request.id}>
+                              <td style={{ fontWeight: 600 }}>{request.consumableName || "—"}</td>
+                              <td style={mutedTextStyle}>{request.technicianName || "—"}</td>
+                              <td style={mutedTextStyle}>
+                                {request.createdAt
+                                  ? new Date(request.createdAt).toLocaleString("en-GB", {
+                                      day: "2-digit",
+                                      month: "short",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })
+                                  : "—"}
+                              </td>
+                              <td>
+                                <span
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    padding: "2px 10px",
+                                    borderRadius: "var(--radius-pill)",
+                                    fontSize: "0.8rem",
+                                    fontWeight: 600,
+                                    background: tone.background,
+                                    color: tone.color,
+                                  }}
+                                >
+                                  {tone.label}
+                                </span>
+                              </td>
+                              <td>
+                                {request.status === "pending" ? (
+                                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRequestStatusUpdate(request.id, "approved")}
+                                      style={{ ...buttonPrimaryStyle, padding: "6px 12px" }}
+                                      disabled={requestUpdateId === request.id}
+                                    >
+                                      Approve
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRequestStatusUpdate(request.id, "rejected")}
+                                      style={{
+                                        ...buttonSecondaryStyle,
+                                        padding: "6px 12px",
+                                        color: "var(--danger)",
+                                        borderColor: "rgba(var(--danger-rgb), 0.36)",
+                                      }}
+                                      disabled={requestUpdateId === request.id}
+                                    >
+                                      Reject
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <span style={mutedTextStyle}>No actions</span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
                     </table>
                   </div>
                 ) : (
-                  <p style={{ margin: 0, color: "var(--grey-accent-dark)" }}>No stock check submissions yet.</p>
+                  <p style={{ margin: 0, ...mutedTextStyle }}>No stock check submissions yet.</p>
                 )}
+              </div>
               </div>
             )}
 
-            <div style={{ ...sectionCardStyle, display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div style={{ ...subtleSectionStyle, display: "flex", flexDirection: "column", gap: "12px", flex: "1.35 1 420px", minWidth: "320px" }}>
               <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: "12px", alignItems: "center" }}>
                 <div>
-                  <h3 style={{ margin: 0, color: "var(--primary-dark)" }}>Consumable stock</h3>
+                  <h3 style={sectionHeadingStyle}>Consumable stock</h3>
                 </div>
-                <span style={{ color: "var(--grey-accent-dark)", fontSize: "0.9rem" }}>
+                <span style={{ ...mutedTextStyle, fontSize: "0.9rem" }}>
                   {loading ? "Loading…" : `${visibleItems} of ${totalItems} items`}
                 </span>
               </div>
-              <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
-                <SearchBar
-                  value={stockSearchInput}
-                  onChange={(event) => setStockSearchInput(event.target.value)}
-                  onClear={clearStockSearch}
-                  onKeyDown={handleStockSearchKeyDown}
-                  placeholder="Search consumables"
-                  inputMode="search"
-                  enterKeyHint="search"
-                  style={{
-                    flex: "1 1 260px",
-                    minWidth: "240px",
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => applyStockSearch()}
-                  style={{ ...buttonPrimaryStyle, padding: "10px 14px" }}
-                  disabled={loading || totalItems === 0}
-                >
-                  Search
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowStockList((previous) => !previous)}
-                  style={{ ...buttonSecondaryStyle, padding: "10px 14px" }}
-                  disabled={totalItems === 0}
-                >
-                  {showStockList && !hasAppliedSearch ? "Hide list" : "Show list"}
-                </button>
+              <div
+                style={{
+                  ...sectionCardStyle,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
+                  padding: "14px",
+                }}
+              >
+                <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+                  <SearchBar
+                    value={stockSearchInput}
+                    onChange={(event) => setStockSearchInput(event.target.value)}
+                    onClear={clearStockSearch}
+                    onKeyDown={handleStockSearchKeyDown}
+                    placeholder="Search consumables"
+                    inputMode="search"
+                    enterKeyHint="search"
+                    style={{
+                      flex: "1 1 260px",
+                      minWidth: "240px",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => applyStockSearch()}
+                    style={{ ...buttonPrimaryStyle, padding: "10px 14px" }}
+                    disabled={loading || totalItems === 0}
+                  >
+                    Search
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowStockList((previous) => !previous)}
+                    className="app-btn app-btn--control"
+                    disabled={totalItems === 0}
+                  >
+                    {showStockList && !hasAppliedSearch ? "Hide list" : "Show list"}
+                  </button>
+                </div>
               </div>
               {hasSearchQuery && !loading && (
                 <div
@@ -875,20 +975,21 @@ function StockCheckPopup({
                     padding: "12px",
                     borderRadius: "var(--radius-sm)",
                     background: "var(--surface-light)",
+                    border: "1px solid rgba(var(--accent-base-rgb), 0.12)",
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
-                    <strong style={{ color: "var(--primary-dark)", fontSize: "0.95rem" }}>
+                    <strong style={{ color: "var(--text-primary)", fontSize: "0.95rem" }}>
                       Possible items
                     </strong>
                     {hasAppliedSearch && (
-                      <span style={{ color: "var(--grey-accent-dark)", fontSize: "0.85rem" }}>
+                      <span style={{ ...mutedTextStyle, fontSize: "0.85rem" }}>
                         Active search: "{stockSearchQuery}"
                       </span>
                     )}
                   </div>
                   {searchSuggestions.length === 0 ? (
-                    <p style={{ margin: 0, color: "var(--grey-accent-dark)" }}>
+                    <p style={{ margin: 0, ...mutedTextStyle }}>
                       No matching consumables found.
                     </p>
                   ) : (
@@ -901,7 +1002,7 @@ function StockCheckPopup({
                           style={{
                             ...buttonSecondaryStyle,
                             padding: "8px 12px",
-                            background: "rgba(var(--primary-rgb), 0.1)",
+                            background: "rgba(var(--accent-base-rgb), 0.08)",
                           }}
                         >
                           {item.name}
@@ -911,14 +1012,10 @@ function StockCheckPopup({
                   )}
                 </div>
               )}
-              {!shouldShowStockList ? (
-                <p style={{ margin: 0, color: "var(--grey-accent-dark)" }}>
-                  Type to see suggestions, then press Search or tap a suggestion.
-                </p>
-              ) : loading ? (
+              {!shouldShowStockList ? null : loading ? (
                 <p style={{ margin: 0, color: "var(--info)" }}>Loading stock...</p>
               ) : visibleItems === 0 ? (
-                <p style={{ margin: 0, color: "var(--grey-accent-dark)" }}>
+                <p style={{ margin: 0, ...mutedTextStyle }}>
                   {totalItems === 0 ? "No consumables recorded yet." : "No consumables match your search."}
                 </p>
               ) : (
@@ -927,11 +1024,22 @@ function StockCheckPopup({
                 </div>
               )}
             </div>
+            </div>
           </div>
 
-        <div style={{ ...sectionCardStyle, display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+        <div
+          style={{
+            ...subtleSectionStyle,
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "12px",
+            padding: "16px 18px",
+          }}
+        >
           <div>
-            <strong style={{ color: "var(--primary-dark)", fontSize: "1rem" }}>
+            <strong style={{ color: "var(--text-primary)", fontSize: "1rem" }}>
               {selectedCount} item{selectedCount === 1 ? "" : "s"} selected
             </strong>
           </div>

@@ -723,12 +723,6 @@ export default function CustomerDashboardPage() {
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] p-5 text-sm text-[var(--text-secondary)]">
-          Loading your live workshop data…
-        </div>
-      ) : null}
-
       {!isLoading && isLibraryOpen ? (
         <section className="mb-6 rounded-3xl border border-[var(--surface-light)] bg-[var(--surface)] p-5 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-3">

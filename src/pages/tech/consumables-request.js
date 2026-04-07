@@ -6,17 +6,19 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react"; // Import React hooks for stateful UI
 import Layout from "@/components/Layout"; // Import global layout wrapper
 import { useUser } from "@/context/UserContext"; // Import user context for role-based permissions
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import Link from "next/link"; // Import Next.js Link for navigation buttons
 import StockCheckPopup from "@/components/Consumables/StockCheckPopup";
 import { SearchBar } from "@/components/searchBarAPI";
 
 const pageWrapperStyle = {
-  padding: "24px", // Provide comfortable outer spacing
-  maxWidth: "100%", // Fill full screen width
-  margin: "0 auto", // Center the page content
-  display: "flex", // Use flex layout for main content columns
-  flexDirection: "column", // Stack sections vertically
-  gap: "24px", // Space sections evenly
+  width: "100%", // Fill the available content area like the news feed page
+  maxWidth: "100%",
+  minWidth: 0,
+  padding: "8px 0",
+  display: "flex",
+  flexDirection: "column",
+  gap: "20px",
 };
 
 const cardStyle = {
@@ -285,8 +287,21 @@ const TechConsumableRequestPage = () => {
   if (!isTechRole && !isWorkshopManager) {
     return (
       <Layout>
-        <div style={{ padding: "40px", maxWidth: "720px", margin: "0 auto" }}>
-          <div style={{ ...cardStyle, textAlign: "center" }}>
+        <DevLayoutSection
+          sectionKey="tech-consumables-access-shell"
+          sectionType="page-shell"
+          shell
+          widthMode="page"
+          style={{ padding: "40px", maxWidth: "720px", margin: "0 auto" }}
+        >
+          <DevLayoutSection
+            as="section"
+            sectionKey="tech-consumables-access-card"
+            parentKey="tech-consumables-access-shell"
+            sectionType="content-card"
+            backgroundToken="surface"
+            style={{ ...cardStyle, textAlign: "center" }}
+          >
             <h1 style={{ color: "var(--primary-dark)", marginBottom: "16px" }}>
               Technician Access Only
             </h1>
@@ -295,22 +310,30 @@ const TechConsumableRequestPage = () => {
               consumables. Please navigate back to your dashboard if this was in
               error.
             </p>
-            <Link
-              href="/dashboard"
-              style={{
-                display: "inline-block",
-                padding: "var(--control-padding)",
-                borderRadius: "var(--control-radius)",
-                background: "var(--primary)",
-                color: "var(--surface)",
-                fontWeight: 600,
-                textDecoration: "none",
-              }}
+            <DevLayoutSection
+              as="div"
+              sectionKey="tech-consumables-access-action"
+              parentKey="tech-consumables-access-card"
+              sectionType="floating-action"
+              backgroundToken="transparent"
             >
-              Return to dashboard
-            </Link>
-          </div>
-        </div>
+              <Link
+                href="/dashboard"
+                style={{
+                  display: "inline-block",
+                  padding: "var(--control-padding)",
+                  borderRadius: "var(--control-radius)",
+                  background: "var(--primary)",
+                  color: "var(--surface)",
+                  fontWeight: 600,
+                  textDecoration: "none",
+                }}
+              >
+                Return to dashboard
+              </Link>
+            </DevLayoutSection>
+          </DevLayoutSection>
+        </DevLayoutSection>
       </Layout>
     );
   }
@@ -318,37 +341,91 @@ const TechConsumableRequestPage = () => {
   return (
     <Layout>
       <div style={pageWrapperStyle}>
-        <div style={{ ...cardStyle }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <DevLayoutSection
+          as="section"
+          sectionKey="tech-consumables-request-panel"
+          sectionType="content-card"
+          backgroundToken="accent"
+          className="app-layout-surface-accent"
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            flexWrap: "wrap",
+            alignItems: "end",
+            gap: "16px",
+          }}
+        >
+          <DevLayoutSection
+            as="div"
+            sectionKey="tech-consumables-request-header"
+            parentKey="tech-consumables-request-panel"
+            sectionType="section-header-row"
+            backgroundToken="transparent"
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flex: "0 0 auto",
+              minWidth: "140px",
+            }}
+          >
             <div>
               <h1 style={{ margin: 0, fontSize: "1.6rem", color: "var(--primary-dark)" }}></h1>
             </div>
-            <button
-              type="button"
-              onClick={() => setShowStockCheck(true)}
-              style={{
-                padding: "var(--control-padding)",
-                borderRadius: "var(--control-radius)",
-                border: "1px solid var(--primary)",
-                background: "var(--surface)",
-                color: "var(--primary-dark)",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
+            <DevLayoutSection
+              as="div"
+              sectionKey="tech-consumables-stock-check-action"
+              parentKey="tech-consumables-request-header"
+              sectionType="floating-action"
+              backgroundToken="transparent"
             >
-              Stock Check
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={() => setShowStockCheck(true)}
+                style={{
+                  padding: "var(--control-padding)",
+                  borderRadius: "var(--control-radius)",
+                  border: "1px solid var(--primary)",
+                  background: "var(--surface)",
+                  color: "var(--primary-dark)",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Stock Check
+              </button>
+            </DevLayoutSection>
+          </DevLayoutSection>
 
-          <form onSubmit={handleSubmit} style={{ marginTop: "20px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px", alignItems: "end" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label htmlFor="partName" style={{ fontWeight: 600, color: "var(--primary-dark)" }}>
-                Part Name
-              </label>
+          <DevLayoutSection
+            as="form"
+            sectionKey="tech-consumables-request-form"
+            parentKey="tech-consumables-request-panel"
+            sectionType="form-grid"
+            backgroundToken="transparent"
+            onSubmit={handleSubmit}
+            style={{
+              flex: "1 1 720px",
+              marginTop: 0,
+              display: "grid",
+              gridTemplateColumns: "minmax(280px, 1fr) minmax(140px, 180px) minmax(180px, 220px)",
+              gap: "16px",
+              alignItems: "end",
+            }}
+          >
+            <DevLayoutSection
+              as="div"
+              sectionKey="tech-consumables-item-field"
+              parentKey="tech-consumables-request-form"
+              sectionType="form-block"
+              backgroundToken="surface"
+              style={{ display: "flex", flexDirection: "column", gap: "6px" }}
+            >
               <input
                 id="partName"
                 name="partName"
                 type="text"
+                aria-label="Part Name"
                 value={requestForm.partName}
                 onChange={handleInputChange}
                 placeholder="e.g. Nitrile gloves"
@@ -356,13 +433,26 @@ const TechConsumableRequestPage = () => {
                 required
               />
               {requestForm.partName.trim() && (
-                <div style={{ marginTop: "4px", border: "none", borderRadius: "var(--control-radius)", padding: "8px", background: "var(--surface-lightest)", display: "flex", flexDirection: "column", gap: "6px" }}>
+                <DevLayoutSection
+                  as="div"
+                  sectionKey="tech-consumables-stock-suggestions"
+                  parentKey="tech-consumables-item-field"
+                  sectionType="content-card"
+                  backgroundToken="surface-light"
+                  style={{ marginTop: "4px", border: "none", borderRadius: "var(--control-radius)", padding: "8px", background: "var(--surface-lightest)", display: "flex", flexDirection: "column", gap: "6px" }}
+                >
                   {stockLoading ? (
                     <span style={{ color: "var(--grey-accent-dark)", fontSize: "0.85rem" }}>Searching stock…</span>
                   ) : stockMatches.length > 0 ? (
                     <>
                       <span style={{ color: "var(--grey-accent-dark)", fontSize: "0.8rem" }}>Matching stock items:</span>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <div
+                        data-dev-section="1"
+                        data-dev-section-key="tech-consumables-stock-suggestion-list"
+                        data-dev-section-type="list"
+                        data-dev-section-parent="tech-consumables-stock-suggestions"
+                        style={{ display: "flex", flexDirection: "column", gap: "4px" }}
+                      >
                         {stockMatches.map((item) => (
                           <button
                             key={item.id}
@@ -411,27 +501,39 @@ const TechConsumableRequestPage = () => {
                   {stockError && (
                     <span style={{ color: "var(--primary-dark)", fontSize: "0.8rem" }}>{stockError}</span>
                   )}
-                </div>
+                </DevLayoutSection>
               )}
-            </div>
+            </DevLayoutSection>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label htmlFor="quantity" style={{ fontWeight: 600, color: "var(--primary-dark)" }}>
-                Quantity Needed
-              </label>
+            <DevLayoutSection
+              as="div"
+              sectionKey="tech-consumables-quantity-field"
+              parentKey="tech-consumables-request-form"
+              sectionType="form-block"
+              backgroundToken="surface"
+              style={{ display: "flex", flexDirection: "column", gap: "6px" }}
+            >
               <input
                 id="quantity"
                 name="quantity"
                 type="number"
+                aria-label="Quantity Needed"
                 min="1"
                 step="1"
                 value={requestForm.quantity}
                 onChange={handleInputChange}
                 style={inputStyle}
               />
-            </div>
+            </DevLayoutSection>
 
-            <div style={{ gridColumn: "span 1", display: "flex", justifyContent: "flex-end" }}>
+            <DevLayoutSection
+              as="div"
+              sectionKey="tech-consumables-submit-action"
+              parentKey="tech-consumables-request-form"
+              sectionType="toolbar"
+              backgroundToken="transparent"
+              style={{ gridColumn: "span 1", display: "flex", justifyContent: "flex-end" }}
+            >
               <button
                 type="submit"
                 style={{
@@ -448,33 +550,96 @@ const TechConsumableRequestPage = () => {
               >
                 Submit Request
               </button>
-            </div>
-          </form>
-        </div>
+            </DevLayoutSection>
+          </DevLayoutSection>
+        </DevLayoutSection>
 
-        <div style={{ ...cardStyle }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+        <DevLayoutSection
+          as="section"
+          sectionKey="tech-consumables-requests-panel"
+          sectionType="section-shell"
+          shell
+          backgroundToken="accent"
+          className="app-layout-surface-accent"
+        >
+          <DevLayoutSection
+            as="div"
+            sectionKey="tech-consumables-requests-toolbar"
+            parentKey="tech-consumables-requests-panel"
+            sectionType="toolbar"
+            backgroundToken="transparent"
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}
+          >
             <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-dark)" }}>Requests</h2>
-            <SearchBar
-              placeholder="Search requests"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              onClear={() => setSearchTerm("")}
-              style={{
-                maxWidth: "240px",
-              }}
-            />
-          </div>
+            <DevLayoutSection
+              as="div"
+              sectionKey="tech-consumables-requests-search"
+              parentKey="tech-consumables-requests-toolbar"
+              sectionType="filter-row"
+              backgroundToken="search-surface"
+              style={{ maxWidth: "240px", width: "100%" }}
+            >
+              <SearchBar
+                placeholder="Search requests"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                onClear={() => setSearchTerm("")}
+                style={{
+                  maxWidth: "240px",
+                }}
+              />
+            </DevLayoutSection>
+          </DevLayoutSection>
           {successMessage && (
-            <p style={{ margin: "0 0 12px", color: "var(--success-dark)" }}>{successMessage}</p>
+            <DevLayoutSection
+              as="p"
+              sectionKey="tech-consumables-success-banner"
+              parentKey="tech-consumables-requests-panel"
+              sectionType="state-banner"
+              backgroundToken="success-surface"
+              style={{ margin: "0 0 12px", color: "var(--success-dark)" }}
+            >
+              {successMessage}
+            </DevLayoutSection>
           )}
           {requestError && (
-            <p style={{ margin: "0 0 12px", color: "var(--primary-dark)" }}>{requestError}</p>
+            <DevLayoutSection
+              as="p"
+              sectionKey="tech-consumables-error-banner"
+              parentKey="tech-consumables-requests-panel"
+              sectionType="state-banner"
+              backgroundToken="danger-surface"
+              style={{ margin: "0 0 12px", color: "var(--primary-dark)" }}
+            >
+              {requestError}
+            </DevLayoutSection>
           )}
 
-          <div style={{ overflowX: "auto", maxHeight: "420px", overflowY: "auto" }}>
-            <table className="table-api" style={{ minWidth: "640px" }}>
-              <thead>
+          <DevLayoutSection
+            as="div"
+            sectionKey="tech-consumables-request-auto-data-table-1-shell"
+            parentKey="tech-consumables-requests-panel"
+            sectionType="data-table-shell"
+            backgroundToken="surface"
+            className="app-section-card"
+            style={{ overflowX: "auto", maxHeight: "420px", overflowY: "auto", padding: 0, background: "var(--surface)" }}
+          >
+            <DevLayoutSection
+              as="table"
+              sectionKey="tech-consumables-request-auto-data-table-1"
+              parentKey="tech-consumables-request-auto-data-table-1-shell"
+              sectionType="data-table"
+              backgroundToken="surface"
+              className="app-data-table"
+              style={{ minWidth: "640px", background: "var(--surface)" }}
+            >
+              <thead
+                data-dev-section="1"
+                data-dev-section-key="tech-consumables-request-auto-data-table-1-headings"
+                data-dev-section-type="table-headings"
+                data-dev-section-parent="tech-consumables-request-auto-data-table-1"
+                style={{ background: "var(--accent-surface-hover)" }}
+              >
                 <tr>
                   <th style={tableHeaderStyle}>Status</th>
                   <th style={tableHeaderStyle}>Part Name</th>
@@ -483,52 +648,90 @@ const TechConsumableRequestPage = () => {
                   <th style={tableHeaderStyle}>Requested By</th>
                 </tr>
               </thead>
-              <tbody>
-                {filteredRequests.map((request) => (
-                  <tr key={request.id}>
-                    <td style={{ padding: "12px" }}>
-                      <span
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          padding: "4px 10px",
-                          borderRadius: "var(--radius-pill)",
-                          fontWeight: 600,
-                          fontSize: "0.75rem",
-                          ...(statusBadgeStyles[request.status] || statusBadgeStyles.pending),
-                        }}
-                      >
-                        {request.status === "fulfilled"
-                          ? "✅"
-                          : request.status === "urgent"
-                          ? "⏰"
-                          : request.status === "rejected"
-                          ? "✖️"
-                          : request.status === "ordered"
-                          ? "📦"
-                          : "📦"}
-                        {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-                      </span>
+              <tbody
+                data-dev-section="1"
+                data-dev-section-key="tech-consumables-request-auto-data-table-1-rows"
+                data-dev-section-type="table-rows"
+                data-dev-section-parent="tech-consumables-request-auto-data-table-1"
+              >
+                {loadingRequests ? (
+                  <tr
+                    data-dev-section="1"
+                    data-dev-section-key="tech-consumables-requests-loading-row"
+                    data-dev-section-type="state-banner"
+                    data-dev-section-parent="tech-consumables-request-auto-data-table-1-rows"
+                    style={{ background: "var(--surface)" }}
+                  >
+                    <td colSpan={5} style={{ padding: "18px 12px", color: "var(--text-secondary)", textAlign: "center" }}>
+                      Loading requests…
                     </td>
-                    <td style={{ padding: "12px", fontWeight: 600, color: "var(--text-primary)" }}>{request.itemName}</td>
-                    <td style={{ padding: "12px", color: "var(--text-secondary)" }}>{request.quantity}</td>
-                    <td style={{ padding: "12px", color: "var(--text-secondary)" }}>
-                      {request.requestedAt
-                        ? new Date(request.requestedAt).toLocaleDateString("en-GB", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          })
-                        : "—"}
-                    </td>
-                    <td style={{ padding: "12px", color: "var(--text-secondary)" }}>{request.requestedByName || "—"}</td>
                   </tr>
-                ))}
+                ) : filteredRequests.length > 0 ? (
+                  filteredRequests.map((request) => (
+                    <tr
+                      key={request.id}
+                      data-dev-section="1"
+                      data-dev-section-key={`tech-consumables-request-auto-data-table-1-row-${request.id}`}
+                      data-dev-section-type="table-row"
+                      data-dev-section-parent="tech-consumables-request-auto-data-table-1-rows"
+                      style={{ background: "var(--surface)" }}
+                    >
+                      <td style={{ padding: "12px" }}>
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            padding: "4px 10px",
+                            borderRadius: "var(--radius-pill)",
+                            fontWeight: 600,
+                            fontSize: "0.75rem",
+                            ...(statusBadgeStyles[request.status] || statusBadgeStyles.pending),
+                          }}
+                        >
+                          {request.status === "fulfilled"
+                            ? "✅"
+                            : request.status === "urgent"
+                            ? "⏰"
+                            : request.status === "rejected"
+                            ? "✖️"
+                            : request.status === "ordered"
+                            ? "📦"
+                            : "📦"}
+                          {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                        </span>
+                      </td>
+                      <td style={{ padding: "12px", fontWeight: 600, color: "var(--text-primary)" }}>{request.itemName}</td>
+                      <td style={{ padding: "12px", color: "var(--text-secondary)" }}>{request.quantity}</td>
+                      <td style={{ padding: "12px", color: "var(--text-secondary)" }}>
+                        {request.requestedAt
+                          ? new Date(request.requestedAt).toLocaleDateString("en-GB", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            })
+                          : "—"}
+                      </td>
+                      <td style={{ padding: "12px", color: "var(--text-secondary)" }}>{request.requestedByName || "—"}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr
+                    data-dev-section="1"
+                    data-dev-section-key="tech-consumables-requests-empty-row"
+                    data-dev-section-type="empty-state"
+                    data-dev-section-parent="tech-consumables-request-auto-data-table-1-rows"
+                    style={{ background: "var(--surface)" }}
+                  >
+                    <td colSpan={5} style={{ padding: "18px 12px", color: "var(--text-secondary)", textAlign: "center" }}>
+                      No consumable requests match the current filter.
+                    </td>
+                  </tr>
+                )}
               </tbody>
-            </table>
-          </div>
-        </div>
+            </DevLayoutSection>
+          </DevLayoutSection>
+        </DevLayoutSection>
       </div>
       {showStockCheck && (
         <StockCheckPopup

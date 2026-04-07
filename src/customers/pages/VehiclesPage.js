@@ -16,11 +16,6 @@ export default function CustomerVehiclesPage() {
           {error}
         </div>
       )}
-      {isLoading ? (
-        <div className="mb-4 rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] p-5 text-sm text-[var(--text-secondary)]">
-          Loading your vehicles…
-        </div>
-      ) : null}
       <div className="grid gap-6 lg:grid-cols-2">
         <VehicleGarageCard vehicles={vehicles} />
         <AppointmentTimeline events={timeline} />

@@ -451,6 +451,7 @@ so i have archiving for job numbers, this is everything links to a job is archiv
 
 CHECK LAST CHANGES FIRST
 create a flow for create a job card, start from the /create page and then based on the code used create a story line with "bla bla bla > bla bla bla" like actions to show next page / feaute/ tap/ section. use a code to show which sections are linked to what eg showing the same infomation where else that feaute is used etc. add the databazse table used and if the table can be made better save the data add the database table name and columns withn the story line. have the story line more like bullet points created in a new folder under docs which will be named Jobcard Flow. 
+Created master copy prompt: docs/Jobcard Flow/create-job-card-head-to-toe-master-prompt.md
 
 
 

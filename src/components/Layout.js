@@ -66,6 +66,7 @@ export default function Layout({
   children,
   jobNumber,
   disableContentCard = false,
+  disableContentCardHover = false,
   contentBackground = null,
   requiresLandscape = false,
 }) {
@@ -1248,7 +1249,15 @@ export default function Layout({
               parentKey="app-layout-main-shell"
               sectionType="content-card"
               backgroundToken={contentBackground ? "app-page-card-custom" : "app-page-card"}
-              className={disableContentCard || hideSidebar ? "app-page-card app-page-card--bare" : "app-page-card"}
+              className={
+                [
+                  "app-page-card",
+                  disableContentCard || hideSidebar ? "app-page-card--bare" : "",
+                  disableContentCardHover ? "app-page-card--no-hover" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")
+              }
               style={
                 disableContentCard || hideSidebar
                   ? undefined

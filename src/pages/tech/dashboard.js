@@ -1,13 +1,116 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import { SectionShell, StatCard } from "@/components/ui";
 import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
 import { getAllJobs } from "@/lib/database/jobs";
 import { getClockingStatus } from "@/lib/database/clocking";
 import { prefetchJob } from "@/lib/swr/prefetch";
+
+const pageShellStyle = {
+  width: "100%",
+  minWidth: 0,
+  padding: "8px 0",
+};
+
+const statsGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+  gap: "12px",
+  width: "100%",
+};
+
+const actionGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))",
+  gap: "12px",
+  width: "100%",
+};
+
+const jobsListStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "12px",
+};
+
+const centeredStateStyle = {
+  minHeight: "280px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  textAlign: "center",
+};
+
+const statusBadgeBaseStyle = {
+  padding: "6px 12px",
+  borderRadius: "var(--radius-sm)",
+  fontSize: "12px",
+  fontWeight: "600",
+  whiteSpace: "nowrap",
+};
+
+const getStatusBadgeStyle = (status) => {
+  switch (String(status || "").trim().toLowerCase()) {
+    case "in progress":
+      return {
+        ...statusBadgeBaseStyle,
+        backgroundColor: "var(--accent-purple-surface)",
+        color: "var(--primary)",
+        border: "1px solid rgba(var(--accent-base-rgb), 0.2)",
+      };
+    case "complete":
+      return {
+        ...statusBadgeBaseStyle,
+        backgroundColor: "var(--success-surface)",
+        color: "var(--success-text)",
+        border: "1px solid var(--success-border)",
+      };
+    default:
+      return {
+        ...statusBadgeBaseStyle,
+        backgroundColor: "var(--warning-surface)",
+        color: "var(--warning-text)",
+        border: "1px solid var(--warning-border)",
+      };
+  }
+};
+
+const formatClockInLabel = (clockInTime) => {
+  if (!clockInTime) return "Not currently working";
+  return `Since ${new Date(clockInTime).toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+  })}`;
+};
+
+const buildVehicleLabel = (job) => {
+  const reg = job?.reg || "No registration";
+  const makeModel = job?.makeModel || "Vehicle details missing";
+  return `${reg} - ${makeModel}`;
+};
+
+const detailLabelStyle = {
+  fontSize: "15px",
+  color: "var(--text-secondary)",
+  margin: 0,
+};
+
+const sectionHeadingStyle = {
+  fontSize: "20px",
+  fontWeight: "700",
+  color: "var(--text-primary)",
+  margin: 0,
+};
+
+const sectionCopyStyle = {
+  margin: 0,
+  fontSize: "14px",
+  color: "var(--text-secondary)",
+};
 
 export default function TechsDashboard() {
   const router = useRouter();
@@ -21,25 +124,27 @@ export default function TechsDashboard() {
   const techsList = usersByRole?.["Techs"] || [];
   const motList = usersByRole?.["MOT Tester"] || [];
   const allowedNames = new Set([...techsList, ...motList]);
-  const username =
-    typeof user?.username === "string" ? user.username.trim() : "";
+  const username = typeof user?.username === "string" ? user.username.trim() : "";
   const hasTechRole =
     user?.roles?.some((role) => role?.toLowerCase().includes("tech")) || false;
   const isTech = allowedNames.has(username) || hasTechRole;
 
-  const isAssignedToTechnician = (job) => {
-    if (!dbUserId || !job) return false;
-    const assignedNumeric =
-      typeof job.assignedTo === "number"
-        ? job.assignedTo
-        : typeof job.assignedTo === "string"
-          ? Number(job.assignedTo)
-          : null;
+  const isAssignedToTechnician = useCallback(
+    (job) => {
+      if (!dbUserId || !job) return false;
+      const assignedNumeric =
+        typeof job.assignedTo === "number"
+          ? job.assignedTo
+          : typeof job.assignedTo === "string"
+            ? Number(job.assignedTo)
+            : null;
 
-    if (assignedNumeric === dbUserId) return true;
-    if (job.assignedTech?.id && job.assignedTech.id === dbUserId) return true;
-    return false;
-  };
+      if (assignedNumeric === dbUserId) return true;
+      if (job.assignedTech?.id && job.assignedTech.id === dbUserId) return true;
+      return false;
+    },
+    [dbUserId]
+  );
 
   useEffect(() => {
     if (!isTech || !dbUserId) return;
@@ -50,7 +155,6 @@ export default function TechsDashboard() {
       try {
         const fetchedJobs = await getAllJobs();
         const assignedJobs = fetchedJobs.filter((job) => isAssignedToTechnician(job));
-
         const sortedJobs = assignedJobs.sort((a, b) => {
           if (a.createdAt && b.createdAt) {
             return new Date(b.createdAt) - new Date(a.createdAt);
@@ -63,10 +167,7 @@ export default function TechsDashboard() {
 
         const { isClockedIn, data } = await getClockingStatus(dbUserId);
         setClockingStatus(data);
-
-        if (isClockedIn && data) {
-          setCurrentJob(sortedJobs[0] || null);
-        }
+        setCurrentJob(isClockedIn && data ? sortedJobs[0] || null : null);
       } catch (error) {
         console.error("Error fetching tech data:", error);
       } finally {
@@ -75,18 +176,46 @@ export default function TechsDashboard() {
     };
 
     fetchData();
-  }, [dbUserId, isTech]);
+  }, [dbUserId, isAssignedToTechnician, isTech]);
 
-  const handleStartJob = (job) => {
-    router.push(`/job-cards/myjobs/${job.jobNumber}`);
-  };
+  const handleStartJob = useCallback(
+    (job) => {
+      router.push(`/job-cards/myjobs/${job.jobNumber}`);
+    },
+    [router]
+  );
+
+  const visibleJobs = useMemo(() => myJobs.slice(0, 3), [myJobs]);
+  const isClockedIn = Boolean(clockingStatus?.clock_in);
+  const clockInTime = clockingStatus?.clock_in || null;
+  const dashboardActions = [
+    {
+      key: "view-all-jobs",
+      label: "View All Jobs",
+      href: "/job-cards/myjobs",
+    },
+    {
+      key: "time-tracking",
+      label: "Time Tracking",
+      href: "/tech/efficiency",
+    },
+    {
+      key: "request-consumables",
+      label: "Request Consumables",
+      href: "/tech/consumables-request",
+    },
+  ];
 
   if (rosterLoading) {
     return (
       <Layout>
-        <div style={{ padding: "40px", textAlign: "center", color: "var(--text-secondary)" }}>
-          Loading roster...
-        </div>
+        <SectionShell
+          sectionKey="tech-dashboard-roster-loading"
+          parentKey="app-layout-page-card"
+          style={centeredStateStyle}
+        >
+          <p style={{ color: "var(--text-secondary)", margin: 0 }}>Loading roster...</p>
+        </SectionShell>
       </Layout>
     );
   }
@@ -94,10 +223,18 @@ export default function TechsDashboard() {
   if (!isTech) {
     return (
       <Layout>
-        <div style={{ padding: "40px", textAlign: "center" }}>
-          <h2 style={{ color: "var(--primary)", marginBottom: "10px" }}>Access Denied</h2>
-          <p style={{ color: "var(--text-secondary)" }}>This page is only for Technicians.</p>
-        </div>
+        <SectionShell
+          sectionKey="tech-dashboard-access-denied"
+          parentKey="app-layout-page-card"
+          style={centeredStateStyle}
+        >
+          <div style={{ display: "grid", gap: "10px" }}>
+            <h2 style={{ color: "var(--primary)", margin: 0 }}>Access Denied</h2>
+            <p style={{ color: "var(--text-secondary)", margin: 0 }}>
+              This page is only for technicians.
+            </p>
+          </div>
+        </SectionShell>
       </Layout>
     );
   }
@@ -105,29 +242,31 @@ export default function TechsDashboard() {
   if (loading) {
     return (
       <Layout>
-        <div
+        <SectionShell
+          sectionKey="tech-dashboard-loading"
+          parentKey="app-layout-page-card"
           style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            height: "80vh",
-            flexDirection: "column",
+            ...centeredStateStyle,
+            minHeight: "70vh",
             gap: "16px",
           }}
         >
           <div
+            aria-hidden="true"
             style={{
               width: "60px",
               height: "60px",
               border: "4px solid var(--surface-light)",
               borderTop: "4px solid var(--primary)",
               borderRadius: "var(--radius-full)",
-              animation: "spin 1s linear infinite",
+              animation: "tech-dashboard-spin 1s linear infinite",
             }}
           />
-          <p style={{ color: "var(--text-secondary)", fontSize: "16px" }}>Loading dashboard...</p>
+          <p style={{ color: "var(--text-secondary)", fontSize: "16px", margin: 0 }}>
+            Loading dashboard...
+          </p>
           <style jsx>{`
-            @keyframes spin {
+            @keyframes tech-dashboard-spin {
               0% {
                 transform: rotate(0deg);
               }
@@ -136,457 +275,363 @@ export default function TechsDashboard() {
               }
             }
           `}</style>
-        </div>
+        </SectionShell>
       </Layout>
     );
   }
 
   return (
     <Layout>
-      <div
-        style={{
-          maxWidth: "100%",
-          margin: "0 auto",
-          padding: "16px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "16px",
-        }}
+      <DevLayoutSection
+        sectionKey="tech-dashboard-page"
+        parentKey="app-layout-page-card"
+        sectionType="page-shell"
+        shell
+        backgroundToken="surface"
+        className="app-layout-page-shell"
+        style={pageShellStyle}
       >
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
-            gap: "12px",
-          }}
+        <DevLayoutSection
+          sectionKey="tech-dashboard-stats-grid"
+          parentKey="tech-dashboard-page"
+          sectionType="section-shell"
+          shell
+          style={statsGridStyle}
         >
-          <div
+          <StatCard
+            sectionKey="tech-dashboard-stat-assigned"
+            parentKey="tech-dashboard-stats-grid"
             style={{
               backgroundColor: "var(--accent-purple-surface)",
-              padding: "16px",
-              borderRadius: "var(--radius-md)",
-              boxShadow: "none",
-              border: "none",
+              border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
             }}
           >
-            <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--primary)", marginBottom: "4px" }}>
+            <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--primary)" }}>
               {myJobs.length}
             </div>
-            <div style={{ fontSize: "14px", color: "var(--text-secondary)", fontWeight: "600" }}>Jobs Assigned</div>
-          </div>
+            <div style={{ fontSize: "14px", color: "var(--text-secondary)", fontWeight: "600" }}>
+              Jobs Assigned
+            </div>
+          </StatCard>
 
-          <div
+          <StatCard
+            sectionKey="tech-dashboard-stat-clocking"
+            parentKey="tech-dashboard-stats-grid"
             style={{
-              backgroundColor: clockingStatus ? "var(--success-surface)" : "var(--danger-surface)",
-              padding: "16px",
-              borderRadius: "var(--radius-md)",
-              boxShadow: "none",
-              border: `1px solid ${clockingStatus ? "var(--success-border)" : "var(--danger-border)"}`,
+              backgroundColor: isClockedIn ? "var(--success-surface)" : "var(--danger-surface)",
+              border: `1px solid ${isClockedIn ? "var(--success-border)" : "var(--danger-border)"}`,
             }}
           >
             <div
               style={{
                 fontSize: "16px",
                 fontWeight: "600",
-                color: clockingStatus ? "var(--success-text)" : "var(--danger-text)",
-                marginBottom: "8px",
+                color: isClockedIn ? "var(--success-text)" : "var(--danger-text)",
               }}
             >
-              {clockingStatus ? "Clocked In" : "Clocked Out"}
+              {isClockedIn ? "Clocked In" : "Clocked Out"}
             </div>
             <div style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
-              {clockingStatus
-                ? `Since ${new Date(clockingStatus.clock_in).toLocaleTimeString("en-GB", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}`
-                : "Not currently working"}
+              {formatClockInLabel(clockInTime)}
             </div>
-          </div>
+          </StatCard>
 
-          <div
+          <StatCard
+            sectionKey="tech-dashboard-stat-current-job"
+            parentKey="tech-dashboard-stats-grid"
             style={{
               backgroundColor: "rgba(var(--primary-rgb), 0.08)",
-              padding: "16px",
-              borderRadius: "var(--radius-md)",
-              boxShadow: "none",
-              border: "none",
+              border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
             }}
           >
-            <div style={{ fontSize: "16px", fontWeight: "600", color: "var(--text-primary)", marginBottom: "8px" }}>
+            <div style={{ fontSize: "16px", fontWeight: "600", color: "var(--text-primary)" }}>
               Current Job
             </div>
             <div style={{ fontSize: "20px", fontWeight: "700", color: "var(--primary)" }}>
               {currentJob ? currentJob.jobNumber : "None"}
             </div>
-          </div>
+          </StatCard>
 
-          <div
+          <StatCard
+            sectionKey="tech-dashboard-stat-hours"
+            parentKey="tech-dashboard-stats-grid"
             style={{
               backgroundColor: "rgba(var(--primary-rgb), 0.08)",
-              padding: "16px",
-              borderRadius: "var(--radius-md)",
-              boxShadow: "none",
-              border: "none",
+              border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
             }}
           >
-            <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--primary)", marginBottom: "4px" }}>
-              {clockingStatus ? calculateHoursWorked(clockingStatus.clock_in) : "0.0"}h
+            <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--primary)" }}>
+              {isClockedIn ? calculateHoursWorked(clockInTime) : "0.0"}h
             </div>
-            <div style={{ fontSize: "14px", color: "var(--text-secondary)", fontWeight: "600" }}>Hours Today</div>
-          </div>
-        </div>
+            <div style={{ fontSize: "14px", color: "var(--text-secondary)", fontWeight: "600" }}>
+              Hours Today
+            </div>
+          </StatCard>
+        </DevLayoutSection>
 
         {currentJob && (
-          <div
+          <SectionShell
+            sectionKey="tech-dashboard-current-job"
+            parentKey="tech-dashboard-page"
+            backgroundToken="page-card-alt"
             style={{
-              backgroundColor: "var(--surface)",
-              padding: "24px",
-              borderRadius: "var(--radius-md)",
-              boxShadow: "none",
-              border: "2px solid var(--primary)",
+              gap: "16px",
+              border: "1px solid rgba(var(--accent-base-rgb), 0.28)",
             }}
           >
-            <h2
-              style={{
-                fontSize: "20px",
-                fontWeight: "700",
-                color: "var(--primary)",
-                marginBottom: "16px",
-              }}
-            >
-              Currently Working On
-            </h2>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px",
-              }}
-            >
-              <div>
-                <p style={{ fontSize: "24px", fontWeight: "700", color: "var(--text-primary)", margin: "0 0 8px 0" }}>
+            <div style={{ display: "grid", gap: "12px" }}>
+              <h2 style={{ ...sectionHeadingStyle, color: "var(--primary)" }}>
+                Currently Working On
+              </h2>
+              <div style={{ display: "grid", gap: "6px" }}>
+                <p style={{ fontSize: "24px", fontWeight: "700", color: "var(--text-primary)", margin: 0 }}>
                   {currentJob.jobNumber}
                 </p>
-                <p style={{ fontSize: "16px", color: "var(--text-secondary)", margin: "0 0 4px 0" }}>
+                <p style={detailLabelStyle}>
                   <strong>Customer:</strong> {currentJob.customer}
                 </p>
-                <p style={{ fontSize: "16px", color: "var(--text-secondary)", margin: "0 0 4px 0" }}>
-                  <strong>Vehicle:</strong> {currentJob.reg} - {currentJob.makeModel}
+                <p style={detailLabelStyle}>
+                  <strong>Vehicle:</strong> {buildVehicleLabel(currentJob)}
                 </p>
-                <p style={{ fontSize: "14px", color: "var(--text-secondary)", margin: "8px 0 0 0" }}>
-                  {currentJob.description}
+                <p style={{ ...sectionCopyStyle, marginTop: "2px" }}>
+                  {currentJob.description || "No description added yet."}
                 </p>
               </div>
-              <button
-                onClick={() => handleStartJob(currentJob)}
-                style={{
-                  padding: "14px 28px",
-                  backgroundColor: "var(--primary)",
-                  color: "var(--text-inverse)",
-                  border: "none",
-                  borderRadius: "var(--radius-xs)",
-                  cursor: "pointer",
-                  fontSize: "15px",
-                  fontWeight: "600",
-                  boxShadow: "none",
-                  transition: "all 0.2s",
-                  width: "100%",
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = "var(--primary-dark)";
-                  prefetchJob(currentJob?.jobNumber); // warm SWR cache on hover
-                }}
-                onMouseLeave={(e) => (e.target.style.backgroundColor = "var(--primary)")}
-              >
-                Continue Job
-              </button>
             </div>
-          </div>
+
+            <DevLayoutSection
+              as="button"
+              type="button"
+              sectionKey="tech-dashboard-current-job-action"
+              parentKey="tech-dashboard-current-job"
+              sectionType="content-card"
+              className="tech-dashboard-primary-button"
+              onClick={() => handleStartJob(currentJob)}
+              onMouseEnter={() => prefetchJob(currentJob?.jobNumber)}
+            >
+              Continue Job
+            </DevLayoutSection>
+          </SectionShell>
         )}
 
         {nextJob && !currentJob && (
-          <div
-            style={{
-              backgroundColor: "var(--surface)",
-              padding: "24px",
-              borderRadius: "var(--radius-md)",
-              boxShadow: "none",
-              border: "none",
-            }}
+          <SectionShell
+            sectionKey="tech-dashboard-next-job"
+            parentKey="tech-dashboard-page"
+            backgroundToken="page-card-alt"
           >
-            <h2
-              style={{
-                fontSize: "20px",
-                fontWeight: "700",
-                color: "var(--text-primary)",
-                marginBottom: "16px",
-              }}
-            >
-              Next Job Assigned
-            </h2>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px",
-              }}
-            >
-              <div>
-                <p style={{ fontSize: "24px", fontWeight: "700", color: "var(--primary)", margin: "0 0 8px 0" }}>
+            <div style={{ display: "grid", gap: "12px" }}>
+              <h2 style={sectionHeadingStyle}>Next Job Assigned</h2>
+              <div style={{ display: "grid", gap: "6px" }}>
+                <p style={{ fontSize: "24px", fontWeight: "700", color: "var(--primary)", margin: 0 }}>
                   {nextJob.jobNumber}
                 </p>
-                <p style={{ fontSize: "16px", color: "var(--text-secondary)", margin: "0 0 4px 0" }}>
+                <p style={detailLabelStyle}>
                   <strong>Customer:</strong> {nextJob.customer}
                 </p>
-                <p style={{ fontSize: "16px", color: "var(--text-secondary)", margin: "0 0 4px 0" }}>
-                  <strong>Vehicle:</strong> {nextJob.reg} - {nextJob.makeModel}
+                <p style={detailLabelStyle}>
+                  <strong>Vehicle:</strong> {buildVehicleLabel(nextJob)}
                 </p>
-                <p style={{ fontSize: "14px", color: "var(--text-secondary)", margin: "8px 0 0 0" }}>
-                  {nextJob.description}
+                <p style={{ ...sectionCopyStyle, marginTop: "2px" }}>
+                  {nextJob.description || "No description added yet."}
                 </p>
               </div>
-              <button
-                onClick={() => handleStartJob(nextJob)}
-                style={{
-                  padding: "14px 28px",
-                  backgroundColor: "var(--primary)",
-                  color: "var(--text-inverse)",
-                  border: "none",
-                  borderRadius: "var(--radius-xs)",
-                  cursor: "pointer",
-                  fontSize: "15px",
-                  fontWeight: "600",
-                  boxShadow: "none",
-                  transition: "all 0.2s",
-                  width: "100%",
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = "var(--primary-dark)";
-                  prefetchJob(nextJob?.jobNumber); // warm SWR cache on hover
-                }}
-                onMouseLeave={(e) => (e.target.style.backgroundColor = "var(--primary)")}
-              >
-                Start Job
-              </button>
             </div>
-          </div>
+
+            <DevLayoutSection
+              as="button"
+              type="button"
+              sectionKey="tech-dashboard-next-job-action"
+              parentKey="tech-dashboard-next-job"
+              sectionType="content-card"
+              className="tech-dashboard-primary-button"
+              onClick={() => handleStartJob(nextJob)}
+              onMouseEnter={() => prefetchJob(nextJob?.jobNumber)}
+            >
+              Start Job
+            </DevLayoutSection>
+          </SectionShell>
         )}
 
-        <div
-          style={{
-            backgroundColor: "var(--surface)",
-            padding: "24px",
-            borderRadius: "var(--radius-md)",
-            boxShadow: "none",
-            border: "none",
-          }}
+        <SectionShell
+          sectionKey="tech-dashboard-assigned-jobs"
+          parentKey="tech-dashboard-page"
+          backgroundToken="page-card-alt"
         >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "20px",
-            }}
+          <DevLayoutSection
+            sectionKey="tech-dashboard-assigned-jobs-header"
+            parentKey="tech-dashboard-assigned-jobs"
+            sectionType="toolbar"
+            className="app-layout-header-row"
           >
-            <h2
-              style={{
-                fontSize: "20px",
-                fontWeight: "700",
-                color: "var(--text-primary)",
-                margin: 0,
-              }}
-            ></h2>
-          </div>
-
-          {myJobs.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "40px", color: "var(--text-secondary)" }}>
-              <p style={{ fontSize: "16px" }}>No jobs assigned yet</p>
+            <div style={{ display: "grid", gap: "4px" }}>
+              <h2 style={sectionHeadingStyle}>My Assigned Jobs</h2>
+              <p style={sectionCopyStyle}>
+                Showing the next three jobs currently assigned to you.
+              </p>
             </div>
-          ) : (
-            <div
+          </DevLayoutSection>
+
+          {visibleJobs.length === 0 ? (
+            <DevLayoutSection
+              sectionKey="tech-dashboard-assigned-jobs-empty"
+              parentKey="tech-dashboard-assigned-jobs"
+              sectionType="content-card"
+              className="app-layout-card"
               style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px",
+                alignItems: "center",
+                justifyContent: "center",
+                textAlign: "center",
+                minHeight: "140px",
               }}
             >
-              {myJobs.slice(0, 3).map((job) => (
-                <div
-                  key={job.id}
-                  onClick={() => handleStartJob(job)}
+              <p style={{ fontSize: "16px", color: "var(--text-secondary)", margin: 0 }}>
+                No jobs assigned yet.
+              </p>
+            </DevLayoutSection>
+          ) : (
+            <DevLayoutSection
+              sectionKey="tech-dashboard-assigned-jobs-rows"
+              parentKey="tech-dashboard-assigned-jobs"
+              sectionType="table-rows"
+              style={jobsListStyle}
+            >
+              {visibleJobs.map((job, index) => (
+                <DevLayoutSection
+                  key={job.id || job.jobNumber || index}
+                  as="button"
+                  type="button"
+                  sectionKey={`tech-dashboard-assigned-job-${index + 1}`}
+                  parentKey="tech-dashboard-assigned-jobs-rows"
+                  sectionType="content-card"
+                  className="app-layout-card tech-dashboard-surface-button"
                   style={{
-                    border: "none",
-                    borderRadius: "var(--radius-xs)",
-                    padding: "16px",
-                    cursor: "pointer",
-                    transition: "all 0.2s",
-                    backgroundColor: "var(--surface)",
+                    textAlign: "left",
+                    justifyContent: "space-between",
                   }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = "rgba(var(--primary-rgb), 0.06)";
-                    e.currentTarget.style.borderColor = "var(--primary)";
-                    prefetchJob(job.jobNumber); // warm SWR cache on hover
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "var(--surface)";
-                    e.currentTarget.style.borderColor = "var(--surface-light)";
-                  }}
+                  onClick={() => handleStartJob(job)}
+                  onMouseEnter={() => prefetchJob(job.jobNumber)}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      gap: "12px",
+                      width: "100%",
+                    }}
+                  >
+                    <div style={{ display: "grid", gap: "4px" }}>
                       <p
                         style={{
                           fontSize: "16px",
                           fontWeight: "700",
                           color: "var(--primary)",
-                          margin: "0 0 4px 0",
+                          margin: 0,
                         }}
                       >
                         {job.jobNumber}
                       </p>
-                      <p style={{ fontSize: "14px", color: "var(--text-secondary)", margin: "0 0 4px 0" }}>
+                      <p style={{ fontSize: "14px", color: "var(--text-secondary)", margin: 0 }}>
                         {job.customer} | {job.reg}
                       </p>
-                      <p style={{ fontSize: "13px", color: "var(--text-secondary)", margin: 0 }}>{job.makeModel}</p>
+                      <p style={{ fontSize: "13px", color: "var(--text-secondary)", margin: 0 }}>
+                        {job.makeModel || "Vehicle details missing"}
+                      </p>
                     </div>
-                    <div
-                      style={{
-                        padding: "6px 12px",
-                        backgroundColor:
-                          job.status === "In Progress"
-                            ? "var(--accent-purple-surface)"
-                            : job.status === "Complete"
-                              ? "var(--success-surface)"
-                              : "var(--warning-surface)",
-                        color:
-                          job.status === "In Progress"
-                            ? "var(--primary)"
-                            : job.status === "Complete"
-                              ? "var(--success-text)"
-                              : "var(--warning-text)",
-                        border:
-                          job.status === "In Progress"
-                            ? "none"
-                            : job.status === "Complete"
-                              ? "1px solid var(--success-border)"
-                              : "1px solid var(--warning-border)",
-                        borderRadius: "var(--radius-sm)",
-                        fontSize: "12px",
-                        fontWeight: "600",
-                      }}
-                    >
-                      {job.status}
-                    </div>
+                    <div style={getStatusBadgeStyle(job.status)}>{job.status}</div>
                   </div>
-                </div>
+                </DevLayoutSection>
               ))}
+
               {myJobs.length > 3 && (
-                <div
-                  style={{
-                    border: "none",
-                    backgroundColor: "rgba(var(--primary-rgb), 0.08)",
-                    borderRadius: "var(--radius-xs)",
-                    padding: "12px 16px",
-                    color: "var(--text-secondary)",
-                    fontSize: "14px",
-                    fontWeight: "600",
-                  }}
+                <DevLayoutSection
+                  sectionKey="tech-dashboard-assigned-jobs-more"
+                  parentKey="tech-dashboard-assigned-jobs-rows"
+                  sectionType="content-card"
+                  className="app-layout-surface-subtle"
                 >
-                  More jobs available. Click the "View All Jobs" button below.
-                </div>
+                  <p style={{ ...sectionCopyStyle, fontWeight: "600" }}>
+                    More jobs are available. Use View All Jobs below to open the full list.
+                  </p>
+                </DevLayoutSection>
               )}
-            </div>
+            </DevLayoutSection>
           )}
-        </div>
+        </SectionShell>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 140px), 1fr))",
-            gap: "12px",
-          }}
+        <DevLayoutSection
+          sectionKey="tech-dashboard-actions"
+          parentKey="tech-dashboard-page"
+          sectionType="toolbar"
+          className="app-layout-toolbar-row"
+          style={actionGridStyle}
         >
-          <button
-            onClick={() => router.push("/job-cards/Myjobs")}
-            style={{
-              padding: "20px",
-              backgroundColor: "rgba(var(--primary-rgb), 0.08)",
-              border: "none",
-              borderRadius: "var(--radius-sm)",
-              cursor: "pointer",
-              textAlign: "center",
-              boxShadow: "none",
-              transition: "all 0.2s",
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.transform = "translateY(-2px)";
-              e.target.style.backgroundColor = "rgba(var(--primary-rgb), 0.14)";
-              e.target.style.zIndex = "var(--hover-surface-z, 80)";
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.transform = "translateY(0)";
-              e.target.style.backgroundColor = "rgba(var(--primary-rgb), 0.08)";
-              e.target.style.zIndex = "0";
-            }}
-          >
-            <div style={{ fontSize: "16px", fontWeight: "700", color: "var(--text-primary)" }}>View All Jobs</div>
-          </button>
+          {dashboardActions.map((action) => (
+            <DevLayoutSection
+              key={action.key}
+              as="button"
+              type="button"
+              sectionKey={`tech-dashboard-action-${action.key}`}
+              parentKey="tech-dashboard-actions"
+              sectionType="content-card"
+              className="app-layout-card tech-dashboard-action-button"
+              onClick={() => router.push(action.href)}
+            >
+              <div style={{ fontSize: "16px", fontWeight: "700", color: "var(--text-primary)" }}>
+                {action.label}
+              </div>
+            </DevLayoutSection>
+          ))}
+        </DevLayoutSection>
+      </DevLayoutSection>
 
-          <button
-            onClick={() => router.push("/tech/efficiency")}
-            style={{
-              padding: "20px",
-              backgroundColor: "rgba(var(--primary-rgb), 0.08)",
-              border: "none",
-              borderRadius: "var(--radius-sm)",
-              cursor: "pointer",
-              textAlign: "center",
-              boxShadow: "none",
-              transition: "all 0.2s",
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.transform = "translateY(-2px)";
-              e.target.style.backgroundColor = "rgba(var(--primary-rgb), 0.14)";
-              e.target.style.zIndex = "var(--hover-surface-z, 80)";
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.transform = "translateY(0)";
-              e.target.style.backgroundColor = "rgba(var(--primary-rgb), 0.08)";
-              e.target.style.zIndex = "0";
-            }}
-          >
-            <div style={{ fontSize: "16px", fontWeight: "700", color: "var(--text-primary)" }}>Time Tracking</div>
-          </button>
+      <style jsx>{`
+        .tech-dashboard-primary-button {
+          width: 100%;
+          border: none;
+          border-radius: var(--radius-sm);
+          padding: 14px 20px;
+          background: var(--primary);
+          color: var(--text-inverse);
+          font-size: 15px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background-color 0.2s ease, transform 0.2s ease;
+        }
 
-          <button
-            onClick={() => router.push("/tech/consumables-request")}
-            style={{
-              padding: "20px",
-              backgroundColor: "rgba(var(--primary-rgb), 0.08)",
-              border: "none",
-              borderRadius: "var(--radius-sm)",
-              cursor: "pointer",
-              textAlign: "center",
-              boxShadow: "none",
-              transition: "all 0.2s",
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.transform = "translateY(-2px)";
-              e.target.style.backgroundColor = "rgba(var(--primary-rgb), 0.14)";
-              e.target.style.zIndex = "var(--hover-surface-z, 80)";
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.transform = "translateY(0)";
-              e.target.style.backgroundColor = "rgba(var(--primary-rgb), 0.08)";
-              e.target.style.zIndex = "0";
-            }}
-          >
-            <div style={{ fontSize: "16px", fontWeight: "700", color: "var(--text-primary)" }}>Request Consumables</div>
-          </button>
-        </div>
-      </div>
+        .tech-dashboard-primary-button:hover,
+        .tech-dashboard-primary-button:focus-visible {
+          background: var(--primary-dark);
+          transform: translateY(-1px);
+        }
+
+        .tech-dashboard-surface-button,
+        .tech-dashboard-action-button {
+          appearance: none;
+          width: 100%;
+          cursor: pointer;
+          transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+        }
+
+        .tech-dashboard-action-button {
+          min-height: 88px;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          background: rgba(var(--primary-rgb), 0.08);
+        }
+
+        .tech-dashboard-surface-button:hover,
+        .tech-dashboard-surface-button:focus-visible,
+        .tech-dashboard-action-button:hover,
+        .tech-dashboard-action-button:focus-visible {
+          transform: translateY(-2px);
+          border-color: rgba(var(--accent-base-rgb), 0.32);
+          background: rgba(var(--primary-rgb), 0.12);
+          z-index: var(--hover-surface-z, 80);
+        }
+      `}</style>
     </Layout>
   );
 }

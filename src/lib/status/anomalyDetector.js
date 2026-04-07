@@ -142,14 +142,43 @@ function checkStatusMismatch(snapshot, timeline) {
   const overallStatus = snapshot.job?.overallStatus; // Current main status
   if (!overallStatus) return null; // No status to check
 
-  // If timeline shows tech work completed but status is still checked_in.
-  const hasTechComplete = timeline.some((e) => e.status === "technician_work_completed"); // Tech complete exists
-  if (hasTechComplete && overallStatus === "checked_in") {
+  const parseEntryTime = (entry) => {
+    const raw = entry?.timestamp || entry?.at || null;
+    const parsed = raw ? new Date(raw).getTime() : Number.NaN;
+    return Number.isNaN(parsed) ? null : parsed;
+  };
+
+  const latestTechComplete = [...timeline]
+    .filter((e) => e.status === "technician_work_completed")
+    .map(parseEntryTime)
+    .filter((value) => value !== null)
+    .sort((a, b) => b - a)[0] || null;
+
+  if (!latestTechComplete) return null;
+
+  const latestTechStarted = [...timeline]
+    .filter((e) => e.status === "technician_started")
+    .map(parseEntryTime)
+    .filter((value) => value !== null)
+    .sort((a, b) => b - a)[0] || null;
+
+  const hasRestartedAfterCompletion =
+    latestTechStarted !== null && latestTechStarted > latestTechComplete;
+  const hasActiveClocking = Boolean(snapshot.workflows?.clocking?.active);
+
+  // If timeline shows tech work completed but status is still checked_in, and there has not been
+  // a later technician restart/active workshop session, the main status is genuinely lagging behind.
+  if (
+    overallStatus === "checked_in" &&
+    !hasRestartedAfterCompletion &&
+    !hasActiveClocking
+  ) {
     return {
       code: "STATUS_MISMATCH",
       severity: "warning",
       message: "Job status may not reflect current progress — tech work completed but status is still Checked In",
-      detail: null,
+      detail:
+        'Reason: the technician completion event exists, but the main job status is still "Checked In" instead of moving into workshop progress. Fix: change the main status to "In Progress" and then press "Complete Job" again if needed.',
       workflowKey: "system",
     };
   }

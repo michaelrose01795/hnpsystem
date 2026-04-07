@@ -210,6 +210,54 @@ const isRequestComplete = (status) => {
   return normalized === "complete" || normalized === "completed" || normalized === "done";
 };
 
+const extractWriteUpTasks = (taskChecklist) => {
+  if (!taskChecklist) return [];
+  if (Array.isArray(taskChecklist)) return taskChecklist.filter(Boolean);
+  if (typeof taskChecklist === "string") {
+    try {
+      const parsed = JSON.parse(taskChecklist);
+      return extractWriteUpTasks(parsed);
+    } catch (_error) {
+      return [];
+    }
+  }
+  if (typeof taskChecklist === "object") {
+    return Array.isArray(taskChecklist.tasks) ? taskChecklist.tasks.filter(Boolean) : [];
+  }
+  return [];
+};
+
+const buildWriteUpTaskSummary = (tasks = []) => {
+  const allTasks = Array.isArray(tasks) ? tasks : [];
+  const normalizedTasks = allTasks.filter((task) => task && typeof task === "object");
+  const total = normalizedTasks.length;
+  const completed = normalizedTasks.filter((task) => {
+    if (typeof task.checked === "boolean") return task.checked;
+    return isRequestComplete(task.status);
+  }).length;
+  const started = normalizedTasks.filter((task) => {
+    const normalized = String(task?.status || "").trim().toLowerCase();
+    return normalized === "additional_work" || normalized === "inprogress" || normalized === "in_progress";
+  }).length;
+  const pending = Math.max(0, total - completed);
+  const nonMotTasks = normalizedTasks.filter((task) => !Boolean(task?.isMot));
+  const technicianTasksComplete =
+    nonMotTasks.length > 0 &&
+    nonMotTasks.every((task) => {
+      if (typeof task.checked === "boolean") return task.checked;
+      return isRequestComplete(task.status);
+    });
+
+  return {
+    total,
+    completed,
+    started,
+    pending,
+    hasStarted: started > 0 || completed > 0,
+    technicianTasksComplete,
+  };
+};
+
 const buildRequestsSummary = (rows = []) => {
   const all = Array.isArray(rows) ? rows : [];
   const total = all.length;
@@ -382,7 +430,7 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
       .limit(10),
     db
       .from("job_writeups")
-      .select("completion_status, updated_at")
+      .select("completion_status, updated_at, task_checklist")
       .eq("job_id", jobIdValue)
       .order("updated_at", { ascending: false })
       .limit(1)
@@ -754,6 +802,8 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
   const lastTrackingAt = latestVehicleEvent?.occurred_at || latestKeyEvent?.occurred_at || null;
   const latestWriteUp = writeUpRes?.data || null;
   const writeUpStatus = latestWriteUp?.completion_status || "missing";
+  const writeUpTasks = extractWriteUpTasks(latestWriteUp?.task_checklist);
+  const writeUpTaskSummary = buildWriteUpTaskSummary(writeUpTasks);
   const activeClocking =
     (clockingRes.data || []).filter((row) => !row.clock_out).slice(-1)[0] || null;
 
@@ -842,6 +892,7 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
       writeUp: {
         status: writeUpStatus,
         updatedAt: latestWriteUp?.updated_at || null,
+        tasks: writeUpTaskSummary,
       },
       clocking: {
         active: Boolean(activeClocking),

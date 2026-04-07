@@ -744,8 +744,9 @@ export default function ProfilePersonalTab({ disabled = false, onHeaderActionsCh
 
   useEffect(() => {
     onHeaderActionsChange?.(headerActions);
-    return () => onHeaderActionsChange?.(null);
   }, [headerActions, onHeaderActionsChange]);
+
+  useEffect(() => () => onHeaderActionsChange?.(null), [onHeaderActionsChange]);
 
   if (disabled) {
     return (

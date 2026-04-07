@@ -16,6 +16,7 @@ import useBodyModalLock from "@/hooks/useBodyModalLock";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import { addMonths } from "date-fns";
 import { TabGroup } from "@/components/tabAPI/TabGroup";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 const CAR_LOCATIONS = [
   { id: "na", label: "N/A" },
@@ -297,18 +298,8 @@ const nextDueFrom = (reference, intervalDays = 7) => {
 
 const cloneList = (list) => list.map((entry) => ({ ...entry }));
 
-const SECTION_STYLE = {
-  padding: "var(--page-card-padding)",
-  borderRadius: "var(--radius-xl)",
-  background: "var(--section-card-bg)",
-  border: "var(--section-card-border)",
-  display: "flex",
-  flexDirection: "column",
-  gap: "18px",
-  width: "100%",
-  maxWidth: "100%",
-  minWidth: 0,
-};
+const TRACKING_FILTER_ALL = "__all__";
+const TRACKING_FILTER_EMPTY = "__empty__";
 
 const getSectionStyle = (isMobileView) => ({
   padding: isMobileView
@@ -372,19 +363,6 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
         width: "100%",
         maxWidth: "100%",
         minWidth: 0,
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.position = "relative";
-        e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
-        e.currentTarget.style.transform = "translateY(-8px)";
-        e.currentTarget.style.boxShadow = isHighlighted
-          ? "0 8px 16px rgba(var(--danger-rgb), 0.12)"
-          : "0 8px 16px rgba(var(--accent-base-rgb), 0.12)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = "translateY(0)";
-        e.currentTarget.style.boxShadow = "none";
-        e.currentTarget.style.zIndex = "0";
       }}
     >
       <div>
@@ -1474,9 +1452,6 @@ const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries =
             <div key={input.field} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               <label style={{ fontSize: "var(--text-body-sm)", color: "var(--info)", fontWeight: 600 }}>
                 {input.label}
-                {["jobNumber", "reg", "customer"].includes(input.field) && (
-                  <span style={{ fontSize: "var(--text-caption)", color: "var(--info)", fontWeight: 400 }}> (at least one required)</span>
-                )}
               </label>
               <input
                 value={form[input.field]}
@@ -1595,12 +1570,24 @@ export default function TrackingDashboard() {
   const [activeTopUpId, setActiveTopUpId] = useState(null);
   const [topUpValue, setTopUpValue] = useState("");
   const [isMobileView, setIsMobileView] = useState(false); // portrait phone layout toggle
+  const [isWideTrackerView, setIsWideTrackerView] = useState(false);
+  const [trackerSearchTerm, setTrackerSearchTerm] = useState("");
+  const [trackerStatusFilter, setTrackerStatusFilter] = useState(TRACKING_FILTER_ALL);
+  const [trackerVehicleLocationFilter, setTrackerVehicleLocationFilter] = useState(TRACKING_FILTER_ALL);
 
   // Match the portrait-phone behaviour used across the app shell.
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 640px) and (orientation: portrait)");
     setIsMobileView(mediaQuery.matches);
     const handler = (event) => setIsMobileView(event.matches);
+    mediaQuery.addEventListener("change", handler);
+    return () => mediaQuery.removeEventListener("change", handler);
+  }, []);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(min-width: 1280px)");
+    setIsWideTrackerView(mediaQuery.matches);
+    const handler = (event) => setIsWideTrackerView(event.matches);
     mediaQuery.addEventListener("change", handler);
     return () => mediaQuery.removeEventListener("change", handler);
   }, []);
@@ -2013,6 +2000,90 @@ export default function TrackingDashboard() {
     [entries]
   );
 
+  const trackerStatusFilterOptions = useMemo(() => {
+    const values = Array.from(
+      new Set(
+        activeEntries
+          .map((entry) => String(entry.status || "").trim())
+          .filter(Boolean)
+      )
+    ).sort((a, b) => a.localeCompare(b));
+
+    return [
+      { key: TRACKING_FILTER_ALL, value: TRACKING_FILTER_ALL, label: "All statuses" },
+      ...values.map((value) => ({
+        key: `status-${value.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+        value,
+        label: value,
+      })),
+    ];
+  }, [activeEntries]);
+
+  const trackerVehicleLocationFilterOptions = useMemo(() => {
+    const values = Array.from(
+      new Set(
+        activeEntries.map((entry) => {
+          const location = String(entry.vehicleLocation || "").trim();
+          return location || TRACKING_FILTER_EMPTY;
+        })
+      )
+    ).sort((a, b) => {
+      if (a === TRACKING_FILTER_EMPTY) return 1;
+      if (b === TRACKING_FILTER_EMPTY) return -1;
+      return a.localeCompare(b);
+    });
+
+    return [
+      { key: TRACKING_FILTER_ALL, value: TRACKING_FILTER_ALL, label: "All car locations" },
+      ...values.map((value) => ({
+        key: `vehicle-location-${String(value).toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+        value,
+        label: value === TRACKING_FILTER_EMPTY ? "No car location" : value,
+      })),
+    ];
+  }, [activeEntries]);
+
+  const filteredActiveEntries = useMemo(() => {
+    const query = trackerSearchTerm.trim().toLowerCase();
+
+    return activeEntries.filter((entry) => {
+      const matchesSearch =
+        !query ||
+        [
+          entry.jobNumber,
+          entry.reg,
+          entry.customer,
+          entry.makeModel,
+          entry.colour,
+          entry.serviceType,
+          entry.status,
+          entry.vehicleLocation,
+          normalizeKeyLocationLabel(entry.keyLocation),
+        ]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(query));
+
+      if (!matchesSearch) {
+        return false;
+      }
+
+      const entryStatus = String(entry.status || "").trim();
+      if (trackerStatusFilter !== TRACKING_FILTER_ALL && entryStatus !== trackerStatusFilter) {
+        return false;
+      }
+
+      const entryVehicleLocation = String(entry.vehicleLocation || "").trim() || TRACKING_FILTER_EMPTY;
+      if (
+        trackerVehicleLocationFilter !== TRACKING_FILTER_ALL &&
+        entryVehicleLocation !== trackerVehicleLocationFilter
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [activeEntries, trackerSearchTerm, trackerStatusFilter, trackerVehicleLocationFilter]);
+
   const closeSearchModal = () => setSearchModal({ open: false, type: null });
 
   const openEntryModal = (type, entry = null) => setEntryModal({ open: true, type, entry });
@@ -2095,20 +2166,50 @@ export default function TrackingDashboard() {
   };
 
   const renderTrackerContent = () => (
-    <section style={SECTION_STYLE}>
-      <div
+    <>
+      <DevLayoutSection
+        sectionKey="tracking-active-jobs-header"
+        parentKey="tracking-page-body"
+        sectionType="toolbar"
         style={{
           display: "flex",
-          justifyContent: "space-between",
           flexWrap: "wrap",
           gap: "12px",
-          alignItems: "flex-start",
+          alignItems: "center",
         }}
       >
-        <div>
-          <h1 style={{ margin: "6px 0 0", fontSize: "var(--text-h1)", color: "var(--accent-purple)" }}>Active jobs</h1>
-        </div>
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+        <SearchBar
+          value={trackerSearchTerm}
+          onChange={(event) => setTrackerSearchTerm(event.target.value)}
+          onClear={() => setTrackerSearchTerm("")}
+          placeholder="Search active jobs"
+          ariaLabel="Search active jobs"
+          style={{
+            flex: "1 1 320px",
+            minWidth: "240px",
+          }}
+        />
+        <DropdownField
+          options={trackerStatusFilterOptions}
+          value={trackerStatusFilter}
+          onValueChange={(value) => setTrackerStatusFilter(value || TRACKING_FILTER_ALL)}
+          size="md"
+          style={{
+            flex: "0 1 220px",
+            minWidth: "180px",
+          }}
+        />
+        <DropdownField
+          options={trackerVehicleLocationFilterOptions}
+          value={trackerVehicleLocationFilter}
+          onValueChange={(value) => setTrackerVehicleLocationFilter(value || TRACKING_FILTER_ALL)}
+          size="md"
+          style={{
+            flex: "0 1 220px",
+            minWidth: "190px",
+          }}
+        />
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginLeft: "auto" }}>
           <button
             type="button"
             onClick={loadEntries}
@@ -2144,9 +2245,12 @@ export default function TrackingDashboard() {
             Add location
           </button>
         </div>
-      </div>
+      </DevLayoutSection>
       {entries.length === 0 && (
-        <div
+        <DevLayoutSection
+          sectionKey="tracking-active-jobs-empty-state"
+          parentKey="tracking-page-body"
+          sectionType="empty-state"
           style={{
             padding: "12px",
             borderRadius: "var(--radius-sm)",
@@ -2156,10 +2260,13 @@ export default function TrackingDashboard() {
           }}
         >
           No active job tracking data yet.
-        </div>
+        </DevLayoutSection>
       )}
       {activeEntries.length === 0 && entries.length > 0 && (
-        <div
+        <DevLayoutSection
+          sectionKey="tracking-active-jobs-unmapped-state"
+          parentKey="tracking-page-body"
+          sectionType="empty-state"
           style={{
             padding: "12px",
             borderRadius: "var(--radius-sm)",
@@ -2169,12 +2276,32 @@ export default function TrackingDashboard() {
           }}
         >
           Waiting for job-mapped tracking entries.
-        </div>
+        </DevLayoutSection>
       )}
-      <div
+      {activeEntries.length > 0 && filteredActiveEntries.length === 0 && (
+        <DevLayoutSection
+          sectionKey="tracking-active-jobs-filter-empty-state"
+          parentKey="tracking-page-body"
+          sectionType="empty-state"
+          style={{
+            padding: "12px",
+            borderRadius: "var(--radius-sm)",
+            border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
+            textAlign: "center",
+            color: "var(--info-dark)",
+          }}
+        >
+          No active jobs match your search or filters.
+        </DevLayoutSection>
+      )}
+      <DevLayoutSection
+        sectionKey="tracking-active-jobs-list"
+        parentKey="tracking-page-body"
+        sectionType="list"
         style={{
-          display: "flex",
-          flexDirection: "column",
+          display: "grid",
+          gridTemplateColumns:
+            !isMobileView && isWideTrackerView ? "repeat(2, minmax(0, 1fr))" : "minmax(0, 1fr)",
           gap: "20px",
           maxHeight: isMobileView ? "none" : "calc(4 * 180px + 3 * 12px)",
           overflowY: "auto",
@@ -2184,37 +2311,53 @@ export default function TrackingDashboard() {
           minWidth: 0,
         }}
       >
-        {activeEntries.map((entry) => {
+        {filteredActiveEntries.map((entry, index) => {
           const isHighlighted = highlightedJobNumber && entry.jobNumber?.toLowerCase() === highlightedJobNumber.toLowerCase();
           return (
-            <CombinedTrackerCard
+            <DevLayoutSection
               key={entry.jobId || entry.id || `${entry.jobNumber}-${entry.updatedAt}`}
-              entry={entry}
-              isHighlighted={isHighlighted}
-              onClick={() => openEntryModal("car", {
-                id: entry.id,
-                jobId: entry.jobId,
-                jobNumber: entry.jobNumber,
-                reg: entry.reg,
-                customer: entry.customer,
-                colour: entry.colour,
-                serviceType: entry.serviceType,
-                vehicleLocation: entry.vehicleLocation,
-                keyLocation: entry.keyLocation,
-                status: entry.status,
-                keyTip: entry.keyTip,
-                notes: entry.notes,
-              })}
-            />
+              sectionKey={`tracking-active-jobs-card-${index + 1}`}
+              parentKey="tracking-active-jobs-list"
+              sectionType="content-card"
+            >
+              <CombinedTrackerCard
+                entry={entry}
+                isHighlighted={isHighlighted}
+                isMobileView={isMobileView}
+                onClick={() => openEntryModal("car", {
+                  id: entry.id,
+                  jobId: entry.jobId,
+                  jobNumber: entry.jobNumber,
+                  reg: entry.reg,
+                  customer: entry.customer,
+                  colour: entry.colour,
+                  serviceType: entry.serviceType,
+                  vehicleLocation: entry.vehicleLocation,
+                  keyLocation: entry.keyLocation,
+                  status: entry.status,
+                  keyTip: entry.keyTip,
+                  notes: entry.notes,
+                })}
+              />
+            </DevLayoutSection>
           );
         })}
-      </div>
-    </section>
+      </DevLayoutSection>
+    </>
   );
 
   const renderEquipmentContent = () => (
-    <section style={{ ...getSectionStyle(isMobileView), gap: "20px" }}>
-      <div
+    <DevLayoutSection
+      sectionKey="tracking-equipment-panel"
+      parentKey="tracking-page-body"
+      sectionType="section-shell"
+      backgroundToken="surface"
+      style={{ ...getSectionStyle(isMobileView), gap: "20px" }}
+    >
+      <DevLayoutSection
+        sectionKey="tracking-equipment-header"
+        parentKey="tracking-equipment-panel"
+        sectionType="toolbar"
         style={{
           display: "flex",
           justifyContent: "space-between",
@@ -2246,8 +2389,11 @@ export default function TrackingDashboard() {
         {equipmentLoading && (
           <span style={{ alignSelf: "center", color: "var(--info)", fontWeight: 600 }}>Loading…</span>
         )}
-      </div>
-      <div
+      </DevLayoutSection>
+      <DevLayoutSection
+        sectionKey="tracking-equipment-grid"
+        parentKey="tracking-equipment-panel"
+        sectionType="grid"
         style={{
           display: "grid",
           gridTemplateColumns: isMobileView ? "minmax(0, 1fr)" : "repeat(auto-fit, minmax(260px, 1fr))",
@@ -2256,7 +2402,10 @@ export default function TrackingDashboard() {
         }}
       >
         {equipmentChecks.length === 0 && (
-          <div
+          <DevLayoutSection
+            sectionKey="tracking-equipment-empty-state"
+            parentKey="tracking-equipment-grid"
+            sectionType="empty-state"
             style={{
               gridColumn: "1 / -1",
               padding: "12px",
@@ -2267,17 +2416,20 @@ export default function TrackingDashboard() {
             }}
           >
             Equipment service list is empty.
-          </div>
+          </DevLayoutSection>
         )}
-        {equipmentChecks.map((check) => {
+        {equipmentChecks.map((check, index) => {
           const dueLabel = getDueLabel(check.nextDue);
           const isDue = dueLabel === "Due now";
           const statusLabel = (check.status || "").toLowerCase();
           const badgeColor = statusLabel.includes("due") || isDue ? "var(--danger)" : "var(--success-dark)";
           const durationLabel = getDurationDisplay(check);
           return (
-            <div
+            <DevLayoutSection
               key={check.id}
+              sectionKey={`tracking-equipment-card-${index + 1}`}
+              parentKey="tracking-equipment-grid"
+              sectionType="content-card"
               role="button"
               tabIndex={0}
               onClick={() => setEquipmentModal({ open: true, item: check })}
@@ -2369,16 +2521,25 @@ export default function TrackingDashboard() {
               >
                 Log check
               </button>
-            </div>
+            </DevLayoutSection>
           );
         })}
-      </div>
-    </section>
+      </DevLayoutSection>
+    </DevLayoutSection>
   );
 
   const renderOilContent = () => (
-    <section style={{ ...getSectionStyle(isMobileView), gap: "20px" }}>
-      <div
+    <DevLayoutSection
+      sectionKey="tracking-oil-panel"
+      parentKey="tracking-page-body"
+      sectionType="section-shell"
+      backgroundToken="surface"
+      style={{ ...getSectionStyle(isMobileView), gap: "20px" }}
+    >
+      <DevLayoutSection
+        sectionKey="tracking-oil-header"
+        parentKey="tracking-oil-panel"
+        sectionType="toolbar"
         style={{
           display: "flex",
           justifyContent: "space-between",
@@ -2410,8 +2571,11 @@ export default function TrackingDashboard() {
         {oilLoading && (
           <span style={{ alignSelf: "center", color: "var(--info)", fontWeight: 600 }}>Loading…</span>
         )}
-      </div>
-      <div
+      </DevLayoutSection>
+      <DevLayoutSection
+        sectionKey="tracking-oil-grid"
+        parentKey="tracking-oil-panel"
+        sectionType="grid"
         style={{
           display: "grid",
           gridTemplateColumns: isMobileView ? "minmax(0, 1fr)" : "repeat(auto-fit, minmax(260px, 1fr))",
@@ -2420,7 +2584,10 @@ export default function TrackingDashboard() {
         }}
       >
         {oilChecks.length === 0 && (
-          <div
+          <DevLayoutSection
+            sectionKey="tracking-oil-empty-state"
+            parentKey="tracking-oil-grid"
+            sectionType="empty-state"
             style={{
               gridColumn: "1 / -1",
               padding: "12px",
@@ -2431,17 +2598,20 @@ export default function TrackingDashboard() {
             }}
           >
             Oil stock checklist is empty.
-          </div>
+          </DevLayoutSection>
         )}
-        {oilChecks.map((item) => {
+        {oilChecks.map((item, index) => {
           const dueLabel = getDueLabel(item.nextCheck);
           const isDue = dueLabel === "Due now";
           const durationLabel = getDurationDisplay(item);
           const isTopUpActive = activeTopUpId === item.id;
           const badgeColor = isDue ? "var(--danger)" : "var(--success-dark)";
           return (
-            <div
+            <DevLayoutSection
               key={item.id}
+              sectionKey={`tracking-oil-card-${index + 1}`}
+              parentKey="tracking-oil-grid"
+              sectionType="content-card"
               role="button"
               tabIndex={0}
               onClick={() => !isTopUpActive && setOilStockModal({ open: true, item })}
@@ -2586,11 +2756,11 @@ export default function TrackingDashboard() {
                   Mark checked
                 </button>
               )}
-            </div>
+            </DevLayoutSection>
           );
         })}
-      </div>
-    </section>
+      </DevLayoutSection>
+    </DevLayoutSection>
   );
 
   const renderActiveTabContent = () => {
@@ -2604,8 +2774,12 @@ export default function TrackingDashboard() {
   };
 
   return (
-    <Layout>
-      <div
+    <Layout disableContentCardHover>
+      <DevLayoutSection
+        sectionKey="tracking-page"
+        parentKey="app-layout-page-card"
+        sectionType="section-shell"
+        backgroundToken="surface"
         className="app-page-stack"
         style={{
           display: "flex",
@@ -2617,7 +2791,10 @@ export default function TrackingDashboard() {
           padding: "8px 0",
         }}
       >
-        <div
+        <DevLayoutSection
+          sectionKey="tracking-page-body"
+          parentKey="tracking-page"
+          sectionType="section-shell"
           style={{
             display: "flex",
             flexDirection: "column",
@@ -2628,15 +2805,24 @@ export default function TrackingDashboard() {
           }}
         >
           {tabs.length > 1 && (
-            <TabGroup
-              items={tabs.map((tab) => ({ label: tab.label, value: tab.id }))}
-              value={activeTab}
-              onChange={setActiveTab}
-              ariaLabel="Tracker tabs"
-            />
+            <DevLayoutSection
+              sectionKey="tracking-page-tabs"
+              parentKey="tracking-page-body"
+              sectionType="toolbar"
+            >
+              <TabGroup
+                items={tabs.map((tab) => ({ label: tab.label, value: tab.id }))}
+                value={activeTab}
+                onChange={setActiveTab}
+                ariaLabel="Tracker tabs"
+              />
+            </DevLayoutSection>
           )}
           {error && (
-            <div
+            <DevLayoutSection
+              sectionKey="tracking-page-error"
+              parentKey="tracking-page-body"
+              sectionType="banner"
               style={{
                 padding: "12px 16px",
                 borderRadius: "var(--radius-md)",
@@ -2647,11 +2833,11 @@ export default function TrackingDashboard() {
               }}
             >
               {error}
-            </div>
+            </DevLayoutSection>
           )}
           {renderActiveTabContent()}
-        </div>
-      </div>
+        </DevLayoutSection>
+      </DevLayoutSection>
 
       {searchModal.open && (
         <LocationSearchModal

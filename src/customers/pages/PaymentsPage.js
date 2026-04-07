@@ -24,12 +24,6 @@ export default function CustomerPaymentsPage() {
           {error}
         </div>
       )}
-      {isLoading ? (
-        <div className="mb-4 rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] p-5 text-sm text-[var(--text-secondary)]">
-          Loading your payment information…
-        </div>
-      ) : null}
-
       <div className="grid gap-6">
         <OutstandingInvoicesCard invoices={outstandingInvoices} />
         <PaymentPlansCard paymentPlans={paymentPlans} />
