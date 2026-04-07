@@ -16,6 +16,7 @@ import { isValidUuid } from "@/lib/utils/ids";
 import { createOrUpdateVehicle } from "@/lib/database/vehicles";
 import { TabGroup } from "@/components/tabAPI/TabGroup";
 import { prefetchJob } from "@/lib/swr/prefetch";
+import { getVehicleRegistration, pickMileageValue } from "@/lib/canonical/fields";
 
 const TAB_DEFINITIONS = [
   { id: "vehicles", label: "Vehicles" },
@@ -430,7 +431,7 @@ const VehiclesTab = ({ vehicles, customerId, onVehicleAdded }) => {
           }}
         >
           {vehicles.map((vehicle) => {
-            const registration = vehicle.registration || vehicle.reg_number || "Unregistered";
+            const registration = getVehicleRegistration(vehicle, "Unregistered");
             const makeModel =
               vehicle.make_model ||
               [vehicle.make, vehicle.model].filter(Boolean).join(" ") ||
@@ -609,8 +610,8 @@ const HistoryTab = ({ jobs }) => {
                 value={job.vehicle_make_model || job.vehicle_reg}
               />
               <VehicleField
-                label="Milage"
-                value={job.milage ? `${job.milage} miles` : null}
+                label="Mileage"
+                value={pickMileageValue(job.mileage, job.milage) ? `${pickMileageValue(job.mileage, job.milage)} miles` : null}
               />
               <VehicleField label="Created" value={formatDate(job.created_at)} />
               <VehicleField label="Updated" value={formatDate(job.updated_at)} />

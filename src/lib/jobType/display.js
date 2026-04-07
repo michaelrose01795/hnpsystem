@@ -1,3 +1,5 @@
+import { getJobRequests } from "@/lib/canonical/fields";
+
 const DETECTED_JOB_TYPE_LABELS = {
   EML: "EML",
   SERVICE: "Service",
@@ -71,7 +73,7 @@ const jobMentionsMot = (job = {}) => {
   const haystack = [
     toText(job?.type),
     toText(job?.description),
-    extractRequestText(job?.requests),
+    extractRequestText(getJobRequests(job)),
   ]
     .join(" ")
     .toLowerCase();

@@ -1,6 +1,7 @@
 import { supabaseService } from "@/lib/supabaseClient";
 import { sendSystemNotification } from "@/lib/notifications/system";
 import { resolveJobIdentity } from "@/lib/jobs/jobIdentity";
+import { getVehicleRegistration } from "@/lib/canonical/fields";
 
 const BOOKING_REQUEST_FIELDS = `
   request_id,
@@ -104,7 +105,7 @@ const safeName = (jobsRow) => {
 
 const buildSubmissionMessage = (job, description, submittedByName) => {
   const who = submittedByName || safeName(job);
-  const reg = job.vehicle_reg || job.vehicle?.registration || "";
+  const reg = job.vehicle_reg || getVehicleRegistration(job.vehicle);
   return `📩 Booking request received for Job #${job.job_number} ${reg ? `(${reg}) ` : ""}by ${who}.\n\n${description}`;
 };
 

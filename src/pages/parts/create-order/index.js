@@ -13,6 +13,7 @@ import { updateCustomer } from "@/lib/database/customers";
 import { CalendarField } from "@/components/calendarAPI";
 import { TimePickerField } from "@/components/timePickerAPI";
 import { SearchBar } from "@/components/searchBarAPI";
+import { getVehicleRegistration } from "@/lib/canonical/fields";
 
 const cardStyle = {
   gap: "18px",
@@ -314,7 +315,7 @@ export default function PartsJobCardPage() {
       if (!error && data) {
         setForm((prev) => ({
           ...prev,
-          vehicle_reg: data.registration || data.reg_number || prev.vehicle_reg,
+          vehicle_reg: getVehicleRegistration(data) || prev.vehicle_reg,
           vehicle_make: data.make || data.make_model || prev.vehicle_make,
           vehicle_model: data.model || prev.vehicle_model,
           vehicle_vin: data.vin || data.chassis || prev.vehicle_vin,

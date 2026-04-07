@@ -2,6 +2,7 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/database/vehicles.js
 import { supabase } from "@/lib/supabaseClient";
+import { buildRegistrationWriteFields } from "@/lib/canonical/fields";
 
 /* ============================================
    GET VEHICLE BY REGISTRATION
@@ -255,8 +256,7 @@ export const createOrUpdateVehicle = async (vehicleData) => {
       
       const updateData = {
         ...vehicleData,
-        registration: regNumber, // NEW column
-        reg_number: regNumber, // OLD column (keep for compatibility)
+        ...buildRegistrationWriteFields(regNumber), // writes both registration + reg_number
         updated_at: new Date().toISOString(),
       };
 
@@ -277,8 +277,7 @@ export const createOrUpdateVehicle = async (vehicleData) => {
       
       const insertData = {
         ...vehicleData,
-        registration: regNumber, // NEW column
-        reg_number: regNumber, // OLD column (keep for compatibility)
+        ...buildRegistrationWriteFields(regNumber), // writes both registration + reg_number
         created_at: new Date().toISOString(),
       };
 

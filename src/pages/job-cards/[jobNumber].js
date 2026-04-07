@@ -25,6 +25,11 @@ import {
   normalizeRequests,
   mapCustomerJobsToHistory
 } from "@/lib/jobcards/utils";
+import {
+  getJobRequests,
+  getVehicleRegistration,
+  pickMileageValue as canonicalPickMileageValue,
+} from "@/lib/canonical/fields";
 import { summarizePartsPipeline } from "@/lib/partsPipeline";
 import { STATUSES as JOB_STATUSES } from "@/lib/status/catalog/job";
 import { resolveMainStatusId } from "@/lib/status/statusFlow";
@@ -429,14 +434,8 @@ const isStatusReadyForInvoicing = (status, statusId) => {
   return normalizeStatusId(status) === JOB_STATUSES.IN_PROGRESS;
 };
 
-const pickMileageValue = (...values) => {
-  for (const value of values) {
-    if (value === null || value === undefined) continue;
-    if (typeof value === "string" && value.trim() === "") continue;
-    return value;
-  }
-  return null;
-};
+/** @deprecated Use canonicalPickMileageValue from @/lib/canonical/fields */
+const pickMileageValue = canonicalPickMileageValue;
 
 const isRemovedAllocation = (item = {}) => normalizeStatusId(item?.status) === "removed";
 
@@ -2002,10 +2001,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         if (normalizedVehicleId && normalizedVehicleId !== jobData.vehicleId) {
           updates.vehicle_id = normalizedVehicleId;
           if (selectedVehicle) {
-            const regValue =
-              (selectedVehicle.registration ||
-                selectedVehicle.reg_number ||
-                "")?.toString().toUpperCase() || null;
+            const regValue = getVehicleRegistration(selectedVehicle) || null;
             if (regValue) {
               updates.vehicle_reg = regValue;
             }
@@ -6746,8 +6742,7 @@ function SchedulingTab({
         make_model: jobData.makeModel,
         make: jobData.make,
         model: jobData.model,
-        mileage: jobData.mileage
-          || jobData.milage
+        mileage: pickMileageValue(jobData.mileage, jobData.milage)
       });
     }
 
@@ -7047,7 +7042,7 @@ function SchedulingTab({
                 className="compact-picker"
                 options={vehicleOptions.map((vehicle) => ({
                   value: String(vehicle.vehicle_id),
-                  label: `${vehicle.registration || vehicle.reg_number || "Vehicle"} \u00B7 ${
+                  label: `${getVehicleRegistration(vehicle, "Vehicle")} \u00B7 ${
                     vehicle.make_model ||
                     [vehicle.make, vehicle.model].filter(Boolean).join(" ")
                   }`,

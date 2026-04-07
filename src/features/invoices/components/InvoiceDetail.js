@@ -1,5 +1,6 @@
 // file location: src/features/invoices/components/InvoiceDetail.js
 import React, { useState } from "react";
+import { getJobRequests } from "@/lib/canonical/fields";
 import styles from "@/features/invoices/styles/invoice.module.css";
 import ModalPortal from "@/components/popups/ModalPortal";
 import DropdownField from "@/components/dropdownAPI/DropdownField";
@@ -286,11 +287,7 @@ export default function InvoiceDetail({
     return null;
   }
 
-  const requestRowsSource = Array.isArray(jobData?.jobRequests)
-    ? jobData.jobRequests
-    : Array.isArray(jobData?.job_requests)
-    ? jobData.job_requests
-    : [];
+  const requestRowsSource = getJobRequests(jobData);
   const customerRequestIds = [];
   const authorisedRequestIds = [];
   const requestSourceById = {};

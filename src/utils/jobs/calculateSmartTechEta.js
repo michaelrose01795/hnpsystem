@@ -1,4 +1,5 @@
 import { normalizeRequests } from "@/lib/jobcards/utils";
+import { getJobRequests } from "@/lib/canonical/fields";
 import { resolveMainStatusId, resolveSubStatusId } from "@/lib/status/statusFlow";
 
 const COMPLETE_REQUEST_STATUSES = new Set(["complete", "completed", "done"]);
@@ -43,11 +44,7 @@ const parseAllocatedMinutes = (hoursValue) => {
 };
 
 const normaliseRequestRows = (job = {}) => {
-  const sourceRows = Array.isArray(job?.jobRequests)
-    ? job.jobRequests
-    : Array.isArray(job?.job_requests)
-    ? job.job_requests
-    : normalizeRequests(job?.requests || []);
+  const sourceRows = getJobRequests(job);
 
   return (Array.isArray(sourceRows) ? sourceRows : []).map((row, index) => ({
     requestId: row?.requestId ?? row?.request_id ?? null,

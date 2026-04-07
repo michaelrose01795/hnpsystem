@@ -4,6 +4,7 @@ import dayjs from "dayjs";
 import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
+import { getVehicleRegistration } from "@/lib/canonical/fields";
 
 const DEFAULT_CUSTOMER_DASHBOARD_WIDGETS = [
   { id: "hero", type: "hero", config: {} },
@@ -59,7 +60,7 @@ const buildContacts = (usersByRole = {}) =>
 
 const mapVehicleRow = (row) => ({
   id: row.vehicle_id,
-  reg: (row.registration || row.reg_number || "").toUpperCase(),
+  reg: getVehicleRegistration(row),
   makeModel: row.make_model || [row.make, row.model].filter(Boolean).join(" "),
   vin: row.vin || "N/A",
   mileage: row.mileage || "—",

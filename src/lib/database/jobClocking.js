@@ -1,5 +1,6 @@
 import { getDatabaseClient } from "@/lib/database/client";
 import { logJobSubStatus } from "@/lib/services/jobStatusService";
+import { getVehicleRegistration } from "@/lib/canonical/fields";
 
 const db = getDatabaseClient();
 const TABLE_NAME = "job_clocking";
@@ -112,9 +113,7 @@ const formatCustomerName = (customer = {}) => {
 const deriveJobMeta = (job = {}) => {
   const reg =
     job.vehicle_reg ||
-    job.vehicle?.registration ||
-    job.vehicle?.reg_number ||
-    "";
+    getVehicleRegistration(job.vehicle);
   const makeModel =
     job.vehicle_make_model ||
     job.vehicle?.make_model ||

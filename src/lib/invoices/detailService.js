@@ -1,5 +1,6 @@
 // file location: src/lib/invoices/detailService.js // describe where this helper lives
 import supabase from "@/lib/supabaseClient"; // import shared Supabase client for DB access
+import { getVehicleRegistration, pickMileageValue } from "@/lib/canonical/fields"; // canonical field helpers
 import { createClient } from "@supabase/supabase-js";
 
 const DEFAULT_VAT_RATE = 20; // default VAT percentage when configuration missing
@@ -343,7 +344,7 @@ function buildVehicleDetails(invoice, job, vehicle) { // build vehicle row snaps
     return vehicleInfo; // return snapshot
   }
   return { // build fallback object from job + vehicle
-    reg: job?.vehicle_reg || vehicle?.registration || vehicle?.reg_number || "",
+    reg: job?.vehicle_reg || getVehicleRegistration(vehicle),
     vehicle:
       vehicle?.make_model ||
       [vehicle?.make, vehicle?.model].filter(Boolean).join(" ").trim() ||
@@ -352,7 +353,7 @@ function buildVehicleDetails(invoice, job, vehicle) { // build vehicle row snaps
     chassis: vehicle?.chassis || "",
     engine: vehicle?.engine || vehicle?.engine_number || "",
     reg_date: vehicle?.month_of_first_registration || "",
-    mileage: job?.milage || vehicle?.mileage || "",
+    mileage: pickMileageValue(vehicle?.mileage, job?.milage) || "",
     delivery_date: job?.completed_at || "",
     engine_no: vehicle?.engine_number || vehicle?.engine || ""
   }; // return detail object

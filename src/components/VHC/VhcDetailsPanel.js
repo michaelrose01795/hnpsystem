@@ -18,6 +18,7 @@ import UndersideDetailsModal from "@/components/VHC/UndersideDetailsModal";
 import PrePickLocationModal from "@/components/VHC/PrePickLocationModal";
 import VHCModalShell from "@/components/VHC/VHCModalShell";
 import PopupModal from "@/components/popups/popupStyleApi";
+import { getVehicleRegistration, pickMileageValue } from "@/lib/canonical/fields";
 import DropdownField from "@/components/dropdownAPI/DropdownField";
 import { buildVhcRowStatusView, normaliseDecisionStatus, resolveSeverityKey } from "@/lib/vhc/summaryStatus";
 import { getSlotCode, makeLineKey, resolveLineType } from "@/lib/vhc/slotIdentity";
@@ -2798,7 +2799,7 @@ export default function VhcDetailsPanel({
       engine: vehicle.engine || vehicle.engine_size || vehicle.engineSize || "",
       year: vehicle.year || vehicle.model_year || vehicle.registration_year || "",
       vin: vehicle.vin || vehicle.chassis || vehicle.chassis_number || "",
-      reg: vehicle.registration || vehicle.reg || vehicle.registration_number || "",
+      reg: getVehicleRegistration(vehicle),
     };
   }, [job?.vehicle]);
 
@@ -8047,7 +8048,7 @@ export default function VhcDetailsPanel({
       </div>
       <div>
         <div style={{ fontSize: "12px", color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.16em" }}>Reg</div>
-        <div style={{ fontSize: "20px", fontWeight: 700 }}>{job?.vehicle?.registration || job?.vehicle_reg || "—"}</div>
+        <div style={{ fontSize: "20px", fontWeight: 700 }}>{getVehicleRegistration(job?.vehicle) || job?.vehicle_reg || "—"}</div>
       </div>
       <div>
         <div style={{ fontSize: "12px", color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.16em" }}>Customer</div>
@@ -8055,7 +8056,7 @@ export default function VhcDetailsPanel({
       </div>
       <div>
         <div style={{ fontSize: "12px", color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.16em" }}>Mileage</div>
-        <div style={{ fontSize: "15px", fontWeight: 600 }}>{job?.vehicle?.mileage ? `${job.vehicle.mileage} mi` : job?.mileage ? `${job.mileage} mi` : "—"}</div>
+        <div style={{ fontSize: "15px", fontWeight: 600 }}>{pickMileageValue(job?.vehicle?.mileage, job?.mileage, job?.milage) ? `${pickMileageValue(job?.vehicle?.mileage, job?.mileage, job?.milage)} mi` : "—"}</div>
       </div>
       <div>
         <div style={{ fontSize: "12px", color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.16em" }}>Submitted</div>
@@ -8111,7 +8112,7 @@ export default function VhcDetailsPanel({
                 onClick={() => {
                   const params = new URLSearchParams({
                     jobNumber: job?.job_number || "",
-                    reg: job?.vehicle?.reg || job?.vehicle?.registration || "",
+                    reg: getVehicleRegistration(job?.vehicle),
                     customer: job?.customer?.name || `${job?.customer?.firstname || ""} ${job?.customer?.lastname || ""}`.trim() || "",
                     makeModel: job?.vehicle?.make_model || `${job?.vehicle?.make || ""} ${job?.vehicle?.model || ""}`.trim() || "",
                     colour: job?.vehicle?.colour || "",

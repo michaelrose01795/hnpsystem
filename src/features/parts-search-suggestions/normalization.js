@@ -1,4 +1,5 @@
 // file location: src/features/parts-search-suggestions/normalization.js
+import { getVehicleRegistration } from "@/lib/canonical/fields";
 
 const CONTEXT_SYNONYMS = {
   eml: ["engine_management_light", "check_engine"],
@@ -77,7 +78,7 @@ export const buildVehicleContextText = (vehicle = {}) => {
   const engine = vehicle?.engine || vehicle?.engine_size || vehicle?.engineSize || "";
   const year = vehicle?.year || vehicle?.model_year || vehicle?.registration_year || "";
   const vin = vehicle?.vin || vehicle?.chassis || vehicle?.chassis_number || "";
-  const reg = vehicle?.registration || vehicle?.reg || vehicle?.registration_number || "";
+  const reg = getVehicleRegistration(vehicle);
 
   return [make, model, derivative, engine, year, reg, vin]
     .map((part) => normalizeText(part))

@@ -45,6 +45,29 @@ const centeredStateStyle = {
   textAlign: "center",
 };
 
+const statCardBaseStyle = {
+  background: "linear-gradient(180deg, var(--page-card-bg) 0%, var(--page-card-bg-alt) 100%)",
+  border: "1px solid var(--accentBorder)",
+  boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb), 0.35)",
+};
+
+const buildToneSurfaceStyle = (surface, border = "var(--accentBorder)") => ({
+  ...statCardBaseStyle,
+  background: `linear-gradient(180deg, ${surface} 0%, var(--page-card-bg) 100%)`,
+  border: `1px solid ${border}`,
+});
+
+const sectionSurfaceStyle = {
+  background: "linear-gradient(180deg, var(--page-card-bg) 0%, var(--page-card-bg-alt) 100%)",
+  border: "1px solid var(--accentBorder)",
+  boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb), 0.3)",
+};
+
+const emphasizedSectionSurfaceStyle = {
+  ...sectionSurfaceStyle,
+  border: "1px solid var(--accentBorderStrong)",
+};
+
 const statusBadgeBaseStyle = {
   padding: "6px 12px",
   borderRadius: "var(--radius-sm)",
@@ -95,8 +118,9 @@ const buildVehicleLabel = (job) => {
 
 const detailLabelStyle = {
   fontSize: "15px",
-  color: "var(--text-secondary)",
+  color: "var(--text-primary)",
   margin: 0,
+  lineHeight: 1.5,
 };
 
 const sectionHeadingStyle = {
@@ -110,6 +134,7 @@ const sectionCopyStyle = {
   margin: 0,
   fontSize: "14px",
   color: "var(--text-secondary)",
+  lineHeight: 1.5,
 };
 
 export default function TechsDashboard() {
@@ -301,10 +326,7 @@ export default function TechsDashboard() {
           <StatCard
             sectionKey="tech-dashboard-stat-assigned"
             parentKey="tech-dashboard-stats-grid"
-            style={{
-              backgroundColor: "var(--accent-purple-surface)",
-              border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
-            }}
+            style={buildToneSurfaceStyle("var(--accent-surface)", "var(--accentBorderStrong)")}
           >
             <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--primary)" }}>
               {myJobs.length}
@@ -317,10 +339,10 @@ export default function TechsDashboard() {
           <StatCard
             sectionKey="tech-dashboard-stat-clocking"
             parentKey="tech-dashboard-stats-grid"
-            style={{
-              backgroundColor: isClockedIn ? "var(--success-surface)" : "var(--danger-surface)",
-              border: `1px solid ${isClockedIn ? "var(--success-border)" : "var(--danger-border)"}`,
-            }}
+            style={buildToneSurfaceStyle(
+              isClockedIn ? "var(--success-surface)" : "var(--danger-surface)",
+              isClockedIn ? "var(--success-border)" : "var(--danger-border)"
+            )}
           >
             <div
               style={{
@@ -331,7 +353,12 @@ export default function TechsDashboard() {
             >
               {isClockedIn ? "Clocked In" : "Clocked Out"}
             </div>
-            <div style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
+            <div
+              style={{
+                fontSize: "13px",
+                color: isClockedIn ? "var(--success-text)" : "var(--danger-text)",
+              }}
+            >
               {formatClockInLabel(clockInTime)}
             </div>
           </StatCard>
@@ -339,10 +366,7 @@ export default function TechsDashboard() {
           <StatCard
             sectionKey="tech-dashboard-stat-current-job"
             parentKey="tech-dashboard-stats-grid"
-            style={{
-              backgroundColor: "rgba(var(--primary-rgb), 0.08)",
-              border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
-            }}
+            style={buildToneSurfaceStyle("var(--page-card-bg-alt)")}
           >
             <div style={{ fontSize: "16px", fontWeight: "600", color: "var(--text-primary)" }}>
               Current Job
@@ -355,10 +379,7 @@ export default function TechsDashboard() {
           <StatCard
             sectionKey="tech-dashboard-stat-hours"
             parentKey="tech-dashboard-stats-grid"
-            style={{
-              backgroundColor: "rgba(var(--primary-rgb), 0.08)",
-              border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
-            }}
+            style={buildToneSurfaceStyle("var(--page-card-bg-alt)")}
           >
             <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--primary)" }}>
               {isClockedIn ? calculateHoursWorked(clockInTime) : "0.0"}h
@@ -375,8 +396,8 @@ export default function TechsDashboard() {
             parentKey="tech-dashboard-page"
             backgroundToken="page-card-alt"
             style={{
+              ...emphasizedSectionSurfaceStyle,
               gap: "16px",
-              border: "1px solid rgba(var(--accent-base-rgb), 0.28)",
             }}
           >
             <div style={{ display: "grid", gap: "12px" }}>
@@ -419,6 +440,7 @@ export default function TechsDashboard() {
             sectionKey="tech-dashboard-next-job"
             parentKey="tech-dashboard-page"
             backgroundToken="page-card-alt"
+            style={sectionSurfaceStyle}
           >
             <div style={{ display: "grid", gap: "12px" }}>
               <h2 style={sectionHeadingStyle}>Next Job Assigned</h2>
@@ -457,6 +479,7 @@ export default function TechsDashboard() {
           sectionKey="tech-dashboard-assigned-jobs"
           parentKey="tech-dashboard-page"
           backgroundToken="page-card-alt"
+          style={sectionSurfaceStyle}
         >
           <DevLayoutSection
             sectionKey="tech-dashboard-assigned-jobs-header"
@@ -592,17 +615,18 @@ export default function TechsDashboard() {
           border: none;
           border-radius: var(--radius-sm);
           padding: 14px 20px;
-          background: var(--primary);
+          background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
           color: var(--text-inverse);
           font-size: 15px;
           font-weight: 600;
           cursor: pointer;
           transition: background-color 0.2s ease, transform 0.2s ease;
+          box-shadow: inset 0 1px 0 rgba(var(--text-inverse-rgb), 0.16);
         }
 
         .tech-dashboard-primary-button:hover,
         .tech-dashboard-primary-button:focus-visible {
-          background: var(--primary-dark);
+          background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
           transform: translateY(-1px);
         }
 
@@ -614,12 +638,18 @@ export default function TechsDashboard() {
           transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
         }
 
+        .tech-dashboard-surface-button {
+          background: linear-gradient(180deg, var(--page-card-bg) 0%, var(--page-card-bg-alt) 100%);
+          border: 1px solid var(--accentBorder);
+        }
+
         .tech-dashboard-action-button {
           min-height: 88px;
           align-items: center;
           justify-content: center;
           text-align: center;
-          background: rgba(var(--primary-rgb), 0.08);
+          background: linear-gradient(180deg, var(--control-bg) 0%, var(--page-card-bg-alt) 100%);
+          border: var(--control-border);
         }
 
         .tech-dashboard-surface-button:hover,
@@ -627,8 +657,19 @@ export default function TechsDashboard() {
         .tech-dashboard-action-button:hover,
         .tech-dashboard-action-button:focus-visible {
           transform: translateY(-2px);
-          border-color: rgba(var(--accent-base-rgb), 0.32);
-          background: rgba(var(--primary-rgb), 0.12);
+          z-index: var(--hover-surface-z, 80);
+        }
+
+        .tech-dashboard-surface-button:hover,
+        .tech-dashboard-surface-button:focus-visible {
+          border-color: var(--accentBorderStrong);
+          background: linear-gradient(180deg, var(--accent-surface) 0%, var(--accent-surface-hover) 100%);
+        }
+
+        .tech-dashboard-action-button:hover,
+        .tech-dashboard-action-button:focus-visible {
+          border-color: var(--control-border-hover);
+          background: linear-gradient(180deg, var(--control-bg-hover) 0%, var(--accent-surface-hover) 100%);
           z-index: var(--hover-surface-z, 80);
         }
       `}</style>

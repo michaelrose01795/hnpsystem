@@ -5,6 +5,7 @@ import React, { useState, useRef, useEffect } from "react"; // React hooks for s
 import { useRouter } from "next/router"; // Next.js router for navigation
 import { useUser } from "@/context/UserContext"; // Custom user context (dev auth user)
 import { useConfirmation } from "@/context/ConfirmationContext";
+import { getVehicleRegistration } from "@/lib/canonical/fields";
 import {
   // Job clocking functions to start/stop time on jobs
   clockInToJob,
@@ -141,9 +142,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
     reg:
       j?.vehicle_reg ??
       j?.reg ??
-      j?.vehicle?.registration ??
-      j?.vehicle?.reg_number ??
-      "", // Registration
+      getVehicleRegistration(j?.vehicle), // Registration
     makeModel:
       j?.vehicle_make_model ??
       j?.makeModel ??

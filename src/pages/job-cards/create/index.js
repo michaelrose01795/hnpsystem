@@ -23,6 +23,7 @@ import NewCustomerPopup from "@/components/popups/NewCustomerPopup"; // import n
 import ExistingCustomerPopup from "@/components/popups/ExistingCustomerPopup"; // import existing customer popup
 import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
 import RequestPresetAutosuggestInput from "@/components/JobCards/RequestPresetAutosuggestInput";
+import { getVehicleRegistration } from "@/lib/canonical/fields";
 import { DropdownField } from "@/components/dropdownAPI";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { detectJobTypesForRequests } from "@/lib/ai/jobTypeDetection";
@@ -532,9 +533,7 @@ export default function CreateJobCardPage() {
         return; // nothing to hydrate
       }
 
-      const normalizedReg = (storedVehicle.registration || storedVehicle.reg_number || "")
-        .toString()
-        .toUpperCase(); // normalize registration text
+      const normalizedReg = getVehicleRegistration(storedVehicle); // normalize registration text
       const combinedMakeModel = (storedVehicle.make_model || `${storedVehicle.make || ""} ${storedVehicle.model || ""}`)
         .trim(); // build make/model label
 
@@ -1086,7 +1085,7 @@ export default function CreateJobCardPage() {
         const latestVehicle = vehicles?.[0];
         if (latestVehicle) {
           setVehicle({
-            reg: (latestVehicle.registration || latestVehicle.reg_number || "").toUpperCase(),
+            reg: getVehicleRegistration(latestVehicle),
             colour: latestVehicle.colour || "",
             makeModel: latestVehicle.make_model || "",
             chassis: latestVehicle.vin || latestVehicle.chassis || "",

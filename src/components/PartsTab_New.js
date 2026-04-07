@@ -12,6 +12,7 @@ import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import {
   buildVhcRequestLinkRows,
 } from "@/lib/vhc/requestRowLinking";
+import { getJobRequests } from "@/lib/canonical/fields";
 
 // Helper functions (keep existing)
 const normalizePartStatus = (status = "") => {
@@ -303,13 +304,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     };
 
     // Prefer jobRequests/job_requests from the database (has proper request_id)
-    const requestsSource = Array.isArray(jobData.jobRequests)
-      ? jobData.jobRequests
-      : Array.isArray(jobData.job_requests)
-      ? jobData.job_requests
-      : Array.isArray(jobData.requests)
-      ? jobData.requests
-      : [];
+    const requestsSource = getJobRequests(jobData);
 
     const vhcChecksSource = Array.isArray(jobData.vhcChecks)
       ? jobData.vhcChecks

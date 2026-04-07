@@ -11,6 +11,11 @@ import {
 } from "@/lib/status/statusFlow";
 import { syncHealthCheckToCanonicalVhc } from "@/lib/vhc/saveVhcItem";
 import { cachedQuery, invalidateCache } from "@/lib/database/queryCache";
+import {
+  getVehicleRegistration,
+  pickMileageValue,
+  getJobRequests,
+} from "@/lib/canonical/fields";
 import dayjs from "dayjs";
 
 const supabase = getDatabaseClient();
@@ -543,7 +548,7 @@ export const getDashboardData = async () => {
       jobNumber: a.job?.job_number,
       type: a.job?.type,
       status: a.job?.status,
-      reg: a.job?.vehicle_reg || a.job?.vehicle?.registration || a.job?.vehicle?.reg_number || "",
+      reg: a.job?.vehicle_reg || getVehicleRegistration(a.job?.vehicle),
       make: a.job?.vehicle?.make || "",
       model: a.job?.vehicle?.model || "",
       makeModel: a.job?.vehicle_make_model || a.job?.vehicle?.make_model || "",
@@ -1113,7 +1118,7 @@ const _getJobByNumberUncached = async (jobNumber, options = {}) => {
       } : null,
       vehicle: jobData.vehicle ? {
         vehicleId: jobData.vehicle.vehicle_id,
-        reg: jobData.vehicle.registration || jobData.vehicle.reg_number,
+        reg: getVehicleRegistration(jobData.vehicle),
         make: jobData.vehicle.make,
         model: jobData.vehicle.model,
         makeModel: jobData.vehicle.make_model,
@@ -2426,7 +2431,7 @@ const formatJobData = (data) => {
     
     // ✅ Vehicle info from both direct fields and joined table
     vehicleId: data.vehicle_id || data.vehicle?.vehicle_id || null,
-    reg: data.vehicle_reg || data.vehicle?.registration || data.vehicle?.reg_number || "",
+    reg: data.vehicle_reg || getVehicleRegistration(data.vehicle),
     make: data.vehicle?.make || "",
     model: data.vehicle?.model || "",
     makeModel: data.vehicle_make_model || data.vehicle?.make_model || "",
@@ -2436,12 +2441,7 @@ const formatJobData = (data) => {
     chassis: data.vehicle?.chassis || "",
     engineNumber: data.vehicle?.engine_number || "",
     engine: data.vehicle?.engine || "",
-    mileage:
-      data.vehicle?.mileage === null || data.vehicle?.mileage === undefined
-        ? data.milage === null || data.milage === undefined
-          ? ""
-          : data.milage
-        : data.vehicle.mileage,
+    mileage: pickMileageValue(data.vehicle?.mileage, data.milage) ?? "",
     milage: data.milage === null || data.milage === undefined ? null : data.milage,
     fuelType: data.vehicle?.fuel_type || "",
     transmission: data.vehicle?.transmission || "",
@@ -3335,7 +3335,7 @@ export const getJobsByDate = async (date) => {
       jobNumber: a.job?.job_number,
       type: a.job?.type,
       status: a.job?.status,
-      reg: a.job?.vehicle_reg || a.job?.vehicle?.registration || a.job?.vehicle?.reg_number || "",
+      reg: a.job?.vehicle_reg || getVehicleRegistration(a.job?.vehicle),
       make: a.job?.vehicle?.make || "",
       model: a.job?.vehicle?.model || "",
       makeModel: a.job?.vehicle_make_model || "",

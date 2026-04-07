@@ -1,6 +1,7 @@
 // ✅ Connected to Supabase (server-side)
 // file location: src/pages/api/invoices/create.js
 import { createClient } from "@supabase/supabase-js";
+import { getVehicleRegistration, pickMileageValue } from "@/lib/canonical/fields";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -105,7 +106,7 @@ const fetchJobContext = async (jobId) => {
     };
   };
   const buildVehicleSnapshot = () => ({
-    reg: job?.vehicle_reg || vehicle?.registration || vehicle?.reg_number || "",
+    reg: job?.vehicle_reg || getVehicleRegistration(vehicle),
     vehicle:
       vehicle?.make_model ||
       [vehicle?.make, vehicle?.model].filter(Boolean).join(" ").trim() ||
@@ -114,7 +115,7 @@ const fetchJobContext = async (jobId) => {
     chassis: vehicle?.chassis || "",
     engine: vehicle?.engine || vehicle?.engine_number || "",
     reg_date: vehicle?.month_of_first_registration || "",
-    mileage: job?.milage || vehicle?.mileage || ""
+    mileage: pickMileageValue(vehicle?.mileage, job?.milage) || ""
   });
   return {
     accountId: job?.account_id || null,

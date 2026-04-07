@@ -19,6 +19,7 @@ import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { SearchBar } from "@/components/searchBarAPI";
 import { deriveJobTypeDisplay } from "@/lib/jobType/display";
 import { normalizeRequests } from "@/lib/jobcards/utils";
+import { getJobRequests, getJobRequestsCount as canonicalRequestsCount, getVehicleRegistration } from "@/lib/canonical/fields";
 import { revalidateAllJobs } from "@/lib/swr/mutations";
 import { prefetchJob } from "@/lib/swr/prefetch"; // warm SWR cache on hover for instant navigation
 
@@ -196,7 +197,7 @@ const getRequestText = (request = {}, index = 0) => {
 };
 
 const getJobRequestItems = (job) =>
-  normalizeRequests(job?.requests).map((request, index) => ({
+  getJobRequests(job).map((request, index) => ({
     id:
       request?.requestId ??
       request?.request_id ??
@@ -328,9 +329,7 @@ const mapActiveClockingRow = (row = {}) => {
   const customer = job.customer || {};
   const reg =
     job.vehicle_reg ||
-    vehicle.registration ||
-    vehicle.reg_number ||
-    "";
+    getVehicleRegistration(vehicle);
   const makeModel =
     job.vehicle_make_model ||
     vehicle.make_model ||
@@ -498,9 +497,7 @@ export default function NextJobsPage() {
 
     const vehicleReg =
       row.vehicle_reg ||
-      row.vehicle?.registration ||
-      row.vehicle?.reg_number ||
-      "";
+      getVehicleRegistration(row.vehicle);
 
     const assignedTechRecord = row.technician;
     const assignedTech = assignedTechRecord

@@ -3,6 +3,7 @@ import React, { useEffect, useState, useCallback, useMemo } from "react";
 import InvoiceDetail from "@/features/invoices/components/InvoiceDetail";
 import styles from "@/features/invoices/styles/invoice.module.css";
 import { supabase } from "@/lib/supabaseClient";
+import { getJobRequests } from "@/lib/canonical/fields";
 
 const InvoiceSkeleton = () => {
   return (
@@ -89,11 +90,7 @@ export default function InvoiceDetailSection({
   const invoiceSyncSignature = useMemo(() => {
     if (!jobData || typeof jobData !== "object") return "";
 
-    const requests = Array.isArray(jobData.jobRequests)
-      ? jobData.jobRequests
-      : Array.isArray(jobData.job_requests)
-      ? jobData.job_requests
-      : [];
+    const requests = getJobRequests(jobData);
     const parts = Array.isArray(jobData.partsAllocations)
       ? jobData.partsAllocations
       : Array.isArray(jobData.parts_job_items)

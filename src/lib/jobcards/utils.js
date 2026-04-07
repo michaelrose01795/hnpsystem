@@ -1,25 +1,15 @@
 // file location: src/lib/jobcards/utils.js
-const normalizeRequests = (rawRequests) => {
-  if (Array.isArray(rawRequests)) {
-    return rawRequests;
-  }
+import {
+  normalizeLegacyRequests,
+  getJobRequests,
+  pickMileageValue,
+} from "@/lib/canonical/fields";
 
-  if (typeof rawRequests === "string") {
-    try {
-      const parsed = JSON.parse(rawRequests);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (error) {
-      console.warn("normalizeRequests: failed to parse string payload", error);
-      return [];
-    }
-  }
-
-  if (rawRequests && typeof rawRequests === "object") {
-    return [];
-  }
-
-  return [];
-};
+/**
+ * @deprecated Use normalizeLegacyRequests from @/lib/canonical/fields directly.
+ * Kept as a re-export so existing callers are not broken.
+ */
+const normalizeRequests = normalizeLegacyRequests;
 
 const normalizeApprovalStatus = (value = "") => {
   const normalized = String(value || "").trim().toLowerCase();
@@ -58,9 +48,10 @@ const mapCustomerJobsToHistory = (jobs = [], vehicleReg = "") => {
           })
         : "Unknown";
 
+      const canonicalRequests = getJobRequests(job);
       const requests =
         Array.isArray(job.job_requests) && job.job_requests.length
-          ? job.job_requests.map((req) => ({
+          ? canonicalRequests.map((req) => ({
               requestId: req.request_id,
               text: req.description || "",
               time: req.hours ?? "",
@@ -69,7 +60,7 @@ const mapCustomerJobsToHistory = (jobs = [], vehicleReg = "") => {
               source: req.request_source || "job_request",
               noteText: req.note_text || ""
             }))
-          : normalizeRequests(job.requests);
+          : canonicalRequests;
 
       const approvedVhcRequests = Array.isArray(job.vhc_checks)
         ? job.vhc_checks
@@ -110,7 +101,7 @@ const mapCustomerJobsToHistory = (jobs = [], vehicleReg = "") => {
         jobNumber: job.job_number || job.jobNumber,
         serviceDate: requestedAt,
         serviceDateFormatted,
-        mileage: job.milage ?? job.mileage ?? null,
+        mileage: pickMileageValue(job.mileage, job.milage),
         requests,
         approvedVhcRequests,
         combinedRequests,
