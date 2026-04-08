@@ -46,21 +46,21 @@ const centeredStateStyle = {
 };
 
 const statCardBaseStyle = {
-  background: "linear-gradient(180deg, var(--page-card-bg) 0%, var(--page-card-bg-alt) 100%)",
-  border: "1px solid var(--accentBorder)",
-  boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb), 0.35)",
+  background: "var(--accent-surface)",
+  border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
+  boxShadow: "none",
 };
 
 const buildToneSurfaceStyle = (surface, border = "var(--accentBorder)") => ({
   ...statCardBaseStyle,
-  background: `linear-gradient(180deg, ${surface} 0%, var(--page-card-bg) 100%)`,
+  background: surface,
   border: `1px solid ${border}`,
 });
 
 const sectionSurfaceStyle = {
-  background: "linear-gradient(180deg, var(--page-card-bg) 0%, var(--page-card-bg-alt) 100%)",
-  border: "1px solid var(--accentBorder)",
-  boxShadow: "inset 0 1px 0 rgba(var(--surface-rgb), 0.3)",
+  background: "var(--accent-surface)",
+  border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
+  boxShadow: "none",
 };
 
 const emphasizedSectionSurfaceStyle = {
@@ -583,30 +583,37 @@ export default function TechsDashboard() {
           )}
         </SectionShell>
 
-        <DevLayoutSection
-          sectionKey="tech-dashboard-actions"
+        <SectionShell
+          sectionKey="tech-dashboard-actions-card"
           parentKey="tech-dashboard-page"
-          sectionType="toolbar"
-          className="app-layout-toolbar-row"
-          style={actionGridStyle}
+          backgroundToken="page-card-alt"
+          style={sectionSurfaceStyle}
         >
-          {dashboardActions.map((action) => (
-            <DevLayoutSection
-              key={action.key}
-              as="button"
-              type="button"
-              sectionKey={`tech-dashboard-action-${action.key}`}
-              parentKey="tech-dashboard-actions"
-              sectionType="content-card"
-              className="app-layout-card tech-dashboard-action-button"
-              onClick={() => router.push(action.href)}
-            >
-              <div style={{ fontSize: "16px", fontWeight: "700", color: "var(--text-primary)" }}>
-                {action.label}
-              </div>
-            </DevLayoutSection>
-          ))}
-        </DevLayoutSection>
+          <DevLayoutSection
+            sectionKey="tech-dashboard-actions"
+            parentKey="tech-dashboard-actions-card"
+            sectionType="toolbar"
+            className="app-layout-toolbar-row"
+            style={actionGridStyle}
+          >
+            {dashboardActions.map((action) => (
+              <DevLayoutSection
+                key={action.key}
+                as="button"
+                type="button"
+                sectionKey={`tech-dashboard-action-${action.key}`}
+                parentKey="tech-dashboard-actions"
+                sectionType="content-card"
+                className="app-layout-card tech-dashboard-action-button"
+                onClick={() => router.push(action.href)}
+              >
+                <div style={{ fontSize: "16px", fontWeight: "700", color: "var(--text-primary)" }}>
+                  {action.label}
+                </div>
+              </DevLayoutSection>
+            ))}
+          </DevLayoutSection>
+        </SectionShell>
       </DevLayoutSection>
 
       <style jsx>{`
@@ -615,18 +622,18 @@ export default function TechsDashboard() {
           border: none;
           border-radius: var(--radius-sm);
           padding: 14px 20px;
-          background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+          background: var(--primary);
           color: var(--text-inverse);
           font-size: 15px;
           font-weight: 600;
           cursor: pointer;
           transition: background-color 0.2s ease, transform 0.2s ease;
-          box-shadow: inset 0 1px 0 rgba(var(--text-inverse-rgb), 0.16);
+          box-shadow: none;
         }
 
         .tech-dashboard-primary-button:hover,
         .tech-dashboard-primary-button:focus-visible {
-          background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
+          background: var(--primary-dark);
           transform: translateY(-1px);
         }
 
@@ -639,8 +646,8 @@ export default function TechsDashboard() {
         }
 
         .tech-dashboard-surface-button {
-          background: linear-gradient(180deg, var(--page-card-bg) 0%, var(--page-card-bg-alt) 100%);
-          border: 1px solid var(--accentBorder);
+          background: var(--surface);
+          border: 1px solid rgba(var(--accent-base-rgb), 0.14);
         }
 
         .tech-dashboard-action-button {
@@ -648,8 +655,8 @@ export default function TechsDashboard() {
           align-items: center;
           justify-content: center;
           text-align: center;
-          background: linear-gradient(180deg, var(--control-bg) 0%, var(--page-card-bg-alt) 100%);
-          border: var(--control-border);
+          background: var(--surface);
+          border: 1px solid rgba(var(--accent-base-rgb), 0.14);
         }
 
         .tech-dashboard-surface-button:hover,
@@ -662,14 +669,14 @@ export default function TechsDashboard() {
 
         .tech-dashboard-surface-button:hover,
         .tech-dashboard-surface-button:focus-visible {
-          border-color: var(--accentBorderStrong);
-          background: linear-gradient(180deg, var(--accent-surface) 0%, var(--accent-surface-hover) 100%);
+          border-color: rgba(var(--accent-base-rgb), 0.3);
+          background: var(--accent-surface);
         }
 
         .tech-dashboard-action-button:hover,
         .tech-dashboard-action-button:focus-visible {
-          border-color: var(--control-border-hover);
-          background: linear-gradient(180deg, var(--control-bg-hover) 0%, var(--accent-surface-hover) 100%);
+          border-color: rgba(var(--accent-base-rgb), 0.3);
+          background: var(--accent-surface);
           z-index: var(--hover-surface-z, 80);
         }
       `}</style>

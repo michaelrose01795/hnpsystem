@@ -18,6 +18,7 @@ import {
 } from "@/lib/database/efficiency";
 import ModalPortal from "@/components/popups/ModalPortal";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { CalendarField } from "@/components/calendarAPI";
 import { DropdownField } from "@/components/dropdownAPI";
 import { SearchBar } from "@/components/searchBarAPI";
@@ -833,6 +834,12 @@ export default function EfficiencyTab({
     gap: "16px",
   };
 
+  const themedSectionStyle = {
+    ...sectionStyle,
+    background: "var(--accent-surface)",
+    border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
+  };
+
   const statCardStyle = {
     borderRadius: "var(--radius-md)",
     padding: "16px",
@@ -870,6 +877,17 @@ export default function EfficiencyTab({
     padding: "12px 16px",
     borderBottom: "1px solid var(--surface-light)",
     color: "var(--text-color)",
+  };
+
+  const themedTableHeadingStyle = {
+    ...thStyle,
+    background: "var(--accent-surface-hover)",
+    borderBottom: "1px solid rgba(var(--accent-base-rgb), 0.24)",
+    color: "var(--primary-dark)",
+  };
+
+  const themedTableRowStyle = {
+    background: "var(--surface)",
   };
 
   const effColor = (pct) => {
@@ -1038,93 +1056,154 @@ export default function EfficiencyTab({
   };
 
   return (
-    <div className="efficiency-page" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+    <DevLayoutSection
+      sectionKey="tech-efficiency-page"
+      sectionType="page-shell"
+      backgroundToken="surface-page"
+      shell
+      className="efficiency-page"
+      style={{ display: "flex", flexDirection: "column", gap: "20px" }}
+    >
       {/* Combined row: Tabs + Month Nav + Print */}
-      <div className="efficiency-topbar" style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-        {/* Tab bar */}
-        <div className="efficiency-topbar-tabs" style={{ flex: "1 1 auto" }}>
-          <TabGroup
-            ariaLabel="Efficiency technicians"
-            value={activeTab}
-            onChange={(nextValue) => setActiveTab(String(nextValue))}
-            items={[
-              { value: "overall", label: "Overall" },
-              ...visibleTechs.map((tech) => ({
-                value: String(tech.user_id),
-                label: tech.first_name,
-              })),
-            ]}
-          />
-        </div>
+      <DevLayoutSection
+        sectionKey="tech-efficiency-topbar"
+        sectionType="toolbar"
+        parentKey="tech-efficiency-page"
+        backgroundToken="surface-toolbar"
+        className="efficiency-topbar"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          flexWrap: "wrap",
+          padding: "16px 18px",
+          borderRadius: "var(--radius-lg)",
+          background: "var(--accent-surface)",
+          border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
+        }}
+      >
+        <DevLayoutSection
+          sectionKey="tech-efficiency-nav-group"
+          sectionType="toolbar"
+          parentKey="tech-efficiency-topbar"
+          className="efficiency-topbar-nav-group"
+          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flex: "1 1 auto", flexWrap: "wrap" }}
+        >
+          {/* Tab bar */}
+          <DevLayoutSection
+            sectionKey="tech-efficiency-tabs"
+            sectionType="tab-row"
+            parentKey="tech-efficiency-nav-group"
+            className="efficiency-topbar-tabs"
+            style={{ flex: "0 0 auto", width: "fit-content" }}
+          >
+            <TabGroup
+              ariaLabel="Efficiency technicians"
+              value={activeTab}
+              onChange={(nextValue) => setActiveTab(String(nextValue))}
+              items={[
+                { value: "overall", label: "Overall" },
+                ...visibleTechs.map((tech) => ({
+                  value: String(tech.user_id),
+                  label: tech.first_name,
+                })),
+              ]}
+            />
+          </DevLayoutSection>
 
-        {/* Month navigation */}
-        <div className="efficiency-month-nav" style={{ ...monthNavStyle, flexShrink: 0 }}>
-          <button type="button" style={monthBtnStyle} onClick={handlePrevMonth}>
-            &lsaquo; Prev
-          </button>
-          <span style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--primary-dark)", minWidth: "150px", textAlign: "center" }}>
-            {MONTHS[selectedMonth - 1]} {selectedYear}
-          </span>
-          <button type="button" style={monthBtnStyle} onClick={handleNextMonth}>
-            Next &rsaquo;
-          </button>
-        </div>
-
-        {/* Action buttons */}
-        <div className="efficiency-topbar-actions" style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
-          {activeTab !== "overall" && (
-            <button
-              type="button"
-              onClick={handleDownload}
-              style={{
-                padding: "10px 16px",
-                borderRadius: "var(--radius-sm)",
-                border: "none",
-                background: "var(--surface)",
-                color: "var(--primary-dark)",
-                fontWeight: 600,
-                fontSize: "0.85rem",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-              }}
-            >
-              &#8595; Download
+          {/* Month navigation */}
+          <DevLayoutSection
+            sectionKey="tech-efficiency-month-nav"
+            sectionType="toolbar"
+            parentKey="tech-efficiency-nav-group"
+            className="efficiency-month-nav"
+            style={{ ...monthNavStyle, flex: "0 0 auto", marginInline: "auto" }}
+          >
+            <button type="button" style={monthBtnStyle} onClick={handlePrevMonth}>
+              &lsaquo; Prev
             </button>
-          )}
-          {isTabEditable && activeTab !== "overall" && (
-            <button
-              type="button"
-              onClick={openAddModal}
-              style={{
-                padding: "10px 20px",
-                borderRadius: "var(--radius-sm)",
-                border: "none",
-                background: "var(--primary)",
-                color: "var(--surface)",
-                fontWeight: 600,
-                fontSize: "0.85rem",
-                cursor: "pointer",
-              }}
-            >
-              + Add Job Entry
+            <span style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--primary-dark)", minWidth: "150px", textAlign: "center" }}>
+              {MONTHS[selectedMonth - 1]} {selectedYear}
+            </span>
+            <button type="button" style={monthBtnStyle} onClick={handleNextMonth}>
+              Next &rsaquo;
             </button>
-          )}
-        </div>
-      </div>
+          </DevLayoutSection>
 
-      <div className="efficiency-filter-shell" style={{ ...sectionStyle, padding: "16px 18px", gap: "12px" }}>
+          {/* Action buttons */}
+          <DevLayoutSection
+            sectionKey="tech-efficiency-topbar-actions"
+            sectionType="toolbar"
+            parentKey="tech-efficiency-nav-group"
+            className="efficiency-topbar-actions"
+            style={{ display: "flex", gap: "8px", flexShrink: 0 }}
+          >
+            {activeTab !== "overall" && (
+              <button
+                type="button"
+                onClick={handleDownload}
+                style={{
+                  padding: "10px 16px",
+                  borderRadius: "var(--radius-sm)",
+                  border: "none",
+                  background: "var(--surface)",
+                  color: "var(--primary-dark)",
+                  fontWeight: 600,
+                  fontSize: "0.85rem",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}
+              >
+                &#8595; Download
+              </button>
+            )}
+            {isTabEditable && activeTab !== "overall" && (
+              <button
+                type="button"
+                onClick={openAddModal}
+                style={{
+                  padding: "10px 20px",
+                  borderRadius: "var(--radius-sm)",
+                  border: "none",
+                  background: "var(--primary)",
+                  color: "var(--surface)",
+                  fontWeight: 600,
+                  fontSize: "0.85rem",
+                  cursor: "pointer",
+                }}
+              >
+                + Add Job Entry
+              </button>
+            )}
+          </DevLayoutSection>
+        </DevLayoutSection>
+      </DevLayoutSection>
+
+      <DevLayoutSection
+        sectionKey="tech-efficiency-filter-shell"
+        sectionType="content-card"
+        parentKey="tech-efficiency-page"
+        backgroundToken="surface-filter-card"
+        className="efficiency-filter-shell"
+        style={{ ...themedSectionStyle, padding: "16px 18px", gap: "12px" }}
+      >
         <div
+          data-dev-section="1"
+          data-dev-section-key="tech-efficiency-filter-row"
+          data-dev-section-type="filter-row"
+          data-dev-section-parent="tech-efficiency-filter-shell"
           style={{
             display: "flex",
             gap: "10px",
             flexWrap: "wrap",
             alignItems: "center",
-            justifyContent: "center",
+            justifyContent: "space-between",
+            width: "100%",
           }}
         >
-          <div className="efficiency-period-toggle" style={{ flex: "0 0 auto" }}>
+          <div className="efficiency-period-toggle" style={{ flex: "1 1 220px", minWidth: "180px" }}>
             <TabGroup
               value={periodFilter}
               onChange={setPeriodFilter}
@@ -1136,7 +1215,7 @@ export default function EfficiencyTab({
               ariaLabel="Efficiency period"
             />
           </div>
-          <div style={{ width: "fit-content", flex: "0 0 auto" }}>
+          <div style={{ width: "100%", maxWidth: "220px", flex: "1 1 180px" }}>
             <CalendarField
               id="efficiencyFilterDate"
               className="compact-picker efficiency-filter-field efficiency-filter-calendar"
@@ -1145,11 +1224,11 @@ export default function EfficiencyTab({
             />
           </div>
           {activeTab === "overall" && (
-            <div style={{ width: "fit-content", flex: "0 0 auto" }}>
+            <div style={{ width: "100%", maxWidth: "220px", flex: "1 1 180px" }}>
               <DropdownField
                 id="efficiencyOverviewTech"
                 className="compact-picker efficiency-tech-filter-dropdown"
-                style={{ width: "17ch" }}
+                style={{ width: "100%" }}
                 value={overviewTechFilter}
                 onChange={(event) => setOverviewTechFilter(event.target.value)}
                 placeholder="All technicians"
@@ -1164,7 +1243,7 @@ export default function EfficiencyTab({
               />
             </div>
           )}
-          <div className="efficiency-search-wrap" style={{ width: "min(220px, 100%)", flex: "0 1 220px" }}>
+          <div className="efficiency-search-wrap" style={{ width: "100%", flex: "2 1 280px", minWidth: "220px" }}>
             <SearchBar
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
@@ -1174,25 +1253,39 @@ export default function EfficiencyTab({
             />
           </div>
         </div>
-      </div>
+      </DevLayoutSection>
 
       {/* Error */}
       {error && (
-        <div style={{
-          borderRadius: "var(--radius-md)",
-          padding: "14px 18px",
-          background: "var(--danger-surface)",
-          border: "1px solid var(--danger)",
-          color: "var(--danger)",
-          fontSize: "0.9rem",
-        }}>
+        <div
+          data-dev-section="1"
+          data-dev-section-key="tech-efficiency-error"
+          data-dev-section-type="content-card"
+          data-dev-section-parent="tech-efficiency-page"
+          data-dev-background-token="surface-danger"
+          style={{
+            borderRadius: "var(--radius-md)",
+            padding: "14px 18px",
+            background: "var(--danger-surface)",
+            border: "1px solid var(--danger)",
+            color: "var(--danger)",
+            fontSize: "0.9rem",
+          }}
+        >
           {error}
         </div>
       )}
 
       {/* Loading */}
       {loading && (
-        <div style={sectionStyle}>
+        <div
+          data-dev-section="1"
+          data-dev-section-key="tech-efficiency-loading"
+          data-dev-section-type="content-card"
+          data-dev-section-parent="tech-efficiency-page"
+          data-dev-background-token="surface-loading"
+          style={sectionStyle}
+        >
           <p style={{ color: "var(--info)", margin: 0 }}>Loading efficiency data...</p>
         </div>
       )}
@@ -1201,12 +1294,25 @@ export default function EfficiencyTab({
       {!loading && activeTab === "overall" && (
         <>
           {/* Overall stats */}
-          <div style={sectionStyle}>
+          <DevLayoutSection
+            sectionKey="tech-efficiency-overall-summary"
+            sectionType="content-card"
+            parentKey="tech-efficiency-page"
+            backgroundToken="surface-summary-card"
+            style={themedSectionStyle}
+          >
             <h3 style={{ margin: 0, fontSize: "1.15rem", color: "var(--primary-dark)" }}>
               Overall Efficiency - {activeFilterHeading}
             </h3>
-            <div className="efficiency-summary-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px" }}>
-              <div style={statCardStyle}>
+            <div
+              className="efficiency-summary-grid"
+              style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px" }}
+              data-dev-section="1"
+              data-dev-section-key="tech-efficiency-overall-summary-grid"
+              data-dev-section-type="content-card"
+              data-dev-section-parent="tech-efficiency-overall-summary"
+            >
+              <div style={statCardStyle} data-dev-section="1" data-dev-section-key="tech-efficiency-overall-logged" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-overall-summary-grid">
                 <span style={statusLabelStyle(overallSectionStatusColor)}>
                   Logged Total
                 </span>
@@ -1214,7 +1320,7 @@ export default function EfficiencyTab({
                   {formatHours(totalsForFilteredSet.logged)}h
                 </strong>
               </div>
-              <div style={statCardStyle}>
+              <div style={statCardStyle} data-dev-section="1" data-dev-section-key="tech-efficiency-overall-allocated" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-overall-summary-grid">
                 <span style={statusLabelStyle(overallSectionStatusColor)}>
                   Allocated Total
                 </span>
@@ -1222,7 +1328,7 @@ export default function EfficiencyTab({
                   {formatHours(totalsForFilteredSet.allocated)}h
                 </strong>
               </div>
-              <div style={statusCardStyle(overallSectionStatusColor)}>
+              <div style={statusCardStyle(overallSectionStatusColor)} data-dev-section="1" data-dev-section-key="tech-efficiency-overall-total-difference" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-overall-summary-grid">
                 <span style={statusLabelStyle(overallSectionStatusColor)}>
                   Total Difference
                 </span>
@@ -1230,7 +1336,7 @@ export default function EfficiencyTab({
                   {formatSignedHours(filteredSetDifference)}
                 </strong>
               </div>
-              <div style={statCardStyle}>
+              <div style={statCardStyle} data-dev-section="1" data-dev-section-key="tech-efficiency-overall-weighted-actual" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-overall-summary-grid">
                 <span style={statusLabelStyle(overallSectionStatusColor)}>
                   Weighted Actual
                 </span>
@@ -1238,7 +1344,7 @@ export default function EfficiencyTab({
                   {overallTotals.weightedActual}h
                 </strong>
               </div>
-              <div style={statCardStyle}>
+              <div style={statCardStyle} data-dev-section="1" data-dev-section-key="tech-efficiency-overall-weighted-target" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-overall-summary-grid">
                 <span style={statusLabelStyle(overallSectionStatusColor)}>
                   Weighted Target
                 </span>
@@ -1246,7 +1352,7 @@ export default function EfficiencyTab({
                   {overallTotals.weightedTarget}h
                 </strong>
               </div>
-              <div style={statusCardStyle(overallSectionStatusColor)}>
+              <div style={statusCardStyle(overallSectionStatusColor)} data-dev-section="1" data-dev-section-key="tech-efficiency-overall-weighted-difference" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-overall-summary-grid">
                 <span style={statusLabelStyle(overallSectionStatusColor)}>
                   Difference
                 </span>
@@ -1254,7 +1360,7 @@ export default function EfficiencyTab({
                   {formatSignedHours(overallTotals.difference)}
                 </strong>
               </div>
-              <div style={statusCardStyle(overallSectionStatusColor)}>
+              <div style={statusCardStyle(overallSectionStatusColor)} data-dev-section="1" data-dev-section-key="tech-efficiency-overall-efficiency" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-overall-summary-grid">
                 <span style={statusLabelStyle(overallSectionStatusColor)}>
                   Overall Efficiency
                 </span>
@@ -1263,28 +1369,41 @@ export default function EfficiencyTab({
                 </strong>
               </div>
             </div>
-          </div>
+          </DevLayoutSection>
 
           {/* Technician summary table */}
-          <div style={sectionStyle}>
+          <DevLayoutSection
+            sectionKey="tech-efficiency-overall-breakdown"
+            sectionType="content-card"
+            parentKey="tech-efficiency-page"
+            backgroundToken="surface-table-card"
+            style={themedSectionStyle}
+          >
             <h3 style={{ margin: 0, fontSize: "1.15rem", color: "var(--primary-dark)" }}>
               Technician Breakdown
             </h3>
-            <div className="efficiency-table-wrap" style={tableWrapperStyle}>
+            <div
+              className="efficiency-table-wrap"
+              style={tableWrapperStyle}
+              data-dev-section="1"
+              data-dev-section-key="tech-efficiency-overall-breakdown-table"
+              data-dev-section-type="data-table"
+              data-dev-section-parent="tech-efficiency-overall-breakdown"
+            >
               <table style={tableStyle}>
-                <thead>
+                <thead style={{ background: "var(--accent-surface-hover)" }}>
                   <tr>
-                    <th style={thStyle}>Technician</th>
-                    <th style={thStyle}>Weight</th>
-                    <th style={thStyle}>Actual Hours</th>
-                    <th style={thStyle}>Target Hours</th>
-                    <th style={thStyle}>Difference</th>
-                    <th style={thStyle}>Efficiency %</th>
+                    <th style={themedTableHeadingStyle}>Technician</th>
+                    <th style={themedTableHeadingStyle}>Weight</th>
+                    <th style={themedTableHeadingStyle}>Actual Hours</th>
+                    <th style={themedTableHeadingStyle}>Target Hours</th>
+                    <th style={themedTableHeadingStyle}>Difference</th>
+                    <th style={themedTableHeadingStyle}>Efficiency %</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody style={{ background: "var(--surface)" }}>
                   {overviewTechSummaries.length === 0 ? (
-                    <tr>
+                    <tr style={themedTableRowStyle}>
                       <td colSpan={6} style={{ ...tdStyle, textAlign: "center", color: "var(--grey-accent)" }}>
                         No technicians configured.
                       </td>
@@ -1293,10 +1412,14 @@ export default function EfficiencyTab({
                     overviewTechSummaries.map(({ tech, totals, weight }) => (
                       <tr
                         key={tech.user_id}
+                        data-dev-section="1"
+                        data-dev-section-key={`tech-efficiency-overall-tech-${tech.user_id}`}
+                        data-dev-section-type="content-card"
+                        data-dev-section-parent="tech-efficiency-overall-breakdown-table"
                         onClick={() => openDetailPopup(tech.user_id)}
-                        style={{ cursor: "pointer", transition: "background 0.15s ease" }}
+                        style={{ ...themedTableRowStyle, cursor: "pointer", transition: "background 0.15s ease" }}
                         onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-light)"; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = ""; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "var(--surface)"; }}
                       >
                         <td style={{ ...tdStyle, fontWeight: 600 }}>{tech.first_name}</td>
                         <td style={tdStyle}>{(weight * 100).toFixed(0)}%</td>
@@ -1314,7 +1437,7 @@ export default function EfficiencyTab({
                 </tbody>
               </table>
             </div>
-          </div>
+          </DevLayoutSection>
 
         </>
       )}
@@ -1323,12 +1446,25 @@ export default function EfficiencyTab({
       {!loading && activeTab !== "overall" && activeSummary && (
         <>
           {/* Tech stats */}
-          <div style={sectionStyle}>
+          <DevLayoutSection
+            sectionKey="tech-efficiency-tech-summary"
+            sectionType="content-card"
+            parentKey="tech-efficiency-page"
+            backgroundToken="surface-summary-card"
+            style={themedSectionStyle}
+          >
             <h3 style={{ margin: 0, fontSize: "1.15rem", color: "var(--primary-dark)" }}>
               {activeSummary.tech.first_name} - {activeFilterHeading}
             </h3>
-            <div className="efficiency-summary-grid efficiency-tech-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px" }}>
-              <div style={statCardStyle}>
+            <div
+              className="efficiency-summary-grid efficiency-tech-grid"
+              style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px" }}
+              data-dev-section="1"
+              data-dev-section-key="tech-efficiency-tech-summary-grid"
+              data-dev-section-type="content-card"
+              data-dev-section-parent="tech-efficiency-tech-summary"
+            >
+              <div style={statCardStyle} data-dev-section="1" data-dev-section-key="tech-efficiency-tech-logged" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-tech-summary-grid">
                 <span style={statusLabelStyle(filteredSetStatusColor)}>
                   Logged Total
                 </span>
@@ -1336,7 +1472,7 @@ export default function EfficiencyTab({
                   {formatHours(totalsForFilteredSet.logged)}h
                 </strong>
               </div>
-              <div style={statCardStyle}>
+              <div style={statCardStyle} data-dev-section="1" data-dev-section-key="tech-efficiency-tech-allocated" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-tech-summary-grid">
                 <span style={statusLabelStyle(filteredSetStatusColor)}>
                   Allocated Total
                 </span>
@@ -1344,7 +1480,7 @@ export default function EfficiencyTab({
                   {formatHours(totalsForFilteredSet.allocated)}h
                 </strong>
               </div>
-              <div style={statusCardStyle(filteredSetStatusColor)}>
+              <div style={statusCardStyle(filteredSetStatusColor)} data-dev-section="1" data-dev-section-key="tech-efficiency-tech-total-difference" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-tech-summary-grid">
                 <span style={statusLabelStyle(filteredSetStatusColor)}>
                   Total Difference
                 </span>
@@ -1353,7 +1489,7 @@ export default function EfficiencyTab({
                 </strong>
               </div>
               {/* Combined Current Target + Full Month card — hidden on mobile, replaced by separate cards */}
-              <div className="efficiency-target-combined" style={{ ...statCardStyle, gridColumn: "span 2", minWidth: "320px" }}>
+              <div className="efficiency-target-combined" style={{ ...statCardStyle, gridColumn: "span 2", minWidth: "320px" }} data-dev-section="1" data-dev-section-key="tech-efficiency-tech-target-combined" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-tech-summary-grid">
                 <div
                   style={{
                     display: "grid",
@@ -1386,20 +1522,20 @@ export default function EfficiencyTab({
                 </div>
               </div>
               {/* Separate Current Target card — visible only on mobile */}
-              <div className="efficiency-target-mobile" style={{ ...statCardStyle, display: "none" }}>
+              <div className="efficiency-target-mobile" style={{ ...statCardStyle, display: "none" }} data-dev-section="1" data-dev-section-key="tech-efficiency-tech-target-current-mobile" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-tech-summary-grid">
                 <span style={statusLabelStyle(filteredSetStatusColor)}>Current Target</span>
                 <strong style={summaryValueStyle(filteredSetStatusColor)}>
                   {formatHours(currentMonthTargetHours)}h
                 </strong>
               </div>
               {/* Separate Full Month card — visible only on mobile */}
-              <div className="efficiency-target-mobile" style={{ ...statCardStyle, display: "none" }}>
+              <div className="efficiency-target-mobile" style={{ ...statCardStyle, display: "none" }} data-dev-section="1" data-dev-section-key="tech-efficiency-tech-target-full-month-mobile" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-tech-summary-grid">
                 <span style={statusLabelStyle(filteredSetStatusColor)}>Full Month</span>
                 <strong style={summaryValueStyle(filteredSetStatusColor)}>
                   {formatHours(fullMonthTargetHours)}h
                 </strong>
               </div>
-              <div style={statusCardStyle(filteredSetStatusColor)}>
+              <div style={statusCardStyle(filteredSetStatusColor)} data-dev-section="1" data-dev-section-key="tech-efficiency-tech-efficiency" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-tech-summary-grid">
                 <span style={statusLabelStyle(filteredSetStatusColor)}>
                   Efficiency
                 </span>
@@ -1408,31 +1544,44 @@ export default function EfficiencyTab({
                 </strong>
               </div>
             </div>
-          </div>
+          </DevLayoutSection>
 
           {/* Entries table */}
-          <div style={sectionStyle}>
+          <DevLayoutSection
+            sectionKey="tech-efficiency-tech-entries"
+            sectionType="content-card"
+            parentKey="tech-efficiency-page"
+            backgroundToken="surface-table-card"
+            style={themedSectionStyle}
+          >
             <h3 style={{ margin: 0, fontSize: "1.05rem", color: "var(--primary-dark)" }}>
               Entries
             </h3>
-            <div className="efficiency-table-wrap" style={tableWrapperStyle}>
+            <div
+              className="efficiency-table-wrap"
+              style={tableWrapperStyle}
+              data-dev-section="1"
+              data-dev-section-key="tech-efficiency-tech-entries-table"
+              data-dev-section-type="data-table"
+              data-dev-section-parent="tech-efficiency-tech-entries"
+            >
               <div style={{ maxHeight: "520px", overflowY: "auto" }}>
                 <table style={tableStyle}>
-                  <thead>
+                  <thead style={{ background: "var(--accent-surface-hover)" }}>
                     <tr>
-                      <th style={thStyle}>Date</th>
-                      <th style={thStyle}>Job Number</th>
-                      <th style={thStyle}>Job Description</th>
-                      <th style={thStyle}>Allocated Total</th>
-                      <th style={thStyle}>Logged Total</th>
-                      <th style={thStyle}>Difference</th>
-                      <th style={thStyle}>Notes</th>
-                      <th style={thStyle}>Day Type</th>
+                      <th style={themedTableHeadingStyle}>Date</th>
+                      <th style={themedTableHeadingStyle}>Job Number</th>
+                      <th style={themedTableHeadingStyle}>Job Description</th>
+                      <th style={themedTableHeadingStyle}>Allocated Total</th>
+                      <th style={themedTableHeadingStyle}>Logged Total</th>
+                      <th style={themedTableHeadingStyle}>Difference</th>
+                      <th style={themedTableHeadingStyle}>Notes</th>
+                      <th style={themedTableHeadingStyle}>Day Type</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody style={{ background: "var(--surface)" }}>
                     {activeSummary.entries.length === 0 ? (
-                      <tr>
+                      <tr style={themedTableRowStyle}>
                         <td colSpan={8} style={{ ...tdStyle, textAlign: "center", color: "var(--grey-accent)", padding: "32px 16px" }}>
                           No entries for {MONTHS[selectedMonth - 1]} {selectedYear}. {isTabEditable ? "Click \"+ Add Job Entry\" to get started." : ""}
                         </td>
@@ -1449,6 +1598,10 @@ export default function EfficiencyTab({
                         return (
                         <tr
                           key={entry.id}
+                          data-dev-section="1"
+                          data-dev-section-key={`tech-efficiency-entry-${entry.id}`}
+                          data-dev-section-type="content-card"
+                          data-dev-section-parent="tech-efficiency-tech-entries-table"
                           role={isClickable ? "button" : undefined}
                           tabIndex={isClickable ? 0 : -1}
                           onPointerUp={(event) => {
@@ -1464,8 +1617,8 @@ export default function EfficiencyTab({
                             }
                           }}
                           style={{
+                            ...themedTableRowStyle,
                             cursor: isClickable ? "pointer" : "default",
-                            backgroundColor: canOpenEditModal ? "transparent" : undefined,
                           }}
                         >
                           <td style={tdStyle}>
@@ -1509,7 +1662,7 @@ export default function EfficiencyTab({
                 </table>
               </div>
             </div>
-          </div>
+          </DevLayoutSection>
         </>
       )}
 
@@ -2230,10 +2383,14 @@ export default function EfficiencyTab({
                 gap: 8px !important;
                 align-items: stretch !important;
               }
+              :global(.efficiency-topbar-nav-group),
               :global(.efficiency-topbar-tabs),
               :global(.efficiency-month-nav),
               :global(.efficiency-topbar-actions) {
                 width: 100%;
+              }
+              :global(.efficiency-topbar-nav-group) {
+                gap: 8px !important;
               }
               :global(.efficiency-month-nav) {
                 justify-content: space-between;
@@ -2277,8 +2434,8 @@ export default function EfficiencyTab({
                 gap: 10px !important;
               }
               :global(.efficiency-summary-grid.efficiency-tech-grid) {
-                grid-template-columns: 1fr !important;
-                gap: 8px !important;
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                gap: 10px !important;
               }
               :global(.efficiency-summary-grid > div) {
                 padding: 12px !important;
@@ -2286,10 +2443,10 @@ export default function EfficiencyTab({
                 min-width: 0 !important;
               }
               :global(.efficiency-summary-grid.efficiency-tech-grid > div) {
-                flex-direction: row !important;
-                justify-content: space-between !important;
-                align-items: center !important;
-                padding: 12px 16px !important;
+                flex-direction: column !important;
+                justify-content: flex-start !important;
+                align-items: stretch !important;
+                padding: 12px !important;
               }
               :global(.efficiency-summary-grid span) {
                 font-size: 0.62rem !important;
@@ -2348,6 +2505,6 @@ export default function EfficiencyTab({
         onCancel={() => setConfirmDialog(null)}
         onConfirm={confirmDialog?.onConfirm}
       />
-    </div>
+    </DevLayoutSection>
   );
 }

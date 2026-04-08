@@ -14,6 +14,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { summarizePartsPipeline } from "@/lib/partsPipeline";
 import { normalizeDisplayName } from "@/utils/nameUtils";
 import { deriveJobTypeDisplay } from "@/lib/jobType/display";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { SearchBar } from "@/components/searchBarAPI";
 import { prefetchJob } from "@/lib/swr/prefetch";
 
@@ -595,28 +596,48 @@ export default function MyJobsPage() {
 
   return (
     <Layout>
-      <div className="app-page-stack" style={{ minHeight: "100%" }}>
+      <DevLayoutSection
+        sectionKey="myjobs-page-shell"
+        sectionType="page-shell"
+        backgroundToken="surface-page"
+        shell
+        className="app-page-stack"
+        style={{ minHeight: "100%" }}
+      >
         {/* Header */}
-        <div style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center"
-        }}>
+        <DevLayoutSection
+          sectionKey="myjobs-page-header"
+          sectionType="toolbar"
+          parentKey="myjobs-page-shell"
+          className="myjobs-page-header"
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center"
+          }}
+        >
           <div></div>
 
-        </div>
+        </DevLayoutSection>
 
         {/* Search and Filter Bar */}
-        <div style={{
-          display: "flex",
-          gap: "12px",
-          alignItems: "center",
-          flexWrap: "wrap",
-          padding: "12px",
-          backgroundColor: "var(--search-surface)",
-          borderRadius: "var(--radius-sm)",
-          color: "var(--search-text)"
-        }}>
+        <DevLayoutSection
+          sectionKey="myjobs-filter-toolbar"
+          sectionType="filter-row"
+          parentKey="myjobs-page-shell"
+          backgroundToken="surface-filter-card"
+          style={{
+            display: "flex",
+            gap: "12px",
+            alignItems: "center",
+            flexWrap: "wrap",
+            padding: "12px",
+            backgroundColor: "var(--accent-surface)",
+            border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
+            borderRadius: "var(--radius-sm)",
+            color: "var(--search-text)"
+          }}
+        >
           {/* Search Input */}
           <SearchBar
             placeholder="Search by job number, customer, reg, or vehicle..."
@@ -630,7 +651,13 @@ export default function MyJobsPage() {
           />
 
           {/* Filter Buttons */}
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          <div
+            data-dev-section="1"
+            data-dev-section-key="myjobs-filter-buttons"
+            data-dev-section-type="toolbar"
+            data-dev-section-parent="myjobs-filter-toolbar"
+            style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}
+          >
             {[
               { value: "all", label: "All Jobs" },
               { value: "in-progress", label: "In Progress" },
@@ -641,16 +668,20 @@ export default function MyJobsPage() {
                 key={value}
                 onClick={() => setFilter(value)}
                 style={{
-                  padding: "10px 20px",
+                  minHeight: "var(--control-height-md)",
+                  padding: "0 16px",
                   backgroundColor: filter === value ? "var(--primary)" : "var(--surface)",
                   color: filter === value ? "var(--surface)" : "var(--primary)",
                   border: "1px solid var(--primary)",
-                  borderRadius: "var(--radius-xs)",
+                  borderRadius: "var(--input-radius)",
                   cursor: "pointer",
-                  fontSize: "14px",
+                  fontSize: "0.9rem",
                   fontWeight: filter === value ? "600" : "500",
                   whiteSpace: "nowrap",
-                  transition: "all 0.2s"
+                  transition: "all 0.2s",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
                 onMouseEnter={(e) => {
                   if (filter !== value) {
@@ -667,32 +698,43 @@ export default function MyJobsPage() {
               </button>
             ))}
           </div>
-        </div>
+        </DevLayoutSection>
 
         {/* Jobs List */}
-        <div
+        <DevLayoutSection
+          sectionKey="myjobs-results-shell"
+          sectionType="content-card"
+          parentKey="myjobs-page-shell"
+          backgroundToken="surface-results-card"
           style={{
             flex: 1,
             display: "flex",
             flexDirection: "column",
             borderRadius: "var(--radius-xl)",
-            border: "none",
-            background: "var(--surface)",
+            border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
+            background: "var(--accent-surface)",
             padding: "var(--page-card-padding)",
             overflow: "hidden",
             minHeight: 0
           }}
         >
           {filteredJobs.length === 0 ? (
-            <div style={{
-              backgroundColor: "transparent",
-              padding: "60px",
-              borderRadius: "var(--radius-md)",
-              border: "1px dashed var(--danger)",
-              textAlign: "center",
-              margin: "auto",
-              maxWidth: "520px"
-            }}>
+            <div
+              data-dev-section="1"
+              data-dev-section-key="myjobs-empty-state"
+              data-dev-section-type="content-card"
+              data-dev-section-parent="myjobs-results-shell"
+              data-dev-background-token="surface-empty-state"
+              style={{
+                backgroundColor: "transparent",
+                padding: "60px",
+                borderRadius: "var(--radius-md)",
+                border: "1px dashed var(--danger)",
+                textAlign: "center",
+                margin: "auto",
+                maxWidth: "520px"
+              }}
+            >
               <div style={{ fontSize: "64px", marginBottom: "20px" }}>
                 {searchTerm ? "🔍" : "📭"}
               </div>
@@ -708,6 +750,10 @@ export default function MyJobsPage() {
             </div>
           ) : (
             <div
+              data-dev-section="1"
+              data-dev-section-key="myjobs-results-scroll"
+              data-dev-section-type="content-card"
+              data-dev-section-parent="myjobs-results-shell"
               style={{
                 flex: 1,
                 overflowY: "auto",
@@ -720,17 +766,21 @@ export default function MyJobsPage() {
             >
               <div
                 className="myjobs-header"
+                data-dev-section="1"
+                data-dev-section-key="myjobs-results-header"
+                data-dev-section-type="table-headings"
+                data-dev-section-parent="myjobs-results-scroll"
                 style={{
                   display: "flex",
                   alignItems: "center",
                   gap: "12px",
                   padding: "8px 16px",
                   borderRadius: "var(--radius-sm)",
-                  backgroundColor: "var(--surface-light)",
+                  backgroundColor: "var(--accent-surface-hover)",
                   border: "none",
                   fontSize: "12px",
                   fontWeight: "700",
-                  color: "var(--info)",
+                  color: "var(--primary-dark)",
                   textTransform: "uppercase",
                   letterSpacing: "0.04em"
                 }}
@@ -787,6 +837,11 @@ export default function MyJobsPage() {
                   <div
                     key={job.id || job.jobNumber}
                     className="myjobs-row"
+                    data-dev-section="1"
+                    data-dev-section-key={`myjobs-row-${job.id || job.jobNumber}`}
+                    data-dev-section-type="content-card"
+                    data-dev-section-parent="myjobs-results-scroll"
+                    data-dev-background-token={`myjobs-status-${getTechStatusCategory(displayStatusLabel)}`}
                     onClick={() => handleJobClick(job)}
                     style={{
                       border: "none",
@@ -901,25 +956,39 @@ export default function MyJobsPage() {
               })}
             </div>
           )}
-        </div>
+        </DevLayoutSection>
 
         {/* Job Count Summary */}
-        <div className="app-section-card" style={{
-          border: "none"
-        }}>
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-            gap: "16px",
-            textAlign: "center"
-          }}>
-            <div>
+        <DevLayoutSection
+          sectionKey="myjobs-summary"
+          sectionType="content-card"
+          parentKey="myjobs-page-shell"
+          backgroundToken="surface-summary-card"
+          className="app-section-card"
+          style={{
+            border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
+            background: "var(--accent-surface)"
+          }}
+        >
+          <div
+            data-dev-section="1"
+            data-dev-section-key="myjobs-summary-grid"
+            data-dev-section-type="content-card"
+            data-dev-section-parent="myjobs-summary"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+              gap: "16px",
+              textAlign: "center"
+            }}
+          >
+            <div data-dev-section="1" data-dev-section-key="myjobs-summary-total" data-dev-section-type="stat-card" data-dev-section-parent="myjobs-summary-grid">
               <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--primary)", marginBottom: "4px" }}>
                 {myJobs.length}
               </div>
               <div style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Total Jobs</div>
             </div>
-            <div>
+            <div data-dev-section="1" data-dev-section-key="myjobs-summary-in-progress" data-dev-section-type="stat-card" data-dev-section-parent="myjobs-summary-grid">
               <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--info)", marginBottom: "4px" }}>
                 {myJobs.filter(
                   (j) =>
@@ -930,7 +999,7 @@ export default function MyJobsPage() {
               </div>
               <div style={{ fontSize: "13px", color: "var(--grey-accent)" }}>In Progress</div>
             </div>
-            <div>
+            <div data-dev-section="1" data-dev-section-key="myjobs-summary-waiting" data-dev-section-type="stat-card" data-dev-section-parent="myjobs-summary-grid">
               <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--danger)", marginBottom: "4px" }}>
                 {myJobs.filter(
                   (j) =>
@@ -941,7 +1010,7 @@ export default function MyJobsPage() {
               </div>
               <div style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Waiting</div>
             </div>
-            <div>
+            <div data-dev-section="1" data-dev-section-key="myjobs-summary-complete" data-dev-section-type="stat-card" data-dev-section-parent="myjobs-summary-grid">
               <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--info)", marginBottom: "4px" }}>
                 {myJobs.filter(
                   (j) =>
@@ -953,9 +1022,9 @@ export default function MyJobsPage() {
               <div style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Completed</div>
             </div>
           </div>
-        </div>
+        </DevLayoutSection>
 
-      </div>
+      </DevLayoutSection>
 
       {/* Start Job Modal */}
       <JobCardModal 
@@ -966,7 +1035,75 @@ export default function MyJobsPage() {
         }}
         prefilledJobNumber={prefilledJobNumber} // Pass the prefilled job number to modal
       />
+      <style jsx>{`
+        @media (max-width: 480px) {
+          :global(.app-page-stack) {
+            gap: 12px !important;
+          }
+          :global([data-dev-section-key="myjobs-filter-toolbar"]) {
+            padding: 12px !important;
+            gap: 10px !important;
+          }
+          :global([data-dev-section-key="myjobs-filter-toolbar"] .search-bar) {
+            min-width: 0 !important;
+          }
+          :global([data-dev-section-key="myjobs-filter-buttons"]) {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            width: 100%;
+            gap: 8px !important;
+          }
+          :global([data-dev-section-key="myjobs-filter-buttons"] button) {
+            width: 100%;
+            min-width: 0;
+            padding: 10px 12px !important;
+            font-size: 0.82rem !important;
+          }
+          :global([data-dev-section-key="myjobs-results-shell"]) {
+            padding: 12px !important;
+            border-radius: 16px !important;
+          }
+          :global([data-dev-section-key="myjobs-results-scroll"]) {
+            gap: 10px !important;
+            padding-right: 0 !important;
+          }
+          :global(.myjobs-row) {
+            gap: 8px !important;
+            padding: 12px !important;
+            border-radius: 14px !important;
+          }
+          :global(.myjobs-status) {
+            max-width: 100% !important;
+          }
+          :global(.myjobs-jobnumber),
+          :global(.myjobs-reg),
+          :global(.myjobs-type) {
+            flex: 1 1 calc(50% - 4px) !important;
+          }
+          :global(.myjobs-customer),
+          :global(.myjobs-make) {
+            flex: 1 1 100% !important;
+          }
+          :global([data-dev-section-key="myjobs-summary"]) {
+            padding: 12px !important;
+          }
+          :global([data-dev-section-key="myjobs-summary-grid"]) {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 10px !important;
+          }
+          :global([data-dev-section-key="myjobs-summary-grid"] > div) {
+            border-radius: 12px;
+            padding: 12px 10px;
+            background: var(--surface);
+          }
+          :global([data-dev-section-key="myjobs-summary-grid"] > div > div:first-child) {
+            font-size: 1.35rem !important;
+          }
+          :global([data-dev-section-key="myjobs-summary-grid"] > div > div:last-child) {
+            font-size: 0.78rem !important;
+          }
+        }
+      `}</style>
     </Layout>
   );
 }
-
