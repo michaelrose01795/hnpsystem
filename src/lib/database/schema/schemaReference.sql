@@ -555,6 +555,10 @@ CREATE TABLE public.job_files (
   uploaded_by integer,
   folder text DEFAULT 'general'::text,
   uploaded_at timestamp with time zone DEFAULT now(),
+  visible_to_customer boolean NOT NULL DEFAULT true,
+  file_size bigint,
+  storage_type text NOT NULL DEFAULT 'local'::text,
+  storage_path text,
   CONSTRAINT job_files_pkey PRIMARY KEY (file_id),
   CONSTRAINT job_files_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT job_files_uploaded_by_fkey FOREIGN KEY (uploaded_by) REFERENCES public.users(user_id)

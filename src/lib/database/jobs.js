@@ -3349,7 +3349,11 @@ export const getJobsByDate = async (date) => {
 /* ============================================
    ✅ NEW: ADD FILE TO JOB
 ============================================ */
-export const addJobFile = async (jobId, fileName, fileUrl, fileType, folder, uploadedBy, visibleToCustomer = true) => {
+export const addJobFile = async (
+  jobId, fileName, fileUrl, fileType, folder, uploadedBy,
+  visibleToCustomer = true,
+  { fileSize = null, storageType = "local", storagePath = null } = {}
+) => {
   try {
     const { data, error } = await supabase
       .from("job_files")
@@ -3362,6 +3366,9 @@ export const addJobFile = async (jobId, fileName, fileUrl, fileType, folder, upl
         uploaded_by: uploadedBy,
         uploaded_at: new Date().toISOString(),
         visible_to_customer: visibleToCustomer,
+        file_size: fileSize,
+        storage_type: storageType,
+        storage_path: storagePath,
       }])
       .select()
       .single();
