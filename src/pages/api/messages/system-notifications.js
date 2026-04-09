@@ -1,6 +1,7 @@
 // file location: src/pages/api/messages/system-notifications.js
 import { sendThreadMessage } from "@/lib/database/messages";
 import { ensureSystemMessagingConfig } from "@/lib/messages/systemConfig";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 const formatEstimatedQtyText = (quantity) => {
   if (quantity === null || quantity === undefined || Number.isNaN(Number(quantity))) {
@@ -24,7 +25,7 @@ const formatStatusMessage = ({ name, status, nextEstimatedOrderDate, estimatedQu
   )}.`;
 };
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method !== "POST") {
     return res.status(405).json({ success: false, message: "Method not allowed." });
   }
@@ -70,3 +71,5 @@ export default async function handler(req, res) {
       .json({ success: false, message: error.message || "Unable to send notification." });
   }
 }
+
+export default withRoleGuard(handler);

@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import { supabase } from "@/lib/supabaseClient";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 const DISPLAY_DAYS = 21;
 
@@ -14,7 +15,7 @@ const buildDateRange = () => {
   return Array.from({ length: DISPLAY_DAYS }).map((_, index) => rangeStart.add(index, "day"));
 };
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
     return res.status(405).json({ error: "Only GET allowed" });
@@ -66,3 +67,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Unable to load booking calendar" });
   }
 }
+
+export default withRoleGuard(handler);

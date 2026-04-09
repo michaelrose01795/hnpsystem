@@ -4,8 +4,9 @@ import {
   markThreadRead,
   sendThreadMessage,
 } from "@/lib/database/messages";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   const threadIdRaw = req.query.threadId;
   const threadId = Number(threadIdRaw);
 
@@ -76,3 +77,5 @@ export default async function handler(req, res) {
 
   return res.status(405).json({ success: false, message: "Method not allowed" });
 }
+
+export default withRoleGuard(handler);

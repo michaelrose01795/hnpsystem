@@ -1,7 +1,8 @@
 import { sendDmsEmail } from "@/lib/email/emailApi";
 import { getEmailBranding, renderEmailShell } from "@/lib/email/template";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method !== "POST") {
     return res.status(405).json({ success: false, error: "Method not allowed" });
   }
@@ -58,3 +59,4 @@ export default async function handler(req, res) {
   }
 }
 
+export default withRoleGuard(handler);

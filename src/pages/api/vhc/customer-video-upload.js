@@ -2,6 +2,7 @@
 
 export const runtime = "nodejs";
 
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabaseService } from "@/lib/supabaseClient";
 
 export const config = {
@@ -54,7 +55,7 @@ const parseJson = (value, fallback) => {
   }
 };
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", ["POST"]);
     return res.status(405).json({ success: false, message: "Method not allowed" });
@@ -124,3 +125,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ success: false, message: error?.message || "Unexpected upload error." });
   }
 }
+
+export default withRoleGuard(handler);

@@ -1,7 +1,8 @@
 // file location: src/pages/api/messages/users.js
 import { searchDirectoryUsers } from "@/lib/database/messages";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method !== "GET") {
     return res.status(405).json({ success: false, message: "Method not allowed" });
   }
@@ -25,3 +26,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ success: false, message: error.message });
   }
 }
+
+export default withRoleGuard(handler);

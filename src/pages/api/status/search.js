@@ -1,4 +1,5 @@
 // file location: src/pages/api/status/search.js
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from "@/lib/supabaseClient";
 
 const JOB_SELECT = `
@@ -11,7 +12,7 @@ const JOB_SELECT = `
   updated_at
 `;
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "GET") {
     return res.status(405).json({ success: false, error: "Method not allowed" });
   }
@@ -50,3 +51,5 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withRoleGuard(handler);

@@ -2,6 +2,8 @@
 // file location: src/pages/api/invoices/create.js
 import { createClient } from "@supabase/supabase-js";
 import { getVehicleRegistration, pickMileageValue } from "@/lib/canonical/fields";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
+import { HR_CORE_ROLES, MANAGER_SCOPED_ROLES } from "@/lib/auth/roles";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -128,7 +130,7 @@ const fetchJobContext = async (jobId) => {
   };
 };
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ success: false, error: "Method not allowed" });
   }
@@ -255,3 +257,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ success: false, error: error.message || "Failed to create invoice" });
   }
 }
+
+export default withRoleGuard(handler, { allow: [...HR_CORE_ROLES, ...MANAGER_SCOPED_ROLES] });

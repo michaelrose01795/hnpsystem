@@ -5,6 +5,7 @@ import { isSmtpConfigured } from "@/lib/email/smtp";
 import { sendDmsEmail } from "@/lib/email/emailApi";
 import { getEmailBranding, renderEmailShell, resolveEmailBaseUrl } from "@/lib/email/template";
 import { resolveJobIdentity } from "@/lib/jobs/jobIdentity";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 const COMPANY_NAME = process.env.SMTP_COMPANY_NAME || "Service Department";
 
@@ -48,7 +49,7 @@ const buildHtml = ({ customerName, jobNumber, shareUrl, branding }) =>
     footerText: `This secure link expires after 24 hours. Contact ${branding.companyName} if you need a new one.`,
   });
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method !== "POST") {
     return res.status(405).json({ success: false, error: "Method not allowed" });
   }
@@ -167,3 +168,5 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withRoleGuard(handler);

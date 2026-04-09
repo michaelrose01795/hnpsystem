@@ -3,6 +3,7 @@
 import getUserFromRequest from "@/lib/auth/getUserFromRequest";
 import { updateJobRequestPresetDefaultHours } from "@/lib/database/jobRequestPresets";
 import { isDiagnosticRequestText } from "@/lib/jobRequestPresets/constants";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 const MANAGER_ROLE_KEYWORDS = ["admin", "manager", "workshop manager", "service manager"];
 
@@ -12,7 +13,7 @@ const hasPresetWritePermission = (role = "") => {
   return MANAGER_ROLE_KEYWORDS.some((keyword) => normalizedRole.includes(keyword));
 };
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method !== "POST") {
     res.setHeader("Allow", ["POST"]);
     res.status(405).json({ success: false, message: "Method not allowed" });
@@ -71,3 +72,5 @@ export default async function handler(req, res) {
     res.status(500).json({ success: false, message: "Failed to update preset default hours" });
   }
 }
+
+export default withRoleGuard(handler);

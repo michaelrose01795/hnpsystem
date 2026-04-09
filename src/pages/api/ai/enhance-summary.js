@@ -3,7 +3,9 @@
 // Sends code-generated summary data to an external AI endpoint for refined wording.
 // Falls back to original data on any failure. Only active when feature flag is enabled.
 
-export default async function handler(req, res) {
+import { withRoleGuard } from "@/lib/auth/roleGuard";
+
+async function handler(req, res, session) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" }); // POST-only endpoint
   }
@@ -73,3 +75,5 @@ export default async function handler(req, res) {
     return res.status(200).json({ refined: false, reason }); // Fallback to code-generated text
   }
 }
+
+export default withRoleGuard(handler);

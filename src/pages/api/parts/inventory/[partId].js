@@ -1,5 +1,6 @@
 // file location: src/pages/api/parts/inventory/[partId].js
 
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from "@/lib/supabaseClient";
 import { resolveAuditIds } from "@/lib/utils/ids";
 
@@ -38,7 +39,7 @@ const withJobCount = async (part) => {
   };
 };
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   const { partId } = req.query;
 
   if (!partId || typeof partId !== "string") {
@@ -150,3 +151,5 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withRoleGuard(handler);

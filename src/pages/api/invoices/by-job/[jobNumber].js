@@ -1,7 +1,9 @@
 // file location: src/pages/api/invoices/by-job/[jobNumber].js // identify API route path
 import { getInvoiceDetailPayload } from "@/lib/invoices/detailService"; // import shared invoice detail builder
+import { withRoleGuard } from "@/lib/auth/roleGuard"; // import role guard wrapper
+import { HR_CORE_ROLES, MANAGER_SCOPED_ROLES } from "@/lib/auth/roles"; // import allowed role sets
 
-export default async function handler(req, res) { // main handler for /api/invoices/by-job/[jobNumber]
+async function handler(req, res) { // main handler for /api/invoices/by-job/[jobNumber]
   if (req.method !== "GET") { // restrict to GET
     res.setHeader("Allow", "GET"); // advertise allowed method
     res.status(405).json({ success: false, message: "Method not allowed" }); // respond with error
@@ -31,3 +33,5 @@ export default async function handler(req, res) { // main handler for /api/invoi
     res.status(500).json({ success: false, message: error.message || "Unable to load invoice details" }); // send server error with actual error message
   }
 } // end handler
+
+export default withRoleGuard(handler, { allow: [...HR_CORE_ROLES, ...MANAGER_SCOPED_ROLES] }); // enforce manager-level access

@@ -1,9 +1,10 @@
 // file location: src/pages/api/parts/catalog/[partId].js
 
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from "@/lib/supabaseClient";
 import { isValidUuid } from "@/lib/utils/ids";
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   const { partId } = req.query;
 
   if (!partId || !isValidUuid(partId)) {
@@ -100,3 +101,5 @@ export default async function handler(req, res) {
   res.setHeader("Allow", ["GET", "PATCH"]);
   return res.status(405).json({ success: false, message: "Method not allowed" });
 }
+
+export default withRoleGuard(handler);

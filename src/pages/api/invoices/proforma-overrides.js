@@ -1,5 +1,7 @@
 // file location: src/pages/api/invoices/proforma-overrides.js
 import { createClient } from "@supabase/supabase-js";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
+import { HR_CORE_ROLES, MANAGER_SCOPED_ROLES } from "@/lib/auth/roles";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -32,7 +34,7 @@ const toNullableText = (value) => {
   return text ? text : null;
 };
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method === "GET") {
     const rawJobId = req.query?.jobId;
     const jobId = Number(rawJobId);
@@ -129,3 +131,5 @@ export default async function handler(req, res) {
 
   return res.status(200).json({ success: true, data });
 }
+
+export default withRoleGuard(handler, { allow: [...HR_CORE_ROLES, ...MANAGER_SCOPED_ROLES] });

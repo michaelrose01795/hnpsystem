@@ -1,5 +1,6 @@
 // file location: src/pages/api/vhc/item-aliases.js
 
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from "@/lib/supabaseClient";
 
 const buildErrorResponse = (res, status, message) => {
@@ -9,7 +10,7 @@ const buildErrorResponse = (res, status, message) => {
   });
 };
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method === "POST") {
     const { jobId, displayId, vhcItemId } = req.body || {};
     if (!jobId || !displayId || !vhcItemId) {
@@ -82,4 +83,6 @@ export default async function handler(req, res) {
   res.setHeader("Allow", ["POST", "DELETE"]);
   return buildErrorResponse(res, 405, `Method ${req.method} not allowed`);
 }
+
+export default withRoleGuard(handler);
 

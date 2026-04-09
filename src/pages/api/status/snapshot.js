@@ -1,7 +1,8 @@
 // file location: src/pages/api/status/snapshot.js
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { buildJobStatusSnapshot } from "@/lib/status/jobStatusSnapshot";
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -24,3 +25,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ success: false, error: "Internal server error" });
   }
 }
+
+export default withRoleGuard(handler);

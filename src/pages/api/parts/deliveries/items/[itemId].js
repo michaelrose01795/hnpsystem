@@ -1,5 +1,6 @@
 // file location: src/pages/api/parts/deliveries/items/[itemId].js
 
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from "@/lib/supabaseClient";
 import { resolveAuditIds } from "@/lib/utils/ids";
 
@@ -15,7 +16,7 @@ const parseNumber = (value, fallback) => {
   return Number.isNaN(parsed) ? fallback : parsed
 }
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   const { itemId } = req.query
 
   if (!itemId || typeof itemId !== "string") {
@@ -202,3 +203,5 @@ export default async function handler(req, res) {
     })
   }
 }
+
+export default withRoleGuard(handler);

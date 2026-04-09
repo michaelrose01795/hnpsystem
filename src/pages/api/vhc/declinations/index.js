@@ -1,4 +1,5 @@
 // file location: src/pages/api/vhc/declinations/index.js
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { createDeclination } from "@/lib/database/vhc"; // Import VHC declination helper.
 import { getUserFromRequest } from "@/lib/auth/getUserFromRequest"; // Resolve caller context for RBAC enforcement.
 
@@ -8,7 +9,7 @@ const normaliseRole = (role) => (typeof role === "string" ? role.trim().toLowerC
 
 const hasServicePrivileges = (role) => SERVICE_ROLE_KEYWORDS.some((keyword) => normaliseRole(role).includes(keyword)); // Evaluate RBAC.
 
-export default async function handler(req, res) { // API handler for recording VHC declinations.
+async function handler(req, res) { // API handler for recording VHC declinations.
   if (req.method !== "POST") { // Only POST is supported.
     res.setHeader("Allow", ["POST"]); // Advertise supported method.
     res.status(405).json({ ok: false, error: `Method ${req.method} not allowed` }); // Return method-not-allowed response.
@@ -44,3 +45,5 @@ export default async function handler(req, res) { // API handler for recording V
     res.status(500).json({ ok: false, error: error?.message || "Unexpected error" }); // Return generic failure payload.
   }
 }
+
+export default withRoleGuard(handler);

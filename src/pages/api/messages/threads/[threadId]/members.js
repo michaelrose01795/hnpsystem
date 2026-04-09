@@ -1,7 +1,8 @@
 // file location: src/pages/api/messages/threads/[threadId]/members.js
 import { updateGroupMembers } from "@/lib/database/messages";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method !== "POST" && req.method !== "DELETE") {
     return res.status(405).json({ success: false, message: "Method not allowed" });
   }
@@ -56,3 +57,5 @@ export default async function handler(req, res) {
       .json({ success: false, message: error.message || "Server error" });
   }
 }
+
+export default withRoleGuard(handler);

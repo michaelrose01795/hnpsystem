@@ -2,6 +2,7 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/api/search/global.js
 import { supabase } from "@/lib/supabaseClient";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { createCustomerDisplaySlug, normalizeCustomerSlug } from "@/lib/customers/slug";
 
 import { resolveMainStatusId } from "@/lib/status/statusFlow";
@@ -17,7 +18,7 @@ const toTitleCase = (value) => {
     .join(" ");
 };
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method !== "GET") {
     return res.status(405).json({
       success: false,
@@ -382,3 +383,5 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withRoleGuard(handler);

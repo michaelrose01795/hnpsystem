@@ -1,4 +1,5 @@
 import { supabaseService } from "@/lib/supabaseClient";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 const mapVehicle = (row = {}) => ({
   id: row.vehicle_id,
@@ -15,7 +16,7 @@ const mapVehicle = (row = {}) => ({
   history: [],
 });
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (!supabaseService) {
     return res.status(500).json({ success: false, error: "Service role key missing" });
   }
@@ -172,3 +173,5 @@ export default async function handler(req, res) {
       .json({ success: false, error: error.message || "Failed to update staff vehicle" });
   }
 }
+
+export default withRoleGuard(handler);

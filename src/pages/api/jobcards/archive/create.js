@@ -2,6 +2,7 @@
 import { supabaseService } from "@/lib/supabaseClient";
 import { getJobByNumber } from "@/lib/database/jobs";
 import { getNotesByJob } from "@/lib/database/notes";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 const fetchRows = async (builder, label) => {
   const { data, error } = await builder;
@@ -35,7 +36,7 @@ const deleteByIds = async (table, idField, ids) => {
   }
 };
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (!supabaseService) {
     return res.status(500).json({ success: false, error: "Service role key not configured" });
   }
@@ -571,3 +572,5 @@ export default async function handler(req, res) {
       .json({ success: false, error: error.message || "Failed to archive job" });
   }
 }
+
+export default withRoleGuard(handler);

@@ -2,6 +2,7 @@
 export const runtime = "nodejs"; // Ensure Vercel executes this API route in the Node.js runtime for HTTPS support
 
 import https from "https"; // Node.js HTTPS module used to communicate with the DVLA API securely
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 // Helper that performs the DVLA POST request and resolves with the raw response payload
 function makeHttpsRequest(registration, apiKey) {
@@ -54,7 +55,7 @@ function makeHttpsRequest(registration, apiKey) {
 }
 
 // Primary API route handler consumed by the Next.js runtime
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" }); // Restrict the endpoint to POST requests only
   }
@@ -155,3 +156,5 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withRoleGuard(handler);

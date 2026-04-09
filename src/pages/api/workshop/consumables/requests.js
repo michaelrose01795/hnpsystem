@@ -1,5 +1,6 @@
 // file location: src/pages/api/workshop/consumables/requests.js
 import { supabase } from "@/lib/supabaseClient";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 const TABLE = "workshop_consumable_requests";
 
@@ -14,7 +15,7 @@ const formatRequestRow = (row) => ({
   updatedAt: row.updated_at,
 });
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   try {
     if (req.method === "GET") {
       const { data, error } = await supabase
@@ -108,3 +109,5 @@ export default async function handler(req, res) {
       .json({ success: false, message: error.message || "Server error" });
   }
 }
+
+export default withRoleGuard(handler);

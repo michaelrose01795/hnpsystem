@@ -1,5 +1,6 @@
 // file location: src/pages/api/parts/inventory/index.js
 
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from "@/lib/supabaseClient";
 import { resolveAuditIds } from "@/lib/utils/ids";
 
@@ -139,7 +140,7 @@ const buildLinkedJobsMap = async (partIds = []) => {
   return { linkedJobs, jobCounts };
 };
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method === "GET") {
     const {
       search = "",
@@ -281,3 +282,5 @@ export default async function handler(req, res) {
     message: `Method ${req.method} not allowed`,
   });
 }
+
+export default withRoleGuard(handler);

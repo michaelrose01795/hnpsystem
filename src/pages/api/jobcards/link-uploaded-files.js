@@ -8,6 +8,7 @@ import fs from "fs";
 import path from "path";
 import { saveFileRecord, sanitiseFileName } from "@/lib/storage/storageService";
 import { supabaseService, supabase as supabaseFallback } from "@/lib/supabaseClient";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 const BUCKET = "job-files";
 
@@ -15,7 +16,7 @@ function getClient() {
   return supabaseService || supabaseFallback;
 }
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method !== "POST") {
     res.setHeader("Allow", ["POST"]);
     return res.status(405).json({ error: `Method ${req.method} not allowed` });
@@ -129,3 +130,5 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withRoleGuard(handler);

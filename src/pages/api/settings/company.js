@@ -2,6 +2,8 @@
 // API endpoint to fetch company settings including VAT rate and labour rate
 
 import { getDatabaseClient } from "@/lib/database/client";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
+import { HR_CORE_ROLES, MANAGER_SCOPED_ROLES } from "@/lib/auth/roles";
 
 const supabase = getDatabaseClient();
 
@@ -14,7 +16,7 @@ const supabase = getDatabaseClient();
  *   Example: ?keys=vat_rate,default_labour_rate
  *   If not provided, returns all settings
  */
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -80,3 +82,5 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withRoleGuard(handler, { allow: [...HR_CORE_ROLES, ...MANAGER_SCOPED_ROLES] });

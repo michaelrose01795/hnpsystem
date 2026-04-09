@@ -1,5 +1,6 @@
 // file location: src/pages/api/parts/job-items/[id].js
 
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from "@/lib/supabaseClient";
 import { syncVhcPartsAuthorisation } from "@/lib/database/vhcPartsSync";
 
@@ -106,7 +107,7 @@ const getUserFromRequest = async (req) => {
   return { role: 'admin' }
 }
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   const { id: rawId } = req.query || {}
   const id = Array.isArray(rawId) ? rawId[0] : rawId
 
@@ -374,3 +375,5 @@ export default async function handler(req, res) {
     return res.status(statusCode).json({ ok: false, error: message })
   }
 }
+
+export default withRoleGuard(handler);

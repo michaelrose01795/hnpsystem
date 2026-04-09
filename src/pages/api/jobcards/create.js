@@ -4,6 +4,7 @@
 
 import { ensureCustomer, ensureVehicle, createFullJob } from "@/lib/services/createJobService"; // shared service layer
 import { getDatabaseClient } from "@/lib/database/client"; // database client for history counts
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 const supabase = getDatabaseClient(); // server-side database client
 
@@ -19,7 +20,7 @@ const supabase = getDatabaseClient(); // server-side database client
  * 5. Saves job requests, detections, cosmetic damage, and customer status (via service layer)
  * 6. Returns complete job card with relationship info (same response shape as before)
  */
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method !== "POST") { // only accept POST
     res.setHeader("Allow", ["POST"]); // inform client of allowed methods
     return res.status(405).json({ // reject with 405
@@ -168,3 +169,5 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withRoleGuard(handler);

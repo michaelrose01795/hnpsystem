@@ -1,5 +1,6 @@
 // file location: src/pages/api/vhc/labour-time-suggestions.js
 
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from "@/lib/supabaseClient";
 import { buildNormalizedKey, isValidUuid, tokenize } from "@/features/labour-times/normalization";
 import { rankSuggestions } from "@/features/labour-times/ranking";
@@ -59,7 +60,7 @@ const toSuggestionResponse = (item = {}) => ({
   reason: item.reason || null,
 });
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "POST") {
     res.status(405).json({ success: false, message: "Method not allowed" });
     return;
@@ -247,3 +248,5 @@ export default async function handler(req, res) {
     res.status(500).json({ success: false, message: "Failed to fetch labour suggestions" });
   }
 }
+
+export default withRoleGuard(handler);

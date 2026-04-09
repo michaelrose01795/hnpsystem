@@ -3,6 +3,7 @@ export const runtime = "nodejs"; // Ensure Vercel uses the Node.js runtime for f
 
 import fs from "fs"; // Node.js file system utilities to manage uploaded files
 import path from "path"; // Path helper to build cross-platform temporary paths
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 export const config = {
   api: {
@@ -65,7 +66,7 @@ async function parseMultipartForm(req) {
  * NOTE: PDF parsing temporarily disabled due to Turbopack compatibility issues
  * This endpoint now accepts the file upload and stores metadata only
  */
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" }); // Block unsupported HTTP verbs
   }
@@ -227,3 +228,5 @@ export default async function handler(req, res) {
     }
   }
 }
+
+export default withRoleGuard(handler);

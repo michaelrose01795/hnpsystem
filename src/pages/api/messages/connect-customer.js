@@ -2,6 +2,7 @@
 
 import { createGroupThread } from "@/lib/database/messages";
 import { supabase } from "@/lib/supabaseClient";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 const CUSTOMER_SELECT_FIELDS =
   "id, firstname, lastname, email, mobile, telephone, name";
@@ -148,7 +149,7 @@ const fetchThreadMeta = async (threadId) => {
   return data;
 };
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method !== "POST") {
     return res.status(405).json({ success: false, message: "Method not allowed" });
   }
@@ -223,3 +224,5 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withRoleGuard(handler);

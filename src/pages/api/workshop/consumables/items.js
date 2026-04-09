@@ -1,7 +1,8 @@
 // file location: src/pages/api/workshop/consumables/items.js
 import { supabase } from "@/lib/supabaseClient";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method !== "POST") {
     return res
       .status(405)
@@ -63,3 +64,5 @@ export default async function handler(req, res) {
       .json({ success: false, message: error.message || "Server error" });
   }
 }
+
+export default withRoleGuard(handler);

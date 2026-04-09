@@ -1,6 +1,8 @@
 // file location: src/pages/api/hr/training-courses/index.js
 import { listTrainingCourses, createTrainingCourse } from "@/lib/database/hr"; // Import HR training course data helpers.
 import { getUserFromRequest } from "@/lib/auth/getUserFromRequest"; // Resolve the caller's role for access control.
+import { withRoleGuard } from "@/lib/auth/roleGuard"; // Role-based access control wrapper.
+import { HR_CORE_ROLES } from "@/lib/auth/roles"; // Allowed roles for HR endpoints.
 
 const MANAGER_KEYWORDS = ["admin", "manager"]; // Normalised substrings that grant elevated privileges.
 
@@ -11,7 +13,7 @@ const hasManagerPrivileges = (role) => { // Determine if the caller has administ
   return MANAGER_KEYWORDS.some((keyword) => normalised.includes(keyword)); // Grant if any keyword is present.
 };
 
-export default async function handler(req, res) { // Main API handler for listing and creating training courses.
+async function handler(req, res, session) { // Main API handler for listing and creating training courses.
   try { // Wrap logic to surface consistent JSON errors.
     if (req.method === "GET") { // Handle listing of courses.
       const courses = await listTrainingCourses(); // Fetch all course definitions.
@@ -52,3 +54,5 @@ export default async function handler(req, res) { // Main API handler for listin
     res.status(500).json({ ok: false, error: error?.message || "Unexpected error" }); // Return generic failure response.
   }
 }
+
+export default withRoleGuard(handler, { allow: HR_CORE_ROLES }); // Protect route with HR role check.

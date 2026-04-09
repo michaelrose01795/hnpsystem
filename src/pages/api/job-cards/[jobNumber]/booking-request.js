@@ -2,6 +2,7 @@ import { supabaseService } from "@/lib/supabaseClient";
 import { sendSystemNotification } from "@/lib/notifications/system";
 import { resolveJobIdentity } from "@/lib/jobs/jobIdentity";
 import { getVehicleRegistration } from "@/lib/canonical/fields";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 const BOOKING_REQUEST_FIELDS = `
   request_id,
@@ -137,7 +138,7 @@ const buildApprovalMessage = ({
   return `✅ Booking approved for Job #${job.job_number}.\n${body}`;
 };
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (!supabaseService) {
     return res
       .status(500)
@@ -329,3 +330,5 @@ export default async function handler(req, res) {
       .json({ success: false, error: error.message || "Server error" });
   }
 }
+
+export default withRoleGuard(handler);

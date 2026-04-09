@@ -1,6 +1,7 @@
 // ✅ Connected to Supabase (server-side)
 // file location: src/pages/api/users/roster.js
 import { getAllUsers, getUsersGroupedByRole } from "@/lib/database/users";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 const mapUsersToNameList = (grouped = {}) =>
   Object.fromEntries(
@@ -10,7 +11,7 @@ const mapUsersToNameList = (grouped = {}) =>
     ])
   );
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method !== "GET") {
     res.setHeader("Allow", ["GET"]);
     return res.status(405).json({ success: false, message: "Method not allowed" });
@@ -41,3 +42,5 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withRoleGuard(handler);

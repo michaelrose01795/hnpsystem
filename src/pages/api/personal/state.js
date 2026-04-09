@@ -1,3 +1,4 @@
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import {
   buildPersonalApiError,
   getPersonalState,
@@ -5,7 +6,7 @@ import {
   savePersonalState,
 } from "@/lib/profile/personalServer";
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   try {
     const { userId, db } = await requirePersonalAccess(req, res);
 
@@ -29,3 +30,5 @@ export default async function handler(req, res) {
     return buildPersonalApiError(res, error, "Failed to handle personal state request.");
   }
 }
+
+export default withRoleGuard(handler);

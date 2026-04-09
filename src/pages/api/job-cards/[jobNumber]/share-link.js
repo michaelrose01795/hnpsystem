@@ -2,6 +2,7 @@
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
 import { resolveJobIdentity } from "@/lib/jobs/jobIdentity";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -24,7 +25,7 @@ function isLinkExpired(createdAt) {
   return Date.now() - created > expiryMs;
 }
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   const { jobNumber: rawJobNumber } = req.query;
   const allowedMethods = new Set(["GET", "POST"]);
   if (!allowedMethods.has(req.method)) {
@@ -233,3 +234,5 @@ export default async function handler(req, res) {
   }
 
 }
+
+export default withRoleGuard(handler);

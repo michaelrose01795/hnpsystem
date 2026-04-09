@@ -8,6 +8,7 @@ export const runtime = "nodejs";
 import { parseMultipartForm } from "@/lib/storage/parseMultipartForm";
 import { uploadAndRecord } from "@/lib/storage/storageService";
 import { getJobByNumberOrReg } from "@/lib/database/jobs";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 export const config = {
   api: {
@@ -15,7 +16,7 @@ export const config = {
   },
 };
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method !== "POST") {
     res.setHeader("Allow", ["POST"]);
     return res.status(405).json({ error: `Method ${req.method} not allowed` });
@@ -75,3 +76,5 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withRoleGuard(handler);

@@ -1,5 +1,6 @@
 // file location: src/pages/api/workshop/consumables/financials.js
 import { supabase } from "@/lib/supabaseClient";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 const toNumber = (value) => {
   if (value === null || value === undefined) {
@@ -81,7 +82,7 @@ const calculateFinancialSummary = async (year, month) => {
   };
 };
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   try {
     const { year: rawYear, month: rawMonth } =
       req.method === "GET" ? req.query : req.body;
@@ -128,3 +129,5 @@ export default async function handler(req, res) {
       .json({ success: false, message: error.message || "Server error" });
   }
 }
+
+export default withRoleGuard(handler);

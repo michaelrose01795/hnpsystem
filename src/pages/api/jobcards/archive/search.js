@@ -1,6 +1,7 @@
 import { supabaseService } from "@/lib/supabaseClient";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (!supabaseService) {
     return res.status(500).json({ success: false, error: "Service role key not configured" });
   }
@@ -70,3 +71,5 @@ export default async function handler(req, res) {
       .json({ success: false, error: error.message || "Failed to search archived jobs" });
   }
 }
+
+export default withRoleGuard(handler);

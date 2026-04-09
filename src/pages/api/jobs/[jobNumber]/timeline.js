@@ -1,5 +1,6 @@
 // file location: src/pages/api/jobs/[jobNumber]/timeline.js
 import { createClient } from "@supabase/supabase-js"; // import supabase client
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -7,7 +8,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   // Extract jobNumber from the request URL
   const { jobNumber } = req.query;
 
@@ -45,3 +46,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Unexpected server error" });
   }
 }
+
+export default withRoleGuard(handler);

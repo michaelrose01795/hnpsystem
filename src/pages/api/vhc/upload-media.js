@@ -4,6 +4,7 @@
 // Existing local files under public/uploads/vhc-media/ remain accessible.
 export const runtime = "nodejs";
 
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { parseMultipartForm } from "@/lib/storage/parseMultipartForm";
 import { uploadAndRecord } from "@/lib/storage/storageService";
 
@@ -33,7 +34,7 @@ function validateMediaFile(mimetype, size) {
   return { valid: true };
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", ["POST"]);
     return res.status(405).json({ error: `Method ${req.method} not allowed` });
@@ -119,3 +120,5 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withRoleGuard(handler);

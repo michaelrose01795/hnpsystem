@@ -1,5 +1,6 @@
 // file location: src/pages/api/parts/deliveries/index.js
 
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from "@/lib/supabaseClient";
 import { resolveAuditIds } from "@/lib/utils/ids";
 
@@ -41,7 +42,7 @@ const normaliseLocation = (value = "") =>
     .toUpperCase()
     .replace(/[^A-Z0-9]/g, "");
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method === "GET") {
     const { status = "all", limit = "50", offset = "0" } = req.query;
 
@@ -229,3 +230,5 @@ export default async function handler(req, res) {
     message: `Method ${req.method} not allowed`,
   });
 }
+
+export default withRoleGuard(handler);

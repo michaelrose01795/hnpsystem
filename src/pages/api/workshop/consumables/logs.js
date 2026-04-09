@@ -1,5 +1,6 @@
 // file location: src/pages/api/workshop/consumables/logs.js
 import { supabase } from "@/lib/supabaseClient";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 const getMonthBounds = (year, month) => {
   const parsedYear = Number(year);
@@ -30,7 +31,7 @@ const formatRow = (row) => ({
   itemName: row.consumable?.item_name || null,
 });
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method !== "GET") {
     return res.status(405).json({ success: false, message: "Method not allowed." });
   }
@@ -92,3 +93,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ success: false, message: error.message || "Server error" });
   }
 }
+
+export default withRoleGuard(handler);

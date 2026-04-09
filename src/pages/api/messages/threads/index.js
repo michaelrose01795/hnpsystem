@@ -4,8 +4,9 @@ import {
   ensureDirectThread,
   getThreadsForUser,
 } from "@/lib/database/messages";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method === "GET") {
     const userId = Number(req.query.userId);
     if (!Number.isFinite(userId) || userId <= 0) {
@@ -64,3 +65,5 @@ export default async function handler(req, res) {
 
   return res.status(405).json({ success: false, message: "Method not allowed" });
 }
+
+export default withRoleGuard(handler);

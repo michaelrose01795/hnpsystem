@@ -1,5 +1,6 @@
 // file location: src/pages/api/parts/deliveries/[deliveryId]/items.js
 
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from "@/lib/supabaseClient";
 import { resolveAuditIds } from "@/lib/utils/ids";
 
@@ -15,7 +16,7 @@ const parseNumber = (value) => {
   return Number.isNaN(parsed) ? null : parsed
 }
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   const { deliveryId } = req.query
 
   if (!deliveryId || typeof deliveryId !== "string") {
@@ -143,4 +144,6 @@ export default async function handler(req, res) {
     message: `Method ${req.method} not allowed`,
   })
 }
+
+export default withRoleGuard(handler);
     const { uuid: auditUserId } = resolveAuditIds(userId, userNumericId);

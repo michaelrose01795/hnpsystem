@@ -2,6 +2,8 @@
 import { isSmtpConfigured } from "@/lib/email/smtp";
 import { sendDmsEmail } from "@/lib/email/emailApi";
 import { escapeHtml, getEmailBranding, renderEmailShell } from "@/lib/email/template";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
+import { HR_CORE_ROLES, MANAGER_SCOPED_ROLES } from "@/lib/auth/roles";
 
 const formatCurrency = (value) => {
   const num = Number(value || 0);
@@ -186,7 +188,7 @@ function buildInvoiceEmailHtml(data, branding) {
   });
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ success: false, error: "Method not allowed" });
   }
@@ -229,3 +231,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ success: false, error: error.message || "Failed to send email" });
   }
 }
+
+export default withRoleGuard(handler, { allow: [...HR_CORE_ROLES, ...MANAGER_SCOPED_ROLES] });

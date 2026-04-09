@@ -2,6 +2,8 @@
 // file location: src/pages/api/invoices/share.js
 import { createClient } from "@supabase/supabase-js";
 import { Buffer } from "buffer";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
+import { HR_CORE_ROLES, MANAGER_SCOPED_ROLES } from "@/lib/auth/roles";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -24,7 +26,7 @@ const insertNotification = async ({ jobNumber, targetRole, message }) => {
   });
 };
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ success: false, error: "Method not allowed" });
   }
@@ -93,3 +95,5 @@ export default async function handler(req, res) {
       .json({ success: false, error: error.message || "Failed to share invoice" });
   }
 }
+
+export default withRoleGuard(handler, { allow: [...HR_CORE_ROLES, ...MANAGER_SCOPED_ROLES] });

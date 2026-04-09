@@ -1,4 +1,5 @@
 import { supabaseService } from "@/lib/supabaseClient";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { syncStaffVehiclePayrollDeduction } from "@/lib/profile/staffVehiclePayrollDeductions";
 
 const extractRequestOne = (requests = []) => {
@@ -34,7 +35,7 @@ async function fetchInvoiceInfo(jobNumber) {
   };
 }
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (!supabaseService) {
     return res.status(500).json({ success: false, error: "Service role key missing" });
   }
@@ -174,3 +175,5 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withRoleGuard(handler);

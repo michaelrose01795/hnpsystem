@@ -1,5 +1,6 @@
 // file location: src/pages/api/parts/job-items/index.js
 
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from "@/lib/supabaseClient";
 import { linkRequestToJobItem } from "@/lib/parts/partsRequestAdapter"; // Parts request adapter.
 
@@ -106,7 +107,7 @@ const getUserFromRequest = async (req) => {
   return { role: 'admin' }
 }
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   try {
     // Handle GET request - List job items by job ID
     if (req.method === "GET") {
@@ -224,3 +225,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ ok: false, error: error?.message || "Unexpected error" })
   }
 }
+
+export default withRoleGuard(handler);

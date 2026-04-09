@@ -1,11 +1,12 @@
 // API endpoint for updating part status, location, and related fields
 // file location: src/pages/api/parts/update-status.js
 
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from "@/lib/supabaseClient";
 import { syncVhcPartsAuthorisation } from "@/lib/database/vhcPartsSync";
 import { syncRequestStatus } from "@/lib/parts/partsRequestAdapter"; // Parts request status sync.
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method !== "PATCH") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -156,3 +157,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Internal server error", details: err.message });
   }
 }
+
+export default withRoleGuard(handler);

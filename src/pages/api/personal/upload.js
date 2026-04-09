@@ -3,6 +3,7 @@ export const runtime = "nodejs";
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import {
   buildPersonalApiError,
   buildPersonalAttachmentRelativePath,
@@ -60,7 +61,7 @@ function withDownloadUrl(attachment) {
   };
 }
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   try {
     if (req.method !== "POST") {
       res.setHeader("Allow", ["POST"]);
@@ -114,3 +115,5 @@ export default async function handler(req, res) {
     return buildPersonalApiError(res, error, "Failed to upload personal attachment.");
   }
 }
+
+export default withRoleGuard(handler);

@@ -1,4 +1,5 @@
 // file location: src/pages/api/parts/catalog/index.js
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabaseService } from "@/lib/supabaseClient";
 
 const PART_COLUMNS = [
@@ -108,7 +109,7 @@ const buildSearchQuery = (query, term) => {
   return query.or(Array.from(clauses).join(","));
 };
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method === "POST") {
     const {
       partNumber,
@@ -279,3 +280,5 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withRoleGuard(handler);

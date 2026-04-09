@@ -1,3 +1,4 @@
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import {
   buildPersonalApiError,
   clearPersonalUnlockCookie,
@@ -12,7 +13,7 @@ import {
   verifyPasscode,
 } from "@/lib/profile/personalServer";
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   const db = getPersonalDb();
 
   try {
@@ -139,3 +140,5 @@ export default async function handler(req, res) {
     return buildPersonalApiError(res, error, "Failed to handle personal security request.");
   }
 }
+
+export default withRoleGuard(handler);

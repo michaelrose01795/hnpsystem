@@ -1,6 +1,7 @@
 // file location: src/pages/api/parts/allocate-to-request.js
 // API endpoint to allocate a part to a specific job request
 
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from "@/lib/supabaseClient";
 import { syncVhcPartsAuthorisation } from "@/lib/database/vhcPartsSync";
 
@@ -54,7 +55,7 @@ const fetchVhcRequestRow = async ({ jobId, requestId = null, vhcItemId = null })
   return data || null;
 };
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method !== "POST") {
     return res.status(405).json({ success: false, message: "Method not allowed" });
   }
@@ -172,3 +173,5 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withRoleGuard(handler);

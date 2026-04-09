@@ -1,5 +1,6 @@
 // file location: src/pages/api/parts/jobs/[jobPartId].js
 
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from "@/lib/supabaseClient";
 import { resolveAuditIds } from "@/lib/utils/ids";
 
@@ -37,7 +38,7 @@ const PART_COLUMNS = [
   "unit_price",
 ].join(",");
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   const { jobPartId } = req.query;
 
   if (!jobPartId || typeof jobPartId !== "string") {
@@ -224,3 +225,5 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withRoleGuard(handler);

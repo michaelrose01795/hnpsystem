@@ -1,3 +1,4 @@
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { sendThreadMessage } from "@/lib/database/messages";
 import { ensureSystemMessagingConfig } from "@/lib/messages/systemConfig";
 import { supabaseService } from "@/lib/supabaseClient";
@@ -14,7 +15,7 @@ const formatSystemMessage = ({ jobNumber, stopNumber, customerName }) => {
   return `System alert: ${parts.join(" · ")}`;
 };
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method !== "POST") {
     return res.status(405).json({ success: false, message: "Method not allowed." });
   }
@@ -106,3 +107,5 @@ export default async function handler(req, res) {
       .json({ success: false, message: error.message || "Unable to confirm delivery." });
   }
 }
+
+export default withRoleGuard(handler);

@@ -1,9 +1,10 @@
 // file location: src/pages/api/parts/delivery-logs/[partId].js
 // API endpoint to fetch delivery logs for a specific part
 
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from "@/lib/supabaseClient";
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   const { partId } = req.query;
 
   if (!partId) {
@@ -46,3 +47,5 @@ export default async function handler(req, res) {
     message: `Method ${req.method} not allowed`,
   });
 }
+
+export default withRoleGuard(handler);

@@ -2,8 +2,9 @@
 
 import { searchJobRequestPresets } from "@/lib/database/jobRequestPresets";
 import { clampSuggestionLimit, isDiagnosticRequestText, normalizePresetText } from "@/lib/jobRequestPresets/constants";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method !== "GET") {
     res.setHeader("Allow", ["GET"]);
     res.status(405).json({ success: false, message: "Method not allowed" });
@@ -33,3 +34,5 @@ export default async function handler(req, res) {
     res.status(500).json({ success: false, message: "Failed to load preset suggestions" });
   }
 }
+
+export default withRoleGuard(handler);

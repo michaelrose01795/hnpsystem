@@ -1,6 +1,7 @@
 import { sendSystemNotification } from "@/lib/notifications/system";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method !== "POST") {
     return res.status(405).json({ success: false, message: "Method not allowed." });
   }
@@ -33,3 +34,5 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withRoleGuard(handler);

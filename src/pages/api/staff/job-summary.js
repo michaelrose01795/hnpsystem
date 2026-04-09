@@ -1,4 +1,5 @@
 import { supabaseService } from "@/lib/supabaseClient";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 const extractRequestOne = (requests = []) => {
   const req = requests.find((item) => Number(item.request_number) === 1) || null;
@@ -6,7 +7,7 @@ const extractRequestOne = (requests = []) => {
   return req.title || req.notes || "";
 };
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (!supabaseService) {
     return res.status(500).json({ success: false, error: "Service role key missing" });
   }
@@ -76,3 +77,5 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withRoleGuard(handler);

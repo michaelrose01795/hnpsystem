@@ -1,5 +1,6 @@
 // file location: src/pages/api/parts/vhc-labour.js
 
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from "@/lib/supabaseClient";
 
 const parseLabourHours = (value) => {
@@ -8,7 +9,7 @@ const parseLabourHours = (value) => {
   return parsed;
 };
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method !== "PATCH") {
     res.setHeader("Allow", ["PATCH"]);
     return res.status(405).json({
@@ -64,3 +65,5 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withRoleGuard(handler);

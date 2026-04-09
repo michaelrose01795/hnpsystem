@@ -1,6 +1,7 @@
 // file location: src/pages/api/tracking/snapshot.js
 import { fetchTrackingSnapshot } from "@/lib/database/tracking"; // import database helper
 import { initialTrackingEntries } from "@/lib/tracking/mockEntries";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 const respondWithMockData = (res, reason = null) => {
   return res.status(200).json({
@@ -28,7 +29,7 @@ const shouldServeMockTrackingData = () => {
   );
 };
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method !== "GET") {
     res.setHeader("Allow", ["GET"]);
     return res.status(405).json({ success: false, message: "Method not allowed" });
@@ -50,3 +51,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ success: false, message: error.message || "Unexpected error" });
   }
 }
+
+export default withRoleGuard(handler);

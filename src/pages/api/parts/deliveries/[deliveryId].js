@@ -1,5 +1,6 @@
 // file location: src/pages/api/parts/deliveries/[deliveryId].js
 
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from '@/lib/supabaseClient' // Import Supabase client
 import { resolveAuditIds } from "@/lib/utils/ids";
 
@@ -9,7 +10,7 @@ const parseDate = (value) => {
   return Number.isNaN(date.getTime()) ? null : date.toISOString().slice(0, 10)
 }
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   const { deliveryId } = req.query
 
   if (!deliveryId || typeof deliveryId !== "string") {
@@ -70,3 +71,5 @@ export default async function handler(req, res) {
     message: `Method ${req.method} not allowed`,
   })
 }
+
+export default withRoleGuard(handler);

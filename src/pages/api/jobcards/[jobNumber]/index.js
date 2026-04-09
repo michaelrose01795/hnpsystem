@@ -5,6 +5,7 @@ import { getCustomerJobs } from "@/lib/database/customers";
 import { mapCustomerJobsToHistory, normalizeRequests } from "@/lib/jobcards/utils";
 import { supabaseService } from "@/lib/supabaseClient";
 import { resolveJobIdentity } from "@/lib/jobs/jobIdentity";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 const buildArchiveCandidates = (input) => {
   const token = String(input || "").trim();
@@ -68,7 +69,7 @@ const loadLiveJob = async (jobNumber, { force = false } = {}) => {
   return getJobByNumber(jobNumber, { noCache: force });
 };
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   const { jobNumber: rawJobNumber, archive, force } = req.query;
 
   if (req.method !== "GET") {
@@ -168,3 +169,5 @@ export default async function handler(req, res) {
       .json({ message: "Unexpected error fetching job card" });
   }
 }
+
+export default withRoleGuard(handler);

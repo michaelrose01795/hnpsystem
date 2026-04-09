@@ -1,6 +1,8 @@
 // file location: src/pages/api/hr/training-courses/[course_id].js
 import { getTrainingCourse, updateTrainingCourse, deleteTrainingCourse } from "@/lib/database/hr"; // Import course helpers.
 import { getUserFromRequest } from "@/lib/auth/getUserFromRequest"; // Resolve caller context for RBAC decisions.
+import { withRoleGuard } from "@/lib/auth/roleGuard"; // Role-based access control wrapper.
+import { HR_CORE_ROLES } from "@/lib/auth/roles"; // Allowed roles for HR endpoints.
 
 const MANAGER_KEYWORDS = ["admin", "manager"]; // Substrings that signify elevated privileges.
 
@@ -8,7 +10,7 @@ const normaliseRole = (role) => (typeof role === "string" ? role.trim().toLowerC
 
 const hasManagerPrivileges = (role) => MANAGER_KEYWORDS.some((keyword) => normaliseRole(role).includes(keyword)); // Evaluate RBAC.
 
-export default async function handler(req, res) { // API handler for retrieving, updating, and deleting a training course.
+async function handler(req, res, session) { // API handler for retrieving, updating, and deleting a training course.
   const { course_id: rawCourseId } = req.query || {}; // Extract course identifier from the route.
   const courseId = Array.isArray(rawCourseId) ? rawCourseId[0] : rawCourseId; // Normalise array inputs from Next.js routing.
 
@@ -70,3 +72,5 @@ export default async function handler(req, res) { // API handler for retrieving,
     res.status(500).json({ ok: false, error: error?.message || "Unexpected error" }); // Return generic failure payload.
   }
 }
+
+export default withRoleGuard(handler, { allow: HR_CORE_ROLES }); // Protect route with HR role check.

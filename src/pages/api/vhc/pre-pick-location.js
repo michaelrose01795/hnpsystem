@@ -1,5 +1,6 @@
 // file location: src/pages/api/vhc/pre-pick-location.js
 
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from "@/lib/supabaseClient";
 import { normalizePrePickLocation } from "@/lib/prePickLocations";
 import { resolveCanonicalVhcId, syncVhcPartsAuthorisation } from "@/lib/database/vhcPartsSync";
@@ -27,7 +28,7 @@ const buildPartPrePickUpdates = (prePickLocation, timestamp) => {
   return updates;
 };
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "PATCH") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -197,3 +198,5 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withRoleGuard(handler);

@@ -1,5 +1,6 @@
 // file location: src/pages/api/parts/summary.js
 
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from "@/lib/supabaseClient";
 
 const fetchCount = async (query) => {
@@ -55,7 +56,7 @@ const fetchJobCountsForParts = async (partIds = []) => {
   }, {});
 };
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method !== "GET") {
     res.setHeader("Allow", ["GET"]);
     return res.status(405).json({
@@ -162,3 +163,5 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withRoleGuard(handler);

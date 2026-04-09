@@ -1,6 +1,7 @@
 // ✅ Connected to Supabase (server-side)
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/api/status/getHistory.js
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { createClient } from "@supabase/supabase-js"; // Import Supabase factory for privileged server access
 import { supabase as browserSupabase } from "@/lib/supabaseClient"; // Import shared Supabase client as fallback
 import {
@@ -317,7 +318,7 @@ const fetchJobActionEvents = async (jobId) => {
   };
 };
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" }); // Enforce GET-only semantics for history endpoint
   }
@@ -508,3 +509,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Internal server error" }); // Mask underlying error details from caller
   }
 }
+
+export default withRoleGuard(handler);

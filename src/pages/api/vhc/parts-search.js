@@ -1,4 +1,5 @@
 // file location: src/pages/api/vhc/parts-search.js
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabaseService } from "@/lib/supabaseClient";
 
 const PART_COLUMNS = [
@@ -41,7 +42,7 @@ const buildSearchQuery = (baseQuery, term) => {
   return baseQuery.or(clauses.join(","));
 };
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "GET") {
     res.setHeader("Allow", ["GET"]);
     return res.status(405).json({ success: false, message: `Method ${req.method} not allowed` });
@@ -93,3 +94,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ success: false, message: "Unexpected server error." });
   }
 }
+
+export default withRoleGuard(handler);

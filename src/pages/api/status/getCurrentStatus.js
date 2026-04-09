@@ -1,6 +1,7 @@
 // ✅ Connected to Supabase (server-side)
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/api/status/getCurrentStatus.js
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { createClient } from "@supabase/supabase-js"; // Import Supabase factory for service role usage
 import { supabase as browserSupabase } from "@/lib/supabaseClient"; // Import shared Supabase client for fallback use
 import {
@@ -43,7 +44,7 @@ const buildStatusMetadata = (status) => {
   }; // Provide enriched metadata for UI consumers
 };
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" }); // Reject unsupported HTTP verbs
   }
@@ -116,3 +117,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Internal server error" }); // Protect internal error details from client
   }
 }
+
+export default withRoleGuard(handler);

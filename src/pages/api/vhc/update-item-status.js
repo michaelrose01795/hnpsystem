@@ -1,10 +1,11 @@
 // API endpoint to update VHC item approval status and related fields
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from "@/lib/supabaseClient";
 import { syncVhcPartsAuthorisation } from "@/lib/database/vhcPartsSync";
 import { calculateVhcFinancialTotals } from "@/lib/vhc/calculateVhcTotals";
 import { normalizeDecision, normalizeSeverity, isSeverityColor, DECISION, buildDecisionUpdatePayload } from "@/lib/vhc/vhcItemState";
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "PATCH" && req.method !== "POST") {
     return res.status(405).json({ success: false, message: "Method not allowed" });
   }
@@ -425,3 +426,5 @@ export default async function handler(req, res) {
     });
   }
 }
+
+export default withRoleGuard(handler);

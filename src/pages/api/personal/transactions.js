@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import {
   buildPersonalApiError,
   getPersonalState,
@@ -33,7 +34,7 @@ function buildTransactionPayload(body = {}, userId) {
   };
 }
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   try {
     const { userId, db } = await requirePersonalAccess(req, res);
     const state = await getPersonalState(userId, db);
@@ -79,3 +80,5 @@ export default async function handler(req, res) {
     return buildPersonalApiError(res, error, "Failed to handle personal transactions request.");
   }
 }
+
+export default withRoleGuard(handler);

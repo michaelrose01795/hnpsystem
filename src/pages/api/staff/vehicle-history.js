@@ -1,4 +1,5 @@
 import { supabaseService } from "@/lib/supabaseClient";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { syncStaffVehiclePayrollDeduction } from "@/lib/profile/staffVehiclePayrollDeductions";
 
 const mapHistory = (row = {}) => ({
@@ -12,7 +13,7 @@ const mapHistory = (row = {}) => ({
   payrollProcessedAt: row.payroll_processed_at || null,
 });
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (!supabaseService) {
     return res.status(500).json({ success: false, error: "Service role key missing" });
   }
@@ -169,3 +170,5 @@ export default async function handler(req, res) {
       .json({ success: false, error: error.message || "Failed to add vehicle history" });
   }
 }
+
+export default withRoleGuard(handler);

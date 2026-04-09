@@ -1,5 +1,6 @@
 // file location: src/pages/api/tracking/oil-stock.js
 import { getDatabaseClient } from "@/lib/database/client";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 const serializeOilStock = (record) => ({
   id: record.id,
@@ -21,7 +22,7 @@ const sanitisePayload = (payload) => {
   return Object.fromEntries(entries);
 };
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   const supabase = getDatabaseClient();
 
   if (req.method === "GET") {
@@ -150,3 +151,4 @@ export default async function handler(req, res) {
   return res.status(405).json({ success: false, message: "Method not allowed" });
 }
 
+export default withRoleGuard(handler);

@@ -1,4 +1,5 @@
 // file location: src/pages/api/workshop/consumables/stock-check.js
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import {
   addTemporaryConsumables,
   createConsumableLocation,
@@ -21,7 +22,7 @@ async function buildSnapshot() {
   return { locations, unassigned, stockChecks };
 }
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   try {
     if (req.method === "GET") {
       const data = await buildSnapshot();
@@ -118,3 +119,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ success: false, message: error.message || "Server error" });
   }
 }
+
+export default withRoleGuard(handler);

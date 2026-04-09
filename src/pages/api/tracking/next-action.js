@@ -1,7 +1,8 @@
 // file location: src/pages/api/tracking/next-action.js
 import { logNextActionEvents, updateTrackingLocations } from "@/lib/database/tracking"; // import database helper
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 
-export default async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method !== "POST") {
     res.setHeader("Allow", ["POST"]);
     return res.status(405).json({ success: false, message: "Method not allowed" });
@@ -63,3 +64,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ success: false, message: error.message || "Unexpected error" });
   }
 }
+
+export default withRoleGuard(handler);
