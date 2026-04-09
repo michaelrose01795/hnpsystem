@@ -1,7 +1,11 @@
 // file location: src/pages/api/jobcards/create.js
+// Legacy API endpoint for job creation — now delegates to the shared service layer.
+// Preserves the original request/response contract for backwards compatibility.
 
-import { supabase } from '@/lib/supabaseClient' // Import Supabase client
-import { formatJobNumberFromId } from "@/lib/database/jobs";
+import { ensureCustomer, ensureVehicle, createFullJob } from "@/lib/services/createJobService"; // shared service layer
+import { getDatabaseClient } from "@/lib/database/client"; // database client for history counts
+
+const supabase = getDatabaseClient(); // server-side database client
 
 /**
  * API endpoint to create a new job card
@@ -9,269 +13,158 @@ import { formatJobNumberFromId } from "@/lib/database/jobs";
  *
  * This endpoint:
  * 1. Validates incoming job card data
- * 2. Creates/updates customer record
- * 3. Creates/updates vehicle record
- * 4. Creates job card with all relationships
- * 5. Returns complete job card with relationship info
+ * 2. Creates/updates customer record (via service layer)
+ * 3. Creates/updates vehicle record (via service layer)
+ * 4. Creates job card with all relationships (via service layer)
+ * 5. Saves job requests, detections, cosmetic damage, and customer status (via service layer)
+ * 6. Returns complete job card with relationship info (same response shape as before)
  */
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    res.setHeader("Allow", ["POST"])
-    return res.status(405).json({
-      message: `Method ${req.method} not allowed`,
-      code: "METHOD_NOT_ALLOWED"
-    })
+  if (req.method !== "POST") { // only accept POST
+    res.setHeader("Allow", ["POST"]); // inform client of allowed methods
+    return res.status(405).json({ // reject with 405
+      message: `Method ${req.method} not allowed`, // error message
+      code: "METHOD_NOT_ALLOWED" // error code
+    });
   }
 
   try {
-    const jobCard = req.body
-    console.log('📝 Creating job card for vehicle:', jobCard.vehicle?.reg || "unknown")
+    const jobCard = req.body; // extract request body
+    console.log('📝 Creating job card for vehicle:', jobCard.vehicle?.reg || "unknown"); // debug log
 
-    // ✅ Validate required fields
-    if (!jobCard.vehicle || !jobCard.vehicle.reg) {
-      return res.status(400).json({
-        message: "Missing required field: vehicle registration",
-        code: "MISSING_VEHICLE"
-      })
+    // ✅ Validate required fields (same checks as original)
+    if (!jobCard.vehicle || !jobCard.vehicle.reg) { // vehicle registration required
+      return res.status(400).json({ // 400 bad request
+        message: "Missing required field: vehicle registration", // error message
+        code: "MISSING_VEHICLE" // error code
+      });
     }
 
-    if (!jobCard.customer) {
-      return res.status(400).json({
-        message: "Missing required field: customer details",
-        code: "MISSING_CUSTOMER"
-      })
+    if (!jobCard.customer) { // customer details required
+      return res.status(400).json({ // 400 bad request
+        message: "Missing required field: customer details", // error message
+        code: "MISSING_CUSTOMER" // error code
+      });
     }
 
-    if (!jobCard.requests || jobCard.requests.length === 0) {
-      return res.status(400).json({
-        message: "Missing required field: at least one job request",
-        code: "MISSING_REQUESTS"
-      })
+    if (!jobCard.requests || jobCard.requests.length === 0) { // at least one request required
+      return res.status(400).json({ // 400 bad request
+        message: "Missing required field: at least one job request", // error message
+        code: "MISSING_REQUESTS" // error code
+      });
     }
 
-    // ✅ Step 1: Create or Update Customer
-    let customerId = jobCard.customer.customerId
-    let customerRecord
+    // ✅ Step 1: Resolve customer via service layer
+    const customerRecord = await ensureCustomer({ // create or update customer
+      customerId: jobCard.customer.customerId || null, // existing customer id
+      firstName: jobCard.customer.firstName, // first name
+      lastName: jobCard.customer.lastName, // last name
+      email: jobCard.customer.email, // email
+      mobile: jobCard.customer.mobile, // mobile
+      telephone: jobCard.customer.telephone || "", // telephone
+      address: jobCard.customer.address || "", // address
+      postcode: jobCard.customer.postcode || "", // postcode
+    });
 
-    if (customerId) {
-      // Try to get existing customer
-      const { data, error } = await supabase
-        .from('customers')
-        .select('*')
-        .eq('id', customerId)
-        .single()
+    const customerId = customerRecord.id; // resolved customer id
+    console.log('✅ Customer resolved:', customerId); // debug log
 
-      if (data) {
-        console.log('✅ Found existing customer:', customerId)
-        customerRecord = data
-        
-        // Update customer details
-        await supabase
-          .from('customers')
-          .update({
-            firstname: jobCard.customer.firstName,
-            lastname: jobCard.customer.lastName,
-            email: jobCard.customer.email,
-            mobile: jobCard.customer.mobile,
-            telephone: jobCard.customer.telephone,
-            address: jobCard.customer.address,
-            postcode: jobCard.customer.postcode,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', customerId)
-      }
-    }
+    // ✅ Step 2: Normalize requests into the service layer format
+    const normalizedRequests = (jobCard.requests || []).map((r) => ({ // map to expected shape
+      text: r.description || r.text || "", // request description text
+      time: r.time || r.hours || "", // estimated hours
+      paymentType: r.paymentType || r.jobType || "Customer", // payment type
+      presetId: r.presetId || null, // preset reference
+    }));
 
-    if (!customerRecord) {
-      // Create new customer
-      console.log('➕ Creating new customer')
-      const { data, error } = await supabase
-        .from('customers')
-        .insert([{
-          firstname: jobCard.customer.firstName,
-          lastname: jobCard.customer.lastName,
-          email: jobCard.customer.email,
-          mobile: jobCard.customer.mobile,
-          telephone: jobCard.customer.telephone,
-          address: jobCard.customer.address,
-          postcode: jobCard.customer.postcode,
-          created_at: new Date().toISOString(),
-        }])
-        .select()
-        .single()
-
-      if (error) {
-        return res.status(500).json({
-          message: "Failed to create customer",
-          code: "CUSTOMER_ERROR",
-          error: error.message
-        })
-      }
-
-      customerRecord = data
-      customerId = customerRecord.id
-      console.log('✅ Customer created:', customerId)
-    }
-
-    // ✅ Step 2: Create or Update Vehicle
-    const { data: existingVehicle, error: vehicleCheckError } = await supabase
-      .from('vehicles')
-      .select('*')
-      .eq('reg_number', jobCard.vehicle.reg.toUpperCase())
-      .single()
-
-    let vehicleRecord
-
-    if (!existingVehicle) {
-      console.log('➕ Creating new vehicle:', jobCard.vehicle.reg)
-      const { data, error } = await supabase
-        .from('vehicles')
-        .insert([{
-          reg_number: jobCard.vehicle.reg.toUpperCase(),
-          colour: jobCard.vehicle.colour,
-          make: jobCard.vehicle.makeModel?.split(' ')[0] || '',
-          model: jobCard.vehicle.makeModel?.split(' ').slice(1).join(' ') || '',
-          vin: jobCard.vehicle.chassis,
-          engine_number: jobCard.vehicle.engine,
-          mileage: jobCard.vehicle.mileage,
-          customer_id: customerId,
-          created_at: new Date().toISOString(),
-        }])
-        .select()
-        .single()
-
-      if (error) {
-        return res.status(500).json({
-          message: "Failed to create vehicle",
-          code: "VEHICLE_ERROR",
-          error: error.message
-        })
-      }
-
-      vehicleRecord = data
-      console.log('✅ Vehicle created')
-    } else {
-      console.log('✅ Found existing vehicle:', jobCard.vehicle.reg)
-      vehicleRecord = existingVehicle
-      
-      // Update vehicle if mileage is higher
-      if (jobCard.vehicle.mileage > vehicleRecord.mileage) {
-        await supabase
-          .from('vehicles')
-          .update({
-            mileage: jobCard.vehicle.mileage,
-            customer_id: customerId,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('reg_number', jobCard.vehicle.reg.toUpperCase())
-        
-        console.log('✅ Vehicle mileage updated')
-      }
-    }
-
-    // ✅ Step 3: Create Job Card
-    // Build description from requests
-    const description = jobCard.requests.map(r => r.description).join(', ')
-
-    // Determine job type from categories
-    let jobType = 'Service'
-    if (jobCard.jobCategories?.includes('MOT')) jobType = 'MOT'
-    else if (jobCard.jobCategories?.includes('Repair')) jobType = 'Repair'
-    else if (jobCard.jobCategories?.includes('Diagnostic')) jobType = 'Diagnostic'
-
-    const { data: newJob, error: jobError } = await supabase
-      .from('jobs')
-      .insert([{
-        reg: jobCard.vehicle.reg.toUpperCase(),
-        customer_id: customerId,
-        assigned_to: null, // Will be assigned later
-        type: jobType,
-        description: description,
-        status: 'pending',
-        created_at: jobCard.createdAt || new Date().toISOString(),
-      }])
-      .select()
-      .single()
-
-    if (jobError) {
-      return res.status(500).json({
-        message: "Failed to create job card",
-        code: "JOB_ERROR",
-        error: jobError.message
-      })
-    }
-
-    const generatedJobNumber = formatJobNumberFromId(newJob?.id);
-    if (!generatedJobNumber) {
-      throw new Error("Unable to generate job number");
-    }
-
-    const { data: jobWithNumber, error: jobNumberError } = await supabase
-      .from('jobs')
-      .update({ job_number: generatedJobNumber })
-      .eq('id', newJob.id)
-      .select("job_number")
-      .single()
-
-    if (jobNumberError) {
-      throw jobNumberError;
-    }
-
-    const persistedJobNumber = jobWithNumber?.job_number || generatedJobNumber;
-    console.log('✅ Job card created successfully:', persistedJobNumber)
-
-    // ✅ Get job history counts
-    const { count: customerJobCount } = await supabase
-      .from('jobs')
-      .select('*', { count: 'exact', head: true })
-      .eq('customer_id', customerId)
-
-    const { count: vehicleJobCount } = await supabase
-      .from('jobs')
-      .select('*', { count: 'exact', head: true })
-      .eq('reg', jobCard.vehicle.reg.toUpperCase())
-
-    const responseJobNumber = persistedJobNumber || jobCard.jobNumber || null;
-
-    // ✅ Respond with success
-    return res.status(200).json({
-      message: `Job Card ${responseJobNumber} created successfully!`,
-      code: "SUCCESS",
-      jobCard: {
-        jobNumber: responseJobNumber,
-        createdAt: jobCard.createdAt || new Date().toISOString(),
-        status: "pending",
-        vehicleReg: jobCard.vehicle.reg,
-        customerId: customerId,
-        description: description,
-        type: jobType,
-        requests: jobCard.requests,
-        cosmeticNotes: jobCard.cosmeticNotes || "",
-        vhcRequired: jobCard.vhcRequired || false,
-        waitingStatus: jobCard.waitingStatus || "Neither",
-        jobSource: jobCard.jobSource || "Retail",
-        jobCategories: jobCard.jobCategories || ["Other"]
+    // ✅ Step 3: Create the job via service layer (handles vehicle, job, requests, detections, cosmetic, status)
+    const result = await createFullJob({ // delegate to service
+      customer: customerRecord, // resolved customer
+      vehicle: { // vehicle data from request body
+        reg: jobCard.vehicle.reg, // registration
+        makeModel: jobCard.vehicle.makeModel || `${jobCard.vehicle.make || ""} ${jobCard.vehicle.model || ""}`.trim(), // make model
+        colour: jobCard.vehicle.colour || "", // colour
+        chassis: jobCard.vehicle.chassis || jobCard.vehicle.vin || "", // chassis/VIN
+        engine: jobCard.vehicle.engine || "", // engine
+        mileage: jobCard.vehicle.mileage || "", // mileage
       },
-      relationships: {
-        customer: {
-          id: customerId,
-          name: `${customerRecord.firstname} ${customerRecord.lastname}`,
-          totalJobs: customerJobCount || 0
+      requests: normalizedRequests, // normalized request list
+      options: { // job options
+        waitingStatus: jobCard.waitingStatus || "Neither", // waiting status
+        jobSource: jobCard.jobSource || "Retail", // job source
+        jobDivision: jobCard.jobDivision || "Retail", // job division
+        cosmeticNotes: jobCard.cosmeticNotes || null, // cosmetic notes
+        cosmeticDamagePresent: !!jobCard.cosmeticDamagePresent, // cosmetic flag
+        vhcRequired: !!jobCard.vhcRequired, // VHC flag
+        washRequired: !!jobCard.washRequired, // wash flag
+        isFirstJob: true, // single job creation
+      },
+    });
+
+    const insertedJob = result.data.job; // the created job record
+    const jobNumber = insertedJob.jobNumber || insertedJob.job_number || null; // job number
+    console.log('✅ Job card created successfully:', jobNumber); // debug log
+
+    // ✅ Get job history counts (same as original for response compatibility)
+    const { count: customerJobCount } = await supabase // count customer jobs
+      .from('jobs')
+      .select('*', { count: 'exact', head: true })
+      .eq('customer_id', customerId);
+
+    const regUpper = jobCard.vehicle.reg.toUpperCase(); // normalize reg
+    const { count: vehicleJobCount } = await supabase // count vehicle jobs
+      .from('jobs')
+      .select('*', { count: 'exact', head: true })
+      .eq('vehicle_reg', regUpper);
+
+    // Build description for response (same format as original)
+    const description = (jobCard.requests || []).map(r => r.description || r.text || "").join(', '); // comma-joined descriptions
+
+    // Determine job type for response (same logic as original)
+    let jobType = 'Service'; // default
+    if (jobCard.jobCategories?.includes('MOT')) jobType = 'MOT'; // MOT override
+    else if (jobCard.jobCategories?.includes('Repair')) jobType = 'Repair'; // Repair override
+    else if (jobCard.jobCategories?.includes('Diagnostic')) jobType = 'Diagnostic'; // Diagnostic override
+
+    // ✅ Respond with success (same response shape as original)
+    return res.status(200).json({ // 200 success
+      message: `Job Card ${jobNumber} created successfully!`, // success message
+      code: "SUCCESS", // success code
+      jobCard: { // job card details
+        jobNumber: jobNumber, // assigned job number
+        createdAt: jobCard.createdAt || new Date().toISOString(), // creation timestamp
+        status: "Open", // initial status (corrected from legacy 'pending')
+        vehicleReg: jobCard.vehicle.reg, // vehicle registration
+        customerId: customerId, // customer id
+        description: description, // combined description
+        type: jobType, // resolved job type
+        requests: jobCard.requests, // original requests
+        cosmeticNotes: jobCard.cosmeticNotes || "", // cosmetic notes
+        vhcRequired: jobCard.vhcRequired || false, // VHC flag
+        waitingStatus: jobCard.waitingStatus || "Neither", // waiting status
+        jobSource: jobCard.jobSource || "Retail", // job source
+        jobCategories: jobCard.jobCategories || ["Other"] // job categories
+      },
+      relationships: { // relationship info
+        customer: { // customer details
+          id: customerId, // customer id
+          name: `${customerRecord.firstName} ${customerRecord.lastName}`, // full name
+          totalJobs: customerJobCount || 0 // total job count
         },
-        vehicle: {
-          reg: vehicleRecord.reg_number,
-          makeModel: `${vehicleRecord.make} ${vehicleRecord.model}`,
-          totalJobs: vehicleJobCount || 0
+        vehicle: { // vehicle details
+          reg: regUpper, // normalized registration
+          makeModel: jobCard.vehicle.makeModel || `${jobCard.vehicle.make || ""} ${jobCard.vehicle.model || ""}`.trim(), // make model
+          totalJobs: vehicleJobCount || 0 // total job count
         }
       }
-    })
+    });
 
-  } catch (error) {
-    console.error("❌ Error creating job card:", error)
-    return res.status(500).json({
-      message: "Failed to create job card",
-      code: "SERVER_ERROR",
-      error: error.message
-    })
+  } catch (error) { // handle errors
+    console.error("❌ Error creating job card:", error); // log error
+    return res.status(500).json({ // 500 server error
+      message: "Failed to create job card", // error message
+      code: "SERVER_ERROR", // error code
+      error: error.message // error detail
+    });
   }
 }

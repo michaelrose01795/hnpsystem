@@ -16,9 +16,10 @@ import {
   getCustomerVehicles,
   updateCustomer,
 } from "@/lib/database/customers";
-import { createOrUpdateVehicle, getVehicleByReg } from "@/lib/database/vehicles";
-import { addJobToDatabase, getJobByNumber } from "@/lib/database/jobs";
-import { supabase } from "@/lib/supabaseClient"; // import supabase client for job request inserts
+import { getVehicleByReg } from "@/lib/database/vehicles";
+import { getJobByNumber } from "@/lib/database/jobs";
+import { createFullJobBatch } from "@/lib/services/createJobService"; // consolidated job creation service
+import { supabase } from "@/lib/supabaseClient"; // import supabase client for signature lookups
 import NewCustomerPopup from "@/components/popups/NewCustomerPopup"; // import new customer popup
 import ExistingCustomerPopup from "@/components/popups/ExistingCustomerPopup"; // import existing customer popup
 import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
@@ -716,127 +717,8 @@ export default function CreateJobCardPage() {
     }
   };
 
-  const saveJobRequestsToDatabase = async (jobId, jobRequestEntries) => { // persist each job request as its own Supabase row
-    if (!jobId || !Array.isArray(jobRequestEntries) || jobRequestEntries.length === 0) { // guard against invalid inputs
-      return []; // nothing to do when payload missing
-    } // comment for guard end
-
-    const timestamp = new Date().toISOString(); // reuse timestamp for created/updated columns
-
-    const payload = jobRequestEntries // begin mapping job requests into insert payload
-      .map((entry, index) => { // iterate each request to normalize fields
-        const trimmedDescription = (entry.text || "").trim(); // sanitize description text
-        if (!trimmedDescription) { // skip empty descriptions
-          return null; // produce null placeholder removed later
-        } // finish empty guard
-
-        const parsedHours = entry.time === "" || entry.time === null || entry.time === undefined ? null : Number(entry.time); // parse numeric hours when present
-        const safeHours = Number.isFinite(parsedHours) ? Number(parsedHours.toFixed(2)) : null; // ensure NaN becomes null and keep 2dp precision
-
-        return { // build insert row
-          job_id: jobId, // link to parent job id
-          description: trimmedDescription, // set description text
-          hours: safeHours, // store parsed hours or null
-          job_request_preset_id: entry.presetId || null,
-          job_type: (entry.paymentType || "Customer").trim() || "Customer", // persist job type label
-          sort_order: index + 1, // keep order for UI grouping
-          created_at: timestamp, // assign creation timestamp
-          updated_at: timestamp, // assign update timestamp
-        }; // end row object
-      })
-      .filter(Boolean); // remove null rows from skipped descriptions
-
-    if (payload.length === 0) { // guard when all rows skipped
-      return []; // nothing to insert
-    } // finish guard
-
-    console.log("📝 saveJobRequestsToDatabase payload:", payload.map((row) => ({ description: row.description?.slice(0, 30), hours: row.hours, job_type: row.job_type })));
-
-    const { data, error } = await supabase
-      .from("job_requests")
-      .insert(payload)
-      .select("request_id, description, sort_order, hours"); // insert payload into Supabase table
-    if (error) { // check for insert failure
-      throw new Error(error.message || "Failed to save job requests"); // bubble error so caller can abort
-    } // finish error handling
-    console.log("✅ saveJobRequestsToDatabase result:", (data || []).map((row) => ({ request_id: row.request_id, hours: row.hours })));
-    return data || [];
-  }; // end helper
-
-  const saveJobRequestDetections = async (jobId, jobNumber, insertedRequests, jobRequestEntries) => {
-    if (!jobId || !Array.isArray(insertedRequests) || insertedRequests.length === 0) {
-      return;
-    }
-
-    const detections = detectJobTypesForRequests(jobRequestEntries);
-    if (!detections.length) return;
-
-    const requestIdByOrder = new Map(
-      insertedRequests.map((row) => [row.sort_order, row.request_id])
-    );
-
-    const timestamp = new Date().toISOString();
-    const payload = detections.map((detection) => ({
-      job_id: jobId,
-      job_number: jobNumber || null,
-      request_id: requestIdByOrder.get(detection.requestIndex + 1) || null,
-      request_index: detection.requestIndex + 1,
-      source_text: detection.sourceText,
-      job_type: detection.jobType,
-      item_category: detection.itemCategory,
-      confidence: Number.isFinite(detection.confidence) ? detection.confidence : null,
-      explanation: detection.explanation || null,
-      created_at: timestamp,
-      updated_at: timestamp,
-    }));
-
-    const { error } = await supabase.from("job_request_detections").insert(payload);
-    if (error) {
-      throw new Error(error.message || "Failed to save job request detections");
-    }
-  };
-
-  const saveCosmeticDamageDetails = async (jobId, hasDamage, notes) => { // persist cosmetic damage flag + notes per job
-    if (!jobId) { // ensure job id provided
-      return; // skip when no job id available
-    } // end guard
-
-    const timestamp = new Date().toISOString(); // shared timestamp for audit columns
-    const payload = { // build upsert payload
-      job_id: jobId, // link to parent job
-      has_damage: hasDamage === true, // coerce boolean flag
-      notes: (notes || "").trim() || null, // store trimmed notes or null
-      created_at: timestamp, // track creation time
-      updated_at: timestamp, // track update time
-    }; // end payload
-
-    const { error } = await supabase // insert or upsert record
-      .from("job_cosmetic_damage") // target cosmetic table
-      .upsert(payload, { onConflict: "job_id" }); // enforce single record per job
-
-    if (error) { // handle supabase error
-      throw new Error(error.message || "Failed to save cosmetic damage details"); // propagate for caller to handle
-    } // finish error handling
-  }; // end helper
-
-  const saveCustomerStatus = async (jobId, status) => { // persist customer status in dedicated table for later scheduling hook
-    if (!jobId) { // ensure we have a job id before writing
-      return; // skip when job missing
-    }
-
-    const timestamp = new Date().toISOString(); // shared timestamp for audit trail
-    const payload = { // build insert payload for customer status table
-      job_id: jobId,
-      customer_status: status || "Neither",
-      created_at: timestamp,
-      updated_at: timestamp,
-    };
-
-    const { error } = await supabase.from("job_customer_statuses").insert([payload]); // insert status row
-    if (error) { // log but don't block job creation
-      console.error("Failed to save customer status", error.message);
-    }
-  };
+  // saveJobRequestsToDatabase, saveJobRequestDetections, saveCosmeticDamageDetails,
+  // and saveCustomerStatus have been moved to src/lib/services/createJobService.js
 
   const captureTempUploadMetadata = useCallback((metadataList = []) => {
     if (!Array.isArray(metadataList) || metadataList.length === 0) {
@@ -1197,7 +1079,7 @@ export default function CreateJobCardPage() {
     }
   };
 
-  // ✅ Save Job Function - persist job info, vehicle, customer status, requests, documents, and check-sheets together
+  // ✅ Save Job Function - delegates to createJobService for all database writes
   const handleSaveJob = async () => {
     // ===== VALIDATION PHASE - NO DATABASE OPERATIONS =====
     // Perform all validations first before touching the database
@@ -1229,170 +1111,63 @@ export default function CreateJobCardPage() {
         }
       }
 
-      // All validations passed - proceed with database operations
-      console.log("✓ All validations passed. Starting save job process...");
+      // All validations passed - proceed with database operations via service layer
+      console.log("✓ All validations passed. Starting save job process via createJobService...");
 
-      // ===== DATABASE OPERATIONS PHASE =====
-      // Prepare vehicle data
-      const regUpper = vehicle.reg.trim().toUpperCase();
-      const makeModelParts = (vehicle.makeModel || "").trim().split(/\s+/);
-      const primaryMake = makeModelParts[0] || "Unknown";
-      const modelName = makeModelParts.slice(1).join(" ");
+      // ===== DATABASE OPERATIONS PHASE (via service layer) =====
+      const batchResult = await createFullJobBatch({
+        customer: { // normalized customer object
+          id: customer.id,
+          firstName: customerForm.firstName,
+          lastName: customerForm.lastName,
+          email: customerForm.email,
+          mobile: customerForm.mobile,
+          telephone: customerForm.telephone,
+          address: customerForm.address,
+          postcode: customerForm.postcode,
+        },
+        vehicle, // vehicle state object { reg, makeModel, colour, chassis, engine, mileage }
+        tabs: jobTabs, // array of tab objects with requests, waitingStatus, jobSource, etc.
+        sharedOptions: {
+          cosmeticNotes: cosmeticNotes || null, // cosmetic damage notes
+          cosmeticDamagePresent, // cosmetic damage flag
+          vhcRequired, // VHC required flag
+          washRequired, // wash required flag
+          isSubJobMode, // sub-job mode from query param
+          primeJobData, // prime job data when in sub-job mode
+          asPrimeJob, // create as prime job checkbox
+        },
+      });
 
-      const vehiclePayload = {
-        registration: regUpper,
-        reg_number: regUpper,
-        make_model: vehicle.makeModel || "",
-        make: primaryMake,
-        model: modelName,
-        colour: vehicle.colour || null,
-        chassis: vehicle.chassis || null,
-        vin: vehicle.chassis || null,
-        engine: vehicle.engine || null,
-        engine_number: vehicle.engine || null,
-        mileage:
-          vehicle.mileage === "" ||
-          vehicle.mileage === null ||
-          vehicle.mileage === undefined
-            ? null
-            : Number.isFinite(Number(vehicle.mileage))
-            ? parseInt(vehicle.mileage, 10)
-            : null,
-        customer_id: customer.id,
-      };
-
-      // Step 1: Save/update vehicle
-      const vehicleResult = await createOrUpdateVehicle(vehiclePayload);
-
-      if (!vehicleResult.success || !vehicleResult.data) {
-        throw new Error(vehicleResult.error?.message || "Failed to save vehicle");
+      if (!batchResult.success) {
+        throw new Error("Job creation batch failed");
       }
 
-      const vehicleRecord = vehicleResult.data;
-      const vehicleId = vehicleRecord.vehicle_id || vehicleRecord.id;
+      const { createdJobs, primaryJob } = batchResult.data;
 
-      if (!vehicleId) {
-        throw new Error("Vehicle ID not returned after save");
-      }
-
-      console.log("✓ Vehicle saved/updated with ID:", vehicleId);
-
-      // Step 2: Create jobs - handle multiple tabs if asPrimeJob is enabled
-      const createdJobs = [];
-      let primeJobId = null;
-
-      for (let tabIndex = 0; tabIndex < jobTabs.length; tabIndex++) {
-        const tab = jobTabs[tabIndex];
-        const isFirstTab = tabIndex === 0;
-
-        // Sanitize requests for this tab
-        const sanitizedRequests = tab.requests
-          .map((req) => ({ ...req, text: (req.text || "").trim() }))
-          .filter((req) => req.text.length > 0);
-
-        const jobDescription = sanitizedRequests.map((req) => req.text).join("\n");
-        const detectedJobTypes = Array.from(
-          new Set(detectJobTypesForRequests(sanitizedRequests).map((d) => d.jobType))
-        );
-
-          const jobPayload = {
-          regNumber: regUpper,
-          jobNumber: null,
-          description: jobDescription || `Job card for ${regUpper}`,
-          type: tab.jobSource === "Warranty" ? "Warranty" : "Service",
-          assignedTo: null,
-          customerId: customer.id,
-          vehicleId,
-          waitingStatus: tab.waitingStatus,
-          jobSource: tab.jobSource,
-          jobDivision: tab.jobDivision,
-          jobCategories: detectedJobTypes,
-          requests: sanitizedRequests,
-          cosmeticNotes: isFirstTab ? (cosmeticNotes || null) : null,
-          vhcRequired: isFirstTab ? vhcRequired : false,
-          maintenanceInfo: isFirstTab ? { cosmeticDamagePresent, washRequired } : {},
-          // Prime/Sub-job parameters
-          primeJobId: isSubJobMode && primeJobData
-            ? primeJobData.id
-            : (!isFirstTab && primeJobId ? primeJobId : null),
-          asPrimeJob: !isSubJobMode && asPrimeJob && isFirstTab,
-        };
-
-        console.log(`Saving job ${tabIndex + 1} via shared helper:`, jobPayload);
-
-        const jobResult = await addJobToDatabase(jobPayload);
-
-        if (!jobResult.success || !jobResult.data) {
-          throw new Error(jobResult.error?.message || `Failed to create job card ${tabIndex + 1}`);
-        }
-
-        const insertedJob = jobResult.data;
-        createdJobs.push(insertedJob);
-
-        // Store the prime job ID for linking subsequent jobs
-        if (isFirstTab && asPrimeJob && !isSubJobMode) {
-          primeJobId = insertedJob.id || insertedJob.jobId || insertedJob.job_id;
-        }
-
-        console.log(`✓ Job ${tabIndex + 1} created successfully:`, insertedJob.jobNumber);
-      }
-
-      // Use the first job for the rest of the save process
-      const insertedJob = createdJobs[0];
-      const persistedJobId = insertedJob.id || insertedJob.jobId || insertedJob.job_id;
-
-      if (!persistedJobId) {
-        throw new Error("Job ID missing after creation");
-      }
-
-      console.log("✓ Job created successfully with ID:", persistedJobId);
-
-      // Step 3: Save related data for all created jobs
+      // Link uploaded files for each job (file operations stay client-side)
       for (let i = 0; i < createdJobs.length; i++) {
-        const job = createdJobs[i];
         const tab = jobTabs[i];
-        const jobId = job.id || job.jobId || job.job_id;
-        const isFirstJob = i === 0;
-
-        const tabRequests = tab.requests
-          .map((req) => ({ ...req, text: (req.text || "").trim() }))
-          .filter((req) => req.text.length > 0);
-
-        console.log("🕐 tabRequests before save (time values):", tabRequests.map((r) => ({ text: (r.text || "").slice(0, 30), time: r.time, typeofTime: typeof r.time })));
-
-        if (isFirstJob) {
-          await saveCosmeticDamageDetails(jobId, cosmeticDamagePresent, cosmeticNotes);
-        }
-        await saveCustomerStatus(jobId, tab.waitingStatus);
-
-        const insertedRequests = await saveJobRequestsToDatabase(jobId, tabRequests);
-        await saveJobRequestDetections(
-          jobId,
-          job.jobNumber || job.job_number || null,
-          insertedRequests,
-          tabRequests
-        );
-
-        if (tab.uploadedFiles.length > 0) {
+        const jobId = createdJobs[i].job?.id || createdJobs[i].job?.jobId || createdJobs[i].job?.job_id;
+        if (tab.uploadedFiles.length > 0 && jobId) {
           await linkUploadedFilesToJobById(jobId, tab.uploadedFiles);
         }
-
-        console.log(`✓ Related data saved for job ${i + 1}`);
       }
 
-      console.log("✓ All related data saved successfully");
+      console.log("✓ All jobs and related data saved successfully via service layer");
 
-      // Step 4: Refresh jobs cache
+      // Refresh jobs cache
       if (typeof fetchJobs === "function") {
         fetchJobs().catch((err) => console.error("❌ Error refreshing jobs:", err));
       }
 
-      // Step 5: Update UI and redirect
-      const finalJobNumber = insertedJob.jobNumber || insertedJob.id;
+      // Update UI and redirect
+      const finalJobNumber = primaryJob?.jobNumber || primaryJob?.job_number || primaryJob?.id;
       setJobNumberDisplay(finalJobNumber || null);
 
+      const regUpper = vehicle.reg.trim().toUpperCase();
       const jobsCreatedMessage = createdJobs.length > 1
-        ? `${createdJobs.length} linked jobs created: ${createdJobs.map((j) => j.jobNumber).join(", ")}`
+        ? `${createdJobs.length} linked jobs created: ${createdJobs.map((j) => j.job?.jobNumber || j.job?.job_number).join(", ")}`
         : `Job created: ${finalJobNumber}`;
 
       alert(
