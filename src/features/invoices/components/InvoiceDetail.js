@@ -5,6 +5,7 @@ import styles from "@/features/invoices/styles/invoice.module.css";
 import ModalPortal from "@/components/popups/ModalPortal";
 import DropdownField from "@/components/dropdownAPI/DropdownField";
 import InvoicePaymentModal from "@/features/invoices/components/InvoicePaymentModal";
+import { isAuthorisedDecision, isVhcAuthorisedSource, isInvoiceRowPaid } from "@/lib/status/statusHelpers"; // Centralized status helpers.
 
 const formatCurrency = (value) => {
   const number = Number(value || 0);
@@ -20,10 +21,9 @@ const formatDate = (value) => {
 
 const isAuthorisedRequest = (request = {}) => {
   const explicitKind = String(request?.request_kind || "").toLowerCase().trim();
-  if (explicitKind === "authorised" || explicitKind === "authorized") return true;
+  if (isAuthorisedDecision(explicitKind)) return true; // Centralized decision check.
   if (explicitKind === "request") return false;
-  const explicitJobType = String(request?.job_type || "").toLowerCase().trim();
-  if (explicitJobType === "authorised" || explicitJobType === "authorized") return true;
+  if (isAuthorisedDecision(request?.job_type)) return true; // Centralized decision check.
   const label = String(request?.request_label || "").toLowerCase();
   const title = String(request?.title || "").toLowerCase();
   const summary = String(request?.summary || "").toLowerCase();
@@ -37,15 +37,11 @@ const isAuthorisedRequest = (request = {}) => {
   );
 };
 
-const isAuthorisedSource = (value) => {
-  const normalized = String(value || "").trim().toLowerCase();
-  return normalized === "vhc_authorised" || normalized === "vhc_authorized";
-};
+/** @see statusHelpers.isVhcAuthorisedSource — delegates to centralized check. */
+const isAuthorisedSource = (value) => isVhcAuthorisedSource(value);
 
-const isAuthorizedVhcDecision = (value) => {
-  const normalized = String(value || "").trim().toLowerCase();
-  return normalized === "authorized" || normalized === "authorised" || normalized === "completed";
-};
+/** @see statusHelpers.isAuthorisedDecision — delegates to centralized check. */
+const isAuthorizedVhcDecision = (value) => isAuthorisedDecision(value);
 
 const parseChecklistPayload = (raw) => {
   if (!raw) return null;
@@ -521,9 +517,7 @@ export default function InvoiceDetail({
     return aAuthorised ? 1 : -1;
   });
   const isProforma = Boolean(data?.meta?.isProforma);
-  const invoicePaid =
-    invoice?.paid === true ||
-    String(invoice?.payment_status || "").trim().toLowerCase() === "paid";
+  const invoicePaid = isInvoiceRowPaid(invoice); // Centralized check from statusHelpers.
   const jobIdForOverride = jobData?.id || null;
 
   const handleOpenProformaEditor = (request) => {

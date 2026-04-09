@@ -13,20 +13,7 @@ import {
   buildVhcRequestLinkRows,
 } from "@/lib/vhc/requestRowLinking";
 import { getJobRequests } from "@/lib/canonical/fields";
-
-// Helper functions (keep existing)
-const normalizePartStatus = (status = "") => {
-  const normalized = status.toLowerCase().replace(/\s+/g, "_");
-  if (["pending"].includes(normalized)) return "pending";
-  if (["priced"].includes(normalized)) return "priced";
-  if (["pre_pick", "pre-pick", "picked"].includes(normalized)) return "pre_pick";
-  if (["on_order", "on-order", "awaiting_stock", "order", "ordered"].includes(normalized)) return "on_order";
-  if (["booked"].includes(normalized)) return "booked";
-  if (["removed"].includes(normalized)) return "removed";
-  if (["reserved"].includes(normalized)) return "reserved";
-  if (["stock", "allocated", "fitted", "reserved"].includes(normalized)) return "stock";
-  return "pending";
-};
+import { NORMALIZE_ITEM as normalizePartStatus } from "@/lib/status/catalog/parts"; // Centralized parts item normalizer.
 
 const moneyFormatter = new Intl.NumberFormat("en-GB", {
   style: "currency",

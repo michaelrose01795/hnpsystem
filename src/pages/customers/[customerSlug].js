@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
+import { isInactiveJobStatus } from "@/lib/status/statusHelpers";
 import {
   getCustomerById,
   getCustomerBySlug,
@@ -23,7 +24,7 @@ const TAB_DEFINITIONS = [
   { id: "history", label: "History" },
 ];
 
-const INACTIVE_JOB_STATUSES = new Set(["complete", "collected", "cancelled", "invoiced"]);
+/** @see statusHelpers.isInactiveJobStatus — replaces inline Set */
 
 const detailCardStyles = {
   container: {
@@ -741,7 +742,7 @@ export default function CustomerDetailWorkspace() {
   const { totalJobs, activeJobs } = useMemo(() => {
     const total = jobs.length;
     const active = jobs.filter(
-      (job) => job?.status && !INACTIVE_JOB_STATUSES.has(String(job.status).toLowerCase())
+      (job) => job?.status && !isInactiveJobStatus(job.status)
     ).length;
     return { totalJobs: total, activeJobs: active };
   }, [jobs]);

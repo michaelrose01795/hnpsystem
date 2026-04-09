@@ -4,6 +4,7 @@ import {
   getJobRequests,
   pickMileageValue,
 } from "@/lib/canonical/fields";
+import { normalizeDecision } from "@/lib/vhc/vhcItemState"; // Canonical VHC decision normalizer.
 
 /**
  * @deprecated Use normalizeLegacyRequests from @/lib/canonical/fields directly.
@@ -11,11 +12,9 @@ import {
  */
 const normalizeRequests = normalizeLegacyRequests;
 
-const normalizeApprovalStatus = (value = "") => {
-  const normalized = String(value || "").trim().toLowerCase();
-  if (!normalized) return "";
-  if (normalized === "approved" || normalized === "authorised") return "authorized";
-  return normalized;
+/** Delegates to canonical normalizeDecision. Returns "" for empty input (legacy behavior). */
+const normalizeApprovalStatus = (value = "") => { // Thin wrapper for backward compat.
+  return normalizeDecision(value) ?? ""; // Canonical normalizer, empty-string fallback.
 };
 
 const buildHistoryText = (...values) =>

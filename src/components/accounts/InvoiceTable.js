@@ -3,6 +3,7 @@ import React from "react"; // import React for JSX
 import PropTypes from "prop-types";
 import { useRouter } from "next/router";
 import { INVOICE_STATUSES } from "@/config/accounts";
+import { isInvoiceSettled } from "@/lib/status/statusHelpers"; // Centralized invoice status check.
 import { CalendarField } from "@/components/calendarAPI";
 import { SearchBar } from "@/components/searchBarAPI";
 import DropdownField from "@/components/dropdownAPI/DropdownField";
@@ -60,8 +61,8 @@ const getDueDateDisplayValue = (invoice) => {
 
 const isInvoiceOverdue = (invoice) => {
   if (!invoice) return false;
-  const status = (invoice.payment_status || invoice.status || "").toLowerCase();
-  if (status === "paid" || status === "cancelled") return false;
+  const status = invoice.payment_status || invoice.status || "";
+  if (isInvoiceSettled(status)) return false; // Paid or cancelled — not overdue.
   const due = invoice.due_date ? new Date(invoice.due_date) : invoice.invoice_date ? new Date(invoice.invoice_date) : null;
   if (due && !invoice.due_date) {
     const creditTerms = Number(invoice?.account?.credit_terms || 30) || 30;

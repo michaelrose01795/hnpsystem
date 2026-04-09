@@ -6,8 +6,7 @@ import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { createCustomerDisplaySlug, normalizeCustomerSlug } from "@/lib/customers/slug";
 
 import { resolveMainStatusId } from "@/lib/status/statusFlow";
-
-const INACTIVE_STATUS_IDS = new Set(["complete", "invoiced"]);
+import { INACTIVE_JOB_IDS } from "@/lib/status/statusHelpers";
 
 const toTitleCase = (value) => {
   if (!value) return "";
@@ -236,7 +235,7 @@ async function handler(req, res, session) {
 
       if (
         jobStatusId &&
-        !INACTIVE_STATUS_IDS.has(jobStatusId) &&
+        !INACTIVE_JOB_IDS.has(jobStatusId) &&
         (!existing.active ||
           new Date(job.created_at || 0) >
             new Date(existing.active.created_at || 0))

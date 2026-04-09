@@ -2,6 +2,12 @@
 // Shared utility functions used across VHC modules.
 // Consolidates duplicated helpers from saveVhcItem, upsertVhcIssueRow, quoteLines, etc.
 
+import {
+  normalizeDecision as _normalizeDecision,
+  normalizeSeverity as _normalizeSeverity,
+  SEVERITY,
+} from "@/lib/vhc/vhcItemState"; // Canonical state model — single source of truth.
+
 export const DEFAULT_LABOUR_RATE_GBP = 85;
 
 export const toNumber = (value, fallback = 0) => {
@@ -12,32 +18,20 @@ export const toNumber = (value, fallback = 0) => {
 export const collapseWhitespace = (value = "") =>
   String(value || "").trim().replace(/\s+/g, " ");
 
-export const normalizeSeverity = (value) => {
-  const text = collapseWhitespace(value).toLowerCase();
-  if (!text) return "amber";
-  if (text.includes("red")) return "red";
-  if (text.includes("amber") || text.includes("orange") || text.includes("yellow")) return "amber";
-  if (text.includes("green") || text.includes("good") || text.includes("pass")) return "green";
-  return "grey";
+/** @deprecated Use normalizeSeverity from vhcItemState directly. Kept for existing callers. */
+export const normalizeSeverity = (value) => { // Delegates to canonical normalizer, defaults to "amber" for backward compat.
+  return _normalizeSeverity(value) ?? SEVERITY.AMBER; // Legacy default was "amber" for empty input.
 };
 
-export const normaliseColour = (value) => {
-  if (!value) return null;
-  const lower = String(value).toLowerCase().trim();
-  if (lower === "red" || lower.includes("red")) return "red";
-  if (lower === "amber" || lower === "yellow" || lower === "orange" || lower.includes("amber")) return "amber";
-  if (lower === "green" || lower === "good" || lower === "pass" || lower.includes("green")) return "green";
-  if (lower === "grey" || lower === "gray" || lower === "neutral" || lower.includes("grey")) return "grey";
-  return "grey";
+/** @deprecated Use normalizeSeverity from vhcItemState directly. Kept for existing callers. */
+export const normaliseColour = (value) => { // Delegates to canonical normalizer.
+  if (!value) return null; // Preserve original null behavior.
+  return _normalizeSeverity(value) ?? SEVERITY.GREY; // Legacy default was "grey" for unrecognized.
 };
 
-export const normalizeApprovalStatus = (value) => {
-  const text = collapseWhitespace(value).toLowerCase();
-  if (!text) return "pending";
-  if (text === "n/a") return "n/a";
-  if (text === "authorised" || text === "approved") return "authorized";
-  if (["authorized", "declined", "completed", "pending"].includes(text)) return text;
-  return "pending";
+/** @deprecated Use normalizeDecision from vhcItemState directly. Kept for existing callers. */
+export const normalizeApprovalStatus = (value) => { // Delegates to canonical normalizer, defaults to "pending".
+  return _normalizeDecision(value) ?? "pending"; // Legacy default was "pending" for empty input.
 };
 
 export const resolveSectionType = (sectionName) => {

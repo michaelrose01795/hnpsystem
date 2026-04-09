@@ -2,6 +2,7 @@
 import supabase from "@/lib/supabaseClient"; // import shared Supabase client for DB access
 import { getVehicleRegistration, pickMileageValue } from "@/lib/canonical/fields"; // canonical field helpers
 import { createClient } from "@supabase/supabase-js";
+import { isAuthorisedDecision, isVhcAuthorisedSource } from "@/lib/status/statusHelpers"; // Centralized VHC decision helpers.
 
 const DEFAULT_VAT_RATE = 20; // default VAT percentage when configuration missing
 const DEFAULT_LABOUR_RATE = 85; // default labour rate per hour fallback
@@ -166,10 +167,6 @@ async function fetchAuthorizedVhcRequests(jobId) { // fetch authorised VHC rows 
   if (error && error.code !== "PGRST116") {
     throw error;
   }
-  const isAuthorisedDecision = (value) => {
-    const normalized = String(value || "").trim().toLowerCase();
-    return normalized === "authorized" || normalized === "authorised" || normalized === "completed";
-  };
   return (data || []).filter((row) => {
     const section = String(row?.section || "").trim();
     if (section === "VHC_CHECKSHEET" || section === "VHC Checksheet") return false;
@@ -434,7 +431,7 @@ function enrichRequestsFromJob(jobRequests, partAllocations, vatRate, labourRate
   const fallbackRequests = sourceRequests.filter((request) => {
     const source = String(request?.request_source || request?.requestSource || "").toLowerCase().trim();
     const requestId = request?.request_id ?? request?.requestId ?? null;
-    if (source !== "vhc_authorised" && source !== "vhc_authorized") {
+    if (!isVhcAuthorisedSource(source)) {
       const sortOrderRaw = request?.sort_order ?? request?.sortOrder ?? null;
       const sortOrder = Number(sortOrderRaw);
       const isLikelyLegacyVhcRequest =
@@ -464,16 +461,12 @@ function enrichRequestsFromJob(jobRequests, partAllocations, vatRate, labourRate
     const bSource = String(b?.request_source || b?.requestSource || "").toLowerCase();
     const aIsAuthorised =
       Boolean(aMeta) ||
-      aType === "authorised" ||
-      aType === "authorized" ||
-      aSource === "vhc_authorised" ||
-      aSource === "vhc_authorized";
+      isAuthorisedDecision(aType) ||
+      isVhcAuthorisedSource(aSource);
     const bIsAuthorised =
       Boolean(bMeta) ||
-      bType === "authorised" ||
-      bType === "authorized" ||
-      bSource === "vhc_authorised" ||
-      bSource === "vhc_authorized";
+      isAuthorisedDecision(bType) ||
+      isVhcAuthorisedSource(bSource);
     if (aIsAuthorised === bIsAuthorised) return 0;
     return aIsAuthorised ? 1 : -1;
   }); // end sort
@@ -542,10 +535,8 @@ function enrichRequestsFromJob(jobRequests, partAllocations, vatRate, labourRate
     const requestSourceLower = String(request.request_source || request.requestSource || "").toLowerCase();
     const isAuthorised =
       Boolean(vhcMeta) ||
-      requestTypeLower === "authorised" ||
-      requestTypeLower === "authorized" ||
-      requestSourceLower === "vhc_authorised" ||
-      requestSourceLower === "vhc_authorized"; // check request type/source
+      isAuthorisedDecision(requestTypeLower) ||
+      isVhcAuthorisedSource(requestSourceLower); // centralized from statusHelpers
     if (isAuthorised) { authorisedCount++; } else { customerCount++; } // increment appropriate counter
     const requestLabel = isAuthorised ? `Authorised ${authorisedCount}` : `Request ${customerCount}`; // build label
     const summaryBits = [];
@@ -592,7 +583,7 @@ function normalizeInvoiceRequests(structuredRequests, options = {}) { // convert
   );
   const isAuthorisedStructuredRequest = (request = {}) => {
     const explicitKind = String(request?.request_kind || "").trim().toLowerCase();
-    if (explicitKind === "authorised" || explicitKind === "authorized") return true;
+    if (isAuthorisedDecision(explicitKind)) return true; // Centralized decision check.
     if (explicitKind === "request") return false;
 
     const requestId = request?.request_id;
@@ -600,8 +591,7 @@ function normalizeInvoiceRequests(structuredRequests, options = {}) { // convert
       return true;
     }
 
-    const jobType = String(request?.job_type || "").trim().toLowerCase();
-    if (jobType === "authorised" || jobType === "authorized") return true;
+    if (isAuthorisedDecision(request?.job_type)) return true; // Centralized decision check.
 
     const notes = String(request?.notes || "").toLowerCase();
     return notes.includes("authorised") || notes.includes("authorized");
@@ -862,10 +852,9 @@ function applyProformaOverrides(requests = [], overrides = []) {
     }
 
     const isAuthorisedRequest =
-      String(request?.request_kind || "").trim().toLowerCase() === "authorised" ||
-      String(request?.job_type || "").trim().toLowerCase() === "authorised" ||
-      String(request?.request_source || "").trim().toLowerCase() === "vhc_authorised" ||
-      String(request?.request_source || "").trim().toLowerCase() === "vhc_authorized";
+      isAuthorisedDecision(request?.request_kind) ||
+      isAuthorisedDecision(request?.job_type) ||
+      isVhcAuthorisedSource(request?.request_source);
 
     const labourHours =
       row.labour_hours_override !== null && row.labour_hours_override !== undefined
@@ -1159,12 +1148,7 @@ export async function getInvoiceDetailPayload({ jobNumber, orderNumber }) { // m
         .filter((row) => {
           const source = String(row?.request_source || row?.requestSource || "").trim().toLowerCase();
           const type = String(row?.job_type || row?.jobType || "").trim().toLowerCase();
-          return (
-            source === "vhc_authorised" ||
-            source === "vhc_authorized" ||
-            type === "authorised" ||
-            type === "authorized"
-          );
+          return isVhcAuthorisedSource(source) || isAuthorisedDecision(type);
         })
         .map((row) => row?.request_id ?? row?.requestId)
         .filter((value) => value !== null && value !== undefined);

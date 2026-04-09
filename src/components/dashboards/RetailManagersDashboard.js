@@ -4,6 +4,7 @@ import dayjs from "dayjs";
 import { roleCategories } from "@/config/users";
 import { useRoster } from "@/context/RosterContext";
 import { supabase } from "@/lib/supabaseClient";
+import { isInactiveJobStatus } from "@/lib/status/statusHelpers";
 import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
 import { MetricPill } from "@/components/dashboards/DashboardPrimitives"; // metric display pill
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
@@ -31,7 +32,7 @@ const LinearTrend = ({ data, accent = "var(--primary)" }) => (
   </div>
 );
 
-const COMPLETED_STATUSES = new Set(["Complete", "Completed", "Collected", "Closed", "Invoiced"]);
+/** @see statusHelpers.isInactiveJobStatus — replaces inline Set */
 const CRITICAL_STATUS_KEYWORDS = ["waiting", "hold", "vhc", "qa", "road"];
 
 const sumAuthorizedCheckTotal = (row) => {
@@ -177,11 +178,11 @@ const useRetailWorkshopSnapshot = (teamMembers) => {
         }).length;
 
         const jobsOnSite = jobs.filter(
-          (job) => !COMPLETED_STATUSES.has(job.status || "")
+          (job) => !isInactiveJobStatus(job.status)
         ).length;
 
         const completedToday = jobs.filter((job) =>
-          COMPLETED_STATUSES.has(job.status || "")
+          isInactiveJobStatus(job.status)
         ).length;
 
         const courtesyCarsOut = jobs.filter((job) =>

@@ -7,18 +7,20 @@ import { updateJob } from "@/lib/database/jobs"; // Function to update job in da
 import {
   getSubStatusMetadata,
   resolveMainStatusId,
+  isValidTransition,
 } from "@/lib/status/statusFlow";
+import { DISPLAY as JOB_DISPLAY, STATUSES as JOB } from "@/lib/status/catalog/job"; // Canonical job status constants.
 
 /* ============================================
    STATUS FLOW DEFINITION
-   Defines which statuses can transition to which
+   Built from the canonical catalog — single source of truth.
 ============================================ */
 const STATUS_FLOW = {
-  Booked: ["Checked In", "In Progress"],
-  "Checked In": ["In Progress"],
-  "In Progress": ["Invoiced"],
-  Invoiced: ["Released"],
-  Released: [],
+  [JOB_DISPLAY[JOB.BOOKED]]: [JOB_DISPLAY[JOB.CHECKED_IN], JOB_DISPLAY[JOB.IN_PROGRESS]],
+  [JOB_DISPLAY[JOB.CHECKED_IN]]: [JOB_DISPLAY[JOB.IN_PROGRESS]],
+  [JOB_DISPLAY[JOB.IN_PROGRESS]]: [JOB_DISPLAY[JOB.INVOICED]],
+  [JOB_DISPLAY[JOB.INVOICED]]: [JOB_DISPLAY[JOB.RELEASED]],
+  [JOB_DISPLAY[JOB.RELEASED]]: [],
 };
 
 /* ============================================

@@ -48,6 +48,8 @@ const isMotRole = (role) => {
   return normalized.includes("mot");
 };
 
+// NOTE: These status Sets use DMS-specific uppercase display labels (not canonical status IDs).
+// For canonical status checks, use isInactiveJobStatus() from @/lib/status/statusHelpers.
 const STATUS_WAITING_QUEUE = new Set([
   "CHECKED IN",
   "ACCEPTED IN",

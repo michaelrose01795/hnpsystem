@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import ModalPortal from "@/components/popups/ModalPortal";
 import styles from "@/features/invoices/styles/invoice.module.css";
+import { isInvoiceRowPaid } from "@/lib/status/statusHelpers"; // Centralized paid check.
 import {
   findPaymentFlowMethod,
   PAYMENT_FLOW_METHODS,
@@ -128,9 +129,7 @@ export default function InvoicePaymentModal({
     () => findPaymentFlowMethod(selectedMethodId),
     [selectedMethodId]
   );
-  const invoiceAlreadyPaid =
-    invoice?.paid === true ||
-    String(invoice?.payment_status || "").trim().toLowerCase() === "paid";
+  const invoiceAlreadyPaid = isInvoiceRowPaid(invoice); // Centralized check from statusHelpers.
 
   const methodSummary = useMemo(
     () =>

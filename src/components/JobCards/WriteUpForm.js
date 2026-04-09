@@ -12,6 +12,7 @@ import {
 } from "@/lib/database/jobs";
 import { logJobSubStatus } from "@/lib/services/jobStatusService";
 import { normalizeStatusId, resolveMainStatusId, resolveSubStatusId } from "@/lib/status/statusFlow";
+import { NORMALIZE_ITEM, ITEM_STATUSES } from "@/lib/status/catalog/parts"; // Centralized parts item normalizer.
 import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
@@ -396,7 +397,8 @@ const ensureAuthorizedTasks = (tasks = [], authorizedItems = []) => {
 
 // ✅ Generate a reusable empty checkbox array
 const createCheckboxArray = () => Array(10).fill(false);
-const PARTS_ON_ORDER_STATUSES = new Set(["on-order", "on_order", "awaiting-stock", "awaiting_stock"]);
+/** Parts that resolve to ON_ORDER via the catalog normalizer are "on order". */
+const isPartsOnOrder = (status) => NORMALIZE_ITEM(status) === ITEM_STATUSES.ON_ORDER;
 
 const createAuthorizedSourceKey = (item, index, jobId) => {
   const authSegment =
@@ -454,12 +456,9 @@ const tasksAreEqual = (left = [], right = []) => {
   return true;
 };
 
-const extractNormalizedStatus = (value = "") =>
-  `${value}`.toLowerCase().trim().replace(/\s+/g, "-");
-
 const hasPartsOnOrder = (requests = []) =>
   (Array.isArray(requests) ? requests : []).some((request) =>
-    PARTS_ON_ORDER_STATUSES.has(extractNormalizedStatus(request?.status))
+    isPartsOnOrder(request?.status)
   );
 
 const determineJobStatusFromTasks = (tasks = [], requests = [], hasRectificationItems = false) => {

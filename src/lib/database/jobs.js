@@ -10,6 +10,8 @@ import {
   resolveSubStatusId,
 } from "@/lib/status/statusFlow";
 import { syncHealthCheckToCanonicalVhc } from "@/lib/vhc/saveVhcItem";
+import { normalizeDecision } from "@/lib/vhc/vhcItemState"; // Canonical VHC decision normalizer.
+import { isInvoiceRowPaid } from "@/lib/status/statusHelpers"; // Centralized invoice paid check.
 import { cachedQuery, invalidateCache } from "@/lib/database/queryCache";
 import {
   getVehicleRegistration,
@@ -212,11 +214,7 @@ const hasPaidInvoiceForJob = async (jobId) => {
     throw error;
   }
 
-  return (data || []).some((row) => {
-    if (row?.paid === true) return true;
-    const status = String(row?.payment_status || "").trim().toLowerCase();
-    return status === "paid";
-  });
+  return (data || []).some((row) => isInvoiceRowPaid(row)); // Centralized paid check from statusHelpers.
 };
 
 const mergeRectificationSources = (stored = [], authorized = []) => {
@@ -663,14 +661,7 @@ export const getAuthorizedAdditionalWorkByJob = async (jobId) => {
 ============================================ */
 export const getAuthorizedVhcItemsWithDetails = async (jobId) => {
   try {
-    const normaliseAuthorizationState = (value) => {
-      const lower = String(value || "").toLowerCase().trim();
-      if (!lower) return "";
-      if (lower === "authorised" || lower === "approved") return "authorized";
-      if (lower === "complete") return "completed";
-      if (lower === "rejected") return "declined";
-      return lower;
-    };
+    const normaliseAuthorizationState = (value) => normalizeDecision(value) ?? ""; // Canonical normalizer from vhcItemState.
 
     // Query vhc_checks directly — authorized items data is now consolidated here
     const { data: rows, error } = await supabase
@@ -2191,13 +2182,7 @@ const hydrateVhcChecks = (checks = []) =>
     return { ...check, data: structuredData };
   });
 
-const normalizeAuthorizationDecision = (value = "") => {
-  const normalized = normalizeSearchValue(value);
-  if (!normalized) return "";
-  if (normalized === "authorised" || normalized === "approved") return "authorized";
-  if (normalized === "complete" || normalized === "completed") return "completed";
-  return normalized;
-};
+const normalizeAuthorizationDecision = (value = "") => normalizeDecision(value) ?? ""; // Canonical normalizer from vhcItemState.
 
 const formatJobData = (data) => {
   if (!data) return null;

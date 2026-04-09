@@ -39,3 +39,44 @@ export const NORMALIZE = (value) => {
   if (Object.values(STATUSES).includes(normalized)) return normalized;
   return ITEM_STATUS_TO_STAGE[normalized] || STATUSES.WAITING_AUTHORISATION;
 };
+
+// ---------------------------------------------------------------------------
+// Item-level status normalization (for parts_job_items rows)
+// ---------------------------------------------------------------------------
+
+export const ITEM_STATUSES = {
+  PENDING: "pending",
+  PRICED: "priced",
+  PRE_PICK: "pre_pick",
+  ON_ORDER: "on_order",
+  BOOKED: "booked",
+  REMOVED: "removed",
+  RESERVED: "reserved",
+  STOCK: "stock",
+};
+
+const ITEM_ALIASES = {
+  pending: ITEM_STATUSES.PENDING,
+  priced: ITEM_STATUSES.PRICED,
+  pre_pick: ITEM_STATUSES.PRE_PICK,
+  "pre-pick": ITEM_STATUSES.PRE_PICK,
+  picked: ITEM_STATUSES.PRE_PICK,
+  on_order: ITEM_STATUSES.ON_ORDER,
+  "on-order": ITEM_STATUSES.ON_ORDER,
+  awaiting_stock: ITEM_STATUSES.ON_ORDER,
+  order: ITEM_STATUSES.ON_ORDER,
+  ordered: ITEM_STATUSES.ON_ORDER,
+  booked: ITEM_STATUSES.BOOKED,
+  removed: ITEM_STATUSES.REMOVED,
+  reserved: ITEM_STATUSES.RESERVED,
+  stock: ITEM_STATUSES.STOCK,
+  allocated: ITEM_STATUSES.STOCK,
+  fitted: ITEM_STATUSES.STOCK,
+};
+
+/** Normalize a raw parts_job_items status string to a canonical item status. */
+export const NORMALIZE_ITEM = (value) => {
+  if (!value) return ITEM_STATUSES.PENDING; // Default for empty/null.
+  const normalized = String(value).toLowerCase().replace(/\s+/g, "_"); // Lowercase + underscore.
+  return ITEM_ALIASES[normalized] || ITEM_STATUSES.PENDING; // Fallback to pending.
+};

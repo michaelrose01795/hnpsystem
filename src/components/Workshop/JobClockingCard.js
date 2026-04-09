@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from "react"; // React hooks for state and effects
 import { useUser } from "@/context/UserContext"; // Get logged-in user
+import { isInactiveJobStatus } from "@/lib/status/statusHelpers"; // Centralized job status check
 import { usePolling } from "@/hooks/usePolling"; // visibility-gated polling
 import { 
   clockInToJob, 
@@ -62,7 +63,7 @@ export default function JobClockingCard() {
       const allJobs = await getAllJobs();
       // Filter to jobs that are active and not completed
       const activeJobsList = allJobs.filter(job => 
-        !["Complete", "Completed", "Invoiced", "Collected", "Cancelled"].includes(job.status)
+        !isInactiveJobStatus(job.status)
       );
       setAvailableJobs(activeJobsList);
     }
