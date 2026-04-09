@@ -49,12 +49,10 @@ const pickLatestByUpdatedAt = (rows) => {
   return latest;
 };
 
-const normaliseApprovalStatus = (value) => {
-  if (value === null || value === undefined) return null;
-  const normalised = String(value).trim().toLowerCase();
-  if (!normalised) return null;
-  if (normalised === "authorised" || normalised === "approved") return "authorized";
-  return normalised;
+import { normalizeDecision } from "@/lib/vhc/vhcItemState"; // Canonical decision normalizer.
+
+const normaliseApprovalStatus = (value) => { // Delegates to canonical normalizer.
+  return normalizeDecision(value); // Single source of truth.
 };
 
 export const syncVhcPartsAuthorisation = async ({ jobId, vhcItemId, approvalStatus }) => {

@@ -2,6 +2,7 @@
 import { supabase } from "@/lib/supabaseClient";
 import { syncVhcPartsAuthorisation } from "@/lib/database/vhcPartsSync";
 import { calculateVhcFinancialTotals } from "@/lib/vhc/calculateVhcTotals";
+import { normalizeDecision, normalizeSeverity, isSeverityColor, DECISION, buildDecisionUpdatePayload } from "@/lib/vhc/vhcItemState";
 
 export default async function handler(req, res) {
   if (req.method !== "PATCH" && req.method !== "POST") {
@@ -26,27 +27,16 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: "vhcItemId is required" });
     }
 
-    const isSeverityDisplay = (value) => {
-      const normalized = String(value || "").trim().toLowerCase();
-      return normalized === "red" || normalized === "amber" || normalized === "green" || normalized === "grey";
+    const isSeverityDisplay = (value) => isSeverityColor(value); // Delegates to canonical helper.
+
+    const normaliseApproval = (value) => { // Delegates to canonical normalizer, preserving null passthrough.
+      if (value === null || value === undefined) return value; // Preserve null/undefined.
+      return normalizeDecision(value) || String(value).trim().toLowerCase(); // Canonical normalize with raw fallback.
     };
 
-    const normaliseApproval = (value) => {
-      if (value === null || value === undefined) return value;
-      const normalised = String(value).trim().toLowerCase();
-      if (!normalised) return normalised;
-      if (normalised === "authorised") return "authorized";
-      if (normalised === "approved") return "authorized";
-      return normalised;
-    };
-
-    const normaliseDisplay = (value) => {
-      if (value === null || value === undefined) return value;
-      const normalised = String(value).trim().toLowerCase();
-      if (!normalised) return normalised;
-      if (normalised === "authorised") return "authorized";
-      if (normalised === "approved") return "authorized";
-      return normalised;
+    const normaliseDisplay = (value) => { // Delegates to canonical normalizer, preserving null passthrough.
+      if (value === null || value === undefined) return value; // Preserve null/undefined.
+      return normalizeDecision(value) || normalizeSeverity(value) || String(value).trim().toLowerCase(); // Try decision, then severity, then raw.
     };
 
     const { data: existingCheck, error: existingCheckError } = await supabase

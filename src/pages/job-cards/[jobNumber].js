@@ -37,6 +37,7 @@ import VhcDetailsPanel from "@/components/VHC/VhcDetailsPanel";
 import InvoiceSection from "@/components/Invoices/InvoiceSection";
 import { calculateVhcFinancialTotals } from "@/lib/vhc/calculateVhcTotals";
 import { normaliseDecisionStatus, buildVhcRowStatusView } from "@/lib/vhc/summaryStatus";
+import { resolveVhcItemState } from "@/lib/vhc/vhcItemState";
 import { isValidUuid, sanitizeNumericId } from "@/lib/utils/ids";
 import { clockInToJob, getUserActiveJobs, switchJob } from "@/lib/database/jobClocking";
 import PartsTabNew from "@/components/PartsTab_New";
@@ -854,17 +855,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       return { total: 0, decided: 0, allDecided: false };
     }
     const decided = decisionChecks.filter((check) => {
-      const decision = normaliseDecisionStatus(
-        check?.approval_status ??
-          check?.approvalStatus ??
-          check?.display_status ??
-          check?.status
-      );
-      return (
-        decision === "authorized" ||
-        decision === "declined" ||
-        decision === "completed"
-      );
+      return resolveVhcItemState(check).isDecided; // Canonical state resolver handles field priority.
     }).length;
     return {
       total: decisionChecks.length,
@@ -889,14 +880,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     }
 
     return redAmberChecks.every((check) => {
-      const decision = normaliseDecisionStatus(
-        check?.authorization_state ??
-          check?.authorizationState ??
-          check?.approval_status ??
-          check?.approvalStatus ??
-          check?.display_status ??
-          check?.status
-      );
+      const { decision } = resolveVhcItemState(check); // Canonical state resolver handles field priority.
       return decision === "authorized" || decision === "declined";
     });
   }, [jobData?.vhcChecks]);

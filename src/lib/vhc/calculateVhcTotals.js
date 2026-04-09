@@ -5,31 +5,26 @@
  */
 
 import { summariseTechnicianVhc } from './summary';
+import { normalizeDecision, normalizeSeverity, resolveVhcItemState, isAuthorizedLike } from '@/lib/vhc/vhcItemState'; // Canonical state model.
 
 const LABOUR_RATE = 150; // £150 per hour
 
 /**
- * Normalise colour values to standard severity levels
+ * Normalise colour values to standard severity levels.
+ * Delegates to canonical normalizeSeverity, with legacy aliases for workflow statuses.
  */
-function normaliseColour(value) {
-  if (!value || typeof value !== 'string') return null;
-  const lower = value.toLowerCase().trim();
-  if (lower === 'red' || lower === 'critical' || lower === 'high') return 'red';
-  if (lower === 'amber' || lower === 'warning' || lower === 'medium' || lower === 'yellow') return 'amber';
-  if (lower === 'green' || lower === 'ok' || lower === 'low' || lower === 'good') return 'green';
-  if (lower === 'authorized' || lower === 'approved') return 'authorized';
-  if (lower === 'declined' || lower === 'rejected') return 'declined';
-  return null;
+function normaliseColour(value) { // Local wrapper that also maps workflow strings for backward compat.
+  if (!value || typeof value !== 'string') return null; // Null guard.
+  const severity = normalizeSeverity(value); // Try canonical severity first.
+  if (severity) return severity; // Return if it's a color.
+  const decision = normalizeDecision(value); // Try as a decision value.
+  if (decision === 'authorized' || decision === 'completed') return 'authorized'; // Map for severity list bucketing.
+  if (decision === 'declined') return 'declined'; // Map for severity list bucketing.
+  return null; // Unrecognized.
 }
 
-function normaliseDecisionStatus(value) {
-  if (!value || typeof value !== "string") return null;
-  const lower = value.toLowerCase().trim();
-  if (!lower) return null;
-  if (lower === "authorised" || lower === "approved") return "authorized";
-  if (lower === "rejected") return "declined";
-  if (lower === "complete") return "completed";
-  return lower;
+function normaliseDecisionStatus(value) { // Delegates to canonical normalizer.
+  return normalizeDecision(value); // Single source of truth.
 }
 
 /**

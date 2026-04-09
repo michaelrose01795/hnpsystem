@@ -3,6 +3,7 @@
 // file location: src/lib/services/vhcStatusService.js
 
 import { supabase } from "@/lib/supabaseClient"; // Supabase client for database operations
+import { resolveVhcItemState } from "@/lib/vhc/vhcItemState"; // Canonical VHC state resolver.
 import { 
   autoSetVHCCompleteStatus,
   autoSetVHCSentStatus,
@@ -521,11 +522,7 @@ export const getVHCAuthorizationHistory = async (jobId) => {
     if (checksError) throw checksError;
 
     const authData = (checksData || [])
-      .filter((row) => {
-        const approval = String(row?.approval_status || "").trim().toLowerCase();
-        const state = String(row?.authorization_state || "").trim().toLowerCase();
-        return approval === "authorized" || approval === "authorised" || state === "authorized" || state === "authorised";
-      })
+      .filter((row) => resolveVhcItemState(row).isAuthorizedLike)
       .map((row) => ({
         id: row.vhc_id,
         job_id: jobId,
@@ -610,14 +607,7 @@ export const calculateVHCTotals = async (jobId) => {
     
     let authorized = 0;
     (vhcChecks || []).forEach((check) => {
-      const approval = String(check?.approval_status || "").trim().toLowerCase();
-      const state = String(check?.authorization_state || "").trim().toLowerCase();
-      const isAuthorized =
-        approval === "authorized" ||
-        approval === "authorised" ||
-        state === "authorized" ||
-        state === "authorised";
-      if (!isAuthorized) return;
+      if (!resolveVhcItemState(check).isAuthorizedLike) return; // Canonical state check.
 
       const override = Number(check?.total_override);
       if (Number.isFinite(override) && override > 0) {

@@ -3,6 +3,7 @@ import { parseVhcBuilderPayload, summariseTechnicianVhc } from "@/lib/vhc/summar
 import { normaliseDecisionStatus, resolveSeverityKey } from "@/lib/vhc/summaryStatus";
 import { buildStableDisplayId } from "@/lib/vhc/displayId";
 import { normaliseColour, resolveCategoryForItem, toNumber } from "@/lib/vhc/shared";
+import { resolveVhcItemState, DECISION } from "@/lib/vhc/vhcItemState";
 
 const WORKFLOW_DISPLAY_STATUSES = new Set(["authorized", "declined", "completed", "pending", "n/a", ""]); // Workflow statuses that are not severity colours.
 
@@ -22,14 +23,11 @@ const resolveDisplaySeverity = (displayStatus) => { // Only allow display_status
   return candidate === "red" || candidate === "amber" || candidate === "green" ? candidate : null;
 };
 
-const resolveDecisionStatus = (check = {}, fallback = null) => {
-  const authState = normaliseDecisionStatus(check?.authorization_state);
-  const approval = normaliseDecisionStatus(check?.approval_status);
-  // Prefer explicit approval_status when auth_state is only the legacy "n/a" placeholder.
-  if (authState === "n/a" && approval && approval !== "n/a") return approval;
-  if (authState) return authState;
-  if (approval) return approval;
-  return normaliseDecisionStatus(fallback) || "pending";
+const resolveDecisionStatus = (check = {}, fallback = null) => { // Delegates to canonical resolver; keeps local signature stable.
+  if (check && (check.approval_status || check.approvalStatus || check.authorization_state || check.authorizationState)) {
+    return resolveVhcItemState(check).decision; // Use unified resolver.
+  }
+  return normaliseDecisionStatus(fallback) || DECISION.PENDING; // Fallback path.
 };
 
 const buildRowIdLabel = (rowId) => {

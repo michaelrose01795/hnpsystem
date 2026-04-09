@@ -1376,6 +1376,21 @@ CREATE TABLE public.staff_vehicle_history (
   CONSTRAINT staff_vehicle_history_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.staff_vehicles(vehicle_id),
   CONSTRAINT staff_vehicle_history_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
 );
+CREATE TABLE public.staff_vehicle_payroll_deductions (
+  deduction_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  history_id bigint NOT NULL UNIQUE,
+  vehicle_id uuid NOT NULL,
+  user_id integer NOT NULL,
+  month_key text NOT NULL CHECK (month_key ~ '^\d{4}-\d{2}$'::text),
+  label text NOT NULL DEFAULT 'Work Deduction'::text,
+  amount numeric NOT NULL DEFAULT 0,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT staff_vehicle_payroll_deductions_pkey PRIMARY KEY (deduction_id),
+  CONSTRAINT staff_vehicle_payroll_deductions_history_id_fkey FOREIGN KEY (history_id) REFERENCES public.staff_vehicle_history(history_id),
+  CONSTRAINT staff_vehicle_payroll_deductions_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.staff_vehicles(vehicle_id),
+  CONSTRAINT staff_vehicle_payroll_deductions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
+);
 CREATE TABLE public.staff_vehicles (
   vehicle_id uuid NOT NULL DEFAULT gen_random_uuid(),
   user_id integer NOT NULL,

@@ -1,46 +1,16 @@
-const normaliseColour = (value) => {
-  if (!value) return null;
-  const colour = value.toString().toLowerCase();
-  if (colour.includes("red")) return "red";
-  if (colour.includes("amber") || colour.includes("yellow")) return "amber";
-  if (colour.includes("green")) return "green";
-  if (colour.includes("grey") || colour.includes("gray")) return "grey";
-  return null;
+import { normalizeDecision, normalizeSeverity as _normalizeSeverity } from "@/lib/vhc/vhcItemState"; // Canonical normalizers.
+
+const normaliseColour = (value) => { // Delegates to canonical severity normalizer.
+  return _normalizeSeverity(value); // Single source of truth.
 };
 
-export const normaliseDecisionStatus = (value) => {
-  if (!value) return null;
-  const normalized = value.toString().trim().toLowerCase();
-  if (!normalized) return null;
-  if (normalized === "n/a" || normalized === "na" || normalized === "not applicable") {
-    return "n/a";
-  }
-  if (
-    normalized === "authorised" ||
-    normalized === "authorized" ||
-    normalized === "approved" ||
-    normalized.includes("authorised") ||
-    normalized.includes("authorized")
-  ) {
-    return "authorized";
-  }
-  if (
-    normalized === "declined" ||
-    normalized === "decline" ||
-    normalized === "declinded" ||
-    normalized.includes("declin")
-  ) {
-    return "declined";
-  }
-  if (
-    normalized === "completed" ||
-    normalized === "complete" ||
-    normalized.includes("complet")
-  ) {
-    return "completed";
-  }
-  if (normalized === "pending" || normalized.includes("pending")) return "pending";
-  return normalized;
+export const normaliseDecisionStatus = (value) => { // Delegates to canonical decision normalizer.
+  const result = normalizeDecision(value); // Use canonical normalizer.
+  if (result) return result; // Return if recognized.
+  // Legacy fallback: return the raw lowercased value for unrecognized inputs.
+  if (!value) return null; // Null guard.
+  const normalized = value.toString().trim().toLowerCase(); // Clean the input.
+  return normalized || null; // Return raw or null.
 };
 
 export const resolveSeverityKey = (rawSeverity, displayStatus) => {
