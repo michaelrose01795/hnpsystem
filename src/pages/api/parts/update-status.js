@@ -3,6 +3,7 @@
 
 import { supabase } from "@/lib/supabaseClient";
 import { syncVhcPartsAuthorisation } from "@/lib/database/vhcPartsSync";
+import { syncRequestStatus } from "@/lib/parts/partsRequestAdapter"; // Parts request status sync.
 
 export default async function handler(req, res) {
   if (req.method !== "PATCH") {
@@ -137,6 +138,15 @@ export default async function handler(req, res) {
         // Log the sync error but don't fail the entire request
         // The part status was already updated successfully
         console.error("VHC sync error (non-blocking):", syncError);
+      }
+    }
+
+    // Keep linked parts_requests status in sync when a job item status changes.
+    if (data?.id && status !== undefined) {
+      try {
+        await syncRequestStatus({ jobItemId: data.id, newJobItemStatus: data.status });
+      } catch (requestSyncError) {
+        console.error("Request status sync error (non-blocking):", requestSyncError);
       }
     }
 

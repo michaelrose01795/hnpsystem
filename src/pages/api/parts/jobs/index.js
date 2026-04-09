@@ -7,6 +7,7 @@ import {
   buildVhcRequestLinkRows,
   matchPartToVhcRequestRow,
 } from "@/lib/vhc/requestRowLinking";
+import { linkRequestToJobItem, syncRequestStatus } from "@/lib/parts/partsRequestAdapter"; // Parts request adapter.
 
 const PRE_PICK_LOCATIONS = new Set([
   "service_rack_1",
@@ -298,6 +299,7 @@ export default async function handler(req, res) {
       userId,
       userNumericId,
       vhcItemId,
+      sourceRequestId,
     } = req.body || {};
 
     console.log("[api/parts/jobs] POST request received", {
@@ -409,6 +411,9 @@ export default async function handler(req, res) {
         shouldAllocate &&
         (resolvedStatus === "booked" || resolvedOrigin === "job_card" || resolvedOrigin === "vhc");
 
+      const resolvedSourceRequestId = // Resolve source_request_id from body (supports both casings).
+        sourceRequestId ?? req.body?.source_request_id ?? null;
+
       const payload = {
         job_id: jobId,
         part_id: partId,
@@ -426,6 +431,7 @@ export default async function handler(req, res) {
         unit_price: resolvedUnitPrice,
         request_notes: requestNotes || null,
         allocated_by: shouldAllocate ? auditUserId || null : null,
+        source_request_id: resolvedSourceRequestId, // Link to originating parts_requests row.
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -524,6 +530,18 @@ export default async function handler(req, res) {
           });
         } catch (syncError) {
           console.error("[api/parts/jobs] VHC sync error (non-blocking):", syncError);
+        }
+      }
+
+      // Link back to the originating parts_request if provided (bidirectional FK).
+      if (resolvedSourceRequestId && newJobPart?.id) {
+        try {
+          await linkRequestToJobItem({
+            jobItemId: newJobPart.id,
+            requestId: resolvedSourceRequestId,
+          });
+        } catch (linkError) {
+          console.error("[api/parts/jobs] Request link error (non-blocking):", linkError);
         }
       }
 

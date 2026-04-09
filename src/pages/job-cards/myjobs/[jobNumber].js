@@ -429,6 +429,7 @@ export default function TechJobDetailPage() {
   }, [jobData?.jobCard?.parts_job_items]);
   const [partRequestDescription, setPartRequestDescription] = useState("");
   const [partRequestQuantity, setPartRequestQuantity] = useState(1);
+  const [partRequestVhcItemId, setPartRequestVhcItemId] = useState(null); // Optional VHC item link for tech requests.
   const [partsSubmitting, setPartsSubmitting] = useState(false);
   const [partsFeedback, setPartsFeedback] = useState("");
   const [jobDocuments, setJobDocuments] = useState([]);
@@ -1134,7 +1135,7 @@ export default function TechJobDetailPage() {
     setPartsFeedback("");
 
     try {
-      const { error } = await supabase.from("parts_requests").insert({
+      const insertPayload = { // Build request payload with optional VHC link.
         job_id: jobCardId,
         requested_by: requesterId,
         quantity: Math.max(1, Number(partRequestQuantity) || 1),
@@ -1143,7 +1144,12 @@ export default function TechJobDetailPage() {
         source: "tech_request",
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-      });
+      };
+      if (partRequestVhcItemId) { // Attach VHC item link if tech selected one.
+        insertPayload.vhc_item_id = partRequestVhcItemId;
+      }
+
+      const { error } = await supabase.from("parts_requests").insert(insertPayload);
 
       if (error) {
         throw error;
@@ -1151,6 +1157,7 @@ export default function TechJobDetailPage() {
 
       setPartRequestDescription("");
       setPartRequestQuantity(1);
+      setPartRequestVhcItemId(null); // Reset VHC link after submission.
       setPartsFeedback("Part request submitted. Parts will review it alongside VHC items.");
       await fetchJobData();
     } catch (submitError) {
@@ -1165,6 +1172,7 @@ export default function TechJobDetailPage() {
     user?.id,
     partRequestDescription,
     partRequestQuantity,
+    partRequestVhcItemId,
     fetchJobData,
   ]);
 
@@ -4049,6 +4057,32 @@ export default function TechJobDetailPage() {
                       }}
                     />
                   </label>
+                  {Array.isArray(vhcChecks) && vhcChecks.filter((c) => c.section !== "VHC_CHECKSHEET").length > 0 && (
+                    <label style={{ display: "flex", flexDirection: "column", fontSize: "12px", color: "var(--info)" }}>
+                      Link to VHC item (optional)
+                      <select
+                        value={partRequestVhcItemId || ""}
+                        onChange={(e) => setPartRequestVhcItemId(e.target.value ? Number(e.target.value) : null)}
+                        style={{
+                          marginTop: "4px",
+                          padding: "6px 10px",
+                          borderRadius: "var(--radius-xs)",
+                          border: "1px solid var(--accent-purple-surface)",
+                          fontSize: "14px",
+                          maxWidth: "240px",
+                        }}
+                      >
+                        <option value="">None</option>
+                        {vhcChecks
+                          .filter((c) => c.section !== "VHC_CHECKSHEET")
+                          .map((c) => (
+                            <option key={c.vhc_id} value={c.vhc_id}>
+                              #{c.vhc_id} {(c.issue_title || c.section || "").slice(0, 40)}
+                            </option>
+                          ))}
+                      </select>
+                    </label>
+                  )}
                   <button
                     type="button"
                     onClick={handlePartsRequestSubmit}

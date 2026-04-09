@@ -1120,12 +1120,14 @@ CREATE TABLE public.parts_job_items (
   part_number_snapshot text,
   part_name_snapshot text,
   row_description text,
+  source_request_id integer,
   CONSTRAINT parts_job_items_pkey PRIMARY KEY (id),
   CONSTRAINT parts_job_items_vhc_item_id_fkey FOREIGN KEY (vhc_item_id) REFERENCES public.vhc_checks(vhc_id),
   CONSTRAINT parts_job_items_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT parts_job_items_part_id_fkey FOREIGN KEY (part_id) REFERENCES public.parts_catalog(id),
   CONSTRAINT parts_job_items_allocated_to_request_id_fkey FOREIGN KEY (allocated_to_request_id) REFERENCES public.job_requests(request_id),
-  CONSTRAINT parts_job_items_allocated_by_auth_users_fkey FOREIGN KEY (allocated_by) REFERENCES auth.users(id)
+  CONSTRAINT parts_job_items_allocated_by_auth_users_fkey FOREIGN KEY (allocated_by) REFERENCES auth.users(id),
+  CONSTRAINT parts_job_items_source_request_id_fkey FOREIGN KEY (source_request_id) REFERENCES public.parts_requests(request_id) ON DELETE SET NULL
 );
 CREATE TABLE public.parts_order_card_items (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -1192,11 +1194,15 @@ CREATE TABLE public.parts_requests (
   description text,
   source text DEFAULT 'manual'::text,
   pre_pick_location text CHECK (pre_pick_location IS NULL OR (pre_pick_location = ANY (ARRAY['service_rack_1'::text, 'service_rack_2'::text, 'service_rack_3'::text, 'service_rack_4'::text, 'sales_rack_1'::text, 'sales_rack_2'::text, 'sales_rack_3'::text, 'sales_rack_4'::text, 'tyre_shed'::text, 'stairs_pre_pick'::text, 'no_pick'::text, 'on_order'::text]))),
+  vhc_item_id integer,
+  fulfilled_by uuid,
   CONSTRAINT parts_requests_pkey PRIMARY KEY (request_id),
   CONSTRAINT parts_requests_requested_by_fkey FOREIGN KEY (requested_by) REFERENCES public.users(user_id),
   CONSTRAINT parts_requests_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES public.users(user_id),
   CONSTRAINT parts_requests_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
-  CONSTRAINT parts_requests_part_id_fkey FOREIGN KEY (part_id) REFERENCES public.parts_catalog(id)
+  CONSTRAINT parts_requests_part_id_fkey FOREIGN KEY (part_id) REFERENCES public.parts_catalog(id),
+  CONSTRAINT parts_requests_vhc_item_id_fkey FOREIGN KEY (vhc_item_id) REFERENCES public.vhc_checks(vhc_id) ON DELETE SET NULL,
+  CONSTRAINT parts_requests_fulfilled_by_fkey FOREIGN KEY (fulfilled_by) REFERENCES public.parts_job_items(id) ON DELETE SET NULL
 );
 CREATE TABLE public.parts_search_events (
   id uuid NOT NULL DEFAULT gen_random_uuid(),

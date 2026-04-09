@@ -1,6 +1,7 @@
 // file location: src/pages/api/parts/job-items/index.js
 
 import { supabase } from "@/lib/supabaseClient";
+import { linkRequestToJobItem } from "@/lib/parts/partsRequestAdapter"; // Parts request adapter.
 
 const WRITE_ROLE_KEYWORDS = ["tech", "parts", "manager", "admin"] // Role keywords permitted to create records
 const VALID_STATUSES = new Set([
@@ -166,6 +167,9 @@ export default async function handler(req, res) {
         ? await buildVhcRowDescription({ jobId, vhcItemId: resolvedVhcItemId })
         : null
 
+      const resolvedSourceRequestId = // Resolve source_request_id from body (supports both casings).
+        body.source_request_id ?? body.sourceRequestId ?? null;
+
       // Build payload for database insert
       const payload = {
         job_id: jobId,
@@ -183,6 +187,7 @@ export default async function handler(req, res) {
         row_description: rowDescription,
         origin: body.origin ?? null,
         allocated_by: body.allocated_by ?? body.allocatedBy ?? null,
+        source_request_id: resolvedSourceRequestId, // Link to originating parts_requests row.
         created_at: new Date().toISOString(),
       }
 
@@ -194,6 +199,18 @@ export default async function handler(req, res) {
         .single()
 
       if (error) throw error
+
+      // Link back to the originating parts_request if provided (bidirectional FK).
+      if (resolvedSourceRequestId && created?.id) {
+        try {
+          await linkRequestToJobItem({
+            jobItemId: created.id,
+            requestId: resolvedSourceRequestId,
+          });
+        } catch (linkError) {
+          console.error("[api/parts/job-items] Request link error (non-blocking):", linkError);
+        }
+      }
 
       return res.status(201).json({ ok: true, data: created })
     }
