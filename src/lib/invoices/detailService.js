@@ -3,6 +3,7 @@ import supabase from "@/lib/supabaseClient"; // import shared Supabase client fo
 import { getVehicleRegistration, pickMileageValue } from "@/lib/canonical/fields"; // canonical field helpers
 import { createClient } from "@supabase/supabase-js";
 import { isAuthorisedDecision, isVhcAuthorisedSource } from "@/lib/status/statusHelpers"; // Centralized VHC decision helpers.
+import { loadStructuredInvoiceRequests, SNAPSHOT_VERSION } from "@/lib/invoices/persistence"; // Hydrates persisted snapshot rows back to API shape.
 
 const DEFAULT_VAT_RATE = 20; // default VAT percentage when configuration missing
 const DEFAULT_LABOUR_RATE = 85; // default labour rate per hour fallback
@@ -102,36 +103,10 @@ async function fetchJobSnapshot(jobNumber, jobId) { // fetch job, customer, and 
 } // end fetchJobSnapshot
 
 async function fetchInvoiceRequests(invoiceId) { // fetch invoice_requests + items if available
-  const { data: requests, error } = await supabase // query invoice_requests
-    .from("invoice_requests") // table name
-    .select("*") // fetch columns
-    .eq("invoice_id", invoiceId) // filter by invoice
-    .order("request_number", { ascending: true }); // order by request number
-  if (error && error.code !== "PGRST116") { // handle real errors
-    throw error; // propagate error
-  }
-  if (!requests || requests.length === 0) { // no structured requests stored
-    return []; // return empty array
-  }
-  const ids = requests.map((req) => req.id); // collect request IDs
-  const { data: items, error: itemsError } = await supabase // query request items
-    .from("invoice_request_items") // table name
-    .select("*") // fetch columns
-    .in("request_id", ids); // filter by collected IDs
-  if (itemsError && itemsError.code !== "PGRST116") { // handle errors
-    throw itemsError; // propagate error
-  }
-  const grouped = {}; // map request_id -> items array
-  (items || []).forEach((item) => { // iterate items
-    if (!grouped[item.request_id]) { // create bucket when missing
-      grouped[item.request_id] = []; // initialize array
-    }
-    grouped[item.request_id].push(item); // push item into bucket
-  }); // finish grouping
-  return requests.map((request) => ({ // attach items array to each request
-    ...request, // spread original row
-    items: grouped[request.id] || [] // add child list
-  })); // return structured requests
+  // Delegates to the persistence helper so the metadata jsonb (request_kind,
+  // request_id, labour_hours, writeup, etc.) is hydrated onto the top-level
+  // fields normalizeInvoiceRequests already understands.
+  return loadStructuredInvoiceRequests({ client: supabase, invoiceId });
 } // end fetchInvoiceRequests
 
 async function fetchInvoicePayments(invoiceId) {
@@ -1123,10 +1098,22 @@ export async function getInvoiceDetailPayload({ jobNumber, orderNumber }) { // m
     error.status = 404; // attach HTTP status
     throw error; // propagate error
   }
-  const { job, customer, vehicle } = await fetchJobSnapshot( // fetch job snapshot
-    invoice.job_number || jobNumber || null, // job number fallback
-    invoice.job_id || null // job id fallback
-  ); // finish snapshot fetch
+  // ── Snapshot-aware read path ───────────────────────────────────────────────
+  // If the invoice was created via the v1 snapshot persistence path, build the
+  // entire payload from stored rows ONLY. Do not consult job_requests,
+  // parts_job_items, vhc_checks, job_writeups, or proforma_request_overrides:
+  // those are LIVE state and would mutate the rendered invoice after issue.
+  // Legacy invoices (snapshot_version = 0 or column missing) keep the original
+  // rebuild-from-live path as a compatibility safety net.
+  const snapshotVersion = Number(invoice?.snapshot_version) || 0;
+  const isFullSnapshot = snapshotVersion >= 1;
+
+  const { job, customer, vehicle } = isFullSnapshot
+    ? { job: null, customer: null, vehicle: null }
+    : await fetchJobSnapshot(
+        invoice.job_number || jobNumber || null, // job number fallback
+        invoice.job_id || null // job id fallback
+      );
   const [invoiceRequests, invoicePayments] = await Promise.all([
     fetchInvoiceRequests(invoice.id),
     fetchInvoicePayments(invoice.id),
@@ -1134,7 +1121,18 @@ export async function getInvoiceDetailPayload({ jobNumber, orderNumber }) { // m
   let requests = []; // prepare array
   let livePartAllocations = [];
   let liveAuthorizedVhcRows = [];
-  if (invoiceRequests.length > 0) { // use stored requests when available
+
+  if (isFullSnapshot && invoiceRequests.length > 0) {
+    // Pure stored read — every metadata field already lives on each row.
+    const authorisedRequestIds = invoiceRequests
+      .filter((row) => {
+        const kind = String(row?.request_kind || "").toLowerCase();
+        return kind === "authorised" || kind === "authorized";
+      })
+      .map((row) => row?.request_id)
+      .filter((value) => value !== null && value !== undefined);
+    requests = normalizeInvoiceRequests(invoiceRequests, { authorisedRequestIds });
+  } else if (invoiceRequests.length > 0) { // legacy path: stored requests + live merge
     let authorisedRequestIds = [];
     if (job?.id) {
       const [jobRequests, authorizedVhcRows, partAllocations] = await Promise.all([
@@ -1170,18 +1168,39 @@ export async function getInvoiceDetailPayload({ jobNumber, orderNumber }) { // m
   } else { // fallback when no job at all
     requests = []; // keep empty list
   }
-  if (job?.id && liveAuthorizedVhcRows.length > 0) {
-    requests = appendMissingAuthorisedRowsFromVhcChecks({
-      requests,
-      partAllocations: livePartAllocations,
-      authorizedVhcRows: liveAuthorizedVhcRows,
-      vatRate,
-      labourRate,
-    });
-  }
-  if (job?.id && requests.length > 0) {
-    const writeUp = await fetchJobWriteUp(job.id);
-    requests = attachWriteUpDetailsToRequests(requests, writeUp);
+
+  // Live VHC merging + write-up attachment only run for legacy invoices.
+  if (!isFullSnapshot) {
+    if (job?.id && liveAuthorizedVhcRows.length > 0) {
+      requests = appendMissingAuthorisedRowsFromVhcChecks({
+        requests,
+        partAllocations: livePartAllocations,
+        authorizedVhcRows: liveAuthorizedVhcRows,
+        vatRate,
+        labourRate,
+      });
+    }
+    if (job?.id && requests.length > 0) {
+      const writeUp = await fetchJobWriteUp(job.id);
+      requests = attachWriteUpDetailsToRequests(requests, writeUp);
+    }
+  } else {
+    // Snapshot-mode: hydrate any persisted writeup straight back onto each
+    // request from its metadata blob (already done by loadStructuredInvoiceRequests
+    // → top-level `writeup` field; normalizeInvoiceRequests preserves it via spread
+    // of unrecognised fields below if needed). We re-attach it explicitly here so
+    // the consumer always sees `request.writeup` regardless of normaliser tweaks.
+    const writeupByNumber = new Map(
+      invoiceRequests
+        .filter((row) => row?.writeup)
+        .map((row) => [Number(row.request_number), row.writeup])
+    );
+    if (writeupByNumber.size > 0) {
+      requests = requests.map((request) => {
+        const stored = writeupByNumber.get(Number(request?.request_number));
+        return stored ? { ...request, writeup: stored } : request;
+      });
+    }
   }
   const totals = aggregateRequestTotals(requests); // compute aggregated totals
   const invoiceTo = invoice.invoice_to && Object.keys(invoice.invoice_to).length > 0 // check stored invoice_to snapshot
@@ -1228,6 +1247,9 @@ export async function getInvoiceDetailPayload({ jobNumber, orderNumber }) { // m
       notice: "",
       paymentStatus: invoiceBlock.payment_status,
       paymentCaptured: invoiceBlock.paid,
+      snapshotVersion, // expose to UI for diagnostics
+      isFullSnapshot, // true ⇒ this payload was built without consulting live job state
+      headerMeta: invoice?.meta || null, // raw header meta blob (totals_breakdown etc.)
     }
   }; // end payload
 } // end getInvoiceDetailPayload

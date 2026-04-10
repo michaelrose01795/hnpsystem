@@ -92,8 +92,6 @@ const LoginCard = ({
 );
 
 export default function LoginPage() {
-  const CUSTOMER_PORTAL_URL =
-    process.env.NEXT_PUBLIC_CUSTOMER_PORTAL_URL || "https://www.hpautomotive.co.uk";
   const allowDevUserSelection = true;
   const { data: session, status: sessionStatus } = useSession();
   // Safe destructuring from context
@@ -102,7 +100,12 @@ export default function LoginPage() {
   const dbUserId = userContext?.dbUserId;
   const logout = userContext?.logout;
   const logoutInProgress = userContext?.logoutInProgress;
-  const { usersByRole, usersByRoleDetailed, isLoading: rosterLoading, refreshRoster } = useRoster();
+  const {
+    usersByRole,
+    usersByRoleDetailed,
+    allUsers,
+    isLoading: rosterLoading,
+  } = useRoster();
   const { setTemporaryOverride } = useTheme();
 
   const router = useRouter();
@@ -511,6 +514,7 @@ export default function LoginPage() {
                   setSelectedDepartment={setSelectedDepartment}
                   selectedUser={selectedUser}
                   setSelectedUser={setSelectedUser}
+                  allUsers={allUsers}
                   usersByRole={usersByRole}
                   usersByRoleDetailed={usersByRoleDetailed}
                   roleCategories={loginRoleCategories}

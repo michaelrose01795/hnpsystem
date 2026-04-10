@@ -4,6 +4,10 @@ import { createClient } from "@supabase/supabase-js";
 import { getVehicleRegistration, pickMileageValue } from "@/lib/canonical/fields";
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { HR_CORE_ROLES, MANAGER_SCOPED_ROLES } from "@/lib/auth/roles";
+import {
+  persistStructuredInvoiceRequests,
+  SNAPSHOT_VERSION,
+} from "@/lib/invoices/persistence";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -13,6 +17,11 @@ if (!supabaseUrl || !serviceRoleKey) {
 }
 
 const dbClient = createClient(supabaseUrl, serviceRoleKey);
+
+// Postgres "undefined column" error code — used to retry inserts when the
+// migration that adds snapshot_version / meta has not been applied yet.
+const COLUMN_MISSING_CODE = "42703";
+let warnedHeaderColumnsMissing = false;
 
 const insertNotification = async ({ jobNumber, method, targetRole, message }) => {
   return dbClient.from("notifications").insert({
@@ -52,6 +61,22 @@ const addDaysToDateOnly = (value, days = 0) => {
   if (Number.isNaN(date.getTime())) return null;
   date.setUTCDate(date.getUTCDate() + Number(days || 0));
   return date.toISOString().slice(0, 10);
+};
+
+const round2 = (value) => {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return 0;
+  return Math.round(num * 100) / 100;
+};
+
+const looksLikeMissingColumn = (error) => {
+  if (!error) return false;
+  if (error.code === COLUMN_MISSING_CODE) return true;
+  const message = String(error.message || "").toLowerCase();
+  return (
+    (message.includes("snapshot_version") || message.includes("meta")) &&
+    message.includes("column")
+  );
 };
 
 const fetchJobContext = async (jobId) => {
@@ -130,6 +155,32 @@ const fetchJobContext = async (jobId) => {
   };
 };
 
+// Compute totals breakdown from the structured request payload so the snapshot
+// is internally consistent even if the caller passed slightly different totals.
+const summariseStructuredRequests = (requests = []) => {
+  let labourNet = 0;
+  let partsNet = 0;
+  let vatTotal = 0;
+  let gross = 0;
+  (Array.isArray(requests) ? requests : []).forEach((request) => {
+    const totals = request?.totals || {};
+    const requestNet = Number(totals.request_total_net || 0);
+    const requestVat = Number(totals.request_total_vat || 0);
+    const requestGross = Number(totals.request_total_gross || requestNet + requestVat);
+    const labour = Number(request?.labour?.net || 0);
+    labourNet += labour;
+    partsNet += Math.max(requestNet - labour, 0);
+    vatTotal += requestVat;
+    gross += requestGross;
+  });
+  return {
+    labourNet: round2(labourNet),
+    partsNet: round2(partsNet),
+    vatTotal: round2(vatTotal),
+    gross: round2(gross),
+  };
+};
+
 async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ success: false, error: "Method not allowed" });
@@ -158,14 +209,50 @@ async function handler(req, res) {
     const now = new Date().toISOString();
     const invoiceDate = toDateOnly(now);
     const dueDate = addDaysToDateOnly(invoiceDate, jobContext.creditTerms || 30);
-    const invoicePayload = {
+
+    // Prefer the totals derived from structured requests so the persisted header
+    // is internally consistent with the persisted line items.
+    const structuredTotals = summariseStructuredRequests(structuredRequests);
+    const hasStructured = Array.isArray(structuredRequests) && structuredRequests.length > 0;
+
+    const headerLabour = hasStructured
+      ? structuredTotals.labourNet
+      : Number(totals.labourTotal ?? 0);
+    const headerParts = hasStructured
+      ? structuredTotals.partsNet
+      : Number(totals.partsTotal ?? 0);
+    const headerVat = hasStructured
+      ? structuredTotals.vatTotal
+      : Number(totals.vatTotal ?? 0);
+    const headerGross = hasStructured
+      ? structuredTotals.gross
+      : Number(totals.total ?? 0);
+
+    // Header-level meta blob captures everything the read path used to derive
+    // from live company_settings/profile + per-request totals breakdown so we
+    // can rebuild the entire payload without consulting live job state.
+    const headerMeta = {
+      snapshot_version: SNAPSHOT_VERSION,
+      created_from: hasStructured ? "structuredRequests" : "totals",
+      totals_breakdown: {
+        labour_net: headerLabour,
+        parts_net: headerParts,
+        vat_total: headerVat,
+        gross_total: headerGross,
+      },
+      request_count: Array.isArray(structuredRequests) ? structuredRequests.length : 0,
+      account_label: jobContext.accountLabel || null,
+      credit_terms: jobContext.creditTerms,
+    };
+
+    const baseInvoicePayload = {
       job_id: jobId,
       customer_id: customerId || null,
       account_id: jobContext.accountId || null,
-      total_parts: Number(totals.partsTotal ?? 0),
-      total_labour: Number(totals.labourTotal ?? 0),
-      total_vat: Number(totals.vatTotal ?? 0),
-      total: Number(totals.total ?? 0),
+      total_parts: headerParts,
+      total_labour: headerLabour,
+      total_vat: headerVat,
+      total: headerGross,
       payment_method: null,
       payment_status: "Draft",
       sent_email_at: null,
@@ -181,21 +268,62 @@ async function handler(req, res) {
       invoice_to: jobContext.invoiceTo,
       deliver_to: jobContext.deliverTo,
       vehicle_details: jobContext.vehicleDetails,
-      service_total: Number(totals.partsTotal || 0) + Number(totals.labourTotal || 0),
-      vat_total: Number(totals.vatTotal || 0),
-      invoice_total: Number(totals.total || 0)
+      service_total: headerLabour + headerParts,
+      vat_total: headerVat,
+      invoice_total: headerGross,
     };
 
-    const { data: invoice, error: invoiceError } = await dbClient
+    // Insert with snapshot_version + meta first; retry without on missing column.
+    const fullPayload = {
+      ...baseInvoicePayload,
+      snapshot_version: SNAPSHOT_VERSION,
+      meta: headerMeta,
+    };
+
+    let { data: invoice, error: invoiceError } = await dbClient
       .from("invoices")
-      .insert(invoicePayload)
+      .insert(fullPayload)
       .select()
       .single();
+
+    if (invoiceError && looksLikeMissingColumn(invoiceError)) {
+      if (!warnedHeaderColumnsMissing) {
+        console.warn(
+          "[invoices] invoices.snapshot_version/meta missing — falling back to legacy header insert. Apply migration 20260410120000_invoice_snapshot_v1.sql to enable full snapshotting."
+        );
+        warnedHeaderColumnsMissing = true;
+      }
+      const retry = await dbClient
+        .from("invoices")
+        .insert(baseInvoicePayload)
+        .select()
+        .single();
+      invoice = retry.data;
+      invoiceError = retry.error;
+    }
 
     if (invoiceError) {
       throw invoiceError;
     }
 
+    // ── 1. Persist the structured snapshot (per-request labour/parts/metadata) ──
+    let structuredPersistResult = { requestCount: 0, itemCount: 0, columnsMissing: false };
+    if (hasStructured) {
+      try {
+        structuredPersistResult = await persistStructuredInvoiceRequests({
+          client: dbClient,
+          invoiceId: invoice.id,
+          structuredRequests,
+        });
+      } catch (structuredError) {
+        // Roll back the just-written invoice header so we don't leave a partial
+        // record that the read path will then try to rebuild from live data.
+        await dbClient.from("invoices").delete().eq("id", invoice.id);
+        throw structuredError;
+      }
+    }
+
+    // ── 2. Legacy flat invoice_items rows (kept for backward compatibility) ──
     const lineItems = [];
 
     requests.forEach((line, index) => {
@@ -220,7 +348,37 @@ async function handler(req, res) {
       });
     });
 
-    if (Number(totals.labourTotal)) {
+    // Derive flat invoice_items entries from structuredRequests as well, so the
+    // legacy table is populated even when the caller only sends structuredRequests.
+    if (hasStructured) {
+      structuredRequests.forEach((request, index) => {
+        const labourNet = Number(request?.labour?.net || 0);
+        if (labourNet > 0) {
+          lineItems.push({
+            invoice_id: invoice.id,
+            description: request?.title
+              ? `Labour — ${request.title}`
+              : `Labour — Request ${index + 1}`,
+            quantity: 1,
+            unit_price: round2(labourNet),
+            total: round2(labourNet),
+          });
+        }
+        (Array.isArray(request?.parts) ? request.parts : []).forEach((part) => {
+          const qty = Number(part?.qty) || 0;
+          const unitNet = Number(part?.price) || 0;
+          if (qty <= 0 || unitNet <= 0) return;
+          lineItems.push({
+            invoice_id: invoice.id,
+            description: part?.description || part?.part_number || "Part",
+            quantity: qty,
+            unit_price: round2(unitNet),
+            total: round2(unitNet * qty),
+          });
+        });
+      });
+    } else if (Number(totals.labourTotal)) {
+      // Preserve original behaviour when no structuredRequests were sent.
       lineItems.push({
         invoice_id: invoice.id,
         description: "Labour",
@@ -233,12 +391,11 @@ async function handler(req, res) {
     if (lineItems.length > 0) {
       const { error: itemsError } = await dbClient.from("invoice_items").insert(lineItems);
       if (itemsError) {
-        throw itemsError;
+        // Don't roll back here — the structured snapshot is the source of
+        // truth; legacy invoice_items is only a compatibility shim.
+        console.warn("[invoices] legacy invoice_items insert failed:", itemsError.message);
       }
     }
-
-    // TODO: Persist full proforma-to-invoice structured request rows once invoice_requests
-    // is expanded to support request linkage and authored proforma metadata consistently.
 
     await insertNotification({
       jobNumber,
@@ -250,7 +407,13 @@ async function handler(req, res) {
     return res.status(201).json({
       success: true,
       invoice,
-      provider: null
+      provider: null,
+      snapshot: {
+        version: SNAPSHOT_VERSION,
+        request_count: structuredPersistResult.requestCount,
+        item_count: structuredPersistResult.itemCount,
+        columns_missing: structuredPersistResult.columnsMissing,
+      },
     });
   } catch (error) {
     console.error("❌ create invoice error:", error);

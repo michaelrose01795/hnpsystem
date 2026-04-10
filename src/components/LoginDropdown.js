@@ -6,7 +6,7 @@ const ROLE_ALIASES = {
   "valet service": ["valet"],
 };
 const DEFAULT_DEV_LOGIN_CATEGORY = "retail";
-const DEFAULT_DEV_LOGIN_DEPARTMENT = "techs";
+const DEFAULT_DEV_LOGIN_DEPARTMENT = "workshop";
 const DEFAULT_DEV_LOGIN_USER = "michael";
 
 const normalizeValue = (value) =>
@@ -41,6 +41,7 @@ export default function LoginDropdown({
   setSelectedDepartment,
   selectedUser,
   setSelectedUser,
+  allUsers,
   usersByRole,
   usersByRoleDetailed,
   roleCategories,
@@ -79,12 +80,82 @@ export default function LoginDropdown({
     return matchKey ? source[matchKey] : null;
   };
 
+  const categorizedUsers = useMemo(() => {
+    if (!selectedCategory) return [];
+
+    const allowedRoles = new Set(
+      (roleCategories?.[selectedCategory] || []).map((role) => normalizeValue(role))
+    );
+
+    const baseUsers =
+      Array.isArray(allUsers) && allUsers.length > 0
+        ? allUsers
+        : Object.values(usersByRoleDetailed || {}).flat();
+
+    return baseUsers.filter((user) => allowedRoles.has(normalizeValue(user?.role)));
+  }, [allUsers, roleCategories, selectedCategory, usersByRoleDetailed]);
+
+  const departmentGroups = useMemo(() => {
+    if (!selectedCategory) return [];
+
+    const groups = new Map();
+
+    categorizedUsers.forEach((user, index) => {
+      const departmentLabel =
+        String(user?.department || "").trim() ||
+        String(user?.role || "").trim() ||
+        `Department ${index + 1}`;
+      const key = normalizeValue(departmentLabel);
+      const existing = groups.get(key);
+
+      if (existing) {
+        existing.users.push(user);
+        return;
+      }
+
+      groups.set(key, {
+        key,
+        label: departmentLabel,
+        users: [user],
+      });
+    });
+
+    if (groups.size > 0) {
+      return Array.from(groups.values()).sort((a, b) => a.label.localeCompare(b.label));
+    }
+
+    return (roleCategories?.[selectedCategory] || [])
+      .filter((department) =>
+        resolveDepartmentRoster(usersByRoleDetailed, department) ||
+        resolveDepartmentRoster(usersByRole, department)
+      )
+      .map((department) => ({
+        key: normalizeValue(department),
+        label: department,
+        users: resolveDepartmentRoster(usersByRoleDetailed, department) ||
+          resolveDepartmentRoster(usersByRole, department) ||
+          [],
+      }));
+  }, [
+    categorizedUsers,
+    roleCategories,
+    selectedCategory,
+    usersByRole,
+    usersByRoleDetailed,
+  ]);
+
   const userOptions = useMemo(() => {
     if (!selectedDepartment) return [];
+    const selectedGroup = departmentGroups.find(
+      (group) => group.key === normalizeValue(selectedDepartment)
+    );
     const detailed = resolveDepartmentRoster(usersByRoleDetailed, selectedDepartment);
     const fallback = resolveDepartmentRoster(usersByRole, selectedDepartment);
     const source =
-      Array.isArray(detailed) && detailed.length > 0 ? detailed : fallback || [];
+      (Array.isArray(selectedGroup?.users) && selectedGroup.users.length > 0
+        ? selectedGroup.users
+        : null) ||
+      (Array.isArray(detailed) && detailed.length > 0 ? detailed : fallback || []);
 
     return source.map((user, index) =>
       typeof user === "string"
@@ -104,10 +175,11 @@ export default function LoginDropdown({
               user.email ||
               `User ${index + 1}`,
             email: user.email || "",
+            department: user.department || selectedDepartment,
             role: user.role || selectedDepartment,
           }
     );
-  }, [selectedDepartment, usersByRole, usersByRoleDetailed]);
+  }, [departmentGroups, selectedDepartment, usersByRole, usersByRoleDetailed]);
 
   useEffect(() => {
     if (!selectedUser || userOptions.length === 0) return;
@@ -177,17 +249,13 @@ export default function LoginDropdown({
 
   const departmentOptions = useMemo(() => {
     if (!selectedCategory) return [];
-    return (roleCategories?.[selectedCategory] || [])
-      .filter((department) =>
-        resolveDepartmentRoster(usersByRoleDetailed, department) ||
-        resolveDepartmentRoster(usersByRole, department)
-      )
-      .map((department) => ({
-        key: department,
-        value: department,
-        label: department,
-      }));
-  }, [roleCategories, selectedCategory, usersByRole, usersByRoleDetailed]);
+    return departmentGroups.map((department) => ({
+      key: department.key,
+      value: department.label,
+      label: department.label,
+      description: `${department.users.length} user${department.users.length === 1 ? "" : "s"}`,
+    }));
+  }, [departmentGroups, selectedCategory]);
 
   const userDropdownOptions = useMemo(
     () =>
@@ -198,7 +266,7 @@ export default function LoginDropdown({
           key: userId,
           value: userId,
           label,
-          description: user.email || "",
+          description: user.email || user.role || "",
           raw: user,
         };
       }),
