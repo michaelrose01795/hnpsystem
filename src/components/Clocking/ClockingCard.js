@@ -8,8 +8,8 @@
 // inheriting bugs.
 //
 // Changes vs the previous version:
-//   - Now consumes `useClockingContext` directly instead of the legacy
-//     `useClocking` hook (the hook is itself a deprecated adapter).
+//   - Consumes `useClockingContext` directly. (The legacy `useClocking`
+//     adapter hook was deleted on 2026-04-10 — see git history.)
 //   - Fixed latent crash: `hoursWorked.toFixed(2)` was called on a string in
 //     the old hook return shape. The context returns a Number, and we
 //     defensively coerce in case the provider is mid-fetch.
