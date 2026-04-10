@@ -464,6 +464,99 @@ const addMembersToThread = async (threadId, memberConfigs = []) => {
   return data;
 };
 
+// Provision (or reuse) a users-table row for a customers-table record so that
+// messaging FKs (messages.sender_id, message_thread_members.user_id, …) can
+// reference an integer user_id. Linking is by email (users.email is UNIQUE).
+//
+// - If a users row already exists with the same email → return its user_id
+//   (covers the case where the customer is also an employee — no duplicate).
+// - Otherwise insert a new users row with role "Customer" and the
+//   external-auth placeholder password_hash, mirroring the HR employees flow
+//   in src/pages/api/hr/employees.js.
+// - Race-safe: a unique-email collision (PG 23505) is caught and the row is
+//   re-fetched so concurrent invites resolve to the same user_id.
+export const ensureUserForCustomer = async (customerRow = {}) => {
+  assertMessagingWriteAccess();
+
+  const rawEmail = String(customerRow?.email || "").trim();
+  if (!rawEmail) {
+    throw new Error(
+      "Customer is missing an email address. Add an email before inviting them to chat."
+    );
+  }
+  const email = rawEmail.toLowerCase();
+
+  // 1) Reuse an existing users row when email matches.
+  const { data: existingUser, error: lookupError } = await dbClient
+    .from("users")
+    .select("user_id, role")
+    .ilike("email", email)
+    .maybeSingle();
+
+  if (lookupError && lookupError.code !== "PGRST116") {
+    throw lookupError;
+  }
+  if (existingUser?.user_id) {
+    return existingUser.user_id;
+  }
+
+  // 2) Derive first/last name with safe fallbacks.
+  const trimmedFirst = String(customerRow.firstname || "").trim();
+  const trimmedLast = String(customerRow.lastname || "").trim();
+  let firstName = trimmedFirst;
+  let lastName = trimmedLast;
+  if (!firstName && !lastName) {
+    const combined = String(customerRow.name || "").trim();
+    if (combined) {
+      const parts = combined.split(/\s+/);
+      firstName = parts.shift() || "";
+      lastName = parts.join(" ");
+    }
+  }
+  if (!firstName) firstName = rawEmail.split("@")[0] || "Customer";
+  if (!lastName) lastName = "(Customer)";
+
+  const phone =
+    String(customerRow.mobile || "").trim() ||
+    String(customerRow.telephone || "").trim() ||
+    null;
+
+  const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
+
+  const insertPayload = {
+    first_name: firstName,
+    last_name: lastName,
+    name: fullName || firstName || "Customer",
+    email: rawEmail,
+    password_hash: "external_auth",
+    role: "Customer",
+    phone,
+  };
+
+  const { data: inserted, error: insertError } = await dbClient
+    .from("users")
+    .insert(insertPayload)
+    .select("user_id")
+    .single();
+
+  if (insertError) {
+    // Unique-email race: another request just provisioned the same user.
+    // Re-fetch by email and reuse its user_id.
+    if (insertError.code === "23505") {
+      const { data: raceRow, error: raceError } = await dbClient
+        .from("users")
+        .select("user_id")
+        .ilike("email", email)
+        .maybeSingle();
+      if (raceError && raceError.code !== "PGRST116") throw raceError;
+      if (raceRow?.user_id) return raceRow.user_id;
+    }
+    throw insertError;
+  }
+
+  return inserted.user_id;
+};
+
 export const searchDirectoryUsers = async (searchTerm = "", limit = 25) => {
   const query = dbClient
     .from("users")

@@ -1,6 +1,6 @@
 // file location: src/pages/api/messages/connect-customer.js
 
-import { createGroupThread } from "@/lib/database/messages";
+import { createGroupThread, ensureUserForCustomer } from "@/lib/database/messages";
 import { supabase } from "@/lib/supabaseClient";
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 
@@ -8,26 +8,31 @@ const CUSTOMER_SELECT_FIELDS =
   "id, firstname, lastname, email, mobile, telephone, name";
 
 const createHttpError = (status, message) => {
+  // Build a tagged Error so the outer handler can map to a status code.
   const error = new Error(message);
   error.status = status;
   return error;
 };
 
 const slugify = (value = "") =>
+  // Lowercase + strip non-alphanumerics so name comparisons ignore spacing/case.
   String(value || "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "")
     .trim();
 
 const sanitizeIlikeTerm = (value = "") =>
+  // Strip ilike wildcards so a user-supplied term cannot widen the query.
   String(value || "").replace(/[%_]/g, "").trim();
 
 const normalizeQuery = (value = "") =>
+  // Trim and remove the optional [bracket] wrapper produced by /addcust[...].
   String(value || "")
     .replace(/^\[|\]$/g, "")
     .trim();
 
 const buildCustomerDisplayName = (row = {}) => {
+  // Prefer firstname+lastname, then the legacy "name" column, then email.
   const combined = [row.firstname, row.lastname].filter(Boolean).join(" ").trim();
   if (combined) return combined;
   if (row.name) return row.name.trim();
@@ -36,6 +41,7 @@ const buildCustomerDisplayName = (row = {}) => {
 };
 
 const lookupCustomerRow = async (rawQuery) => {
+  // Resolve the user-supplied query to a single customers row.
   const trimmed = normalizeQuery(rawQuery);
   if (!trimmed) {
     throw createHttpError(400, "Customer name or email is required.");
@@ -45,10 +51,13 @@ const lookupCustomerRow = async (rawQuery) => {
   let query = supabase.from("customers").select(CUSTOMER_SELECT_FIELDS).limit(5);
 
   if (normalized.includes("@")) {
+    // Email lookup is exact (case-insensitive).
     query = query.ilike("email", normalized);
   } else if (/^[0-9a-f-]{32,}$/i.test(trimmed)) {
+    // UUID lookup hits the customers PK directly.
     query = query.eq("id", trimmed);
   } else {
+    // Free-text search across the name + email columns.
     const safeTerm = sanitizeIlikeTerm(trimmed);
     if (!safeTerm) {
       throw createHttpError(
@@ -72,6 +81,7 @@ const lookupCustomerRow = async (rawQuery) => {
     throw createHttpError(404, "No customer matched that name or email.");
   }
 
+  // Prefer an exact slug (firstname+lastname) match if available.
   const exactSlug = slugify(trimmed);
   const slugMatch = data.find((row) => {
     const rowName = slugify(
@@ -82,6 +92,7 @@ const lookupCustomerRow = async (rawQuery) => {
 
   if (slugMatch) return slugMatch;
 
+  // Fall back to an exact email match.
   const exactEmail = data.find(
     (row) => row.email && row.email.toLowerCase() === normalized
   );
@@ -98,34 +109,23 @@ const lookupCustomerRow = async (rawQuery) => {
 };
 
 const ensureCustomerUser = async (customerRow) => {
-  const email = String(customerRow.email || "").trim().toLowerCase();
-  if (!email) {
-    throw createHttpError(
-      400,
-      "Customer is missing an email address. Add an email before inviting them to chat."
-    );
+  // Map the customers row onto a users row (creating one when missing) so the
+  // customer can participate in the messages_* tables, which all reference
+  // users.user_id. Linking strategy is email-based — see ensureUserForCustomer
+  // in src/lib/database/messages.js for the full provisioning rules.
+  try {
+    return await ensureUserForCustomer(customerRow);
+  } catch (error) {
+    // Surface the missing-email error as a 400, everything else as 500.
+    if (error?.message?.includes("missing an email address")) {
+      throw createHttpError(400, error.message);
+    }
+    throw error;
   }
-
-  const { data: existingUser, error: lookupError } = await supabase
-    .from("users")
-    .select("user_id, role")
-    .ilike("email", email)
-    .maybeSingle();
-
-  if (lookupError && lookupError.code !== "PGRST116") {
-    throw lookupError;
-  }
-
-  if (existingUser?.user_id) {
-    return existingUser.user_id;
-  }
-  throw createHttpError(
-    409,
-    "No users-table account exists for this customer email. User table writes are restricted to HR Manager > Employees."
-  );
 };
 
 const fetchThreadMembers = async (threadId) => {
+  // Pull the membership list so we can verify the actor + merge the customer.
   const { data, error } = await supabase
     .from("message_thread_members")
     .select("user_id")
@@ -136,6 +136,7 @@ const fetchThreadMembers = async (threadId) => {
 };
 
 const fetchThreadMeta = async (threadId) => {
+  // Used for the fallback title when the existing thread has no name set.
   const { data, error } = await supabase
     .from("message_threads")
     .select("thread_id, thread_type, title")
@@ -166,6 +167,7 @@ async function handler(req, res, session) {
       throw createHttpError(400, "actorId must be a valid number.");
     }
 
+    // The actor must already be a member of the conversation they're inviting into.
     const members = await fetchThreadMembers(threadIdNum);
     if (!members.some((entry) => entry.user_id === actorUserId)) {
       throw createHttpError(
@@ -176,8 +178,11 @@ async function handler(req, res, session) {
 
     const baseThread = await fetchThreadMeta(threadIdNum);
     const customerRow = await lookupCustomerRow(customerQuery);
+    // Provisions the matching users row when none exists yet.
     const customerUserId = await ensureCustomerUser(customerRow);
 
+    // Merge the new customer user_id into the existing membership set, dedup,
+    // then build a fresh group thread containing everyone.
     const existingMemberIds = members.map((entry) => entry.user_id);
     const combinedMemberIds = Array.from(
       new Set([...existingMemberIds, customerUserId])
@@ -217,7 +222,7 @@ async function handler(req, res, session) {
     });
   } catch (error) {
     const status = error.status || 500;
-    console.error("❌ connect-customer error:", error);
+    console.error("connect-customer error:", error);
     return res.status(status).json({
       success: false,
       message: error.message || "Unable to connect customer to chat.",
