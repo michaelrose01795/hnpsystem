@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
+import { canShowDevPages } from "@/lib/dev-tools/config";
 
 // ── Section: Core Data ──────────────────────────────────────────
 
@@ -461,8 +462,6 @@ export default function UserDiagnosticDevPage() {
   const [running, setRunning] = useState(false);
   const [expanded, setExpanded] = useState({});
 
-  const isProduction = process.env.NODE_ENV === "production";
-
   const runAllTests = useCallback(async () => {
     setRunning(true);
     setResults(null);
@@ -515,7 +514,7 @@ export default function UserDiagnosticDevPage() {
     setRunning(false);
   }, [dbUserId]);
 
-  if (isProduction) {
+  if (!canShowDevPages()) {
     return (
       <div style={{ padding: "32px" }}>
         <h1>User System Diagnostic</h1>

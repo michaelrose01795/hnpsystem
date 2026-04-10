@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from "react"; // import React and hooks
 import Layout from "@/components/Layout"; // import layout wrapper
+import { PageContentSkeleton } from "@/components/ui/LoadingSkeleton";
 import { useNextAction } from "@/context/NextActionContext"; // import next action context
 import { useRouter } from "next/router"; // for navigation
 import { getAllJobs, updateJobStatus } from "@/lib/database/jobs"; // import database functions
@@ -584,38 +585,7 @@ export default function ViewJobCards() {
   if (loading) {
     return (
       <Layout>
-        <PageShell sectionKey="job-cards-view-loading-shell">
-          <DevLayoutSection
-            className="redirect-screen"
-            role="status"
-            aria-live="polite"
-            sectionKey="job-cards-view-loading-state"
-            parentKey="job-cards-view-loading-shell"
-            sectionType="state-banner"
-          >
-          <DevLayoutSection
-            className="redirect-card"
-            sectionKey="job-cards-view-loading-card"
-            parentKey="job-cards-view-loading-state"
-            sectionType="content-card"
-          >
-            <div className="login-brand redirect-brand" aria-hidden="true">
-              <img src="/logo.png" alt="H&P logo" className="login-logo" />
-            </div>
-            <div className="redirect-spinner" aria-hidden="true"></div>
-            <div className="redirect-copy">
-              <p className="redirect-kicker">Page Load</p>
-              <h2 className="redirect-title">Loading job cards...</h2>
-              <p className="redirect-sub">Please wait while we fetch your data.</p>
-            </div>
-            <div className="redirect-dots" aria-hidden="true">
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
-          </DevLayoutSection>
-          </DevLayoutSection>
-        </PageShell>
+        <PageContentSkeleton route={router.asPath || "/job-cards/view"} />
       </Layout>
     );
   }

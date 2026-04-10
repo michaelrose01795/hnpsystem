@@ -128,13 +128,6 @@ export function getFinanceYearMonths(monthKey = getCurrentMonthKey()) {
   return months;
 }
 
-function getFinanceYearWeeksWorked(monthKey = getCurrentMonthKey()) {
-  const safeMonthKey = normaliseMonthKey(monthKey, getCurrentMonthKey());
-  const months = getFinanceYearMonths(safeMonthKey);
-  const monthIndex = Math.max(months.indexOf(safeMonthKey), 0);
-  return Number((((monthIndex + 1) * 52) / 12).toFixed(2));
-}
-
 export function createDefaultMonthFinanceState() {
   return {
     otherIncome: 0,
@@ -773,7 +766,9 @@ export function buildFinanceDashboardModel({ financeState, workData = null, mont
 
   const financeYearMonths = getFinanceYearMonths(safeMonthKey);
   const contractedWeeklyHours = toNumber(financeState?.paySettings?.contractedWeeklyHours, 0);
-  const financeYearWorkedHours = Number((contractedWeeklyHours * getFinanceYearWeeksWorked(safeMonthKey)).toFixed(2));
+  // Year hours worked = monthly contract hours (derived from weekly hours) × 12 months (April–March finance year)
+  const monthlyContractHours = Number(((contractedWeeklyHours * 52) / 12).toFixed(2));
+  const financeYearWorkedHours = Number((monthlyContractHours * 12).toFixed(2));
   const yearRows = financeYearMonths.map((rowMonthKey) => buildMonthlyFinanceSummary({ financeState, workData, monthKey: rowMonthKey }));
 
   const yearTotals = yearRows.reduce(

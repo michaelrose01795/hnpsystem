@@ -9,8 +9,10 @@ import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import LoginDropdown from "@/components/LoginDropdown";
 import BrandLogo from "@/components/BrandLogo";
+import { PageContentSkeleton } from "@/components/ui/LoadingSkeleton";
 import { roleCategories } from "@/config/users"; // Dev users config
 import { useTheme } from "@/styles/themeProvider";
+import { canShowDevLogin } from "@/lib/dev-tools/config";
 
 const FIELD_MAX_WIDTH = 380;
 const LOGOUT_BARRIER_STORAGE_KEY = "hnp-logout-barrier-until";
@@ -92,7 +94,7 @@ const LoginCard = ({
 );
 
 export default function LoginPage() {
-  const allowDevUserSelection = true;
+  const allowDevUserSelection = canShowDevLogin();
   const { data: session, status: sessionStatus } = useSession();
   // Safe destructuring from context
   const userContext = useUser();
@@ -128,6 +130,7 @@ export default function LoginPage() {
   const [showRevertResult, setShowRevertResult] = useState(false);
   const [revertResultType, setRevertResultType] = useState("success");
   const [revertResultMessage, setRevertResultMessage] = useState("");
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const finalizedPendingLogoutRef = useRef(false);
 
   useEffect(() => {
@@ -336,14 +339,17 @@ export default function LoginPage() {
     }
   };
 
-  // Redirect once user is logged in (via NextAuth session or UserContext) + auto clock-in
+  // Redirect once user is logged in (via NextAuth session or UserContext) + auto clock-in.
+  // While the redirect is in flight, the login page swaps in PageLoadingSkeleton so
+  // the user sees the global loading style instead of a flash of the login form.
   useEffect(() => {
     if (logoutInProgress || hasActiveLogoutBarrier()) return;
     const activeUser =
       user || (sessionStatus === "authenticated" && session?.user ? session.user : null);
     if (!activeUser) return;
 
-    // Auto clock-in on login (fire-and-forget, don't block redirect)
+    setIsRedirecting(true);
+
     const roles = []
       .concat(activeUser.roles || [])
       .concat(activeUser.role ? [activeUser.role] : [])
@@ -422,6 +428,14 @@ export default function LoginPage() {
     setRevertToken(token);
     setShowRevertPrompt(true);
   }, [router.isReady, router.query]);
+
+  if (isRedirecting) {
+    return (
+      <Layout>
+        <PageContentSkeleton route={router.asPath || "/login"} />
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

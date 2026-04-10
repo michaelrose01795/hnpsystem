@@ -12,6 +12,7 @@ import { departmentDashboardShortcuts } from "@/config/departmentDashboards";
 import BrandLogo from "@/components/BrandLogo";
 import { useDevLayoutOverlay } from "@/context/DevLayoutOverlayContext";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import { canShowDevPages, canShowDevSidebarItems } from "@/lib/dev-tools/config";
 
 const LOGOUT_BARRIER_STORAGE_KEY = "hnp-logout-barrier-until";
 const LOGOUT_BARRIER_MS = 8000;
@@ -44,6 +45,8 @@ export default function Sidebar({
   const { user, dbUserId } = useUser();
   const { canAccess: canUseDevOverlay, enabled: devOverlayEnabled, toggleEnabled: toggleDevOverlay } =
     useDevLayoutOverlay();
+  const canShowDevItems = canShowDevSidebarItems(user);
+  const canShowDevPagesLink = canShowDevPages();
   const { unreadCount } = useMessagesBadge(dbUserId);
   const derivedRoles = user?.roles?.map((role) => role.toLowerCase()) || [];
   const userRoles =
@@ -415,7 +418,7 @@ export default function Sidebar({
                         Logout
                       </button>
                     </div>
-                    {(process.env.NODE_ENV !== "production" || canUseDevOverlay) && (
+                    {(canShowDevItems || canShowDevPagesLink) && (
                       <div
                         style={{
                           display: "flex",
@@ -424,7 +427,7 @@ export default function Sidebar({
                           marginTop: "8px",
                         }}
                       >
-                        {process.env.NODE_ENV !== "production" && (
+                        {canShowDevPagesLink && (
                           <Link
                             className="app-sidebar__link"
                             href="/dev/user-diagnostic"

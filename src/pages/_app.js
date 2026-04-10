@@ -21,6 +21,7 @@ import { DevLayoutRegistryProvider } from "@/context/DevLayoutRegistryContext";
 import GlobalNotesWidget from "@/components/GlobalNotesWidget";
 import GlobalDraftPersistence from "@/components/App/GlobalDraftPersistence";
 import DevLayoutOverlayRoot from "@/components/dev-layout-overlay/DevLayoutOverlayRoot";
+import { LoadingStateProvider } from "@/context/LoadingStateContext";
 import { SWRConfig } from "swr"; // global SWR cache and revalidation config
 import { swrConfig } from "@/lib/swr/config"; // HNP-tuned SWR defaults
 
@@ -30,14 +31,11 @@ function AppWrapper({ Component, pageProps }) {
   const pathname = router?.pathname || "";
   const asPath = router?.asPath || "";
   const asPathWithoutQuery = asPath.split("?")[0] || "";
-  const routeForVisibility = `${pathname} ${asPath}`.toLowerCase();
   const notesHiddenRoutes = new Set(["/", "/login"]);
   const isProtectedRoute = !notesHiddenRoutes.has(pathname) && !notesHiddenRoutes.has(asPathWithoutQuery);
-  const suppressGlobalLoader = !isProtectedRoute || routeForVisibility.includes("redirect");
+  const suppressGlobalLoader = !isProtectedRoute;
   const hideNotesWidget =
-    notesHiddenRoutes.has(pathname) ||
-    notesHiddenRoutes.has(asPathWithoutQuery) ||
-    routeForVisibility.includes("redirect");
+    notesHiddenRoutes.has(pathname) || notesHiddenRoutes.has(asPathWithoutQuery);
   const [isRouteLoading, setIsRouteLoading] = useState(false);
   const [showGlobalLoader, setShowGlobalLoader] = useState(false);
   const showTimerRef = useRef(null);
@@ -194,18 +192,18 @@ function AppWrapper({ Component, pageProps }) {
     };
   }, []);
 
+  // The loading flag is published to Layout.js (and CustomerLayout.js) via context.
+  // Each layout swaps its content area for a PageContentSkeleton while loading,
+  // so the sidebar and topbar stay mounted and never blink.
+  const isGlobalLoading = showGlobalLoader && !suppressGlobalLoader;
+
   return (
-    <>
+    <LoadingStateProvider value={{ isLoading: isGlobalLoading }}>
       <GlobalDraftPersistence />
       <Component {...pageProps} />
       {!hideNotesWidget && <GlobalNotesWidget />}
       <DevLayoutOverlayRoot />
-      {showGlobalLoader && !suppressGlobalLoader && (
-        <div className="global-slow-loader-overlay" role="status" aria-live="polite" aria-label="Loading">
-          <span className="global-slow-loader-spinner" aria-hidden="true" />
-        </div>
-      )}
-    </>
+    </LoadingStateProvider>
   ); // render the requested page
 }
 

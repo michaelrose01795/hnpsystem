@@ -1,22 +1,51 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/customers/components/CustomerLayout.js
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
 import CustomerSidebar from "@/customers/components/CustomerSidebar";
+import { PageContentSkeleton } from "@/components/ui/LoadingSkeleton";
+import { useLoadingState } from "@/context/LoadingStateContext";
+import { captureLayoutFingerprint, setLayoutFingerprint } from "@/lib/loading/layoutFingerprint";
 
 const CUSTOMER_ROLE_ALLOWLIST = ["CUSTOMER"];
 
 export default function CustomerLayout({ children }) {
   const router = useRouter();
-  const { user, logout } = useUser();
+  const { user, loading: userLoading, logout } = useUser();
+  const { isLoading: isGlobalLoading } = useLoadingState();
+  const contentRef = useRef(null);
 
   const roleList = []
     .concat(user?.roles || [])
     .concat(user?.role ? [user.role] : [])
     .map((role) => (role || "").toString().toUpperCase());
   const isCustomer = roleList.some((role) => CUSTOMER_ROLE_ALLOWLIST.includes(role));
+  const isContentLoading = isGlobalLoading || userLoading || !user;
+
+  // Same fingerprint capture pattern as Layout.js so the customer portal also
+  // gets a skeleton that mirrors its real per-page grid on subsequent visits.
+  useEffect(() => {
+    if (isContentLoading) return undefined;
+    if (typeof window === "undefined") return undefined;
+    const el = contentRef.current;
+    if (!el) return undefined;
+
+    const route = router.asPath || router.pathname;
+    let timeoutId = null;
+    const rafId = window.requestAnimationFrame(() => {
+      timeoutId = window.setTimeout(() => {
+        const fingerprint = captureLayoutFingerprint(el);
+        if (fingerprint) setLayoutFingerprint(route, fingerprint);
+      }, 80);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      if (timeoutId !== null) window.clearTimeout(timeoutId);
+    };
+  }, [isContentLoading, router.asPath, router.pathname]);
 
   if (!user) {
     return (
@@ -120,7 +149,13 @@ export default function CustomerLayout({ children }) {
             </div>
           </header>
 
-          <main className="customer-portal-stack">{children}</main>
+          <main className="customer-portal-stack" ref={contentRef}>
+            {isContentLoading ? (
+              <PageContentSkeleton route={router.asPath || router.pathname} />
+            ) : (
+              children
+            )}
+          </main>
         </div>
       </div>
     </div>

@@ -1,13 +1,12 @@
 // file location: src/pages/dev/status-snapshot.js
 import { useCallback, useState } from "react";
+import { canShowDevPages } from "@/lib/dev-tools/config";
 
 export default function StatusSnapshotDevPage() {
   const [jobInput, setJobInput] = useState("");
   const [snapshot, setSnapshot] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const isProduction = process.env.NODE_ENV === "production";
 
   const fetchSnapshot = useCallback(async () => {
     const trimmed = jobInput.trim();
@@ -33,7 +32,7 @@ export default function StatusSnapshotDevPage() {
     }
   }, [jobInput]);
 
-  if (isProduction) {
+  if (!canShowDevPages()) {
     return (
       <div style={{ padding: "32px" }}>
         <h1>Status Snapshot</h1>

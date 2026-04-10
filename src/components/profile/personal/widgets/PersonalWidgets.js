@@ -416,6 +416,7 @@ export function WorkSummaryWidget({ widget, onOpenSettings, finance }) {
 /* ── SpendingWidget ───────────────────────────────────────────── */
 
 export function SpendingWidget({ widget, onOpenSettings, finance }) {
+  const isMobile = useIsMobile();
   const month = finance.model.currentMonth;
   const creditCards = buildDisplayRowsNewestFirst(month.monthState.creditCards || []);
   const sectionStyle = {
@@ -441,7 +442,15 @@ export function SpendingWidget({ widget, onOpenSettings, finance }) {
         <SurfacePanel style={sectionStyle}>
           <div style={{ display: "grid", gap: "8px" }}>
             <SectionLabel>Breakdown (Linked)</SectionLabel>
-            <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "repeat(4, minmax(0, 1fr))" }}>
+            <div
+              style={{
+                display: "grid",
+                gap: "8px",
+                gridTemplateColumns: isMobile
+                  ? "repeat(2, minmax(0, 1fr))"
+                  : "repeat(4, minmax(0, 1fr))",
+              }}
+            >
               <MetricPill label="Fixed" value={formatCurrency(month.totals.fixedOut)} accent="var(--danger, #c62828)" />
               <MetricPill label="Planned" value={formatCurrency(month.totals.plannedOut)} accent="var(--warning, #ef6c00)" />
               <MetricPill label="Card payments" value={formatCurrency(month.totals.creditCardOut)} accent="var(--accent-purple)" />

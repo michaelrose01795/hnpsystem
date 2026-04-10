@@ -28,6 +28,9 @@ import { DropdownField } from "@/components/dropdownAPI";
 import { getWelcomeQuoteSlotKey } from "@/lib/welcomeQuoteSlot";
 import BrandLogo from "@/components/BrandLogo";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import { PageContentSkeleton } from "@/components/ui/LoadingSkeleton";
+import { useLoadingState } from "@/context/LoadingStateContext";
+import { captureLayoutFingerprint, setLayoutFingerprint } from "@/lib/loading/layoutFingerprint";
 
 const SERVICE_ACTION_ROLES = new Set([
   "service",
@@ -447,6 +450,11 @@ export default function Layout({
 
   const colors = appShellTheme.light;
   const [contentKey, setContentKey] = useState(() => router.asPath || "initial");
+  const { isLoading: isGlobalLoading } = useLoadingState();
+  const contentRef = useRef(null);
+  // Treat "no user yet on a protected route" as a loading state so the sidebar/topbar
+  // stay mounted and only the content area shows the skeleton.
+  const isContentLoading = !hideSidebar && (isGlobalLoading || userLoading || !user);
 
   useEffect(() => {
     if (isTablet) {
@@ -470,6 +478,30 @@ export default function Layout({
   useEffect(() => {
     setContentKey(router.asPath || `${router.pathname}-${Date.now()}`);
   }, [router.asPath, router.pathname]);
+
+  // Capture a layout fingerprint of the current page after it has finished
+  // rendering. The next visit to this route — or any in-place reload — uses the
+  // cached fingerprint so the loading skeleton mirrors this page's actual grid.
+  useEffect(() => {
+    if (isContentLoading) return undefined;
+    if (typeof window === "undefined") return undefined;
+    const el = contentRef.current;
+    if (!el) return undefined;
+
+    const route = router.asPath || router.pathname;
+    let timeoutId = null;
+    const rafId = window.requestAnimationFrame(() => {
+      timeoutId = window.setTimeout(() => {
+        const fingerprint = captureLayoutFingerprint(el);
+        if (fingerprint) setLayoutFingerprint(route, fingerprint);
+      }, 80);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      if (timeoutId !== null) window.clearTimeout(timeoutId);
+    };
+  }, [isContentLoading, router.asPath, router.pathname, contentKey]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !router?.events) return;
@@ -500,23 +532,9 @@ export default function Layout({
     };
   }, [router]);
 
-  const shouldRenderAuthSpinnerOnly = !hideSidebar && userLoading && !user;
-  if (shouldRenderAuthSpinnerOnly) {
-    return <div style={{ minHeight: "100vh" }} aria-hidden="true" />;
-  }
-
-  const shouldBlockForAuth = !hideSidebar && !userLoading && !user;
-  if (shouldBlockForAuth) {
-    return (
-      <div className="redirect-page-shell">
-        <div className="redirect-card" role="status" aria-live="polite">
-          <p className="redirect-kicker">PAGE LOAD</p>
-          <h1 className="redirect-title">Loading page...</h1>
-          <p className="redirect-sub">Just a moment while we get things ready.</p>
-        </div>
-      </div>
-    );
-  }
+  // The full Layout (sidebar + topbar) always mounts. When the user is missing or
+  // a route/data load is in flight, only the inner content area is replaced with
+  // <PageContentSkeleton /> below — so the shell never blinks out.
 
   const accountsRoleCandidates = (roleCategories?.Sales || []).filter((roleName) =>
     roleName.toLowerCase().includes("accounts")
@@ -1236,6 +1254,7 @@ export default function Layout({
           <div
             className="app-page-content"
             key={contentKey}
+            ref={contentRef}
             style={{
               maxWidth: hideSidebar ? "100%" : undefined,
               minHeight: "100%",
@@ -1264,10 +1283,14 @@ export default function Layout({
                     : undefined
               }
             >
-              <div className="app-page-stack">
-                {showHrTabs && <HrTabsBar />}
-                {children}
-              </div>
+              {isContentLoading ? (
+                <PageContentSkeleton route={router.asPath || router.pathname} />
+              ) : (
+                <div className="app-page-stack">
+                  {showHrTabs && <HrTabsBar />}
+                  {children}
+                </div>
+              )}
             </DevLayoutSection>
           </div>
         </DevLayoutSection>

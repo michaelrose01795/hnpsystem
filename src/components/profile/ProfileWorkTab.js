@@ -2,6 +2,7 @@
 // file location: src/pages/profile/index.js
 import React, { useMemo, useState, useEffect, useCallback, useRef } from "react"; // React for UI and memoization
 import { usePolling } from "@/hooks/usePolling"; // visibility-gated polling
+import useIsMobile from "@/hooks/useIsMobile"; // viewport detection for phone layout
 import { useRouter } from "next/router"; // Next.js router for query params
 import { useSession } from "next-auth/react"; // NextAuth session for authentication
 import Layout from "@/components/Layout"; // shared layout wrapper
@@ -15,6 +16,7 @@ import { isHrCoreRole, isManagerScopedRole } from "@/lib/auth/roles"; // Role ch
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import PopupModal from "@/components/popups/popupStyleApi";
 import Button from "@/components/ui/Button";
+import { SkeletonBlock, SkeletonMetricCard, SkeletonTableRow } from "@/components/ui/LoadingSkeleton";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { calculateLeaveRequestDayTotals, normaliseLeaveDayType } from "@/lib/hr/leaveRequests";
 import {
@@ -88,60 +90,6 @@ function isNextDayClocking(clockIn, clockOut) {
   );
 }
 
-// Skeleton loading placeholder component
-function SkeletonBlock({ width = "100%", height = "20px", borderRadius = "8px" }) {
-  return (
-    <div
-      style={{
-        width,
-        height,
-        borderRadius,
-        background:
-          "linear-gradient(90deg, var(--surface-light, #e0e0e0) 25%, var(--surface, #f0f0f0) 50%, var(--surface-light, #e0e0e0) 75%)",
-        backgroundSize: "200% 100%",
-        animation: "shimmer 1.5s ease-in-out infinite",
-      }}
-    />
-  );
-}
-
-function SkeletonMetricCard() {
-  return (
-    <div
-      style={{
-        background: "var(--surface)",
-        borderRadius: "var(--radius-md)",
-        padding: "16px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "10px",
-        minWidth: "200px",
-        flex: 1,
-        border: "1px solid var(--accent-purple-surface)",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-        <SkeletonBlock width="28px" height="28px" borderRadius="8px" />
-        <SkeletonBlock width="120px" height="14px" />
-      </div>
-      <SkeletonBlock width="80px" height="30px" borderRadius="6px" />
-      <SkeletonBlock width="140px" height="12px" />
-    </div>
-  );
-}
-
-function SkeletonTableRow({ cols = 5 }) {
-  return (
-    <tr>
-      {Array.from({ length: cols }).map((_, i) => (
-        <td key={i} style={{ padding: "10px 0" }}>
-          <SkeletonBlock width={i === 0 ? "100px" : "70px"} height="14px" />
-        </td>
-      ))}
-    </tr>
-  );
-}
-
 function ProfileCard({
   title,
   action,
@@ -165,13 +113,14 @@ function ProfileCard({
             alignItems: "center",
             justifyContent: "space-between",
             gap: "12px",
+            flexWrap: "wrap",
             ...headerStyle,
           }}
         >
           <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--text-primary)" }}>
             {title}
           </div>
-          {action ? <div>{action}</div> : null}
+          {action ? <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>{action}</div> : null}
         </div>
       )}
       {children}
@@ -1601,6 +1550,7 @@ export function ProfileWorkTab({
   const router = useRouter(); // access query params
   const { user, dbUserId } = useUser(); // Keycloak session details + Supabase id for dev mode
   const { data: session } = useSession(); // NextAuth session for role checking
+  const isMobile = useIsMobile(); // collapse grids / swap table for cards on phone vertical
   // State for user's own profile data (non-admin users)
   const [userProfileData, setUserProfileData] = useState(null);
   const [userProfileLoading, setUserProfileLoading] = useState(true);
@@ -2126,9 +2076,10 @@ export function ProfileWorkTab({
               shell
               style={{
                 ...profileSectionShellStyle,
+                padding: isMobile ? "12px" : "var(--section-card-padding)",
                 display: "grid",
-                gap: "14px",
-                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: isMobile ? "10px" : "14px",
+                gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "repeat(auto-fit, minmax(220px, 1fr))",
               }}
             >
               {/* Total Hours (logged) card with 3 sub-columns + grand total */}
@@ -2278,8 +2229,9 @@ export function ProfileWorkTab({
               shell
               style={{
                 ...profileSectionShellStyle,
+                padding: isMobile ? "12px" : "var(--section-card-padding)",
                 display: "grid",
-                gap: "16px",
+                gap: isMobile ? "12px" : "16px",
                 gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 480px), 1fr))",
               }}
             >
@@ -2633,6 +2585,93 @@ export function ProfileWorkTab({
                 }
               >
 
+                {isMobile ? (
+                  <DevLayoutSection
+                    as="div"
+                    sectionKey="profile-auto-data-table-2-shell"
+                    parentKey="profile-work-attendance-history"
+                    sectionType="data-table-shell"
+                    backgroundToken="surface"
+                    style={{
+                      maxHeight: shouldScrollAttendanceHistory ? "420px" : "none",
+                      overflowY: shouldScrollAttendanceHistory ? "auto" : "visible",
+                      marginTop: "10px",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "8px",
+                      padding: "4px",
+                      borderRadius: "var(--radius-md)",
+                      border: "1px solid rgba(var(--accent-purple-rgb), 0.12)",
+                      background: "var(--profile-table-surface)",
+                    }}
+                  >
+                    {attendanceRecords.map((entry) => {
+                      const nextDay = isNextDayClocking(entry.clockIn, entry.clockOut);
+                      const entryType = entry.type || entry.status;
+                      const tone =
+                        entryType === "Overtime"
+                          ? "warning"
+                          : entryType === "Weekend"
+                          ? "info"
+                          : entryType === "Weekday"
+                          ? "success"
+                          : "default";
+                      return (
+                        <div
+                          key={entry.id}
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "8px",
+                            padding: "12px 14px",
+                            borderRadius: "var(--radius-md)",
+                            background: "var(--surface)",
+                            border: "1px solid rgba(var(--accent-purple-rgb), 0.12)",
+                          }}
+                        >
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
+                            <span style={{ fontWeight: 700, fontSize: "0.88rem", color: "var(--text-primary)" }}>
+                              {formatDate(entry.date)}
+                            </span>
+                            <StatusTag label={entryType} tone={tone} />
+                          </div>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "6px" }}>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                              <span style={{ fontSize: "0.68rem", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Login</span>
+                              <span style={{ fontSize: "0.86rem", fontWeight: 600, color: "var(--text-primary)" }}>{formatTime(entry.clockIn)}</span>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                              <span style={{ fontSize: "0.68rem", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Logout</span>
+                              <span style={{ fontSize: "0.86rem", fontWeight: 600, color: "var(--text-primary)" }}>
+                                {entry.clockOut ? (
+                                  <>
+                                    {formatTime(entry.clockOut)}
+                                    {nextDay && (
+                                      <span style={{ fontSize: "0.68rem", color: "var(--warning)", marginLeft: "4px" }}>+1d</span>
+                                    )}
+                                  </>
+                                ) : (
+                                  <span style={{ fontSize: "0.68rem", fontWeight: 600, color: "var(--success)", background: "rgba(var(--success-rgb, 67,160,71), 0.12)", padding: "2px 8px", borderRadius: "var(--radius-pill)" }}>Active</span>
+                                )}
+                              </span>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "2px", alignItems: "flex-end" }}>
+                              <span style={{ fontSize: "0.68rem", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Hours</span>
+                              <span style={{ fontSize: "0.86rem", fontWeight: 700, color: nextDay ? "var(--warning)" : "var(--text-primary)" }}>
+                                {nextDay ? "Next Day" : `${Number(entry.totalHours ?? 0).toFixed(2)}h`}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {attendanceRecords.length === 0 && (
+                      <div style={{ padding: "18px 14px", color: "var(--text-secondary)", textAlign: "center" }}>
+                        No records found.
+                      </div>
+                    )}
+                  </DevLayoutSection>
+                ) : (
                 <DevLayoutSection
                   as="div"
                   sectionKey="profile-auto-data-table-2-shell"
@@ -2756,6 +2795,7 @@ export function ProfileWorkTab({
                   </DevLayoutSection>
                 </DevLayoutSection>
               </DevLayoutSection>
+                )}
               </ProfileCard>
             </DevLayoutSection>
 
