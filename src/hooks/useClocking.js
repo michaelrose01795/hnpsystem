@@ -1,124 +1,42 @@
-// ✅ Connected to Supabase (frontend)
-// ✅ Imports converted to use absolute alias "@/"
 // file location: src/hooks/useClocking.js
-import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabaseClient"; // make sure you have Supabase client setup
-import { useClockingContext } from "@/context/ClockingContext";
+// ⚠️ DEPRECATED — thin adapter retained only for backwards compatibility.
+//
+// History: this hook used to talk directly to the Supabase `clocking` table
+// from the browser (`supabase.from("clocking")...`). That bypassed the
+// server-side auto-close logic in `src/pages/api/profile/clock.js` and could
+// leave stale records open. The canonical flow is now `ClockingContext`,
+// which calls `/api/profile/clock` and centralises the state machine.
+//
+// To prevent any drift between the legacy hook and the canonical context,
+// `useClocking` is now a thin pass-through over `useClockingContext()`. The
+// public return shape (`{ clockedIn, hoursWorked, loading, clockIn, clockOut }`)
+// is preserved so existing callers compile unchanged.
+//
+// New code should call `useClockingContext()` directly from
+// `@/context/ClockingContext`. Audit (2026-04-10) shows the only remaining
+// importer is `src/components/Clocking/ClockingCard.js`, which is itself an
+// orphan and is being migrated in the same change.
+//
+// Backwards compatibility notes:
+//   - `hoursWorked` is now a Number (was a string formatted with toFixed).
+//     Callers must format it themselves with `.toFixed(2)`.
+//   - This hook still requires a `<ClockingProvider>` ancestor — same as the
+//     pre-adapter version, which already called `useClockingContext()` for the
+//     userId. No new requirement is introduced.
+import { useClockingContext } from "@/context/ClockingContext"; // canonical clocking source
 
 export const useClocking = () => {
-  const { userId } = useClockingContext(); // assumes you store logged-in user ID in context
-  const [clockedIn, setClockedIn] = useState(false); // is user clocked in
-  const [hoursWorked, setHoursWorked] = useState(0); // total hours today
-  const [loading, setLoading] = useState(true);
+  // Pull the canonical state and actions from the provider.
+  const {
+    clockedIn,    // boolean — current clock-in state for the logged-in user
+    hoursWorked,  // number  — hours since most recent clock-in (0 if clocked out)
+    loading,      // boolean — provider is fetching/mutating
+    clockIn,      // () => Promise<void> — POST /api/profile/clock action=clock-in
+    clockOut,     // () => Promise<void> — POST /api/profile/clock action=clock-out
+  } = useClockingContext();
 
-  // fetch today's clocking status and hours
-  const fetchClocking = async () => {
-    if (!userId) {
-      setClockedIn(false);
-      setHoursWorked(0);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    try {
-      const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-      const { data, error } = await supabase
-        // ⚠️ Verify: table or column not found in Supabase schema
-        .from("clocking") // your DB table
-        .select("*")
-        .eq("user_id", userId)
-        .eq("date", today)
-        .order("clock_in", { ascending: true });
-
-      if (error) throw error;
-
-      if (data && data.length > 0) {
-        const lastRecord = data[data.length - 1];
-        setClockedIn(!lastRecord.clock_out); // if clock_out is null, user is clocked in
-
-        // calculate total hours worked today
-        let total = 0;
-        data.forEach((record) => {
-          if (record.clock_in && record.clock_out) {
-            total += (new Date(record.clock_out) - new Date(record.clock_in)) / 3600000; // hours
-          }
-        });
-        setHoursWorked(total.toFixed(2));
-      } else {
-        setClockedIn(false);
-        setHoursWorked(0);
-      }
-    } catch (err) {
-      console.error("Error fetching clocking:", err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (userId) fetchClocking();
-  }, [userId]);
-
-  // clock in function
-  const clockIn = async () => {
-    if (!userId) {
-      console.warn("Clock in attempted without a resolved workshop user id");
-      return;
-    }
-    setLoading(true);
-    try {
-      const today = new Date().toISOString().split("T")[0];
-      // ⚠️ Verify: table or column not found in Supabase schema
-      const { error } = await supabase.from("clocking").insert([
-        { user_id: userId, date: today, clock_in: new Date().toISOString() },
-      ]);
-      if (error) throw error;
-      setClockedIn(true);
-      fetchClocking(); // refresh hoursWorked
-    } catch (err) {
-      console.error("Clock In Error:", err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // clock out function
-  const clockOut = async () => {
-    if (!userId) {
-      console.warn("Clock out attempted without a resolved workshop user id");
-      return;
-    }
-    setLoading(true);
-    try {
-      const today = new Date().toISOString().split("T")[0];
-      // find latest clock-in without clock-out
-      const { data, error } = await supabase
-        // ⚠️ Verify: table or column not found in Supabase schema
-        .from("clocking")
-        .select("*")
-        .eq("user_id", userId)
-        .eq("date", today)
-        .is("clock_out", null)
-        .order("clock_in", { ascending: false })
-        .limit(1)
-        .single();
-
-      if (error) throw error;
-
-      await supabase
-        // ⚠️ Verify: table or column not found in Supabase schema
-        .from("clocking")
-        .update({ clock_out: new Date().toISOString() })
-        .eq("id", data.id);
-
-      setClockedIn(false);
-      fetchClocking(); // refresh hoursWorked
-    } catch (err) {
-      console.error("Clock Out Error:", err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Preserve the legacy return shape so existing destructuring keeps working.
   return { clockedIn, hoursWorked, loading, clockIn, clockOut };
 };
+
+export default useClocking;

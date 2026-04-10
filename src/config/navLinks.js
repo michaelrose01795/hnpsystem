@@ -1,51 +1,33 @@
-// src/config/navLinks.js
-export const navLinksByRole = {
-  Admin: [{ href: "/dashboard", label: "Dashboard" }, { href: "/users", label: "User Management" }],
-  "Admin Manager": [
-    { href: "/dashboard", label: "Dashboard" },
-    { href: "/users", label: "User Management" },
-    { href: "/reports", label: "Reports" },
-    { href: "/workshop/Clocking", label: "Clocking System" }, // cross-role visibility
-  ],
-  Accounts: [{ href: "/dashboard", label: "Dashboard" }, { href: "/accounts", label: "Accounts Overview" }],
-  "Accounts Manager": [
-    { href: "/dashboard", label: "Dashboard" },
-    { href: "/accounts", label: "Accounts Overview" },
-    { href: "/reports", label: "Reports" },
-  ],
-  Owner: [{ href: "/dashboard", label: "Dashboard" }],
-  "General Manager": [{ href: "/dashboard", label: "Dashboard" }, { href: "/overview", label: "Overview" }],
-  "Sales Director": [{ href: "/dashboard", label: "Dashboard" }, { href: "/sales", label: "Sales Tracking" }],
-  Sales: [{ href: "/dashboard", label: "Dashboard" }, { href: "/sales", label: "My Sales" }],
-  Service: [{ href: "/dashboard", label: "Dashboard" }, { href: "/jobs", label: "Job Cards" }],
-  "Service Manager": [
-    { href: "/dashboard", label: "Dashboard" },
-    { href: "/jobs", label: "All Jobs" },
-    { href: "/workshop/Clocking", label: "Clocking System" },
-  ],
-  "Workshop Manager": [
-    { href: "/dashboard", label: "Dashboard" },
-    { href: "/jobs", label: "All Jobs" },
-    { href: "/workshop/Clocking", label: "Clocking System" },
-  ],
-  Techs: [{ href: "/dashboard", label: "Dashboard" }, { href: "/jobs", label: "My Jobs" }],
-  Parts: [{ href: "/dashboard", label: "Dashboard" }, { href: "/parts", label: "My Parts" }],
-  "Parts Manager": [
-    { href: "/dashboard", label: "Dashboard" },
-    { href: "/parts", label: "Parts Workspace" },
-    { href: "/parts/manager", label: "Manager Overview" },
-  ],
-  "MOT Tester": [{ href: "/dashboard", label: "Dashboard" }, { href: "/mot", label: "MOT Testing" }],
-  "Valet Service": [{ href: "/dashboard", label: "Dashboard" }, { href: "/valet", label: "Valet Jobs" }],
-  "Valet Sales": [{ href: "/dashboard", label: "Dashboard" }, { href: "/valet/sales", label: "Valet Sales" }],
-  "Buying Director": [{ href: "/dashboard", label: "Dashboard" }, { href: "/buying", label: "Buying Overview" }],
-  "Second Hand Buying": [{ href: "/dashboard", label: "Dashboard" }, { href: "/buying/used", label: "Used Cars" }],
-  "Vehicle Processor & Photographer": [
-    { href: "/dashboard", label: "Dashboard" },
-    { href: "/vehicle/processing", label: "Vehicle Processing" },
-    { href: "/vehicle/photos", label: "Photos" },
-  ],
-  Receptionist: [{ href: "/dashboard", label: "Dashboard" }, { href: "/appointments", label: "Appointments" }],
-  Painters: [{ href: "/dashboard", label: "Dashboard" }, { href: "/painting", label: "Painting Jobs" }],
-  Contractors: [{ href: "/dashboard", label: "Dashboard" }, { href: "/contracts", label: "Contract Jobs" }],
-};
+// file location: src/config/navLinks.js
+// ⚠️ DEPRECATED — DO NOT IMPORT.
+//
+// The live navigation source of truth is `src/config/navigation.js`
+// (consumed by `src/components/Sidebar.js` and `src/components/Layout.js`).
+//
+// This file used to expose `navLinksByRole`, a per-role flat link map that
+// pre-dated the section-based navigation defined in `navigation.js`. As of
+// 2026-04-10 a full grep of the repo confirms zero importers of this module
+// (`navLinksByRole`, `@/config/navLinks`) — the only references that remain
+// are in generated structure dumps (`src-structure.txt`, `project-structure.txt`).
+//
+// The file is kept (not deleted) so that any unknown dynamic require still
+// resolves to a defined module instead of crashing the bundle. The export is
+// intentionally empty: any future caller will get an empty role map and a
+// console warning rather than silently relying on stale role→route data.
+//
+// To remove permanently: confirm no dynamic `require("@/config/navLinks")`
+// usage in a production deploy log, then delete this file in a follow-up PR.
+
+if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
+  // Surface accidental imports during dev only — never in prod bundles.
+  // eslint-disable-next-line no-console
+  console.warn(
+    "[deprecated] @/config/navLinks is no longer the navigation source. " +
+      "Import sidebarSections from @/config/navigation instead."
+  );
+}
+
+// Empty stub — preserves the named export shape so legacy callers don't crash.
+export const navLinksByRole = {};
+
+export default navLinksByRole;

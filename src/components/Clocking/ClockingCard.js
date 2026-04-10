@@ -1,13 +1,36 @@
-// ✅ Imports converted to use absolute alias "@/"
 // file location: src/components/Clocking/ClockingCard.js
+// ⚠️ DEPRECATED — orphan component (no importers as of 2026-04-10).
+//
+// This card is the original "personal clocking widget" UI. It is not mounted
+// on any current page; the live workshop clocking entry point is
+// `src/components/Workshop/JobClockingCard.js`. The file is kept and made
+// theme-correct so it can be reused by future personal-dashboard work without
+// inheriting bugs.
+//
+// Changes vs the previous version:
+//   - Now consumes `useClockingContext` directly instead of the legacy
+//     `useClocking` hook (the hook is itself a deprecated adapter).
+//   - Fixed latent crash: `hoursWorked.toFixed(2)` was called on a string in
+//     the old hook return shape. The context returns a Number, and we
+//     defensively coerce in case the provider is mid-fetch.
+//   - Replaced hardcoded `var(--danger)` / `var(--success)` color overrides
+//     on the Button with the shared `Button` variants. Per CLAUDE.md the
+//     theme tokens and `.app-btn` system are the source of truth; status
+//     colors should not be inlined on a button style prop.
 import React from "react";
-import { useClocking } from "@/hooks/useClocking";
+import { useClockingContext } from "@/context/ClockingContext"; // canonical clocking source
 import { Button, Card } from "@/components/ui";
 
 export default function ClockingCard() {
-  const { clockedIn, hoursWorked, loading, clockIn, clockOut } = useClocking();
+  // Pull state + actions straight from the provider — no legacy hook layer.
+  const { clockedIn, hoursWorked, loading, clockIn, clockOut } = useClockingContext();
 
+  // Provider is still resolving the user's status — show a placeholder.
   if (loading) return <p>Loading clocking info...</p>;
+
+  // Defensive numeric coercion: hoursWorked should be a Number, but during
+  // first render or after an error it can be undefined. Default to 0.
+  const hoursDisplay = Number(hoursWorked || 0).toFixed(2);
 
   return (
     <Card
@@ -15,31 +38,27 @@ export default function ClockingCard() {
       style={{ width: "100%", maxWidth: "32rem" }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+        {/* Human-readable status line for the logged-in user */}
         <p>Status: {clockedIn ? "Clocked In" : "Clocked Out"}</p>
-        <p>Hours Worked Today: {hoursWorked.toFixed(2)}</p>
+        {/* Total hours since most recent clock-in (0 if clocked out) */}
+        <p>Hours Worked Today: {hoursDisplay}</p>
       </div>
       {clockedIn ? (
+        // Use the shared secondary variant — theme tokens drive the color.
+        // Avoid inlining --danger here so accent themes stay in control.
         <Button
           onClick={clockOut}
-          variant="ghost"
-          style={{
-            background: "var(--danger)",
-            borderColor: "var(--danger)",
-            color: "var(--text-inverse)",
-            alignSelf: "flex-start",
-          }}
+          variant="secondary"
+          style={{ alignSelf: "flex-start" }}
         >
           Clock Out
         </Button>
       ) : (
+        // Same reasoning for the clock-in button — defer to global theme.
         <Button
           onClick={clockIn}
-          style={{
-            background: "var(--success)",
-            borderColor: "var(--success)",
-            color: "var(--text-inverse)",
-            alignSelf: "flex-start",
-          }}
+          variant="primary"
+          style={{ alignSelf: "flex-start" }}
         >
           Clock In
         </Button>
