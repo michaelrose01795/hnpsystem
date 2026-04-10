@@ -739,7 +739,7 @@ export default function Layout({
     color: colors.text,
     justifyContent: hideSidebar ? "center" : "flex-start",
     alignItems: hideSidebar ? "center" : "stretch",
-    gap: hideSidebar ? "0" : isTablet ? "12px" : "24px",
+    gap: hideSidebar ? "0" : "12px",
     padding: hideSidebar ? "0" : isTablet ? "12px" : "0 16px",
     boxSizing: "border-box",
     overflow: hideSidebar ? "hidden" : "visible",
@@ -774,18 +774,16 @@ export default function Layout({
           backgroundToken="app-sidebar-rail"
           style={{
             width: isSidebarOpen ? `${NAV_DRAWER_WIDTH}px` : "0px",
+            minWidth: isSidebarOpen ? `${NAV_DRAWER_WIDTH}px` : "0px",
             padding: "16px 0",
             alignSelf: "stretch",
-            height: "auto",
-            background: "var(--surface)",
-            borderRadius: "var(--page-card-radius)",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: "16px",
-            transition: "width 0.25s ease",
+            transition: "width 0.25s ease, min-width 0.25s ease",
             position: "relative",
             overflow: "hidden",
+            flexShrink: 0,
           }}
         >
           {isSidebarOpen && (
@@ -812,7 +810,7 @@ export default function Layout({
           width: hideSidebar ? "100%" : "100%",
           display: "flex",
           flexDirection: "column",
-          gap: hideSidebar ? 0 : undefined,
+          gap: hideSidebar ? 0 : "12px",
           padding: hideSidebar ? "0" : undefined,
           background: "transparent",
           height: "auto",

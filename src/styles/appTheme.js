@@ -102,6 +102,14 @@ export const createVhcButtonStyle = (variant = "primary", { disabled = false } =
   };
 };
 
+export const dropdownTriggerButtonStyle = {
+  minHeight: "var(--dropdown-trigger-height)",
+  padding: "var(--dropdown-trigger-padding)",
+  borderRadius: "var(--dropdown-trigger-radius)",
+  lineHeight: 1,
+  boxShadow: "none",
+};
+
 // vhcLayoutStyles removed — moved inline to src/pages/job-cards/myjobs/[jobNumber].js
 // (it was the only consumer of this export)
 

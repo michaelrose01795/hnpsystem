@@ -145,14 +145,19 @@ export default function CreateJobCardPage() {
   const setWaitingStatus = (val) => updateCurrentTab({ waitingStatus: val });
   const jobSource = currentTab.jobSource;
   const setJobSource = (val) => updateCurrentTab({ jobSource: val });
-  const jobDivision = currentTab.jobDivision;
-  const setJobDivision = (val) => updateCurrentTab({ jobDivision: val });
   const jobCategories = currentTab.jobCategories;
   const setJobCategories = (val) => updateCurrentTab({ jobCategories: val });
   const jobDetections = currentTab.jobDetections || [];
   const setJobDetections = (val) => updateCurrentTab({ jobDetections: val });
   const uploadedFiles = currentTab.uploadedFiles;
   const setUploadedFiles = (val) => updateCurrentTab({ uploadedFiles: typeof val === "function" ? val(currentTab.uploadedFiles) : val });
+  const visibleJobDetections = jobDetections.filter((d) => d.sourceText);
+  const populatedRequests = requests
+    .map((request, index) => ({
+      index,
+      text: String(request?.text || "").trim(),
+    }))
+    .filter((request) => request.text);
 
   // Shared state (same across all tabs)
   const [cosmeticDamagePresent, setCosmeticDamagePresent] = useState(false); // track whether cosmetic damage observed
@@ -164,6 +169,7 @@ export default function CreateJobCardPage() {
   const [showNewCustomer, setShowNewCustomer] = useState(false); // toggle new customer popup
   const [showExistingCustomer, setShowExistingCustomer] = useState(false); // toggle existing customer popup
   const [showDocumentsPopup, setShowDocumentsPopup] = useState(false); // toggle documents popup
+  const [showDetectedRequestsPopup, setShowDetectedRequestsPopup] = useState(false); // toggle detected requests popup
   const [newCustomerPrefill, setNewCustomerPrefill] = useState({ firstName: "", lastName: "" });
 
   // ✅ Tab management functions
@@ -186,7 +192,6 @@ export default function CreateJobCardPage() {
   const [checkSheetCheckboxes, setCheckSheetCheckboxes] = useState([]); // list of checkbox metadata for current sheet
   const [userSignature, setUserSignature] = useState(null); // store current user's signature metadata
   const [isUploadingSignature, setIsUploadingSignature] = useState(false); // track signature upload state
-  const [jobNumberDisplay, setJobNumberDisplay] = useState(null); // store assigned job number for header display
   const lastVehicleLookupRef = useRef(""); // track last registration looked up to avoid duplicate fetches
   const vehicleSectionRef = useRef(null); // ref for measuring vehicle section height
   const [topRowHeight, setTopRowHeight] = useState(null); // sync top row card heights
@@ -475,16 +480,12 @@ export default function CreateJobCardPage() {
     border: "none",
   };
 
-  const linkedJobCardBaseNumber =
-    (isSubJobMode ? primeJobData?.jobNumber : jobNumberDisplay) || "00000";
   const jobCardSelectorOptions = jobTabs.map((tab, index) => ({
     id: tab.id,
     index,
-    label: index === 0 ? linkedJobCardBaseNumber : `${linkedJobCardBaseNumber}.${index}`,
+    label: `Job${index + 1}`,
   }));
   const hasLinkedJobCards = jobCardSelectorOptions.length > 1;
-  const activeJobCardLabel =
-    jobCardSelectorOptions[activeTabIndex]?.label || linkedJobCardBaseNumber;
 
   const binaryToggleGroupStyle = {
     display: "flex",
@@ -507,6 +508,42 @@ export default function CreateJobCardPage() {
     cursor: "pointer",
     transition: "all 0.2s",
   });
+
+  const jobInfoOptionGroupStyle = {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "10px",
+    width: "100%",
+  };
+
+  const getJobInfoOptionStyle = (isSelected) => ({
+    width: "100%",
+    maxWidth: "320px",
+    minHeight: "44px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "8px",
+    cursor: "pointer",
+    padding: "12px 16px",
+    borderRadius: "var(--radius-xs)",
+    border: isSelected ? "1px solid var(--primary)" : "1px solid var(--accent-border)",
+    backgroundColor: "var(--surface)",
+    color: isSelected ? "var(--primary)" : "var(--text-primary)",
+    transition: "all 0.2s",
+    fontWeight: isSelected ? 600 : 500,
+  });
+
+  const customerFieldDefinitions = [
+    { label: "First Name", field: "firstName", type: "text", placeholder: "" },
+    { label: "Last Name", field: "lastName", type: "text", placeholder: "" },
+    { label: "Email", field: "email", type: "email", placeholder: "" },
+    { label: "Mobile", field: "mobile", type: "tel", placeholder: "" },
+    { label: "Telephone", field: "telephone", type: "tel", placeholder: "" },
+    { label: "Address", field: "address", type: "textarea", placeholder: "" },
+    { label: "Contact Preference", field: "contactPreference", type: "multi-select" },
+  ];
 
   // remove a request from the list by index
   const handleRemoveRequest = (index) => {
@@ -1163,8 +1200,6 @@ export default function CreateJobCardPage() {
 
       // Update UI and redirect
       const finalJobNumber = primaryJob?.jobNumber || primaryJob?.job_number || primaryJob?.id;
-      setJobNumberDisplay(finalJobNumber || null);
-
       const regUpper = vehicle.reg.trim().toUpperCase();
       const jobsCreatedMessage = createdJobs.length > 1
         ? `${createdJobs.length} linked jobs created: ${createdJobs.map((j) => j.job?.jobNumber || j.job?.job_number).join(", ")}`
@@ -1244,18 +1279,6 @@ export default function CreateJobCardPage() {
               flex: "1 1 420px",
             }}
           >
-            <h2
-              style={{
-                margin: 0,
-                fontSize: "16px",
-                color: "var(--text-primary)",
-                fontWeight: "600",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {`Job cards #${activeJobCardLabel}`}
-            </h2>
-
             <div
               className="job-cards-create-selector-wrap"
               style={{
@@ -1360,6 +1383,101 @@ export default function CreateJobCardPage() {
                   }}
                 >
                   Remove selected
+                </button>
+              )}
+            </div>
+          </div>
+          <div
+            style={{
+              flex: "1 1 280px",
+              minWidth: 0,
+              display: "flex",
+              justifyContent: "center",
+            }}
+          >
+            <div
+              style={{
+                width: "100%",
+                maxWidth: "520px",
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                padding: "6px",
+                borderRadius: "var(--radius-pill)",
+                background: "var(--accent-surface)",
+                border: "1px solid var(--accent-border)",
+              }}
+            >
+              {populatedRequests.length === 0 ? (
+                <span
+                  style={{
+                    padding: "6px 12px",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    color: "var(--text-secondary)",
+                  }}
+                >
+                  No detected requests yet
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowDetectedRequestsPopup(true)}
+                  style={{
+                    width: "100%",
+                    minHeight: "40px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                    padding: "8px 14px",
+                    borderRadius: "999px",
+                    background: "var(--surface)",
+                    color: "var(--text-primary)",
+                    border: "1px solid var(--accent-border)",
+                    cursor: "pointer",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: "12px",
+                      fontWeight: "700",
+                      color: "var(--accent-strong)",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    Request 1
+                  </span>
+                  <span
+                    style={{
+                      minWidth: 0,
+                      flex: "0 1 auto",
+                      fontSize: "12px",
+                      color: "var(--text-secondary)",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {populatedRequests[0]?.text}
+                  </span>
+                  {populatedRequests.length > 1 ? (
+                    <span
+                      style={{
+                        flexShrink: 0,
+                        fontSize: "11px",
+                        fontWeight: "700",
+                        color: "var(--accent-strong)",
+                        background: "var(--accent-surface)",
+                        borderRadius: "999px",
+                        padding: "4px 8px",
+                      }}
+                    >
+                      +{populatedRequests.length - 1} more
+                    </span>
+                  ) : null}
                 </button>
               )}
             </div>
@@ -1491,216 +1609,89 @@ export default function CreateJobCardPage() {
                 overflowY: "auto",
               }}
             >
-              <div style={{ marginBottom: "10px" }}>
-                <label
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: "600",
-                    color: "var(--text-secondary)",
-                    display: "block",
-                    marginBottom: "8px",
-                  }}
-                >
-                  Customer Status
-                </label>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "8px",
-                    flexWrap: "wrap",
-                    padding: "6px",
-                    borderRadius: "var(--control-radius)",
-                    backgroundColor: "var(--surface)",
-                    border: "none",
-                    width: "fit-content",
-                  }}
-                >
-                  {["Waiting", "Loan Car", "Collection", "Neither"].map((status) => (
-                    <label
-                      key={status}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        cursor: "pointer",
-                        padding: "8px 14px",
-                        borderRadius: "var(--control-radius)",
-                        border: waitingStatus === status ? "1px solid var(--primary)" : "1px solid transparent",
-                        backgroundColor: waitingStatus === status ? "var(--surface)" : "transparent",
-                        color: waitingStatus === status ? "var(--text-primary)" : "var(--text-secondary)",
-                        transition: "all 0.2s",
-                        fontWeight: waitingStatus === status ? 600 : 500,
-                      }}
-                    >
-                      <input
-                        type="radio"
-                        name="waiting"
-                        value={status}
-                        checked={waitingStatus === status}
-                        onChange={() => setWaitingStatus(status)}
-                        style={{ display: "none" }}
-                      />
-                      <span style={{ fontSize: "13px" }}>{status}</span>
-                    </label>
-                  ))}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  justifyContent: "flex-start",
+                  gap: "12px",
+                  paddingBottom: "12px",
+                  borderBottom: "1px solid var(--accent-border)",
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <h3
+                    style={{
+                      fontSize: "16px",
+                      fontWeight: "600",
+                      color: "var(--text-primary)",
+                      margin: 0,
+                    }}
+                  >
+                    Job Information
+                  </h3>
                 </div>
               </div>
 
-              <div style={{ marginBottom: "10px" }}>
-                <label
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: "600",
-                    color: "var(--text-secondary)",
-                    display: "block",
-                    marginBottom: "8px",
-                  }}
-                >
-                  Job Source
-                </label>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "8px",
-                    padding: "6px",
-                    borderRadius: "var(--control-radius)",
-                    backgroundColor: "var(--surface)",
-                    border: "none",
-                    width: "fit-content",
-                  }}
-                >
-                  {["Retail", "Warranty"].map((src) => (
-                    <label
-                      key={src}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        cursor: "pointer",
-                        padding: "8px 16px",
-                        borderRadius: "var(--control-radius)",
-                        border: jobSource === src ? "1px solid var(--primary)" : "1px solid transparent",
-                        backgroundColor: jobSource === src ? "var(--surface)" : "transparent",
-                        color: jobSource === src ? "var(--text-primary)" : "var(--text-secondary)",
-                        transition: "all 0.2s",
-                        fontWeight: jobSource === src ? 600 : 500,
-                      }}
-                    >
-                      <input
-                        type="radio"
-                        name="source"
-                        value={src}
-                        checked={jobSource === src}
-                        onChange={() => setJobSource(src)}
-                        style={{ display: "none" }}
-                      />
-                      <span style={{ fontSize: "13px" }}>{src}</span>
-                    </label>
-                  ))}
+              <div style={{ display: "grid", gap: "12px" }}>
+                <div>
+                  <label
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      color: "var(--text-secondary)",
+                      display: "block",
+                      marginBottom: "10px",
+                    }}
+                  >
+                    Customer Status
+                  </label>
+                  <div style={jobInfoOptionGroupStyle}>
+                    {["Waiting", "Loan Car", "Collection", "Neither"].map((status) => (
+                      <label key={status} style={getJobInfoOptionStyle(waitingStatus === status)}>
+                        <input
+                          type="radio"
+                          name="waiting"
+                          value={status}
+                          checked={waitingStatus === status}
+                          onChange={() => setWaitingStatus(status)}
+                          style={{ display: "none" }}
+                        />
+                        <span style={{ fontSize: "13px", textAlign: "center" }}>{status}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      color: "var(--text-secondary)",
+                      display: "block",
+                      marginBottom: "10px",
+                    }}
+                  >
+                    Job Source
+                  </label>
+                  <div style={jobInfoOptionGroupStyle}>
+                    {["Retail", "Warranty"].map((src) => (
+                      <label key={src} style={getJobInfoOptionStyle(jobSource === src)}>
+                        <input
+                          type="radio"
+                          name="source"
+                          value={src}
+                          checked={jobSource === src}
+                          onChange={() => setJobSource(src)}
+                          style={{ display: "none" }}
+                        />
+                        <span style={{ fontSize: "13px", textAlign: "center" }}>{src}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
               </div>
-
-              <div style={{ marginBottom: "10px" }}>
-                <label
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: "600",
-                    color: "var(--text-secondary)",
-                    display: "block",
-                    marginBottom: "8px",
-                  }}
-                >
-                  Job Division
-                </label>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "8px",
-                    padding: "6px",
-                    borderRadius: "var(--control-radius)",
-                    backgroundColor: "var(--surface)",
-                    border: "none",
-                    width: "fit-content",
-                  }}
-                >
-                  {["Retail", "Sales"].map((division) => (
-                    <label
-                      key={division}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        cursor: "pointer",
-                        padding: "8px 16px",
-                        borderRadius: "var(--control-radius)",
-                        border: jobDivision === division ? "1px solid var(--primary)" : "1px solid transparent",
-                        backgroundColor: jobDivision === division ? "var(--surface)" : "transparent",
-                        color: jobDivision === division ? "var(--text-primary)" : "var(--text-secondary)",
-                        transition: "all 0.2s",
-                        fontWeight: jobDivision === division ? 600 : 500,
-                      }}
-                    >
-                      <input
-                        type="radio"
-                        name="jobDivision"
-                        value={division}
-                        checked={jobDivision === division}
-                        onChange={() => setJobDivision(division)}
-                        style={{ display: "none" }}
-                      />
-                      <span style={{ fontSize: "13px" }}>{division}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: "600",
-                    color: "var(--text-secondary)",
-                    display: "block",
-                    marginBottom: "8px",
-                  }}
-                >
-                  AI Detected Job Types
-                </label>
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  {jobDetections.filter((d) => d.sourceText).length === 0 ? (
-                    <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>No detections yet</div>
-                  ) : (
-                    jobDetections
-                      .filter((d) => d.sourceText)
-                      .map((detection, index) => (
-                        <div
-                          key={`${detection.requestIndex}-${index}`}
-                          style={{
-                            border: "none",
-                            borderRadius: "var(--radius-sm)",
-                            padding: "10px 12px",
-                            backgroundColor: "var(--surface-light)",
-                            display: "flex",
-                            flexWrap: "wrap",
-                            gap: "4px 8px",
-                            alignItems: "center",
-                            fontSize: "12px",
-                          }}
-                        >
-                          <div style={{ fontWeight: "700", color: "var(--text-primary)", whiteSpace: "nowrap" }}>{detection.jobType}</div>
-                          <div style={{ color: "var(--text-secondary)", flex: "1 1 auto", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
-                            <strong style={{ color: "var(--text-primary)" }}>{detection.itemCategory}</strong>
-                            <span style={{ marginLeft: "6px" }}>{detection.sourceText}</span>
-                          </div>
-                          <div style={{ color: "var(--text-secondary)", whiteSpace: "nowrap", marginLeft: "auto" }}>
-                            {Math.round(detection.confidence * 100)}%
-                          </div>
-                        </div>
-                      ))
-                  )}
-                </div>
-              </div>
-
             </DevLayoutSection>
 
             {/* Vehicle Details Section - 33% width */}
@@ -1807,6 +1798,7 @@ export default function CreateJobCardPage() {
                       padding: "10px 12px",
                       border: "none",
                       borderRadius: "var(--radius-xs)",
+                      backgroundColor: "var(--surface)",
                       fontSize: "14px",
                       textTransform: "uppercase",
                       outline: "none",
@@ -1840,7 +1832,7 @@ export default function CreateJobCardPage() {
                       if (!isLoadingVehicle) e.target.style.backgroundColor = "var(--primary)";
                     }}
                   >
-                    {isLoadingVehicle ? "Loading..." : "Fetch Data"}
+                    {isLoadingVehicle ? "Loading..." : "Search"}
                   </button>
                 </div>
               </div>
@@ -1919,6 +1911,7 @@ export default function CreateJobCardPage() {
                       padding: "10px 12px",
                       border: "none",
                       borderRadius: "var(--radius-xs)",
+                      backgroundColor: "var(--surface)",
                       fontSize: "14px",
                       outline: "none",
                       transition: "border-color 0.2s",
@@ -2015,131 +2008,202 @@ export default function CreateJobCardPage() {
               )}
 
               {customer ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                  {[
-                    { label: "First Name", field: "firstName", type: "text", placeholder: "" }, // first name input
-                    { label: "Last Name", field: "lastName", type: "text", placeholder: "" }, // last name input
-                    { label: "Email", field: "email", type: "email", placeholder: "" }, // email input
-                    { label: "Mobile", field: "mobile", type: "tel", placeholder: "" }, // mobile input
-                    { label: "Telephone", field: "telephone", type: "tel", placeholder: "" }, // telephone input
-                    { label: "Address", field: "address", type: "textarea", placeholder: "" }, // address textarea
-                    { label: "Postcode", field: "postcode", type: "text", placeholder: "" }, // postcode input
-                    { label: "Contact Preference", field: "contactPreference", type: "multi-select" }, // contact preference input
-                  ].map((input) => (
-                    <div key={input.field}>
-                      <label
-                        style={{
-                          fontSize: "13px",
-                          fontWeight: "500",
-                          color: "var(--text-secondary)",
-                          display: "block",
-                          marginBottom: "6px",
-                        }}
-                      >
-                        {input.label}
-                      </label>
-                      {input.type === "textarea" ? (
-                        <textarea
-                          value={customerForm[input.field] || ""}
-                          onChange={(e) => handleCustomerFieldChange(input.field, e.target.value)}
-                          onInput={(e) => {
-                            if (input.field !== "address") return;
-                            e.target.style.height = "auto";
-                            e.target.style.height = `${e.target.scrollHeight}px`;
-                          }}
-                          disabled={!isCustomerEditing || isSavingCustomer}
-                          placeholder={input.placeholder}
-                          rows={input.field === "address" ? 1 : 3}
-                          style={{
-                            width: "100%",
-                            padding: "10px 12px",
-                            border: "none",
-                            borderRadius: "var(--radius-xs)",
-                            fontSize: "14px",
-                            outline: "none",
-                            transition: "border-color 0.2s",
-                            backgroundColor: isCustomerEditing && !isSavingCustomer ? "var(--surface-light)" : "var(--surface)",
-                            resize: input.field === "address" ? "none" : "vertical",
-                            minHeight: input.field === "address" ? "40px" : "unset",
-                            overflow: "hidden",
-                          }}
-                          onFocus={(e) => {
-                            e.target.style.borderColor = "var(--primary)";
-                          }}
-                          onBlur={(e) => {
-                            e.target.style.borderColor = "var(--surface-light)";
-                          }}
-                        />
-                      ) : input.type === "multi-select" ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {isCustomerEditing ? (
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                        gap: "12px",
+                      }}
+                    >
+                      {customerFieldDefinitions.map((input) => (
                         <div
+                          key={input.field}
                           style={{
-                            display: "flex",
-                            gap: "8px",
-                            flexWrap: "wrap",
-                            padding: "6px",
-                            borderRadius: "var(--control-radius)",
-                            backgroundColor: "var(--surface-light)",
-                            border: "none",
-                            width: "fit-content",
+                            gridColumn:
+                              input.field === "email" ||
+                              input.field === "address" ||
+                              input.field === "contactPreference"
+                                ? "1 / -1"
+                                : "auto",
                           }}
                         >
-                          {["phone", "email", "sms"].map((pref) => {
-                            const active = Array.isArray(customerForm.contactPreference) &&
-                              customerForm.contactPreference.includes(pref);
-                            return (
-                              <button
-                                key={pref}
-                                type="button"
-                                onClick={() => toggleContactPreference(pref)}
-                                style={{
-                                  padding: "8px 14px",
-                                  borderRadius: "var(--control-radius)",
-                                  border: active ? "1px solid var(--primary)" : "1px solid transparent",
-                                  backgroundColor: active ? "var(--surface)" : "transparent",
-                                  color: active ? "var(--text-primary)" : "var(--text-secondary)",
-                                  fontSize: "13px",
-                                  fontWeight: active ? "600" : "500",
-                                  cursor: "pointer",
-                                  transition: "all 0.2s",
-                                  textTransform: "none",
-                                  letterSpacing: "0",
-                                }}
-                              >
-                                {pref === "sms" ? "SMS" : pref.charAt(0).toUpperCase() + pref.slice(1)}
-                              </button>
-                            );
-                          })}
+                          <label
+                            style={{
+                              fontSize: "13px",
+                              fontWeight: "500",
+                              color: "var(--text-secondary)",
+                              display: "block",
+                              marginBottom: "6px",
+                            }}
+                          >
+                            {input.label}
+                          </label>
+                          {input.type === "textarea" ? (
+                            <textarea
+                              value={customerForm[input.field] || ""}
+                              onChange={(e) => handleCustomerFieldChange(input.field, e.target.value)}
+                              onInput={(e) => {
+                                if (input.field !== "address") return;
+                                e.target.style.height = "auto";
+                                e.target.style.height = `${e.target.scrollHeight}px`;
+                              }}
+                              disabled={!isCustomerEditing || isSavingCustomer}
+                              placeholder={input.placeholder}
+                              rows={input.field === "address" ? 1 : 3}
+                              style={{
+                                width: "100%",
+                                padding: "10px 12px",
+                                border: "none",
+                                borderRadius: "var(--radius-xs)",
+                                fontSize: "14px",
+                                outline: "none",
+                                transition: "border-color 0.2s",
+                                backgroundColor: isCustomerEditing && !isSavingCustomer ? "var(--surface-light)" : "transparent",
+                                resize: input.field === "address" ? "none" : "vertical",
+                                minHeight: input.field === "address" ? "40px" : "unset",
+                                overflow: "hidden",
+                                lineHeight: 1.45,
+                              }}
+                              onFocus={(e) => {
+                                e.target.style.borderColor = "var(--primary)";
+                              }}
+                              onBlur={(e) => {
+                                e.target.style.borderColor = "var(--surface-light)";
+                              }}
+                            />
+                          ) : input.type === "multi-select" ? (
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: "8px",
+                                flexWrap: "wrap",
+                                padding: "6px",
+                                borderRadius: "var(--control-radius)",
+                                backgroundColor: isCustomerEditing ? "var(--surface-light)" : "transparent",
+                                border: "none",
+                                width: "100%",
+                              }}
+                            >
+                              {["phone", "email", "sms"].map((pref) => {
+                                const active = Array.isArray(customerForm.contactPreference) &&
+                                  customerForm.contactPreference.includes(pref);
+                                return (
+                                  <button
+                                    key={pref}
+                                    type="button"
+                                    onClick={() => toggleContactPreference(pref)}
+                                    style={{
+                                      padding: "8px 14px",
+                                      borderRadius: "var(--control-radius)",
+                                      border: active ? "1px solid var(--primary)" : "1px solid transparent",
+                                      backgroundColor: active ? "var(--surface)" : "transparent",
+                                      color: active ? "var(--text-primary)" : "var(--text-secondary)",
+                                      fontSize: "13px",
+                                      fontWeight: active ? "600" : "500",
+                                      cursor: "pointer",
+                                      transition: "all 0.2s",
+                                      textTransform: "none",
+                                      letterSpacing: "0",
+                                    }}
+                                  >
+                                    {pref === "sms" ? "SMS" : pref.charAt(0).toUpperCase() + pref.slice(1)}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <input
+                              type={input.type}
+                              value={customerForm[input.field] || ""}
+                              onChange={(e) => handleCustomerFieldChange(input.field, e.target.value)}
+                              disabled={!isCustomerEditing || isSavingCustomer}
+                              placeholder={input.placeholder}
+                              style={{
+                                width: "100%",
+                                padding: "10px 12px",
+                                border: "none",
+                                borderRadius: "var(--radius-xs)",
+                                fontSize: "14px",
+                                outline: "none",
+                                transition: "border-color 0.2s",
+                                backgroundColor: isCustomerEditing && !isSavingCustomer ? "var(--surface-light)" : "transparent",
+                                color: input.type === "tel" ? "#000" : "inherit",
+                              }}
+                              onFocus={(e) => {
+                                e.target.style.borderColor = "var(--primary)";
+                              }}
+                              onBlur={(e) => {
+                                e.target.style.borderColor = "var(--surface-light)";
+                              }}
+                            />
+                          )}
                         </div>
-                      ) : (
-                        <input
-                          type={input.type}
-                          value={customerForm[input.field] || ""}
-                          onChange={(e) => handleCustomerFieldChange(input.field, e.target.value)}
-                          disabled={!isCustomerEditing || isSavingCustomer}
-                          placeholder={input.placeholder}
-                          style={{
-                            width: "100%",
-                            padding: "10px 12px",
-                            border: "none",
-                            borderRadius: "var(--radius-xs)",
-                            fontSize: "14px",
-                            outline: "none",
-                            transition: "border-color 0.2s",
-                            backgroundColor: isCustomerEditing && !isSavingCustomer ? "var(--surface-light)" : "var(--surface)",
-                            color: input.field === "mobile" ? "white" : "inherit",
-                          }}
-                          onFocus={(e) => {
-                            e.target.style.borderColor = "var(--primary)";
-                          }}
-                          onBlur={(e) => {
-                            e.target.style.borderColor = "var(--surface-light)";
-                          }}
-                        />
-                      )}
+                      ))}
                     </div>
-                  ))}
+                  ) : (
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                        gap: "8px",
+                      }}
+                    >
+                      {customerFieldDefinitions
+                        .filter((input) => input.field !== "contactPreference")
+                        .map((input) => (
+                          <div
+                            key={input.field}
+                            style={{
+                              gridColumn:
+                                input.field === "email" || input.field === "address"
+                                  ? "1 / -1"
+                                  : "auto",
+                              padding:
+                                input.field === "email"
+                                  ? "12px 14px"
+                                  : input.field === "mobile" || input.field === "telephone"
+                                    ? "12px 14px"
+                                    : "10px 12px",
+                              borderRadius: "var(--radius-sm)",
+                              background: "var(--surface)",
+                              border: "1px solid var(--accent-border)",
+                              minWidth: 0,
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: "11px",
+                                fontWeight: "700",
+                                color: "var(--text-secondary)",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.04em",
+                                marginBottom: "4px",
+                              }}
+                            >
+                              {input.label}
+                            </div>
+                            <div
+                              style={{
+                                fontSize:
+                                  input.field === "email"
+                                    ? "14px"
+                                    : "13px",
+                                fontWeight: "600",
+                                color: "var(--text-primary)",
+                                lineHeight: 1.4,
+                                wordBreak: "break-word",
+                              }}
+                            >
+                              {customerForm[input.field] || "Not provided"}
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
 
-                  <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+                  <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
                     {isCustomerEditing ? (
                       <>
                         <button
@@ -2198,63 +2262,98 @@ export default function CreateJobCardPage() {
                         </button>
                       </>
                     ) : (
-                      <button
-                        onClick={handleStartCustomerEdit}
-                        style={{
-                          width: "100%",
-                          maxWidth: "320px",
-                          padding: "12px",
-                          fontSize: "14px",
-                          backgroundColor: "var(--primary)",
-                          color: "var(--text-inverse)",
-                          border: "none",
-                          borderRadius: "var(--radius-xs)",
-                          cursor: "pointer",
-                          fontWeight: "600",
-                          transition: "all 0.2s",
-                          alignSelf: "center",
-                        }}
-                        onMouseEnter={(e) => {
-                          e.target.style.backgroundColor = "var(--primary-dark)";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.backgroundColor = "var(--primary)";
-                        }}
-                      >
-                        Edit Customer
-                      </button>
+                      <>
+                        <button
+                          onClick={handleStartCustomerEdit}
+                          style={{
+                            width: "100%",
+                            maxWidth: "320px",
+                            padding: "14px",
+                            fontSize: "14px",
+                            backgroundColor: "var(--primary)",
+                            color: "var(--text-inverse)",
+                            border: "none",
+                            borderRadius: "var(--radius-xs)",
+                            cursor: "pointer",
+                            fontWeight: "600",
+                            transition: "all 0.2s",
+                            alignSelf: "center",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.target.style.backgroundColor = "var(--primary-dark)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.backgroundColor = "var(--primary)";
+                          }}
+                        >
+                          Edit Customer
+                        </button>
+                        <button
+                          onClick={() => setCustomer(null)}
+                          disabled={isSavingCustomer}
+                          style={{
+                            width: "100%",
+                            maxWidth: "320px",
+                            padding: "12px 16px",
+                            fontSize: "14px",
+                            backgroundColor: "var(--accent-purple-surface)",
+                            color: "var(--accent-purple)",
+                            border: "1px solid var(--accent-purple)",
+                            borderRadius: "var(--radius-xs)",
+                            cursor: isSavingCustomer ? "not-allowed" : "pointer",
+                            fontWeight: "600",
+                            transition: "background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease",
+                            opacity: isSavingCustomer ? 0.7 : 1,
+                            alignSelf: "center",
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isSavingCustomer) {
+                              e.target.style.backgroundColor = "var(--accent-purple)";
+                              e.target.style.color = "var(--text-inverse)";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.backgroundColor = "var(--accent-purple-surface)";
+                            e.target.style.color = "var(--accent-purple)";
+                          }}
+                        >
+                          Clear Customer
+                        </button>
+                      </>
                     )}
                   </div>
 
-                  <button
-                    onClick={() => setCustomer(null)}
-                    disabled={isSavingCustomer}
-                    style={{
-                      width: "100%",
-                      maxWidth: "320px",
-                      padding: "12px",
-                      fontSize: "14px",
-                      backgroundColor: "var(--surface-light)",
-                      color: "var(--text-primary)",
-                      border: "none",
-                      borderRadius: "var(--radius-xs)",
-                      cursor: isSavingCustomer ? "not-allowed" : "pointer",
-                      fontWeight: "600",
-                      transition: "all 0.2s",
-                      opacity: isSavingCustomer ? 0.7 : 1,
-                      alignSelf: "center",
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isSavingCustomer) {
-                        e.target.style.backgroundColor = "var(--surface-muted)";
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = "var(--surface-light)";
-                    }}
-                  >
-                    Clear Customer
-                  </button>
+                  {isCustomerEditing && (
+                    <button
+                      onClick={() => setCustomer(null)}
+                      disabled={isSavingCustomer}
+                      style={{
+                        width: "100%",
+                        maxWidth: "320px",
+                        padding: "12px",
+                        fontSize: "14px",
+                        backgroundColor: "var(--surface-light)",
+                        color: "var(--text-primary)",
+                        border: "none",
+                        borderRadius: "var(--radius-xs)",
+                        cursor: isSavingCustomer ? "not-allowed" : "pointer",
+                        fontWeight: "600",
+                        transition: "all 0.2s",
+                        opacity: isSavingCustomer ? 0.7 : 1,
+                        alignSelf: "center",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isSavingCustomer) {
+                          e.target.style.backgroundColor = "var(--surface-muted)";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.backgroundColor = "var(--surface-light)";
+                      }}
+                    >
+                      Clear Customer
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px", alignItems: "center" }}>
@@ -2388,7 +2487,7 @@ export default function CreateJobCardPage() {
                         fontSize: "14px",
                         outline: "none",
                         transition: "border-color 0.2s",
-                        backgroundColor: "var(--surface)",
+                        backgroundColor: "var(--accent-surface)",
                       }}
                     />
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -2407,7 +2506,7 @@ export default function CreateJobCardPage() {
                           fontSize: "14px",
                           outline: "none",
                           transition: "border-color 0.2s",
-                          backgroundColor: "var(--surface)",
+                          backgroundColor: "var(--accent-surface)",
                         }}
                         onFocus={(e) => {
                           e.target.style.borderColor = "var(--primary)";
@@ -2730,6 +2829,134 @@ export default function CreateJobCardPage() {
             url: f.url || "",
           }))}
         />
+        {showDetectedRequestsPopup && (
+          <div
+            style={popupOverlayStyles}
+            onClick={(event) => {
+              if (event.target === event.currentTarget) {
+                setShowDetectedRequestsPopup(false);
+              }
+            }}
+          >
+            <div
+              style={{
+                ...popupCardStyles,
+                width: "100%",
+                maxWidth: "620px",
+                maxHeight: "88vh",
+                overflowY: "auto",
+                border: "none",
+              }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div style={{ padding: "28px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "16px",
+                  }}
+                >
+                  <h3
+                    style={{
+                      margin: 0,
+                      fontSize: "18px",
+                      fontWeight: 700,
+                      color: "var(--primary)",
+                      letterSpacing: "0.02em",
+                    }}
+                  >
+                    Job Requests
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowDetectedRequestsPopup(false)}
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      cursor: "pointer",
+                      fontSize: "22px",
+                      lineHeight: 1,
+                      color: "var(--info)",
+                    }}
+                    aria-label="Close job requests popup"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div style={{ display: "grid", gap: "10px" }}>
+                  {populatedRequests.map((request) => {
+                    const requestDetections = visibleJobDetections.filter(
+                      (detection) => Number(detection.requestIndex) === request.index
+                    );
+
+                    return (
+                      <div
+                        key={`detected-request-popup-${request.index}`}
+                        style={{
+                          border: "none",
+                          borderRadius: "var(--radius-sm)",
+                          backgroundColor: "var(--surface-light)",
+                          padding: "14px 16px",
+                          display: "grid",
+                          gap: "10px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            gap: "12px",
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-primary)" }}>
+                            Request {request.index + 1}
+                          </span>
+                          {requestDetections.length > 0 ? (
+                            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+                              {requestDetections.map((detection, index) => (
+                                <span
+                                  key={`request-detection-${request.index}-${index}`}
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    minHeight: "24px",
+                                    padding: "0 8px",
+                                    borderRadius: "999px",
+                                    background: "var(--surface)",
+                                    color: "var(--accent-strong)",
+                                    fontSize: "11px",
+                                    fontWeight: "700",
+                                  }}
+                                >
+                                  {detection.jobType}
+                                </span>
+                              ))}
+                            </div>
+                          ) : null}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: "13px",
+                            lineHeight: 1.5,
+                            color: "var(--text-primary)",
+                            whiteSpace: "pre-wrap",
+                          }}
+                        >
+                          {request.text}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </DevLayoutSection>
     </Layout>
   );

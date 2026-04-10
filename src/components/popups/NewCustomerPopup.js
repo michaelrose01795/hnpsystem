@@ -282,6 +282,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                       borderRadius: "var(--input-radius)",
                       border: "2px solid var(--surface-light)",
                       backgroundColor: "var(--surface-light)",
+                      color: "#000",
                       fontSize: "15px",
                       transition: "border-color 0.2s",
                     }}
@@ -312,6 +313,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                       borderRadius: "var(--input-radius)",
                       border: "2px solid var(--surface-light)",
                       backgroundColor: "var(--surface-light)",
+                      color: "#000",
                       fontSize: "15px",
                       transition: "border-color 0.2s",
                     }}

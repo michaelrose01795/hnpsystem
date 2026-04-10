@@ -10,6 +10,7 @@ import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import Link from "next/link"; // Import Next.js Link for navigation buttons
 import StockCheckPopup from "@/components/Consumables/StockCheckPopup";
 import { SearchBar } from "@/components/searchBarAPI";
+import useIsMobile from "@/hooks/useIsMobile";
 
 const pageWrapperStyle = {
   width: "100%", // Fill the available content area like the news feed page
@@ -45,6 +46,30 @@ const tableHeaderStyle = {
   padding: "8px", // Space around header labels
 };
 
+const fieldLabelStyle = {
+  fontSize: "0.78rem",
+  fontWeight: 700,
+  letterSpacing: "0.04em",
+  textTransform: "uppercase",
+  color: "var(--text-secondary)",
+};
+
+const requestCardStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "12px",
+  padding: "14px",
+  borderRadius: "var(--radius-md)",
+  border: "1px solid var(--border-subtle, rgba(15, 23, 42, 0.08))",
+  background: "var(--surface)",
+};
+
+const requestCardMetaGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+  gap: "12px",
+};
+
 const statusBadgeStyles = {
   pending: {
     backgroundColor: "rgba(var(--primary-rgb),0.12)", // Pale red for pending requests
@@ -75,6 +100,7 @@ const statusBadgeStyles = {
 
 const TechConsumableRequestPage = () => {
   const { user, dbUserId } = useUser(); // Access current user information
+  const isMobile = useIsMobile();
   const userRoles = user?.roles?.map((role) => role.toLowerCase()) || []; // Normalise roles to lower case for checks
   const isTechRole = userRoles.includes("techs") || userRoles.includes("mot tester"); // Determine if page access should be granted
   const isWorkshopManager = userRoles.includes("workshop manager") || userRoles.includes("workshop_manager");
@@ -185,6 +211,59 @@ const TechConsumableRequestPage = () => {
         .some((field) => field.toLowerCase().includes(needle))
     ); // Perform case-insensitive search across key fields
   }, [requests, searchTerm]);
+
+  const requestPanelStyle = useMemo(
+    () => ({
+      display: "flex",
+      flexDirection: isMobile ? "column" : "row",
+      flexWrap: "wrap",
+      alignItems: isMobile ? "stretch" : "end",
+      gap: isMobile ? "14px" : "16px",
+      padding: isMobile ? "16px" : undefined,
+    }),
+    [isMobile]
+  );
+
+  const requestHeaderStyle = useMemo(
+    () => ({
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: isMobile ? "stretch" : "center",
+      flexDirection: isMobile ? "column" : "row",
+      gap: isMobile ? "12px" : "16px",
+      flex: isMobile ? "1 1 auto" : "0 0 auto",
+      minWidth: isMobile ? 0 : "140px",
+      width: isMobile ? "100%" : "auto",
+    }),
+    [isMobile]
+  );
+
+  const requestFormStyle = useMemo(
+    () => ({
+      flex: "1 1 720px",
+      marginTop: 0,
+      display: "grid",
+      gridTemplateColumns: isMobile
+        ? "minmax(0, 1fr)"
+        : "minmax(280px, 1fr) minmax(140px, 180px) minmax(180px, 220px)",
+      gap: isMobile ? "12px" : "16px",
+      alignItems: "end",
+      width: "100%",
+    }),
+    [isMobile]
+  );
+
+  const requestsToolbarStyle = useMemo(
+    () => ({
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: isMobile ? "stretch" : "center",
+      flexDirection: isMobile ? "column" : "row",
+      gap: isMobile ? "12px" : "16px",
+      marginBottom: "16px",
+    }),
+    [isMobile]
+  );
 
   const stockMatches = useMemo(() => {
     const query = normalizeName(requestForm.partName);
@@ -347,13 +426,7 @@ const TechConsumableRequestPage = () => {
           sectionType="content-card"
           backgroundToken="accent"
           className="app-layout-surface-accent"
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            flexWrap: "wrap",
-            alignItems: "end",
-            gap: "16px",
-          }}
+          style={requestPanelStyle}
         >
           <DevLayoutSection
             as="div"
@@ -361,13 +434,7 @@ const TechConsumableRequestPage = () => {
             parentKey="tech-consumables-request-panel"
             sectionType="section-header-row"
             backgroundToken="transparent"
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              flex: "0 0 auto",
-              minWidth: "140px",
-            }}
+            style={requestHeaderStyle}
           >
             <div>
               <h1 style={{ margin: 0, fontSize: "1.6rem", color: "var(--primary-dark)" }}></h1>
@@ -390,6 +457,7 @@ const TechConsumableRequestPage = () => {
                   color: "var(--primary-dark)",
                   fontWeight: 600,
                   cursor: "pointer",
+                  width: isMobile ? "100%" : "auto",
                 }}
               >
                 Stock Check
@@ -404,14 +472,7 @@ const TechConsumableRequestPage = () => {
             sectionType="form-grid"
             backgroundToken="transparent"
             onSubmit={handleSubmit}
-            style={{
-              flex: "1 1 720px",
-              marginTop: 0,
-              display: "grid",
-              gridTemplateColumns: "minmax(280px, 1fr) minmax(140px, 180px) minmax(180px, 220px)",
-              gap: "16px",
-              alignItems: "end",
-            }}
+            style={requestFormStyle}
           >
             <DevLayoutSection
               as="div"
@@ -421,6 +482,9 @@ const TechConsumableRequestPage = () => {
               backgroundToken="surface"
               style={{ display: "flex", flexDirection: "column", gap: "6px" }}
             >
+              <label htmlFor="partName" style={fieldLabelStyle}>
+                Consumable
+              </label>
               <input
                 id="partName"
                 name="partName"
@@ -513,6 +577,9 @@ const TechConsumableRequestPage = () => {
               backgroundToken="surface"
               style={{ display: "flex", flexDirection: "column", gap: "6px" }}
             >
+              <label htmlFor="quantity" style={fieldLabelStyle}>
+                Quantity
+              </label>
               <input
                 id="quantity"
                 name="quantity"
@@ -568,7 +635,7 @@ const TechConsumableRequestPage = () => {
             parentKey="tech-consumables-requests-panel"
             sectionType="toolbar"
             backgroundToken="transparent"
-            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}
+            style={requestsToolbarStyle}
           >
             <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-dark)" }}>Requests</h2>
             <DevLayoutSection
@@ -577,7 +644,7 @@ const TechConsumableRequestPage = () => {
               parentKey="tech-consumables-requests-toolbar"
               sectionType="filter-row"
               backgroundToken="search-surface"
-              style={{ maxWidth: "240px", width: "100%" }}
+              style={{ maxWidth: isMobile ? "100%" : "240px", width: "100%" }}
             >
               <SearchBar
                 placeholder="Search requests"
@@ -585,7 +652,7 @@ const TechConsumableRequestPage = () => {
                 onChange={(event) => setSearchTerm(event.target.value)}
                 onClear={() => setSearchTerm("")}
                 style={{
-                  maxWidth: "240px",
+                  maxWidth: isMobile ? "100%" : "240px",
                 }}
               />
             </DevLayoutSection>
@@ -615,122 +682,212 @@ const TechConsumableRequestPage = () => {
             </DevLayoutSection>
           )}
 
-          <DevLayoutSection
-            as="div"
-            sectionKey="tech-consumables-request-auto-data-table-1-shell"
-            parentKey="tech-consumables-requests-panel"
-            sectionType="data-table-shell"
-            backgroundToken="surface"
-            className="app-section-card"
-            style={{ overflowX: "auto", maxHeight: "420px", overflowY: "auto", padding: 0, background: "var(--surface)" }}
-          >
+          {isMobile ? (
             <DevLayoutSection
-              as="table"
-              sectionKey="tech-consumables-request-auto-data-table-1"
-              parentKey="tech-consumables-request-auto-data-table-1-shell"
-              sectionType="data-table"
+              as="div"
+              sectionKey="tech-consumables-request-mobile-list"
+              parentKey="tech-consumables-requests-panel"
+              sectionType="list"
               backgroundToken="surface"
-              className="app-data-table"
-              style={{ minWidth: "640px", background: "var(--surface)" }}
+              style={{ display: "flex", flexDirection: "column", gap: "12px" }}
             >
-              <thead
-                data-dev-section="1"
-                data-dev-section-key="tech-consumables-request-auto-data-table-1-headings"
-                data-dev-section-type="table-headings"
-                data-dev-section-parent="tech-consumables-request-auto-data-table-1"
-                style={{ background: "var(--accent-surface-hover)" }}
-              >
-                <tr>
-                  <th style={tableHeaderStyle}>Status</th>
-                  <th style={tableHeaderStyle}>Part Name</th>
-                  <th style={tableHeaderStyle}>Quantity</th>
-                  <th style={tableHeaderStyle}>Requested</th>
-                  <th style={tableHeaderStyle}>Requested By</th>
-                </tr>
-              </thead>
-              <tbody
-                data-dev-section="1"
-                data-dev-section-key="tech-consumables-request-auto-data-table-1-rows"
-                data-dev-section-type="table-rows"
-                data-dev-section-parent="tech-consumables-request-auto-data-table-1"
-              >
-                {loadingRequests ? (
-                  <tr
+              {loadingRequests ? (
+                <div style={{ ...requestCardStyle, textAlign: "center", color: "var(--text-secondary)" }}>
+                  Loading requests…
+                </div>
+              ) : filteredRequests.length > 0 ? (
+                filteredRequests.map((request) => (
+                  <article
+                    key={request.id}
                     data-dev-section="1"
-                    data-dev-section-key="tech-consumables-requests-loading-row"
-                    data-dev-section-type="state-banner"
-                    data-dev-section-parent="tech-consumables-request-auto-data-table-1-rows"
-                    style={{ background: "var(--surface)" }}
+                    data-dev-section-key={`tech-consumables-request-mobile-card-${request.id}`}
+                    data-dev-section-type="content-card"
+                    data-dev-section-parent="tech-consumables-request-mobile-list"
+                    style={requestCardStyle}
                   >
-                    <td colSpan={5} style={{ padding: "18px 12px", color: "var(--text-secondary)", textAlign: "center" }}>
-                      Loading requests…
-                    </td>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, color: "var(--text-primary)", wordBreak: "break-word" }}>
+                          {request.itemName}
+                        </div>
+                      </div>
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          padding: "4px 10px",
+                          borderRadius: "var(--radius-pill)",
+                          fontWeight: 600,
+                          fontSize: "0.75rem",
+                          whiteSpace: "nowrap",
+                          ...(statusBadgeStyles[request.status] || statusBadgeStyles.pending),
+                        }}
+                      >
+                        {request.status === "fulfilled"
+                          ? "✅"
+                          : request.status === "urgent"
+                          ? "⏰"
+                          : request.status === "rejected"
+                          ? "✖️"
+                          : request.status === "ordered"
+                          ? "📦"
+                          : "📦"}
+                        {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                      </span>
+                    </div>
+                    <div style={requestCardMetaGridStyle}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={fieldLabelStyle}>Quantity</div>
+                        <div style={{ marginTop: "4px", color: "var(--text-primary)", fontWeight: 600 }}>
+                          {request.quantity}
+                        </div>
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={fieldLabelStyle}>Requested</div>
+                        <div style={{ marginTop: "4px", color: "var(--text-secondary)" }}>
+                          {request.requestedAt
+                            ? new Date(request.requestedAt).toLocaleDateString("en-GB", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              })
+                            : "—"}
+                        </div>
+                      </div>
+                      <div style={{ gridColumn: "1 / -1", minWidth: 0 }}>
+                        <div style={fieldLabelStyle}>Requested By</div>
+                        <div style={{ marginTop: "4px", color: "var(--text-secondary)", wordBreak: "break-word" }}>
+                          {request.requestedByName || "—"}
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                ))
+              ) : (
+                <div style={{ ...requestCardStyle, textAlign: "center", color: "var(--text-secondary)" }}>
+                  No consumable requests match the current filter.
+                </div>
+              )}
+            </DevLayoutSection>
+          ) : (
+            <DevLayoutSection
+              as="div"
+              sectionKey="tech-consumables-request-auto-data-table-1-shell"
+              parentKey="tech-consumables-requests-panel"
+              sectionType="data-table-shell"
+              backgroundToken="surface"
+              className="app-section-card"
+              style={{ overflowX: "auto", maxHeight: "420px", overflowY: "auto", padding: 0, background: "var(--surface)" }}
+            >
+              <DevLayoutSection
+                as="table"
+                sectionKey="tech-consumables-request-auto-data-table-1"
+                parentKey="tech-consumables-request-auto-data-table-1-shell"
+                sectionType="data-table"
+                backgroundToken="surface"
+                className="app-data-table"
+                style={{ minWidth: "640px", background: "var(--surface)" }}
+              >
+                <thead
+                  data-dev-section="1"
+                  data-dev-section-key="tech-consumables-request-auto-data-table-1-headings"
+                  data-dev-section-type="table-headings"
+                  data-dev-section-parent="tech-consumables-request-auto-data-table-1"
+                  style={{ background: "var(--accent-surface-hover)" }}
+                >
+                  <tr>
+                    <th style={tableHeaderStyle}>Status</th>
+                    <th style={tableHeaderStyle}>Part Name</th>
+                    <th style={tableHeaderStyle}>Quantity</th>
+                    <th style={tableHeaderStyle}>Requested</th>
+                    <th style={tableHeaderStyle}>Requested By</th>
                   </tr>
-                ) : filteredRequests.length > 0 ? (
-                  filteredRequests.map((request) => (
+                </thead>
+                <tbody
+                  data-dev-section="1"
+                  data-dev-section-key="tech-consumables-request-auto-data-table-1-rows"
+                  data-dev-section-type="table-rows"
+                  data-dev-section-parent="tech-consumables-request-auto-data-table-1"
+                >
+                  {loadingRequests ? (
                     <tr
-                      key={request.id}
                       data-dev-section="1"
-                      data-dev-section-key={`tech-consumables-request-auto-data-table-1-row-${request.id}`}
-                      data-dev-section-type="table-row"
+                      data-dev-section-key="tech-consumables-requests-loading-row"
+                      data-dev-section-type="state-banner"
                       data-dev-section-parent="tech-consumables-request-auto-data-table-1-rows"
                       style={{ background: "var(--surface)" }}
                     >
-                      <td style={{ padding: "12px" }}>
-                        <span
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "6px",
-                            padding: "4px 10px",
-                            borderRadius: "var(--radius-pill)",
-                            fontWeight: 600,
-                            fontSize: "0.75rem",
-                            ...(statusBadgeStyles[request.status] || statusBadgeStyles.pending),
-                          }}
-                        >
-                          {request.status === "fulfilled"
-                            ? "✅"
-                            : request.status === "urgent"
-                            ? "⏰"
-                            : request.status === "rejected"
-                            ? "✖️"
-                            : request.status === "ordered"
-                            ? "📦"
-                            : "📦"}
-                          {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-                        </span>
+                      <td colSpan={5} style={{ padding: "18px 12px", color: "var(--text-secondary)", textAlign: "center" }}>
+                        Loading requests…
                       </td>
-                      <td style={{ padding: "12px", fontWeight: 600, color: "var(--text-primary)" }}>{request.itemName}</td>
-                      <td style={{ padding: "12px", color: "var(--text-secondary)" }}>{request.quantity}</td>
-                      <td style={{ padding: "12px", color: "var(--text-secondary)" }}>
-                        {request.requestedAt
-                          ? new Date(request.requestedAt).toLocaleDateString("en-GB", {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                            })
-                          : "—"}
-                      </td>
-                      <td style={{ padding: "12px", color: "var(--text-secondary)" }}>{request.requestedByName || "—"}</td>
                     </tr>
-                  ))
-                ) : (
-                  <tr
-                    data-dev-section="1"
-                    data-dev-section-key="tech-consumables-requests-empty-row"
-                    data-dev-section-type="empty-state"
-                    data-dev-section-parent="tech-consumables-request-auto-data-table-1-rows"
-                    style={{ background: "var(--surface)" }}
-                  >
-                    <td colSpan={5} style={{ padding: "18px 12px", color: "var(--text-secondary)", textAlign: "center" }}>
-                      No consumable requests match the current filter.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
+                  ) : filteredRequests.length > 0 ? (
+                    filteredRequests.map((request) => (
+                      <tr
+                        key={request.id}
+                        data-dev-section="1"
+                        data-dev-section-key={`tech-consumables-request-auto-data-table-1-row-${request.id}`}
+                        data-dev-section-type="table-row"
+                        data-dev-section-parent="tech-consumables-request-auto-data-table-1-rows"
+                        style={{ background: "var(--surface)" }}
+                      >
+                        <td style={{ padding: "12px" }}>
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "6px",
+                              padding: "4px 10px",
+                              borderRadius: "var(--radius-pill)",
+                              fontWeight: 600,
+                              fontSize: "0.75rem",
+                              ...(statusBadgeStyles[request.status] || statusBadgeStyles.pending),
+                            }}
+                          >
+                            {request.status === "fulfilled"
+                              ? "✅"
+                              : request.status === "urgent"
+                              ? "⏰"
+                              : request.status === "rejected"
+                              ? "✖️"
+                              : request.status === "ordered"
+                              ? "📦"
+                              : "📦"}
+                            {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                          </span>
+                        </td>
+                        <td style={{ padding: "12px", fontWeight: 600, color: "var(--text-primary)" }}>{request.itemName}</td>
+                        <td style={{ padding: "12px", color: "var(--text-secondary)" }}>{request.quantity}</td>
+                        <td style={{ padding: "12px", color: "var(--text-secondary)" }}>
+                          {request.requestedAt
+                            ? new Date(request.requestedAt).toLocaleDateString("en-GB", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              })
+                            : "—"}
+                        </td>
+                        <td style={{ padding: "12px", color: "var(--text-secondary)" }}>{request.requestedByName || "—"}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr
+                      data-dev-section="1"
+                      data-dev-section-key="tech-consumables-requests-empty-row"
+                      data-dev-section-type="empty-state"
+                      data-dev-section-parent="tech-consumables-request-auto-data-table-1-rows"
+                      style={{ background: "var(--surface)" }}
+                    >
+                      <td colSpan={5} style={{ padding: "18px 12px", color: "var(--text-secondary)", textAlign: "center" }}>
+                        No consumable requests match the current filter.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </DevLayoutSection>
             </DevLayoutSection>
-          </DevLayoutSection>
+          )}
         </DevLayoutSection>
       </div>
       {showStockCheck && (

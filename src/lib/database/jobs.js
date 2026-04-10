@@ -84,6 +84,18 @@ export const formatJobNumberFromId = (jobId) => {
   return String(Math.floor(normalizedId)).padStart(5, "0");
 };
 
+const shouldReplaceGeneratedSubJobNumber = (jobRow) => {
+  const currentJobNumber = normaliseJobNumberInput(jobRow?.job_number);
+  const primeJobNumber = normaliseJobNumberInput(jobRow?.prime_job_number);
+  const subJobSequence = Number(jobRow?.sub_job_sequence);
+
+  if (!currentJobNumber || !primeJobNumber || !Number.isInteger(subJobSequence) || subJobSequence <= 0) {
+    return false;
+  }
+
+  return currentJobNumber === `${primeJobNumber}.${subJobSequence}`;
+};
+
 const ensureJobNumberAssigned = async (jobRow, providedJobNumber = null) => {
   if (!jobRow) {
     return jobRow;
@@ -97,7 +109,7 @@ const ensureJobNumberAssigned = async (jobRow, providedJobNumber = null) => {
     };
   }
 
-  if (jobRow.job_number) {
+  if (jobRow.job_number && !shouldReplaceGeneratedSubJobNumber(jobRow)) {
     return jobRow;
   }
 

@@ -1457,7 +1457,7 @@ export default function EfficiencyTab({
               {activeSummary.tech.first_name} - {activeFilterHeading}
             </h3>
             <div
-              className="efficiency-summary-grid efficiency-tech-grid"
+              className="efficiency-summary-grid"
               style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px" }}
               data-dev-section="1"
               data-dev-section-key="tech-efficiency-tech-summary-grid"
@@ -1488,48 +1488,13 @@ export default function EfficiencyTab({
                   {formatSignedHours(filteredSetDifference)}
                 </strong>
               </div>
-              {/* Combined Current Target + Full Month card — hidden on mobile, replaced by separate cards */}
-              <div className="efficiency-target-combined" style={{ ...statCardStyle, gridColumn: "span 2", minWidth: "320px" }} data-dev-section="1" data-dev-section-key="tech-efficiency-tech-target-combined" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-tech-summary-grid">
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "12px",
-                    alignItems: "stretch",
-                    marginTop: "2px",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "4px",
-                      paddingRight: "12px",
-                      borderRight: "1px solid rgba(var(--accent-purple-rgb), 0.22)",
-                    }}
-                  >
-                    <span style={statusLabelStyle(filteredSetStatusColor)}>Current Target</span>
-                    <strong style={summaryValueStyle(filteredSetStatusColor)}>
-                      {formatHours(currentMonthTargetHours)}h
-                    </strong>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "4px", paddingLeft: "2px" }}>
-                    <span style={statusLabelStyle(filteredSetStatusColor)}>Full Month</span>
-                    <strong style={summaryValueStyle(filteredSetStatusColor)}>
-                      {formatHours(fullMonthTargetHours)}h
-                    </strong>
-                  </div>
-                </div>
-              </div>
-              {/* Separate Current Target card — visible only on mobile */}
-              <div className="efficiency-target-mobile" style={{ ...statCardStyle, display: "none" }} data-dev-section="1" data-dev-section-key="tech-efficiency-tech-target-current-mobile" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-tech-summary-grid">
+              <div style={statCardStyle} data-dev-section="1" data-dev-section-key="tech-efficiency-tech-target-current" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-tech-summary-grid">
                 <span style={statusLabelStyle(filteredSetStatusColor)}>Current Target</span>
                 <strong style={summaryValueStyle(filteredSetStatusColor)}>
                   {formatHours(currentMonthTargetHours)}h
                 </strong>
               </div>
-              {/* Separate Full Month card — visible only on mobile */}
-              <div className="efficiency-target-mobile" style={{ ...statCardStyle, display: "none" }} data-dev-section="1" data-dev-section-key="tech-efficiency-tech-target-full-month-mobile" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-tech-summary-grid">
+              <div style={statCardStyle} data-dev-section="1" data-dev-section-key="tech-efficiency-tech-target-full-month" data-dev-section-type="stat-card" data-dev-section-parent="tech-efficiency-tech-summary-grid">
                 <span style={statusLabelStyle(filteredSetStatusColor)}>Full Month</span>
                 <strong style={summaryValueStyle(filteredSetStatusColor)}>
                   {formatHours(fullMonthTargetHours)}h
@@ -2433,20 +2398,10 @@ export default function EfficiencyTab({
                 grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
                 gap: 10px !important;
               }
-              :global(.efficiency-summary-grid.efficiency-tech-grid) {
-                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-                gap: 10px !important;
-              }
               :global(.efficiency-summary-grid > div) {
                 padding: 12px !important;
                 border-radius: 12px !important;
                 min-width: 0 !important;
-              }
-              :global(.efficiency-summary-grid.efficiency-tech-grid > div) {
-                flex-direction: column !important;
-                justify-content: flex-start !important;
-                align-items: stretch !important;
-                padding: 12px !important;
               }
               :global(.efficiency-summary-grid span) {
                 font-size: 0.62rem !important;
@@ -2457,15 +2412,6 @@ export default function EfficiencyTab({
               :global(.efficiency-summary-grid > div[style*="grid-column: span 2"]) {
                 grid-column: 1 / -1 !important;
                 min-width: 0 !important;
-              }
-              :global(.efficiency-summary-grid.efficiency-tech-grid > div[style*="grid-column: span 2"]) {
-                grid-column: 1 / -1 !important;
-              }
-              :global(.efficiency-summary-grid.efficiency-tech-grid .efficiency-target-combined) {
-                display: none !important;
-              }
-              :global(.efficiency-summary-grid.efficiency-tech-grid .efficiency-target-mobile) {
-                display: flex !important;
               }
               :global(.efficiency-table-wrap) {
                 overflow-x: auto !important;

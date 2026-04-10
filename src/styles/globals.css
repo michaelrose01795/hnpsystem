@@ -2176,6 +2176,13 @@ textarea {
   gap: var(--control-gap);
 }
 
+.dropdown-api__control {
+  min-height: var(--dropdown-trigger-height);
+  padding: var(--dropdown-trigger-padding);
+  border-radius: var(--dropdown-trigger-radius);
+  line-height: 1;
+}
+
 .dropdown-api__control,
 .calendar-api__control,
 .timepicker-api__control {
@@ -3321,9 +3328,9 @@ input[type="search"]::-webkit-search-results-decoration {
 .dropdown-api.prepick-popup-dropdown .dropdown-api__control,
 .dropdown-api.leave-modal-field .dropdown-api__control,
 .calendar-api.leave-modal-field .calendar-api__control {
-  min-height: var(--control-height-sm);
-  padding: var(--control-padding-sm);
-  border-radius: var(--control-radius-sm);
+  min-height: var(--dropdown-trigger-height-sm);
+  padding: var(--dropdown-trigger-padding-sm);
+  border-radius: var(--dropdown-trigger-radius-sm);
 }
 
 .popup-card .calendar-api__menu,

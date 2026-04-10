@@ -1,5 +1,6 @@
 // file location: /src/components/dropdownAPI/MultiSelectDropdown.js
 import React, { useEffect, useId, useMemo, useRef, useState } from "react";
+import { dropdownTriggerButtonStyle } from "@/styles/appTheme";
 
 /**
  * MultiSelectDropdownAPI
@@ -227,6 +228,7 @@ export default function MultiSelectDropdown({
       {/* Searchable control */}
       <div
         className="dropdown-api__control"
+        style={dropdownTriggerButtonStyle}
         onClick={() => controlInputRef.current?.focus()}
       >
         <input

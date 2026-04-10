@@ -340,6 +340,30 @@ const tagToneClass = (tag) => {
   return "";
 };
 
+const getCreateSectionLabel = (section, mode) => {
+  const shortKey = String(section?.key || "")
+    .replace(/^job-cards-create-/, "")
+    .replace(/-/g, " ")
+    .trim();
+
+  if (mode === "labels") {
+    return (
+      <>
+        <span className={styles.labelPrimary}>{section.number}</span>
+        {shortKey ? <span className={styles.labelSecondary}>{shortKey}</span> : null}
+      </>
+    );
+  }
+
+  return (
+    <>
+      <span className={styles.labelPrimary}>{section.number}</span>
+      {shortKey ? <span className={styles.labelSecondary}>{shortKey}</span> : null}
+      <span className={styles.labelMeta}>{section.type}</span>
+    </>
+  );
+};
+
 const scanSections = ({ route, registry }) => {
   const sectionsByKey = new Map();
   const explicitNodes = Array.from(document.querySelectorAll("[data-dev-section-key]"));
@@ -671,6 +695,8 @@ export default function DevLayoutOverlay() {
 
   if (!canAccess || !enabled) return null;
 
+  const currentRoute = router.asPath || router.pathname || "/";
+  const isJobCardsCreateRoute = currentRoute.startsWith("/job-cards/create");
   const canInspectClick = true;
   const handleCopy = async (type, text) => {
     await copyText(text);
@@ -695,15 +721,25 @@ export default function DevLayoutOverlay() {
     : undefined;
 
   return (
-    <div className={styles.root} aria-hidden="true" style={overlayStyle}>
+    <div className={`${styles.root} ${isJobCardsCreateRoute ? styles.rootCreate : ""}`.trim()} aria-hidden="true" style={overlayStyle}>
       {scopedSections.map((section) => {
         const selectedClass = scopedSelected?.key === section.key ? styles.boxSelected : "";
         const sidebarSection = fullScreen && isSidebarSection(section);
         const primarySidebarSection = fullScreen && isPrimarySidebarSection(section);
         const sidebarColumnSection = fullScreen && isSidebarColumnSection(section);
-        const labelText = mode === "labels" ? section.number : `${section.number} · ${section.type} · ${section.backgroundToken}`;
+        const labelText = mode === "labels"
+          ? section.number
+          : isJobCardsCreateRoute
+            ? `${section.number} · ${section.type}`
+            : `${section.number} · ${section.type} · ${section.backgroundToken}`;
         const localRect = overlayBounds ? toLocalRect(section.rect, overlayBounds) : section.rect;
-        const labelStyle = sidebarColumnSection
+        const labelStyle = isJobCardsCreateRoute
+          ? {
+              left: localRect.left + 8,
+              top: localRect.top + 8,
+              maxWidth: Math.max(96, localRect.width - 16),
+            }
+          : sidebarColumnSection
           ? {
               left: Math.max(12, localRect.left + Math.min(localRect.width / 2, 120)),
               top: Math.max(8, localRect.top + 8),
@@ -747,7 +783,7 @@ export default function DevLayoutOverlay() {
               />
             )}
             <div
-              className={`${styles.box} ${sidebarSection ? styles.boxSidebar : ""} ${sidebarColumnSection ? styles.boxSidebarColumn : ""} ${primarySidebarSection ? styles.boxSidebarPrimary : ""} ${selectedClass}`.trim()}
+              className={`${styles.box} ${isJobCardsCreateRoute ? styles.boxCreate : ""} ${sidebarSection ? styles.boxSidebar : ""} ${sidebarColumnSection ? styles.boxSidebarColumn : ""} ${primarySidebarSection ? styles.boxSidebarPrimary : ""} ${selectedClass}`.trim()}
               style={{
                 left: localRect.left,
                 top: localRect.top,
@@ -756,10 +792,10 @@ export default function DevLayoutOverlay() {
               }}
             />
             <div
-              className={`${styles.label} ${sidebarSection ? styles.labelSidebar : ""} ${sidebarColumnSection ? styles.labelSidebarColumn : ""} ${primarySidebarSection ? styles.labelSidebarPrimary : ""} ${mode !== "labels" ? styles.labelDetails : ""}`}
+              className={`${styles.label} ${isJobCardsCreateRoute ? styles.labelCreate : ""} ${sidebarSection ? styles.labelSidebar : ""} ${sidebarColumnSection ? styles.labelSidebarColumn : ""} ${primarySidebarSection ? styles.labelSidebarPrimary : ""} ${mode !== "labels" && !isJobCardsCreateRoute ? styles.labelDetails : ""}`}
               style={labelStyle}
             >
-              {labelText}
+              {isJobCardsCreateRoute ? getCreateSectionLabel(section, mode) : labelText}
             </div>
           </React.Fragment>
         );
@@ -817,7 +853,7 @@ export default function DevLayoutOverlay() {
       )}
 
       {scopedSelected && (
-        <aside className={styles.panel} role="dialog" aria-label="Dev layout inspector">
+        <aside className={`${styles.panel} ${isJobCardsCreateRoute ? styles.panelCreate : ""}`.trim()} role="dialog" aria-label="Dev layout inspector">
           <div className={styles.panelScroll}>
             <div className={styles.panelHeader}>
               <div className={styles.panelTitleBlock}>

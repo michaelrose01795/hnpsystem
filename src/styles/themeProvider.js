@@ -74,7 +74,7 @@ const ThemeContext = createContext({
 });
 
 export function ThemeProvider({ children, defaultMode = "system" }) {
-  const { dbUserId } = useUser() || {};
+  const { user, dbUserId, authUserId } = useUser() || {};
   const normalizedDefault = normalizeMode(defaultMode);
   const [mode, setMode] = useState(() => {
     if (typeof document !== "undefined") {
@@ -221,8 +221,33 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
 
   useEffect(() => {
     let cancelled = false;
+
+    const applyPreferencePayload = (payload = {}) => {
+      const preference = normalizeDbMode(payload.dark_mode ?? payload.themeMode);
+      const { resolved } = applyMode(preference);
+      const nextAccent =
+        typeof (payload.accent_color ?? payload.accentColor) === "string" &&
+        (payload.accent_color ?? payload.accentColor).length > 0
+          ? normalizeAccent(payload.accent_color ?? payload.accentColor)
+          : DEFAULT_ACCENT;
+      applyAccent(nextAccent, resolved);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(STORAGE_KEY, preference);
+        window.localStorage.setItem(ACCENT_STORAGE_KEY, nextAccent);
+      }
+      writePreferenceCookie(THEME_COOKIE_KEY, preference);
+      writePreferenceCookie(ACCENT_COOKIE_KEY, nextAccent);
+    };
+
     const fetchPreference = async () => {
-      if (!dbUserId) {
+      const numericUserId =
+        Number.isInteger(Number(dbUserId)) && Number(dbUserId) > 0
+          ? Number(dbUserId)
+          : Number.isInteger(Number(user?.id)) && Number(user?.id) > 0
+            ? Number(user.id)
+            : null;
+
+      if (!user && !numericUserId && !authUserId) {
         const storedMode = readStoredMode();
         const storedAccent = readStoredAccent();
         const nextMode =
@@ -237,39 +262,40 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
       setLoading(true);
       try {
         let data = null;
-        try {
-          const { data: fullData, error: fullError } = await supabaseClient
-            .from("users")
-            .select("dark_mode, accent_color")
-            .eq("user_id", dbUserId)
-            .maybeSingle();
-          if (fullError) throw fullError;
-          data = fullData;
-        } catch (fullErr) {
-          const { data: fallbackData, error: fallbackError } = await supabaseClient
-            .from("users")
-            .select("dark_mode")
-            .eq("user_id", dbUserId)
-            .maybeSingle();
-          if (fallbackError) throw fallbackError;
-          data = fallbackData;
-          console.warn("Accent DB column unavailable, using local accent preference", fullErr?.message || fullErr);
+
+        if (numericUserId) {
+          try {
+            const { data: fullData, error: fullError } = await supabaseClient
+              .from("users")
+              .select("dark_mode, accent_color")
+              .eq("user_id", numericUserId)
+              .maybeSingle();
+            if (fullError) throw fullError;
+            data = fullData;
+          } catch (fullErr) {
+            const { data: fallbackData, error: fallbackError } = await supabaseClient
+              .from("users")
+              .select("dark_mode")
+              .eq("user_id", numericUserId)
+              .maybeSingle();
+            if (fallbackError) throw fallbackError;
+            data = fallbackData;
+            console.warn("Accent DB column unavailable, using local accent preference", fullErr?.message || fullErr);
+          }
+        } else if (authUserId) {
+          const response = await fetch("/api/profile/me", {
+            method: "GET",
+            credentials: "include",
+          });
+          if (!response.ok) {
+            throw new Error(`Profile preference load failed (${response.status})`);
+          }
+          const payload = await response.json().catch(() => null);
+          data = payload?.profile || null;
         }
 
         if (!cancelled && data) {
-          const preference = normalizeDbMode(data.dark_mode);
-          const { resolved } = applyMode(preference);
-          const nextAccent =
-            typeof data.accent_color === "string" && data.accent_color.length > 0
-              ? normalizeAccent(data.accent_color)
-              : DEFAULT_ACCENT;
-          applyAccent(nextAccent, resolved);
-          if (typeof window !== "undefined") {
-            window.localStorage.setItem(STORAGE_KEY, preference);
-            window.localStorage.setItem(ACCENT_STORAGE_KEY, nextAccent);
-          }
-          writePreferenceCookie(THEME_COOKIE_KEY, preference);
-          writePreferenceCookie(ACCENT_COOKIE_KEY, nextAccent);
+          applyPreferencePayload(data);
         }
       } catch (err) {
         console.error("Failed to load theme preference", err.message || err);
@@ -284,7 +310,7 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
     return () => {
       cancelled = true;
     };
-  }, [dbUserId, applyAccent, applyMode, normalizedDefault]);
+  }, [user, dbUserId, authUserId, applyAccent, applyMode, normalizedDefault]);
 
   const persistPreference = useCallback(
     async (nextMode) => {

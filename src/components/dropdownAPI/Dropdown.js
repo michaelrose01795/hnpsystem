@@ -1,6 +1,7 @@
 // file location: /src/components/dropdownAPI/Dropdown.js
 import React, { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { dropdownTriggerButtonStyle } from "@/styles/appTheme";
 
 const pickStyleKeys = (style, keys) => {
   if (!style) return undefined;
@@ -383,7 +384,7 @@ export default function Dropdown({
         id={controlId}
         type="button"
         className="dropdown-api__control"
-        style={mergedControlStyle}
+        style={{ ...dropdownTriggerButtonStyle, ...mergedControlStyle }}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         aria-label={ariaLabel}
